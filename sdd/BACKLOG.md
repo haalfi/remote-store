@@ -40,12 +40,15 @@ Items graduate through the SDD pipeline:
 ## Bugs
 
 - [ ] **BUG-159 — S3 `read()` leaks file handle if stream wrapping fails**
-  `S3Backend.read()` (`_s3.py:130-134`) acquires a file handle via
-  `self._fs.open()` then wraps it in `_ErrorMappingStream` /
-  `BufferedReader` without try/except protection. If wrapping fails,
-  the s3fs file handle leaks. Same pattern as BUG-142 (SFTP) and
-  BUG-158 (Azure), both fixed in v0.21.1. `S3PyArrowBackend.read()`
-  (`_s3_pyarrow.py:196-200`) has the same issue.
+  Both S3 backends have unprotected acquire-then-wrap in `read()`:
+  - `S3Backend.read()` (`_s3.py:130-134`): acquires an s3fs file handle
+    via `self._fs.open()`, then wraps in `_ErrorMappingStream` →
+    `BufferedReader` (double-layer, same pattern as BUG-142/158).
+  - `S3PyArrowBackend.read()` (`_s3_pyarrow.py:196-200`): acquires a
+    PyArrow `NativeFile` via `open_input_file()`, then wraps in
+    `_PyArrowBinaryIO` → `_ErrorMappingStream` (single-layer, leaked
+    resource is a C++ file handle, not an s3fs handle).
+  If any wrapping constructor raises, the raw handle leaks.
   - Reproduce: monkeypatch `_ErrorMappingStream.__init__` to raise,
     call `S3Backend.read()`, observe unclosed file handle.
   - Fix: use `_safe_wrap` helper (BK-139 deliverable 1) or inline
@@ -61,7 +64,7 @@ Items graduate through the SDD pipeline:
   1. `_safe_wrap()` helper in `_stream.py` + fix BUG-159 S3 `read()` leak (~20 lines)
   2. Hypothesis P4 — stateful backend model via `RuleBasedStateMachine` (~60 lines)
   3. Hypothesis P1–P3 — partition, config, path roundtrip properties (~80 lines)
-  4. Enable ruff `BLE` + `TRY` rule sets (1-line config change)
+  4. Enable ruff `BLE` rule set (1-line config change)
   5. Extended conformance suite — parameter combos, edge inputs, error fidelity,
      metadata, resource cleanup, operational consistency (~300 lines, ~58 tests).
      Use `@pytest.mark.extended_conformance` to isolate CI impact.

@@ -9,7 +9,7 @@ resource safety, static analysis).
 [TESTING.md](../TESTING.md),
 [research-testing-best-practices.md](research-testing-best-practices.md).
 
-**Context:** The 0.21.1 patch release fixed 21 bugs despite strong SDD
+**Context:** The 0.21.1 patch release fixed 22 bugs despite strong SDD
 practices, spec-driven development, 95% coverage, mutation testing, and
 review-enforced test quality rules. This document analyzes root causes,
 evaluates prevention strategies beyond testing, and recommends
@@ -19,7 +19,8 @@ concrete actions.
 
 ## 1. Bug Taxonomy (0.21.1)
 
-Categorizing the 21 bugs by root cause pattern reveals seven clusters:
+Categorizing the 22 bugs fixed in 0.21.1 by root cause pattern reveals
+seven clusters:
 
 | Pattern | Bugs | Count |
 |---------|------|-------|
@@ -29,7 +30,7 @@ Categorizing the 21 bugs by root cause pattern reveals seven clusters:
 | Edge-case inputs not rejected | BUG-136, 139, 140, 141 | 4 |
 | Cache coherency | BUG-137, 138 | 2 |
 | Mutation of caller data | BUG-148 | 1 |
-| Edge-case behavior on unexpected input | BUG-143, 153, 154, 157 | 3 |
+| Edge-case behavior on unexpected input | BUG-143, 153, 154, 157 | 4 |
 
 **Key observation:** Most bugs are NOT logic errors in core algorithms. They
 are **behavioral gaps at boundaries** — parameter combinations the conformance
@@ -211,9 +212,13 @@ backend `read()` acquires a low-level resource (file handle, paramiko
 channel, Azure downloader), then wraps it in `_ErrorMappingStream` /
 `BufferedReader`. If wrapping fails, the raw resource leaks.
 
-**Latent bug found during research:** `S3Backend.read()` in `_s3.py` has
-the same unprotected acquire-then-wrap pattern. If `_ErrorMappingStream()`
-or `BufferedReader()` construction fails, the s3fs file handle leaks.
+**Latent bug found during research (filed as BUG-159):** Both S3 backends
+have unprotected acquire-then-wrap in `read()`. `S3Backend.read()`
+(`_s3.py:130-134`) wraps an s3fs handle in `_ErrorMappingStream` →
+`BufferedReader` (double-layer, same as BUG-142/158). `S3PyArrowBackend`
+(`_s3_pyarrow.py:196-200`) wraps a PyArrow `NativeFile` in
+`_PyArrowBinaryIO` → `_ErrorMappingStream` (single-layer, different
+resource type). If any wrapping constructor raises, the raw handle leaks.
 
 **Recommended deliverables:**
 
@@ -317,7 +322,7 @@ How each strategy maps to the 0.21.1 bug clusters:
 | Cache coherency | P4 (stateful) | Operational consistency | — | — |
 | Mutation of caller data | P2 (config) | — | — | — |
 
-All 21 bugs are covered by at least one strategy. Most are covered by two
+All 22 bugs are covered by at least one strategy. Most are covered by two
 (defense in depth).
 
 ---
@@ -331,8 +336,8 @@ Ordered by value-to-effort ratio:
 | 1 | `_safe_wrap` helper + S3 bug fix (BUG-159) | ~20 lines | Resource leaks (4 bugs) + latent S3 bug | Very low |
 | 2 | Hypothesis P4 (stateful backend model) | ~60 lines | Cross-backend + emergent bugs | Low (flaky if non-deterministic — use fixed seeds in CI) |
 | 3 | Hypothesis P1–P3 (partition, config, path) | ~80 lines | Parsing/config bugs (4 bugs) | Low |
-| 4 | Enable ruff `BLE` + `TRY` rules | 1-line config | Broad-except class | Very low |
-| 5 | Extended conformance suite (6 categories) | ~300 lines | All 21 bug classes | Medium (CI duration — use marks to separate) |
+| 4 | Enable ruff `BLE` rules | 1-line config | Broad-except class | Very low |
+| 5 | Extended conformance suite (6 categories) | ~300 lines | All 22 bug classes | Medium (CI duration — use marks to separate) |
 | 6 | `check_error_handling.py` AST script | ~80 lines | Error swallowing (3 bugs) | Medium (maintenance burden — keep scope minimal) |
 | 7 | `ResourceWarning` safety net for SFTP/Azure | ~10 lines | Debugging aid | Very low |
 
