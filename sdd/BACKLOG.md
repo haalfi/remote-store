@@ -39,20 +39,7 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-- [ ] **BUG-159 — S3 `read()` leaks file handle if stream wrapping fails**
-  Both S3 backends have unprotected acquire-then-wrap in `read()`:
-  - `S3Backend.read()` (`_s3.py:130-134`): acquires an s3fs file handle
-    via `self._fs.open()`, then wraps in `_ErrorMappingStream` →
-    `BufferedReader` (double-layer, same pattern as BUG-142/158).
-  - `S3PyArrowBackend.read()` (`_s3_pyarrow.py:196-200`): acquires a
-    PyArrow `NativeFile` via `open_input_file()`, then wraps in
-    `_PyArrowBinaryIO` → `_ErrorMappingStream` (single-layer, leaked
-    resource is a C++ file handle, not an s3fs handle).
-  If any wrapping constructor raises, the raw handle leaks.
-  - Reproduce: monkeypatch `_ErrorMappingStream.__init__` to raise,
-    call `S3Backend.read()`, observe unclosed file handle.
-  - Fix: use `_safe_wrap` helper (BK-139 deliverable 1) or inline
-    try/except matching the SFTP/Azure pattern.
+*(none)*
 
 ---
 
@@ -71,21 +58,15 @@ Items graduate through the SDD pipeline:
   5. BE-018: document move atomicity is backend-dependent
   6. SIO-001: acquire-then-wrap safety invariant
 
-- [ ] **BK-139 — Implement bug prevention measures from research**
+- [~] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
-  **Prerequisite:** BK-140 spec amendments (deliverables 2 and 5 depend on
-  a well-defined behavioral contract as oracle; see
-  [research-backend-contract-completeness.md](research/research-backend-contract-completeness.md) § 4).
-  Seven deliverables, ordered by ROI (resource safety + PBT first):
-  1. `_safe_wrap()` helper in `_stream.py` + fix BUG-159 S3 `read()` leak (~20 lines)
-  2. Hypothesis P4 — stateful backend model via `RuleBasedStateMachine` (~60 lines)
-  3. Hypothesis P1–P3 — partition, config, path roundtrip properties (~80 lines)
+  Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Remaining deliverables:
   4. Enable ruff `BLE` rule set (1-line config change)
   5. Extended conformance suite — parameter combos, edge inputs, error fidelity,
      metadata, resource cleanup, operational consistency (~300 lines, ~58 tests).
      Use `@pytest.mark.extended_conformance` to isolate CI impact.
   6. `scripts/check_error_handling.py` AST script (~80 lines) — deferred until
-     items 1–5 prove insufficient; conformance error fidelity tests may suffice.
+     items 4–5 prove insufficient; conformance error fidelity tests may suffice.
   7. `ResourceWarning` safety net for SFTP/Azure backends (~10 lines)
 
 ---

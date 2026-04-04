@@ -21,7 +21,7 @@ from remote_store._errors import (
     _not_found,
     _permission_denied,
 )
-from remote_store._stream import _ErrorMappingStream
+from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
     _normalize_endpoint_url,
@@ -196,8 +196,13 @@ class S3PyArrowBackend(_S3Base):
     def read(self, path: str) -> BinaryIO:
         with self._pyarrow_errors(path):
             pa_file = self._pa_fs.open_input_file(self._pa_path(path))
-            raw = _PyArrowBinaryIO(pa_file)
-            return cast("BinaryIO", _ErrorMappingStream(raw, self._classify_error, path))
+            return cast(
+                "BinaryIO",
+                _safe_wrap(
+                    _PyArrowBinaryIO(pa_file),
+                    lambda s: _ErrorMappingStream(s, self._classify_error, path),
+                ),
+            )
 
     def read_bytes(self, path: str) -> bytes:
         with self._pyarrow_errors(path):

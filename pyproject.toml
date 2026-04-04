@@ -100,6 +100,7 @@ dev = [
   "pytest-cov",
   "pytest-httpserver>=1.0.0",
   "pytest-asyncio>=0.23",
+  "hypothesis>=6.0",
   "moto[server,s3]",
   # Type checking & linting
   "mypy",
@@ -233,6 +234,7 @@ markers = [
   "standard: medium-tier benchmark (10MB payload, deep hierarchy, ~5 min/backend)",
   "full: heavy-tier benchmark (100MB payload, 10k listing, ~20-30 min/backend)",
   "os_sensitive: exercises OS-specific behaviour (paths, atomic writes, local filesystem); run on macOS and Windows CI",
+  "pbt: property-based test using Hypothesis",
 ]
 
 [tool.pytest-gremlins]

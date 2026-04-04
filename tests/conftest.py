@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import pytest
+from hypothesis import HealthCheck, settings
 
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
+
+# -- Hypothesis profiles (dev=50, ci=100, nightly=1000) --
+settings.register_profile("dev", max_examples=50)
+settings.register_profile("ci", max_examples=100, suppress_health_check=[HealthCheck.too_slow])
+settings.register_profile("nightly", max_examples=1000, suppress_health_check=[HealthCheck.too_slow])
+settings.load_profile("dev")
 
 
 def pytest_configure(config: object) -> None:
@@ -20,6 +27,7 @@ def pytest_configure(config: object) -> None:
             "os_sensitive: exercises OS-specific behaviour (paths, atomic writes, local filesystem); "
             "run on macOS and Windows CI",
         )
+        config.addinivalue_line("markers", "pbt: property-based test using Hypothesis")
 
 
 # region: shared fixtures

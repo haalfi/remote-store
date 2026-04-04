@@ -4,12 +4,34 @@ from __future__ import annotations
 
 import contextlib
 import io
-from typing import TYPE_CHECKING, Any, cast
+from typing import IO, TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
     from remote_store._errors import RemoteStoreError
+
+
+def _safe_wrap(raw: IO[bytes], *wrappers: Callable[[IO[bytes]], IO[bytes]]) -> IO[bytes]:
+    """Apply *wrappers* in order, closing *raw* if any wrapper fails.
+
+    Each wrapper receives the result of the previous one.  If a wrapper
+    raises, every successfully-created layer (plus *raw*) is closed so
+    that the underlying resource does not leak.
+
+    >>> wrapped = _safe_wrap(raw_handle, error_mapper, buffered_reader)
+    """
+    layers: list[IO[bytes]] = [raw]
+    try:
+        for wrapper in wrappers:
+            layers.append(wrapper(layers[-1]))
+        return layers[-1]
+    except BaseException:
+        # Close in reverse order; suppress errors during cleanup.
+        for layer in reversed(layers):
+            with contextlib.suppress(Exception):
+                layer.close()
+        raise
 
 
 class _ErrorMappingStream(io.RawIOBase):

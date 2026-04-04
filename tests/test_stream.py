@@ -1,4 +1,4 @@
-"""Tests for _ErrorMappingStream."""
+"""Tests for _ErrorMappingStream and _safe_wrap."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import io
 import pytest
 
 from remote_store._errors import NotFound, RemoteStoreError
-from remote_store._stream import _ErrorMappingStream
+from remote_store._stream import _ErrorMappingStream, _safe_wrap
 
 
 def _test_mapper(exc: Exception, path: str) -> RemoteStoreError:
@@ -221,3 +221,84 @@ class TestErrorMappingStreamErrors:
         stream = _ErrorMappingStream(_FailingCloseStream(), _test_mapper, "f.txt")
         stream.close()  # should not raise
         assert stream.closed
+
+
+# ---------------------------------------------------------------------------
+# _safe_wrap tests (BUG-159)
+# ---------------------------------------------------------------------------
+
+
+class _TrackingStream(io.BytesIO):
+    """Stream that tracks whether close() was called."""
+
+    def __init__(self, data: bytes = b"hello") -> None:
+        super().__init__(data)
+        self.was_closed = False
+
+    def close(self) -> None:
+        self.was_closed = True
+        super().close()
+
+
+class TestSafeWrap:
+    """Tests for the _safe_wrap helper."""
+
+    @pytest.mark.spec("BUG-159")
+    def test_successful_wrap(self) -> None:
+        raw = _TrackingStream()
+        result = _safe_wrap(raw, lambda s: io.BufferedReader(s))
+        assert isinstance(result, io.BufferedReader)
+        assert not raw.was_closed
+
+    @pytest.mark.spec("BUG-159")
+    def test_wrapper_failure_closes_raw(self) -> None:
+        """If a wrapper raises, the raw handle is closed (BUG-159 fix)."""
+        raw = _TrackingStream()
+
+        def failing_wrapper(s: object) -> io.BytesIO:
+            raise RuntimeError("wrapping failed")
+
+        with pytest.raises(RuntimeError, match="wrapping failed"):
+            _safe_wrap(raw, failing_wrapper)
+
+        assert raw.was_closed, "Raw stream must be closed when wrapper fails"
+
+    @pytest.mark.spec("BUG-159")
+    def test_multi_layer_wrap(self) -> None:
+        raw = _TrackingStream()
+        result = _safe_wrap(
+            raw,
+            lambda s: _ErrorMappingStream(s, _test_mapper, "f.txt"),
+            lambda s: io.BufferedReader(s),
+        )
+        assert isinstance(result, io.BufferedReader)
+        assert not raw.was_closed
+
+    @pytest.mark.spec("BUG-159")
+    def test_second_wrapper_failure_closes_all(self) -> None:
+        """If the second wrapper fails, both the first wrapper and raw are closed."""
+        raw = _TrackingStream()
+        first_layer_closed = []
+
+        class _TrackingWrapper(io.RawIOBase):
+            def __init__(self, inner: object) -> None:
+                self._inner = inner
+
+            def close(self) -> None:
+                first_layer_closed.append(True)
+                super().close()
+
+            def readable(self) -> bool:
+                return True
+
+            def readinto(self, b: bytearray | memoryview) -> int:
+                return 0
+
+        def second_fails(s: object) -> io.BytesIO:
+            raise ValueError("second layer failed")
+
+        with pytest.raises(ValueError, match="second layer failed"):
+            _safe_wrap(raw, _TrackingWrapper, second_fails)
+
+        assert raw.was_closed
+        assert first_layer_closed, "First wrapper layer must also be closed"
