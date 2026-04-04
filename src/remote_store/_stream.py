@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import io
-from typing import IO, TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from remote_store._errors import RemoteStoreError
 
 
-def _safe_wrap(raw: IO[bytes], *wrappers: Callable[[IO[bytes]], IO[bytes]]) -> IO[bytes]:
+def _safe_wrap(raw: Any, *wrappers: Callable[..., Any]) -> Any:
     """Apply *wrappers* in order, closing *raw* if any wrapper fails.
 
     Each wrapper receives the result of the previous one.  If a wrapper
@@ -21,7 +21,7 @@ def _safe_wrap(raw: IO[bytes], *wrappers: Callable[[IO[bytes]], IO[bytes]]) -> I
 
     >>> wrapped = _safe_wrap(raw_handle, error_mapper, buffered_reader)
     """
-    layers: list[IO[bytes]] = [raw]
+    layers: list[Any] = [raw]
     try:
         for wrapper in wrappers:
             layers.append(wrapper(layers[-1]))

@@ -228,12 +228,24 @@ class TestErrorMappingStreamErrors:
 # ---------------------------------------------------------------------------
 
 
-class _TrackingStream(io.BytesIO):
-    """Stream that tracks whether close() was called."""
+class _TrackingStream(io.RawIOBase):
+    """Stream that tracks whether close() was called.
+
+    Extends RawIOBase (not BytesIO) so it can be wrapped in
+    ``io.BufferedReader`` on Python 3.14+ which enforces the
+    RawIOBase requirement.
+    """
 
     def __init__(self, data: bytes = b"hello") -> None:
-        super().__init__(data)
+        super().__init__()
+        self._buf = io.BytesIO(data)
         self.was_closed = False
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, b: bytearray | memoryview) -> int:
+        return self._buf.readinto(b)  # type: ignore[arg-type]
 
     def close(self) -> None:
         self.was_closed = True
