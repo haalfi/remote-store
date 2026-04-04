@@ -1,7 +1,15 @@
 # Research: Bug Prevention Beyond Testing
 
 **Date:** 2026-04-03
-**Context:** The 0.21.1 patch release fixed ~20 bugs despite strong SDD
+**Status:** Complete
+**Scope:** Systematic analysis of 0.21.1 bug root causes and evaluation of
+prevention strategies beyond testing (DbC, PBT, extended conformance,
+resource safety, static analysis).
+**Related:** BK-139, BUG-159,
+[TESTING.md](../TESTING.md),
+[research-testing-best-practices.md](research-testing-best-practices.md).
+
+**Context:** The 0.21.1 patch release fixed 21 bugs despite strong SDD
 practices, spec-driven development, 95% coverage, mutation testing, and
 review-enforced test quality rules. This document analyzes root causes,
 evaluates prevention strategies beyond testing, and recommends
@@ -11,7 +19,7 @@ concrete actions.
 
 ## 1. Bug Taxonomy (0.21.1)
 
-Categorizing the 20 bugs by root cause pattern reveals six clusters:
+Categorizing the 21 bugs by root cause pattern reveals seven clusters:
 
 | Pattern | Bugs | Count |
 |---------|------|-------|
@@ -21,7 +29,7 @@ Categorizing the 20 bugs by root cause pattern reveals six clusters:
 | Edge-case inputs not rejected | BUG-136, 139, 140, 141 | 4 |
 | Cache coherency | BUG-137, 138 | 2 |
 | Mutation of caller data | BUG-148 | 1 |
-| Edge-case behavior on unexpected input | BUG-143, 153, 154 | 3 |
+| Edge-case behavior on unexpected input | BUG-143, 153, 154, 157 | 3 |
 
 **Key observation:** Most bugs are NOT logic errors in core algorithms. They
 are **behavioral gaps at boundaries** — parameter combinations the conformance
@@ -287,7 +295,7 @@ How each strategy maps to the 0.21.1 bug clusters:
 | Cache coherency | P4 (stateful) | Operational consistency | — | — |
 | Mutation of caller data | P2 (config) | — | — | — |
 
-All 20 bugs are covered by at least one strategy. Most are covered by two
+All 21 bugs are covered by at least one strategy. Most are covered by two
 (defense in depth).
 
 ---
@@ -298,11 +306,11 @@ Ordered by value-to-effort ratio:
 
 | # | Deliverable | Effort | Prevents |
 |---|-------------|--------|----------|
-| 1 | `_safe_wrap` helper + S3 bug fix | ~20 lines | Resource leaks (4 bugs) + latent S3 bug |
+| 1 | `_safe_wrap` helper + S3 bug fix (BUG-159) | ~20 lines | Resource leaks (4 bugs) + latent S3 bug |
 | 2 | `check_error_handling.py` AST script | ~80 lines | Error swallowing (3 bugs) |
 | 3 | Enable ruff `BLE` rules | 1 line | Broad-except class |
 | 4 | Hypothesis P1–P3 (partition, config, path) | ~80 lines | Parsing/config bugs (4 bugs) |
-| 5 | Extended conformance suite (6 categories) | ~300 lines | All 20 bug classes |
+| 5 | Extended conformance suite (6 categories) | ~300 lines | All 21 bug classes |
 | 6 | Hypothesis P4 (stateful backend model) | ~60 lines | Cross-backend + emergent bugs |
 | 7 | `ResourceWarning` safety net for SFTP/Azure | ~10 lines | Debugging aid |
 

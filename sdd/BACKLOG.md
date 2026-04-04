@@ -39,7 +39,17 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-*(none)*
+- [ ] **BUG-159 — S3 `read()` leaks file handle if stream wrapping fails**
+  `S3Backend.read()` (`_s3.py:130-134`) acquires a file handle via
+  `self._fs.open()` then wraps it in `_ErrorMappingStream` /
+  `BufferedReader` without try/except protection. If wrapping fails,
+  the s3fs file handle leaks. Same pattern as BUG-142 (SFTP) and
+  BUG-158 (Azure), both fixed in v0.21.1. `S3PyArrowBackend.read()`
+  (`_s3_pyarrow.py:196-200`) has the same issue.
+  - Reproduce: monkeypatch `_ErrorMappingStream.__init__` to raise,
+    call `S3Backend.read()`, observe unclosed file handle.
+  - Fix: use `_safe_wrap` helper (BK-139 deliverable 1) or inline
+    try/except matching the SFTP/Azure pattern.
 
 ---
 
