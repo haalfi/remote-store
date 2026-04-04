@@ -57,14 +57,16 @@ Items graduate through the SDD pipeline:
 
 - [ ] **BK-139 — Implement bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
-  Seven deliverables, ordered by value-to-effort:
-  1. `_safe_wrap()` helper in `_stream.py` + fix latent S3 `read()` leak (~20 lines)
-  2. `scripts/check_error_handling.py` AST script for silent-swallow detection (~80 lines)
-  3. Enable ruff `BLE` rule set (1-line config change)
-  4. Hypothesis PBT for partition, config, path roundtrips (~80 lines)
+  Seven deliverables, ordered by ROI (resource safety + PBT first):
+  1. `_safe_wrap()` helper in `_stream.py` + fix BUG-159 S3 `read()` leak (~20 lines)
+  2. Hypothesis P4 — stateful backend model via `RuleBasedStateMachine` (~60 lines)
+  3. Hypothesis P1–P3 — partition, config, path roundtrip properties (~80 lines)
+  4. Enable ruff `BLE` + `TRY` rule sets (1-line config change)
   5. Extended conformance suite — parameter combos, edge inputs, error fidelity,
-     metadata, resource cleanup, operational consistency (~300 lines, ~58 tests)
-  6. Hypothesis stateful backend model (~60 lines)
+     metadata, resource cleanup, operational consistency (~300 lines, ~58 tests).
+     Use `@pytest.mark.extended_conformance` to isolate CI impact.
+  6. `scripts/check_error_handling.py` AST script (~80 lines) — deferred until
+     items 1–5 prove insufficient; conformance error fidelity tests may suffice.
   7. `ResourceWarning` safety net for SFTP/Azure backends (~10 lines)
 
 ---

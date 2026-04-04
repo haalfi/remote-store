@@ -96,10 +96,15 @@ textbook PBT targets.
 P1–P3 are pure functions — microsecond execution, ~80 lines total.
 P4 uses Hypothesis `RuleBasedStateMachine` — model the backend as a Python
 dict, generate random write/read/delete/list sequences, verify the real
-backend matches. ~60 lines.
+backend matches. ~60 lines. **P4 is the highest-value target**: it catches
+cross-backend behavioral inconsistency, the hardest bug class to find
+manually and the one that caused the most 0.21.1 bugs.
 
 **CI setup:** Three profiles (`dev`=50 examples, `ci`=100, `nightly`=1000).
 Total CI impact: ~10 seconds. Add `.hypothesis/` to `.gitignore`.
+Hypothesis must be strictly a dev dependency (in `[tool.hatch.envs.default]`
+dependencies, never in `[project.dependencies]`) to maintain the
+zero-runtime-dep guarantee.
 
 **Concrete example — would have caught BUG-141:**
 
@@ -160,6 +165,13 @@ zero new infrastructure.
   contract. S3PyArrow would have been in the set and failed (BUG-150/151).
 - Resource cleanup tests verify the observable contract cross-backend;
   deep monkeypatch tests (wrapper failure injection) stay backend-specific.
+
+**CI impact risk:** 58 tests x 7 backends = ~400 parameterized cases. Tests
+against mocked backends (moto, Azurite, in-memory SFTP) are fast, but
+watch for bloat. Use `@pytest.mark.extended_conformance` so these can be
+separated into integration/nightly CI if they slow the default run. Keep
+the extended suite focused — test dangerous parameter combinations, not
+exhaustive permutations.
 
 **Concrete example — would have caught BUG-152, BUG-155:**
 
@@ -246,8 +258,10 @@ can flag `except Exception:` but not `except IOError:` that should check
 | Rule | Enabled? | Catches SFTP bugs? |
 |------|----------|-------------------|
 | `E722` (bare `except:`) | Yes | No |
-| `BLE001` (`except Exception`) | **No** | No, but catches different bad class |
-| `S110` (try/except/pass) | No | Partially |
+| `BLE001` (`except Exception`) | **No** | No — only flags `Exception`/`BaseException`, not `IOError` |
+| `TRY*` (tryceratops) | Not enabled | No — TRY rules cover raise style, logging, else clauses. None flag silent returns. |
+| `PGH*` (pygrep-hooks) | Not enabled | No — PGH rules cover noqa/type:ignore annotations, not error handling. |
+| `S110` (try/except/pass) | Not enabled | Partially — catches `pass` but not `return False` or `return []` |
 
 **Deliverable 1 — `scripts/check_error_handling.py` (~80 lines):**
 
@@ -260,6 +274,14 @@ Supports `# noqa: RSE001` suppression for intentional broad catches
 (~3–5 in current code: `exists()`, `is_file()`, `is_folder()`).
 
 Would have caught BUG-145, BUG-146, BUG-147 directly.
+
+**Maintenance risk:** Custom AST scripts can become brittle as code
+patterns evolve. The two existing scripts (`check_test_assertions.py`,
+`check_mock_spec.py`) have been stable because they target narrow,
+well-defined patterns. This script targets a similarly narrow pattern
+(broad catch + silent return + no errno). Keep scope minimal — if it
+grows beyond ~100 lines or requires frequent suppression updates,
+reconsider in favor of review-enforced rules.
 
 **Deliverable 2 — Enable ruff `BLE` rule set:**
 
@@ -304,18 +326,21 @@ All 21 bugs are covered by at least one strategy. Most are covered by two
 
 Ordered by value-to-effort ratio:
 
-| # | Deliverable | Effort | Prevents |
-|---|-------------|--------|----------|
-| 1 | `_safe_wrap` helper + S3 bug fix (BUG-159) | ~20 lines | Resource leaks (4 bugs) + latent S3 bug |
-| 2 | `check_error_handling.py` AST script | ~80 lines | Error swallowing (3 bugs) |
-| 3 | Enable ruff `BLE` rules | 1 line | Broad-except class |
-| 4 | Hypothesis P1–P3 (partition, config, path) | ~80 lines | Parsing/config bugs (4 bugs) |
-| 5 | Extended conformance suite (6 categories) | ~300 lines | All 21 bug classes |
-| 6 | Hypothesis P4 (stateful backend model) | ~60 lines | Cross-backend + emergent bugs |
-| 7 | `ResourceWarning` safety net for SFTP/Azure | ~10 lines | Debugging aid |
+| # | Deliverable | Effort | Prevents | Risk |
+|---|-------------|--------|----------|------|
+| 1 | `_safe_wrap` helper + S3 bug fix (BUG-159) | ~20 lines | Resource leaks (4 bugs) + latent S3 bug | Very low |
+| 2 | Hypothesis P4 (stateful backend model) | ~60 lines | Cross-backend + emergent bugs | Low (flaky if non-deterministic — use fixed seeds in CI) |
+| 3 | Hypothesis P1–P3 (partition, config, path) | ~80 lines | Parsing/config bugs (4 bugs) | Low |
+| 4 | Enable ruff `BLE` + `TRY` rules | 1-line config | Broad-except class | Very low |
+| 5 | Extended conformance suite (6 categories) | ~300 lines | All 21 bug classes | Medium (CI duration — use marks to separate) |
+| 6 | `check_error_handling.py` AST script | ~80 lines | Error swallowing (3 bugs) | Medium (maintenance burden — keep scope minimal) |
+| 7 | `ResourceWarning` safety net for SFTP/Azure | ~10 lines | Debugging aid | Very low |
 
-Items 1–3 are quick wins. Items 4–6 are the structural improvements.
-Item 7 is a nice-to-have.
+Items 1–4 are the highest-ROI investments (resource safety + PBT).
+Item 5 has medium ROI but needs CI-time monitoring. Item 6 is deferred
+until items 1–5 prove insufficient — the extended conformance error
+fidelity tests (item 5, category 3) may cover the same bug class with
+less maintenance overhead. Item 7 is a nice-to-have.
 
 ---
 
