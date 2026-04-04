@@ -57,7 +57,7 @@ class BackendModel(RuleBasedStateMachine):
             result = self.backend.read_bytes(path)
             assert result == self.model[path], f"Content mismatch for {path!r}"
         else:
-            with pytest.raises(remote_store._errors.NotFound):
+            with pytest.raises(remote_store._errors.NotFound, match=path):
                 self.backend.read_bytes(path)
 
     @rule(path=_path)
@@ -91,7 +91,7 @@ class BackendModel(RuleBasedStateMachine):
         expected = {k for k in self.model if k.startswith(prefix) and "/" not in k[len(prefix) :]}
         try:
             actual = {str(f.path) for f in self.backend.list_files(path)}
-        except Exception:
+        except remote_store._errors.NotFound:
             # Folder may not exist — that's fine if we expect no files
             actual = set()
         assert actual == expected, f"list_files({path!r}): {actual} != {expected}"
