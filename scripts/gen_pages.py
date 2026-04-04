@@ -150,6 +150,9 @@ for _num, slug, _title in rfc_entries:
 
 for _num, slug, _title in research_entries:
     content = (ROOT / "sdd" / "research" / f"{slug}.md").read_text(encoding="utf-8")
+    # Research docs may link to sibling sdd/ files (e.g. ../TESTING.md).
+    # In the docs tree these live at design/<name>.md with different slugs.
+    content = content.replace("../TESTING.md", "../testing-standards.md")
     with mkdocs_gen_files.open(f"design/research/{slug}.md", "w") as f:
         f.write(content)
 
