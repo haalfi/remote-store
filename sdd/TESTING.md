@@ -33,6 +33,18 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 8. **Tests must survive refactoring** [review-enforced]
    — if renaming a private method breaks the test, the test is wrong.
 
+9. **Every `@given` test must assert on a non-rejection path** [review-enforced]
+   — `try/except/return` to reject invalid inputs is fine, but the test
+   must reach an `assert` for some generated inputs. 100% rejection = no-op.
+
+10. **Use Hypothesis profiles, not inline `max_examples`** [review-enforced]
+    — profiles: `dev` (50), `ci` (100), `nightly` (1000). Inline
+    `@settings(max_examples=N)` only when suppressing a health check.
+
+11. **PBT strategies at module scope** [review-enforced]
+    — define as module-level constants for reuse. Inline `st.` chains
+    only for trivial one-liners.
+
 ## Guides
 
 ### Examples (bad → good)
@@ -63,6 +75,9 @@ backend = MagicMock(spec=Backend)           # good
 | 6 | Mock could be a real dependency | review |
 | 7 | 3+ similar methods → parametrize | review |
 | 8 | Renaming internal breaks test? | review |
+| 9 | `@given` has `assert` on non-rejection path | review |
+| 10 | No inline `max_examples` | grep `max_examples` |
+| 11 | Strategies at module scope | review |
 
 ### Test code economy
 
@@ -75,25 +90,7 @@ signal, and double refactoring cost. Delete tests that don't provide value
 PBT targets combinatorial input spaces with a clear oracle (roundtrip,
 invariant, model equivalence). Use `@pytest.mark.parametrize` for known
 edge cases; use `@given` when the interesting inputs are the ones you
-haven't thought of.
-
-9. **Every `@given` test must assert on at least one non-rejection path**
-   [review-enforced] — the `try/except/return` "assume" idiom is valid
-   for rejecting invalid inputs, but the test must have an `assert` (or
-   `pytest.raises` with `match=`) that executes for at least some
-   generated inputs. A test that rejects 100% of inputs is a no-op.
-
-10. **Use profiles, not inline `max_examples`** [review-enforced] —
-    three registered profiles control example counts:
-    `dev` (50), `ci` (100), `nightly` (1000). Never hard-code
-    `@settings(max_examples=N)` unless suppressing a health check
-    requires a per-test override.
-
-11. **PBT strategies belong at module scope** [review-enforced] —
-    define strategies as module-level constants (`_partition_key`,
-    `_config_strategy`, etc.) so they are reusable and readable.
-    Inline `st.` chains inside `@given()` are acceptable only for
-    trivial one-liners.
+haven't thought of. See rules 9–11.
 
 ### Ruff PT rules (enabled)
 
