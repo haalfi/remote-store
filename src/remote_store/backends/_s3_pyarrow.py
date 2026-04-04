@@ -199,7 +199,8 @@ class S3PyArrowBackend(_S3Base):
             return cast(
                 "BinaryIO",
                 _safe_wrap(
-                    _PyArrowBinaryIO(pa_file),
+                    pa_file,
+                    _PyArrowBinaryIO,
                     lambda s: _ErrorMappingStream(s, self._classify_error, path),
                 ),
             )

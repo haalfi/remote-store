@@ -28,6 +28,29 @@ _path = st.lists(_segment, min_size=1, max_size=3).map("/".join)
 _content = st.binary(min_size=0, max_size=100)
 
 
+def _implicit_dirs(files: dict[str, bytes]) -> set[str]:
+    """Return the set of implicit directory paths from existing files."""
+    dirs: set[str] = set()
+    for path in files:
+        parts = path.split("/")
+        for i in range(1, len(parts)):
+            dirs.add("/".join(parts[:i]))
+    return dirs
+
+
+def _can_write(path: str, files: dict[str, bytes]) -> bool:
+    """Return True if *path* can be written without a file/directory conflict."""
+    # Cannot write if path is an implicit directory
+    if path in _implicit_dirs(files):
+        return False
+    # Cannot write if any ancestor of path is a file
+    parts = path.split("/")
+    for i in range(1, len(parts)):
+        if "/".join(parts[:i]) in files:
+            return False
+    return True
+
+
 class BackendModel(RuleBasedStateMachine):
     """MemoryBackend must behave like a simple dict[str, bytes]."""
 
@@ -39,16 +62,19 @@ class BackendModel(RuleBasedStateMachine):
     @rule(path=_path, data=_content)
     def write_new(self, path: str, data: bytes) -> None:
         """Write to a path that should not exist yet."""
-        if path in self.model:
-            return  # skip — already exists, would need overwrite=True
+        if path in self.model or not _can_write(path, self.model):
+            return  # skip — conflict
         self.backend.write(path, data)
         self.model[path] = data
 
     @rule(path=_path, data=_content)
     def write_overwrite(self, path: str, data: bytes) -> None:
         """Overwrite an existing path."""
-        self.backend.write(path, data, overwrite=True)
-        self.model[path] = data
+        if not _can_write(path, self.model) and path not in self.model:
+            return  # skip — directory/file conflict
+        if path in self.model or _can_write(path, self.model):
+            self.backend.write(path, data, overwrite=True)
+            self.model[path] = data
 
     @rule(path=_path)
     def read_bytes(self, path: str) -> None:
@@ -62,8 +88,10 @@ class BackendModel(RuleBasedStateMachine):
 
     @rule(path=_path)
     def exists(self, path: str) -> None:
-        """exists must match the model."""
-        assert self.backend.exists(path) == (path in self.model)
+        """exists returns True for files AND implicit directories."""
+        is_file = path in self.model
+        is_dir = path in _implicit_dirs(self.model)
+        assert self.backend.exists(path) == (is_file or is_dir)
 
     @rule(path=_path)
     def is_file(self, path: str) -> None:
@@ -80,19 +108,19 @@ class BackendModel(RuleBasedStateMachine):
     @rule(path=_path)
     def delete_missing_ok(self, path: str) -> None:
         """Delete with missing_ok=True never raises."""
+        if path in _implicit_dirs(self.model):
+            return  # skip — deleting a directory path is a different operation
         self.backend.delete(path, missing_ok=True)
         self.model.pop(path, None)
 
     @rule(path=_path)
     def list_files_flat(self, path: str) -> None:
         """Non-recursive list_files for a prefix must match the model."""
-        # Collect files directly in this "folder" from the model
         prefix = path + "/"
         expected = {k for k in self.model if k.startswith(prefix) and "/" not in k[len(prefix) :]}
         try:
             actual = {str(f.path) for f in self.backend.list_files(path)}
         except remote_store._errors.NotFound:
-            # Folder may not exist — that's fine if we expect no files
             actual = set()
         assert actual == expected, f"list_files({path!r}): {actual} != {expected}"
 

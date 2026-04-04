@@ -27,7 +27,9 @@ def _safe_wrap(raw: Any, *wrappers: Callable[..., Any]) -> Any:
             layers.append(wrapper(layers[-1]))
         return layers[-1]
     except BaseException:
-        # Close in reverse order; suppress errors during cleanup.
+        # Close in reverse (outer-first) order.  Outer wrappers delegate
+        # close() to inner layers, so inner layers may be closed twice;
+        # this is safe because close() is idempotent on IO base classes.
         for layer in reversed(layers):
             with contextlib.suppress(Exception):
                 layer.close()
