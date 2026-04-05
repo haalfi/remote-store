@@ -4551,6 +4551,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#property-based-testing-hypothesis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Property-Based Testing (Hypothesis)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ruff-pt-rules-enabled" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7825,6 +7836,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#property-based-testing-hypothesis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Property-Based Testing (Hypothesis)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ruff-pt-rules-enabled" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7900,6 +7922,21 @@
 <p><strong>Tests must survive refactoring</strong> [review-enforced]
    — if renaming a private method breaks the test, the test is wrong.</p>
 </li>
+<li>
+<p><strong>Every <code>@given</code> test must assert on a non-rejection path</strong> [review-enforced]
+   — <code>try/except/return</code> to reject invalid inputs is fine, but the test
+   must reach an <code>assert</code> for some generated inputs. 100% rejection = no-op.</p>
+</li>
+<li>
+<p><strong>Use Hypothesis profiles, not inline <code>max_examples</code></strong> [review-enforced]
+    — profiles: <code>dev</code> (50), <code>ci</code> (100), <code>nightly</code> (1000). Inline
+    <code>@settings(max_examples=N)</code> only when suppressing a health check.</p>
+</li>
+<li>
+<p><strong>PBT strategies at module scope</strong> [review-enforced]
+    — define as module-level constants for reuse. Inline <code>st.</code> chains
+    only for trivial one-liners.</p>
+</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="examples-bad-good">Examples (bad → good)<a class="headerlink" href="#examples-bad-good" title="Permanent link">&para;</a></h3>
@@ -7965,12 +8002,32 @@
 <td>Renaming internal breaks test?</td>
 <td>review</td>
 </tr>
+<tr>
+<td>9</td>
+<td><code>@given</code> has <code>assert</code> on non-rejection path</td>
+<td>review</td>
+</tr>
+<tr>
+<td>10</td>
+<td>No inline <code>max_examples</code></td>
+<td>grep <code>max_examples</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td>Strategies at module scope</td>
+<td>review</td>
+</tr>
 </tbody>
 </table>
 <h3 id="test-code-economy">Test code economy<a class="headerlink" href="#test-code-economy" title="Permanent link">&para;</a></h3>
 <p>Bloated suites bury meaningful tests, inflate coverage without behavioral
 signal, and double refactoring cost. Delete tests that don't provide value
 (BK-014: -8.6% code, zero coverage loss).</p>
+<h3 id="property-based-testing-hypothesis">Property-Based Testing (Hypothesis)<a class="headerlink" href="#property-based-testing-hypothesis" title="Permanent link">&para;</a></h3>
+<p>PBT targets combinatorial input spaces with a clear oracle (roundtrip,
+invariant, model equivalence). Use <code>@pytest.mark.parametrize</code> for known
+edge cases; use <code>@given</code> when the interesting inputs are the ones you
+haven't thought of. See rules 9–11.</p>
 <h3 id="ruff-pt-rules-enabled">Ruff PT rules (enabled)<a class="headerlink" href="#ruff-pt-rules-enabled" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
