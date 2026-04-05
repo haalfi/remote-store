@@ -58,8 +58,24 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-140 — Tighten backend behavioral contract (spec amendments)**
+  Follow-up on [research-backend-contract-completeness.md](research/research-backend-contract-completeness.md).
+  Six gaps in the backend ABC where behavior is unspecified and backends
+  diverge. Spec amendments are prerequisite for BK-139 P4 (stateful model)
+  and extended conformance (deliverable 5).
+  Amendments (see research doc § 5 for details):
+  1. BE-008: precondition evaluation order (path validity → type → overwrite)
+  2. BE-021: canonical error mapping table for cross-cutting scenarios
+  3. BE-014/BE-015: listing on missing paths MUST yield nothing, not raise
+  4. DEPTH-001: reference depth-counting algorithm with inclusive comparison
+  5. BE-018: document move atomicity is backend-dependent
+  6. SIO-001: acquire-then-wrap safety invariant
+
 - [ ] **BK-139 — Implement bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
+  **Prerequisite:** BK-140 spec amendments (deliverables 2 and 5 depend on
+  a well-defined behavioral contract as oracle; see
+  [research-backend-contract-completeness.md](research/research-backend-contract-completeness.md) § 4).
   Seven deliverables, ordered by ROI (resource safety + PBT first):
   1. `_safe_wrap()` helper in `_stream.py` + fix BUG-159 S3 `read()` leak (~20 lines)
   2. Hypothesis P4 — stateful backend model via `RuleBasedStateMachine` (~60 lines)
