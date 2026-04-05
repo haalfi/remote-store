@@ -67,7 +67,10 @@ when multiple preconditions fail simultaneously.
 `InvalidPath` on Local/Memory but `AlreadyExists` on S3. The caller cannot
 write portable error handling without knowing which backend is underneath.
 
-**Bugs caused:** BUG-153, BUG-154 (Local leaking `IsADirectoryError`).
+**Bugs caused:** BUG-154 (Local `write()` leaking `IsADirectoryError`).
+BUG-153 (Local `read()`/`delete()` leaking `IsADirectoryError`) is related
+but belongs to Gap 2 — the read/delete path is an error-discrimination issue,
+not a write-precondition issue.
 
 **What's missing from the spec:**
 - BE-008 needs: "If `path` names an existing directory, raises `InvalidPath`.
@@ -97,7 +100,9 @@ clauses.
 backends. SFTP's broad `except OSError` handlers without `errno`
 discrimination turned permission errors into silent returns.
 
-**Bugs caused:** BUG-145, BUG-146, BUG-147 (SFTP error swallowing).
+**Bugs caused:** BUG-145, BUG-146, BUG-147 (SFTP error swallowing);
+BUG-153 (Local `read()`/`delete()` leaking `IsADirectoryError` instead of
+mapping to `NotFound`).
 
 **What's missing from the spec:**
 - BE-021 needs a **canonical error mapping table** per scenario:
@@ -132,12 +137,14 @@ yield nothing" — but this guarantee is not stated for `list_files()` or
 | Memory (`_memory.py:211`) | Empty iterator (silent) | Empty iterator (silent) |
 | S3 (`_s3_base.py:~150`) | Empty iterator (S3 returns empty for missing prefixes) | Empty iterator |
 | SFTP (`_sftp.py:~460`) | Empty iterator (catches ENOENT) | Empty iterator |
-| Azure (`_azure.py:~510`) | Empty iterator (catches NotFound) — but other errors may propagate differently on HNS vs non-HNS | Empty iterator |
+| Azure (`_azure.py:~510`) | Empty iterator: HNS catches `NotFound` and returns; non-HNS prefix query returns empty naturally | Empty iterator |
 | SQL (`_sqlalchemy.py:~455`) | Empty iterator (prefix query returns no rows) | Empty iterator |
 
-**Current state:** All backends happen to agree (empty iterator), but this is
-an *accidental consensus*, not a specified contract. A new backend
-implementer could reasonably raise `NotFound`.
+**Current state:** All backends agree on the missing-path case (empty
+iterator), but this is *accidental consensus* — the spec does not require it.
+A new backend implementer could reasonably raise `NotFound`. Note: Azure HNS
+does propagate non-`NotFound` errors differently from non-HNS (see Gap 2),
+but for the missing-path case specifically, both code paths converge on empty.
 
 **Store safety net:** The Store does NOT catch `NotFound` from listing
 operations — it trusts the backend to return empty. If a backend raised
@@ -172,7 +179,7 @@ The spec provides this *example* but does not specify a *reference algorithm*.
 | Backend | Depth algorithm | Code location |
 |---------|----------------|---------------|
 | Local | `len(Path(dirpath).relative_to(full).parts)` — path-part count | `_local.py:282` |
-| Memory | Recursive depth counter incremented per directory level | `_memory.py:540` |
+| Memory | Iterative DFS with depth counter on stack entries | `_memory.py:540` |
 | SFTP | Recursive `_depth` parameter incremented per level | `_sftp.py:490` |
 | S3 | Breadth-first queue with depth counter | `_s3_base.py:~155` |
 | Azure | `rel.count("/")` — slash-counting | `_azure.py:524` |
@@ -185,25 +192,30 @@ identical results for *well-formed* paths but could diverge for edge cases
 
 **Comparison operator divergence:**
 
-| Backend | Condition | Meaning |
-|---------|-----------|---------|
-| Local | `depth > max_depth` → skip | Inclusive of max_depth |
-| Memory | `depth >= max_depth` → skip | Exclusive of max_depth |
-| Azure | `depth > max_depth` → skip | Inclusive of max_depth |
-| SQL | `depth > max_depth` → skip | Inclusive of max_depth |
-| SFTP | `depth >= max_depth` → skip | Exclusive of max_depth |
+| Backend | Condition | What it controls |
+|---------|-----------|-----------------|
+| Local | `depth > max_depth` → skip dir contents | Files at max_depth included; dirs at max_depth not entered |
+| Memory | `depth >= max_depth` → don't recurse into subdir | Files at max_depth included (yielded before recursion check) |
+| Azure | `depth > max_depth` → skip file | Post-hoc filter on yielded files |
+| SQL | `depth > max_depth` → skip file | Post-hoc filter on yielded files |
+| SFTP | `depth >= max_depth` → don't recurse into subdir | Files at max_depth included (yielded before recursion check) |
 
-Memory and SFTP use `>=` while others use `>`. Whether this causes observable
-differences depends on whether depth starts at 0 or 1 relative to the query
-root — both implementations produce correct results for the spec example, but
-the counting base differs.
+Memory and SFTP use `>=` but apply the check to *subdirectory recursion*, not
+to file yielding — files at exactly `max_depth` are still yielded. Local/Azure/SQL
+use `>` but apply the check differently (traversal pruning vs post-hoc filter).
+All backends produce the same observable results for well-formed paths. The
+divergence is in implementation strategy, not in output — but the lack of a
+reference algorithm means a new backend could misinterpret the semantics.
 
 **Store safety net:** DEPTH-003 says the Store applies client-side depth
 filtering as a correctness guarantee even if backends get it wrong
 (`_store.py:393-396`). This masks backend bugs rather than preventing them.
 
 **Bugs caused:** BUG-152 (S3 ignoring max_depth), BUG-155 (Azure ignoring
-max_depth).
+max_depth). Note: both bugs were missing-implementation (the parameter was
+accepted but filtering logic was absent), not algorithm-disagreement bugs.
+A reference algorithm in the spec would have made these gaps obvious during
+implementation and review.
 
 **What's missing from the spec:**
 - DEPTH-001 needs a **reference algorithm**, not just an example:
@@ -360,7 +372,7 @@ With tightened specs, the test design becomes straightforward:
 
 **For conformance tests (BK-139 extended suite):**
 - Gap 1: `test_write_on_directory_raises_invalid_path` (all backends)
-- Gap 2: `test_read_on_directory_raises_not_invalid_path_not_native` (all backends)
+- Gap 2: `test_read_on_directory_raises_remote_store_error` (all backends)
 - Gap 3: `test_list_files_missing_path_yields_nothing` (all backends)
 - Gap 4: `test_list_files_max_depth_reference_algorithm` (all backends)
 - Gap 5: Document-only (no behavioral test, but capability query test)

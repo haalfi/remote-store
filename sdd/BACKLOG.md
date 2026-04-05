@@ -73,6 +73,9 @@ Items graduate through the SDD pipeline:
 
 - [ ] **BK-139 — Implement bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
+  **Prerequisite:** BK-140 spec amendments (deliverables 2 and 5 depend on
+  a well-defined behavioral contract as oracle; see
+  [research-backend-contract-completeness.md](research/research-backend-contract-completeness.md) § 4).
   Seven deliverables, ordered by ROI (resource safety + PBT first):
   1. `_safe_wrap()` helper in `_stream.py` + fix BUG-159 S3 `read()` leak (~20 lines)
   2. Hypothesis P4 — stateful backend model via `RuleBasedStateMachine` (~60 lines)
