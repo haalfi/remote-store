@@ -6,12 +6,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Fixed
-
-- **S3 `read()` leaks file handle if stream wrapping fails** (BUG-159):
-  Both `S3Backend.read()` and `S3PyArrowBackend.read()` now use the new
-  `_safe_wrap()` helper to close raw handles if wrapping constructors raise.
-
 ### Added
 
 - **Property-based tests** (BK-139a): Hypothesis PBT suite covering
@@ -23,6 +17,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **`_safe_wrap()` helper** in `_stream.py`: Safely wraps a stream through
   one or more wrapper layers, closing all acquired resources if any wrapper
   constructor raises.
+
+### Fixed
+
+- **S3 `read()` leaks file handle if stream wrapping fails** (BUG-159):
+  Both `S3Backend.read()` and `S3PyArrowBackend.read()` now use the new
+  `_safe_wrap()` helper to close raw handles if wrapping constructors raise.
 
 ## [0.21.1] - 2026-04-03
 

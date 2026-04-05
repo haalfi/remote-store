@@ -64,7 +64,7 @@ class BackendModel(RuleBasedStateMachine):
 
     @rule(path=_path, data=_content)
     def write_overwrite(self, path: str, data: bytes) -> None:
-        """Overwrite an existing path."""
+        """Write with overwrite=True (creates or overwrites)."""
         if not _can_write(path, self.model) and path not in self.model:
             return  # skip — directory/file conflict
         if path in self.model or _can_write(path, self.model):
@@ -78,7 +78,7 @@ class BackendModel(RuleBasedStateMachine):
             result = self.backend.read_bytes(path)
             assert result == self.model[path], f"Content mismatch for {path!r}"
         else:
-            with pytest.raises(remote_store._errors.NotFound, match=path):
+            with pytest.raises(remote_store._errors.NotFound, match=__import__("re").escape(path)):
                 self.backend.read_bytes(path)
 
     @rule(path=_path)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from hypothesis import HealthCheck, given, settings  # noqa: F811
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from remote_store._config import RegistryConfig, Secret
