@@ -40,15 +40,10 @@ def _implicit_dirs(files: dict[str, bytes]) -> set[str]:
 
 def _can_write(path: str, files: dict[str, bytes]) -> bool:
     """Return True if *path* can be written without a file/directory conflict."""
-    # Cannot write if path is an implicit directory
     if path in _implicit_dirs(files):
         return False
-    # Cannot write if any ancestor of path is a file
     parts = path.split("/")
-    for i in range(1, len(parts)):
-        if "/".join(parts[:i]) in files:
-            return False
-    return True
+    return all("/".join(parts[:i]) not in files for i in range(1, len(parts)))
 
 
 class BackendModel(RuleBasedStateMachine):
