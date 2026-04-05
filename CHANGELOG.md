@@ -6,6 +6,24 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **Property-based tests** (BK-139a): Hypothesis PBT suite covering
+  partition roundtrip (P1), config `from_dict` corruption (P2), path
+  normalization idempotence (P3), and stateful MemoryBackend model (P4).
+  Three profiles: `dev` (50 examples), `ci` (100), `nightly` (1000).
+- **PBT testing rules** in `sdd/TESTING.md`: Rules 9–11 covering the
+  `@given` assertion requirement, profile discipline, and strategy scope.
+- **`_safe_wrap()` helper** in `_stream.py`: Safely wraps a stream through
+  one or more wrapper layers, closing all acquired resources if any wrapper
+  constructor raises.
+
+### Fixed
+
+- **S3 `read()` leaks file handle if stream wrapping fails** (BUG-159):
+  Both `S3Backend.read()` and `S3PyArrowBackend.read()` now use the new
+  `_safe_wrap()` helper to close raw handles if wrapping constructors raise.
+
 ## [0.21.1] - 2026-04-03
 
 ### Fixed

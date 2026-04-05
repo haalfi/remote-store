@@ -12,6 +12,30 @@ if TYPE_CHECKING:
     from remote_store._errors import RemoteStoreError
 
 
+def _safe_wrap(raw: Any, *wrappers: Callable[..., Any]) -> Any:
+    """Apply *wrappers* in order, closing *raw* if any wrapper fails.
+
+    Each wrapper receives the result of the previous one.  If a wrapper
+    raises, every successfully-created layer (plus *raw*) is closed so
+    that the underlying resource does not leak.
+
+    >>> wrapped = _safe_wrap(raw_handle, error_mapper, buffered_reader)
+    """
+    layers: list[Any] = [raw]
+    try:
+        for wrapper in wrappers:
+            layers.append(wrapper(layers[-1]))
+        return layers[-1]
+    except BaseException:
+        # Close in reverse (outer-first) order.  Outer wrappers delegate
+        # close() to inner layers, so inner layers may be closed twice;
+        # this is safe because close() is idempotent on IO base classes.
+        for layer in reversed(layers):
+            with contextlib.suppress(Exception):
+                layer.close()
+        raise
+
+
 class _ErrorMappingStream(io.RawIOBase):
     """Wraps a BinaryIO stream and maps I/O exceptions through a classifier.
 

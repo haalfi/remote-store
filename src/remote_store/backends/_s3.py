@@ -17,7 +17,7 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     NotFound,
 )
-from remote_store._stream import _ErrorMappingStream
+from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
     _normalize_endpoint_url,
@@ -130,8 +130,14 @@ class S3Backend(_S3Base):
     def read(self, path: str) -> BinaryIO:
         with self._s3fs_errors(path):
             f: BinaryIO = self._fs.open(self._s3_path(path), "rb")
-            raw = _ErrorMappingStream(f, self._classify_error, path)
-            return io.BufferedReader(cast("io.RawIOBase", raw))
+            return cast(
+                "BinaryIO",
+                _safe_wrap(
+                    f,
+                    lambda s: _ErrorMappingStream(s, self._classify_error, path),
+                    lambda s: io.BufferedReader(cast("io.RawIOBase", s)),
+                ),
+            )
 
     def read_bytes(self, path: str) -> bytes:
         with self._s3fs_errors(path):

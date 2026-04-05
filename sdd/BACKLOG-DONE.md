@@ -7,6 +7,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Bugs
 
+- [x] **BUG-159 — S3 `read()` leaks file handle if stream wrapping fails**
+  Fixed via `_safe_wrap()` helper in `_stream.py`. Both `S3Backend.read()`
+  and `S3PyArrowBackend.read()` now use `_safe_wrap()` to close raw handles
+  if wrapping constructors raise. See BK-139a.
+
 - [x] **BUG-158 — Sync `AzureBackend.read()` doesn't protect raw stream on wrapping failure** (v0.21.1)
   `_AzureBinaryIO` is now closed if `_ErrorMappingStream` or `BufferedReader`
   construction fails, matching the BUG-142 (SFTP) defensive pattern.
@@ -107,6 +112,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `exists`/`is_file`/`is_folder` entries for every ancestor directory of
   the mutated path, not just the leaf. Called from `_invalidate_path`.
   Audit: [008 B-1](audits/audit-008-package-bugs.md#b-1)
+
+## Backlog
+
+- [x] **BK-139a — Bug prevention: `_safe_wrap` + PBT (deliverables 1–3)**
+  From [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md):
+  1. `_safe_wrap()` helper in `_stream.py` + fix BUG-159 S3 `read()` leak
+  2. Hypothesis P4 — stateful backend model via `RuleBasedStateMachine`
+  3. Hypothesis P1–P3 — partition, config, path roundtrip properties
+  Remaining items 4–7 tracked as BK-139b.
 
 ## Documentation & Developer Experience
 

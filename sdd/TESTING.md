@@ -33,6 +33,18 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 8. **Tests must survive refactoring** [review-enforced]
    — if renaming a private method breaks the test, the test is wrong.
 
+9. **Every `@given` test must assert on a non-rejection path** [review-enforced]
+   — `try/except/return` to reject invalid inputs is fine, but the test
+   must reach an `assert` for some generated inputs. 100% rejection = no-op.
+
+10. **Use Hypothesis profiles, not inline `max_examples`** [review-enforced]
+    — profiles: `dev` (50), `ci` (100), `nightly` (1000). Inline
+    `@settings(max_examples=N)` only when suppressing a health check.
+
+11. **PBT strategies at module scope** [review-enforced]
+    — define as module-level constants for reuse. Inline `st.` chains
+    only for trivial one-liners.
+
 ## Guides
 
 ### Examples (bad → good)
@@ -63,12 +75,22 @@ backend = MagicMock(spec=Backend)           # good
 | 6 | Mock could be a real dependency | review |
 | 7 | 3+ similar methods → parametrize | review |
 | 8 | Renaming internal breaks test? | review |
+| 9 | `@given` has `assert` on non-rejection path | review |
+| 10 | No inline `max_examples` | grep `max_examples` |
+| 11 | Strategies at module scope | review |
 
 ### Test code economy
 
 Bloated suites bury meaningful tests, inflate coverage without behavioral
 signal, and double refactoring cost. Delete tests that don't provide value
 (BK-014: -8.6% code, zero coverage loss).
+
+### Property-Based Testing (Hypothesis)
+
+PBT targets combinatorial input spaces with a clear oracle (roundtrip,
+invariant, model equivalence). Use `@pytest.mark.parametrize` for known
+edge cases; use `@given` when the interesting inputs are the ones you
+haven't thought of. See rules 9–11.
 
 ### Ruff PT rules (enabled)
 
