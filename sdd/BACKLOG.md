@@ -45,19 +45,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-140a — Tighten backend behavioral contract (spec amendments)**
-  Remainder of BK-140.  Dafny formal model shipped (see BK-140 in
-  BACKLOG-DONE.md).  Remaining: edit the actual spec `.md` files to
-  codify the six gap amendments.  Validate each amendment against the
-  Dafny model in `sdd/formal/`.
-  Amendments (see [research doc](research/research-backend-contract-completeness.md) § 5):
-  1. BE-008: precondition evaluation order (path validity → type → overwrite)
-  2. BE-021: canonical error mapping table for cross-cutting scenarios
-  3. BE-014/BE-015: listing on missing paths MUST yield nothing, not raise
-  4. DEPTH-001: reference depth-counting algorithm with inclusive comparison
-  5. BE-018: document move atomicity is backend-dependent
-  6. SIO-001: acquire-then-wrap safety invariant
-
 - [~] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
   Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Remaining deliverables:

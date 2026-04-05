@@ -31,14 +31,28 @@ The two compose naturally.
 `recursive=True` and filters results by path component count. No Backend ABC
 change.
 
+**Reference depth algorithm:** Depth for a file at `file_path` relative to
+listing root `root` is defined as:
+
+```
+depth = len(RemotePath(file_path).parent.parts) - len(RemotePath(root).parts)
+```
+
+`max_depth=N` includes files where `depth <= N` (inclusive comparison). Backend
+implementations MUST use this definition as the correctness oracle. The
+comparison operator MUST be `<=`, not `<`. Implementations that use
+slash-counting (`rel.count("/")`) or traversal-level counters are both
+acceptable so long as their output is equivalent to the above formula for all
+well-formed paths (no trailing slashes, no empty segments).
+
 **Depth examples:**
 
 ```
 store.list_files("data", max_depth=1)
 
-data/file_a.csv          -> depth 0  included
-data/raw/file_b.csv      -> depth 1  included
-data/raw/2026/file_c.csv -> depth 2  excluded
+data/file_a.csv          -> depth 0  included (0 <= 1)
+data/raw/file_b.csv      -> depth 1  included (1 <= 1)
+data/raw/2026/file_c.csv -> depth 2  excluded (2 > 1)
 ```
 
 ---

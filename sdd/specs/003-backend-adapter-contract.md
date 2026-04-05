@@ -10,7 +10,9 @@ The `Backend` ABC defines the contract all storage backends must implement. It i
 
 ### CAP-001: Capability Enum Members
 
-**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`, `SEEKABLE_READ`.
+**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `ATOMIC_MOVE`, `METADATA`, `GLOB`, `SEEKABLE_READ`.
+`ATOMIC_MOVE` indicates that `move()` is atomic on this backend (no
+copy-then-delete risk). See BE-018.
 
 ### CAP-002: CapabilitySet Construction
 
@@ -83,6 +85,12 @@ for cap in cs:
 **Invariant:** `write(path, content, overwrite=False)` creates or overwrites a file.
 **Preconditions:** `content` is `bytes` or `BinaryIO`.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
+**Precondition evaluation order:** Backends MUST evaluate preconditions in this
+order: (1) path validity — if `path` names an existing *directory*, raises
+`InvalidPath`; (2) overwrite conflict — if the file exists and `overwrite=False`,
+raises `AlreadyExists`; (3) I/O. No later check may mask an earlier one. This
+order applies to `write()`, `write_atomic()`, `move()`, and `copy()` wherever
+analogous preconditions exist.
 
 ### BE-009: write Creates Intermediate Directories
 
@@ -113,11 +121,19 @@ for cap in cs:
 
 **Invariant:** `list_files(path, recursive=False)` returns `Iterator[FileInfo]`.
 **Postconditions:** Returns only files, not folders. If `recursive=True`, includes files in all subdirectories.
+**Missing-path behavior:** If `path` does not exist or does not name a folder,
+the iterator yields nothing. `list_files()` MUST NOT raise `NotFound` for
+missing or non-existent paths. This matches the behavior already guaranteed by
+BE-026 (`iter_children`) and ensures callers can safely iterate over potentially
+absent paths without defensive guards.
 
 ### BE-015: list_folders()
 
 **Invariant:** `list_folders(path)` returns `Iterator[FolderEntry]` of immediate subfolders.
 Each `FolderEntry` has `.name` (folder name) and `.path` (backend-relative `RemotePath`).
+**Missing-path behavior:** If `path` does not exist or does not name a folder,
+the iterator yields nothing. `list_folders()` MUST NOT raise `NotFound` for
+missing or non-existent paths.
 
 ### BE-016: get_file_info()
 
@@ -133,6 +149,15 @@ Each `FolderEntry` has `.name` (folder name) and `.path` (backend-relative `Remo
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Atomicity:** Backends SHOULD implement `move()` atomically where the
+underlying storage supports it (e.g. Local via `os.rename`, Memory under lock,
+SQL in a transaction). Backends that cannot provide atomicity (e.g. S3 and
+Azure non-HNS, which use copy-then-delete) MUST document this in their class
+docstring. The caller MUST NOT assume atomicity unless the backend declares
+`Capability.ATOMIC_MOVE`. On partial failure in a copy-then-delete
+implementation, the source file may still exist alongside the destination; the
+backend MUST NOT silently swallow the error.
+**See also:** CAP-001 (`ATOMIC_MOVE` capability member).
 
 ### BE-019: copy()
 
@@ -146,6 +171,24 @@ Each `FolderEntry` has `.name` (folder name) and `.path` (backend-relative `Remo
 ### BE-021: Error Mapping
 
 **Invariant:** Backend-native exceptions never leak. All exceptions are mapped to `remote_store` error types.
+
+**Canonical error mapping table:** The following cross-cutting scenarios MUST
+map to the specified error type regardless of backend:
+
+| Scenario | Required error type |
+|----------|---------------------|
+| Read or write targeting a path that is a directory | `InvalidPath` |
+| Operation on a non-existent file | `NotFound` |
+| Operation denied by credentials or ACL | `PermissionDenied` |
+| Parent directory creation fails (permissions) | `PermissionDenied` |
+| Parent directory creation fails (path conflict) | `InvalidPath` |
+
+**Broad exception handler rule:** Backends MUST NOT use bare `except OSError`
+or `except Exception` handlers that map all errors to a single type. Handlers
+MUST discriminate by `errno`, exception type, or HTTP status code before
+choosing the mapped error. Silent returns (swallowing exceptions without
+re-raising a `RemoteStoreError`) are permitted ONLY for `exists()`,
+`is_file()`, and `is_folder()`.
 
 ### BE-022: unwrap()
 

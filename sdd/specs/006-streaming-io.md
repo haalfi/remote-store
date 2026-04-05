@@ -8,6 +8,23 @@ All I/O in `remote_store` is streaming-first. Read operations return `BinaryIO` 
 
 **Invariant:** `Backend.read(path)` returns a `BinaryIO` stream positioned at the start.
 **Postconditions:** The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use `Store.read_seekable()`.
+**Acquire-then-wrap safety invariant:** Between acquiring a raw native handle
+(e.g. an s3fs file object, a paramiko `SFTPFile`, an Azure downloader) and
+returning the wrapped `BinaryIO` to the caller, the backend MUST guarantee the
+raw handle is closed if any part of the wrapping step raises. The recommended
+implementation is a helper that closes `raw` on exception before re-raising:
+
+```python
+raw = self._native_open(path)
+try:
+    return _ErrorMappingStream(raw, ...)
+except BaseException:
+    raw.close()
+    raise
+```
+
+Failure to observe this invariant causes resource leaks even when the caller
+never receives the stream and therefore cannot close it.
 **Example:**
 ```python
 stream = backend.read("data.bin")

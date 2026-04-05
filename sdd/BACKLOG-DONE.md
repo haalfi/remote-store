@@ -122,7 +122,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   atomicity), SIO-001 (resource safety).  Includes MemoryBackend
   reference refinement (87 verified, 0 errors), CI gate, and
   DepthCounting + ResourceSafety standalone proofs.
-  Remainder: spec `.md` amendments tracked as BK-140a in BACKLOG.md.
+  Spec `.md` amendments completed as BK-140a (see below).
+
+- [x] **BK-140a — Tighten backend behavioral contract (spec amendments)**
+  Six spec amendments to close behavioral gaps identified in
+  [research-backend-contract-completeness.md](research/research-backend-contract-completeness.md),
+  validated against the Dafny formal model in `sdd/formal/`:
+  1. BE-008: precondition evaluation order (path validity → type conflict → overwrite) + flat-namespace exemption
+  2. BE-021: canonical error mapping table + broad-handler rule
+  3. BE-014/BE-015: listing on missing paths MUST yield nothing, not raise `NotFound`
+  4. DEPTH-001: reference depth algorithm (`RemotePath.parts` counting, inclusive `<=`)
+  5. BE-018/BE-019: move and copy atomicity notes (backend-dependent, MUST NOT swallow errors)
+  6. SIO-001: acquire-then-wrap safety invariant
 
 - [x] **BK-139a — Bug prevention: `_safe_wrap` + PBT (deliverables 1–3)**
   From [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md):
