@@ -10,9 +10,7 @@ The `Backend` ABC defines the contract all storage backends must implement. It i
 
 ### CAP-001: Capability Enum Members
 
-**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `ATOMIC_MOVE`, `METADATA`, `GLOB`, `SEEKABLE_READ`.
-`ATOMIC_MOVE` indicates that `move()` is atomic on this backend (no
-copy-then-delete risk). See BE-018.
+**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`, `SEEKABLE_READ`.
 
 ### CAP-002: CapabilitySet Construction
 
@@ -153,11 +151,9 @@ missing or non-existent paths.
 underlying storage supports it (e.g. Local via `os.rename`, Memory under lock,
 SQL in a transaction). Backends that cannot provide atomicity (e.g. S3 and
 Azure non-HNS, which use copy-then-delete) MUST document this in their class
-docstring. The caller MUST NOT assume atomicity unless the backend declares
-`Capability.ATOMIC_MOVE`. On partial failure in a copy-then-delete
-implementation, the source file may still exist alongside the destination; the
-backend MUST NOT silently swallow the error.
-**See also:** CAP-001 (`ATOMIC_MOVE` capability member).
+docstring. The caller MUST NOT assume atomicity. On partial failure in a
+copy-then-delete implementation, the source file may still exist alongside the
+destination; the backend MUST NOT silently swallow the error.
 
 ### BE-019: copy()
 
