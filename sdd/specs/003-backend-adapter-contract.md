@@ -89,6 +89,12 @@ order: (1) path validity — if `path` names an existing *directory*, raises
 raises `AlreadyExists`; (3) I/O. No later check may mask an earlier one. This
 order applies to `write()`, `write_atomic()`, `move()`, and `copy()` wherever
 analogous preconditions exist.
+**Flat-namespace exemption:** Backends where the underlying storage has no
+native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
+(1): they cannot distinguish "path names a directory" from "path does not
+exist", so they MUST skip the type-conflict check entirely. For these backends
+the effective order is: path validity (non-existent target treated as
+writable) → overwrite conflict → I/O.
 
 ### BE-009: write Creates Intermediate Directories
 
@@ -98,6 +104,7 @@ analogous preconditions exist.
 
 **Invariant:** `write_atomic(path, content, overwrite=False)` writes via a temporary file + atomic rename.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
+**Precondition order:** Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies.
 **See also:** [007-atomic-writes.md](007-atomic-writes.md)
 
 ### BE-011: write_atomic Capability Gate
@@ -159,6 +166,12 @@ destination; the backend MUST NOT silently swallow the error.
 
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Partial failure:** Unlike `move()`, `copy()` has no delete-after phase, so it
+cannot create a duplicate of the source. However, a backend that writes `dst`
+incrementally (e.g. multi-part upload) can leave a corrupt or incomplete
+destination if the transfer fails mid-way. Backends MUST NOT silently return
+success on a failed copy — the caller should assume `dst` is corrupt if an
+error is raised mid-operation.
 
 ### BE-020: close()
 
@@ -173,7 +186,8 @@ map to the specified error type regardless of backend:
 
 | Scenario | Required error type |
 |----------|---------------------|
-| Read or write targeting a path that is a directory | `InvalidPath` |
+| Read targeting a path that names a directory (not a file) | `NotFound` |
+| Write targeting a path that names an existing directory | `InvalidPath` |
 | Operation on a non-existent file | `NotFound` |
 | Operation denied by credentials or ACL | `PermissionDenied` |
 | Parent directory creation fails (permissions) | `PermissionDenied` |
