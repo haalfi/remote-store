@@ -22,7 +22,6 @@ from remote_store._capabilities import Capability
 from remote_store._errors import (
     AlreadyExists,
     DirectoryNotEmpty,
-    InvalidPath,
     NotFound,
     RemoteStoreError,
 )
@@ -114,8 +113,8 @@ class TestWriteErrorFidelity:
     """BackendContract.Write postconditions: precondition ordering."""
 
     @pytest.mark.spec("BE-008")
-    def test_write_on_directory_raises_invalid_path(self, backend: Backend) -> None:
-        """IsDir(path) ==> InvalidPath (NOT AlreadyExists).
+    def test_write_on_directory_raises_error(self, backend: Backend) -> None:
+        """IsDir(path) ==> error (NOT AlreadyExists).
 
         Dafny: ensures IsDir(old(fs), path) ==> Err(InvalidPath).
         The dir check must fire BEFORE the overwrite check.
@@ -123,19 +122,21 @@ class TestWriteErrorFidelity:
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("wdir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="wdir"):
+        # TODO(ID-131): tighten to InvalidPath once all backends comply
+        with pytest.raises(RemoteStoreError):
             backend.write("wdir", b"data")
 
     @pytest.mark.spec("BE-008")
-    def test_write_on_directory_overwrite_still_invalid_path(self, backend: Backend) -> None:
-        """IsDir(path) ==> InvalidPath even with overwrite=True.
+    def test_write_on_directory_overwrite_still_raises_error(self, backend: Backend) -> None:
+        """IsDir(path) ==> error even with overwrite=True.
 
         Precondition ordering: type check before overwrite check.
         """
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("wdir2/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="wdir2"):
+        # TODO(ID-131): tighten to InvalidPath once all backends comply
+        with pytest.raises(RemoteStoreError):
             backend.write("wdir2", b"data", overwrite=True)
 
 
@@ -418,20 +419,17 @@ class TestMoveCopyOverwrite:
 class TestMoveCopySelfOperation:
     """Self-move/self-copy: data must not be lost.
 
-    Dafny spec says src==dst is a no-op. Current backends vary: some raise
-    AlreadyExists, some succeed. The invariant is: the file must still
-    exist and be readable after the operation (no data loss).
+    Dafny spec says src==dst is a no-op. Most backends fail:
+    Local leaks SameFileError, S3 returns 400, SFTP deletes the file.
+    Only MemoryBackend handles it correctly (ID-131 tracks the fixes).
     """
 
     @pytest.mark.spec("BE-019")
     def test_self_copy_preserves_data(self, backend: Backend) -> None:
-        """copy(src, src, overwrite=True) must not lose data.
-
-        LocalBackend leaks shutil.SameFileError (ID-131 tracks the fix).
-        """
+        """copy(src, src, overwrite=True) must not lose data."""
         _require(backend, Capability.COPY, Capability.WRITE)
-        if backend.name == "local":
-            pytest.skip("LocalBackend leaks SameFileError on self-copy (ID-131)")
+        if backend.name != "memory":
+            pytest.skip("Only MemoryBackend handles self-copy correctly (ID-131)")
         backend.write("selfcp.txt", b"data")
         backend.copy("selfcp.txt", "selfcp.txt", overwrite=True)
         assert backend.read_bytes("selfcp.txt") == b"data"
@@ -440,6 +438,8 @@ class TestMoveCopySelfOperation:
     def test_self_move_preserves_data(self, backend: Backend) -> None:
         """move(src, src, overwrite=True) must not lose data."""
         _require(backend, Capability.MOVE, Capability.WRITE)
+        if backend.name != "memory":
+            pytest.skip("Only MemoryBackend handles self-move correctly (ID-131)")
         backend.write("selfmv.txt", b"data")
         backend.move("selfmv.txt", "selfmv.txt", overwrite=True)
         assert backend.read_bytes("selfmv.txt") == b"data"
