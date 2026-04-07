@@ -10134,6 +10134,19 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Extended conformance suite</strong> (BK-139b): 42 test functions (~53 parameterized
+  cases per backend) derived from Dafny <code>BackendContract.dfy</code> postconditions.
+  Covers error fidelity, precondition ordering, listing completeness, depth
+  filtering, move/copy semantics, resource cleanup, and operational consistency.
+  Marked <code>@pytest.mark.extended_conformance</code> for CI isolation.</li>
+<li><strong><code>ResourceWarning</code> safety net</strong> (BK-139b): <code>__del__</code> methods on
+  <code>SFTPBackend</code>, <code>AzureBackend</code>, and <code>AsyncAzureBackend</code> emit
+  <code>ResourceWarning</code> if <code>.close()</code> / <code>.aclose()</code> was not called.
+  Sync backends also clean up connections; async backend warns only
+  (cannot <code>await</code> in <code>__del__</code>).</li>
+<li><strong>Ruff <code>BLE</code> rule set</strong> (BK-139b): Enabled <code>BLE001</code> (blind exception)
+  linter rule. All 44 existing intentional broad catches annotated with
+  <code># noqa: BLE001</code> (37 in <code>src/</code>, 7 in <code>tests/</code>).</li>
 <li><strong>Property-based tests</strong> (BK-139a): Hypothesis PBT suite covering
   partition roundtrip (P1), config <code>from_dict</code> corruption (P2), path
   normalization idempotence (P3), and stateful MemoryBackend model (P4).
