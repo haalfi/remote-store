@@ -735,22 +735,43 @@ class AzureBackend(Backend):
     # region: dunder methods
 
     def __del__(self) -> None:
-        if any(
-            (
-                getattr(self, "_cc_instance", None),
-                getattr(self, "_blob_service_instance", None),
-                getattr(self, "_fs_instance", None),
-                getattr(self, "_datalake_service_instance", None),
+        # Guard against interpreter shutdown: module globals (contextlib,
+        # warnings) may already be None.  Use only inline try/except.
+        try:
+            has_clients = any(
+                (
+                    getattr(self, "_cc_instance", None),
+                    getattr(self, "_blob_service_instance", None),
+                    getattr(self, "_fs_instance", None),
+                    getattr(self, "_datalake_service_instance", None),
+                )
             )
-        ):
+            if not has_clients:
+                return
+        except Exception:  # noqa: BLE001
+            return
+        try:
             import warnings
 
             warnings.warn(
-                f"Unclosed {self!r}. Call .close() or use a context manager.",
+                f"Unclosed {type(self).__name__}. Call .close() or use a context manager.",
                 ResourceWarning,
                 stacklevel=1,
             )
-            self.close()
+        except Exception:  # noqa: BLE001
+            pass
+        # Inline cleanup — cannot rely on contextlib.suppress during shutdown.
+        for attr in ("_cc_instance", "_blob_service_instance", "_fs_instance", "_datalake_service_instance"):
+            try:
+                client = getattr(self, attr, None)
+                if client is not None:
+                    client.close()
+            except Exception:  # noqa: BLE001
+                pass
+            try:  # noqa: SIM105 — cannot use contextlib during shutdown
+                setattr(self, attr, None)
+            except Exception:  # noqa: BLE001
+                pass
 
     def __repr__(self) -> str:
         return (

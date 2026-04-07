@@ -661,15 +661,41 @@ class SFTPBackend(Backend):
     # region: dunder methods
 
     def __del__(self) -> None:
-        if getattr(self, "_sftp_client", None) is not None or getattr(self, "_ssh_client", None) is not None:
+        # Guard against interpreter shutdown: module globals (contextlib,
+        # warnings) may already be None.  Use only inline try/except.
+        try:
+            if getattr(self, "_sftp_client", None) is None and getattr(self, "_ssh_client", None) is None:
+                return
+        except Exception:  # noqa: BLE001
+            return
+        try:
             import warnings
 
             warnings.warn(
-                f"Unclosed {self!r}. Call .close() or use a context manager.",
+                f"Unclosed {type(self).__name__}. Call .close() or use a context manager.",
                 ResourceWarning,
                 stacklevel=1,
             )
-            self._close_clients()
+        except Exception:  # noqa: BLE001
+            pass
+        # Inline cleanup — cannot rely on contextlib during shutdown.
+        try:
+            sftp = getattr(self, "_sftp_client", None)
+            if sftp is not None:
+                try:  # noqa: SIM105 — cannot use contextlib during shutdown
+                    sftp.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                self._sftp_client = None
+            ssh = getattr(self, "_ssh_client", None)
+            if ssh is not None:
+                try:  # noqa: SIM105 — cannot use contextlib during shutdown
+                    ssh.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                self._ssh_client = None
+        except Exception:  # noqa: BLE001
+            pass
 
     def __repr__(self) -> str:
         return (

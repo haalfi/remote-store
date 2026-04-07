@@ -19,8 +19,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Sync backends also clean up connections; async backend warns only
   (cannot `await` in `__del__`).
 - **Ruff `BLE` rule set** (BK-139b): Enabled `BLE001` (blind exception)
-  linter rule. All 37 existing intentional broad catches annotated with
-  `# noqa: BLE001`.
+  linter rule. All 44 existing intentional broad catches annotated with
+  `# noqa: BLE001` (37 in `src/`, 7 in `tests/`).
 - **Property-based tests** (BK-139a): Hypothesis PBT suite covering
   partition roundtrip (P1), config `from_dict` corruption (P2), path
   normalization idempotence (P3), and stateful MemoryBackend model (P4).

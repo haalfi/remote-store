@@ -84,7 +84,7 @@ class TestReadErrorFidelity:
         _skip_flat_namespace(backend)
         backend.write("rdir/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError, match="rdir"):
             backend.read("rdir")
 
     @pytest.mark.spec("BE-007")
@@ -94,7 +94,7 @@ class TestReadErrorFidelity:
         _skip_flat_namespace(backend)
         backend.write("rbdir/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError, match="rbdir"):
             backend.read_bytes("rbdir")
 
     @pytest.mark.spec("BE-006")
@@ -123,7 +123,7 @@ class TestWriteErrorFidelity:
         _skip_flat_namespace(backend)
         backend.write("wdir/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError, match="wdir"):
             backend.write("wdir", b"data")
 
     @pytest.mark.spec("BE-008")
@@ -136,7 +136,7 @@ class TestWriteErrorFidelity:
         _skip_flat_namespace(backend)
         backend.write("wdir2/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError, match="wdir2"):
             backend.write("wdir2", b"data", overwrite=True)
 
 
@@ -154,25 +154,24 @@ class TestDeleteErrorFidelity:
         _skip_flat_namespace(backend)
         backend.write("ddir/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError, match="ddir"):
             backend.delete("ddir")
 
     @pytest.mark.spec("BE-012")
     def test_delete_on_directory_missing_ok_raises_or_passes(self, backend: Backend) -> None:
-        """IsDir(path) with missing_ok: no native exception leak."""
+        """IsDir(path) with missing_ok: no native exception leak, child preserved."""
         _require(backend, Capability.DELETE, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("ddir2/file.txt", b"x")
         # Some backends raise RemoteStoreError, some pass — either is ok.
-        # The key contract: no native exception leaks.
-        native_leaked = False
-        try:
+        # The key contract: no native exception leaks, and the child file
+        # is not silently deleted (delete targets files, not dirs).
+        try:  # noqa: SIM105 — assert follows; contextlib.suppress would hide it
             backend.delete("ddir2", missing_ok=True)
         except RemoteStoreError:
-            pass  # expected — some backends reject delete(dir) even with missing_ok
-        except Exception:  # noqa: BLE001
-            native_leaked = True
-        assert not native_leaked, "Native exception leaked through delete(dir, missing_ok=True)"
+            pass
+        # Child file must still exist regardless of whether the backend raised.
+        assert backend.exists("ddir2/file.txt"), "Child file was silently deleted"
 
 
 class TestDeleteFolderErrorFidelity:
@@ -184,7 +183,7 @@ class TestDeleteFolderErrorFidelity:
         _require(backend, Capability.DELETE, Capability.WRITE)
         backend.write("dffile.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError, match="dffile"):
             backend.delete_folder("dffile.txt")
 
     @pytest.mark.spec("BE-013")
@@ -231,7 +230,7 @@ class TestGetFileInfoErrorFidelity:
         _skip_flat_namespace(backend)
         backend.write("gfid/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError, match="gfid"):
             backend.get_file_info("gfid")
 
     @pytest.mark.spec("BE-016")
@@ -362,7 +361,7 @@ class TestMoveCopyErrorFidelity:
             pytest.skip("Only MemoryBackend enforces dir-src check (ID-131)")
         backend.write(f"mcds/{op}/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError, match=f"mcds/{op}"):
             _do_op(backend, op, f"mcds/{op}", f"mcds/{op}_dst.txt")
 
     @pytest.mark.spec("BE-018")
@@ -379,7 +378,7 @@ class TestMoveCopyErrorFidelity:
         backend.write(f"mcdd/{op}_src.txt", b"src")
         backend.write(f"mcdd/{op}_dstdir/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError, match=f"mcdd/{op}"):
             _do_op(backend, op, f"mcdd/{op}_src.txt", f"mcdd/{op}_dstdir")
 
     @pytest.mark.spec("BE-018")
