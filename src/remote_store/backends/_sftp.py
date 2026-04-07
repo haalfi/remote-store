@@ -661,7 +661,7 @@ class SFTPBackend(Backend):
     # region: dunder methods
 
     def __del__(self) -> None:
-        if self._sftp_client is not None or self._ssh_client is not None:
+        if getattr(self, "_sftp_client", None) is not None or getattr(self, "_ssh_client", None) is not None:
             import warnings
 
             warnings.warn(

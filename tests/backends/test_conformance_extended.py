@@ -80,8 +80,9 @@ class TestReadErrorFidelity:
 
     @pytest.mark.spec("BE-006")
     def test_read_on_directory_raises_error(self, backend: Backend) -> None:
-        """Read(dir) ==> InvalidPath.  Flat-NS backends may raise NotFound."""
+        """Read(dir) ==> InvalidPath.  Flat-NS backends have no real dirs."""
         _require(backend, Capability.WRITE)
+        _skip_flat_namespace(backend)
         backend.write("rdir/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
         with pytest.raises(RemoteStoreError):
@@ -91,6 +92,7 @@ class TestReadErrorFidelity:
     def test_read_bytes_on_directory_raises_error(self, backend: Backend) -> None:
         """read_bytes(dir) — same contract as read()."""
         _require(backend, Capability.WRITE)
+        _skip_flat_namespace(backend)
         backend.write("rbdir/file.txt", b"x")
         # TODO(ID-131): tighten to InvalidPath once all backends comply
         with pytest.raises(RemoteStoreError):

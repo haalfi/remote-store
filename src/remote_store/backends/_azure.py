@@ -735,7 +735,14 @@ class AzureBackend(Backend):
     # region: dunder methods
 
     def __del__(self) -> None:
-        if any((self._cc_instance, self._blob_service_instance, self._fs_instance, self._datalake_service_instance)):
+        if any(
+            (
+                getattr(self, "_cc_instance", None),
+                getattr(self, "_blob_service_instance", None),
+                getattr(self, "_fs_instance", None),
+                getattr(self, "_datalake_service_instance", None),
+            )
+        ):
             import warnings
 
             warnings.warn(
