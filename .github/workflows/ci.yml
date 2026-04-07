@@ -18,6 +18,7 @@ jobs:
     outputs:
       code: ${{ steps.filter.outputs.code }}
       docs: ${{ steps.filter.outputs.docs }}
+      formal: ${{ steps.filter.outputs.formal }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -38,6 +39,9 @@ jobs:
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
           if echo "$FILES" | grep -qE "$DOCS_PAT"; then echo "docs=true" >> "$GITHUB_OUTPUT"
           else echo "docs=false" >> "$GITHUB_OUTPUT"; fi
+          FORMAL_PAT='^sdd/(formal|specs)/|^\.github/workflows/ci\.yml$'
+          if echo "$FILES" | grep -qE "$FORMAL_PAT"; then echo "formal=true" >> "$GITHUB_OUTPUT"
+          else echo "formal=false" >> "$GITHUB_OUTPUT"; fi
 
   lint:
     needs: [changes]
@@ -234,8 +238,24 @@ jobs:
       - run: uv pip install dist/*.whl
       - run: python -c "import remote_store; print(remote_store.__version__)"
 
+  verify-formal:
+    needs: [changes]
+    if: needs.changes.outputs.formal == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dafny-lang/setup-dafny-action@be023fc606339d46ed6b077dcb8614d0279ded31  # v1.9.1
+        with:
+          dafny-version: '4.9.1'
+      - name: Verify formal specifications
+        run: |
+          dafny verify sdd/formal/BackendContract.dfy
+          dafny verify sdd/formal/MemoryBackend.dfy
+          dafny verify sdd/formal/DepthCounting.dfy
+          dafny verify sdd/formal/ResourceSafety.dfy
+
   gate:
-    needs: [changes, lint, typecheck, test, test-cross-platform, notebooks, examples, e2e, docs, package]
+    needs: [changes, lint, typecheck, test, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -257,6 +277,7 @@ jobs:
             "${{ needs.e2e.result }}" \
             "${{ needs.docs.result }}" \
             "${{ needs.package.result }}" \
+            "${{ needs.verify-formal.result }}" \
           )
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
