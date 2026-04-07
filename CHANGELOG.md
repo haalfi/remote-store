@@ -17,6 +17,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **`_safe_wrap()` helper** in `_stream.py`: Safely wraps a stream through
   one or more wrapper layers, closing all acquired resources if any wrapper
   constructor raises.
+- **Dafny formal verification layer** (`sdd/formal/`): Machine-checkable
+  backend contract specification covering the six BK-140 gaps —
+  precondition ordering (BE-008), error mapping (BE-021), listing
+  semantics (BE-014/015), depth counting (DEPTH-001), move atomicity
+  (BE-018), and resource safety (SIO-001). Includes `MemoryBackend`
+  reference refinement, verified depth algorithm, and `_safe_wrap`
+  leak-freedom proof.
+- **CI: Dafny verification gate** in `ci.yml`: Runs `dafny verify` on
+  all formal specs when `sdd/formal/` or `sdd/specs/` files change.
+  Skipped for code-only PRs.
 
 ### Fixed
 

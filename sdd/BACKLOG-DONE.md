@@ -115,6 +115,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Backlog
 
+- [x] **BK-140 — Dafny formal verification layer for backend contract**
+  Machine-checkable specification encoding all six BK-140 gaps:
+  BE-008 (precondition ordering), BE-021 (error mapping), BE-014/015
+  (listing semantics), DEPTH-001 (depth counting), BE-018 (move
+  atomicity), SIO-001 (resource safety).  Includes MemoryBackend
+  reference refinement (87 verified, 0 errors), CI gate, and
+  DepthCounting + ResourceSafety standalone proofs.
+  Remainder: spec `.md` amendments tracked as BK-140a in BACKLOG.md.
+
 - [x] **BK-139a — Bug prevention: `_safe_wrap` + PBT (deliverables 1–3)**
   From [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md):
   1. `_safe_wrap()` helper in `_stream.py` + fix BUG-159 S3 `read()` leak

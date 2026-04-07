@@ -45,12 +45,12 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-140 — Tighten backend behavioral contract (spec amendments)**
-  Follow-up on [research-backend-contract-completeness.md](research/research-backend-contract-completeness.md).
-  Six gaps in the backend ABC where behavior is unspecified and backends
-  diverge. Spec amendments are prerequisite for BK-139 P4 (stateful model)
-  and extended conformance (deliverable 5).
-  Amendments (see research doc § 5 for details):
+- [ ] **BK-140a — Tighten backend behavioral contract (spec amendments)**
+  Remainder of BK-140.  Dafny formal model shipped (see BK-140 in
+  BACKLOG-DONE.md).  Remaining: edit the actual spec `.md` files to
+  codify the six gap amendments.  Validate each amendment against the
+  Dafny model in `sdd/formal/`.
+  Amendments (see [research doc](research/research-backend-contract-completeness.md) § 5):
   1. BE-008: precondition evaluation order (path validity → type → overwrite)
   2. BE-021: canonical error mapping table for cross-cutting scenarios
   3. BE-014/BE-015: listing on missing paths MUST yield nothing, not raise
