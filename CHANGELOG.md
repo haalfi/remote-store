@@ -8,6 +8,17 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **Extended conformance suite** (BK-139b): 42 test functions (~53 parameterized
+  cases per backend) derived from Dafny `BackendContract.dfy` postconditions.
+  Covers error fidelity, precondition ordering, listing completeness, depth
+  filtering, move/copy semantics, resource cleanup, and operational consistency.
+  Marked `@pytest.mark.extended_conformance` for CI isolation.
+- **`ResourceWarning` safety net** (BK-139b): `__del__` methods on
+  `SFTPBackend` and `AzureBackend` emit `ResourceWarning` and clean up
+  connections if `.close()` was not called.
+- **Ruff `BLE` rule set** (BK-139b): Enabled `BLE001` (blind exception)
+  linter rule. All 37 existing intentional broad catches annotated with
+  `# noqa: BLE001`.
 - **Property-based tests** (BK-139a): Hypothesis PBT suite covering
   partition roundtrip (P1), config `from_dict` corruption (P2), path
   normalization idempotence (P3), and stateful MemoryBackend model (P4).

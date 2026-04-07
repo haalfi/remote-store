@@ -56,7 +56,7 @@ def main() -> int:
         try:
             _run_notebook(nb_path)
             print("OK")
-        except Exception:
+        except Exception:  # noqa: BLE001
             traceback.print_exc()
             failed += 1
 

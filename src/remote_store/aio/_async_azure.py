@@ -186,7 +186,7 @@ class AsyncAzureBackend(AsyncBackend):
             try:
                 info = await self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 log.warning(
                     "Failed to detect HNS status, falling back to non-HNS behavior",
                     exc_info=True,
@@ -290,7 +290,7 @@ class AsyncAzureBackend(AsyncBackend):
                 try:
                     await self._fs.get_directory_client(ap).get_directory_properties()
                     return True
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return False
             else:
                 prefix = ap.rstrip("/") + "/"
@@ -334,7 +334,7 @@ class AsyncAzureBackend(AsyncBackend):
                 try:
                     await self._fs.get_directory_client(ap).get_directory_properties()
                     return True
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return False
             else:
                 prefix = ap.rstrip("/") + "/"
@@ -360,7 +360,7 @@ class AsyncAzureBackend(AsyncBackend):
                 yield chunk
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise classify_azure_error(exc, path, self.name) from None
 
     async def read_bytes(self, path: str) -> bytes:
@@ -481,7 +481,7 @@ class AsyncAzureBackend(AsyncBackend):
             bc = self._blob_client(path)
             try:
                 await bc.delete_blob()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 mapped = classify_azure_error(exc, path, self.name)
                 if isinstance(mapped, NotFound):
                     if not missing_ok:
@@ -508,7 +508,7 @@ class AsyncAzureBackend(AsyncBackend):
                 dc = self._fs.get_directory_client(ap)
                 try:
                     await dc.get_directory_properties()
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
                         if not missing_ok:
@@ -570,7 +570,7 @@ class AsyncAzureBackend(AsyncBackend):
                                 if depth > max_depth:
                                     continue
                             yield props_to_fileinfo(p, str(p.name))
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
                         return
@@ -589,7 +589,7 @@ class AsyncAzureBackend(AsyncBackend):
                         yield props_to_fileinfo(item, item.name)
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise classify_azure_error(exc, path, self.name) from None
 
     async def list_folders(self, path: str) -> AsyncIterator[FolderEntry]:
@@ -613,7 +613,7 @@ class AsyncAzureBackend(AsyncBackend):
                             rel = str(p.name).rstrip("/")
                             folder_name = rel.rsplit("/", 1)[-1]
                             yield FolderEntry(path=RemotePath(rel), name=folder_name)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
                         return
@@ -626,7 +626,7 @@ class AsyncAzureBackend(AsyncBackend):
                         yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise classify_azure_error(exc, path, self.name) from None
 
     async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
@@ -652,7 +652,7 @@ class AsyncAzureBackend(AsyncBackend):
                             yield FolderEntry(path=RemotePath(rel), name=folder_name)
                         else:
                             yield props_to_fileinfo(p, str(p.name))
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
                         return
@@ -667,7 +667,7 @@ class AsyncAzureBackend(AsyncBackend):
                         yield props_to_fileinfo(item, item.name)
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise classify_azure_error(exc, path, self.name) from None
 
     async def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
@@ -690,7 +690,7 @@ class AsyncAzureBackend(AsyncBackend):
                     yield info
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise classify_azure_error(exc, pattern, self.name) from None
 
     async def get_file_info(self, path: str) -> FileInfo:
@@ -912,7 +912,7 @@ class AsyncAzureBackend(AsyncBackend):
             yield
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise classify_azure_error(exc, path, self.name) from None
 
     # endregion

@@ -729,7 +729,7 @@ class TestThreadSafety:
                         cs.invalidate("a.txt")
                     elif op == "list":
                         list(cs.list_files(""))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:

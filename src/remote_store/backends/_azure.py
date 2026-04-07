@@ -272,7 +272,7 @@ class AzureBackend(Backend):
                 try:
                     self._fs.get_directory_client(azure_path).get_directory_properties()
                     return True
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return False
             else:
                 prefix = azure_path.rstrip("/") + "/"
@@ -301,7 +301,7 @@ class AzureBackend(Backend):
                 try:
                     self._fs.get_directory_client(azure_path).get_directory_properties()
                     return True
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return False
             else:
                 prefix = azure_path.rstrip("/") + "/"
@@ -459,7 +459,7 @@ class AzureBackend(Backend):
             bc = self._blob_client(path)
             try:
                 bc.delete_blob()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 mapped = self._classify(exc, path)
                 if isinstance(mapped, NotFound):
                     if not missing_ok:
@@ -475,7 +475,7 @@ class AzureBackend(Backend):
                 dc = self._fs.get_directory_client(azure_path)
                 try:
                     dc.get_directory_properties()
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         if not missing_ok:
@@ -525,7 +525,7 @@ class AzureBackend(Backend):
                                 if depth > max_depth:
                                     continue
                             yield self._props_to_fileinfo(p, str(p.name))
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         return
@@ -558,7 +558,7 @@ class AzureBackend(Backend):
                             rel = str(p.name).rstrip("/")
                             folder_name = rel.rsplit("/", 1)[-1]
                             yield FolderEntry(path=RemotePath(rel), name=folder_name)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         return
@@ -586,7 +586,7 @@ class AzureBackend(Backend):
                             yield FolderEntry(path=RemotePath(rel), name=folder_name)
                         else:
                             yield self._props_to_fileinfo(p, str(p.name))
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         return
@@ -734,6 +734,17 @@ class AzureBackend(Backend):
 
     # region: dunder methods
 
+    def __del__(self) -> None:
+        if any((self._cc_instance, self._blob_service_instance, self._fs_instance, self._datalake_service_instance)):
+            import warnings
+
+            warnings.warn(
+                f"Unclosed {self!r}. Call .close() or use a context manager.",
+                ResourceWarning,
+                stacklevel=1,
+            )
+            self.close()
+
     def __repr__(self) -> str:
         return (
             f"AzureBackend(container={self._container!r}, "
@@ -829,7 +840,7 @@ class AzureBackend(Backend):
             try:
                 info = self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 log.warning(
                     "Failed to detect HNS status, falling back to non-HNS behavior",
                     exc_info=True,
@@ -848,7 +859,7 @@ class AzureBackend(Backend):
             yield
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise self._classify(exc, path) from None
 
     def _classify(self, exc: Exception, path: str) -> RemoteStoreError:

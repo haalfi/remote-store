@@ -176,7 +176,7 @@ class TestChildThreadSafety:
         def create_child(name: str) -> None:
             try:
                 results.append(parent.child(name))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 
         threads = [threading.Thread(target=create_child, args=(f"t{i}",)) for i in range(10)]

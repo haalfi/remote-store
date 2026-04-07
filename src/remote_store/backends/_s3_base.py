@@ -171,7 +171,7 @@ class _S3Base(Backend):
             return
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise _permission_denied(path, self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive
+        except Exception as exc:  # pragma: no cover -- defensive  # noqa: BLE001
             raise self._classify_error(exc, path) from None
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
@@ -189,7 +189,7 @@ class _S3Base(Backend):
             return
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise _permission_denied(path, self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive
+        except Exception as exc:  # pragma: no cover -- defensive  # noqa: BLE001
             raise self._classify_error(exc, path) from None
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
@@ -210,7 +210,7 @@ class _S3Base(Backend):
             return
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise _permission_denied(path, self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive
+        except Exception as exc:  # pragma: no cover -- defensive  # noqa: BLE001
             raise self._classify_error(exc, path) from None
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
@@ -281,7 +281,7 @@ class _S3Base(Backend):
             raise _not_found(path, self.name) from None
         except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
             raise _permission_denied(path, self.name) from None
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise self._classify_error(exc, path) from None
 
     def _classify_error(self, exc: Exception, path: str) -> RemoteStoreError:
@@ -373,7 +373,7 @@ class _S3Base(Backend):
                 continue
             try:
                 return ContentDigest(algo_lower, base64.b64decode(b64_value).hex())
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
         return None
 
