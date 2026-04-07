@@ -76,7 +76,7 @@ for cap in cs:
 ### BE-007: read_bytes()
 
 **Invariant:** `read_bytes(path)` returns the full file content as `bytes`.
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a directory. Same preconditions as BE-006; see BE-021.
 
 ### BE-008: write()
 
@@ -143,17 +143,17 @@ missing or non-existent paths.
 ### BE-016: get_file_info()
 
 **Invariant:** `get_file_info(path)` returns `FileInfo`.
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a directory (Dafny: `GetFileInfo: IsDir → InvalidPath`). See BE-021.
 
 ### BE-017: get_folder_info()
 
 **Invariant:** `get_folder_info(path)` returns `FolderInfo`.
-**Raises:** `NotFound` if the folder does not exist.
+**Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
 
 ### BE-018: move()
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
-**Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory (cannot overwrite a directory with a file). `AlreadyExists` if `dst` names an existing file and `overwrite=False`. See BE-021 and BE-008 for precondition evaluation order.
 **Atomicity:** Backends SHOULD implement `move()` atomically where the
 underlying storage supports it (e.g. Local via `os.rename`, Memory under lock,
 SQL in a transaction). Backends that cannot provide atomicity (e.g. S3 and
@@ -165,7 +165,7 @@ destination; the backend MUST NOT silently swallow the error.
 ### BE-019: copy()
 
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
-**Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory. `AlreadyExists` if `dst` names an existing file and `overwrite=False`. See BE-021.
 **Partial failure:** Unlike `move()`, `copy()` has no delete-after phase, so it
 cannot create a duplicate of the source. However, a backend that writes `dst`
 incrementally (e.g. multi-part upload) can leave a corrupt or incomplete
@@ -194,6 +194,8 @@ map to the specified error type regardless of backend:
 | Parent directory creation fails (path conflict) | `InvalidPath` |
 
 The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `Move`, `Copy` postconditions).
+
+**Scope note:** This table covers *cross-cutting* scenarios that apply to multiple operations. Method-specific errors (e.g. `DirectoryNotEmpty` from `delete_folder`, `CapabilityNotSupported` from capability-gated operations) are documented per-method and intentionally omitted here.
 
 **Broad exception handler rule:** Backends MUST NOT use bare `except OSError`
 or `except Exception` handlers that map all errors to a single type. Handlers

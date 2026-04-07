@@ -17,6 +17,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **`_safe_wrap()` helper** in `_stream.py`: Safely wraps a stream through
   one or more wrapper layers, closing all acquired resources if any wrapper
   constructor raises.
+- **BK-140a backend contract spec amendments** (`sdd/specs/`): Six spec
+  amendments tightening the backend ABC behavioral contract — precondition
+  evaluation order with flat-namespace exemption (BE-008), canonical error
+  mapping table aligned with Dafny postconditions (BE-021), missing-path
+  listing semantics (BE-014/015), reference depth algorithm (DEPTH-001),
+  move/copy atomicity documentation (BE-018/019), and acquire-then-wrap
+  resource safety invariant (SIO-001). Per-method Raises clauses updated
+  for BE-006 through BE-019 to be consistent with the canonical table.
 - **Dafny formal verification layer** (`sdd/formal/`): Machine-checkable
   backend contract specification covering the six BK-140 gaps —
   precondition ordering (BE-008), error mapping (BE-021), listing
