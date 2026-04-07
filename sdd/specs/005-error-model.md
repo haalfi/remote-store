@@ -47,13 +47,19 @@ with pytest.raises(AlreadyExists):
 
 ## ERR-005: InvalidPath
 
-**Invariant:** Raised for malformed, unsafe, or out-of-scope paths.
-**Preconditions:** Caller provides a path containing `..`, null bytes, or that normalizes to empty.
-**Postconditions:** `path` attribute is set to the offending input.
-**Example:**
+**Invariant:** Raised for malformed, unsafe, or out-of-scope paths, and for node-type mismatches at a valid path.
+**Preconditions:** Either (a) the caller provides a path containing `..`, null bytes, or that normalizes to empty; or (b) the operation targets a valid path that names the wrong node type — e.g. `read()` on a directory, `delete()` on a directory, `get_file_info()` on a directory, or `move()`/`copy()` with a directory as source. In case (b) the path is well-formed; the error is about type, not syntax. See BE-021 for the canonical per-method mapping.
+**Postconditions:** `path` attribute is set to the offending path.
+**Example (malformed path):**
 ```python
 with pytest.raises(InvalidPath):
     RemotePath("foo/../bar")
+```
+**Example (type mismatch):**
+```python
+store.write("dir/file.txt", b"data")   # creates directory "dir"
+with pytest.raises(InvalidPath):
+    store.read("dir")                   # "dir" exists but is a directory, not a file
 ```
 
 ## ERR-006: CapabilityNotSupported

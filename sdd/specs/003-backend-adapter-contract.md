@@ -70,19 +70,31 @@ for cap in cs:
 ### BE-006: read()
 
 **Invariant:** `read(path)` returns a `BinaryIO` stream for the file content.
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a directory (type mismatch, not a missing file). See BE-021.
 **See also:** [006-streaming-io.md](006-streaming-io.md)
 
 ### BE-007: read_bytes()
 
 **Invariant:** `read_bytes(path)` returns the full file content as `bytes`.
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a directory. Same preconditions as BE-006; see BE-021.
 
 ### BE-008: write()
 
 **Invariant:** `write(path, content, overwrite=False)` creates or overwrites a file.
 **Preconditions:** `content` is `bytes` or `BinaryIO`.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
+**Precondition evaluation order:** Backends MUST evaluate preconditions in this
+order: (1) path validity — if `path` names an existing *directory*, raises
+`InvalidPath`; (2) overwrite conflict — if the file exists and `overwrite=False`,
+raises `AlreadyExists`; (3) I/O. No later check may mask an earlier one. This
+order applies to `write()`, `write_atomic()`, `move()`, and `copy()` wherever
+analogous preconditions exist.
+**Flat-namespace exemption:** Backends where the underlying storage has no
+native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
+(1): they cannot distinguish "path names a directory" from "path does not
+exist", so they MUST skip the type-conflict check entirely. For these backends
+the effective order is: existence check (non-existent target treated as
+writable) → overwrite conflict → I/O.
 
 ### BE-009: write Creates Intermediate Directories
 
@@ -92,6 +104,7 @@ for cap in cs:
 
 **Invariant:** `write_atomic(path, content, overwrite=False)` writes via a temporary file + atomic rename.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
+**Precondition order:** Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies.
 **See also:** [007-atomic-writes.md](007-atomic-writes.md)
 
 ### BE-011: write_atomic Capability Gate
@@ -101,43 +114,65 @@ for cap in cs:
 ### BE-012: delete()
 
 **Invariant:** `delete(path, missing_ok=False)` removes a file.
-**Raises:** `NotFound` if the file is missing and `missing_ok=False`.
+**Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory, regardless of `missing_ok` — type errors are not silenced by missing-path tolerance (Dafny: `Delete: IsDir → InvalidPath` unconditionally). See BE-021.
 **Postconditions:** If `missing_ok=True`, no error for missing files.
 
 ### BE-013: delete_folder()
 
 **Invariant:** `delete_folder(path, recursive=False, missing_ok=False)` removes a folder.
-**Raises:** `NotFound` if the folder is missing and `missing_ok=False`. Fails if folder is non-empty and `recursive=False`.
+**Raises:** `NotFound` if the path does not exist and `missing_ok=False`. `InvalidPath` if `path` names a file (use `delete` instead). `DirectoryNotEmpty` if the folder is non-empty and `recursive=False`. See BE-021.
 
 ### BE-014: list_files()
 
 **Invariant:** `list_files(path, recursive=False)` returns `Iterator[FileInfo]`.
 **Postconditions:** Returns only files, not folders. If `recursive=True`, includes files in all subdirectories.
+**Missing-path behavior:** If `path` does not exist or does not name a folder,
+the iterator yields nothing. `list_files()` MUST NOT raise `NotFound` for
+missing or non-existent paths. This matches the behavior already guaranteed by
+BE-026 (`iter_children`) and ensures callers can safely iterate over potentially
+absent paths without defensive guards.
 
 ### BE-015: list_folders()
 
 **Invariant:** `list_folders(path)` returns `Iterator[FolderEntry]` of immediate subfolders.
 Each `FolderEntry` has `.name` (folder name) and `.path` (backend-relative `RemotePath`).
+**Missing-path behavior:** If `path` does not exist or does not name a folder,
+the iterator yields nothing. `list_folders()` MUST NOT raise `NotFound` for
+missing or non-existent paths.
 
 ### BE-016: get_file_info()
 
 **Invariant:** `get_file_info(path)` returns `FileInfo`.
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a directory (Dafny: `GetFileInfo: IsDir → InvalidPath`). See BE-021.
 
 ### BE-017: get_folder_info()
 
 **Invariant:** `get_folder_info(path)` returns `FolderInfo`.
-**Raises:** `NotFound` if the folder does not exist.
+**Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
+**Formal coverage note:** `get_folder_info()` is not modelled in `sdd/formal/BackendContract.dfy`; the `InvalidPath` postcondition is specified by symmetry with BE-016 (`GetFileInfo: IsDir → InvalidPath`) but is not formally verified. Tracked in ID-130.
 
 ### BE-018: move()
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
-**Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory (cannot overwrite a directory with a file). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move is a no-op (Dafny: `Move: src == dst → Ok`). See BE-021 and BE-008 for precondition evaluation order.
+**Atomicity:** Backends SHOULD implement `move()` atomically where the
+underlying storage supports it (e.g. Local via `os.rename`, Memory under lock,
+SQL in a transaction). Backends that cannot provide atomicity (e.g. S3 and
+Azure non-HNS, which use copy-then-delete) MUST document this in their class
+docstring. The caller MUST NOT assume atomicity. On partial failure in a
+copy-then-delete implementation, the source file may still exist alongside the
+destination; the backend MUST NOT silently swallow the error.
 
 ### BE-019: copy()
 
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
-**Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory. `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"). See BE-021.
+**Partial failure:** Unlike `move()`, `copy()` has no delete-after phase, so it
+cannot create a duplicate of the source. However, a backend that writes `dst`
+incrementally (e.g. multi-part upload) can leave a corrupt or incomplete
+destination if the transfer fails mid-way. Backends MUST NOT silently return
+success on a failed copy — the caller should assume `dst` is corrupt if an
+error is raised mid-operation.
 
 ### BE-020: close()
 
@@ -146,6 +181,29 @@ Each `FolderEntry` has `.name` (folder name) and `.path` (backend-relative `Remo
 ### BE-021: Error Mapping
 
 **Invariant:** Backend-native exceptions never leak. All exceptions are mapped to `remote_store` error types.
+
+**Canonical error mapping table:** The following cross-cutting scenarios MUST
+map to the specified error type regardless of backend:
+
+| Scenario | Required error type |
+|----------|---------------------|
+| File operation (`read`, `write`, `delete`, `get_file_info`, `move`/`copy` src) on a path that is a directory | `InvalidPath` |
+| Directory operation (`delete_folder`, `move`/`copy` dst) on a path that is a file | `InvalidPath` |
+| Operation on a non-existent path | `NotFound` |
+| Operation denied by credentials or ACL | `PermissionDenied` |
+| Parent directory creation fails (permissions) | `PermissionDenied` |
+| Parent directory creation fails (path conflict) | `InvalidPath` |
+
+The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `Move`, `Copy` postconditions).
+
+**Scope note:** This table covers *cross-cutting* scenarios that apply to multiple operations. Method-specific errors (e.g. `DirectoryNotEmpty` from `delete_folder`, `CapabilityNotSupported` from capability-gated operations) are documented per-method and intentionally omitted here.
+
+**Broad exception handler rule:** Backends MUST NOT use bare `except OSError`
+or `except Exception` handlers that map all errors to a single type. Handlers
+MUST discriminate by `errno`, exception type, or HTTP status code before
+choosing the mapped error. Silent returns (swallowing exceptions without
+re-raising a `RemoteStoreError`) are permitted ONLY for `exists()`,
+`is_file()`, and `is_folder()`.
 
 ### BE-022: unwrap()
 

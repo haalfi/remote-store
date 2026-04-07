@@ -45,19 +45,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-140a — Tighten backend behavioral contract (spec amendments)**
-  Remainder of BK-140.  Dafny formal model shipped (see BK-140 in
-  BACKLOG-DONE.md).  Remaining: edit the actual spec `.md` files to
-  codify the six gap amendments.  Validate each amendment against the
-  Dafny model in `sdd/formal/`.
-  Amendments (see [research doc](research/research-backend-contract-completeness.md) § 5):
-  1. BE-008: precondition evaluation order (path validity → type → overwrite)
-  2. BE-021: canonical error mapping table for cross-cutting scenarios
-  3. BE-014/BE-015: listing on missing paths MUST yield nothing, not raise
-  4. DEPTH-001: reference depth-counting algorithm with inclusive comparison
-  5. BE-018: document move atomicity is backend-dependent
-  6. SIO-001: acquire-then-wrap safety invariant
-
 - [~] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
   Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Remaining deliverables:
@@ -74,6 +61,48 @@ Items graduate through the SDD pipeline:
 ## Ideas
 
 ### API Surface Enhancements
+
+- [ ] **ID-131 — Conformance tests for BK-140a `InvalidPath` type-mismatch conditions**
+  BK-140a added `InvalidPath` Raises clauses to BE-006, BE-007, BE-012, BE-013,
+  BE-016, BE-017, BE-018, and BE-019 (e.g. `read(dir)`, `delete(dir)`,
+  `get_file_info(dir)`, `move(src=dir, ...)`). No conformance tests cover these
+  conditions yet. Required work:
+  1. Fix `LocalBackend.read()` and `read_bytes()` to raise `InvalidPath`
+     (not `NotFound`) when the path names a directory — code currently diverges
+     from spec (principle 4: code is wrong).
+  2. Fix `MemoryBackend.read()` and `read_bytes()` same.
+  3. Add `@pytest.mark.spec` conformance tests for all new `InvalidPath` clauses;
+     skip for flat-namespace backends (S3, Azure non-HNS, SQL) per BE-008 exemption.
+  4. Add conformance tests for BE-014/015 missing-path behavior:
+     `list_files(missing)` and `list_folders(missing)` must yield nothing without
+     raising (MUST NOT raise `NotFound`).
+  Related: BK-140a, BE-021, BK-139b (item 5 — extended conformance suite).
+
+- [ ] **ID-130 — Dafny formal coverage for `get_folder_info()` (BE-017)**
+  `sdd/formal/BackendContract.dfy` has no `GetFolderInfo` method. The BE-017
+  `InvalidPath` postcondition (`IsFile → InvalidPath`) is specified by symmetry
+  with `GetFileInfo` but is not machine-verified. Add a `GetFolderInfo` method
+  to `BackendContract.dfy` with postconditions `IsFile → InvalidPath` and
+  `!PathExists → NotFound`, and verify it in `MemoryBackend.dfy`.
+  Related: BE-017, BK-140, ID-129.
+
+- [ ] **ID-129 — Spec gap: query methods under path-type conflicts**
+  `exists()`, `is_file()`, `is_folder()` are not analyzed in the BE-021
+  canonical error mapping table. These methods return `bool` and are permitted
+  to swallow errors, but the behavior when called on a path segment that
+  contains a file-as-directory-component (type conflict in an ancestor) is
+  unspecified. All backends currently return `False` — likely accidental
+  consensus. Worth codifying before BK-139b extended conformance tests.
+  Related: BK-140, BE-005, BE-021.
+
+- [ ] **ID-128 — `Capability.ATOMIC_MOVE` enum member**
+  Add `ATOMIC_MOVE` to the `Capability` enum so callers can query whether
+  `move()` is safe under concurrent access. Deferred from BK-140 to avoid
+  spec/code divergence in a spec-only PR. Requires: adding the member to
+  `_capabilities.py`, updating each backend's `capabilities()` declaration
+  (Local, Memory, SQL → include it; S3, Azure non-HNS, SFTP-fallback → omit),
+  and updating the capabilities matrix page.
+  Related: BE-018 (move atomicity spec), BK-140.
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of
