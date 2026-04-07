@@ -91,11 +91,11 @@ class TestReadErrorFidelity:
 
     def test_read_missing_raises_not_found(self, backend: Backend) -> None:
         """!PathExists ==> NotFound."""
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="ec_missing_read"):
             backend.read("ec_missing_read.txt")
 
     def test_read_bytes_missing_raises_not_found(self, backend: Backend) -> None:
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="ec_missing_rb"):
             backend.read_bytes("ec_missing_rb.txt")
 
 
@@ -111,7 +111,7 @@ class TestWriteErrorFidelity:
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("wdir/file.txt", b"x")
-        with pytest.raises(InvalidPath):
+        with pytest.raises(InvalidPath, match="wdir"):
             backend.write("wdir", b"data")
 
     def test_write_on_directory_overwrite_still_invalid_path(self, backend: Backend) -> None:
@@ -122,7 +122,7 @@ class TestWriteErrorFidelity:
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("wdir2/file.txt", b"x")
-        with pytest.raises(InvalidPath):
+        with pytest.raises(InvalidPath, match="wdir2"):
             backend.write("wdir2", b"data", overwrite=True)
 
 
@@ -165,20 +165,21 @@ class TestDeleteFolderErrorFidelity:
     def test_delete_folder_missing_raises_not_found(self, backend: Backend) -> None:
         """!PathExists && !missing_ok ==> NotFound."""
         _require(backend, Capability.DELETE)
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="ec_missing_df"):
             backend.delete_folder("ec_missing_df", missing_ok=False)
 
     def test_delete_folder_missing_ok_passes(self, backend: Backend) -> None:
-        """!PathExists && missing_ok ==> Ok."""
+        """!PathExists && missing_ok ==> Ok (no error raised)."""
         _require(backend, Capability.DELETE)
         backend.delete_folder("ec_missing_df_ok", missing_ok=True)
+        assert not backend.exists("ec_missing_df_ok")
 
     def test_delete_folder_non_recursive_non_empty_raises(self, backend: Backend) -> None:
         """IsDir && !recursive && HasChildren ==> DirectoryNotEmpty."""
         _require(backend, Capability.DELETE, Capability.WRITE)
         _skip_flat_namespace(backend)
         _seed(backend, {"dne/a.txt": b"a"})
-        with pytest.raises(DirectoryNotEmpty):
+        with pytest.raises(DirectoryNotEmpty, match="dne"):
             backend.delete_folder("dne", recursive=False)
 
     def test_delete_folder_recursive_removes_all(self, backend: Backend) -> None:
@@ -204,7 +205,7 @@ class TestGetFileInfoErrorFidelity:
 
     def test_get_file_info_missing_raises_not_found(self, backend: Backend) -> None:
         """!PathExists ==> NotFound."""
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="ec_missing_gfi"):
             backend.get_file_info("ec_missing_gfi")
 
 
@@ -340,7 +341,7 @@ class TestMoveCopyErrorFidelity:
     def test_source_missing_raises_not_found(self, backend: Backend, op: str, cap: Capability) -> None:
         """!PathExists(src) ==> NotFound(src)."""
         _require(backend, cap)
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="ec_mc_missing_src"):
             _do_op(backend, op, "ec_mc_missing_src.txt", "ec_mc_dst.txt")
 
 
@@ -352,7 +353,7 @@ class TestMoveCopyOverwrite:
         """IsFile(dst) && !overwrite && src != dst ==> AlreadyExists(dst)."""
         _require(backend, cap, Capability.WRITE)
         _seed(backend, {f"mcow/{op}_s.txt": b"s", f"mcow/{op}_d.txt": b"d"})
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match=f"mcow/{op}_d"):
             _do_op(backend, op, f"mcow/{op}_s.txt", f"mcow/{op}_d.txt", overwrite=False)
 
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
@@ -465,12 +466,13 @@ class TestResourceCleanup:
         assert stream.closed
 
     def test_read_stream_double_close(self, backend: Backend) -> None:
-        """Double close must not raise."""
+        """Double close must not raise, stream stays closed."""
         _require(backend, Capability.WRITE)
         backend.write("ec_rdc.txt", b"data")
         stream = backend.read("ec_rdc.txt")
         stream.close()
         stream.close()  # must not raise
+        assert stream.closed
 
 
 # ===========================================================================
@@ -505,7 +507,7 @@ class TestOperationalConsistency:
         """Write with overwrite=False raises AlreadyExists."""
         _require(backend, Capability.WRITE)
         backend.write("ec_wof.txt", b"first")
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="ec_wof"):
             backend.write("ec_wof.txt", b"second", overwrite=False)
 
     def test_delete_preserves_siblings(self, backend: Backend) -> None:
@@ -516,16 +518,14 @@ class TestOperationalConsistency:
         assert not backend.exists("ec_sib/a.txt")
         assert backend.read_bytes("ec_sib/b.txt") == b"b"
 
-    def test_list_files_returns_fileinfo(self, backend: Backend) -> None:
-        """All list_files results are FileInfo instances."""
+    def test_list_files_returns_fileinfo_with_name(self, backend: Backend) -> None:
+        """list_files results have name and path attributes."""
         _require(backend, Capability.LIST, Capability.WRITE)
-        from remote_store._models import FileInfo
-
         backend.write("ec_lfi/x.txt", b"x")
         files = list(backend.list_files("ec_lfi"))
         assert len(files) >= 1
-        for f in files:
-            assert isinstance(f, FileInfo)
+        assert files[0].name == "x.txt"
+        assert str(files[0].path).endswith("x.txt")
 
     def test_get_file_info_size(self, backend: Backend) -> None:
         """get_file_info returns correct size."""
