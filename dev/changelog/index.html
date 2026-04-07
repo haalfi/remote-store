@@ -10143,6 +10143,16 @@
 <li><strong><code>_safe_wrap()</code> helper</strong> in <code>_stream.py</code>: Safely wraps a stream through
   one or more wrapper layers, closing all acquired resources if any wrapper
   constructor raises.</li>
+<li><strong>Dafny formal verification layer</strong> (<code>sdd/formal/</code>): Machine-checkable
+  backend contract specification covering the six BK-140 gaps —
+  precondition ordering (BE-008), error mapping (BE-021), listing
+  semantics (BE-014/015), depth counting (DEPTH-001), move atomicity
+  (BE-018), and resource safety (SIO-001). Includes <code>MemoryBackend</code>
+  reference refinement, verified depth algorithm, and <code>_safe_wrap</code>
+  leak-freedom proof.</li>
+<li><strong>CI: Dafny verification gate</strong> in <code>ci.yml</code>: Runs <code>dafny verify</code> on
+  all formal specs when <code>sdd/formal/</code> or <code>sdd/specs/</code> files change.
+  Skipped for code-only PRs.</li>
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
