@@ -7783,12 +7783,22 @@ The two compose naturally.</p>
 <code>max_depth=0</code> delegates with <code>recursive=False</code>; <code>max_depth &gt; 0</code> delegates with
 <code>recursive=True</code> and filters results by path component count. No Backend ABC
 change.</p>
+<p><strong>Reference depth algorithm:</strong> Depth for a file at <code>file_path</code> relative to
+listing root <code>root</code> is defined as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>depth = len(RemotePath(file_path).parent.parts) - len(RemotePath(root).parts)
+</code></pre></div>
+<p><code>max_depth=N</code> includes files where <code>depth &lt;= N</code> (inclusive comparison). Backend
+implementations MUST use this definition as the correctness oracle. The
+comparison operator MUST be <code>&lt;=</code>, not <code>&lt;</code>. Implementations that use
+slash-counting (<code>rel.count("/")</code>) or traversal-level counters are both
+acceptable so long as their output is equivalent to the above formula for all
+well-formed paths (no trailing slashes, no empty segments).</p>
 <p><strong>Depth examples:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>store.list_files(&quot;data&quot;, max_depth=1)
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>data/file_a.csv          -&gt; depth 0  included
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>data/raw/file_b.csv      -&gt; depth 1  included
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>data/raw/2026/file_c.csv -&gt; depth 2  excluded
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>store.list_files(&quot;data&quot;, max_depth=1)
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>data/file_a.csv          -&gt; depth 0  included (0 &lt;= 1)
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>data/raw/file_b.csv      -&gt; depth 1  included (1 &lt;= 1)
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>data/raw/2026/file_c.csv -&gt; depth 2  excluded (2 &gt; 1)
 </code></pre></div>
 <hr />
 <h2 id="depth-002-list_foldersmax_depthn">DEPTH-002: list_folders(max_depth=N)<a class="headerlink" href="#depth-002-list_foldersmax_depthn" title="Permanent link">&para;</a></h2>
@@ -7811,10 +7821,10 @@ limiting prune traversal early, reducing I/O. Backends that do not override the
 parameter simply ignore it — the Store-level client-side filter (DEPTH-001)
 serves as a correctness safety net.</p>
 <p><strong>ABC signature:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]:</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]:</span>
 </code></pre></div>
 <p><strong>Default behavior:</strong> <code>max_depth=None</code> preserves existing <code>recursive</code> semantics.
 When <code>max_depth</code> is set, backends that support it prune traversal natively;

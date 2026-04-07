@@ -8527,52 +8527,131 @@
 <p><strong>Invariant:</strong> <code>is_file(path)</code> returns <code>True</code> only if <code>path</code> is a file. <code>is_folder(path)</code> returns <code>True</code> only if <code>path</code> is a folder. Both return <code>False</code> for non-existent paths.</p>
 <h3 id="be-006-read">BE-006: read()<a class="headerlink" href="#be-006-read" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> stream for the file content.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.
+<strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory (type mismatch, not a missing file). See BE-021.
 <strong>See also:</strong> <a href="../006-streaming-io/">006-streaming-io.md</a></p>
 <h3 id="be-007-read_bytes">BE-007: read_bytes()<a class="headerlink" href="#be-007-read_bytes" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>read_bytes(path)</code> returns the full file content as <code>bytes</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
+<strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory. Same preconditions as BE-006; see BE-021.</p>
 <h3 id="be-008-write">BE-008: write()<a class="headerlink" href="#be-008-write" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write(path, content, overwrite=False)</code> creates or overwrites a file.
 <strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>BinaryIO</code>.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.</p>
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.
+<strong>Precondition evaluation order:</strong> Backends MUST evaluate preconditions in this
+order: (1) path validity — if <code>path</code> names an existing <em>directory</em>, raises
+<code>InvalidPath</code>; (2) overwrite conflict — if the file exists and <code>overwrite=False</code>,
+raises <code>AlreadyExists</code>; (3) I/O. No later check may mask an earlier one. This
+order applies to <code>write()</code>, <code>write_atomic()</code>, <code>move()</code>, and <code>copy()</code> wherever
+analogous preconditions exist.
+<strong>Flat-namespace exemption:</strong> Backends where the underlying storage has no
+native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
+(1): they cannot distinguish "path names a directory" from "path does not
+exist", so they MUST skip the type-conflict check entirely. For these backends
+the effective order is: existence check (non-existent target treated as
+writable) → overwrite conflict → I/O.</p>
 <h3 id="be-009-write-creates-intermediate-directories">BE-009: write Creates Intermediate Directories<a class="headerlink" href="#be-009-write-creates-intermediate-directories" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write</code> creates any intermediate directories automatically.</p>
 <h3 id="be-010-write_atomic">BE-010: write_atomic()<a class="headerlink" href="#be-010-write_atomic" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_atomic(path, content, overwrite=False)</code> writes via a temporary file + atomic rename.
 <strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.
+<strong>Precondition order:</strong> Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies.
 <strong>See also:</strong> <a href="../007-atomic-writes/">007-atomic-writes.md</a></p>
 <h3 id="be-011-write_atomic-capability-gate">BE-011: write_atomic Capability Gate<a class="headerlink" href="#be-011-write_atomic-capability-gate" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_atomic</code> raises <code>CapabilityNotSupported</code> if the backend lacks <code>ATOMIC_WRITE</code>.</p>
 <h3 id="be-012-delete">BE-012: delete()<a class="headerlink" href="#be-012-delete" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>delete(path, missing_ok=False)</code> removes a file.
-<strong>Raises:</strong> <code>NotFound</code> if the file is missing and <code>missing_ok=False</code>.
+<strong>Raises:</strong> <code>NotFound</code> if the file is missing and <code>missing_ok=False</code>. <code>InvalidPath</code> if <code>path</code> names a directory, regardless of <code>missing_ok</code> — type errors are not silenced by missing-path tolerance (Dafny: <code>Delete: IsDir → InvalidPath</code> unconditionally). See BE-021.
 <strong>Postconditions:</strong> If <code>missing_ok=True</code>, no error for missing files.</p>
 <h3 id="be-013-delete_folder">BE-013: delete_folder()<a class="headerlink" href="#be-013-delete_folder" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>delete_folder(path, recursive=False, missing_ok=False)</code> removes a folder.
-<strong>Raises:</strong> <code>NotFound</code> if the folder is missing and <code>missing_ok=False</code>. Fails if folder is non-empty and <code>recursive=False</code>.</p>
+<strong>Raises:</strong> <code>NotFound</code> if the path does not exist and <code>missing_ok=False</code>. <code>InvalidPath</code> if <code>path</code> names a file (use <code>delete</code> instead). <code>DirectoryNotEmpty</code> if the folder is non-empty and <code>recursive=False</code>. See BE-021.</p>
 <h3 id="be-014-list_files">BE-014: list_files()<a class="headerlink" href="#be-014-list_files" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>list_files(path, recursive=False)</code> returns <code>Iterator[FileInfo]</code>.
-<strong>Postconditions:</strong> Returns only files, not folders. If <code>recursive=True</code>, includes files in all subdirectories.</p>
+<strong>Postconditions:</strong> Returns only files, not folders. If <code>recursive=True</code>, includes files in all subdirectories.
+<strong>Missing-path behavior:</strong> If <code>path</code> does not exist or does not name a folder,
+the iterator yields nothing. <code>list_files()</code> MUST NOT raise <code>NotFound</code> for
+missing or non-existent paths. This matches the behavior already guaranteed by
+BE-026 (<code>iter_children</code>) and ensures callers can safely iterate over potentially
+absent paths without defensive guards.</p>
 <h3 id="be-015-list_folders">BE-015: list_folders()<a class="headerlink" href="#be-015-list_folders" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>list_folders(path)</code> returns <code>Iterator[FolderEntry]</code> of immediate subfolders.
-Each <code>FolderEntry</code> has <code>.name</code> (folder name) and <code>.path</code> (backend-relative <code>RemotePath</code>).</p>
+Each <code>FolderEntry</code> has <code>.name</code> (folder name) and <code>.path</code> (backend-relative <code>RemotePath</code>).
+<strong>Missing-path behavior:</strong> If <code>path</code> does not exist or does not name a folder,
+the iterator yields nothing. <code>list_folders()</code> MUST NOT raise <code>NotFound</code> for
+missing or non-existent paths.</p>
 <h3 id="be-016-get_file_info">BE-016: get_file_info()<a class="headerlink" href="#be-016-get_file_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>get_file_info(path)</code> returns <code>FileInfo</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
+<strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory (Dafny: <code>GetFileInfo: IsDir → InvalidPath</code>). See BE-021.</p>
 <h3 id="be-017-get_folder_info">BE-017: get_folder_info()<a class="headerlink" href="#be-017-get_folder_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>get_folder_info(path)</code> returns <code>FolderInfo</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist.</p>
+<strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a file (wrong type — use <code>get_file_info</code> instead). See BE-021.
+<strong>Formal coverage note:</strong> <code>get_folder_info()</code> is not modelled in <code>sdd/formal/BackendContract.dfy</code>; the <code>InvalidPath</code> postcondition is specified by symmetry with BE-016 (<code>GetFileInfo: IsDir → InvalidPath</code>) but is not formally verified. Tracked in ID-130.</p>
 <h3 id="be-018-move">BE-018: move()<a class="headerlink" href="#be-018-move" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst, overwrite=False)</code> renames/moves a file.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, or if <code>dst</code> names an existing directory (cannot overwrite a directory with a file). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-move is a no-op (Dafny: <code>Move: src == dst → Ok</code>). See BE-021 and BE-008 for precondition evaluation order.
+<strong>Atomicity:</strong> Backends SHOULD implement <code>move()</code> atomically where the
+underlying storage supports it (e.g. Local via <code>os.rename</code>, Memory under lock,
+SQL in a transaction). Backends that cannot provide atomicity (e.g. S3 and
+Azure non-HNS, which use copy-then-delete) MUST document this in their class
+docstring. The caller MUST NOT assume atomicity. On partial failure in a
+copy-then-delete implementation, the source file may still exist alongside the
+destination; the backend MUST NOT silently swallow the error.</p>
 <h3 id="be-019-copy">BE-019: copy()<a class="headerlink" href="#be-019-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>copy(src, dst, overwrite=False)</code> duplicates a file.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
+<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, or if <code>dst</code> names an existing directory. <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-copy is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"). See BE-021.
+<strong>Partial failure:</strong> Unlike <code>move()</code>, <code>copy()</code> has no delete-after phase, so it
+cannot create a duplicate of the source. However, a backend that writes <code>dst</code>
+incrementally (e.g. multi-part upload) can leave a corrupt or incomplete
+destination if the transfer fails mid-way. Backends MUST NOT silently return
+success on a failed copy — the caller should assume <code>dst</code> is corrupt if an
+error is raised mid-operation.</p>
 <h3 id="be-020-close">BE-020: close()<a class="headerlink" href="#be-020-close" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>close()</code> is optional (default no-op). Called for resource cleanup.</p>
 <h3 id="be-021-error-mapping">BE-021: Error Mapping<a class="headerlink" href="#be-021-error-mapping" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Backend-native exceptions never leak. All exceptions are mapped to <code>remote_store</code> error types.</p>
+<p><strong>Canonical error mapping table:</strong> The following cross-cutting scenarios MUST
+map to the specified error type regardless of backend:</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Required error type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>File operation (<code>read</code>, <code>write</code>, <code>delete</code>, <code>get_file_info</code>, <code>move</code>/<code>copy</code> src) on a path that is a directory</td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td>Directory operation (<code>delete_folder</code>, <code>move</code>/<code>copy</code> dst) on a path that is a file</td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td>Operation on a non-existent path</td>
+<td><code>NotFound</code></td>
+</tr>
+<tr>
+<td>Operation denied by credentials or ACL</td>
+<td><code>PermissionDenied</code></td>
+</tr>
+<tr>
+<td>Parent directory creation fails (permissions)</td>
+<td><code>PermissionDenied</code></td>
+</tr>
+<tr>
+<td>Parent directory creation fails (path conflict)</td>
+<td><code>InvalidPath</code></td>
+</tr>
+</tbody>
+</table>
+<p>The type-mismatch rule (<code>InvalidPath</code>) takes precedence over the existence rule (<code>NotFound</code>) — a directory path is not "missing", it is the wrong type. This is machine-verified in <code>sdd/formal/BackendContract.dfy</code> (<code>Read</code>, <code>Delete</code>, <code>DeleteFolder</code>, <code>GetFileInfo</code>, <code>Move</code>, <code>Copy</code> postconditions).</p>
+<p><strong>Scope note:</strong> This table covers <em>cross-cutting</em> scenarios that apply to multiple operations. Method-specific errors (e.g. <code>DirectoryNotEmpty</code> from <code>delete_folder</code>, <code>CapabilityNotSupported</code> from capability-gated operations) are documented per-method and intentionally omitted here.</p>
+<p><strong>Broad exception handler rule:</strong> Backends MUST NOT use bare <code>except OSError</code>
+or <code>except Exception</code> handlers that map all errors to a single type. Handlers
+MUST discriminate by <code>errno</code>, exception type, or HTTP status code before
+choosing the mapped error. Silent returns (swallowing exceptions without
+re-raising a <code>RemoteStoreError</code>) are permitted ONLY for <code>exists()</code>,
+<code>is_file()</code>, and <code>is_folder()</code>.</p>
 <h3 id="be-022-unwrap">BE-022: unwrap()<a class="headerlink" href="#be-022-unwrap" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>unwrap(type_hint)</code> returns the native backend handle if it matches the requested type.
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend cannot provide the requested type.

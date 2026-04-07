@@ -7991,20 +7991,25 @@
 <p><strong>Invariant:</strong> Raised when access is denied by the storage backend.
 <strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set.</p>
 <h2 id="err-005-invalidpath">ERR-005: InvalidPath<a class="headerlink" href="#err-005-invalidpath" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Raised for malformed, unsafe, or out-of-scope paths.
-<strong>Preconditions:</strong> Caller provides a path containing <code>..</code>, null bytes, or that normalizes to empty.
-<strong>Postconditions:</strong> <code>path</code> attribute is set to the offending input.
-<strong>Example:</strong>
+<p><strong>Invariant:</strong> Raised for malformed, unsafe, or out-of-scope paths, and for node-type mismatches at a valid path.
+<strong>Preconditions:</strong> Either (a) the caller provides a path containing <code>..</code>, null bytes, or that normalizes to empty; or (b) the operation targets a valid path that names the wrong node type — e.g. <code>read()</code> on a directory, <code>delete()</code> on a directory, <code>get_file_info()</code> on a directory, or <code>move()</code>/<code>copy()</code> with a directory as source. In case (b) the path is well-formed; the error is about type, not syntax. See BE-021 for the canonical per-method mapping.
+<strong>Postconditions:</strong> <code>path</code> attribute is set to the offending path.
+<strong>Example (malformed path):</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;foo/../bar&quot;</span><span class="p">)</span>
+</code></pre></div>
+<strong>Example (type mismatch):</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;dir/file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>   <span class="c1"># creates directory &quot;dir&quot;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;dir&quot;</span><span class="p">)</span>                   <span class="c1"># &quot;dir&quot; exists but is a directory, not a file</span>
 </code></pre></div></p>
 <h2 id="err-006-capabilitynotsupported">ERR-006: CapabilityNotSupported<a class="headerlink" href="#err-006-capabilitynotsupported" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised when an operation requires a capability the backend does not support.
 <strong>Postconditions:</strong> Carries additional <code>capability: str</code> attribute.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">CapabilityNotSupported</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc_info</span><span class="p">:</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">write_atomic</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">assert</span> <span class="n">exc_info</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">capability</span> <span class="o">==</span> <span class="s2">&quot;atomic_write&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">CapabilityNotSupported</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc_info</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">write_atomic</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">assert</span> <span class="n">exc_info</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">capability</span> <span class="o">==</span> <span class="s2">&quot;atomic_write&quot;</span>
 </code></pre></div></p>
 <h2 id="err-007-backendunavailable">ERR-007: BackendUnavailable<a class="headerlink" href="#err-007-backendunavailable" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised when the backend cannot be reached or initialized.
@@ -8014,17 +8019,17 @@
 <h2 id="err-009-meaningful-string-representations">ERR-009: Meaningful String Representations<a class="headerlink" href="#err-009-meaningful-string-representations" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>str()</code> and <code>repr()</code> produce meaningful messages including all non-None context attributes.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">e</span> <span class="o">=</span> <span class="n">NotFound</span><span class="p">(</span><span class="s2">&quot;File not found&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">assert</span> <span class="s2">&quot;data/file.txt&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">assert</span> <span class="s2">&quot;NotFound&quot;</span> <span class="ow">in</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">e</span> <span class="o">=</span> <span class="n">NotFound</span><span class="p">(</span><span class="s2">&quot;File not found&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">assert</span> <span class="s2">&quot;data/file.txt&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">assert</span> <span class="s2">&quot;NotFound&quot;</span> <span class="ow">in</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="err-010-directorynotempty">ERR-010: DirectoryNotEmpty<a class="headerlink" href="#err-010-directorynotempty" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised when <code>delete_folder(..., recursive=False)</code> targets a non-empty directory.
 <strong>Postconditions:</strong> <code>path</code> attribute is set to the offending folder path.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;folder/file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">DirectoryNotEmpty</span><span class="p">):</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete_folder</span><span class="p">(</span><span class="s2">&quot;folder&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;folder/file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">DirectoryNotEmpty</span><span class="p">):</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete_folder</span><span class="p">(</span><span class="s2">&quot;folder&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="extension-scoped-errors">Extension-scoped errors<a class="headerlink" href="#extension-scoped-errors" title="Permanent link">&para;</a></h2>
 <p>Extension-specific errors inherit from <code>RemoteStoreError</code> but live in their
