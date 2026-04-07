@@ -114,7 +114,7 @@ writable) → overwrite conflict → I/O.
 ### BE-012: delete()
 
 **Invariant:** `delete(path, missing_ok=False)` removes a file.
-**Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory (use `delete_folder` instead). See BE-021.
+**Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory, regardless of `missing_ok` — type errors are not silenced by missing-path tolerance (Dafny: `Delete: IsDir → InvalidPath` unconditionally). See BE-021.
 **Postconditions:** If `missing_ok=True`, no error for missing files.
 
 ### BE-013: delete_folder()
@@ -149,11 +149,12 @@ missing or non-existent paths.
 
 **Invariant:** `get_folder_info(path)` returns `FolderInfo`.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
+**Formal coverage note:** `get_folder_info()` is not modelled in `sdd/formal/BackendContract.dfy`; the `InvalidPath` postcondition is specified by symmetry with BE-016 (`GetFileInfo: IsDir → InvalidPath`) but is not formally verified.
 
 ### BE-018: move()
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
-**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory (cannot overwrite a directory with a file). `AlreadyExists` if `dst` names an existing file and `overwrite=False`. See BE-021 and BE-008 for precondition evaluation order.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory (cannot overwrite a directory with a file). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move is a no-op (Dafny: `Move: src == dst → Ok`). See BE-021 and BE-008 for precondition evaluation order.
 **Atomicity:** Backends SHOULD implement `move()` atomically where the
 underlying storage supports it (e.g. Local via `os.rename`, Memory under lock,
 SQL in a transaction). Backends that cannot provide atomicity (e.g. S3 and
@@ -165,7 +166,7 @@ destination; the backend MUST NOT silently swallow the error.
 ### BE-019: copy()
 
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
-**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory. `AlreadyExists` if `dst` names an existing file and `overwrite=False`. See BE-021.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory. `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"). See BE-021.
 **Partial failure:** Unlike `move()`, `copy()` has no delete-after phase, so it
 cannot create a duplicate of the source. However, a backend that writes `dst`
 incrementally (e.g. multi-part upload) can leave a corrupt or incomplete
