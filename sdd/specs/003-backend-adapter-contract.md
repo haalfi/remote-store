@@ -70,7 +70,7 @@ for cap in cs:
 ### BE-006: read()
 
 **Invariant:** `read(path)` returns a `BinaryIO` stream for the file content.
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a directory (type mismatch, not a missing file). See BE-021.
 **See also:** [006-streaming-io.md](006-streaming-io.md)
 
 ### BE-007: read_bytes()
@@ -114,13 +114,13 @@ writable) → overwrite conflict → I/O.
 ### BE-012: delete()
 
 **Invariant:** `delete(path, missing_ok=False)` removes a file.
-**Raises:** `NotFound` if the file is missing and `missing_ok=False`.
+**Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory (use `delete_folder` instead). See BE-021.
 **Postconditions:** If `missing_ok=True`, no error for missing files.
 
 ### BE-013: delete_folder()
 
 **Invariant:** `delete_folder(path, recursive=False, missing_ok=False)` removes a folder.
-**Raises:** `NotFound` if the folder is missing and `missing_ok=False`. Fails if folder is non-empty and `recursive=False`.
+**Raises:** `NotFound` if the path does not exist and `missing_ok=False`. `InvalidPath` if `path` names a file (use `delete` instead). `DirectoryNotEmpty` if the folder is non-empty and `recursive=False`. See BE-021.
 
 ### BE-014: list_files()
 
@@ -186,12 +186,14 @@ map to the specified error type regardless of backend:
 
 | Scenario | Required error type |
 |----------|---------------------|
-| Read targeting a path that names a directory (not a file) | `NotFound` |
-| Write targeting a path that names an existing directory | `InvalidPath` |
-| Operation on a non-existent file | `NotFound` |
+| File operation (`read`, `write`, `delete`, `get_file_info`, `move`/`copy` src) on a path that is a directory | `InvalidPath` |
+| Directory operation (`delete_folder`, `move`/`copy` dst) on a path that is a file | `InvalidPath` |
+| Operation on a non-existent path | `NotFound` |
 | Operation denied by credentials or ACL | `PermissionDenied` |
 | Parent directory creation fails (permissions) | `PermissionDenied` |
 | Parent directory creation fails (path conflict) | `InvalidPath` |
+
+The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `Move`, `Copy` postconditions).
 
 **Broad exception handler rule:** Backends MUST NOT use bare `except OSError`
 or `except Exception` handlers that map all errors to a single type. Handlers
