@@ -14,7 +14,6 @@ test.  Focus areas:
 
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -35,6 +34,10 @@ if TYPE_CHECKING:
 # Helpers (reused from test_conformance.py patterns)
 # ---------------------------------------------------------------------------
 
+# Backends that use flat/virtual namespace — no real directory entries.
+# Update this set when adding a new flat-namespace backend.
+_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http"})
+
 
 def _require(backend: Backend, *caps: Capability) -> None:
     """Skip the test if the backend lacks any of the given capabilities."""
@@ -51,7 +54,7 @@ def _seed(backend: Backend, files: dict[str, bytes]) -> None:
 
 def _skip_flat_namespace(backend: Backend, reason: str = "flat-namespace backend") -> None:
     """Skip test for backends without real directory entries."""
-    if backend.name in ("s3", "s3-pyarrow", "azure", "http"):
+    if backend.name in _FLAT_NAMESPACE_BACKENDS:
         pytest.skip(reason)
 
 
@@ -75,25 +78,31 @@ pytestmark = pytest.mark.extended_conformance
 class TestReadErrorFidelity:
     """BackendContract.Read postconditions: dir→InvalidPath, missing→NotFound."""
 
+    @pytest.mark.spec("BE-006")
     def test_read_on_directory_raises_error(self, backend: Backend) -> None:
         """Read(dir) ==> InvalidPath.  Flat-NS backends may raise NotFound."""
         _require(backend, Capability.WRITE)
         backend.write("rdir/file.txt", b"x")
+        # TODO(ID-131): tighten to InvalidPath once all backends comply
         with pytest.raises(RemoteStoreError):
             backend.read("rdir")
 
+    @pytest.mark.spec("BE-007")
     def test_read_bytes_on_directory_raises_error(self, backend: Backend) -> None:
         """read_bytes(dir) — same contract as read()."""
         _require(backend, Capability.WRITE)
         backend.write("rbdir/file.txt", b"x")
+        # TODO(ID-131): tighten to InvalidPath once all backends comply
         with pytest.raises(RemoteStoreError):
             backend.read_bytes("rbdir")
 
+    @pytest.mark.spec("BE-006")
     def test_read_missing_raises_not_found(self, backend: Backend) -> None:
         """!PathExists ==> NotFound."""
         with pytest.raises(NotFound, match="ec_missing_read"):
             backend.read("ec_missing_read.txt")
 
+    @pytest.mark.spec("BE-007")
     def test_read_bytes_missing_raises_not_found(self, backend: Backend) -> None:
         with pytest.raises(NotFound, match="ec_missing_rb"):
             backend.read_bytes("ec_missing_rb.txt")
@@ -102,6 +111,7 @@ class TestReadErrorFidelity:
 class TestWriteErrorFidelity:
     """BackendContract.Write postconditions: precondition ordering."""
 
+    @pytest.mark.spec("BE-008")
     def test_write_on_directory_raises_invalid_path(self, backend: Backend) -> None:
         """IsDir(path) ==> InvalidPath (NOT AlreadyExists).
 
@@ -114,6 +124,7 @@ class TestWriteErrorFidelity:
         with pytest.raises(InvalidPath, match="wdir"):
             backend.write("wdir", b"data")
 
+    @pytest.mark.spec("BE-008")
     def test_write_on_directory_overwrite_still_invalid_path(self, backend: Backend) -> None:
         """IsDir(path) ==> InvalidPath even with overwrite=True.
 
@@ -133,47 +144,61 @@ class TestDeleteErrorFidelity:
     NotFound (tracked as ID-131). Test for RemoteStoreError base class.
     """
 
+    @pytest.mark.spec("BE-012")
     def test_delete_on_directory_raises_error(self, backend: Backend) -> None:
         """IsDir(path) ==> RemoteStoreError (no native exception leak)."""
         _require(backend, Capability.DELETE, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("ddir/file.txt", b"x")
+        # TODO(ID-131): tighten to InvalidPath once all backends comply
         with pytest.raises(RemoteStoreError):
             backend.delete("ddir")
 
+    @pytest.mark.spec("BE-012")
     def test_delete_on_directory_missing_ok_raises_or_passes(self, backend: Backend) -> None:
         """IsDir(path) with missing_ok: no native exception leak."""
         _require(backend, Capability.DELETE, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("ddir2/file.txt", b"x")
-        # Some backends raise, some pass with missing_ok on dirs — either is ok.
+        # Some backends raise RemoteStoreError, some pass — either is ok.
         # The key contract: no native exception leaks.
-        with contextlib.suppress(RemoteStoreError):
+        native_leaked = False
+        try:
             backend.delete("ddir2", missing_ok=True)
+        except RemoteStoreError:
+            pass  # expected — some backends reject delete(dir) even with missing_ok
+        except Exception:  # noqa: BLE001
+            native_leaked = True
+        assert not native_leaked, "Native exception leaked through delete(dir, missing_ok=True)"
 
 
 class TestDeleteFolderErrorFidelity:
     """BackendContract.DeleteFolder postconditions."""
 
+    @pytest.mark.spec("BE-013")
     def test_delete_folder_on_file_raises_error(self, backend: Backend) -> None:
         """IsFile(path) ==> RemoteStoreError (Dafny: InvalidPath; ID-131 tracks fix)."""
         _require(backend, Capability.DELETE, Capability.WRITE)
         backend.write("dffile.txt", b"x")
+        # TODO(ID-131): tighten to InvalidPath once all backends comply
         with pytest.raises(RemoteStoreError):
             backend.delete_folder("dffile.txt")
 
+    @pytest.mark.spec("BE-013")
     def test_delete_folder_missing_raises_not_found(self, backend: Backend) -> None:
         """!PathExists && !missing_ok ==> NotFound."""
         _require(backend, Capability.DELETE)
         with pytest.raises(NotFound, match="ec_missing_df"):
             backend.delete_folder("ec_missing_df", missing_ok=False)
 
+    @pytest.mark.spec("BE-013")
     def test_delete_folder_missing_ok_passes(self, backend: Backend) -> None:
         """!PathExists && missing_ok ==> Ok (no error raised)."""
         _require(backend, Capability.DELETE)
         backend.delete_folder("ec_missing_df_ok", missing_ok=True)
         assert not backend.exists("ec_missing_df_ok")
 
+    @pytest.mark.spec("BE-013")
     def test_delete_folder_non_recursive_non_empty_raises(self, backend: Backend) -> None:
         """IsDir && !recursive && HasChildren ==> DirectoryNotEmpty."""
         _require(backend, Capability.DELETE, Capability.WRITE)
@@ -182,6 +207,7 @@ class TestDeleteFolderErrorFidelity:
         with pytest.raises(DirectoryNotEmpty, match="dne"):
             backend.delete_folder("dne", recursive=False)
 
+    @pytest.mark.spec("BE-013")
     def test_delete_folder_recursive_removes_all(self, backend: Backend) -> None:
         """IsDir && recursive ==> Ok, all children removed."""
         _require(backend, Capability.DELETE, Capability.WRITE)
@@ -195,14 +221,17 @@ class TestDeleteFolderErrorFidelity:
 class TestGetFileInfoErrorFidelity:
     """BackendContract.GetFileInfo postconditions."""
 
+    @pytest.mark.spec("BE-016")
     def test_get_file_info_on_directory_raises_error(self, backend: Backend) -> None:
         """IsDir(path) ==> RemoteStoreError (Dafny: InvalidPath; ID-131 tracks fix)."""
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("gfid/file.txt", b"x")
+        # TODO(ID-131): tighten to InvalidPath once all backends comply
         with pytest.raises(RemoteStoreError):
             backend.get_file_info("gfid")
 
+    @pytest.mark.spec("BE-016")
     def test_get_file_info_missing_raises_not_found(self, backend: Backend) -> None:
         """!PathExists ==> NotFound."""
         with pytest.raises(NotFound, match="ec_missing_gfi"):
@@ -231,6 +260,7 @@ class TestListFilesCompleteness:
         "pc/d1/d2/d3/e.txt": b"e",
     }
 
+    @pytest.mark.spec("BE-014")
     def test_list_files_non_recursive(self, backend: Backend) -> None:
         """recursive=false → only immediate children (depth 0)."""
         _require(backend, Capability.LIST, Capability.WRITE)
@@ -238,6 +268,7 @@ class TestListFilesCompleteness:
         files = list(backend.list_files("pc", recursive=False))
         assert {f.name for f in files} == {"a.txt"}
 
+    @pytest.mark.spec("BE-014")
     @pytest.mark.parametrize(
         ("max_depth", "expected_names"),
         [
@@ -254,6 +285,7 @@ class TestListFilesCompleteness:
         files = list(backend.list_files("pc", recursive=True, max_depth=max_depth))
         assert {f.name for f in files} == expected_names
 
+    @pytest.mark.spec("BE-014")
     def test_list_files_unlimited_depth(self, backend: Backend) -> None:
         """max_depth=None → all files returned."""
         _require(backend, Capability.LIST, Capability.WRITE)
@@ -261,12 +293,14 @@ class TestListFilesCompleteness:
         files = list(backend.list_files("pc", recursive=True))
         assert {f.name for f in files} == {"a.txt", "b.txt", "c.txt", "d.txt", "e.txt"}
 
+    @pytest.mark.spec("BE-014")
     def test_list_files_missing_path_yields_empty(self, backend: Backend) -> None:
         """Dafny: !PathExists ==> r.value == [].  Never raises NotFound."""
         _require(backend, Capability.LIST)
         files = list(backend.list_files("ec_nonexistent_listing"))
         assert files == []
 
+    @pytest.mark.spec("BE-014")
     def test_list_files_all_results_are_children(self, backend: Backend) -> None:
         """All returned files must be children of the listed path."""
         _require(backend, Capability.LIST, Capability.WRITE)
@@ -279,12 +313,14 @@ class TestListFilesCompleteness:
 class TestListFoldersCompleteness:
     """ListFolders completeness: every immediate child dir MUST appear."""
 
+    @pytest.mark.spec("BE-015")
     def test_list_folders_missing_path_yields_empty(self, backend: Backend) -> None:
         """Dafny: !PathExists ==> r.value == [].  Never raises NotFound."""
         _require(backend, Capability.LIST)
         folders = list(backend.list_folders("ec_nonexistent_folders"))
         assert folders == []
 
+    @pytest.mark.spec("BE-015")
     def test_list_folders_completeness(self, backend: Backend) -> None:
         """All immediate child directories appear."""
         _require(backend, Capability.LIST, Capability.WRITE)
@@ -309,6 +345,8 @@ class TestListFoldersCompleteness:
 class TestMoveCopyErrorFidelity:
     """Move/Copy error postconditions from BackendContract.dfy."""
 
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("BE-019")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_source_is_directory_raises_error(self, backend: Backend, op: str, cap: Capability) -> None:
         """IsDir(src) ==> RemoteStoreError (Dafny: InvalidPath; ID-131 tracks fix).
@@ -320,9 +358,12 @@ class TestMoveCopyErrorFidelity:
         if backend.name != "memory":
             pytest.skip("Only MemoryBackend enforces dir-src check (ID-131)")
         backend.write(f"mcds/{op}/file.txt", b"x")
+        # TODO(ID-131): tighten to InvalidPath once all backends comply
         with pytest.raises(RemoteStoreError):
             _do_op(backend, op, f"mcds/{op}", f"mcds/{op}_dst.txt")
 
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("BE-019")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_destination_is_directory_raises_error(self, backend: Backend, op: str, cap: Capability) -> None:
         """IsFile(src) && IsDir(dst) ==> RemoteStoreError (Dafny: InvalidPath; ID-131).
@@ -334,9 +375,12 @@ class TestMoveCopyErrorFidelity:
             pytest.skip("Only MemoryBackend enforces dir-dst check (ID-131)")
         backend.write(f"mcdd/{op}_src.txt", b"src")
         backend.write(f"mcdd/{op}_dstdir/file.txt", b"x")
+        # TODO(ID-131): tighten to InvalidPath once all backends comply
         with pytest.raises(RemoteStoreError):
             _do_op(backend, op, f"mcdd/{op}_src.txt", f"mcdd/{op}_dstdir")
 
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("BE-019")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_source_missing_raises_not_found(self, backend: Backend, op: str, cap: Capability) -> None:
         """!PathExists(src) ==> NotFound(src)."""
@@ -348,6 +392,8 @@ class TestMoveCopyErrorFidelity:
 class TestMoveCopyOverwrite:
     """Move/Copy overwrite and self-operation semantics."""
 
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("BE-019")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_dst_exists_no_overwrite_raises_already_exists(self, backend: Backend, op: str, cap: Capability) -> None:
         """IsFile(dst) && !overwrite && src != dst ==> AlreadyExists(dst)."""
@@ -356,6 +402,8 @@ class TestMoveCopyOverwrite:
         with pytest.raises(AlreadyExists, match=f"mcow/{op}_d"):
             _do_op(backend, op, f"mcow/{op}_s.txt", f"mcow/{op}_d.txt", overwrite=False)
 
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("BE-019")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_overwrite_replaces_destination(self, backend: Backend, op: str, cap: Capability) -> None:
         """overwrite=True → dst gets src content."""
@@ -373,6 +421,7 @@ class TestMoveCopySelfOperation:
     exist and be readable after the operation (no data loss).
     """
 
+    @pytest.mark.spec("BE-019")
     def test_self_copy_preserves_data(self, backend: Backend) -> None:
         """copy(src, src, overwrite=True) must not lose data.
 
@@ -385,6 +434,7 @@ class TestMoveCopySelfOperation:
         backend.copy("selfcp.txt", "selfcp.txt", overwrite=True)
         assert backend.read_bytes("selfcp.txt") == b"data"
 
+    @pytest.mark.spec("BE-018")
     def test_self_move_preserves_data(self, backend: Backend) -> None:
         """move(src, src, overwrite=True) must not lose data."""
         _require(backend, Capability.MOVE, Capability.WRITE)
@@ -396,6 +446,7 @@ class TestMoveCopySelfOperation:
 class TestMovePostState:
     """Move post-state: src removed, dst has src content."""
 
+    @pytest.mark.spec("BE-018")
     def test_move_removes_source(self, backend: Backend) -> None:
         """src != dst ==> !PathExists(fs, src)."""
         _require(backend, Capability.MOVE, Capability.WRITE)
@@ -408,6 +459,7 @@ class TestMovePostState:
 class TestCopyPostState:
     """Copy post-state: src unchanged, dst has src content."""
 
+    @pytest.mark.spec("BE-019")
     def test_copy_preserves_source(self, backend: Backend) -> None:
         """IsFile(fs, src) — source still exists after copy."""
         _require(backend, Capability.COPY, Capability.WRITE)
@@ -425,6 +477,8 @@ class TestCopyPostState:
 class TestWriteReadRoundTrip:
     """Write then read: content must match exactly."""
 
+    @pytest.mark.spec("BE-006")
+    @pytest.mark.spec("BE-008")
     @pytest.mark.parametrize(
         "content",
         [
@@ -448,6 +502,7 @@ class TestWriteReadRoundTrip:
 class TestResourceCleanup:
     """Streams from read() must support close/context-manager."""
 
+    @pytest.mark.spec("SIO-001")
     def test_read_stream_close(self, backend: Backend) -> None:
         """Stream must be closeable."""
         _require(backend, Capability.WRITE)
@@ -457,6 +512,7 @@ class TestResourceCleanup:
         stream.close()
         assert stream.closed
 
+    @pytest.mark.spec("SIO-001")
     def test_read_stream_context_manager(self, backend: Backend) -> None:
         """Context manager must close the stream on exit."""
         _require(backend, Capability.WRITE)
@@ -465,6 +521,7 @@ class TestResourceCleanup:
             stream.read()
         assert stream.closed
 
+    @pytest.mark.spec("SIO-001")
     def test_read_stream_double_close(self, backend: Backend) -> None:
         """Double close must not raise, stream stays closed."""
         _require(backend, Capability.WRITE)
@@ -483,12 +540,16 @@ class TestResourceCleanup:
 class TestOperationalConsistency:
     """Cross-cutting operational invariants."""
 
+    @pytest.mark.spec("BE-004")
+    @pytest.mark.spec("BE-008")
     def test_exists_after_write(self, backend: Backend) -> None:
         """exists(path) returns True after successful write."""
         _require(backend, Capability.WRITE)
         backend.write("ec_eaw.txt", b"x")
         assert backend.exists("ec_eaw.txt") is True
 
+    @pytest.mark.spec("BE-004")
+    @pytest.mark.spec("BE-012")
     def test_exists_after_delete(self, backend: Backend) -> None:
         """exists(path) returns False after successful delete."""
         _require(backend, Capability.DELETE, Capability.WRITE)
@@ -496,6 +557,7 @@ class TestOperationalConsistency:
         backend.delete("ec_ead.txt")
         assert backend.exists("ec_ead.txt") is False
 
+    @pytest.mark.spec("BE-008")
     def test_write_overwrite_true_replaces(self, backend: Backend) -> None:
         """Write with overwrite=True replaces content."""
         _require(backend, Capability.WRITE)
@@ -503,6 +565,7 @@ class TestOperationalConsistency:
         backend.write("ec_wot.txt", b"second", overwrite=True)
         assert backend.read_bytes("ec_wot.txt") == b"second"
 
+    @pytest.mark.spec("BE-008")
     def test_write_overwrite_false_rejects(self, backend: Backend) -> None:
         """Write with overwrite=False raises AlreadyExists."""
         _require(backend, Capability.WRITE)
@@ -510,6 +573,7 @@ class TestOperationalConsistency:
         with pytest.raises(AlreadyExists, match="ec_wof"):
             backend.write("ec_wof.txt", b"second", overwrite=False)
 
+    @pytest.mark.spec("BE-012")
     def test_delete_preserves_siblings(self, backend: Backend) -> None:
         """Deleting one file must not affect siblings."""
         _require(backend, Capability.DELETE, Capability.WRITE)
@@ -518,6 +582,7 @@ class TestOperationalConsistency:
         assert not backend.exists("ec_sib/a.txt")
         assert backend.read_bytes("ec_sib/b.txt") == b"b"
 
+    @pytest.mark.spec("BE-014")
     def test_list_files_returns_fileinfo_with_name(self, backend: Backend) -> None:
         """list_files results have name and path attributes."""
         _require(backend, Capability.LIST, Capability.WRITE)
@@ -527,6 +592,7 @@ class TestOperationalConsistency:
         assert files[0].name == "x.txt"
         assert str(files[0].path).endswith("x.txt")
 
+    @pytest.mark.spec("BE-016")
     def test_get_file_info_size(self, backend: Backend) -> None:
         """get_file_info returns correct size."""
         _require(backend, Capability.WRITE)

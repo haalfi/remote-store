@@ -873,6 +873,16 @@ class AsyncAzureBackend(AsyncBackend):
 
     # region: dunder methods
 
+    def __del__(self) -> None:
+        if any((self._cc_instance, self._blob_service_instance, self._fs_instance, self._datalake_service_instance)):
+            import warnings
+
+            warnings.warn(
+                f"Unclosed {self!r}. Call .aclose() or use an async context manager.",
+                ResourceWarning,
+                stacklevel=1,
+            )
+
     def __repr__(self) -> str:
         return (
             f"AsyncAzureBackend(container={self._container!r}, "

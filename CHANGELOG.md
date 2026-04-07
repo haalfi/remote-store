@@ -14,8 +14,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   filtering, move/copy semantics, resource cleanup, and operational consistency.
   Marked `@pytest.mark.extended_conformance` for CI isolation.
 - **`ResourceWarning` safety net** (BK-139b): `__del__` methods on
-  `SFTPBackend` and `AzureBackend` emit `ResourceWarning` and clean up
-  connections if `.close()` was not called.
+  `SFTPBackend`, `AzureBackend`, and `AsyncAzureBackend` emit
+  `ResourceWarning` if `.close()` / `.aclose()` was not called.
+  Sync backends also clean up connections; async backend warns only
+  (cannot `await` in `__del__`).
 - **Ruff `BLE` rule set** (BK-139b): Enabled `BLE001` (blind exception)
   linter rule. All 37 existing intentional broad catches annotated with
   `# noqa: BLE001`.
