@@ -235,6 +235,7 @@ markers = [
   "full: heavy-tier benchmark (100MB payload, 10k listing, ~20-30 min/backend)",
   "os_sensitive: exercises OS-specific behaviour (paths, atomic writes, local filesystem); run on macOS and Windows CI",
   "pbt: property-based test using Hypothesis",
+  "extended_conformance: extended conformance suite derived from Dafny postconditions",
 ]
 
 [tool.pytest-gremlins]
@@ -245,7 +246,7 @@ exclude = ["**/__init__.py", "**/__pycache__/*"]
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM", "TCH", "PT"]
+select = ["E", "F", "W", "I", "UP", "B", "BLE", "SIM", "TCH", "PT"]
 ignore = ["UP045"]
 
 [tool.ruff.lint.flake8-pytest-style]

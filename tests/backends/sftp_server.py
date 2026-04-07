@@ -215,7 +215,7 @@ def _accept_connections(
         server = StubServer()
         try:
             transport.start_server(server=server)
-        except Exception:
+        except Exception:  # noqa: BLE001
             transport.close()
             continue
 

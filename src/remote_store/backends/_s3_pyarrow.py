@@ -453,7 +453,7 @@ class S3PyArrowBackend(_S3Base):
             if any(kw in msg for kw in ("endpoint", "connect", "timeout", "dns", "name or service")):
                 raise BackendUnavailable(str(exc), path=path, backend=self.name) from None
             raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
-        except Exception as exc:  # pragma: no cover -- defensive
+        except Exception as exc:  # pragma: no cover -- defensive  # noqa: BLE001
             raise self._classify_error(exc, path) from None
 
     def _extract_etag(self, info: dict[str, Any]) -> str | None:

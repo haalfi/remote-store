@@ -774,7 +774,7 @@ def test_concurrent_writes(tmp_path: object) -> None:
     def writer(i: int) -> None:
         try:
             b.write(f"file_{i}.txt", f"data_{i}".encode())
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors.append(e)
 
     threads = [threading.Thread(target=writer, args=(i,)) for i in range(20)]

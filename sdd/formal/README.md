@@ -83,13 +83,25 @@ some may not yet exist in the `tests/` directory.
 
 ### Backend contract properties
 
-| Dafny postcondition | Hypothesis test | Property |
+| Dafny postcondition | Test | Property |
 |---|---|---|
-| `Write: IsDir(old(fs)) → InvalidPath` | `test_write_dir_always_invalid_path` | `write(dir)` → `InvalidPath`, never `AlreadyExists` |
-| `Read: IsDir → InvalidPath` | `test_read_dir_not_notfound` | `read(dir)` → `InvalidPath`, not `NotFound` |
-| `ListFiles: ensures r.Ok?` | `test_list_missing_returns_empty` | `list_files(missing)` → `[]`, no error |
-| `WriteReadConsistency` lemma | P4 stateful model: write→read | `write(p,c); read(p) == c` |
-| `MoveIsNotNoop` lemma | P4 stateful model: move | `move(a,b)` changes filesystem |
+| `Write: IsDir(old(fs)) → InvalidPath` | `test_write_on_directory_raises_error` | `write(dir)` → error, never `AlreadyExists` |
+| `Write: IsDir + overwrite=True → InvalidPath` | `test_write_on_directory_overwrite_still_raises_error` | Precondition ordering: type check before overwrite |
+| `Read: IsDir → InvalidPath` | `test_read_on_directory_raises_error` | `read(dir)` → error |
+| `Read: !PathExists → NotFound` | `test_read_missing_raises_not_found` | `read(missing)` → `NotFound` |
+| `Delete: IsDir → InvalidPath` | `test_delete_on_directory_raises_error` | `delete(dir)` → error |
+| `DeleteFolder: IsFile → InvalidPath` | `test_delete_folder_on_file_raises_error` | `delete_folder(file)` → error |
+| `DeleteFolder: !recursive + HasChildren` | `test_delete_folder_non_recursive_non_empty_raises` | → `DirectoryNotEmpty` |
+| `GetFileInfo: IsDir → InvalidPath` | `test_get_file_info_on_directory_raises_error` | `get_file_info(dir)` → error |
+| `ListFiles: ensures r.Ok?` | `test_list_files_missing_path_yields_empty` | `list_files(missing)` → `[]`, no error |
+| `ListFiles: depth ≤ max_depth` | `test_list_files_recursive_max_depth` | Depth boundary inclusive |
+| `ListFiles: completeness` | `test_list_files_all_results_are_children` | All results are children of path |
+| `ListFolders: ensures r.Ok?` | `test_list_folders_missing_path_yields_empty` | `list_folders(missing)` → `[]` |
+| `Move/Copy: IsDir(src) → InvalidPath` | `test_source_is_directory_raises_error` | dir src → error |
+| `Move/Copy: IsDir(dst) → InvalidPath` | `test_destination_is_directory_raises_error` | dir dst → error |
+| `Move/Copy: src==dst → no-op` | `test_self_copy_preserves_data`, `test_self_move_preserves_data` | Data preserved |
+| `WriteReadConsistency` lemma | `test_roundtrip`, P4 stateful model | `write(p,c); read(p) == c` |
+| `MoveIsNotNoop` lemma | `test_move_removes_source`, P4 stateful model | `move(a,b)` changes filesystem |
 
 ### Depth counting properties
 

@@ -331,7 +331,7 @@ def backend(
         service = BlobServiceClient.from_connection_string(azurite_server)
         try:
             service.create_container(container)
-        except Exception:
+        except Exception:  # noqa: BLE001
             service.close()
             raise
         b = AzureBackend(container=container, connection_string=azurite_server)

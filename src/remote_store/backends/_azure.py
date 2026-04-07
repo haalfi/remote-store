@@ -272,7 +272,7 @@ class AzureBackend(Backend):
                 try:
                     self._fs.get_directory_client(azure_path).get_directory_properties()
                     return True
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return False
             else:
                 prefix = azure_path.rstrip("/") + "/"
@@ -301,7 +301,7 @@ class AzureBackend(Backend):
                 try:
                     self._fs.get_directory_client(azure_path).get_directory_properties()
                     return True
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return False
             else:
                 prefix = azure_path.rstrip("/") + "/"
@@ -459,7 +459,7 @@ class AzureBackend(Backend):
             bc = self._blob_client(path)
             try:
                 bc.delete_blob()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 mapped = self._classify(exc, path)
                 if isinstance(mapped, NotFound):
                     if not missing_ok:
@@ -475,7 +475,7 @@ class AzureBackend(Backend):
                 dc = self._fs.get_directory_client(azure_path)
                 try:
                     dc.get_directory_properties()
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         if not missing_ok:
@@ -525,7 +525,7 @@ class AzureBackend(Backend):
                                 if depth > max_depth:
                                     continue
                             yield self._props_to_fileinfo(p, str(p.name))
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         return
@@ -558,7 +558,7 @@ class AzureBackend(Backend):
                             rel = str(p.name).rstrip("/")
                             folder_name = rel.rsplit("/", 1)[-1]
                             yield FolderEntry(path=RemotePath(rel), name=folder_name)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         return
@@ -586,7 +586,7 @@ class AzureBackend(Backend):
                             yield FolderEntry(path=RemotePath(rel), name=folder_name)
                         else:
                             yield self._props_to_fileinfo(p, str(p.name))
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
                         return
@@ -734,6 +734,45 @@ class AzureBackend(Backend):
 
     # region: dunder methods
 
+    def __del__(self) -> None:
+        # Guard against interpreter shutdown: module globals (contextlib,
+        # warnings) may already be None.  Use only inline try/except.
+        try:
+            has_clients = any(
+                (
+                    getattr(self, "_cc_instance", None),
+                    getattr(self, "_blob_service_instance", None),
+                    getattr(self, "_fs_instance", None),
+                    getattr(self, "_datalake_service_instance", None),
+                )
+            )
+            if not has_clients:
+                return
+        except Exception:  # noqa: BLE001
+            return
+        try:
+            import warnings
+
+            warnings.warn(
+                f"Unclosed {type(self).__name__}. Call .close() or use a context manager.",
+                ResourceWarning,
+                stacklevel=1,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        # Inline cleanup — cannot rely on contextlib.suppress during shutdown.
+        for attr in ("_cc_instance", "_blob_service_instance", "_fs_instance", "_datalake_service_instance"):
+            try:
+                client = getattr(self, attr, None)
+                if client is not None:
+                    client.close()
+            except Exception:  # noqa: BLE001
+                pass
+            try:  # noqa: SIM105 — cannot use contextlib during shutdown
+                setattr(self, attr, None)
+            except Exception:  # noqa: BLE001
+                pass
+
     def __repr__(self) -> str:
         return (
             f"AzureBackend(container={self._container!r}, "
@@ -829,7 +868,7 @@ class AzureBackend(Backend):
             try:
                 info = self._blob_service.get_account_information()
                 self._hns_enabled = bool(info.get("is_hns_enabled", False))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 log.warning(
                     "Failed to detect HNS status, falling back to non-HNS behavior",
                     exc_info=True,
@@ -848,7 +887,7 @@ class AzureBackend(Backend):
             yield
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise self._classify(exc, path) from None
 
     def _classify(self, exc: Exception, path: str) -> RemoteStoreError:

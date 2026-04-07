@@ -462,7 +462,7 @@ class SFTPBackend(Backend):
             yield from self._list_files_depth(path, recursive=recursive, max_depth=max_depth, _depth=0)
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
 
     def _list_files_depth(
@@ -514,7 +514,7 @@ class SFTPBackend(Backend):
                     yield FolderEntry(path=RemotePath(rel), name=attr.filename)
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
@@ -537,7 +537,7 @@ class SFTPBackend(Backend):
                     yield FolderEntry(path=RemotePath(rel), name=attr.filename)
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise RemoteStoreError(str(exc), path=path, backend=self.name) from None
 
     def get_file_info(self, path: str) -> FileInfo:
@@ -659,6 +659,43 @@ class SFTPBackend(Backend):
     # endregion
 
     # region: dunder methods
+
+    def __del__(self) -> None:
+        # Guard against interpreter shutdown: module globals (contextlib,
+        # warnings) may already be None.  Use only inline try/except.
+        try:
+            if getattr(self, "_sftp_client", None) is None and getattr(self, "_ssh_client", None) is None:
+                return
+        except Exception:  # noqa: BLE001
+            return
+        try:
+            import warnings
+
+            warnings.warn(
+                f"Unclosed {type(self).__name__}. Call .close() or use a context manager.",
+                ResourceWarning,
+                stacklevel=1,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        # Inline cleanup — cannot rely on contextlib during shutdown.
+        try:
+            sftp = getattr(self, "_sftp_client", None)
+            if sftp is not None:
+                try:  # noqa: SIM105 — cannot use contextlib during shutdown
+                    sftp.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                self._sftp_client = None
+            ssh = getattr(self, "_ssh_client", None)
+            if ssh is not None:
+                try:  # noqa: SIM105 — cannot use contextlib during shutdown
+                    ssh.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                self._ssh_client = None
+        except Exception:  # noqa: BLE001
+            pass
 
     def __repr__(self) -> str:
         return (
@@ -787,7 +824,7 @@ class SFTPBackend(Backend):
         try:
             self._sftp_client.stat(".")
             return True
-        except Exception:  # pragma: no cover -- requires transport failure
+        except Exception:  # pragma: no cover -- requires transport failure  # noqa: BLE001
             return False
 
     def _resolve_host_keys(self, direct: str | None, config: dict[str, Any] | None) -> str | None:
@@ -864,7 +901,7 @@ class SFTPBackend(Backend):
             yield
         except RemoteStoreError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise self._map_exception(exc, path) from None
 
     def _map_exception(self, exc: Exception, path: str) -> RemoteStoreError:

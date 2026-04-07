@@ -135,6 +135,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   5. BE-018/BE-019: move and copy atomicity notes (backend-dependent, MUST NOT swallow errors)
   6. SIO-001: acquire-then-wrap safety invariant
 
+- [x] **BK-139b — Bug prevention: BLE rules, extended conformance, ResourceWarning (deliverables 4, 5, 7)**
+  From [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md):
+  4. Enabled ruff `BLE` rule set — 44 intentional broad catches annotated
+  5. Extended conformance suite — 42 test functions derived from Dafny
+     postconditions (`@pytest.mark.extended_conformance`)
+  7. `ResourceWarning` safety net — `__del__` on SFTP, Azure, AsyncAzure
+  Item 6 (`check_error_handling.py` AST script) deferred; see BK-139b
+  remainder in BACKLOG.md.
+
 - [x] **BK-139a — Bug prevention: `_safe_wrap` + PBT (deliverables 1–3)**
   From [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md):
   1. `_safe_wrap()` helper in `_stream.py` + fix BUG-159 S3 `read()` leak

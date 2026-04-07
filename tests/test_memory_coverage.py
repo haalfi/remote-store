@@ -279,7 +279,7 @@ class TestMemoryListingCorrectness:
             try:
                 for i in range(20):
                     mb.write(f"w{idx}_{i}.txt", f"data-{i}".encode(), overwrite=True)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 
         def reader() -> None:
@@ -288,7 +288,7 @@ class TestMemoryListingCorrectness:
                     list(mb.list_files("", recursive=True))
                     list(mb.list_folders(""))
                     list(mb.iter_children(""))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 errors.append(exc)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:

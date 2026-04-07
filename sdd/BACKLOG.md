@@ -47,14 +47,10 @@ Items graduate through the SDD pipeline:
 
 - [~] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
-  Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Remaining deliverables:
-  4. Enable ruff `BLE` rule set (1-line config change)
-  5. Extended conformance suite — parameter combos, edge inputs, error fidelity,
-     metadata, resource cleanup, operational consistency (~300 lines, ~58 tests).
-     Use `@pytest.mark.extended_conformance` to isolate CI impact.
+  Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Items 4, 5, 7 shipped.
+  Remaining:
   6. `scripts/check_error_handling.py` AST script (~80 lines) — deferred until
      items 4–5 prove insufficient; conformance error fidelity tests may suffice.
-  7. `ResourceWarning` safety net for SFTP/Azure backends (~10 lines)
 
 ---
 

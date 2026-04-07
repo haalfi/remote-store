@@ -192,21 +192,21 @@ class ObservedStore(ProxyStore):
         if hook_name and hooks.get(hook_name) is not None:
             try:
                 hooks[hook_name](event)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 log.warning("Hook %s raised an exception", hook_name, exc_info=True)
 
         # Catch-all hook (fires before on_error per OBS-003 step 7)
         if hooks.get("on_any") is not None:
             try:
                 hooks["on_any"](event)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 log.warning("Hook on_any raised an exception", exc_info=True)
 
         # Error hook (OBS-003 step 8)
         if error is not None and hooks.get("on_error") is not None:
             try:
                 hooks["on_error"](event)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 log.warning("Hook on_error raised an exception", exc_info=True)
 
     @contextlib.contextmanager
