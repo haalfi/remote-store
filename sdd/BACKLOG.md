@@ -62,6 +62,30 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
+- [ ] **ID-131 — Conformance tests for BK-140a `InvalidPath` type-mismatch conditions**
+  BK-140a added `InvalidPath` Raises clauses to BE-006, BE-007, BE-012, BE-013,
+  BE-016, BE-017, BE-018, and BE-019 (e.g. `read(dir)`, `delete(dir)`,
+  `get_file_info(dir)`, `move(src=dir, ...)`). No conformance tests cover these
+  conditions yet. Required work:
+  1. Fix `LocalBackend.read()` and `read_bytes()` to raise `InvalidPath`
+     (not `NotFound`) when the path names a directory — code currently diverges
+     from spec (principle 4: code is wrong).
+  2. Fix `MemoryBackend.read()` and `read_bytes()` same.
+  3. Add `@pytest.mark.spec` conformance tests for all new `InvalidPath` clauses;
+     skip for flat-namespace backends (S3, Azure non-HNS, SQL) per BE-008 exemption.
+  4. Add conformance tests for BE-014/015 missing-path behavior:
+     `list_files(missing)` and `list_folders(missing)` must yield nothing without
+     raising (MUST NOT raise `NotFound`).
+  Related: BK-140a, BE-021, BK-139b (item 5 — extended conformance suite).
+
+- [ ] **ID-130 — Dafny formal coverage for `get_folder_info()` (BE-017)**
+  `sdd/formal/BackendContract.dfy` has no `GetFolderInfo` method. The BE-017
+  `InvalidPath` postcondition (`IsFile → InvalidPath`) is specified by symmetry
+  with `GetFileInfo` but is not machine-verified. Add a `GetFolderInfo` method
+  to `BackendContract.dfy` with postconditions `IsFile → InvalidPath` and
+  `!PathExists → NotFound`, and verify it in `MemoryBackend.dfy`.
+  Related: BE-017, BK-140, ID-129.
+
 - [ ] **ID-129 — Spec gap: query methods under path-type conflicts**
   `exists()`, `is_file()`, `is_folder()` are not analyzed in the BE-021
   canonical error mapping table. These methods return `bool` and are permitted

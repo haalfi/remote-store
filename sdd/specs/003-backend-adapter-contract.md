@@ -93,7 +93,7 @@ analogous preconditions exist.
 native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 (1): they cannot distinguish "path names a directory" from "path does not
 exist", so they MUST skip the type-conflict check entirely. For these backends
-the effective order is: path validity (non-existent target treated as
+the effective order is: existence check (non-existent target treated as
 writable) → overwrite conflict → I/O.
 
 ### BE-009: write Creates Intermediate Directories
@@ -149,7 +149,7 @@ missing or non-existent paths.
 
 **Invariant:** `get_folder_info(path)` returns `FolderInfo`.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
-**Formal coverage note:** `get_folder_info()` is not modelled in `sdd/formal/BackendContract.dfy`; the `InvalidPath` postcondition is specified by symmetry with BE-016 (`GetFileInfo: IsDir → InvalidPath`) but is not formally verified.
+**Formal coverage note:** `get_folder_info()` is not modelled in `sdd/formal/BackendContract.dfy`; the `InvalidPath` postcondition is specified by symmetry with BE-016 (`GetFileInfo: IsDir → InvalidPath`) but is not formally verified. Tracked in ID-130.
 
 ### BE-018: move()
 
