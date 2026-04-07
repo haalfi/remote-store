@@ -25,6 +25,7 @@ from remote_store._errors import (
     BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
+    InvalidPath,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -323,13 +324,15 @@ class SFTPBackend(Backend):
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
-            if not overwrite:
-                try:
-                    self._sftp.stat(sftp_path)
+            try:
+                st = self._sftp.stat(sftp_path)
+                if st is not None and stat.S_ISDIR(st.st_mode or 0):
+                    raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+                if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                except OSError as exc:
-                    if getattr(exc, "errno", None) != errno.ENOENT:
-                        raise
+            except OSError as exc:
+                if getattr(exc, "errno", None) != errno.ENOENT:
+                    raise
             self._ensure_parent_dirs(sftp_path)
             with self._sftp.file(sftp_path, "w") as f:
                 if isinstance(content, bytes):

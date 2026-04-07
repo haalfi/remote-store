@@ -81,50 +81,52 @@ class TestLocalBackendResolve:
 
 
 class TestLocalDeleteOnDirectory:
-    """BUG-153: delete() on a directory must raise RemoteStoreError, not leak IsADirectoryError."""
+    """BUG-153/ID-131: delete() on a directory must raise InvalidPath (BE-021)."""
 
     @pytest.mark.spec("BE-021")
-    def test_delete_directory_raises_not_found(self, local_backend: LocalBackend) -> None:
-        """delete() on a directory path should raise NotFound, not IsADirectoryError."""
-        from remote_store._errors import NotFound
+    def test_delete_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """delete() on a directory path should raise InvalidPath, not IsADirectoryError."""
+        from remote_store._errors import InvalidPath
 
         local_backend.write("folder/file.txt", b"hello")
         assert local_backend.is_folder("folder")
 
-        with pytest.raises(NotFound, match="Not a file"):
+        with pytest.raises(InvalidPath, match="Not a file"):
             local_backend.delete("folder")
 
     @pytest.mark.spec("BE-021")
-    def test_delete_directory_missing_ok_silenced(self, local_backend: LocalBackend) -> None:
-        """delete(missing_ok=True) on a directory should be silenced, consistent with MemoryBackend."""
+    def test_delete_directory_always_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """delete(missing_ok=True) on a directory still raises InvalidPath — type mismatch is not 'missing'."""
+        from remote_store._errors import InvalidPath
+
         local_backend.write("folder/file.txt", b"hello")
         assert local_backend.is_folder("folder")
 
-        # Should not raise — missing_ok silences directory paths
-        local_backend.delete("folder", missing_ok=True)
+        with pytest.raises(InvalidPath, match="Not a file"):
+            local_backend.delete("folder", missing_ok=True)
 
 
 class TestLocalReadOnDirectory:
-    """BUG-153: read()/read_bytes() on a directory must not leak IsADirectoryError."""
+    """BUG-153/ID-131: read()/read_bytes() on a directory must raise InvalidPath (BE-021)."""
 
     @pytest.mark.spec("BE-021")
-    def test_read_directory_raises_not_found(self, local_backend: LocalBackend) -> None:
-        """read() on a directory path should raise NotFound."""
-        from remote_store._errors import NotFound
+    def test_read_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """read() on a directory path should raise InvalidPath."""
+        from remote_store._errors import InvalidPath
 
         local_backend.write("folder/file.txt", b"hello")
 
-        with pytest.raises(NotFound, match="Not a file"):
+        with pytest.raises(InvalidPath, match="Not a file"):
             local_backend.read("folder")
 
     @pytest.mark.spec("BE-021")
-    def test_read_bytes_directory_raises_not_found(self, local_backend: LocalBackend) -> None:
-        """read_bytes() on a directory path should raise NotFound."""
-        from remote_store._errors import NotFound
+    def test_read_bytes_directory_raises_invalid_path(self, local_backend: LocalBackend) -> None:
+        """read_bytes() on a directory path should raise InvalidPath."""
+        from remote_store._errors import InvalidPath
 
         local_backend.write("folder/file.txt", b"hello")
 
-        with pytest.raises(NotFound, match="Not a file"):
+        with pytest.raises(InvalidPath, match="Not a file"):
             local_backend.read_bytes("folder")
 
 

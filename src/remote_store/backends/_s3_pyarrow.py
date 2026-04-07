@@ -286,6 +286,8 @@ class S3PyArrowBackend(_S3Base):
         with self._s3fs_errors(src):
             if not self._s3fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
+            if self._s3_path(src) == self._s3_path(dst):
+                return  # self-move is a no-op
             if not overwrite and self._s3fs.exists(self._s3_path(dst)):
                 raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
         with self._pyarrow_errors(src):
@@ -297,6 +299,8 @@ class S3PyArrowBackend(_S3Base):
         with self._s3fs_errors(src):
             if not self._s3fs.exists(self._s3_path(src)):
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
+            if self._s3_path(src) == self._s3_path(dst):
+                return  # self-copy is a no-op
             if not overwrite and self._s3fs.exists(self._s3_path(dst)):
                 raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
         with self._pyarrow_errors(src):

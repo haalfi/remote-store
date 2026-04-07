@@ -22,6 +22,7 @@ from remote_store._capabilities import Capability
 from remote_store._errors import (
     AlreadyExists,
     DirectoryNotEmpty,
+    InvalidPath,
     NotFound,
     RemoteStoreError,
 )
@@ -36,6 +37,9 @@ if TYPE_CHECKING:
 # Backends that use flat/virtual namespace — no real directory entries.
 # Update this set when adding a new flat-namespace backend.
 _FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http"})
+
+# Backends that do not yet handle self-copy/self-move correctly.
+_NO_SELF_OP_BACKENDS = frozenset({"sftp", "azure", "http"})
 
 
 def _require(backend: Backend, *caps: Capability) -> None:
@@ -83,8 +87,7 @@ class TestReadErrorFidelity:
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("rdir/file.txt", b"x")
-        # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError, match="rdir"):
+        with pytest.raises(InvalidPath, match="rdir"):
             backend.read("rdir")
 
     @pytest.mark.spec("BE-007")
@@ -93,8 +96,7 @@ class TestReadErrorFidelity:
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("rbdir/file.txt", b"x")
-        # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError, match="rbdir"):
+        with pytest.raises(InvalidPath, match="rbdir"):
             backend.read_bytes("rbdir")
 
     @pytest.mark.spec("BE-006")
@@ -114,7 +116,7 @@ class TestWriteErrorFidelity:
 
     @pytest.mark.spec("BE-008")
     def test_write_on_directory_raises_error(self, backend: Backend) -> None:
-        """IsDir(path) ==> error (NOT AlreadyExists).
+        """IsDir(path) ==> InvalidPath (NOT AlreadyExists).
 
         Dafny: ensures IsDir(old(fs), path) ==> Err(InvalidPath).
         The dir check must fire BEFORE the overwrite check.
@@ -122,39 +124,35 @@ class TestWriteErrorFidelity:
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("wdir/file.txt", b"x")
-        # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError, match="wdir"):
+        with pytest.raises(InvalidPath, match="wdir"):
             backend.write("wdir", b"data")
 
     @pytest.mark.spec("BE-008")
     def test_write_on_directory_overwrite_still_raises_error(self, backend: Backend) -> None:
-        """IsDir(path) ==> error even with overwrite=True.
+        """IsDir(path) ==> InvalidPath even with overwrite=True.
 
         Precondition ordering: type check before overwrite check.
         """
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("wdir2/file.txt", b"x")
-        # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError, match="wdir2"):
+        with pytest.raises(InvalidPath, match="wdir2"):
             backend.write("wdir2", b"data", overwrite=True)
 
 
 class TestDeleteErrorFidelity:
-    """BackendContract.Delete postconditions: dir→error (no native leak).
+    """BackendContract.Delete postconditions: dir→InvalidPath.
 
-    Dafny contract specifies InvalidPath; some backends currently raise
-    NotFound (tracked as ID-131). Test for RemoteStoreError base class.
+    Dafny contract specifies InvalidPath for delete(dir).
     """
 
     @pytest.mark.spec("BE-012")
     def test_delete_on_directory_raises_error(self, backend: Backend) -> None:
-        """IsDir(path) ==> RemoteStoreError (no native exception leak)."""
+        """IsDir(path) ==> InvalidPath (no native exception leak)."""
         _require(backend, Capability.DELETE, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("ddir/file.txt", b"x")
-        # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError, match="ddir"):
+        with pytest.raises(InvalidPath, match="ddir"):
             backend.delete("ddir")
 
     @pytest.mark.spec("BE-012")
@@ -179,11 +177,10 @@ class TestDeleteFolderErrorFidelity:
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_on_file_raises_error(self, backend: Backend) -> None:
-        """IsFile(path) ==> RemoteStoreError (Dafny: InvalidPath; ID-131 tracks fix)."""
+        """IsFile(path) ==> InvalidPath (Dafny: InvalidPath)."""
         _require(backend, Capability.DELETE, Capability.WRITE)
         backend.write("dffile.txt", b"x")
-        # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError, match="dffile"):
+        with pytest.raises(InvalidPath, match="dffile"):
             backend.delete_folder("dffile.txt")
 
     @pytest.mark.spec("BE-013")
@@ -225,12 +222,11 @@ class TestGetFileInfoErrorFidelity:
 
     @pytest.mark.spec("BE-016")
     def test_get_file_info_on_directory_raises_error(self, backend: Backend) -> None:
-        """IsDir(path) ==> RemoteStoreError (Dafny: InvalidPath; ID-131 tracks fix)."""
+        """IsDir(path) ==> InvalidPath (Dafny: InvalidPath)."""
         _require(backend, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("gfid/file.txt", b"x")
-        # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError, match="gfid"):
+        with pytest.raises(InvalidPath, match="gfid"):
             backend.get_file_info("gfid")
 
     @pytest.mark.spec("BE-016")
@@ -351,34 +347,23 @@ class TestMoveCopyErrorFidelity:
     @pytest.mark.spec("BE-019")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_source_is_directory_raises_error(self, backend: Backend, op: str, cap: Capability) -> None:
-        """IsDir(src) ==> RemoteStoreError (Dafny: InvalidPath; ID-131 tracks fix).
-
-        Memory backend enforces this; LocalBackend currently moves/copies
-        the directory (no error). Test only on memory for now.
-        """
+        """IsDir(src) ==> InvalidPath (Dafny: InvalidPath)."""
         _require(backend, cap, Capability.WRITE)
-        if backend.name != "memory":
-            pytest.skip("Only MemoryBackend enforces dir-src check (ID-131)")
+        _skip_flat_namespace(backend)
         backend.write(f"mcds/{op}/file.txt", b"x")
-        # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError, match=f"mcds/{op}"):
+        with pytest.raises(InvalidPath, match=f"mcds/{op}"):
             _do_op(backend, op, f"mcds/{op}", f"mcds/{op}_dst.txt")
 
     @pytest.mark.spec("BE-018")
     @pytest.mark.spec("BE-019")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_destination_is_directory_raises_error(self, backend: Backend, op: str, cap: Capability) -> None:
-        """IsFile(src) && IsDir(dst) ==> RemoteStoreError (Dafny: InvalidPath; ID-131).
-
-        Memory backend enforces this; LocalBackend currently overwrites.
-        """
+        """IsFile(src) && IsDir(dst) ==> InvalidPath (Dafny: InvalidPath)."""
         _require(backend, cap, Capability.WRITE)
-        if backend.name != "memory":
-            pytest.skip("Only MemoryBackend enforces dir-dst check (ID-131)")
+        _skip_flat_namespace(backend)
         backend.write(f"mcdd/{op}_src.txt", b"src")
         backend.write(f"mcdd/{op}_dstdir/file.txt", b"x")
-        # TODO(ID-131): tighten to InvalidPath once all backends comply
-        with pytest.raises(RemoteStoreError, match=f"mcdd/{op}"):
+        with pytest.raises(InvalidPath, match=f"mcdd/{op}"):
             _do_op(backend, op, f"mcdd/{op}_src.txt", f"mcdd/{op}_dstdir")
 
     @pytest.mark.spec("BE-018")
@@ -418,17 +403,15 @@ class TestMoveCopyOverwrite:
 class TestMoveCopySelfOperation:
     """Self-move/self-copy: data must not be lost.
 
-    Dafny spec says src==dst is a no-op. Most backends fail:
-    Local leaks SameFileError, S3 returns 400, SFTP deletes the file.
-    Only MemoryBackend handles it correctly (ID-131 tracks the fixes).
+    Dafny spec says src==dst is a no-op.
     """
 
     @pytest.mark.spec("BE-019")
     def test_self_copy_preserves_data(self, backend: Backend) -> None:
         """copy(src, src, overwrite=True) must not lose data."""
         _require(backend, Capability.COPY, Capability.WRITE)
-        if backend.name != "memory":
-            pytest.skip("Only MemoryBackend handles self-copy correctly (ID-131)")
+        if backend.name in _NO_SELF_OP_BACKENDS:
+            pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
         backend.write("selfcp.txt", b"data")
         backend.copy("selfcp.txt", "selfcp.txt", overwrite=True)
         assert backend.read_bytes("selfcp.txt") == b"data"
@@ -437,8 +420,8 @@ class TestMoveCopySelfOperation:
     def test_self_move_preserves_data(self, backend: Backend) -> None:
         """move(src, src, overwrite=True) must not lose data."""
         _require(backend, Capability.MOVE, Capability.WRITE)
-        if backend.name != "memory":
-            pytest.skip("Only MemoryBackend handles self-move correctly (ID-131)")
+        if backend.name in _NO_SELF_OP_BACKENDS:
+            pytest.skip(f"Backend {backend.name!r} does not handle self-move yet")
         backend.write("selfmv.txt", b"data")
         backend.move("selfmv.txt", "selfmv.txt", overwrite=True)
         assert backend.read_bytes("selfmv.txt") == b"data"
