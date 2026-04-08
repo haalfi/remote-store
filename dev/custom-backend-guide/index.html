@@ -3122,6 +3122,73 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#conformance-suite-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conformance suite overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#registering-in-the-conformance-fixture-contributing-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registering in the conformance fixture (contributing backends)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-gating-with-_require" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability gating with _require()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flat-namespace-vs-hierarchical-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flat-namespace vs. hierarchical backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conformance-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conformance checklist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standalone-backend-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standalone backend testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Standalone backend testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#happy-paths" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3162,6 +3229,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -8298,6 +8370,73 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#conformance-suite-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conformance suite overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#registering-in-the-conformance-fixture-contributing-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registering in the conformance fixture (contributing backends)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-gating-with-_require" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability gating with _require()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flat-namespace-vs-hierarchical-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flat-namespace vs. hierarchical backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conformance-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conformance checklist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standalone-backend-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standalone backend testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Standalone backend testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#happy-paths" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8338,6 +8477,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -9209,77 +9353,268 @@ to implement the abstract methods (Python requires it), but they can raise
 code/type, and raise the appropriate remote-store error with <code>from exc</code>.</p>
 <hr />
 <h2 id="testing-your-backend">Testing your backend<a class="headerlink" href="#testing-your-backend" title="Permanent link">&para;</a></h2>
-<p>remote-store's test suite is organized around the Backend contract. For a
-custom backend, write tests covering:</p>
-<h3 id="happy-paths">Happy paths<a class="headerlink" href="#happy-paths" title="Permanent link">&para;</a></h3>
+<p>remote-store ships two conformance test files that validate any backend against
+the formal <code>BackendContract</code> specification. Backends contributed to the repo
+plug into this infrastructure and run ~114 test scenarios per backend
+automatically (64 basic + 50 extended). Standalone backends can either reuse this suite or write focused
+tests against the same categories.</p>
+<hr />
+<h3 id="conformance-suite-overview">Conformance suite overview<a class="headerlink" href="#conformance-suite-overview" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Coverage</th>
+<th>Run with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance.py"><code>test_conformance.py</code></a></td>
+<td>64 tests — BE-001–BE-022, BE-025 + SAW, ITER, SIO, GLOB, NPR, RES specs: identity, capabilities, <code>exists</code>, <code>is_file</code>/<code>is_folder</code>, read, write, delete, list, streaming, glob, native path, resolution</td>
+<td><code>pytest tests/backends/test_conformance.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance_extended.py"><code>test_conformance_extended.py</code></a></td>
+<td>50 Dafny-derived tests: error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup</td>
+<td><code>pytest -m extended_conformance</code></td>
+</tr>
+</tbody>
+</table>
+<p>Both files share the same parameterized <code>backend</code> fixture — every registered
+backend runs the full suite automatically.</p>
+<hr />
+<h3 id="registering-in-the-conformance-fixture-contributing-backends">Registering in the conformance fixture (contributing backends)<a class="headerlink" href="#registering-in-the-conformance-fixture-contributing-backends" title="Permanent link">&para;</a></h3>
+<p>If you are contributing a backend to remote-store, this is step 3 of
+<a href="https://github.com/haalfi/remote-store/blob/master/CONTRIBUTING.md#adding-a-new-backend">CONTRIBUTING.md § Adding a New Backend</a>.
+Add your backend to
+<a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/conftest.py"><code>tests/backends/conftest.py</code></a>;
+the entire conformance suite then runs against it automatically.</p>
+<p><strong>1. Add an availability guard near the top of <code>conftest.py</code>:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_redis_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">redis</span>  <span class="c1"># noqa: F401</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>        <span class="k">return</span> <span class="kc">True</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>        <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+<p><strong>2. Add a <code>pytest.param</code> constant:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">_redis_param</span> <span class="o">=</span> <span class="n">pytest</span><span class="o">.</span><span class="n">param</span><span class="p">(</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    <span class="s2">&quot;redis&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="n">marks</span><span class="o">=</span><span class="n">pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">_redis_available</span><span class="p">(),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;redis-py not installed&quot;</span><span class="p">),</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="p">)</span>
+</code></pre></div>
+<p>If your backend requires an external service (like S3, SFTP, or Azurite), add
+a reachability check and a session-scoped server fixture following the existing
+<code>moto_server</code> / <code>sftp_server</code> / <code>azurite_server</code> pattern.</p>
+<p><strong>3. Add it to the <code>backend</code> fixture's <code>params</code> list and <code>elif</code> branch:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>    <span class="n">params</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>        <span class="n">_local_param</span><span class="p">,</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>        <span class="n">_memory_param</span><span class="p">,</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>        <span class="c1"># ... existing params ...</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>        <span class="n">_redis_param</span><span class="p">,</span>   <span class="c1"># ← add here</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>    <span class="p">]</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="p">)</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">backend</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">moto_server</span><span class="p">,</span> <span class="n">sftp_server</span><span class="p">,</span> <span class="n">azurite_server</span><span class="p">,</span> <span class="n">http_server</span><span class="p">):</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>    <span class="o">...</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>    <span class="k">elif</span> <span class="n">request</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;redis&quot;</span><span class="p">:</span>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends._redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisBackend</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a>        <span class="n">b</span> <span class="o">=</span> <span class="n">RedisBackend</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;test-</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a>        <span class="k">yield</span> <span class="n">b</span>
+<a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a>        <span class="n">b</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div>
+<p><code>conftest.py</code> already imports <code>uuid</code> at the top — ensure yours does too if
+you are starting from scratch. Use a unique prefix per test so isolation is
+guaranteed even without a full teardown.</p>
+<hr />
+<h3 id="capability-gating-with-_require">Capability gating with <code>_require()</code><a class="headerlink" href="#capability-gating-with-_require" title="Permanent link">&para;</a></h3>
+<p>Backends may declare a subset of capabilities. The <code>_require()</code> helper skips a
+test when the backend lacks the needed capability — so a read-only backend
+cleanly skips all write, move, copy, and delete tests without failures:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_require</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="n">Backend</span><span class="p">,</span> <span class="o">*</span><span class="n">caps</span><span class="p">:</span> <span class="n">Capability</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="k">for</span> <span class="n">cap</span> <span class="ow">in</span> <span class="n">caps</span><span class="p">:</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">backend</span><span class="o">.</span><span class="n">capabilities</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">cap</span><span class="p">):</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>            <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backend does not support </span><span class="si">{</span><span class="n">cap</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Use the same pattern in your own tests:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_move_preserves_content</span><span class="p">(</span><span class="n">backend</span><span class="p">):</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>    <span class="n">_require</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">Capability</span><span class="o">.</span><span class="n">MOVE</span><span class="p">)</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;src.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s2">&quot;src.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;dst.txt&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>    <span class="k">assert</span> <span class="n">backend</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;dst.txt&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;hello&quot;</span>
+</code></pre></div>
+<p>A backend declaring only <code>READ</code> and <code>LIST</code> will skip every <code>WRITE</code>, <code>MOVE</code>,
+<code>COPY</code>, and <code>DELETE</code> test. The suite still passes — skips are not failures.</p>
+<hr />
+<h3 id="flat-namespace-vs-hierarchical-backends">Flat-namespace vs. hierarchical backends<a class="headerlink" href="#flat-namespace-vs-hierarchical-backends" title="Permanent link">&para;</a></h3>
+<p>Backends fall into two models that affect a handful of conformance tests.</p>
+<p><strong>Hierarchical</strong> backends (Local, SFTP, Memory) have real directory objects.
+Writing a file creates its parent directories; a path can be either a file
+<em>or</em> a directory, never both.</p>
+<p><strong>Flat-namespace</strong> backends (S3, Azure, HTTP) have no real directory entries.
+Folders are virtual — inferred from key prefixes. A path <code>a/b/c</code> implies a
+prefix <code>a/b/</code> but no actual directory object exists.</p>
+<p>The extended conformance suite tracks this in a frozenset:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># tests/backends/test_conformance_extended.py</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">_FLAT_NAMESPACE_BACKENDS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="s2">&quot;s3-pyarrow&quot;</span><span class="p">,</span> <span class="s2">&quot;azure&quot;</span><span class="p">,</span> <span class="s2">&quot;http&quot;</span><span class="p">})</span>
+</code></pre></div>
+<p>Tests that rely on real directory semantics call <code>_skip_flat_namespace()</code> and
+self-skip for flat backends. If your new backend is flat-namespace, add its
+<code>backend.name</code> string to this set.</p>
+<p>Key behavioral differences that the conformance tests check:</p>
+<table>
+<thead>
+<tr>
+<th>Behavior</th>
+<th>Hierarchical (Local, SFTP, Memory)</th>
+<th>Flat-namespace (S3, Azure, HTTP)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write to a path that is an existing directory</td>
+<td>Raises <code>InvalidPath</code></td>
+<td>Typically allowed (no real directory)</td>
+</tr>
+<tr>
+<td><code>delete_folder(recursive=False)</code> on non-empty folder</td>
+<td>Raises <code>DirectoryNotEmpty</code></td>
+<td>Behaviour varies; some tests are skipped</td>
+</tr>
+<tr>
+<td>Explicit directory creation</td>
+<td>Required (mkdir semantics)</td>
+<td>Not needed; folders emerge from key prefixes</td>
+</tr>
+<tr>
+<td><code>is_folder(path)</code> for a prefix with no keys</td>
+<td><code>False</code></td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<p>If your backend is hierarchical (the common case), no action is needed — the
+full extended suite applies.</p>
+<hr />
+<h3 id="conformance-checklist">Conformance checklist<a class="headerlink" href="#conformance-checklist" title="Permanent link">&para;</a></h3>
+<p>Before a backend is considered conformant, verify:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>What</th>
+<th>Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Basic</strong></td>
+<td>All <code>test_conformance.py</code> tests pass or self-skip (declared capability missing)</td>
+<td><code>pytest tests/backends/test_conformance.py -k &lt;backend-name&gt;</code></td>
+</tr>
+<tr>
+<td><strong>Extended</strong></td>
+<td>All <code>test_conformance_extended.py</code> tests pass or self-skip</td>
+<td><code>pytest -m extended_conformance -k &lt;backend-name&gt;</code></td>
+</tr>
+<tr>
+<td><strong>Error mapping</strong></td>
+<td>Every native exception maps to a <code>remote_store</code> error — nothing leaks</td>
+<td>Error mapping checklist above</td>
+</tr>
+<tr>
+<td><strong>Repr safety</strong></td>
+<td><code>repr(backend)</code> does not expose secrets</td>
+<td><code>test_repr_masks_secrets</code> in basic suite</td>
+</tr>
+</tbody>
+</table>
+<p>Skips are expected and acceptable when a backend doesn't declare the relevant
+capability. Failures (not skips) in either suite are blocking.</p>
+<hr />
+<h3 id="standalone-backend-testing">Standalone backend testing<a class="headerlink" href="#standalone-backend-testing" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Not contributing to the repo?</strong> Skip the fixture registration above and
+write focused tests directly. The categories below mirror what the
+conformance suite verifies.</p>
+</blockquote>
+<p>If you are building a backend outside the remote-store repository, write
+focused tests covering the same categories the conformance suite verifies:</p>
+<h4 id="happy-paths">Happy paths<a class="headerlink" href="#happy-paths" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Read/write round-trip</li>
-<li>Overwrite behavior (both <code>overwrite=True</code> and <code>overwrite=False</code>)</li>
+<li>Overwrite behavior (<code>overwrite=True</code> and <code>overwrite=False</code>)</li>
 <li>List files and folders (recursive and non-recursive)</li>
 <li>Move and copy</li>
-<li>Metadata accuracy (size, modified_at)</li>
+<li>Metadata accuracy (<code>size</code>, <code>modified_at</code>)</li>
 </ul>
-<h3 id="error-paths">Error paths<a class="headerlink" href="#error-paths" title="Permanent link">&para;</a></h3>
+<h4 id="error-paths">Error paths<a class="headerlink" href="#error-paths" title="Permanent link">&para;</a></h4>
 <ul>
 <li><code>read()</code> on missing file raises <code>NotFound</code></li>
-<li><code>write()</code> on existing file raises <code>AlreadyExists</code></li>
-<li><code>delete(missing_ok=False)</code> raises <code>NotFound</code></li>
+<li><code>write()</code> on existing file with <code>overwrite=False</code> raises <code>AlreadyExists</code></li>
+<li><code>delete(missing_ok=False)</code> on missing file raises <code>NotFound</code></li>
 <li><code>delete_folder(recursive=False)</code> on non-empty folder raises <code>DirectoryNotEmpty</code></li>
-<li>Invalid paths raise <code>InvalidPath</code></li>
+<li>Path naming a wrong type (file path to <code>get_folder_info</code>, directory path to
+  <code>read</code>) raises <code>InvalidPath</code></li>
 <li>Backend unavailable raises <code>BackendUnavailable</code></li>
 </ul>
-<h3 id="edge-cases">Edge cases<a class="headerlink" href="#edge-cases" title="Permanent link">&para;</a></h3>
+<h4 id="edge-cases">Edge cases<a class="headerlink" href="#edge-cases" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Empty path (<code>""</code>) and root alias (<code>"."</code>)</li>
+<li>Empty path (<code>""</code>) and root alias (<code>"."</code>) — root always exists and is always a folder</li>
+<li><code>is_file("")</code> always returns <code>False</code>; <code>exists("")</code> never raises</li>
 <li>Deeply nested paths (<code>"a/b/c/d/e/file.txt"</code>)</li>
-<li>Files with special characters in names</li>
-<li>Large files (if your backend has size limits)</li>
+<li>Non-existent paths to <code>list_files</code> / <code>list_folders</code> yield nothing (no exception)</li>
+<li><code>repr(backend)</code> does not expose credentials or secrets</li>
 <li>Concurrent access (if thread-safety matters)</li>
 </ul>
-<h3 id="example-test-structure">Example test structure<a class="headerlink" href="#example-test-structure" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">AlreadyExists</span><span class="p">,</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">Store</span>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">store</span><span class="p">():</span>
-<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>    <span class="n">backend</span> <span class="o">=</span> <span class="n">RedisBackend</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379/15&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;test:&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">flushdb</span><span class="p">()</span>  <span class="c1"># Clean slate</span>
-<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>    <span class="k">return</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
-<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>
-<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_read_write_roundtrip</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
-<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;world&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>    <span class="k">assert</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;world&quot;</span>
-<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>
-<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_write_no_overwrite</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
-<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;first&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">AlreadyExists</span><span class="p">):</span>
-<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>        <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;second&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>
-<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_read_missing</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
-<a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">NotFound</span><span class="p">):</span>
-<a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>        <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;nope.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a>
-<a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_list_files</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
-<a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a/1.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;one&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a/2.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;two&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;b/3.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;three&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a>    <span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">))</span>
-<a id="__codelineno-19-28" name="__codelineno-19-28" href="#__codelineno-19-28"></a>    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
-<a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a>    <span class="n">names</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">}</span>
-<a id="__codelineno-19-30" name="__codelineno-19-30" href="#__codelineno-19-30"></a>    <span class="k">assert</span> <span class="n">names</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;1.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;2.txt&quot;</span><span class="p">}</span>
-<a id="__codelineno-19-31" name="__codelineno-19-31" href="#__codelineno-19-31"></a>
-<a id="__codelineno-19-32" name="__codelineno-19-32" href="#__codelineno-19-32"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_list_files_recursive</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
-<a id="__codelineno-19-33" name="__codelineno-19-33" href="#__codelineno-19-33"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a/b/deep.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;deep&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-34" name="__codelineno-19-34" href="#__codelineno-19-34"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a/top.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;top&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-35" name="__codelineno-19-35" href="#__codelineno-19-35"></a>    <span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-<a id="__codelineno-19-36" name="__codelineno-19-36" href="#__codelineno-19-36"></a>    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
-<a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>
-<a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_list_folders</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
-<a id="__codelineno-19-39" name="__codelineno-19-39" href="#__codelineno-19-39"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;docs/readme.md&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;# Hello&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-40" name="__codelineno-19-40" href="#__codelineno-19-40"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;src/main.py&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;pass&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-41" name="__codelineno-19-41" href="#__codelineno-19-41"></a>    <span class="n">folders</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)}</span>
-<a id="__codelineno-19-42" name="__codelineno-19-42" href="#__codelineno-19-42"></a>    <span class="k">assert</span> <span class="s2">&quot;docs&quot;</span> <span class="ow">in</span> <span class="n">folders</span>
-<a id="__codelineno-19-43" name="__codelineno-19-43" href="#__codelineno-19-43"></a>    <span class="k">assert</span> <span class="s2">&quot;src&quot;</span> <span class="ow">in</span> <span class="n">folders</span>
+<h4 id="example-test-structure">Example test structure<a class="headerlink" href="#example-test-structure" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">AlreadyExists</span><span class="p">,</span> <span class="n">NotFound</span><span class="p">,</span> <span class="n">Store</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">store</span><span class="p">():</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>    <span class="n">backend</span> <span class="o">=</span> <span class="n">RedisBackend</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379/15&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;test:&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">flushdb</span><span class="p">()</span>  <span class="c1"># Clean slate</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>    <span class="k">return</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_read_write_roundtrip</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
+<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;world&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>    <span class="k">assert</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;world&quot;</span>
+<a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a>
+<a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_write_no_overwrite</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
+<a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;first&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a>    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">AlreadyExists</span><span class="p">):</span>
+<a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a>        <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;second&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a>
+<a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_read_missing</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
+<a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a>    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">NotFound</span><span class="p">):</span>
+<a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a>        <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;nope.txt&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a>
+<a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_list_files</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
+<a id="__codelineno-25-24" name="__codelineno-25-24" href="#__codelineno-25-24"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a/1.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;one&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-25" name="__codelineno-25-25" href="#__codelineno-25-25"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a/2.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;two&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-26" name="__codelineno-25-26" href="#__codelineno-25-26"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;b/3.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;three&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-27" name="__codelineno-25-27" href="#__codelineno-25-27"></a>    <span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">))</span>
+<a id="__codelineno-25-28" name="__codelineno-25-28" href="#__codelineno-25-28"></a>    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+<a id="__codelineno-25-29" name="__codelineno-25-29" href="#__codelineno-25-29"></a>    <span class="n">names</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">}</span>
+<a id="__codelineno-25-30" name="__codelineno-25-30" href="#__codelineno-25-30"></a>    <span class="k">assert</span> <span class="n">names</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;1.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;2.txt&quot;</span><span class="p">}</span>
+<a id="__codelineno-25-31" name="__codelineno-25-31" href="#__codelineno-25-31"></a>
+<a id="__codelineno-25-32" name="__codelineno-25-32" href="#__codelineno-25-32"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_list_files_recursive</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
+<a id="__codelineno-25-33" name="__codelineno-25-33" href="#__codelineno-25-33"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a/b/deep.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;deep&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-34" name="__codelineno-25-34" href="#__codelineno-25-34"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a/top.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;top&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-35" name="__codelineno-25-35" href="#__codelineno-25-35"></a>    <span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<a id="__codelineno-25-36" name="__codelineno-25-36" href="#__codelineno-25-36"></a>    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+<a id="__codelineno-25-37" name="__codelineno-25-37" href="#__codelineno-25-37"></a>
+<a id="__codelineno-25-38" name="__codelineno-25-38" href="#__codelineno-25-38"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_list_folders</span><span class="p">(</span><span class="n">store</span><span class="p">):</span>
+<a id="__codelineno-25-39" name="__codelineno-25-39" href="#__codelineno-25-39"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;docs/readme.md&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;# Hello&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-40" name="__codelineno-25-40" href="#__codelineno-25-40"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;src/main.py&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;pass&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-41" name="__codelineno-25-41" href="#__codelineno-25-41"></a>    <span class="n">folders</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)}</span>
+<a id="__codelineno-25-42" name="__codelineno-25-42" href="#__codelineno-25-42"></a>    <span class="k">assert</span> <span class="s2">&quot;docs&quot;</span> <span class="ow">in</span> <span class="n">folders</span>
+<a id="__codelineno-25-43" name="__codelineno-25-43" href="#__codelineno-25-43"></a>    <span class="k">assert</span> <span class="s2">&quot;src&quot;</span> <span class="ow">in</span> <span class="n">folders</span>
 </code></pre></div>
 <hr />
 <h2 id="design-decisions">Design decisions<a class="headerlink" href="#design-decisions" title="Permanent link">&para;</a></h2>

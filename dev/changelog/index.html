@@ -10232,6 +10232,14 @@
 </ul>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Custom backend guide: conformance suite integration</strong> (ID-132): The
+  "Testing your backend" section now explains how to register a new backend in
+  <code>tests/backends/conftest.py</code> to run the full conformance suite automatically,
+  how <code>_require()</code> / capability gating causes tests to self-skip (not fail) for
+  partial-capability backends, and the flat-namespace vs. hierarchical backend
+  distinction (<code>_FLAT_NAMESPACE_BACKENDS</code>). Added a conformance checklist table
+  (basic, extended, error mapping, repr safety). Corrected spec coverage range
+  (BE-001–BE-025 + ancillary specs) and test count (50 Dafny-derived tests).</li>
 <li>Added "Quality &amp; Testing" section to README explaining testing dimensions (spec-driven development, unit tests, PBT, formal verification, mutation testing, benchmarks, examples).</li>
 </ul>
 <h2 id="0211-2026-04-03">[0.21.1] - 2026-04-03<a class="headerlink" href="#0211-2026-04-03" title="Permanent link">&para;</a></h2>
