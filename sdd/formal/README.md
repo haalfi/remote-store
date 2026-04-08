@@ -94,6 +94,8 @@ some may not yet exist in the `tests/` directory.
 | `DeleteFolder: !recursive + HasChildren` | `test_delete_folder_non_recursive_non_empty_raises` | → `DirectoryNotEmpty` |
 | `GetFileInfo: IsDir → InvalidPath` | `test_get_file_info_on_directory_raises_error` | `get_file_info(dir)` → error |
 | `GetFolderInfo: IsFile → InvalidPath` | `test_get_folder_info_on_file_raises_error` | `get_folder_info(file)` → error |
+| `GetFolderInfo: !PathExists → NotFound` | `test_get_folder_info_missing_raises_not_found` | `get_folder_info(missing)` → `NotFound` |
+| `GetFolderInfo: IsDir → Ok` | `test_get_folder_info` | `get_folder_info(dir)` → success |
 | `ListFiles: ensures r.Ok?` | `test_list_files_missing_path_yields_empty` | `list_files(missing)` → `[]`, no error |
 | `ListFiles: depth ≤ max_depth` | `test_list_files_recursive_max_depth` | Depth boundary inclusive |
 | `ListFiles: completeness` | `test_list_files_all_results_are_children` | All results are children of path |

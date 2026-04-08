@@ -194,7 +194,7 @@ map to the specified error type regardless of backend:
 | Parent directory creation fails (permissions) | `PermissionDenied` |
 | Parent directory creation fails (path conflict) | `InvalidPath` |
 
-The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `Move`, `Copy` postconditions).
+The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `GetFolderInfo`, `Move`, `Copy` postconditions).
 
 **Scope note:** This table covers *cross-cutting* scenarios that apply to multiple operations. Method-specific errors (e.g. `DirectoryNotEmpty` from `delete_folder`, `CapabilityNotSupported` from capability-gated operations) are documented per-method and intentionally omitted here.
 
