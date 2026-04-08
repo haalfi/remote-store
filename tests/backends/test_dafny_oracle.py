@@ -418,9 +418,10 @@ class TestBackendVsOracle:
             pytest.skip("Backend does not support DELETE")
 
         oracle = DafnyOracle()
-        oracle.delete("missing.txt", missing_ok=True)
+        oracle_result = oracle.delete("missing.txt", missing_ok=True)
         backend.delete("missing.txt", missing_ok=True)
         # Both should succeed without raising
+        assert _oracle_error_type(oracle_result) is None
 
     @pytest.mark.spec("BE-VS-ORACLE-007")
     def test_list_files_structure(self, backend: Backend) -> None:
