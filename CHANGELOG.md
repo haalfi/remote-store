@@ -69,6 +69,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Both `S3Backend.read()` and `S3PyArrowBackend.read()` now use the new
   `_safe_wrap()` helper to close raw handles if wrapping constructors raise.
 
+### Documentation
+
+- Added "Quality & Testing" section to README explaining testing dimensions (spec-driven development, unit tests, PBT, formal verification, mutation testing, benchmarks, examples).
+
 ## [0.21.1] - 2026-04-03
 
 ### Fixed
