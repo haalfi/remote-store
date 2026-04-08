@@ -103,6 +103,13 @@ def slash_count(p: str) -> int:
     return p.count("/")
 
 
+def filename(path: str) -> str:
+    """Extract final path component (filename from path)."""
+    if "/" not in path:
+        return path
+    return path.rsplit("/", 1)[1]
+
+
 def depth(root: str, child: str) -> int:
     """
     Compute depth of child relative to root.
@@ -142,8 +149,7 @@ def is_child_of(child: str, parent: str) -> bool:
     """
     Check if child is a direct or indirect child of parent.
 
-    Special case: empty parent "" matches all non-empty paths.
-    Mirrors:
+    Mirrors the Dafny spec (with special case for empty parent):
     ```
     predicate IsChildOf(child: string, parent: string)
     {
@@ -152,9 +158,10 @@ def is_child_of(child: str, parent: str) -> bool:
       child[|parent|] == '/'
     }
     ```
+    For empty parent "", apply semantic: non-empty path without leading slash.
     """
     if parent == "":
-        # Empty parent: child is a child if it's non-empty and doesn't start with /
+        # Special case: root directory. Child is a child if non-empty & no leading /
         return len(child) > 0 and not child.startswith("/")
     return len(child) > len(parent) + 1 and child[: len(parent)] == parent and child[len(parent)] == "/"
 
@@ -303,7 +310,7 @@ class DafnyOracle:
 
         # 3. Success: create or overwrite (ensure parent dirs exist)
         self._ensure_parent_dirs(path)
-        info = FileInfo(path, path, len(content))
+        info = FileInfo(path, filename(path), len(content))
         self.fs[path] = FileEntry(content, info)
         return OracleOk(None)
 
@@ -503,7 +510,7 @@ class DafnyOracle:
                 continue
             if not is_child_of(p, path):
                 continue
-            result.append(FolderEntry(p, p))
+            result.append(FolderEntry(p, filename(p)))
 
         return OracleOk(result)
 
@@ -599,7 +606,7 @@ class DafnyOracle:
         self._ensure_parent_dirs(dst)
         src_entry = self.fs[src]
         assert isinstance(src_entry, FileEntry), "src must be a FileEntry"
-        new_info = FileInfo(dst, dst, src_entry.info.size)
+        new_info = FileInfo(dst, filename(dst), src_entry.info.size)
         new_entry = FileEntry(src_entry.content, new_info)
         del self.fs[src]
         self.fs[dst] = new_entry
@@ -665,7 +672,7 @@ class DafnyOracle:
         self._ensure_parent_dirs(dst)
         src_entry = self.fs[src]
         assert isinstance(src_entry, FileEntry), "src must be a FileEntry"
-        new_info = FileInfo(dst, dst, src_entry.info.size)
+        new_info = FileInfo(dst, filename(dst), src_entry.info.size)
         new_entry = FileEntry(src_entry.content, new_info)
         self.fs[dst] = new_entry
         return OracleOk(None)

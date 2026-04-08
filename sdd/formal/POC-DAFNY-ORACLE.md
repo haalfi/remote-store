@@ -11,7 +11,7 @@ A faithful Python implementation of `MemoryBackend.dfy` that mirrors:
 - **Error ordering**: type checks (IsDir) → existence checks (NotFound) → logic checks (AlreadyExists)
 - **Postconditions**: Write/Read/Delete/Move/Copy error and success semantics
 - **Edge cases**: self-move/copy, directory traversal, depth-filtered listings, recursive deletion
-- **Test results**: ✓ 33 tests passing, 25 oracle self-tests validate correctness against spec
+- **Test results**: ✓ 32 tests passing (25 oracle self-tests + 7 backend comparisons)
 
 **Key insight**: Handwritten oracle is practical, passes all spec-validation tests, and requires no external runtime.
 

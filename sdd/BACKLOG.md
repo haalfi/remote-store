@@ -48,9 +48,9 @@ Items graduate through the SDD pipeline:
 - [~] **BK-139c — Dafny-Python bridge: unified oracle for backend conformance**
   POC completed (see `sdd/formal/POC-DAFNY-ORACLE.md`). Close the gap between
   formal Dafny specification and runtime Python implementation.
-  - **Handwritten oracle** (`tests/backends/oracle.py`): 39 passing tests;
-    faithful mirror of `MemoryBackend.dfy` with no external deps. Suitable for
-    daily CI use.
+  - **Handwritten oracle** (`tests/backends/oracle.py`): 32 passing tests
+    (25 self-tests + 7 backend comparisons); faithful mirror of `MemoryBackend.dfy`
+    with no external deps. Suitable for daily CI use.
   - **Dafny-compiled oracle** (`sdd/formal/MemoryBackend-py/`): Direct
     translation of spec to Python via `dafny translate py` (Dafny 4.11.0);
     41 verified proofs. Requires `_dafny` runtime and class-ordering patch.

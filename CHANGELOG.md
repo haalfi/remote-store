@@ -40,6 +40,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **CI: Dafny verification gate** in `ci.yml`: Runs `dafny verify` on
   all formal specs when `sdd/formal/` or `sdd/specs/` files change.
   Skipped for code-only PRs.
+- **DafnyOracle: Reference oracle for backend conformance** (BK-139c):
+  Faithful Python implementation of `MemoryBackend.dfy` postconditions and error
+  ordering, with 32 conformance tests (25 oracle self-tests validating spec
+  correctness + 7 backend comparison tests). Enables differential testing
+  against production backends. Compiled Dafny output (`MemoryBackend-py/`)
+  included as authoritative spec reference (41 verified proofs, Dafny 4.11.0).
 - **BK-140a backend contract spec amendments** (`sdd/specs/`): Six spec
   amendments tightening the backend ABC behavioral contract — precondition
   evaluation order with flat-namespace exemption (BE-008), canonical error

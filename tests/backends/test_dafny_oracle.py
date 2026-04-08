@@ -24,11 +24,12 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 from remote_store._errors import (
     AlreadyExists,
-    DirectoryNotEmpty,
-    InvalidPath,
     NotFound,
 )
-from tests.backends.oracle import DafnyOracle, ErrorKind
+
+# OS-sensitive: tests exercise LocalBackend via parameterized fixture
+pytestmark = pytest.mark.os_sensitive
+from tests.backends.oracle import DafnyOracle, ErrorKind, OracleOk
 
 
 def _oracle_error_type(oracle_result: object) -> ErrorKind | None:
@@ -42,7 +43,6 @@ def _oracle_error_type(oracle_result: object) -> ErrorKind | None:
 
 def _oracle_value(oracle_result: object) -> object:
     """Extract value from oracle result (or None if error)."""
-    from tests.backends.oracle import OracleOk
 
     if isinstance(oracle_result, OracleOk):
         return oracle_result.value
@@ -164,7 +164,7 @@ class TestOracleSelfOperations:
         oracle = DafnyOracle()
         oracle.write("file.txt", b"data")
         result = oracle.move("file.txt", "file.txt")
-        assert isinstance(result, type(oracle.exists("file.txt")))  # Check it's OracleOk
+        assert isinstance(result, OracleOk)
         # File should still exist with same content
         assert _oracle_value(oracle.read("file.txt")) == b"data"
 
@@ -309,7 +309,7 @@ class TestOracleDeleteFolder:
         oracle = DafnyOracle()
         result = oracle.delete_folder("missing", missing_ok=True)
         # Should succeed (not an error)
-        assert isinstance(result, type(oracle.exists("anything")))
+        assert isinstance(result, OracleOk)
 
 
 # ============================================================================
@@ -320,27 +320,16 @@ class TestOracleDeleteFolder:
 class TestBackendVsOracle:
     """Compare real backend behavior against oracle."""
 
-    def _normalize_error(self, exc: Exception) -> ErrorKind | None:
-        """Map backend exceptions to oracle error kinds."""
-        if isinstance(exc, NotFound):
-            return ErrorKind.NOT_FOUND
-        if isinstance(exc, AlreadyExists):
-            return ErrorKind.ALREADY_EXISTS
-        if isinstance(exc, InvalidPath):
-            return ErrorKind.INVALID_PATH
-        if isinstance(exc, DirectoryNotEmpty):
-            return ErrorKind.DIRECTORY_NOT_EMPTY
-        return None
-
     @pytest.mark.spec("BE-VS-ORACLE-001")
     def test_read_missing_file(self, backend: Backend) -> None:
         """Both backend and oracle return NotFound for missing files."""
         oracle = DafnyOracle()
 
-        # Oracle
-        oracle.read("missing.txt")
+        # Oracle should return NotFound
+        oracle_result = oracle.read("missing.txt")
+        assert _oracle_error_type(oracle_result) == ErrorKind.NOT_FOUND
 
-        # Backend
+        # Backend should also raise NotFound
         with pytest.raises(NotFound):
             backend.read("missing.txt")
 
@@ -395,8 +384,11 @@ class TestBackendVsOracle:
         backend.write("file.txt", b"new", overwrite=True)
 
         oracle_content = _oracle_value(oracle.read("file.txt"))
-        backend.read("file.txt")  # Verify backend also succeeds
+        backend_result = backend.read("file.txt")
+        backend_content = backend_result.read() if hasattr(backend_result, "read") else backend_result
+        # Both should have the new content
         assert oracle_content == b"new"  # type: ignore[comparison-overlap]
+        assert oracle_content == backend_content
 
     @pytest.mark.spec("BE-VS-ORACLE-005")
     def test_delete_missing_not_missing_ok(self, backend: Backend) -> None:
