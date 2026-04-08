@@ -45,6 +45,29 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [~] **BK-139c — Dafny-Python bridge: unified oracle for backend conformance**
+  POC completed (see `sdd/formal/POC/`). Proved two viable approaches to bridging
+  formal Dafny specification and runtime Python testing.
+  - **Direction 1: Handwritten oracle** (`sdd/formal/POC/oracle.py`)
+    - 680 lines pure Python, no external deps
+    - 32 passing conformance tests (25 self-validation + 7 backend comparison)
+    - ✓ Practical for daily CI, proven correct
+    - ✗ Manual transcription; must stay in sync with spec
+  - **Direction 2: Compiled oracle** (`sdd/formal/MemoryBackend-py/`)
+    - Direct `dafny translate py` output (41 verified proofs)
+    - ✓ Mathematically verified, auto-generated from spec
+    - ✗ Requires `_dafny` runtime; Dafny types need marshaling; class-ordering bug
+  - **POC demonstrates feasibility**:
+    - Unified strategy possible: run both oracles in differential conformance tests
+    - Differential test fails if handwritten ≠ compiled → investigate why
+    - Catches implementation-vs-spec drift at source
+  - **Remaining (follow-up decision)**:
+    - [ ] Review POC findings (`sdd/formal/POC/README.md`)
+    - [ ] Assess effort vs. benefit for each direction
+    - [ ] Decide: pursue unified bridge? which approach? when?
+    - If yes: implement chosen approach + integrate into CI pipeline
+  - **Related**: BK-139a, BK-139b, BK-140, BE-021
+
 - [~] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
   Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Items 4, 5, 7 shipped.
@@ -55,6 +78,8 @@ Items graduate through the SDD pipeline:
 ---
 
 ## Ideas
+
+### Testing & Verification
 
 ### API Surface Enhancements
 

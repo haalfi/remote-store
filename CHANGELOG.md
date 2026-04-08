@@ -40,6 +40,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **CI: Dafny verification gate** in `ci.yml`: Runs `dafny verify` on
   all formal specs when `sdd/formal/` or `sdd/specs/` files change.
   Skipped for code-only PRs.
+- **DafnyOracle POC** (BK-139c): Proof-of-concept reference oracle implementation
+  derived from `MemoryBackend.dfy` formal specification. Two approaches validated:
+  handwritten oracle (680 lines, 32 passing tests) and compiled oracle (Dafny
+  4.11.0, 41 verified proofs). Demonstrates feasibility of spec-based conformance
+  testing. See `sdd/formal/POC/` for implementation and roadmap. Not production-ready.
 - **BK-140a backend contract spec amendments** (`sdd/specs/`): Six spec
   amendments tightening the backend ABC behavioral contract — precondition
   evaluation order with flat-namespace exemption (BE-008), canonical error
