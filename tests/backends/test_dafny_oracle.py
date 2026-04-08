@@ -359,7 +359,9 @@ class TestBackendVsOracle:
         oracle_result = oracle.read("file.txt")
         backend_result = backend.read("file.txt")
 
-        assert _oracle_value(oracle_result) == backend_result
+        oracle_content = _oracle_value(oracle_result)
+        backend_content = backend_result.read() if hasattr(backend_result, "read") else backend_result
+        assert oracle_content == backend_content
 
     @pytest.mark.spec("BE-VS-ORACLE-003")
     def test_write_overwrite_false_existing(self, backend: Backend) -> None:
@@ -436,7 +438,7 @@ class TestBackendVsOracle:
         oracle_result = oracle.list_files("")
         backend_result = backend.list_files("")
 
-        oracle_paths = {f.path for f in _oracle_value(oracle_result)}  # type: ignore[union-attr]
-        backend_paths = {f.path for f in backend_result}
+        oracle_paths = {str(f.path) for f in _oracle_value(oracle_result)}  # type: ignore[union-attr]
+        backend_paths = {str(f.path) for f in backend_result}
 
         assert oracle_paths == backend_paths
