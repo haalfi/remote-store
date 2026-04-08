@@ -223,6 +223,19 @@ The core library handles storage operations. Extensions add optional capabilitie
 
 Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.
 
+## Quality & Testing
+
+Storage behavior must be predictable and correct. We verify this across multiple dimensions:
+
+- **Spec-driven development:** behavior specifications are the source of truth; tests link directly to them. *Prevents feature drift.*
+- **Extensive unit tests:** 95%+ coverage across all backends, focused on behavior. *Catches integration issues early.*
+- **Design by Contract:** pre/post conditions and invariants catch incorrect usage early. *Fails fast on misuse.*
+- **Property-based testing:** randomized input generation surfaces edge cases no hand-written test would find. *Finds blind spots.*
+- **Formal verification:** critical paths are proven correct in Dafny before implementation. *Eliminates logic errors.*
+- **Mutation testing:** gremlins modify the code; if they survive the tests, the tests have gaps. *Exposes weak test coverage.*
+- **Benchmarks:** performance tracked per operation and backend. *Provides baseline for optimization.*
+- **Examples and snippets:** runnable code in `examples/` and notebooks; docs are tested against actual behavior. *Keeps examples real.*
+
 ## Learn more
 
 To explore `remote-store` beyond the Quick Start:
