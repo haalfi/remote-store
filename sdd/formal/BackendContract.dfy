@@ -146,12 +146,13 @@ predicate IsChildOf(child: string, parent: string)
 }
 
 // All ancestors of p are directories (no file-as-directory-component).
-// Returns true if every prefix of p (except p itself) is either not in fs
-// or is a directory, never a file.
+// Checks only directory-segment-aligned prefixes (those ending with "/" in p).
+// A prefix is valid if it either doesn't exist in fs or is a directory, never a file.
 predicate AllAncestorsTraversable(fs: Filesystem, p: Path)
 {
   forall prefix: Path |
-    prefix != p && |prefix| < |p| && p[..|prefix|] == prefix ::
+    prefix != p && |prefix| < |p| && p[..|prefix|] == prefix &&
+    |prefix| < |p| - 1 && p[|prefix|] == '/' ::
     !PathExists(fs, prefix) || IsDir(fs, prefix)
 }
 
@@ -176,9 +177,11 @@ trait Backend {
   // ====================================================================
   // exists(path) → bool
   // ====================================================================
+  // Returns True iff path exists AND all ancestors are directories.
+  // Returns False for missing paths or paths with file-as-directory-component.
   method Exists(path: Path) returns (r: Result<bool>)
     ensures r.Ok?
-    ensures r.value == PathExists(fs, path)
+    ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
 
   // ====================================================================
   // is_file(path) → bool

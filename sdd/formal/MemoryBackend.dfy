@@ -22,9 +22,11 @@ class MemoryBackend extends Backend {
 
   method Exists(path: Path) returns (r: Result<bool>)
     ensures r.Ok?
-    ensures r.value == PathExists(fs, path)
+    ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
   {
-    r := Ok(path in fs);
+    var exists := path in fs;
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    r := Ok(exists && ancestors_ok);
   }
 
   method IsFileMethod(path: Path) returns (r: Result<bool>)
@@ -46,21 +48,26 @@ class MemoryBackend extends Backend {
   }
 
   // Helper to check that all ancestors are traversable (not files)
+  // Only checks segment-aligned prefixes (those where path[i] == '/').
   method AncestorsTraversableCheck(path: Path) returns (result: bool)
     ensures result == AllAncestorsTraversable(fs, path)
   {
     result := true;
-    var i := 1;
+    var i := 0;
     while i < |path|
-      invariant 1 <= i <= |path|
+      invariant 0 <= i <= |path|
       invariant result == (forall prefix: Path |
-        prefix != path && |prefix| < i && path[..|prefix|] == prefix ::
+        prefix != path && |prefix| < i && path[..|prefix|] == prefix &&
+        |prefix| < |path| - 1 && path[|prefix|] == '/' ::
         !PathExists(fs, prefix) || IsDir(fs, prefix))
     {
-      var prefix := path[..i];
-      if prefix != path && prefix in fs && fs[prefix].FileEntry? {
-        result := false;
-        break;
+      // Find next '/' boundary
+      if i < |path| - 1 && path[i] == '/' {
+        var prefix := path[..i];
+        if prefix in fs && fs[prefix].FileEntry? {
+          result := false;
+          break;
+        }
       }
       i := i + 1;
     }

@@ -15,7 +15,8 @@ fi
 # Attempt typecheck; skip if hatch is unavailable (environmental issue, not code quality)
 OUTPUT=$(hatch run typecheck 2>&1)
 EXIT_CODE=$?
-if [ $EXIT_CODE -eq 127 ] || echo "$OUTPUT" | grep -q "No module named\|not found"; then
+# Exit code 127 = command not found (shell error); also check for missing module errors
+if [ $EXIT_CODE -eq 127 ] || echo "$OUTPUT" | grep -qE "ModuleNotFoundError|No module named"; then
   echo "Warning: typecheck unavailable (hatch/dependencies), proceeding anyway" >&2
   exit 0
 fi

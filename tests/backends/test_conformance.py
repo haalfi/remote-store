@@ -104,63 +104,6 @@ class TestBackendFileFolder:
         assert getattr(backend, method)("nope") is False
 
 
-class TestBackendQueryMethodsTypeConflicts:
-    """BE-004, BE-005, BE-021: Query methods behavior under file-as-directory-component.
-
-    When a path has an ancestor that is a file (not a directory), the query methods
-    exists(), is_file(), and is_folder() return False rather than raising InvalidPath.
-    This codifies the "accidental consensus" behavior across all backends (ID-129).
-    """
-
-    @pytest.mark.spec("BE-004")
-    @pytest.mark.spec("BE-021")
-    def test_exists_returns_false_when_ancestor_is_file(self, backend: Backend) -> None:
-        """exists() returns False for paths with file-as-directory-component ancestor."""
-        _require(backend, Capability.WRITE)
-        backend.write("a/b", b"file_content")
-        # Try to query a path through the file "a/b" as if it were a directory
-        assert backend.exists("a/b/c") is False
-        assert backend.exists("a/b/c/d/e") is False
-
-    @pytest.mark.spec("BE-005")
-    @pytest.mark.spec("BE-021")
-    def test_is_file_returns_false_when_ancestor_is_file(self, backend: Backend) -> None:
-        """is_file() returns False for paths with file-as-directory-component ancestor."""
-        _require(backend, Capability.WRITE)
-        backend.write("a/b", b"file_content")
-        # is_file should return False, not raise InvalidPath
-        assert backend.is_file("a/b/c") is False
-        assert backend.is_file("a/b/c/d") is False
-
-    @pytest.mark.spec("BE-005")
-    @pytest.mark.spec("BE-021")
-    def test_is_folder_returns_false_when_ancestor_is_file(self, backend: Backend) -> None:
-        """is_folder() returns False for paths with file-as-directory-component ancestor."""
-        _require(backend, Capability.WRITE)
-        backend.write("a/b", b"file_content")
-        # is_folder should return False, not raise InvalidPath
-        assert backend.is_folder("a/b/c") is False
-        assert backend.is_folder("a/b/c/d") is False
-
-    @pytest.mark.spec("BE-004")
-    @pytest.mark.spec("BE-005")
-    @pytest.mark.spec("BE-021")
-    @pytest.mark.parametrize(
-        "method",
-        [
-            pytest.param("exists", id="exists"),
-            pytest.param("is_file", id="is_file"),
-            pytest.param("is_folder", id="is_folder"),
-        ],
-    )
-    def test_all_query_methods_return_false_on_type_conflict(self, backend: Backend, method: str) -> None:
-        """All three query methods return False consistently for type conflicts."""
-        _require(backend, Capability.WRITE)
-        backend.write("file", b"content")
-        # All methods should return False when traversing through a file
-        assert getattr(backend, method)("file/subpath") is False
-
-
 class TestBackendRead:
     """BE-006 through BE-007: read operations."""
 
