@@ -139,7 +139,7 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 
 ## What you get
 
-- **One interface, many backends:** local filesystem, S3, SFTP, Azure, in-memory
+- **One interface, many backends:** local filesystem, S3, SFTP, Azure, in-memory, and more
 - **Folder-scoped stores:** each Store is rooted at a folder — compose layouts with multiple stores or narrow scope with `child()`
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
