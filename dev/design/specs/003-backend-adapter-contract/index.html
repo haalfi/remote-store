@@ -8584,7 +8584,7 @@ missing or non-existent paths.</p>
 <h3 id="be-017-get_folder_info">BE-017: get_folder_info()<a class="headerlink" href="#be-017-get_folder_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>get_folder_info(path)</code> returns <code>FolderInfo</code>.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a file (wrong type — use <code>get_file_info</code> instead). See BE-021.
-<strong>Formal coverage note:</strong> <code>get_folder_info()</code> is not modelled in <code>sdd/formal/BackendContract.dfy</code>; the <code>InvalidPath</code> postcondition is specified by symmetry with BE-016 (<code>GetFileInfo: IsDir → InvalidPath</code>) but is not formally verified. Tracked in ID-130.</p>
+<strong>Formal coverage:</strong> <code>get_folder_info()</code> is modelled in <code>sdd/formal/BackendContract.dfy</code> as <code>GetFolderInfo</code> with postconditions <code>IsFile → InvalidPath</code>, <code>!PathExists → NotFound</code>, and <code>IsDir → Ok</code>. Verified in <code>MemoryBackend.dfy</code>. See ID-130.</p>
 <h3 id="be-018-move">BE-018: move()<a class="headerlink" href="#be-018-move" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst, overwrite=False)</code> renames/moves a file.
 <strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, or if <code>dst</code> names an existing directory (cannot overwrite a directory with a file). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-move is a no-op (Dafny: <code>Move: src == dst → Ok</code>). See BE-021 and BE-008 for precondition evaluation order.
@@ -8644,7 +8644,7 @@ map to the specified error type regardless of backend:</p>
 </tr>
 </tbody>
 </table>
-<p>The type-mismatch rule (<code>InvalidPath</code>) takes precedence over the existence rule (<code>NotFound</code>) — a directory path is not "missing", it is the wrong type. This is machine-verified in <code>sdd/formal/BackendContract.dfy</code> (<code>Read</code>, <code>Delete</code>, <code>DeleteFolder</code>, <code>GetFileInfo</code>, <code>Move</code>, <code>Copy</code> postconditions).</p>
+<p>The type-mismatch rule (<code>InvalidPath</code>) takes precedence over the existence rule (<code>NotFound</code>) — a directory path is not "missing", it is the wrong type. This is machine-verified in <code>sdd/formal/BackendContract.dfy</code> (<code>Read</code>, <code>Delete</code>, <code>DeleteFolder</code>, <code>GetFileInfo</code>, <code>GetFolderInfo</code>, <code>Move</code>, <code>Copy</code> postconditions).</p>
 <p><strong>Scope note:</strong> This table covers <em>cross-cutting</em> scenarios that apply to multiple operations. Method-specific errors (e.g. <code>DirectoryNotEmpty</code> from <code>delete_folder</code>, <code>CapabilityNotSupported</code> from capability-gated operations) are documented per-method and intentionally omitted here.</p>
 <p><strong>Broad exception handler rule:</strong> Backends MUST NOT use bare <code>except OSError</code>
 or <code>except Exception</code> handlers that map all errors to a single type. Handlers
