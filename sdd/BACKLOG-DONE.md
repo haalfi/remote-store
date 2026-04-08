@@ -113,6 +113,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the mutated path, not just the leaf. Called from `_invalidate_path`.
   Audit: [008 B-1](audits/audit-008-package-bugs.md#b-1)
 
+## Specification & API Contract
+
+- [x] **ID-129 — Spec gap: query methods under path-type conflicts**
+  Codified behavior for `exists()`, `is_file()`, `is_folder()` when paths
+  contain file-as-directory-component ancestors (e.g., querying `a/b/c` when
+  `a/b` is a file). All backends return `False` — accidental consensus now
+  made explicit.
+  - BE-004: `exists()` returns `False` for type-conflicted paths
+  - BE-005: `is_file()`/`is_folder()` return `False` for type-conflicted paths
+  - BE-021: Added canonical error mapping row documenting query methods return
+    `False` rather than raising `InvalidPath`
+  - BE-021 (broad-handler rule): Clarified that these three methods return
+    `False` on any traversal error, including type conflicts
+  Existing test `test_traverse_through_file_returns_false` validates
+  MemoryBackend. Extended conformance tests (all backends) tracked as
+  Phase 3 in the implementation plan.
+  Related: BK-140, BE-005, BE-021, ID-130 (Dafny coverage).
+
 ## Backlog
 
 - [x] **BK-140 — Dafny formal verification layer for backend contract**

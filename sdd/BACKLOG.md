@@ -91,15 +91,6 @@ Items graduate through the SDD pipeline:
   `!PathExists → NotFound`, and verify it in `MemoryBackend.dfy`.
   Related: BE-017, BK-140, ID-129.
 
-- [ ] **ID-129 — Spec gap: query methods under path-type conflicts**
-  `exists()`, `is_file()`, `is_folder()` are not analyzed in the BE-021
-  canonical error mapping table. These methods return `bool` and are permitted
-  to swallow errors, but the behavior when called on a path segment that
-  contains a file-as-directory-component (type conflict in an ancestor) is
-  unspecified. All backends currently return `False` — likely accidental
-  consensus. Worth codifying before BK-139b extended conformance tests.
-  Related: BK-140, BE-005, BE-021.
-
 - [ ] **ID-128 — `Capability.ATOMIC_MOVE` enum member**
   Add `ATOMIC_MOVE` to the `Capability` enum so callers can query whether
   `move()` is safe under concurrent access. Deferred from BK-140 to avoid
