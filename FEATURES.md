@@ -107,6 +107,7 @@ Query at runtime with `store.supports(Capability.X)`.
 | `MOVE` | Rename/relocate within same backend | `move()` |
 | `COPY` | Duplicate within same backend | `copy()` |
 | `ATOMIC_WRITE` | Write via temp-and-rename (no partial reads) | `write_atomic()`, `open_atomic()` |
+| `ATOMIC_MOVE` | `move()` is guaranteed atomic under concurrent access | — (quality flag for `move()`) |
 | `METADATA` | Retrieve file/folder metadata | `get_file_info()`, `get_folder_info()` |
 | `GLOB` | Native pattern matching on file paths | `glob()` |
 | `SEEKABLE_READ` | `read()` returns natively seekable streams | — (quality flag, not a method gate) |
@@ -122,10 +123,10 @@ Backends implement storage-specific behavior behind the Store API.
 | `local` | Local filesystem storage | `LocalBackend` | — | Yes | ALL |
 | `memory` | In-memory store for testing and caching | `MemoryBackend` | — | Yes | All except GLOB |
 | `http` | Read-only HTTP file access (stdlib urllib; optional `requests`/`httpx` adapters) | `ReadOnlyHttpBackend` | — (`requests`, `httpx` optional) | Yes | READ, METADATA |
-| `s3` | Amazon S3 via s3fs | `S3Backend` | `pip install remote-store[s3]` | No | ALL |
-| `s3-pyarrow` | Amazon S3 via PyArrow C++ filesystem | `S3PyArrowBackend` | `pip install remote-store[s3-pyarrow]` | No | ALL |
-| `sftp` | SFTP via paramiko | `SFTPBackend` | `pip install remote-store[sftp]` | No | All except GLOB |
-| `azure` | Azure Data Lake Storage via Azure SDK | `AzureBackend` | `pip install remote-store[azure]` | No | All except SEEKABLE_READ |
+| `s3` | Amazon S3 via s3fs | `S3Backend` | `pip install remote-store[s3]` | No | All except ATOMIC_MOVE |
+| `s3-pyarrow` | Amazon S3 via PyArrow C++ filesystem | `S3PyArrowBackend` | `pip install remote-store[s3-pyarrow]` | No | All except ATOMIC_MOVE |
+| `sftp` | SFTP via paramiko | `SFTPBackend` | `pip install remote-store[sftp]` | No | All except GLOB and ATOMIC_MOVE |
+| `azure` | Azure Data Lake Storage via Azure SDK | `AzureBackend` | `pip install remote-store[azure]` | No | All except SEEKABLE_READ and ATOMIC_MOVE |
 | `sql-blob` | SQL blob store via SQLAlchemy | `SQLBlobBackend` | `pip install remote-store[sql]` | No | ALL |
 | `sql-query` | SQL query store for tabular data via SQLAlchemy + PyArrow | `SQLQueryBackend` | `pip install remote-store[sql-query]` | No | READ, LIST, METADATA, GLOB, SEEKABLE_READ |
 
