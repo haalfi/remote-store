@@ -71,9 +71,12 @@ during initialization, provided:
 
 1. The probe is for an **optional feature**, not a required operation.
 2. A graceful fallback exists (e.g., Tier 2/3 I/O paths in `ext.arrow`).
-3. The catch is narrowly scoped to `(CapabilityNotSupported, TypeError)`.
-4. A comment explains the probe and fallback strategy.
-5. The catch is annotated with `# noqa: BLE001` and references this section.
+3. The catch is narrowly scoped to expected exceptions (e.g.,
+   `(CapabilityNotSupported, TypeError, OSError)` for cloud backends).
+4. A comment explains the probe, exceptions caught, and fallback strategy.
+5. The catch MAY be annotated with `# noqa: BLE001` as a documentation marker
+   if the implementation uses a broad catch; the annotation is optional if the
+   catch is already narrow and specific.
 
 **Example:** `ext.arrow` Tier 1 probe (`src/remote_store/ext/arrow.py`
 line 177).  The `ArrowAccessor.__init__` probes for a native PyArrow
