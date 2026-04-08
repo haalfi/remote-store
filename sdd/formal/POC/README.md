@@ -70,7 +70,32 @@ To move oracle into production:
 
 ## Architecture
 
-**Two-tier oracle strategy**:
+### Two-Tier Oracle Strategy
+
+```
+┌─────────────────────────────────────────┐
+│  Production Backend (S3, Local, etc.)  │
+└──────────────┬──────────────────────────┘
+               │ conformance tests compare against
+               ↓
+      ┌─────────────────┐
+      │  Test Oracle    │
+      ├─────────────────┤
+      │ Handwritten     │  ← Daily use (practical, no deps)
+      │ (oracle.py)     │
+      │ OR              │
+      │ Dafny-compiled  │  ← Authoritative (mathematically verified)
+      │ (MemoryBackend-│
+      │  py/module_.py) │
+      └────────┬────────┘
+               │
+               ↓
+       ┌──────────────────┐
+       │ Formal Contract  │
+       │ (MemoryBackend   │
+       │  .dfy, verified) │
+       └──────────────────┘
+```
 
 | Layer | Implementation | Use Case | Verification |
 |-------|---|---|---|
@@ -79,8 +104,42 @@ To move oracle into production:
 
 Both should eventually agree (differential testing). If they diverge, code is wrong.
 
-## References
+### Implementation Details
 
-- `sdd/formal/POC-DAFNY-ORACLE.md` — Architecture overview and design decisions
-- `sdd/BACKLOG.md` (BK-139c) — Integration roadmap
+**Handwritten Oracle (`oracle.py`)**
+- 680 lines of pure Python, no external runtime
+- Mirrors all postconditions and error-ordering guarantees
+- Error precedence: type checks (IsDir) → existence checks (NotFound) → logic checks (AlreadyExists)
+- Covers Write/Read/Delete/Move/Copy semantics, depth filtering, recursive deletion
+- ✓ Proven correct via 25 self-tests validating against spec postconditions
+
+**Compiled Oracle (`MemoryBackend-py/`)**
+- Direct compilation: `dafny translate py sdd/formal/MemoryBackend.dfy --include-runtime`
+- ✓ **41 verified, 0 errors** (full formal verification)
+- `module_.py`: compiled MemoryBackend + all types (Result, Error, Capability, etc.)
+- `_dafny/`: Python runtime (Map, Set, Seq, CodePoint implementations)
+- `System_/`: Dafny standard library bindings
+- **Known issue**: Class ordering bug (Backend defined after MemoryBackend) — fixable with one-time reorder patch
+
+### Why Two Tiers?
+
+**Handwritten oracle**:
+- ✓ Pure Python, no external runtime
+- ✓ Easy to modify and debug
+- ✓ Suitable for daily CI/CD
+- ✗ Must be manually kept in sync with spec
+
+**Compiled oracle**:
+- ✓ Mathematically verified by Dafny
+- ✓ Automatically generated from spec
+- ✓ Eliminates manual transcription errors
+- ✗ Requires `_dafny` runtime (external dep)
+- ✗ Dafny types (Seq, Map, CodePoint) need marshaling to Python
+
+**Future**: Use both in differential conformance tests — if handwritten ≠ compiled, investigate why. This catches implementation-vs-spec drift.
+
+## Related Documents
+
+- `sdd/BACKLOG.md` (BK-139c) — Integration roadmap and deliverables
 - `sdd/formal/MemoryBackend.dfy` — Formal specification source
+- `sdd/formal/README.md` — Other formal artifacts (contracts, proofs)
