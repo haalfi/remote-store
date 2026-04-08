@@ -54,6 +54,17 @@ from remote_store import seekable_read
 with seekable_read(store, "report.csv") as f:
     header = f.read(128)
     f.seek(0)  # guaranteed seekable
+
+# Atomic move — quality flag, not a method gate
+# move() is always callable (when MOVE is supported), but only atomic
+# when the backend declares ATOMIC_MOVE.
+if store.supports(Capability.ATOMIC_MOVE):
+    store.move("staging/data.parquet", "prod/data.parquet")
+else:
+    # copy-then-delete: a crash between steps leaves duplicates
+    # consider writing to destination first, then deleting source
+    store.move("staging/data.parquet", "prod/data.parquet")
+    assert not store.exists("staging/data.parquet"), "source not removed — manual cleanup needed"
 ```
 
 ## See also

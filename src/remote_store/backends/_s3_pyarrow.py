@@ -114,6 +114,11 @@ class S3PyArrowBackend(_S3Base):
     for large files) and s3fs for control-path operations (listing, metadata,
     deletion).
 
+    ``move()`` is implemented as a PyArrow copy followed by an s3fs delete.
+    This is non-atomic: a crash or network error between the two steps may
+    leave both source and destination present.  ``ATOMIC_MOVE`` is not
+    declared.
+
     Args:
         bucket: S3 bucket name (required, non-empty).
         endpoint_url: Custom endpoint URL (e.g. for MinIO).

@@ -35,8 +35,8 @@ class MemoryBackend(Backend):
     drop-in backend for unit testing, interactive exploration, and
     documentation examples.
 
-    All 8 capabilities are supported.  The full conformance suite passes
-    with zero skips.
+    All capabilities except ``GLOB`` are supported.  The full conformance
+    suite passes with zero skips.
     """
 
     def __init__(self) -> None:

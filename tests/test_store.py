@@ -53,6 +53,25 @@ class TestStoreBasics:
         assert store.supports(Capability.READ) is True
         assert store.supports(Capability.WRITE) is True
 
+    @pytest.mark.spec("STORE-005")
+    def test_supports_atomic_move_true_for_memory(self) -> None:
+        """Store.supports delegates to backend; MemoryBackend declares ATOMIC_MOVE."""
+        store = Store(backend=MemoryBackend(), root_path="root")
+        assert store.supports(Capability.ATOMIC_MOVE) is True
+
+    @pytest.mark.spec("STORE-005")
+    def test_supports_atomic_move_false_when_backend_lacks_it(self) -> None:
+        """Store.supports returns False when the backend's CapabilitySet excludes ATOMIC_MOVE."""
+        from unittest.mock import MagicMock
+
+        from remote_store._backend import Backend
+        from remote_store._capabilities import CapabilitySet
+
+        mock_backend = MagicMock(spec=Backend)
+        mock_backend.capabilities = CapabilitySet(set(Capability) - {Capability.ATOMIC_MOVE})
+        store = Store(backend=mock_backend, root_path="root")
+        assert store.supports(Capability.ATOMIC_MOVE) is False
+
     @pytest.mark.spec("STORE-004")
     def test_write_and_read(self, store: Store) -> None:
         store.write("test.txt", b"content")

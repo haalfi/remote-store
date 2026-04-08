@@ -160,6 +160,11 @@ def _load_host_keys_from_string(ssh: Any, keys_content: str) -> None:  # pragma:
 class SFTPBackend(Backend):
     """SFTP backend using pure paramiko.
 
+    ``move()`` attempts ``posix_rename`` (atomic on POSIX-compliant servers),
+    then falls back to ``rename``, and finally to a stream copy followed by
+    a delete.  Because atomicity cannot be guaranteed across all servers,
+    ``ATOMIC_MOVE`` is not declared.
+
     Args:
         host: SFTP server hostname (required, non-empty).
         port: SSH port (default: 22).

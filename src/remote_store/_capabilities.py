@@ -34,11 +34,13 @@ class Capability(enum.Enum):
     - ``ATOMIC_WRITE`` -- Write via temp-file-and-rename so readers never
       see partial content. Gates ``Store.write_atomic()`` and
       ``Store.open_atomic()``.
-    - ``ATOMIC_MOVE`` -- ``move()`` is guaranteed atomic under concurrent
-      access (e.g. Local via ``os.rename``, Memory under lock, SQL in a
-      transaction). Backends that cannot guarantee atomicity (S3, Azure
-      non-HNS, SFTP-fallback) do not declare this capability.
-      Gates ``Store.supports(Capability.ATOMIC_MOVE)``.
+    - ``ATOMIC_MOVE`` -- Quality flag: ``move()`` is guaranteed atomic
+      under concurrent access (e.g. Local via ``os.rename``, Memory under
+      lock, SQL in a transaction). Does **not** gate a method — call
+      ``store.supports(Capability.ATOMIC_MOVE)`` before relying on
+      atomic rename semantics. Backends that implement move as
+      copy-then-delete (S3, S3-PyArrow, Azure non-HNS, SFTP copy-fallback)
+      do not declare this capability.
     - ``METADATA`` -- Retrieve file or folder metadata.
       Gates ``Store.get_file_info()`` and ``Store.get_folder_info()``.
     - ``GLOB`` -- Native pattern matching against file paths.

@@ -664,8 +664,10 @@ class TestBackendResolveDefault:
 class TestAtomicMoveCapability:
     """CAP-001: ATOMIC_MOVE capability declared by backends with atomic move semantics."""
 
-    _DECLARES = {"local", "memory", "sqlblob"}
-    _DOES_NOT_DECLARE = {"s3", "s3-pyarrow", "azure", "sftp", "sqlquery", "http"}
+    # Backends exercised by the conformance fixture (conftest.py).
+    # sql-blob and sql-query are not parameterised here; they have their own test modules.
+    _DECLARES = {"local", "memory"}
+    _DOES_NOT_DECLARE = {"s3", "s3-pyarrow", "azure", "sftp", "http"}
 
     @pytest.mark.spec("CAP-001")
     def test_atomic_move_capability_declaration(self, backend: Backend) -> None:
@@ -675,7 +677,11 @@ class TestAtomicMoveCapability:
             assert supports, f"{name} should declare ATOMIC_MOVE"
         elif name in self._DOES_NOT_DECLARE:
             assert not supports, f"{name} should not declare ATOMIC_MOVE"
-        # backends not in either set are not asserted (future backends)
+        else:
+            pytest.fail(
+                f"Backend {name!r} is not listed in _DECLARES or _DOES_NOT_DECLARE. "
+                "Update TestAtomicMoveCapability to classify this backend."
+            )
 
 
 class TestBackendResolveUniversalContract:
