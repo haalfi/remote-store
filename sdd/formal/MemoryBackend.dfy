@@ -27,6 +27,45 @@ class MemoryBackend extends Backend {
     r := Ok(path in fs);
   }
 
+  method IsFileMethod(path: Path) returns (r: Result<bool>)
+    ensures r.Ok?
+    ensures r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
+  {
+    var is_file := path in fs && fs[path].FileEntry?;
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    r := Ok(is_file && ancestors_ok);
+  }
+
+  method IsFolderMethod(path: Path) returns (r: Result<bool>)
+    ensures r.Ok?
+    ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
+  {
+    var is_dir := path in fs && fs[path].DirEntry?;
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    r := Ok(is_dir && ancestors_ok);
+  }
+
+  // Helper to check that all ancestors are traversable (not files)
+  method AncestorsTraversableCheck(path: Path) returns (result: bool)
+    ensures result == AllAncestorsTraversable(fs, path)
+  {
+    result := true;
+    var i := 1;
+    while i < |path|
+      invariant 1 <= i <= |path|
+      invariant result == (forall prefix: Path |
+        prefix != path && |prefix| < i && path[..|prefix|] == prefix ::
+        !PathExists(fs, prefix) || IsDir(fs, prefix))
+    {
+      var prefix := path[..i];
+      if prefix != path && prefix in fs && fs[prefix].FileEntry? {
+        result := false;
+        break;
+      }
+      i := i + 1;
+    }
+  }
+
   method Read(path: Path) returns (r: Result<seq<nat>>)
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
