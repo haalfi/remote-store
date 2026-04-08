@@ -345,7 +345,7 @@ backend runs the full suite automatically.
 ### Registering in the conformance fixture (contributing backends)
 
 If you are contributing a backend to remote-store, this is step 3 of
-[CONTRIBUTING.md § Adding a New Backend](../CONTRIBUTING.md#adding-a-new-backend).
+[CONTRIBUTING.md § Adding a New Backend](https://github.com/haalfi/remote-store/blob/master/CONTRIBUTING.md#adding-a-new-backend).
 Add your backend to
 [`tests/backends/conftest.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conftest.py);
 the entire conformance suite then runs against it automatically.
