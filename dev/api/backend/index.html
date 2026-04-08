@@ -8435,6 +8435,8 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
     <div class="doc doc-contents ">
 
         <p>Check if a file or folder exists. Never raises <code>NotFound</code>.</p>
+<p>Returns <code>False</code> if any ancestor of <em>path</em> is a file (file-as-directory-component),
+as traversal cannot proceed.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8456,7 +8458,14 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
               <code><span title="bool">bool</span></code>
           –
           <div class="doc-md-description">
-            <p><code>True</code> if a file or folder exists at <em>path</em>.</p>
+            <p><code>True</code> if a file or folder exists at <em>path</em>. <code>False</code> if the path</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="bool">bool</span></code>
+          –
+          <div class="doc-md-description">
+            <p>does not exist or if any ancestor is a file instead of a directory.</p>
           </div>
         </li>
     </ul>
@@ -8484,6 +8493,8 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if <code>path</code> is an existing file.</p>
+<p>Returns <code>False</code> if the path does not exist, or if any ancestor of <em>path</em>
+is a file (file-as-directory-component).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8505,7 +8516,14 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
               <code><span title="bool">bool</span></code>
           –
           <div class="doc-md-description">
-            <p><code>True</code> if <em>path</em> exists and is a file.</p>
+            <p><code>True</code> if <em>path</em> exists and is a file. <code>False</code> if the path does not</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="bool">bool</span></code>
+          –
+          <div class="doc-md-description">
+            <p>exist or if any ancestor is a file instead of a directory.</p>
           </div>
         </li>
     </ul>
@@ -8533,6 +8551,8 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if <code>path</code> is an existing folder.</p>
+<p>Returns <code>False</code> if the path does not exist, or if any ancestor of <em>path</em>
+is a file (file-as-directory-component).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8554,7 +8574,14 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
               <code><span title="bool">bool</span></code>
           –
           <div class="doc-md-description">
-            <p><code>True</code> if <em>path</em> exists and is a folder.</p>
+            <p><code>True</code> if <em>path</em> exists and is a folder. <code>False</code> if the path does not</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="bool">bool</span></code>
+          –
+          <div class="doc-md-description">
+            <p>exist or if any ancestor is a file instead of a directory.</p>
           </div>
         </li>
     </ul>

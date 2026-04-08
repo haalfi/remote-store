@@ -10141,6 +10141,9 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
     <div class="doc doc-contents first">
 
         <p>Return <code>True</code> if <em>path</em> exists (file or folder).</p>
+<p>Never raises <code>NotFound</code> — returns <code>False</code> for missing paths instead.
+Also returns <code>False</code> if any ancestor of <em>path</em> is a file (file-as-directory-component),
+as traversal cannot proceed.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10174,6 +10177,7 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
     <div class="doc doc-contents first">
 
         <p>Return <code>True</code> if <em>path</em> exists and is a file.</p>
+<p>Returns <code>False</code> if any ancestor of <em>path</em> is a file (file-as-directory-component).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10207,6 +10211,7 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
     <div class="doc doc-contents first">
 
         <p>Return <code>True</code> if <em>path</em> exists and is a folder.</p>
+<p>Returns <code>False</code> if any ancestor of <em>path</em> is a file (file-as-directory-component).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

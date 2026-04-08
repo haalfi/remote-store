@@ -8522,9 +8522,9 @@
 <h3 id="be-003-capabilities-property">BE-003: Capabilities Property<a class="headerlink" href="#be-003-capabilities-property" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>capabilities</code> property returns a <code>CapabilitySet</code> declaring all supported operations.</p>
 <h3 id="be-004-exists">BE-004: exists()<a class="headerlink" href="#be-004-exists" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>exists(path)</code> returns <code>bool</code>. Returns <code>False</code> for missing paths — never raises <code>NotFound</code>.</p>
+<p><strong>Invariant:</strong> <code>exists(path)</code> returns <code>bool</code>. Returns <code>False</code> for missing paths — never raises <code>NotFound</code>. Also returns <code>False</code> for paths whose ancestors contain a file (file-as-directory-component), where traversal cannot proceed; these are treated as non-existent.</p>
 <h3 id="be-005-is_file-is_folder">BE-005: is_file() / is_folder()<a class="headerlink" href="#be-005-is_file-is_folder" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>is_file(path)</code> returns <code>True</code> only if <code>path</code> is a file. <code>is_folder(path)</code> returns <code>True</code> only if <code>path</code> is a folder. Both return <code>False</code> for non-existent paths.</p>
+<p><strong>Invariant:</strong> <code>is_file(path)</code> returns <code>True</code> only if <code>path</code> is a file. <code>is_folder(path)</code> returns <code>True</code> only if <code>path</code> is a folder. Both return <code>False</code> for non-existent paths and for paths whose ancestors contain a file (file-as-directory-component); in both cases, the path cannot be accessed, so <code>False</code> is the semantically correct response.</p>
 <h3 id="be-006-read">BE-006: read()<a class="headerlink" href="#be-006-read" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> stream for the file content.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory (type mismatch, not a missing file). See BE-021.
@@ -8651,7 +8651,9 @@ or <code>except Exception</code> handlers that map all errors to a single type. 
 MUST discriminate by <code>errno</code>, exception type, or HTTP status code before
 choosing the mapped error. Silent returns (swallowing exceptions without
 re-raising a <code>RemoteStoreError</code>) are permitted ONLY for <code>exists()</code>,
-<code>is_file()</code>, and <code>is_folder()</code>.</p>
+<code>is_file()</code>, and <code>is_folder()</code> — these three methods return <code>False</code> on any
+traversal error, including file-as-directory-component conflicts, rather than
+raising <code>InvalidPath</code>. All other operations MUST raise appropriate errors.</p>
 <h3 id="be-022-unwrap">BE-022: unwrap()<a class="headerlink" href="#be-022-unwrap" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>unwrap(type_hint)</code> returns the native backend handle if it matches the requested type.
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend cannot provide the requested type.

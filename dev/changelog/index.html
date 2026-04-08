@@ -10201,6 +10201,15 @@
   move/copy atomicity documentation (BE-018/019), and acquire-then-wrap
   resource safety invariant (SIO-001). Per-method Raises clauses updated
   for BE-006 through BE-019 to be consistent with the canonical table.</li>
+<li><strong>Query method behavior under file-as-directory-component</strong> (ID-129):
+  Codified behavior for <code>exists()</code>, <code>is_file()</code>, <code>is_folder()</code> when paths
+  contain file-as-directory-component ancestors (e.g., querying <code>a/b/c</code> when
+  <code>a/b</code> is a file). All three query methods return <code>False</code> rather than raising
+  <code>InvalidPath</code>. Spec amendments to BE-004, BE-005, BE-021 document this
+  "accidental consensus" behavior. Dafny formal methods <code>IsFileMethod()</code> and
+  <code>IsFolderMethod()</code> with <code>AllAncestorsTraversable</code> predicate verify the
+  contract in <code>MemoryBackend.dfy</code>. Extended conformance tests cover all
+  backends (Local, S3, Azure, SFTP, etc.).</li>
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
