@@ -661,6 +661,23 @@ class TestBackendResolveDefault:
         assert plan.native_path == backend.native_path(path)
 
 
+class TestAtomicMoveCapability:
+    """CAP-001: ATOMIC_MOVE capability declared by backends with atomic move semantics."""
+
+    _DECLARES = {"local", "memory", "sqlblob"}
+    _DOES_NOT_DECLARE = {"s3", "s3-pyarrow", "azure", "sftp", "sqlquery", "http"}
+
+    @pytest.mark.spec("CAP-001")
+    def test_atomic_move_capability_declaration(self, backend: Backend) -> None:
+        name = backend.name
+        supports = backend.capabilities.supports(Capability.ATOMIC_MOVE)
+        if name in self._DECLARES:
+            assert supports, f"{name} should declare ATOMIC_MOVE"
+        elif name in self._DOES_NOT_DECLARE:
+            assert not supports, f"{name} should not declare ATOMIC_MOVE"
+        # backends not in either set are not asserted (future backends)
+
+
 class TestBackendResolveUniversalContract:
     """RES-025: Universal contract for Backend.resolve()."""
 

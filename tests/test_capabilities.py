@@ -21,6 +21,7 @@ class TestCapabilityEnum:
             "MOVE",
             "COPY",
             "ATOMIC_WRITE",
+            "ATOMIC_MOVE",
             "METADATA",
             "GLOB",
             "SEEKABLE_READ",
