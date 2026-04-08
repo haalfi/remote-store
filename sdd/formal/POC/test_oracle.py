@@ -26,12 +26,13 @@ from remote_store._errors import (
     AlreadyExists,
     NotFound,
 )
-from sdd.formal.POC.oracle import DafnyOracle, ErrorKind, OracleOk
+
+from .oracle import DafnyOracle, ErrorKind, OracleOk
 
 
 def _oracle_error_type(oracle_result: object) -> ErrorKind | None:
     """Extract error type from oracle result."""
-    from sdd.formal.POC.oracle import OracleError
+    from .oracle import OracleError
 
     if isinstance(oracle_result, OracleError):
         return oracle_result.kind
