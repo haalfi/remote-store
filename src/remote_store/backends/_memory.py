@@ -307,6 +307,8 @@ class MemoryBackend(Backend):
         segments = self._split_path(path)
         with self._lock:
             node = self._traverse(segments)
+            if isinstance(node, _FileEntry):
+                raise InvalidPath(f"Not a folder: {path}", path=path, backend="memory")
             if not isinstance(node, _DirNode):
                 raise NotFound(f"Folder not found: {path}", path=path, backend="memory")
             file_count = 0

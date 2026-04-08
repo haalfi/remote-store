@@ -327,6 +327,8 @@ class LocalBackend(Backend):
 
     def get_folder_info(self, path: str) -> FolderInfo:
         full = self._resolve(path)
+        if full.is_file():
+            raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
         if not full.is_dir():
             raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
         file_count = 0

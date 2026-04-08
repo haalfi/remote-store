@@ -300,6 +300,7 @@ class SFTPBackend(Backend):
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
+            self._check_not_dir(sftp_path, path)
             f: BinaryIO = self._sftp.file(sftp_path, "r")
             try:
                 raw = _ErrorMappingStream(f, self._map_exception, path)
@@ -311,6 +312,7 @@ class SFTPBackend(Backend):
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
+            self._check_not_dir(sftp_path, path)
             try:
                 with self._sftp.file(sftp_path, "r") as f:
                     f.prefetch()
@@ -412,6 +414,7 @@ class SFTPBackend(Backend):
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
+            self._check_not_dir(sftp_path, path)
             try:
                 self._sftp.remove(sftp_path)
             except OSError as exc:
@@ -426,8 +429,8 @@ class SFTPBackend(Backend):
             sftp_path = self._sftp_path(path)
             try:
                 attrs = self._sftp.stat(sftp_path)
-                if not stat.S_ISDIR(attrs.st_mode):
-                    raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+                if not stat.S_ISDIR(attrs.st_mode or 0):
+                    raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
             except OSError as exc:
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     if not missing_ok:
@@ -552,7 +555,9 @@ class SFTPBackend(Backend):
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
                 raise
-            if not stat.S_ISREG(attrs.st_mode):
+            if stat.S_ISDIR(attrs.st_mode or 0):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+            if not stat.S_ISREG(attrs.st_mode or 0):
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
             return self._stat_to_fileinfo(path, attrs)
 
@@ -565,7 +570,9 @@ class SFTPBackend(Backend):
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name) from None
                 raise
-            if not stat.S_ISDIR(attrs.st_mode):
+            if stat.S_ISREG(attrs.st_mode or 0):
+                raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
+            if not stat.S_ISDIR(attrs.st_mode or 0):
                 raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
             file_count, total_size, latest_modified = self._collect_folder_stats(sftp_path)
@@ -582,22 +589,30 @@ class SFTPBackend(Backend):
             src_sftp = self._sftp_path(src)
             dst_sftp = self._sftp_path(dst)
 
-            # Check source exists
+            # Check source exists and is a file
             try:
-                self._sftp.stat(src_sftp)
+                src_attrs = self._sftp.stat(src_sftp)
             except OSError as exc:
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     raise NotFound(f"Source not found: {src}", path=src, backend=self.name) from None
                 raise
+            if stat.S_ISDIR(src_attrs.st_mode or 0):
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
+
+            # Self-move is a no-op
+            if src_sftp == dst_sftp:
+                return
 
             # Check destination
-            if not overwrite:
-                try:
-                    self._sftp.stat(dst_sftp)
+            try:
+                dst_attrs = self._sftp.stat(dst_sftp)
+                if stat.S_ISDIR(dst_attrs.st_mode or 0):
+                    raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
+                if not overwrite:
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
-                except OSError as exc:
-                    if getattr(exc, "errno", None) != errno.ENOENT:
-                        raise
+            except OSError as exc:
+                if getattr(exc, "errno", None) != errno.ENOENT:
+                    raise
 
             self._ensure_parent_dirs(dst_sftp)
 
@@ -621,22 +636,30 @@ class SFTPBackend(Backend):
             src_sftp = self._sftp_path(src)
             dst_sftp = self._sftp_path(dst)
 
-            # Check source exists
+            # Check source exists and is a file
             try:
-                self._sftp.stat(src_sftp)
+                src_attrs = self._sftp.stat(src_sftp)
             except OSError as exc:
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     raise NotFound(f"Source not found: {src}", path=src, backend=self.name) from None
                 raise
+            if stat.S_ISDIR(src_attrs.st_mode or 0):
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
+
+            # Self-copy is a no-op
+            if src_sftp == dst_sftp:
+                return
 
             # Check destination
-            if not overwrite:
-                try:
-                    self._sftp.stat(dst_sftp)
+            try:
+                dst_attrs = self._sftp.stat(dst_sftp)
+                if stat.S_ISDIR(dst_attrs.st_mode or 0):
+                    raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
+                if not overwrite:
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
-                except OSError as exc:
-                    if getattr(exc, "errno", None) != errno.ENOENT:
-                        raise
+            except OSError as exc:
+                if getattr(exc, "errno", None) != errno.ENOENT:
+                    raise
 
             self._ensure_parent_dirs(dst_sftp)
 
@@ -871,6 +894,17 @@ class SFTPBackend(Backend):
                 return f"/{path}"
             return f"{self._base_path}/{path}"
         return self._base_path
+
+    def _check_not_dir(self, sftp_path: str, path: str) -> None:
+        """Raise InvalidPath if *sftp_path* is a directory (type-mismatch guard)."""
+        try:
+            st = self._sftp.stat(sftp_path)
+            if st is not None and stat.S_ISDIR(st.st_mode or 0):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+        except OSError as exc:
+            if getattr(exc, "errno", None) == errno.ENOENT:
+                return  # path doesn't exist — let caller handle NotFound
+            raise
 
     def _ensure_parent_dirs(self, sftp_path: str) -> None:
         """Create parent directories for the given SFTP path if they don't exist."""

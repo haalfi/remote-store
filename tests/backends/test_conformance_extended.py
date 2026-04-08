@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 _FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http"})
 
 # Backends that do not yet handle self-copy/self-move correctly.
-_NO_SELF_OP_BACKENDS = frozenset({"sftp", "azure", "http"})
+_NO_SELF_OP_BACKENDS = frozenset({"azure", "http"})
 
 
 def _require(backend: Backend, *caps: Capability) -> None:

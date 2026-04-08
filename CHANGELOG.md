@@ -52,12 +52,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Fixed
 
 - **Type-mismatch errors now raise `InvalidPath` per spec** (ID-131):
-  `read()`, `read_bytes()`, `delete()`, `get_file_info()`, `delete_folder()`
-  on the wrong path type (directory vs file) now raise `InvalidPath` instead
-  of `NotFound` in LocalBackend, MemoryBackend, and SFTPBackend — matching
-  the Dafny `BackendContract.dfy` postconditions and BE-021 canonical error
-  mapping. `move()`/`copy()` now check source and destination types. Self-move
-  and self-copy (`src == dst`) are no-ops in Local, Memory, S3, and S3-PyArrow
+  `read()`, `read_bytes()`, `delete()`, `get_file_info()`, `get_folder_info()`,
+  `delete_folder()` on the wrong path type (directory vs file) now raise
+  `InvalidPath` instead of `NotFound` in LocalBackend, MemoryBackend, and
+  SFTPBackend — matching the Dafny `BackendContract.dfy` postconditions and
+  BE-021 canonical error mapping. `move()`/`copy()` now check source and
+  destination types across all three backends. Self-move and self-copy
+  (`src == dst`) are no-ops in Local, Memory, S3, S3-PyArrow, and SFTP
   backends (previously leaked `SameFileError` or lost data).
 - **S3 `read()` leaks file handle if stream wrapping fails** (BUG-159):
   Both `S3Backend.read()` and `S3PyArrowBackend.read()` now use the new

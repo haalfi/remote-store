@@ -64,11 +64,13 @@ class PermissionDenied(RemoteStoreError):
 
 
 class InvalidPath(RemoteStoreError):
-    """Raised for malformed, unsafe, or out-of-scope paths.
+    """Raised for malformed, unsafe, out-of-scope, or wrong-type paths.
 
     Raised by any method that validates paths: empty strings in file-targeted
-    operations, paths containing ``..`` or null bytes, and paths that fall
-    outside the store's root scope.
+    operations, paths containing ``..`` or null bytes, paths that fall
+    outside the store's root scope, and paths that name the wrong type
+    (e.g. a file operation on a directory path, or a folder operation on a
+    file path).
     """
 
 
