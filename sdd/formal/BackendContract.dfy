@@ -152,7 +152,7 @@ predicate AllAncestorsTraversable(fs: Filesystem, p: Path)
 {
   forall i: int |
     0 < i < |p| - 1 && p[i] == '/' ::
-    !PathExists(fs, p[..i+1]) || IsDir(fs, p[..i+1])
+    !PathExists(fs, p[..i]) || IsDir(fs, p[..i])
 }
 
 // ---------------------------------------------------------------------------

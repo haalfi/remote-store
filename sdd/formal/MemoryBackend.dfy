@@ -61,11 +61,11 @@ class MemoryBackend extends Backend {
       invariant 1 <= i <= |path| - 1
       invariant result == (forall j: int |
         0 < j < i && path[j] == '/' ::
-        !PathExists(fs, path[..j+1]) || IsDir(fs, path[..j+1]))
+        !PathExists(fs, path[..j]) || IsDir(fs, path[..j]))
     {
       // Check '/' boundary
       if path[i] == '/' {
-        var prefix := path[..i+1];
+        var prefix := path[..i];
         if prefix in fs && fs[prefix].FileEntry? {
           result := false;
           break;
