@@ -53,33 +53,45 @@ class Backend(abc.ABC):
     def exists(self, path: str) -> bool:
         """Check if a file or folder exists. Never raises ``NotFound``.
 
+        Returns ``False`` if any ancestor of *path* is a file (file-as-directory-component),
+        as traversal cannot proceed.
+
         Args:
             path: Backend-relative key, or ``""`` for the root.
 
         Returns:
-            ``True`` if a file or folder exists at *path*.
+            ``True`` if a file or folder exists at *path*. ``False`` if the path
+            does not exist or if any ancestor is a file instead of a directory.
         """
 
     @abc.abstractmethod
     def is_file(self, path: str) -> bool:
         """Return ``True`` if ``path`` is an existing file.
 
+        Returns ``False`` if the path does not exist, or if any ancestor of *path*
+        is a file (file-as-directory-component).
+
         Args:
             path: Backend-relative key.
 
         Returns:
-            ``True`` if *path* exists and is a file.
+            ``True`` if *path* exists and is a file. ``False`` if the path does not
+            exist or if any ancestor is a file instead of a directory.
         """
 
     @abc.abstractmethod
     def is_folder(self, path: str) -> bool:
         """Return ``True`` if ``path`` is an existing folder.
 
+        Returns ``False`` if the path does not exist, or if any ancestor of *path*
+        is a file (file-as-directory-component).
+
         Args:
             path: Backend-relative key, or ``""`` for the root.
 
         Returns:
-            ``True`` if *path* exists and is a folder.
+            ``True`` if *path* exists and is a folder. ``False`` if the path does not
+            exist or if any ancestor is a file instead of a directory.
         """
 
     @abc.abstractmethod

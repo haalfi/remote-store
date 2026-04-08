@@ -555,6 +555,9 @@ class Store:
     def exists(self, path: str) -> bool:
         """Return ``True`` if *path* exists (file or folder).
 
+        Returns ``False`` if any ancestor of *path* is a file (file-as-directory-component),
+        as traversal cannot proceed.
+
         Args:
             path: Store-relative path.
         """
@@ -564,6 +567,8 @@ class Store:
     def is_file(self, path: str) -> bool:
         """Return ``True`` if *path* exists and is a file.
 
+        Returns ``False`` if any ancestor of *path* is a file (file-as-directory-component).
+
         Args:
             path: Store-relative path.
         """
@@ -572,6 +577,8 @@ class Store:
 
     def is_folder(self, path: str) -> bool:
         """Return ``True`` if *path* exists and is a folder.
+
+        Returns ``False`` if any ancestor of *path* is a file (file-as-directory-component).
 
         Args:
             path: Store-relative path.
