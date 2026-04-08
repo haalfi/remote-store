@@ -324,8 +324,8 @@ code/type, and raise the appropriate remote-store error with `from exc`.
 
 remote-store ships two conformance test files that validate any backend against
 the formal `BackendContract` specification. Backends contributed to the repo
-plug into this infrastructure and run ~50 test scenarios per backend
-automatically. Standalone backends can either reuse this suite or write focused
+plug into this infrastructure and run ~114 test scenarios per backend
+automatically (64 basic + 50 extended). Standalone backends can either reuse this suite or write focused
 tests against the same categories.
 
 ---
@@ -334,7 +334,7 @@ tests against the same categories.
 
 | File | Coverage | Run with |
 |---|---|---|
-| [`test_conformance.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance.py) | BE-001–BE-025 + SAW, ITER, SIO, GLOB, NPR, RES specs: identity, capabilities, `exists`, `is_file`/`is_folder`, read, write, delete, list, streaming, glob, native path, resolution | `pytest tests/backends/test_conformance.py` |
+| [`test_conformance.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance.py) | 64 tests — BE-001–BE-022, BE-025 + SAW, ITER, SIO, GLOB, NPR, RES specs: identity, capabilities, `exists`, `is_file`/`is_folder`, read, write, delete, list, streaming, glob, native path, resolution | `pytest tests/backends/test_conformance.py` |
 | [`test_conformance_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance_extended.py) | 50 Dafny-derived tests: error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup | `pytest -m extended_conformance` |
 
 Both files share the same parameterized `backend` fixture — every registered
