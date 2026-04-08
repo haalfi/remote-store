@@ -79,7 +79,7 @@ during initialization, provided:
    catch is already narrow and specific.
 
 **Example:** `ext.arrow` Tier 1 probe (`src/remote_store/ext/arrow.py`
-line 177).  The `ArrowAccessor.__init__` probes for a native PyArrow
+line 177).  The `StoreFileSystemHandler.__init__` probes for a native PyArrow
 backend via `store.unwrap(pafs.FileSystem)`.  If the backend doesn't
 support unwrap or the type doesn't match, the probe gracefully falls back
 to Tier 2/3 (full-file materialization or byte-range reads).
