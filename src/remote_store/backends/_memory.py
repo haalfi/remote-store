@@ -341,10 +341,12 @@ class MemoryBackend(Backend):
             raise InvalidPath("Destination path must not be empty", path=dst, backend="memory")
 
         if src_segments == dst_segments:
-            # Verify source exists, then no-op.
+            # Verify source exists and is a file, then no-op.
             with self._lock:
                 parent = self._traverse(src_segments[:-1])
                 leaf = parent.children.get(src_segments[-1]) if isinstance(parent, _DirNode) else None
+                if isinstance(leaf, _DirNode):
+                    raise InvalidPath(f"Source is a directory: {src}", path=src, backend="memory")
                 if not isinstance(leaf, _FileEntry):
                     raise NotFound(f"Source not found: {src}", path=src, backend="memory")
             return

@@ -237,6 +237,25 @@ class TestGetFileInfoErrorFidelity:
             backend.get_file_info("ec_missing_gfi")
 
 
+class TestGetFolderInfoErrorFidelity:
+    """BackendContract.GetFolderInfo postconditions."""
+
+    @pytest.mark.spec("BE-017")
+    def test_get_folder_info_on_file_raises_error(self, backend: Backend) -> None:
+        """IsFile(path) ==> InvalidPath (Dafny: InvalidPath)."""
+        _require(backend, Capability.WRITE)
+        _skip_flat_namespace(backend)
+        backend.write("gfof.txt", b"x")
+        with pytest.raises(InvalidPath, match="gfof"):
+            backend.get_folder_info("gfof.txt")
+
+    @pytest.mark.spec("BE-017")
+    def test_get_folder_info_missing_raises_not_found(self, backend: Backend) -> None:
+        """!PathExists ==> NotFound."""
+        with pytest.raises(NotFound, match="ec_missing_gfo"):
+            backend.get_folder_info("ec_missing_gfo")
+
+
 # ===========================================================================
 # §2  Listing — Dafny §6 ListFiles / ListFolders postconditions
 # ===========================================================================
