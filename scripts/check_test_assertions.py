@@ -69,15 +69,10 @@ def main(directories: list[str] | None = None) -> int:
     if directories is None:
         directories = ["tests"]
 
-    # Exclude POC/experimental test files from assertion checks
-    excluded_files = {"test_dafny_oracle.py"}
-
     all_violations: list[str] = []
     for directory in directories:
         root = Path(directory)
         for path in sorted(root.rglob("test_*.py")):
-            if path.name in excluded_files:
-                continue
             all_violations.extend(_check_file(path))
 
     if all_violations:
