@@ -179,7 +179,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
             if isinstance(native_fs, pafs.FileSystem):
                 self._native_fs = native_fs
                 self._native_path_fn = store.native_path
-        except (CapabilityNotSupported, TypeError, OSError) as _exc:  # noqa: BLE001
+        except (CapabilityNotSupported, TypeError, OSError) as _exc:
             # Tier 1 probe for optional native PyArrow backend (capability-probe
             # pattern per ADR-0008). Catches CapabilityNotSupported (backend lacks
             # unwrap), TypeError (wrong type_hint), and OSError (S3/cloud backend

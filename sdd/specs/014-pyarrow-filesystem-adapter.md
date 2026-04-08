@@ -163,13 +163,17 @@ StoreFileSystemHandler(
   filesystem via `store.unwrap(pyarrow.fs.FileSystem)`. If a native FS is
   available and is a `pyarrow.fs.FileSystem` instance, the handler caches
   both the native FS reference and `store.native_path` as the path-translation
-  function for Tier 1 fast-path reads (PA-010). If `unwrap()` or native FS
-  initialization raises any exception, Tier 1 is disabled and the handler
-  falls through to Tier 2/3. The broad catch ensures that constructor-time
-  probing never propagates backend/client errors to the caller.
+  function for Tier 1 fast-path reads (PA-010). If `unwrap()` raises
+  `CapabilityNotSupported`, `TypeError`, or `OSError` (backend/cloud client
+  initialization failures), Tier 1 is disabled and the handler falls through
+  to Tier 2/3. Unexpected exceptions (e.g., backend implementation bugs)
+  propagate to the caller for debugging. See ADR-0008 § capability-probe
+  exception pattern for rationale.
 - Construction is side-effect-free when the backend does not support
   `unwrap()`. For backends that do (e.g., S3PyArrowBackend), probing may
-  trigger lazy client initialization, but failures are suppressed.
+  trigger lazy client initialization. Expected initialization failures
+  (CapabilityNotSupported, TypeError, OSError) are suppressed; unexpected
+  errors propagate.
 - The Store's lifetime is managed externally — the handler does not own it.
 
 ### PA-002: Convenience Factory
@@ -346,8 +350,9 @@ try:
     if isinstance(native_fs, pyarrow.fs.FileSystem):
         self._native_fs = native_fs
         self._native_path_fn = store.native_path
-except Exception:
-    pass  # Tier 1 disabled — fall through to Tier 2/3
+except (CapabilityNotSupported, TypeError, OSError):
+    pass  # Expected probing failures — Tier 1 disabled, fall through to Tier 2/3
+# Unexpected exceptions (e.g., RuntimeError) propagate to the caller
 
 # At read time:
 def open_input_file(self, path):

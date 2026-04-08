@@ -573,6 +573,7 @@ class TestTier1NativeFastPath:
             def name(self) -> str:
                 return "buggy"
 
+            @property
             def capabilities(self) -> Any:
                 return self._inner.capabilities
 
