@@ -5,6 +5,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-128 — `Capability.ATOMIC_MOVE` enum member**
+  Added `ATOMIC_MOVE` to the `Capability` enum. Declared by Local, Memory,
+  SQLBlob; excluded from S3, S3-PyArrow, Azure, SFTP. Updated spec CAP-001,
+  capabilities matrix, formal layer (BackendContract.dfy, MemoryBackend.dfy,
+  MemoryBackend-py/module_.py, POC/oracle.py), and conformance tests.
+  Related: BE-018, BK-140.
+
 ## Bugs
 
 - [x] **BUG-159 — S3 `read()` leaks file handle if stream wrapping fails**

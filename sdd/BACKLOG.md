@@ -83,15 +83,6 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [ ] **ID-128 — `Capability.ATOMIC_MOVE` enum member**
-  Add `ATOMIC_MOVE` to the `Capability` enum so callers can query whether
-  `move()` is safe under concurrent access. Deferred from BK-140 to avoid
-  spec/code divergence in a spec-only PR. Requires: adding the member to
-  `_capabilities.py`, updating each backend's `capabilities()` declaration
-  (Local, Memory, SQL → include it; S3, Azure non-HNS, SFTP-fallback → omit),
-  and updating the capabilities matrix page.
-  Related: BE-018 (move atomicity spec), BK-140.
-
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of
   ad-hoc `(operation, path)` tuples. Only valuable once `CompositeStore`

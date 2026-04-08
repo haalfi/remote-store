@@ -8,6 +8,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`Capability.ATOMIC_MOVE`** (ID-128): New capability flag indicating
+  `move()` is guaranteed atomic under concurrent access. Declared by
+  Local, Memory, and SQLBlob backends. S3, S3-PyArrow, Azure, and SFTP
+  omit it (copy-then-delete semantics). Query with
+  `store.supports(Capability.ATOMIC_MOVE)`.
 - **Extended conformance suite** (BK-139b): 42 test functions (~53 parameterized
   cases per backend) derived from Dafny `BackendContract.dfy` postconditions.
   Covers error fidelity, precondition ordering, listing completeness, depth
