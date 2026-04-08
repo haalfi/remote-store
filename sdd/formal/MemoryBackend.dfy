@@ -24,9 +24,9 @@ class MemoryBackend extends Backend {
     ensures r.Ok?
     ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
   {
-    var exists := path in fs;
+    var path_exists := path in fs;
     var ancestors_ok := AncestorsTraversableCheck(path);
-    r := Ok(exists && ancestors_ok);
+    r := Ok(path_exists && ancestors_ok);
   }
 
   method IsFileMethod(path: Path) returns (r: Result<bool>)
@@ -53,17 +53,19 @@ class MemoryBackend extends Backend {
     ensures result == AllAncestorsTraversable(fs, path)
   {
     result := true;
-    var i := 0;
-    while i < |path|
-      invariant 0 <= i <= |path|
-      invariant result == (forall prefix: Path |
-        prefix != path && |prefix| < i && path[..|prefix|] == prefix &&
-        |prefix| < |path| - 1 && path[|prefix|] == '/' ::
-        !PathExists(fs, prefix) || IsDir(fs, prefix))
+    if |path| <= 2 {
+      return;
+    }
+    var i := 1;
+    while i < |path| - 1
+      invariant 1 <= i <= |path| - 1
+      invariant result == (forall j: int |
+        0 < j < i && path[j] == '/' ::
+        !PathExists(fs, path[..j+1]) || IsDir(fs, path[..j+1]))
     {
-      // Find next '/' boundary
-      if i < |path| - 1 && path[i] == '/' {
-        var prefix := path[..i];
+      // Check '/' boundary
+      if path[i] == '/' {
+        var prefix := path[..i+1];
         if prefix in fs && fs[prefix].FileEntry? {
           result := false;
           break;

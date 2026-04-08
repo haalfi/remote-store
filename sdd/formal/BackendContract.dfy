@@ -150,10 +150,9 @@ predicate IsChildOf(child: string, parent: string)
 // A prefix is valid if it either doesn't exist in fs or is a directory, never a file.
 predicate AllAncestorsTraversable(fs: Filesystem, p: Path)
 {
-  forall prefix: Path |
-    prefix != p && |prefix| < |p| && p[..|prefix|] == prefix &&
-    |prefix| < |p| - 1 && p[|prefix|] == '/' ::
-    !PathExists(fs, prefix) || IsDir(fs, prefix)
+  forall i: int |
+    0 < i < |p| - 1 && p[i] == '/' ::
+    !PathExists(fs, p[..i+1]) || IsDir(fs, p[..i+1])
 }
 
 // ---------------------------------------------------------------------------
