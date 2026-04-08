@@ -216,6 +216,7 @@ class DafnyOracle:
             "move",
             "copy",
             "atomic_write",
+            "atomic_move",
             "metadata",
             "seekable_read",
         }

@@ -47,7 +47,7 @@ datatype Result<T> = Ok(value: T) | Err(error: Error)
 
 datatype Capability =
   | CapRead | CapWrite | CapDelete | CapList | CapMove | CapCopy
-  | CapAtomicWrite | CapMetadata | CapGlob | CapSeekableRead
+  | CapAtomicWrite | CapAtomicMove | CapMetadata | CapGlob | CapSeekableRead
 
 // CapGlob is defined but the Glob method is intentionally excluded
 // from this contract — it is a capability-gated convenience method
@@ -408,6 +408,7 @@ function CapabilityName(c: Capability): string
   case CapMove => "move"
   case CapCopy => "copy"
   case CapAtomicWrite => "atomic_write"
+  case CapAtomicMove => "atomic_move"
   case CapMetadata => "metadata"
   case CapGlob => "glob"
   case CapSeekableRead => "seekable_read"
