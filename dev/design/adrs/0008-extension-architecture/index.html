@@ -6170,6 +6170,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#capability-probe-exception-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability-probe exception pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#export-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7960,6 +7971,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#capability-probe-exception-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability-probe exception pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#export-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8093,6 +8115,28 @@ the Store and is responsible for its lifecycle.</p>
 <h3 id="error-propagation">Error propagation<a class="headerlink" href="#error-propagation" title="Permanent link">&para;</a></h3>
 <p><code>CapabilityNotSupported</code> raised by Store methods MUST propagate to the
 extension's caller.  Extensions must not catch and suppress it.</p>
+<h3 id="capability-probe-exception-pattern">Capability-probe exception pattern<a class="headerlink" href="#capability-probe-exception-pattern" title="Permanent link">&para;</a></h3>
+<p>The rule "CapabilityNotSupported MUST propagate" has one documented
+exception: the <strong>capability-probe</strong> pattern.  Extensions MAY catch
+<code>CapabilityNotSupported</code> when probing for an <strong>optional native backend</strong>
+during initialization, provided:</p>
+<ol>
+<li>The probe is for an <strong>optional feature</strong>, not a required operation.</li>
+<li>A graceful fallback exists (e.g., Tier 2/3 I/O paths in <code>ext.arrow</code>).</li>
+<li>The catch is narrowly scoped to expected exceptions (e.g.,
+   <code>(CapabilityNotSupported, TypeError, OSError)</code> for cloud backends).</li>
+<li>A comment explains the probe, exceptions caught, and fallback strategy.</li>
+<li>The catch MAY be annotated with <code># noqa: BLE001</code> as a documentation marker
+   if the implementation uses a broad catch; the annotation is optional if the
+   catch is already narrow and specific.</li>
+</ol>
+<p><strong>Example:</strong> <code>ext.arrow</code> Tier 1 probe (<code>src/remote_store/ext/arrow.py</code>
+line 177).  The <code>StoreFileSystemHandler.__init__</code> probes for a native PyArrow
+backend via <code>store.unwrap(pafs.FileSystem)</code>.  If the backend doesn't
+support unwrap or the type doesn't match, the probe gracefully falls back
+to Tier 2/3 (full-file materialization or byte-range reads).</p>
+<p>Any new extension using this pattern MUST cite this section and document
+the fallback strategy explicitly in comments.</p>
 <h3 id="export-rules">Export rules<a class="headerlink" href="#export-rules" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>Superseded by ADR-0013 -- optional-dependency extensions are no longer

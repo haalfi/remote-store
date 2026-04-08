@@ -10217,6 +10217,15 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>ADR-0008 conformance: <code>ext.arrow</code> Tier 1 probe</strong> (BK-141): Updated
+  <code>StoreFileSystemHandler.__init__</code> to narrow exception catch from <code>Exception</code>
+  to <code>(CapabilityNotSupported, TypeError, OSError)</code> and documented the
+  capability-probe pattern in ADR-0008 as an explicit exception to the
+  "CapabilityNotSupported must propagate" rule. OSError catch handles cloud
+  backend initialization failures (e.g., S3 endpoint unreachable). Added test
+  <code>test_tier1_unexpected_exception_propagates</code> to verify unexpected exceptions
+  are not silently caught. The pattern is now ADR-endorsed for optional feature
+  detection during extension initialization.</li>
 <li><strong>Type-mismatch errors now raise <code>InvalidPath</code> per spec</strong> (ID-131):
   <code>read()</code>, <code>read_bytes()</code>, <code>delete()</code>, <code>get_file_info()</code>, <code>get_folder_info()</code>,
   <code>delete_folder()</code> on the wrong path type (directory vs file) now raise
