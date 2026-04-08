@@ -83,14 +83,6 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [ ] **ID-130 — Dafny formal coverage for `get_folder_info()` (BE-017)**
-  `sdd/formal/BackendContract.dfy` has no `GetFolderInfo` method. The BE-017
-  `InvalidPath` postcondition (`IsFile → InvalidPath`) is specified by symmetry
-  with `GetFileInfo` but is not machine-verified. Add a `GetFolderInfo` method
-  to `BackendContract.dfy` with postconditions `IsFile → InvalidPath` and
-  `!PathExists → NotFound`, and verify it in `MemoryBackend.dfy`.
-  Related: BE-017, BK-140, ID-129.
-
 - [ ] **ID-128 — `Capability.ATOMIC_MOVE` enum member**
   Add `ATOMIC_MOVE` to the `Capability` enum so callers can query whether
   `move()` is safe under concurrent access. Deferred from BK-140 to avoid

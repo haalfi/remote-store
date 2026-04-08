@@ -149,7 +149,7 @@ missing or non-existent paths.
 
 **Invariant:** `get_folder_info(path)` returns `FolderInfo`.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
-**Formal coverage note:** `get_folder_info()` is not modelled in `sdd/formal/BackendContract.dfy`; the `InvalidPath` postcondition is specified by symmetry with BE-016 (`GetFileInfo: IsDir → InvalidPath`) but is not formally verified. Tracked in ID-130.
+**Formal coverage:** `get_folder_info()` is modelled in `sdd/formal/BackendContract.dfy` as `GetFolderInfo` with postconditions `IsFile → InvalidPath`, `!PathExists → NotFound`, and `IsDir → Ok`. Verified in `MemoryBackend.dfy`. See ID-130.
 
 ### BE-018: move()
 

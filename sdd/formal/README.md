@@ -31,7 +31,7 @@ requirements as machine-checkable pre/postconditions so that:
 | # | Gap | Spec | Dafny encoding | Caveat |
 |---|-----|------|----------------|--------|
 | 1 | Precondition evaluation order | BE-008 | `Write` postconditions: `IsDir → InvalidPath` before `IsFile && !overwrite → AlreadyExists`. Mutually exclusive by `EntryPartition`. | Error-path frame condition (`fs == old(fs)` on error) not machine-checked; verified in MemoryBackend by construction only. |
-| 2 | Canonical error-mapping table | BE-021 | `Read`/`Delete`/`GetFileInfo`/`Move`/`Copy`: directory → `InvalidPath`, missing → `NotFound` | Same frame condition caveat as Gap 1. |
+| 2 | Canonical error-mapping table | BE-021 | `Read`/`Delete`/`GetFileInfo`/`GetFolderInfo`/`Move`/`Copy`: directory/file → `InvalidPath`, missing → `NotFound` | Same frame condition caveat as Gap 1. |
 | 3 | Listing on missing paths | BE-014/015 | `ListFiles`/`ListFolders`: `ensures r.Ok?` + empty on missing + completeness lower bound | Fully machine-checked (upper + lower bounds). |
 | 4 | Depth-counting algorithm | DEPTH-001 | `DepthCounting.dfy`: reference algorithm + 5 proved lemmas (`ChildHasNonNegativeDepth`, `calc` blocks). Depth filter requires `Depth >= 0`. | Fully machine-checked. |
 | 5 | Move atomicity | BE-018 | `ResourceSafety.dfy` `MovePhase` state machine: atomic vs copy-delete | |
@@ -93,6 +93,7 @@ some may not yet exist in the `tests/` directory.
 | `DeleteFolder: IsFile → InvalidPath` | `test_delete_folder_on_file_raises_error` | `delete_folder(file)` → error |
 | `DeleteFolder: !recursive + HasChildren` | `test_delete_folder_non_recursive_non_empty_raises` | → `DirectoryNotEmpty` |
 | `GetFileInfo: IsDir → InvalidPath` | `test_get_file_info_on_directory_raises_error` | `get_file_info(dir)` → error |
+| `GetFolderInfo: IsFile → InvalidPath` | `test_get_folder_info_on_file_raises_error` | `get_folder_info(file)` → error |
 | `ListFiles: ensures r.Ok?` | `test_list_files_missing_path_yields_empty` | `list_files(missing)` → `[]`, no error |
 | `ListFiles: depth ≤ max_depth` | `test_list_files_recursive_max_depth` | Depth boundary inclusive |
 | `ListFiles: completeness` | `test_list_files_all_results_are_children` | All results are children of path |

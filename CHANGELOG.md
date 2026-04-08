@@ -37,6 +37,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   (BE-018), and resource safety (SIO-001). Includes `MemoryBackend`
   reference refinement, verified depth algorithm, and `_safe_wrap`
   leak-freedom proof.
+- **Dafny `GetFolderInfo` method** (ID-130): Added `GetFolderInfo` to
+  `BackendContract.dfy` with postconditions `IsFile → InvalidPath`,
+  `!PathExists → NotFound`, `IsDir → Ok`. Verified in `MemoryBackend.dfy`.
+  Closes the BE-017 formal coverage gap.
 - **CI: Dafny verification gate** in `ci.yml`: Runs `dafny verify` on
   all formal specs when `sdd/formal/` or `sdd/specs/` files change.
   Skipped for code-only PRs.
