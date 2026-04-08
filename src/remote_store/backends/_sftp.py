@@ -44,7 +44,7 @@ T = TypeVar("T")
 
 log = logging.getLogger(__name__)
 
-_SFTP_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
+_SFTP_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB, Capability.ATOMIC_MOVE})
 
 # RFC 4253 compliant chunk size for SFTP data transfer
 _CHUNK_SIZE = 32768

@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability))
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.ATOMIC_MOVE})
 
 log = logging.getLogger(__name__)
 
