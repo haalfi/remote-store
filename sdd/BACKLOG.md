@@ -46,26 +46,26 @@ Items graduate through the SDD pipeline:
 ## Backlog (Prioritized)
 
 - [~] **BK-139c — Dafny-Python bridge: unified oracle for backend conformance**
-  POC completed (see `sdd/formal/POC-DAFNY-ORACLE.md`). Close the gap between
-  formal Dafny specification and runtime Python implementation.
-  - **Handwritten oracle** (`tests/backends/oracle.py`): 32 passing tests
-    (25 self-tests + 7 backend comparisons); faithful mirror of `MemoryBackend.dfy`
-    with no external deps. Suitable for daily CI use.
-  - **Dafny-compiled oracle** (`sdd/formal/MemoryBackend-py/`): Direct
-    translation of spec to Python via `dafny translate py` (Dafny 4.11.0);
-    41 verified proofs. Requires `_dafny` runtime and class-ordering patch.
-  - **Unified strategy**:
-    1. Use handwritten oracle in conformance tests (practical, fast).
-    2. Create adapter layer marshaling Dafny types (Seq, Map) ↔ Python.
-    3. Run differential conformance: compare results from both oracles.
-    4. Fail if compiled oracle result ≠ handwritten oracle result (spec
-       divergence indicator).
-  - **Remaining work**:
-    - Wrapper around `MemoryBackend-py/` fixing class ordering + type marshaling.
-    - Differential conformance test suite (`conftest.py` fixture).
-    - Integration into CI pipeline.
-  - **Benefits**: Catch implementation-vs.-spec drift; formalize test oracle
-    itself; leverage Dafny verification in production testing.
+  POC completed (see `sdd/formal/POC/`). Proved two viable approaches to bridging
+  formal Dafny specification and runtime Python testing.
+  - **Direction 1: Handwritten oracle** (`sdd/formal/POC/oracle.py`)
+    - 680 lines pure Python, no external deps
+    - 32 passing conformance tests (25 self-validation + 7 backend comparison)
+    - ✓ Practical for daily CI, proven correct
+    - ✗ Manual transcription; must stay in sync with spec
+  - **Direction 2: Compiled oracle** (`sdd/formal/MemoryBackend-py/`)
+    - Direct `dafny translate py` output (41 verified proofs)
+    - ✓ Mathematically verified, auto-generated from spec
+    - ✗ Requires `_dafny` runtime; Dafny types need marshaling; class-ordering bug
+  - **POC demonstrates feasibility**:
+    - Unified strategy possible: run both oracles in differential conformance tests
+    - Differential test fails if handwritten ≠ compiled → investigate why
+    - Catches implementation-vs-spec drift at source
+  - **Remaining (follow-up decision)**:
+    - [ ] Review POC findings (`sdd/formal/POC/README.md`)
+    - [ ] Assess effort vs. benefit for each direction
+    - [ ] Decide: pursue unified bridge? which approach? when?
+    - If yes: implement chosen approach + integrate into CI pipeline
   - **Related**: BK-139a, BK-139b, BK-140, BE-021
 
 - [~] **BK-139b — Implement remaining bug prevention measures from research**
