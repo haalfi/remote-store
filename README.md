@@ -176,7 +176,7 @@ All backends except HTTP and SQL Query support read, write, delete, list, copy, 
 
 ## Store API
 
-The Store provides 29 methods across read/write, browsing, management, and utility. Key highlights:
+The Store provides methods across read/write, browsing, management, and utility. Key highlights:
 
 ```python
 store.read_text("path/to/file.txt")             # → str
