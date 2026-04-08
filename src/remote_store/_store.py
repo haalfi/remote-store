@@ -555,7 +555,8 @@ class Store:
     def exists(self, path: str) -> bool:
         """Return ``True`` if *path* exists (file or folder).
 
-        Returns ``False`` if any ancestor of *path* is a file (file-as-directory-component),
+        Never raises ``NotFound`` — returns ``False`` for missing paths instead.
+        Also returns ``False`` if any ancestor of *path* is a file (file-as-directory-component),
         as traversal cannot proceed.
 
         Args:
