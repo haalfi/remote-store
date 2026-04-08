@@ -353,6 +353,26 @@ class MemoryBackend extends Backend {
     }
   }
 
+  // GetFolderInfo: symmetric with GetFileInfo — file path → InvalidPath.
+  method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
+    ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
+    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures IsDir(fs, path)       ==> r.Ok? && r.value.path == path
+  {
+    if path in fs {
+      match fs[path]
+      case DirEntry =>
+        assert IsDir(fs, path);
+        r := Ok(FolderInfo(path, path));
+      case FileEntry(_, _) =>
+        assert IsFile(fs, path);
+        r := Err(InvalidPath(path, name));
+    } else {
+      assert !PathExists(fs, path);
+      r := Err(NotFound(path, name));
+    }
+  }
+
   // Move: directory src → InvalidPath; missing src → NotFound.
   method Move(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)

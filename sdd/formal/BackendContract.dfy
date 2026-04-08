@@ -72,6 +72,11 @@ datatype FolderEntry = FolderEntry(
   name: string
 )
 
+datatype FolderInfo = FolderInfo(
+  path: Path,
+  name: string
+)
+
 // ---------------------------------------------------------------------------
 // §4  Filesystem model
 // ---------------------------------------------------------------------------
@@ -320,6 +325,15 @@ trait Backend {
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     ensures IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
+
+  // ====================================================================
+  // get_folder_info(path) → FolderInfo
+  // ====================================================================
+  // BE-017: symmetric with GetFileInfo — file path → InvalidPath.
+  method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
+    ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
+    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures IsDir(fs, path)       ==> r.Ok? && r.value.path == path
 
   // ====================================================================
   // move(src, dst, overwrite)

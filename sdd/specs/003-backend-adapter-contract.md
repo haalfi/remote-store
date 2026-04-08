@@ -149,7 +149,7 @@ missing or non-existent paths.
 
 **Invariant:** `get_folder_info(path)` returns `FolderInfo`.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
-**Formal coverage note:** `get_folder_info()` is not modelled in `sdd/formal/BackendContract.dfy`; the `InvalidPath` postcondition is specified by symmetry with BE-016 (`GetFileInfo: IsDir → InvalidPath`) but is not formally verified. Tracked in ID-130.
+**Formal coverage:** `get_folder_info()` is modelled in `sdd/formal/BackendContract.dfy` as `GetFolderInfo` with postconditions `IsFile → InvalidPath`, `!PathExists → NotFound`, and `IsDir → Ok`. Verified in `MemoryBackend.dfy`. See ID-130.
 
 ### BE-018: move()
 
@@ -194,7 +194,7 @@ map to the specified error type regardless of backend:
 | Parent directory creation fails (permissions) | `PermissionDenied` |
 | Parent directory creation fails (path conflict) | `InvalidPath` |
 
-The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `Move`, `Copy` postconditions).
+The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `GetFolderInfo`, `Move`, `Copy` postconditions).
 
 **Scope note:** This table covers *cross-cutting* scenarios that apply to multiple operations. Method-specific errors (e.g. `DirectoryNotEmpty` from `delete_folder`, `CapabilityNotSupported` from capability-gated operations) are documented per-method and intentionally omitted here.
 

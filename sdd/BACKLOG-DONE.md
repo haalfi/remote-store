@@ -128,6 +128,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - **Phase 4:** CHANGELOG entry and documentation updates
   Related: BK-140, BE-004, BE-005, BE-021, ID-130 (Dafny coverage).
 
+- [x] **ID-130 — Dafny formal coverage for `get_folder_info()` (BE-017)**
+  Added `GetFolderInfo` method to `BackendContract.dfy` with postconditions
+  `IsFile → InvalidPath`, `!PathExists → NotFound`, `IsDir → Ok`. Verified
+  in `MemoryBackend.dfy` reference refinement. Symmetric with `GetFileInfo`.
+  Related: BE-017, BK-140, ID-129.
+
 ## Backlog
 
 - [x] **BK-140 — Dafny formal verification layer for backend contract**
