@@ -554,6 +554,95 @@ class TestTier1NativeFastPath:
         with pytest.raises(FileNotFoundError):
             result_fs.open_input_file("nonexistent.txt")
 
+    @pytest.mark.spec("PA-010")
+    def test_tier1_unexpected_exception_propagates(self, local_store: Store) -> None:
+        """Unexpected exceptions from unwrap() should propagate, not be silently caught.
+
+        The narrowed capability-probe catch `(CapabilityNotSupported, TypeError, OSError)`
+        allows expected initialization failures (e.g., S3 unreachable) to degrade to Tier 2/3,
+        while unexpected exceptions (e.g., custom backend bugs) propagate for debugging.
+        """
+
+        class _BuggyBackend(Backend):
+            """Backend that raises an unexpected exception during unwrap()."""
+
+            def __init__(self, inner: Backend) -> None:
+                self._inner = inner
+
+            @property
+            def name(self) -> str:
+                return "buggy"
+
+            @property
+            def capabilities(self) -> Any:
+                return self._inner.capabilities
+
+            def close(self) -> None:
+                pass
+
+            def unwrap(self, type_hint: type) -> Any:
+                if type_hint is pafs.FileSystem:
+                    raise RuntimeError("Simulated backend bug during unwrap()")
+                raise CapabilityNotSupported("Not supported", capability="unwrap", backend="buggy")
+
+            def native_path(self, path: str) -> str:
+                return self._inner.native_path(path)
+
+            # Delegate all other methods to inner
+            def read(self, path: str) -> Any:
+                return self._inner.read(path)
+
+            def read_bytes(self, path: str) -> bytes:
+                return self._inner.read_bytes(path)
+
+            def write(self, path: str, data: Any, *, overwrite: bool = False) -> None:
+                return self._inner.write(path, data, overwrite=overwrite)
+
+            def write_atomic(self, path: str, data: Any, *, overwrite: bool = False) -> None:
+                return self._inner.write_atomic(path, data, overwrite=overwrite)
+
+            def delete(self, path: str, *, missing_ok: bool = False) -> None:
+                return self._inner.delete(path, missing_ok=missing_ok)
+
+            def delete_folder(self, path: str) -> None:
+                return self._inner.delete_folder(path)
+
+            def exists(self, path: str) -> bool:
+                return self._inner.exists(path)
+
+            def is_file(self, path: str) -> bool:
+                return self._inner.is_file(path)
+
+            def is_folder(self, path: str) -> bool:
+                return self._inner.is_folder(path)
+
+            def get_file_info(self, path: str) -> Any:
+                return self._inner.get_file_info(path)
+
+            def get_folder_info(self, path: str) -> Any:
+                return self._inner.get_folder_info(path)
+
+            def list_files(self, path: str = "", *, recursive: bool = False, max_depth: int = 0) -> Any:
+                return self._inner.list_files(path, recursive=recursive, max_depth=max_depth)
+
+            def list_folders(self, path: str = "", *, recursive: bool = False, max_depth: int = 0) -> Any:
+                return self._inner.list_folders(path, recursive=recursive, max_depth=max_depth)
+
+            def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+                return self._inner.move(src, dst, overwrite=overwrite)
+
+            def copy(self, src: str, dst: str, *, overwrite: bool = False, recursive: bool = False) -> None:
+                return self._inner.copy(src, dst, overwrite=overwrite, recursive=recursive)
+
+            def open_atomic(self, path: str) -> Any:
+                return self._inner.open_atomic(path)
+
+        buggy_store = Store(backend=_BuggyBackend(local_store._backend))
+
+        # The RuntimeError from unwrap() should propagate, not be caught
+        with pytest.raises(RuntimeError, match="Simulated backend bug"):
+            StoreFileSystemHandler(buggy_store)
+
 
 # ---------------------------------------------------------------------------
 # PA-011/012: Write operations

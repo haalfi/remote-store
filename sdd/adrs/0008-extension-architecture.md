@@ -62,6 +62,31 @@ the Store and is responsible for its lifecycle.
 `CapabilityNotSupported` raised by Store methods MUST propagate to the
 extension's caller.  Extensions must not catch and suppress it.
 
+### Capability-probe exception pattern
+
+The rule "CapabilityNotSupported MUST propagate" has one documented
+exception: the **capability-probe** pattern.  Extensions MAY catch
+`CapabilityNotSupported` when probing for an **optional native backend**
+during initialization, provided:
+
+1. The probe is for an **optional feature**, not a required operation.
+2. A graceful fallback exists (e.g., Tier 2/3 I/O paths in `ext.arrow`).
+3. The catch is narrowly scoped to expected exceptions (e.g.,
+   `(CapabilityNotSupported, TypeError, OSError)` for cloud backends).
+4. A comment explains the probe, exceptions caught, and fallback strategy.
+5. The catch MAY be annotated with `# noqa: BLE001` as a documentation marker
+   if the implementation uses a broad catch; the annotation is optional if the
+   catch is already narrow and specific.
+
+**Example:** `ext.arrow` Tier 1 probe (`src/remote_store/ext/arrow.py`
+line 177).  The `StoreFileSystemHandler.__init__` probes for a native PyArrow
+backend via `store.unwrap(pafs.FileSystem)`.  If the backend doesn't
+support unwrap or the type doesn't match, the probe gracefully falls back
+to Tier 2/3 (full-file materialization or byte-range reads).
+
+Any new extension using this pattern MUST cite this section and document
+the fallback strategy explicitly in comments.
+
 ### Export rules
 
 > Superseded by ADR-0013 -- optional-dependency extensions are no longer

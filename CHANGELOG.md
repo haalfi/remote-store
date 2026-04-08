@@ -69,6 +69,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **ADR-0008 conformance: `ext.arrow` Tier 1 probe** (BK-141): Updated
+  `StoreFileSystemHandler.__init__` to narrow exception catch from `Exception`
+  to `(CapabilityNotSupported, TypeError, OSError)` and documented the
+  capability-probe pattern in ADR-0008 as an explicit exception to the
+  "CapabilityNotSupported must propagate" rule. OSError catch handles cloud
+  backend initialization failures (e.g., S3 endpoint unreachable). Added test
+  `test_tier1_unexpected_exception_propagates` to verify unexpected exceptions
+  are not silently caught. The pattern is now ADR-endorsed for optional feature
+  detection during extension initialization.
 - **Type-mismatch errors now raise `InvalidPath` per spec** (ID-131):
   `read()`, `read_bytes()`, `delete()`, `get_file_info()`, `get_folder_info()`,
   `delete_folder()` on the wrong path type (directory vs file) now raise
