@@ -684,6 +684,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#quality-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality &amp; Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#learn-more" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7905,6 +7916,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#quality-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality &amp; Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#learn-more" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8218,6 +8240,18 @@ use a Registry with declarative config:</p>
 </tbody>
 </table>
 <p>Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the <a href="https://docs.remotestore.dev/stable/extensions/">extensions guide</a> for details.</p>
+<h2 id="quality-testing">Quality &amp; Testing<a class="headerlink" href="#quality-testing" title="Permanent link">&para;</a></h2>
+<p>Storage behavior must be predictable and correct. We verify this across multiple dimensions:</p>
+<ul>
+<li><strong>Spec-driven development:</strong> behavior specifications are the source of truth; tests link directly to them. <em>Prevents feature drift.</em></li>
+<li><strong>Extensive unit tests:</strong> 95%+ coverage across all backends, focused on behavior. <em>Catches integration issues early.</em></li>
+<li><strong>Design by Contract:</strong> pre/post conditions and invariants catch incorrect usage early. <em>Fails fast on misuse.</em></li>
+<li><strong>Property-based testing:</strong> randomized input generation surfaces edge cases no hand-written test would find. <em>Finds blind spots.</em></li>
+<li><strong>Formal verification:</strong> critical paths are proven correct in Dafny before implementation. <em>Eliminates logic errors.</em></li>
+<li><strong>Mutation testing:</strong> gremlins modify the code; if they survive the tests, the tests have gaps. <em>Exposes weak test coverage.</em></li>
+<li><strong>Benchmarks:</strong> performance tracked per operation and backend. <em>Provides baseline for optimization.</em></li>
+<li><strong>Examples and snippets:</strong> runnable code in <code>examples/</code> and notebooks; docs are tested against actual behavior. <em>Keeps examples real.</em></li>
+</ul>
 <h2 id="learn-more">Learn more<a class="headerlink" href="#learn-more" title="Permanent link">&para;</a></h2>
 <p>To explore <code>remote-store</code> beyond the Quick Start:</p>
 <ul>

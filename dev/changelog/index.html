@@ -4233,6 +4233,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4323,7 +4334,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
+  <a href="#documentation_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -4406,7 +4417,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation_1" class="md-nav__link">
+  <a href="#documentation_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -4456,7 +4467,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation_2" class="md-nav__link">
+  <a href="#documentation_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -4528,7 +4539,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation_3" class="md-nav__link">
+  <a href="#documentation_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -4678,7 +4689,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation_4" class="md-nav__link">
+  <a href="#documentation_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -8924,6 +8935,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9014,7 +9036,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
+  <a href="#documentation_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -9097,7 +9119,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation_1" class="md-nav__link">
+  <a href="#documentation_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -9147,7 +9169,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation_2" class="md-nav__link">
+  <a href="#documentation_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -9219,7 +9241,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation_3" class="md-nav__link">
+  <a href="#documentation_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -9369,7 +9391,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#documentation_4" class="md-nav__link">
+  <a href="#documentation_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Documentation
@@ -10195,6 +10217,10 @@
   Both <code>S3Backend.read()</code> and <code>S3PyArrowBackend.read()</code> now use the new
   <code>_safe_wrap()</code> helper to close raw handles if wrapping constructors raise.</li>
 </ul>
+<h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added "Quality &amp; Testing" section to README explaining testing dimensions (spec-driven development, unit tests, PBT, formal verification, mutation testing, benchmarks, examples).</li>
+</ul>
 <h2 id="0211-2026-04-03">[0.21.1] - 2026-04-03<a class="headerlink" href="#0211-2026-04-03" title="Permanent link">&para;</a></h2>
 <h3 id="fixed_1">Fixed<a class="headerlink" href="#fixed_1" title="Permanent link">&para;</a></h3>
 <ul>
@@ -10324,7 +10350,7 @@
   that need pandas call <code>table.to_pandas()</code> on the result. See
   <a href="../migration/#v0200-to-v0210">Migration Guide</a>.</li>
 </ul>
-<h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_1">Documentation<a class="headerlink" href="#documentation_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Spec 029 amendments</strong> (ID-013b): add round 2 §2.4 items (ASYNC-036/037,
   ASYNC-052a–e, ASYNC-057/058, ASYNC-061/062) and Phase 2 <code>AsyncAzureBackend</code>
@@ -10588,7 +10614,7 @@
   The <code>_deprecated_alias()</code> helper in <code>ext/_helpers.py</code> is also removed.
   Pre-v1 — no deprecation shim needed.</li>
 </ul>
-<h3 id="documentation_1">Documentation<a class="headerlink" href="#documentation_1" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_2">Documentation<a class="headerlink" href="#documentation_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong>Fix docs list completeness findings</strong> (BK-129): Add SQLBlob and SQLQuery
@@ -10704,7 +10730,7 @@
 <li><code>cached_store()</code> → <code>cache()</code> — bare verb, matches <code>observe()</code>.</li>
 <li>Old names remain as deprecated aliases emitting <code>DeprecationWarning</code>.</li>
 </ul>
-<h3 id="documentation_2">Documentation<a class="headerlink" href="#documentation_2" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_3">Documentation<a class="headerlink" href="#documentation_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong>Single-source code snippets for docs</strong> (ID-057): docs code blocks are now
@@ -10846,7 +10872,7 @@
   detection wraps them in <code>Secret</code> correctly. Previously, <code>SecretStr</code> objects
   bypassed the <code>isinstance(v, str)</code> check and were not wrapped.</li>
 </ul>
-<h3 id="documentation_3">Documentation<a class="headerlink" href="#documentation_3" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_4">Documentation<a class="headerlink" href="#documentation_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Backend API reference pages</strong> (ID-088) — added class documentation for all
   7 backends (Local, Memory, HTTP, S3, S3-PyArrow, SFTP, Azure) under a new
@@ -11047,7 +11073,7 @@
 <li><strong><code>ext.cache</code> — store-level caching middleware</strong> (ID-025) — <code>cached_store(store, ttl=300)</code> wraps a Store in a proxy that caches read-only operations (<code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>read_bytes</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>) with TTL-based expiration. All mutating operations automatically invalidate affected entries. <code>max_content_size</code> limits memory for large files. Thread-safe. Spec: CACHE-001 through CACHE-015.</li>
 <li><strong><code>ext.partition</code> — Hive-style partition path helpers</strong> (ID-036) — <code>partition_path(filename, **partitions)</code> builds paths like <code>year=2026/month=03/data.parquet</code>, <code>parse_partition(path)</code> extracts the partition dict and filename. Pure Python, zero dependencies. Spec: PART-001 through PART-013.</li>
 </ul>
-<h3 id="documentation_4">Documentation<a class="headerlink" href="#documentation_4" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_5">Documentation<a class="headerlink" href="#documentation_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Documentation overhaul</strong> (DOC-001) — Diataxis nav restructure (Getting Started / Guides / Reference / Explanation), extension API reference pages for all 9 ext modules, 7 new content pages (capabilities matrix, choosing a backend, troubleshooting, migration, architecture overview, security model, further reading), research docs surfaced on site, docstring audit for Store/Backend/errors with complete <code>:param:</code>/<code>:returns:</code>/<code>:raises:</code> and examples, cross-links between guides and API reference pages.</li>
 </ul>
