@@ -179,6 +179,7 @@ class TestDeleteFolderErrorFidelity:
     def test_delete_folder_on_file_raises_error(self, backend: Backend) -> None:
         """IsFile(path) ==> InvalidPath (Dafny: InvalidPath)."""
         _require(backend, Capability.DELETE, Capability.WRITE)
+        _skip_flat_namespace(backend, "flat-namespace backends cannot distinguish file vs folder")
         backend.write("dffile.txt", b"x")
         with pytest.raises(InvalidPath, match="dffile"):
             backend.delete_folder("dffile.txt")

@@ -17,7 +17,6 @@ from remote_store._errors import (
     CapabilityNotSupported,
     DirectoryNotEmpty,
     InvalidPath,
-    NotFound,
     PermissionDenied,
     RemoteStoreError,
 )
@@ -547,7 +546,7 @@ class TestLocalBackendEdgeCases:
     def test_delete_folder_path_is_file(self, local_backend: tuple[LocalBackend, str]) -> None:
         backend, _ = local_backend
         backend.write("file.txt", b"data")
-        with pytest.raises(NotFound, match="Not a folder"):
+        with pytest.raises(InvalidPath, match="Not a folder"):
             backend.delete_folder("file.txt")
 
     def test_write_atomic_cleanup_on_failure(self, local_backend: tuple[LocalBackend, str]) -> None:
