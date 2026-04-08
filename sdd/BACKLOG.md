@@ -45,6 +45,19 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-141 — `ext.arrow` suppresses `CapabilityNotSupported` during Tier 1 probe**
+  `ArrowAccessor.__init__` catches `Exception` broadly at `store.unwrap()` (~line 182
+  of `src/remote_store/ext/arrow.py`), silently swallowing `CapabilityNotSupported`
+  rather than propagating it. The Tier 1 → Tier 2/3 fallback is intentional, but
+  violates ADR-0008 ("CapabilityNotSupported always propagates; extensions must not
+  suppress it"). Two options:
+  - **Option A:** Codify the Tier 1 probe as an explicit exception to ADR-0008 —
+    update ADR-0008 with the "capability-probe" pattern and annotate the catch.
+  - **Option B:** Narrow the catch to `(CapabilityNotSupported, TypeError)` and
+    document the rationale in-line; re-raises anything unexpected.
+  Decision needed before implementation. Found during ID-132 self-review.
+  Related: ADR-0008, BK-139b (BLE annotations).
+
 - [~] **BK-139c — Dafny-Python bridge: unified oracle for backend conformance**
   POC completed (see `sdd/formal/POC/`). Proved two viable approaches to bridging
   formal Dafny specification and runtime Python testing.
@@ -80,19 +93,6 @@ Items graduate through the SDD pipeline:
 ## Ideas
 
 ### Testing & Verification
-
-### Extensions
-
-- [ ] **ID-133 — `ext.arrow` suppresses `CapabilityNotSupported` during Tier 1 probe**
-  `ArrowAccessor.__init__` catches `Exception` broadly at `store.unwrap()` (line ~182
-  of `src/remote_store/ext/arrow.py`), which silently swallows `CapabilityNotSupported`
-  rather than propagating it. The fallback to Tier 2/3 is intentional, but violates
-  ADR-0008 ("CapabilityNotSupported always propagates to the caller; extensions must
-  not suppress it"). Decide: codify the Tier 1 probe as an explicit exception to
-  ADR-0008 (update ADR), or restructure the probe to catch only narrower exceptions
-  (e.g., `CapabilityNotSupported`) and document the pattern.
-  Found during: ID-132 self-review.
-  Related: ADR-0008, BK-139b (BLE annotations).
 
 ### API Surface Enhancements
 
