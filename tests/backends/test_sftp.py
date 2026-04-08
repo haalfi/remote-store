@@ -83,7 +83,9 @@ class TestSFTPConstruction:
         assert isinstance(caps, CapabilitySet)
         for cap in Capability:
             if cap is Capability.GLOB:
-                assert not caps.supports(cap), "SFTP should not declare GLOB"
+                assert not caps.supports(cap), "SFTP must not declare GLOB"
+            elif cap is Capability.ATOMIC_MOVE:
+                assert not caps.supports(cap), "SFTP must not declare ATOMIC_MOVE (posix_rename not guaranteed)"
             else:
                 assert caps.supports(cap), f"Missing capability: {cap.value}"
 

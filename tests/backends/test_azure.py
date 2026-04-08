@@ -204,6 +204,8 @@ class TestAzureConstruction:
         for cap in Capability:
             if cap is Capability.SEEKABLE_READ:
                 assert not caps.supports(cap), "Azure must not declare SEEKABLE_READ"
+            elif cap is Capability.ATOMIC_MOVE:
+                assert not caps.supports(cap), "Azure must not declare ATOMIC_MOVE (copy-then-delete on non-HNS)"
             else:
                 assert caps.supports(cap), f"Missing capability: {cap.value}"
 
