@@ -58,7 +58,6 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-
 - [ ] **ID-130 — Dafny formal coverage for `get_folder_info()` (BE-017)**
   `sdd/formal/BackendContract.dfy` has no `GetFolderInfo` method. The BE-017
   `InvalidPath` postcondition (`IsFile → InvalidPath`) is specified by symmetry

@@ -14,6 +14,7 @@ test.  Focus areas:
 
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -24,6 +25,7 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
+    RemoteStoreError,
 )
 
 if TYPE_CHECKING:
@@ -178,6 +180,18 @@ class TestDeleteFolderErrorFidelity:
         backend.write("dffile.txt", b"x")
         with pytest.raises(InvalidPath, match="dffile"):
             backend.delete_folder("dffile.txt")
+
+    @pytest.mark.spec("BE-013")
+    def test_delete_folder_on_file_no_native_leak(self, backend: Backend) -> None:
+        """Flat-namespace backends: delete_folder(file) must not leak native exceptions."""
+        _require(backend, Capability.DELETE, Capability.WRITE)
+        if backend.name not in _FLAT_NAMESPACE_BACKENDS:
+            pytest.skip("hierarchical backend — covered by test_delete_folder_on_file_raises_error")
+        backend.write("dffile_flat.txt", b"x")
+        # Flat-namespace backends may not distinguish file/folder.  The key
+        # contract: no native exception leaks (RemoteStoreError or subclass).
+        with contextlib.suppress(RemoteStoreError):
+            backend.delete_folder("dffile_flat.txt")
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_missing_raises_not_found(self, backend: Backend) -> None:
