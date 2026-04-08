@@ -16,22 +16,26 @@ at runtime before calling an operation.
 | MOVE           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
 | COPY           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
 | ATOMIC_WRITE   | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
+| ATOMIC_MOVE    | Yes | Yes | —   | —   | —          | —  | —     | Yes     | —         |
 | METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | GLOB           | Yes | —  | —   | Yes | Yes | —  | Yes | Yes | Yes |
 | SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | — | Yes | Yes |
 
-**Full support (10/10):** Local, S3, S3-PyArrow, SQLBlob.
+**Full support (11/11):** Local, SQLBlob.
 
-**Near-full (9/10):** Memory and SFTP lack native `GLOB`. Use the portable
-fallback `ext.glob.glob_files()` instead — see the
+**Near-full (10/11):** Memory lacks native `GLOB`; use the portable
+fallback `ext.glob.glob_files()` — see the
 [Glob Pattern Matching](glob-pattern-matching.md) guide.
-Azure lacks `SEEKABLE_READ` (forward-only chunk iterator) but supports
-`Store.read_seekable()` via an optimized HTTP Range reader.
+S3 and S3-PyArrow lack `ATOMIC_MOVE` (copy-then-delete semantics).
 
-**Partial (5/10):** SQLQuery is read-only (`READ`, `LIST`, `METADATA`, `GLOB`,
-`SEEKABLE_READ`).
+**Partial support (9/11):** SFTP lacks both `GLOB` and `ATOMIC_MOVE`.
+Azure lacks `SEEKABLE_READ` and `ATOMIC_MOVE` (forward-only chunk
+iterator, copy-then-delete move).
 
-**Minimal (2/10):** HTTP supports only `READ` and `METADATA` (read-only backend).
+**Read-only (5/11):** SQLQuery supports only `READ`, `LIST`, `METADATA`, `GLOB`,
+and `SEEKABLE_READ`.
+
+**Minimal (2/11):** HTTP supports only `READ` and `METADATA` (read-only backend).
 
 ## Querying capabilities at runtime
 
