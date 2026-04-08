@@ -189,7 +189,6 @@ map to the specified error type regardless of backend:
 |----------|---------------------|
 | File operation (`read`, `write`, `delete`, `get_file_info`, `move`/`copy` src) on a path that is a directory | `InvalidPath` |
 | Directory operation (`delete_folder`, `move`/`copy` dst) on a path that is a file | `InvalidPath` |
-| Query method (`exists`, `is_file`, `is_folder`) on a path with file-as-directory-component ancestor | `False` (no exception) |
 | Operation on a non-existent path | `NotFound` |
 | Operation denied by credentials or ACL | `PermissionDenied` |
 | Parent directory creation fails (permissions) | `PermissionDenied` |

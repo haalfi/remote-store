@@ -688,7 +688,13 @@ class TestBackendQueryMethodsTypeConflicts:
         ],
     )
     def test_all_query_methods_return_false_on_type_conflict(self, backend: Backend, method: str) -> None:
-        """All three query methods return False consistently for type conflicts."""
+        """All three query methods return False consistently for type conflicts.
+
+        Note: On flat-namespace backends (S3, Azure, HTTP), this test returns False
+        because the key "file/subpath" does not exist, not because of the file-as-directory-component
+        ancestor check. The test is vacuously true on flat-namespace backends but validates
+        the behavior correctly on hierarchical backends (Local, Memory, SQL, SFTP).
+        """
         _require(backend, Capability.WRITE)
         backend.write("file", b"content")
         # All methods should return False when traversing through a file

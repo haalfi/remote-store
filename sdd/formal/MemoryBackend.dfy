@@ -59,6 +59,9 @@ class MemoryBackend extends Backend {
     var i := 1;
     while i < |path| - 1
       invariant 1 <= i <= |path| - 1
+      // Invariant: result tracks whether all checked ancestors are traversable.
+      // When result == true: all ancestors at positions j < i (where path[j]=='/') are traversable.
+      // When result == false: a file ancestor was found at position i.
       invariant result == (forall j: int |
         0 < j < i && path[j] == '/' ::
         !PathExists(fs, path[..j]) || IsDir(fs, path[..j]))
