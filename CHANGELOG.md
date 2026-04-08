@@ -84,6 +84,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Documentation
 
+- **Custom backend guide: conformance suite integration** (ID-132): The
+  "Testing your backend" section now explains how to register a new backend in
+  `tests/backends/conftest.py` to run the full conformance suite automatically,
+  how `_require()` / capability gating causes tests to self-skip (not fail) for
+  partial-capability backends, and the flat-namespace vs. hierarchical backend
+  distinction (`_FLAT_NAMESPACE_BACKENDS`). Added a conformance checklist table
+  (basic, extended, error mapping, repr safety). Corrected spec coverage range
+  (BE-001–BE-025 + ancillary specs) and test count (50 Dafny-derived tests).
 - Added "Quality & Testing" section to README explaining testing dimensions (spec-driven development, unit tests, PBT, formal verification, mutation testing, benchmarks, examples).
 
 ## [0.21.1] - 2026-04-03

@@ -174,6 +174,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Documentation & Developer Experience
 
+- [x] **ID-132 — Custom backend guide: conformance suite integration and flat-namespace docs**
+  Expanded `guides/custom-backend-guide.md` § "Testing your backend" to connect
+  external authors to the real conformance infrastructure:
+  1. Conformance suite overview table (`test_conformance.py` BE-001–BE-025 + ancillary
+     specs, `test_conformance_extended.py` 50 Dafny-derived tests) with GitHub links.
+  2. Step-by-step fixture registration guide for contributing backends
+     (`conftest.py` availability guard → `pytest.param` → fixture `elif` branch).
+  3. `_require()` / capability-gating explanation with example — skip-not-fail
+     semantics for partial-capability backends.
+  4. Flat-namespace vs. hierarchical distinction: definition, `_FLAT_NAMESPACE_BACKENDS`
+     set, behavioral differences table, when to add your backend name to the set.
+  5. Conformance checklist (basic, extended, error mapping, repr safety).
+  6. Standalone testing section retained with categories aligned to conformance suite.
+  Related: BK-139b, BK-139c, CONTRIBUTING.md § Adding a New Backend.
+
 - [x] **BK-137 — Post-v0.20.0 test quality: TESTING.md compliance + coverage gaps** (v0.21.0)
   Audited new async/dagster test files against `sdd/TESTING.md` rules.
   Fixed Rule 2 (sole `isinstance` → behavioral assertions) and Rule 7

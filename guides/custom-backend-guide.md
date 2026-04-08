@@ -322,35 +322,205 @@ code/type, and raise the appropriate remote-store error with `from exc`.
 
 ## Testing your backend
 
-remote-store's test suite is organized around the Backend contract. For a
-custom backend, write tests covering:
+remote-store ships two conformance test files that validate any backend against
+the formal `BackendContract` specification. Backends contributed to the repo
+plug into this infrastructure and run ~114 test scenarios per backend
+automatically (64 basic + 50 extended). Standalone backends can either reuse this suite or write focused
+tests against the same categories.
 
-### Happy paths
+---
+
+### Conformance suite overview
+
+| File | Coverage | Run with |
+|---|---|---|
+| [`test_conformance.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance.py) | 64 tests — BE-001–BE-022, BE-025 + SAW, ITER, SIO, GLOB, NPR, RES specs: identity, capabilities, `exists`, `is_file`/`is_folder`, read, write, delete, list, streaming, glob, native path, resolution | `pytest tests/backends/test_conformance.py` |
+| [`test_conformance_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance_extended.py) | 50 Dafny-derived tests: error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup | `pytest -m extended_conformance` |
+
+Both files share the same parameterized `backend` fixture — every registered
+backend runs the full suite automatically.
+
+---
+
+### Registering in the conformance fixture (contributing backends)
+
+If you are contributing a backend to remote-store, this is step 3 of
+[CONTRIBUTING.md § Adding a New Backend](https://github.com/haalfi/remote-store/blob/master/CONTRIBUTING.md#adding-a-new-backend).
+Add your backend to
+[`tests/backends/conftest.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conftest.py);
+the entire conformance suite then runs against it automatically.
+
+**1. Add an availability guard near the top of `conftest.py`:**
+
+```python
+def _redis_available() -> bool:
+    try:
+        import redis  # noqa: F401
+        return True
+    except ImportError:
+        return False
+```
+
+**2. Add a `pytest.param` constant:**
+
+```python
+_redis_param = pytest.param(
+    "redis",
+    marks=pytest.mark.skipif(not _redis_available(), reason="redis-py not installed"),
+)
+```
+
+If your backend requires an external service (like S3, SFTP, or Azurite), add
+a reachability check and a session-scoped server fixture following the existing
+`moto_server` / `sftp_server` / `azurite_server` pattern.
+
+**3. Add it to the `backend` fixture's `params` list and `elif` branch:**
+
+```python
+@pytest.fixture(
+    params=[
+        _local_param,
+        _memory_param,
+        # ... existing params ...
+        _redis_param,   # ← add here
+    ]
+)
+def backend(request, moto_server, sftp_server, azurite_server, http_server):
+    ...
+    elif request.param == "redis":
+        from remote_store.backends._redis import RedisBackend
+        b = RedisBackend(url="redis://localhost:6379/0", prefix=f"test-{uuid.uuid4().hex}:")
+        yield b
+        b.close()
+```
+
+`conftest.py` already imports `uuid` at the top — ensure yours does too if
+you are starting from scratch. Use a unique prefix per test so isolation is
+guaranteed even without a full teardown.
+
+---
+
+### Capability gating with `_require()`
+
+Backends may declare a subset of capabilities. The `_require()` helper skips a
+test when the backend lacks the needed capability — so a read-only backend
+cleanly skips all write, move, copy, and delete tests without failures:
+
+```python
+def _require(backend: Backend, *caps: Capability) -> None:
+    for cap in caps:
+        if not backend.capabilities.supports(cap):
+            pytest.skip(f"Backend does not support {cap.name}")
+```
+
+Use the same pattern in your own tests:
+
+```python
+from remote_store import Capability
+import pytest
+
+def test_move_preserves_content(backend):
+    _require(backend, Capability.MOVE)
+    backend.write("src.txt", b"hello")
+    backend.move("src.txt", "dst.txt")
+    assert backend.read_bytes("dst.txt") == b"hello"
+```
+
+A backend declaring only `READ` and `LIST` will skip every `WRITE`, `MOVE`,
+`COPY`, and `DELETE` test. The suite still passes — skips are not failures.
+
+---
+
+### Flat-namespace vs. hierarchical backends
+
+Backends fall into two models that affect a handful of conformance tests.
+
+**Hierarchical** backends (Local, SFTP, Memory) have real directory objects.
+Writing a file creates its parent directories; a path can be either a file
+*or* a directory, never both.
+
+**Flat-namespace** backends (S3, Azure, HTTP) have no real directory entries.
+Folders are virtual — inferred from key prefixes. A path `a/b/c` implies a
+prefix `a/b/` but no actual directory object exists.
+
+The extended conformance suite tracks this in a frozenset:
+
+```python
+# tests/backends/test_conformance_extended.py
+_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http"})
+```
+
+Tests that rely on real directory semantics call `_skip_flat_namespace()` and
+self-skip for flat backends. If your new backend is flat-namespace, add its
+`backend.name` string to this set.
+
+Key behavioral differences that the conformance tests check:
+
+| Behavior | Hierarchical (Local, SFTP, Memory) | Flat-namespace (S3, Azure, HTTP) |
+|---|---|---|
+| Write to a path that is an existing directory | Raises `InvalidPath` | Typically allowed (no real directory) |
+| `delete_folder(recursive=False)` on non-empty folder | Raises `DirectoryNotEmpty` | Behaviour varies; some tests are skipped |
+| Explicit directory creation | Required (mkdir semantics) | Not needed; folders emerge from key prefixes |
+| `is_folder(path)` for a prefix with no keys | `False` | `False` |
+
+If your backend is hierarchical (the common case), no action is needed — the
+full extended suite applies.
+
+---
+
+### Conformance checklist
+
+Before a backend is considered conformant, verify:
+
+| Level | What | Command |
+|---|---|---|
+| **Basic** | All `test_conformance.py` tests pass or self-skip (declared capability missing) | `pytest tests/backends/test_conformance.py -k <backend-name>` |
+| **Extended** | All `test_conformance_extended.py` tests pass or self-skip | `pytest -m extended_conformance -k <backend-name>` |
+| **Error mapping** | Every native exception maps to a `remote_store` error — nothing leaks | Error mapping checklist above |
+| **Repr safety** | `repr(backend)` does not expose secrets | `test_repr_masks_secrets` in basic suite |
+
+Skips are expected and acceptable when a backend doesn't declare the relevant
+capability. Failures (not skips) in either suite are blocking.
+
+---
+
+### Standalone backend testing
+
+> **Not contributing to the repo?** Skip the fixture registration above and
+> write focused tests directly. The categories below mirror what the
+> conformance suite verifies.
+
+If you are building a backend outside the remote-store repository, write
+focused tests covering the same categories the conformance suite verifies:
+
+#### Happy paths
 
 - Read/write round-trip
-- Overwrite behavior (both `overwrite=True` and `overwrite=False`)
+- Overwrite behavior (`overwrite=True` and `overwrite=False`)
 - List files and folders (recursive and non-recursive)
 - Move and copy
-- Metadata accuracy (size, modified_at)
+- Metadata accuracy (`size`, `modified_at`)
 
-### Error paths
+#### Error paths
 
 - `read()` on missing file raises `NotFound`
-- `write()` on existing file raises `AlreadyExists`
-- `delete(missing_ok=False)` raises `NotFound`
+- `write()` on existing file with `overwrite=False` raises `AlreadyExists`
+- `delete(missing_ok=False)` on missing file raises `NotFound`
 - `delete_folder(recursive=False)` on non-empty folder raises `DirectoryNotEmpty`
-- Invalid paths raise `InvalidPath`
+- Path naming a wrong type (file path to `get_folder_info`, directory path to
+  `read`) raises `InvalidPath`
 - Backend unavailable raises `BackendUnavailable`
 
-### Edge cases
+#### Edge cases
 
-- Empty path (`""`) and root alias (`"."`)
+- Empty path (`""`) and root alias (`"."`) — root always exists and is always a folder
+- `is_file("")` always returns `False`; `exists("")` never raises
 - Deeply nested paths (`"a/b/c/d/e/file.txt"`)
-- Files with special characters in names
-- Large files (if your backend has size limits)
+- Non-existent paths to `list_files` / `list_folders` yield nothing (no exception)
+- `repr(backend)` does not expose credentials or secrets
 - Concurrent access (if thread-safety matters)
 
-### Example test structure
+#### Example test structure
 
 ```python
 --8<-- "examples/snippets/custom_backend_guide.py:test-examples"
