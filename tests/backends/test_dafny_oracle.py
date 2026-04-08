@@ -26,10 +26,10 @@ from remote_store._errors import (
     AlreadyExists,
     NotFound,
 )
+from tests.backends.oracle import DafnyOracle, ErrorKind, OracleOk
 
 # OS-sensitive: tests exercise LocalBackend via parameterized fixture
 pytestmark = pytest.mark.os_sensitive
-from tests.backends.oracle import DafnyOracle, ErrorKind, OracleOk
 
 
 def _oracle_error_type(oracle_result: object) -> ErrorKind | None:
