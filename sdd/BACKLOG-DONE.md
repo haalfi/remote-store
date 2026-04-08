@@ -171,8 +171,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 - [x] **ID-132 — Custom backend guide: conformance suite integration and flat-namespace docs**
   Expanded `guides/custom-backend-guide.md` § "Testing your backend" to connect
   external authors to the real conformance infrastructure:
-  1. Conformance suite overview table (`test_conformance.py` BE-001–BE-008,
-     `test_conformance_extended.py` 42 Dafny-derived tests).
+  1. Conformance suite overview table (`test_conformance.py` BE-001–BE-025 + ancillary
+     specs, `test_conformance_extended.py` 50 Dafny-derived tests) with GitHub links.
   2. Step-by-step fixture registration guide for contributing backends
      (`conftest.py` availability guard → `pytest.param` → fixture `elif` branch).
   3. `_require()` / capability-gating explanation with example — skip-not-fail

@@ -334,8 +334,8 @@ tests against the same categories.
 
 | File | Coverage | Run with |
 |---|---|---|
-| `tests/backends/test_conformance.py` | BE-001–BE-008: identity, capabilities, `exists`, `is_file`/`is_folder`, read, write, delete, list | `pytest tests/backends/test_conformance.py` |
-| `tests/backends/test_conformance_extended.py` | 42 Dafny-derived tests: error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup | `pytest -m extended_conformance` |
+| [`test_conformance.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance.py) | BE-001–BE-025 + SAW, ITER, SIO, GLOB, NPR, RES specs: identity, capabilities, `exists`, `is_file`/`is_folder`, read, write, delete, list, streaming, glob, native path, resolution | `pytest tests/backends/test_conformance.py` |
+| [`test_conformance_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance_extended.py) | 50 Dafny-derived tests: error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup | `pytest -m extended_conformance` |
 
 Both files share the same parameterized `backend` fixture — every registered
 backend runs the full suite automatically.
@@ -345,9 +345,10 @@ backend runs the full suite automatically.
 ### Registering in the conformance fixture (contributing backends)
 
 If you are contributing a backend to remote-store, this is step 3 of
-`CONTRIBUTING.md § Adding a New Backend`. Add your backend to the fixture
-in `tests/backends/conftest.py`; the entire conformance suite then runs
-against it automatically.
+[CONTRIBUTING.md § Adding a New Backend](../CONTRIBUTING.md#adding-a-new-backend).
+Add your backend to
+[`tests/backends/conftest.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conftest.py);
+the entire conformance suite then runs against it automatically.
 
 **1. Add an availability guard near the top of `conftest.py`:**
 
@@ -393,8 +394,9 @@ def backend(request, moto_server, sftp_server, azurite_server, http_server):
         b.close()
 ```
 
-Use a unique prefix per test (e.g., `uuid4`) so test isolation is guaranteed
-even without a full teardown.
+`conftest.py` already imports `uuid` at the top — ensure yours does too if
+you are starting from scratch. Use a unique prefix per test so isolation is
+guaranteed even without a full teardown.
 
 ---
 
@@ -414,6 +416,9 @@ def _require(backend: Backend, *caps: Capability) -> None:
 Use the same pattern in your own tests:
 
 ```python
+from remote_store import Capability
+import pytest
+
 def test_move_preserves_content(backend):
     _require(backend, Capability.MOVE)
     backend.write("src.txt", b"hello")
@@ -481,6 +486,10 @@ capability. Failures (not skips) in either suite are blocking.
 
 ### Standalone backend testing
 
+> **Not contributing to the repo?** Skip the fixture registration above and
+> write focused tests directly. The categories below mirror what the
+> conformance suite verifies.
+
 If you are building a backend outside the remote-store repository, write
 focused tests covering the same categories the conformance suite verifies:
 
@@ -504,9 +513,11 @@ focused tests covering the same categories the conformance suite verifies:
 
 #### Edge cases
 
-- Empty path (`""`) and root alias (`"."`)
+- Empty path (`""`) and root alias (`"."`) — root always exists and is always a folder
+- `is_file("")` always returns `False`; `exists("")` never raises
 - Deeply nested paths (`"a/b/c/d/e/file.txt"`)
 - Non-existent paths to `list_files` / `list_folders` yield nothing (no exception)
+- `repr(backend)` does not expose credentials or secrets
 - Concurrent access (if thread-safety matters)
 
 #### Example test structure

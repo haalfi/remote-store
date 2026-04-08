@@ -81,6 +81,18 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
+### Extensions
+
+- [ ] **ID-133 — `ext.arrow` suppresses `CapabilityNotSupported` during Tier 1 probe**
+  `ArrowAccessor.__init__` catches `Exception` broadly at `store.unwrap()` (line ~182
+  of `src/remote_store/ext/arrow.py`), which silently swallows `CapabilityNotSupported`
+  rather than propagating it. The fallback to Tier 2/3 is intentional, but violates
+  ADR-0008 ("CapabilityNotSupported always propagates to the caller; extensions must
+  not suppress it"). Decide: codify the Tier 1 probe as an explicit exception to
+  ADR-0008 (update ADR), or restructure the probe to catch only narrower exceptions
+  (e.g., `CapabilityNotSupported`) and document the pattern.
+  Found during: ID-132 self-review.
+  Related: ADR-0008, BK-139b (BLE annotations).
 
 ### API Surface Enhancements
 
