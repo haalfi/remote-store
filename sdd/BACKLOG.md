@@ -81,26 +81,6 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
-- [ ] **ID-132 — Custom backend guide: conformance suite integration and flat-namespace docs**
-  The external-facing `guides/custom-backend-guide.md` has a hand-rolled "Testing
-  your backend" section that is disconnected from the real conformance infrastructure.
-  Gaps identified post-ID-131:
-  1. The guide never mentions `test_conformance.py` or `test_conformance_extended.py`.
-     It should explain how to add a fixture entry to `tests/backends/conftest.py`
-     so the full suite (BE-001–BE-008 + 42 extended cases) runs automatically against
-     the new backend — matching step 3 of `CONTRIBUTING.md § Adding a New Backend`.
-  2. The `_require()` / capability-gating pattern for optional capabilities is not
-     explained — third-party authors don't know how to declare partial capability
-     support so tests self-skip correctly.
-  3. The flat-namespace vs. hierarchical distinction is invisible. The guide should
-     explain the `_FLAT_NAMESPACE_BACKENDS` boundary: what it means, when a new
-     backend falls into it, and which conformance tests differ for flat-namespace
-     backends (folder-as-prefix semantics, `move` directory tree behaviour, etc.).
-  4. No explicit "conformance checklist" — add a summary table of which test marks
-     a backend must pass to be considered conformant (basic: `test_conformance.py`;
-     extended: `@pytest.mark.extended_conformance`).
-  Scope: `guides/custom-backend-guide.md` edits only. No code changes required.
-  Related: BK-139b, BK-139c, CONTRIBUTING.md § Adding a New Backend.
 
 ### API Surface Enhancements
 
