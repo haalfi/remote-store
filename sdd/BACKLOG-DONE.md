@@ -136,6 +136,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Backlog
 
+- [x] **BK-141 — `ext.arrow` suppresses `CapabilityNotSupported` during Tier 1 probe** (RESOLVED via Option A)
+  Codified the Tier 1 probe as an explicit "capability-probe" exception pattern
+  in ADR-0008 § "Capability-probe exception pattern". Updated `StoreFileSystemHandler.__init__`
+  to narrow exception catch from `Exception` to `(CapabilityNotSupported, TypeError)`
+  with explicit documentation referencing ADR-0008. The pattern is now ADR-endorsed
+  for optional feature detection during extension initialization.
+  Related: ADR-0008, BK-139b (BLE annotations), ID-132 (self-review).
+
 - [x] **BK-140 — Dafny formal verification layer for backend contract**
   Machine-checkable specification encoding all six BK-140 gaps:
   BE-008 (precondition ordering), BE-021 (error mapping), BE-014/015

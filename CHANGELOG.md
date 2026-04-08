@@ -69,6 +69,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **ADR-0008 conformance: `ext.arrow` Tier 1 probe** (BK-141): Updated
+  `StoreFileSystemHandler.__init__` to narrow exception catch from `Exception`
+  to `(CapabilityNotSupported, TypeError)` and documented the capability-probe
+  pattern in ADR-0008 as an explicit exception to the "CapabilityNotSupported
+  must propagate" rule. The Tier 1 probe is now an ADR-endorsed pattern for
+  optional feature detection during extension initialization.
 - **Type-mismatch errors now raise `InvalidPath` per spec** (ID-131):
   `read()`, `read_bytes()`, `delete()`, `get_file_info()`, `get_folder_info()`,
   `delete_folder()` on the wrong path type (directory vs file) now raise
