@@ -56,6 +56,31 @@ Items graduate through the SDD pipeline:
 
 ## Ideas
 
+### Testing & Verification
+
+- [ ] **BK-139c — Dafny-Python bridge: unified oracle for backend conformance**
+  POC completed (see `sdd/formal/POC-DAFNY-ORACLE.md`). Close the gap between
+  formal Dafny specification and runtime Python implementation.
+  - **Handwritten oracle** (`tests/backends/oracle.py`): 33 passing tests;
+    faithful mirror of `MemoryBackend.dfy` with no external deps. Suitable for
+    daily CI use.
+  - **Dafny-compiled oracle** (`sdd/formal/MemoryBackend-py/`): Direct
+    translation of spec to Python via `dafny translate py` (Dafny 4.11.0);
+    41 verified proofs. Requires `_dafny` runtime and class-ordering patch.
+  - **Unified strategy**:
+    1. Use handwritten oracle in conformance tests (practical, fast).
+    2. Create adapter layer marshaling Dafny types (Seq, Map) ↔ Python.
+    3. Run differential conformance: compare results from both oracles.
+    4. Fail if compiled oracle result ≠ handwritten oracle result (spec
+       divergence indicator).
+  - **Deliverables**:
+    - Wrapper around `MemoryBackend-py/` fixing class ordering + type marshaling.
+    - Differential conformance test suite (`conftest.py` fixture).
+    - Updated `sdd/BACKLOG-DONE.md` with completion once shipped.
+  - **Benefits**: Catch implementation-vs.-spec drift; formalize test oracle
+    itself; leverage Dafny verification in production testing.
+  - **Related**: BK-139a, BK-139b, BK-140, BE-021
+
 ### API Surface Enhancements
 
 - [ ] **ID-130 — Dafny formal coverage for `get_folder_info()` (BE-017)**
