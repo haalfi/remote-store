@@ -636,3 +636,81 @@ class TestOperationalConsistency:
         backend.write("ec_gfis.txt", data)
         info = backend.get_file_info("ec_gfis.txt")
         assert info.size == len(data)
+
+
+class TestBackendQueryMethodsTypeConflicts:
+    """BE-004, BE-005, BE-021: Query methods behavior under file-as-directory-component.
+
+    When a path has an ancestor that is a file (not a directory), the query methods
+    exists(), is_file(), and is_folder() return False rather than raising InvalidPath.
+    This codifies the "accidental consensus" behavior across all backends (ID-129).
+    """
+
+    @pytest.mark.spec("BE-004")
+    @pytest.mark.spec("BE-005")
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize(
+        "method",
+        [
+            pytest.param("exists", id="exists"),
+            pytest.param("is_file", id="is_file"),
+            pytest.param("is_folder", id="is_folder"),
+        ],
+    )
+    def test_query_methods_return_false_when_ancestor_is_file(self, backend: Backend, method: str) -> None:
+        """Query methods return False for paths with file-as-directory-component ancestor.
+
+        Tests both shallow and deep nesting levels to ensure consistent behavior
+        at multiple depths.
+        """
+        _require(backend, Capability.WRITE)
+        backend.write("a/b", b"file_content")
+        # Query method should return False, not raise InvalidPath
+        assert getattr(backend, method)("a/b/c") is False
+        assert getattr(backend, method)("a/b/c/d") is False
+
+    @pytest.mark.spec("BE-004")
+    @pytest.mark.spec("BE-005")
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize(
+        "method",
+        [
+            pytest.param("exists", id="exists"),
+            pytest.param("is_file", id="is_file"),
+            pytest.param("is_folder", id="is_folder"),
+        ],
+    )
+    def test_all_query_methods_return_false_on_type_conflict(self, backend: Backend, method: str) -> None:
+        """All three query methods return False consistently for type conflicts.
+
+        Note: On flat-namespace backends (S3, Azure, HTTP), this test returns False
+        because the key "file/subpath" does not exist, not because of the file-as-directory-component
+        ancestor check. The test is vacuously true on flat-namespace backends but validates
+        the behavior correctly on hierarchical backends (Local, Memory, SQL, SFTP).
+        """
+        _require(backend, Capability.WRITE)
+        backend.write("file", b"content")
+        # All methods should return False when traversing through a file
+        assert getattr(backend, method)("file/subpath") is False
+
+    @pytest.mark.spec("BE-021")
+    def test_query_methods_distinct_from_non_existent_paths(self, backend: Backend) -> None:
+        """Query methods return False both for non-existent and type-conflict paths.
+
+        While the return value is the same, this test validates that query methods
+        handle file-as-directory-component scenarios correctly by returning False
+        instead of raising errors (unlike other operations).
+        """
+        _require(backend, Capability.WRITE)
+        backend.write("a/b", b"file_content")
+
+        # Query methods return False for both cases:
+        # 1. Path with file ancestor (cannot traverse)
+        assert backend.exists("a/b/c") is False
+        assert backend.is_file("a/b/c") is False
+        assert backend.is_folder("a/b/c") is False
+
+        # 2. Completely non-existent path
+        assert backend.exists("x/y/z") is False
+        assert backend.is_file("x/y/z") is False
+        assert backend.is_folder("x/y/z") is False

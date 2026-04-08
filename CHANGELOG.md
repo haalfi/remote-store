@@ -53,6 +53,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   move/copy atomicity documentation (BE-018/019), and acquire-then-wrap
   resource safety invariant (SIO-001). Per-method Raises clauses updated
   for BE-006 through BE-019 to be consistent with the canonical table.
+- **Query method behavior under file-as-directory-component** (ID-129):
+  Codified behavior for `exists()`, `is_file()`, `is_folder()` when paths
+  contain file-as-directory-component ancestors (e.g., querying `a/b/c` when
+  `a/b` is a file). All three query methods return `False` rather than raising
+  `InvalidPath`. Spec amendments to BE-004, BE-005, BE-021 document this
+  "accidental consensus" behavior. Dafny formal methods `IsFileMethod()` and
+  `IsFolderMethod()` with `AllAncestorsTraversable` predicate verify the
+  contract in `MemoryBackend.dfy`. Extended conformance tests cover all
+  backends (Local, S3, Azure, SFTP, etc.).
 
 ### Fixed
 

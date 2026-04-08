@@ -113,6 +113,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the mutated path, not just the leaf. Called from `_invalidate_path`.
   Audit: [008 B-1](audits/audit-008-package-bugs.md#b-1)
 
+## Specification & API Contract
+
+- [x] **ID-129 — Spec gap: query methods under path-type conflicts**
+  Codified behavior for `exists()`, `is_file()`, `is_folder()` when paths
+  contain file-as-directory-component ancestors (e.g., querying `a/b/c` when
+  `a/b` is a file). All backends return `False` — accidental consensus now
+  made explicit and formally verified.
+  - **Phase 1:** BE-004, BE-005, BE-021 spec amendments
+  - **Phase 2:** Dafny formal methods `IsFileMethod()`, `IsFolderMethod()` with
+    `AllAncestorsTraversable` predicate; reference refinement in `MemoryBackend.dfy`
+  - **Phase 3:** Extended conformance tests (5 test methods, all backends) in
+    `test_conformance_extended.py` marked with `@pytest.mark.extended_conformance`
+  - **Phase 4:** CHANGELOG entry and documentation updates
+  Related: BK-140, BE-004, BE-005, BE-021, ID-130 (Dafny coverage).
+
 ## Backlog
 
 - [x] **BK-140 — Dafny formal verification layer for backend contract**

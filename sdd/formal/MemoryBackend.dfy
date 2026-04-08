@@ -22,9 +22,60 @@ class MemoryBackend extends Backend {
 
   method Exists(path: Path) returns (r: Result<bool>)
     ensures r.Ok?
-    ensures r.value == PathExists(fs, path)
+    ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
   {
-    r := Ok(path in fs);
+    var path_exists := path in fs;
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    r := Ok(path_exists && ancestors_ok);
+  }
+
+  method IsFileMethod(path: Path) returns (r: Result<bool>)
+    ensures r.Ok?
+    ensures r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
+  {
+    var is_file := path in fs && fs[path].FileEntry?;
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    r := Ok(is_file && ancestors_ok);
+  }
+
+  method IsFolderMethod(path: Path) returns (r: Result<bool>)
+    ensures r.Ok?
+    ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
+  {
+    var is_dir := path in fs && fs[path].DirEntry?;
+    var ancestors_ok := AncestorsTraversableCheck(path);
+    r := Ok(is_dir && ancestors_ok);
+  }
+
+  // Helper to check that all ancestors are traversable (not files)
+  // Only checks segment-aligned prefixes (those where path[i] == '/').
+  method AncestorsTraversableCheck(path: Path) returns (result: bool)
+    ensures result == AllAncestorsTraversable(fs, path)
+  {
+    result := true;
+    if |path| <= 2 {
+      return;
+    }
+    var i := 1;
+    while i < |path| - 1
+      invariant 1 <= i <= |path| - 1
+      // Invariant: result tracks whether all checked ancestors are traversable.
+      // When result == true: all ancestors at positions j < i (where path[j]=='/') are traversable.
+      // When result == false: a file ancestor was found at position i.
+      invariant result == (forall j: int |
+        0 < j < i && path[j] == '/' ::
+        !PathExists(fs, path[..j]) || IsDir(fs, path[..j]))
+    {
+      // Check '/' boundary
+      if path[i] == '/' {
+        var prefix := path[..i];
+        if prefix in fs && fs[prefix].FileEntry? {
+          result := false;
+          break;
+        }
+      }
+      i := i + 1;
+    }
   }
 
   method Read(path: Path) returns (r: Result<seq<nat>>)

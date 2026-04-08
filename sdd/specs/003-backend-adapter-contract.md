@@ -61,11 +61,11 @@ for cap in cs:
 
 ### BE-004: exists()
 
-**Invariant:** `exists(path)` returns `bool`. Returns `False` for missing paths — never raises `NotFound`.
+**Invariant:** `exists(path)` returns `bool`. Returns `False` for missing paths — never raises `NotFound`. Also returns `False` for paths whose ancestors contain a file (file-as-directory-component), where traversal cannot proceed; these are treated as non-existent.
 
 ### BE-005: is_file() / is_folder()
 
-**Invariant:** `is_file(path)` returns `True` only if `path` is a file. `is_folder(path)` returns `True` only if `path` is a folder. Both return `False` for non-existent paths.
+**Invariant:** `is_file(path)` returns `True` only if `path` is a file. `is_folder(path)` returns `True` only if `path` is a folder. Both return `False` for non-existent paths and for paths whose ancestors contain a file (file-as-directory-component); in both cases, the path cannot be accessed, so `False` is the semantically correct response.
 
 ### BE-006: read()
 
@@ -203,7 +203,9 @@ or `except Exception` handlers that map all errors to a single type. Handlers
 MUST discriminate by `errno`, exception type, or HTTP status code before
 choosing the mapped error. Silent returns (swallowing exceptions without
 re-raising a `RemoteStoreError`) are permitted ONLY for `exists()`,
-`is_file()`, and `is_folder()`.
+`is_file()`, and `is_folder()` — these three methods return `False` on any
+traversal error, including file-as-directory-component conflicts, rather than
+raising `InvalidPath`. All other operations MUST raise appropriate errors.
 
 ### BE-022: unwrap()
 
