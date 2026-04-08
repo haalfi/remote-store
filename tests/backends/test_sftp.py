@@ -820,6 +820,18 @@ class TestSFTPTypeGuards:
         with pytest.raises(InvalidPath):
             sftp_backend.delete_folder("notadir.txt")
 
+    def test_write_atomic_on_directory(self, sftp_backend: Backend) -> None:
+        """write_atomic on a directory path raises InvalidPath."""
+        sftp_backend.write("wa_dir/file.txt", b"x")
+        with pytest.raises(InvalidPath):
+            sftp_backend.write_atomic("wa_dir", b"data")
+
+    def test_open_atomic_on_directory(self, sftp_backend: Backend) -> None:
+        """open_atomic on a directory path raises InvalidPath."""
+        sftp_backend.write("oa_dir/file.txt", b"x")
+        with pytest.raises(InvalidPath), sftp_backend.open_atomic("oa_dir") as f:
+            f.write(b"data")
+
 
 class TestSFTPWriteAtomicStream:
     """BK-005: write_atomic with BinaryIO content (line 509)."""

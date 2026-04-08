@@ -345,6 +345,7 @@ class SFTPBackend(Backend):
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
+            self._check_not_dir(sftp_path, path)
             if not overwrite:
                 try:
                     self._sftp.stat(sftp_path)
@@ -382,6 +383,7 @@ class SFTPBackend(Backend):
         # Setup phase: existence check + parent dirs (within error mapping)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
+            self._check_not_dir(sftp_path, path)
             if not overwrite:
                 try:
                     self._sftp.stat(sftp_path)
@@ -896,7 +898,12 @@ class SFTPBackend(Backend):
         return self._base_path
 
     def _check_not_dir(self, sftp_path: str, path: str) -> None:
-        """Raise InvalidPath if *sftp_path* is a directory (type-mismatch guard)."""
+        """Raise InvalidPath if *sftp_path* is a directory (type-mismatch guard).
+
+        Note: this issues an extra ``stat`` round-trip.  ``write()`` folds
+        the check into its existing stat; callers like ``read()`` and
+        ``delete()`` pay the extra call for simplicity.
+        """
         try:
             st = self._sftp.stat(sftp_path)
             if st is not None and stat.S_ISDIR(st.st_mode or 0):

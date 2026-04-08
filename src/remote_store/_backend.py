@@ -174,6 +174,7 @@ class Backend(abc.ABC):
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If *path* names a directory.
         """
 
     @abc.abstractmethod
@@ -189,6 +190,7 @@ class Backend(abc.ABC):
 
         Raises:
             AlreadyExists: If *path* exists and *overwrite* is ``False``.
+            InvalidPath: If *path* names a directory.
             CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         """
 

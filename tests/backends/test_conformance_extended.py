@@ -24,7 +24,6 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
-    RemoteStoreError,
 )
 
 if TYPE_CHECKING:
@@ -156,19 +155,15 @@ class TestDeleteErrorFidelity:
             backend.delete("ddir")
 
     @pytest.mark.spec("BE-012")
-    def test_delete_on_directory_missing_ok_raises_or_passes(self, backend: Backend) -> None:
-        """IsDir(path) with missing_ok: no native exception leak, child preserved."""
+    def test_delete_on_directory_missing_ok_still_raises(self, backend: Backend) -> None:
+        """IsDir(path) with missing_ok: type mismatch is not 'missing', still InvalidPath."""
         _require(backend, Capability.DELETE, Capability.WRITE)
         _skip_flat_namespace(backend)
         backend.write("ddir2/file.txt", b"x")
-        # Some backends raise RemoteStoreError, some pass — either is ok.
-        # The key contract: no native exception leaks, and the child file
-        # is not silently deleted (delete targets files, not dirs).
-        try:  # noqa: SIM105 — assert follows; contextlib.suppress would hide it
+        # Type mismatch (dir where file expected) is not silenced by missing_ok.
+        with pytest.raises(InvalidPath, match="ddir2"):
             backend.delete("ddir2", missing_ok=True)
-        except RemoteStoreError:
-            pass
-        # Child file must still exist regardless of whether the backend raised.
+        # Child file must still exist.
         assert backend.exists("ddir2/file.txt"), "Child file was silently deleted"
 
 
@@ -445,6 +440,26 @@ class TestMoveCopySelfOperation:
         backend.write("selfmv.txt", b"data")
         backend.move("selfmv.txt", "selfmv.txt", overwrite=True)
         assert backend.read_bytes("selfmv.txt") == b"data"
+
+    @pytest.mark.spec("BE-019")
+    def test_self_copy_no_overwrite_preserves_data(self, backend: Backend) -> None:
+        """copy(src, src, overwrite=False) is a no-op — must not raise AlreadyExists."""
+        _require(backend, Capability.COPY, Capability.WRITE)
+        if backend.name in _NO_SELF_OP_BACKENDS:
+            pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
+        backend.write("selfcp2.txt", b"data")
+        backend.copy("selfcp2.txt", "selfcp2.txt", overwrite=False)
+        assert backend.read_bytes("selfcp2.txt") == b"data"
+
+    @pytest.mark.spec("BE-018")
+    def test_self_move_no_overwrite_preserves_data(self, backend: Backend) -> None:
+        """move(src, src, overwrite=False) is a no-op — must not raise AlreadyExists."""
+        _require(backend, Capability.MOVE, Capability.WRITE)
+        if backend.name in _NO_SELF_OP_BACKENDS:
+            pytest.skip(f"Backend {backend.name!r} does not handle self-move yet")
+        backend.write("selfmv2.txt", b"data")
+        backend.move("selfmv2.txt", "selfmv2.txt", overwrite=False)
+        assert backend.read_bytes("selfmv2.txt") == b"data"
 
 
 class TestMovePostState:
