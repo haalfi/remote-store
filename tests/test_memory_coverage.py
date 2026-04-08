@@ -196,18 +196,16 @@ def test_move_same_path_exists(mb: MemoryBackend) -> None:
 
 
 @pytest.mark.spec("MEM-016")
-@pytest.mark.parametrize(
-    ("setup", "path"),
-    [
-        pytest.param(None, "missing", id="not_found"),
-        pytest.param(("a/b/c", b"data"), "a/b", id="is_directory"),
-    ],
-)
-def test_move_same_path_raises(mb: MemoryBackend, setup: tuple | None, path: str) -> None:
-    if setup:
-        mb.write(*setup)
+def test_move_same_path_not_found(mb: MemoryBackend) -> None:
     with pytest.raises(NotFound, match="Source not found"):
-        mb.move(path, path)
+        mb.move("missing", "missing")
+
+
+@pytest.mark.spec("MEM-016")
+def test_move_same_path_directory_raises_invalid_path(mb: MemoryBackend) -> None:
+    mb.write("a/b/c", b"data")
+    with pytest.raises(InvalidPath, match="Source is a directory"):
+        mb.move("a/b", "a/b")
 
 
 @pytest.mark.spec("MEM-016")

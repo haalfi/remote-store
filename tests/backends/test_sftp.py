@@ -28,6 +28,7 @@ from remote_store._errors import (  # noqa: E402
     BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
+    InvalidPath,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -799,25 +800,37 @@ class TestSFTPMapException:
 
 
 class TestSFTPTypeGuards:
-    """BK-005: type guards — file/folder confusion (lines 544, 632, 645)."""
+    """BK-005/ID-131: type guards — file/folder confusion raises InvalidPath."""
 
     def test_get_file_info_on_directory(self, sftp_backend: Backend) -> None:
-        """get_file_info on a directory raises NotFound (line 632)."""
+        """get_file_info on a directory raises InvalidPath."""
         sftp_backend.write("typedir/file.txt", b"x")
-        with pytest.raises(NotFound):
+        with pytest.raises(InvalidPath):
             sftp_backend.get_file_info("typedir")
 
     def test_get_folder_info_on_file(self, sftp_backend: Backend) -> None:
-        """get_folder_info on a file raises NotFound (line 645)."""
+        """get_folder_info on a file raises InvalidPath."""
         sftp_backend.write("typefile.txt", b"x")
-        with pytest.raises(NotFound):
+        with pytest.raises(InvalidPath):
             sftp_backend.get_folder_info("typefile.txt")
 
     def test_delete_folder_on_file(self, sftp_backend: Backend) -> None:
-        """delete_folder on a file raises NotFound (line 544)."""
+        """delete_folder on a file raises InvalidPath."""
         sftp_backend.write("notadir.txt", b"x")
-        with pytest.raises(NotFound):
+        with pytest.raises(InvalidPath):
             sftp_backend.delete_folder("notadir.txt")
+
+    def test_write_atomic_on_directory(self, sftp_backend: Backend) -> None:
+        """write_atomic on a directory path raises InvalidPath."""
+        sftp_backend.write("wa_dir/file.txt", b"x")
+        with pytest.raises(InvalidPath):
+            sftp_backend.write_atomic("wa_dir", b"data")
+
+    def test_open_atomic_on_directory(self, sftp_backend: Backend) -> None:
+        """open_atomic on a directory path raises InvalidPath."""
+        sftp_backend.write("oa_dir/file.txt", b"x")
+        with pytest.raises(InvalidPath), sftp_backend.open_atomic("oa_dir") as f:
+            f.write(b"data")
 
 
 class TestSFTPWriteAtomicStream:

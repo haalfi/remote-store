@@ -274,6 +274,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## API Surface
 
+- [x] **ID-131 — Fix `InvalidPath` type-mismatch conditions across backends**
+  Fixed `read()`, `read_bytes()`, `delete()`, `get_file_info()`, `get_folder_info()`,
+  `delete_folder()` to raise `InvalidPath` (not `NotFound`) when the path names
+  the wrong type (directory vs file) in LocalBackend, MemoryBackend, and
+  SFTPBackend. Added directory type checks to `move()`/`copy()` source and
+  destination in LocalBackend, MemoryBackend, and SFTPBackend. Self-move/self-copy
+  (`src == dst`) now no-op in Local, Memory, S3, S3-PyArrow, and SFTP backends.
+  Tightened 9 weakened conformance tests from `RemoteStoreError` to `InvalidPath`.
+  Related: BK-140a, BE-021, BK-139b.
+
 - [x] **ID-126 — `resolve_env()` — env-var interpolation for config loaders** (v0.21.0)
   `resolve_env(data)` resolves `${VAR}` and `${VAR:-default}` placeholders in
   config dicts. Opt-in `resolve_env_vars=True` on `from_yaml()` and

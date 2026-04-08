@@ -84,6 +84,8 @@ class MemoryBackend(Backend):
         segments = self._split_path(path)
         with self._lock:
             node = self._traverse(segments)
+            if isinstance(node, _DirNode):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend="memory")
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             snapshot = bytes(node.data)
@@ -93,6 +95,8 @@ class MemoryBackend(Backend):
         segments = self._split_path(path)
         with self._lock:
             node = self._traverse(segments)
+            if isinstance(node, _DirNode):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend="memory")
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             return bytes(node.data)
@@ -168,6 +172,8 @@ class MemoryBackend(Backend):
                 return
             leaf = segments[-1]
             existing = parent.children.get(leaf)
+            if isinstance(existing, _DirNode):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend="memory")
             if not isinstance(existing, _FileEntry):
                 if not missing_ok:
                     raise NotFound(f"File not found: {path}", path=path, backend="memory")
@@ -189,6 +195,8 @@ class MemoryBackend(Backend):
 
             leaf = segments[-1]
             node = parent.children.get(leaf)
+            if isinstance(node, _FileEntry):
+                raise InvalidPath(f"Not a folder: {path}", path=path, backend="memory")
             if node is None or not isinstance(node, _DirNode):
                 if not missing_ok:
                     raise NotFound(f"Folder not found: {path}", path=path, backend="memory")
@@ -283,6 +291,8 @@ class MemoryBackend(Backend):
             raise NotFound("File not found: (empty path)", path=path, backend="memory")
         with self._lock:
             node = self._traverse(segments)
+            if isinstance(node, _DirNode):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend="memory")
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             return FileInfo(
@@ -297,6 +307,8 @@ class MemoryBackend(Backend):
         segments = self._split_path(path)
         with self._lock:
             node = self._traverse(segments)
+            if isinstance(node, _FileEntry):
+                raise InvalidPath(f"Not a folder: {path}", path=path, backend="memory")
             if not isinstance(node, _DirNode):
                 raise NotFound(f"Folder not found: {path}", path=path, backend="memory")
             file_count = 0
@@ -329,10 +341,12 @@ class MemoryBackend(Backend):
             raise InvalidPath("Destination path must not be empty", path=dst, backend="memory")
 
         if src_segments == dst_segments:
-            # Verify source exists, then no-op.
+            # Verify source exists and is a file, then no-op.
             with self._lock:
                 parent = self._traverse(src_segments[:-1])
                 leaf = parent.children.get(src_segments[-1]) if isinstance(parent, _DirNode) else None
+                if isinstance(leaf, _DirNode):
+                    raise InvalidPath(f"Source is a directory: {src}", path=src, backend="memory")
                 if not isinstance(leaf, _FileEntry):
                     raise NotFound(f"Source not found: {src}", path=src, backend="memory")
             return
@@ -344,6 +358,8 @@ class MemoryBackend(Backend):
                 raise NotFound(f"Source not found: {src}", path=src, backend="memory")
             src_leaf = src_segments[-1]
             entry = src_parent.children.get(src_leaf)
+            if isinstance(entry, _DirNode):
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend="memory")
             if not isinstance(entry, _FileEntry):
                 raise NotFound(f"Source not found: {src}", path=src, backend="memory")
 
@@ -380,8 +396,14 @@ class MemoryBackend(Backend):
         with self._lock:
             # Find source
             src_node = self._traverse(src_segments)
+            if isinstance(src_node, _DirNode):
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend="memory")
             if not isinstance(src_node, _FileEntry):
                 raise NotFound(f"Source not found: {src}", path=src, backend="memory")
+
+            # Self-copy is a no-op
+            if src_segments == dst_segments:
+                return
 
             # Prepare destination
             dst_parent = self._ensure_parents(dst_segments)

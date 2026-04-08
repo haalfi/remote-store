@@ -94,6 +94,7 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If the file does not exist.
+            InvalidPath: If *path* names a directory, not a file.
         """
 
     @abc.abstractmethod
@@ -108,6 +109,7 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If the file does not exist.
+            InvalidPath: If *path* names a directory, not a file.
         """
 
     def read_seekable(self, path: str) -> BinaryIO:
@@ -130,6 +132,7 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If the file does not exist.
+            InvalidPath: If *path* names a directory, not a file.
         """
         stream = self.read(path)
         if stream.seekable():
@@ -156,6 +159,7 @@ class Backend(abc.ABC):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If *path* names a directory.
         """
 
     @abc.abstractmethod
@@ -170,6 +174,7 @@ class Backend(abc.ABC):
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If *path* names a directory.
         """
 
     @abc.abstractmethod
@@ -185,6 +190,7 @@ class Backend(abc.ABC):
 
         Raises:
             AlreadyExists: If *path* exists and *overwrite* is ``False``.
+            InvalidPath: If *path* names a directory.
             CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         """
 
@@ -198,6 +204,8 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If the file is missing and ``missing_ok`` is ``False``.
+            InvalidPath: If *path* names a directory (type mismatch is
+                not silenced by *missing_ok*).
         """
 
     @abc.abstractmethod
@@ -211,6 +219,7 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If the folder is missing and ``missing_ok`` is ``False``.
+            InvalidPath: If *path* names a file, not a folder.
             DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
         """
 
@@ -260,6 +269,7 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If the file does not exist.
+            InvalidPath: If *path* names a directory, not a file.
         """
 
     @abc.abstractmethod
@@ -274,11 +284,14 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If the folder does not exist.
+            InvalidPath: If *path* names a file, not a folder.
         """
 
     @abc.abstractmethod
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Move or rename a file.
+
+        When ``src == dst`` the call is a no-op (data preserved).
 
         Args:
             src: Backend-relative source key.
@@ -287,6 +300,7 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If ``src`` does not exist.
+            InvalidPath: If ``src`` or ``dst`` names a directory.
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 
@@ -294,6 +308,8 @@ class Backend(abc.ABC):
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy a file.
 
+        When ``src == dst`` the call is a no-op (data preserved).
+
         Args:
             src: Backend-relative source key.
             dst: Backend-relative destination key.
@@ -301,6 +317,7 @@ class Backend(abc.ABC):
 
         Raises:
             NotFound: If ``src`` does not exist.
+            InvalidPath: If ``src`` or ``dst`` names a directory.
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 

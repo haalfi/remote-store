@@ -123,11 +123,11 @@ class LocalBackend(Backend):
         except FileNotFoundError:
             raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
         except IsADirectoryError:
-            raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
+            raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
             # Windows raises PermissionError (not IsADirectoryError) for directories
             if full.is_dir():
-                raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
+                raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     def read_bytes(self, path: str) -> bytes:
@@ -137,11 +137,11 @@ class LocalBackend(Backend):
         except FileNotFoundError:
             raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
         except IsADirectoryError:
-            raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
+            raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
             # Windows raises PermissionError (not IsADirectoryError) for directories
             if full.is_dir():
-                raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
+                raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
@@ -226,15 +226,12 @@ class LocalBackend(Backend):
             if not missing_ok:
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
         except IsADirectoryError:
-            if not missing_ok:
-                raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
+            raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
         except PermissionError:
             # Windows raises PermissionError (not IsADirectoryError) for directories
             if full.is_dir():
-                if not missing_ok:
-                    raise NotFound(f"Not a file: {path}", path=path, backend=self.name) from None
-            else:
-                raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+                raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         full = self._resolve(path)
@@ -243,7 +240,7 @@ class LocalBackend(Backend):
                 raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
             return
         if not full.is_dir():
-            raise NotFound(f"Not a folder: {path}", path=path, backend=self.name)
+            raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
         try:
             if recursive:
                 shutil.rmtree(str(full))
@@ -322,12 +319,16 @@ class LocalBackend(Backend):
 
     def get_file_info(self, path: str) -> FileInfo:
         full = self._resolve(path)
+        if full.is_dir():
+            raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
         if not full.is_file():
             raise NotFound(f"File not found: {path}", path=path, backend=self.name)
         return self._stat_to_fileinfo(path, full)
 
     def get_folder_info(self, path: str) -> FolderInfo:
         full = self._resolve(path)
+        if full.is_file():
+            raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
         if not full.is_dir():
             raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
         file_count = 0
@@ -353,6 +354,12 @@ class LocalBackend(Backend):
         dst_full = self._resolve(dst)
         if not src_full.exists():
             raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
+        if src_full.is_dir():
+            raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
+        if dst_full.is_dir():
+            raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
+        if src_full == dst_full:
+            return  # self-move is a no-op
         if not overwrite and dst_full.exists():
             raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
         try:
@@ -366,6 +373,12 @@ class LocalBackend(Backend):
         dst_full = self._resolve(dst)
         if not src_full.exists():
             raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
+        if src_full.is_dir():
+            raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
+        if dst_full.is_dir():
+            raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
+        if src_full == dst_full:
+            return  # self-copy is a no-op
         if not overwrite and dst_full.exists():
             raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
         try:
