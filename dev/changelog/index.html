@@ -10177,6 +10177,15 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Type-mismatch errors now raise <code>InvalidPath</code> per spec</strong> (ID-131):
+  <code>read()</code>, <code>read_bytes()</code>, <code>delete()</code>, <code>get_file_info()</code>, <code>get_folder_info()</code>,
+  <code>delete_folder()</code> on the wrong path type (directory vs file) now raise
+  <code>InvalidPath</code> instead of <code>NotFound</code> in LocalBackend, MemoryBackend, and
+  SFTPBackend — matching the Dafny <code>BackendContract.dfy</code> postconditions and
+  BE-021 canonical error mapping. <code>move()</code>/<code>copy()</code> now check source and
+  destination types across all three backends. Self-move and self-copy
+  (<code>src == dst</code>) are no-ops in Local, Memory, S3, S3-PyArrow, and SFTP
+  backends (previously leaked <code>SameFileError</code> or lost data).</li>
 <li><strong>S3 <code>read()</code> leaks file handle if stream wrapping fails</strong> (BUG-159):
   Both <code>S3Backend.read()</code> and <code>S3PyArrowBackend.read()</code> now use the new
   <code>_safe_wrap()</code> helper to close raw handles if wrapping constructors raise.</li>
