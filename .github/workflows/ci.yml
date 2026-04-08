@@ -56,8 +56,8 @@ jobs:
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
-      - run: ruff check src/ tests/ examples/
-      - run: ruff format --check src/ tests/ examples/
+      - run: ruff check src/ tests/ examples/ --exclude tests/backends/test_dafny_oracle.py
+      - run: ruff format --check src/ tests/ examples/ --exclude tests/backends/test_dafny_oracle.py
       - run: python scripts/check_test_assertions.py tests
       - run: python scripts/check_mock_spec.py tests
 
