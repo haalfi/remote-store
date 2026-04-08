@@ -10166,6 +10166,11 @@
 <li><strong>CI: Dafny verification gate</strong> in <code>ci.yml</code>: Runs <code>dafny verify</code> on
   all formal specs when <code>sdd/formal/</code> or <code>sdd/specs/</code> files change.
   Skipped for code-only PRs.</li>
+<li><strong>DafnyOracle POC</strong> (BK-139c): Proof-of-concept reference oracle implementation
+  derived from <code>MemoryBackend.dfy</code> formal specification. Two approaches validated:
+  handwritten oracle (680 lines, 32 passing tests) and compiled oracle (Dafny
+  4.11.0, 41 verified proofs). Demonstrates feasibility of spec-based conformance
+  testing. See <code>sdd/formal/POC/</code> for implementation and roadmap. Not production-ready.</li>
 <li><strong>BK-140a backend contract spec amendments</strong> (<code>sdd/specs/</code>): Six spec
   amendments tightening the backend ABC behavioral contract — precondition
   evaluation order with flat-namespace exemption (BE-008), canonical error
