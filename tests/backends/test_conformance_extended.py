@@ -192,6 +192,9 @@ class TestDeleteFolderErrorFidelity:
         # contract: no native exception leaks (RemoteStoreError or subclass).
         with contextlib.suppress(RemoteStoreError):
             backend.delete_folder("dffile_flat.txt")
+        # File may or may not still exist depending on backend behavior,
+        # but the test passed if no non-RemoteStoreError was raised.
+        assert True  # explicit: survived without native exception leak
 
     @pytest.mark.spec("BE-013")
     def test_delete_folder_missing_raises_not_found(self, backend: Backend) -> None:
