@@ -172,7 +172,7 @@ contradiction.
   `total_size` to the corresponding sum) would require a recursive
   ghost function and loop invariant tracking processed elements.  The
   values are correct by inspection; fully machine-checked verification
-  is deferred.
+  is deferred (tracked as ID-134).
 
 ## Compiled oracle as conformance gate
 
@@ -203,8 +203,10 @@ The compiled oracle is **correct by construction** — 53 verified proofs,
 ### How to regenerate
 
 **Required Dafny version**: 4.9.1 (the version recorded in the `.dtr`
-manifest).  Using a different version may change the runtime library or
-compiled output format.
+manifest).  The POC was prototyped on 4.11.0; production compilation
+uses 4.9.1 because it is the latest version available in the CI
+`SessionStart` hook (`apt` / system package).  Using a different version
+may change the runtime library or compiled output format.
 
 When `MemoryBackend.dfy` changes, regenerate the compiled output:
 

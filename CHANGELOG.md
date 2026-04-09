@@ -22,6 +22,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   compiled to Python and runs through the full conformance suite as
   `DafnyOracleBackend`. Validates the conformance suite: if the oracle
   passes a test, the test is known-correct. Handwritten POC oracle removed.
+  Compiled with Dafny 4.9.1 (downgraded from POC's 4.11.0 — 4.9.1 is the
+  version available in the CI environment).
 - **`Capability.ATOMIC_MOVE`** (ID-128): New capability flag indicating
   `move()` is guaranteed atomic under concurrent access. Declared by
   Local, Memory, and SQLBlob backends. S3, S3-PyArrow, Azure, and SFTP
