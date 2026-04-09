@@ -14,7 +14,9 @@ if TYPE_CHECKING:
 class Capability(enum.Enum):
     """Operations a backend may support.
 
-    Each value gates one or more ``Store`` methods.
+    Most values gate one or more ``Store`` methods; some are quality
+    flags that inform callers about backend behaviour without gating a
+    specific method (see ``ATOMIC_MOVE``).
     Use ``Store.supports()`` to query at runtime.
 
     Values:
@@ -39,8 +41,8 @@ class Capability(enum.Enum):
       lock, SQL in a transaction). Does **not** gate a method — call
       ``store.supports(Capability.ATOMIC_MOVE)`` before relying on
       atomic rename semantics. Backends that implement move as
-      copy-then-delete (S3, S3-PyArrow, Azure non-HNS, SFTP copy-fallback)
-      do not declare this capability.
+      copy-then-delete (e.g. S3, Azure non-HNS) do not declare this
+      capability.
     - ``METADATA`` -- Retrieve file or folder metadata.
       Gates ``Store.get_file_info()`` and ``Store.get_folder_info()``.
     - ``GLOB`` -- Native pattern matching against file paths.

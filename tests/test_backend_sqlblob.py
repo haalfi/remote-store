@@ -128,6 +128,8 @@ def test_capabilities(backend: SQLBlobBackend) -> None:
     caps = backend.capabilities
     for cap in Capability:
         assert cap in caps, f"Missing capability: {cap}"
+    # Explicit assertion: SQLBlob move() runs inside a transaction — atomic.
+    assert Capability.ATOMIC_MOVE in caps, "SQLBlob must declare ATOMIC_MOVE (transactional move)"
 
 
 @pytest.mark.spec("SQL-BLOB-004")
