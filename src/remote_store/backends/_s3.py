@@ -34,13 +34,18 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability))
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.ATOMIC_MOVE})
 
 log = logging.getLogger(__name__)
 
 
 class S3Backend(_S3Base):
     """S3-compatible object storage backend using s3fs.
+
+    ``move()`` is implemented as a server-side copy followed by a delete.
+    This is non-atomic: a crash or network error between the two steps may
+    leave both source and destination present.  ``ATOMIC_MOVE`` is not
+    declared.
 
     Args:
         bucket: S3 bucket name (required, non-empty).

@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.SEEKABLE_READ})
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.SEEKABLE_READ, Capability.ATOMIC_MOVE})
 
 log = logging.getLogger(__name__)
 
@@ -150,6 +150,12 @@ class AzureBackend(Backend):
     Uses the Blob SDK for non-HNS accounts (plain Blob Storage, Azurite) and
     the DataLake SDK for HNS accounts (ADLS Gen2) to get atomic rename and
     real directory support.
+
+    ``move()`` on non-HNS accounts is implemented as a server-side copy
+    followed by a blob delete.  This is non-atomic: a failure between the
+    two steps may leave both source and destination present.  HNS accounts
+    use ``rename_file`` which is atomic, but since the backend cannot
+    guarantee HNS at construction time, ``ATOMIC_MOVE`` is not declared.
 
     Args:
         container: Azure Storage container name (required, non-empty).

@@ -81,16 +81,17 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
-### API Surface Enhancements
+### Formal Verification
 
-- [ ] **ID-128 — `Capability.ATOMIC_MOVE` enum member**
-  Add `ATOMIC_MOVE` to the `Capability` enum so callers can query whether
-  `move()` is safe under concurrent access. Deferred from BK-140 to avoid
-  spec/code divergence in a spec-only PR. Requires: adding the member to
-  `_capabilities.py`, updating each backend's `capabilities()` declaration
-  (Local, Memory, SQL → include it; S3, Azure non-HNS, SFTP-fallback → omit),
-  and updating the capabilities matrix page.
-  Related: BE-018 (move atomicity spec), BK-140.
+- [ ] **ID-133 — Regenerate `MemoryBackend-py/module_.py` after `CapAtomicMove` addition**
+  `sdd/formal/MemoryBackend.dfy` was updated in ID-128 to include `CapAtomicMove`,
+  but the Dafny-compiled Python output (`sdd/formal/MemoryBackend-py/module_.py`)
+  was not regenerated (no Dafny toolchain available in CI). Run:
+  `dafny translate py sdd/formal/MemoryBackend.dfy --include-runtime`
+  with Dafny 4.11.0+ and commit the result. The file must not be hand-edited.
+  Related: ID-128, BK-139c.
+
+### API Surface Enhancements
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of

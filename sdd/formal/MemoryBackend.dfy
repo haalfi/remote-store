@@ -12,11 +12,11 @@ class MemoryBackend extends Backend {
     ensures fs == map[]
     ensures name == "memory"
     ensures capabilities == {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
-                             CapAtomicWrite, CapMetadata, CapSeekableRead}
+                             CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead}
   {
     name := "memory";
     capabilities := {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
-                     CapAtomicWrite, CapMetadata, CapSeekableRead};
+                     CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead};
     fs := map[];
   }
 

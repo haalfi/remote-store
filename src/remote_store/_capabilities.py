@@ -14,7 +14,9 @@ if TYPE_CHECKING:
 class Capability(enum.Enum):
     """Operations a backend may support.
 
-    Each value gates one or more ``Store`` methods.
+    Most values gate one or more ``Store`` methods; some are quality
+    flags that inform callers about backend behaviour without gating a
+    specific method (see ``ATOMIC_MOVE``).
     Use ``Store.supports()`` to query at runtime.
 
     Values:
@@ -34,6 +36,13 @@ class Capability(enum.Enum):
     - ``ATOMIC_WRITE`` -- Write via temp-file-and-rename so readers never
       see partial content. Gates ``Store.write_atomic()`` and
       ``Store.open_atomic()``.
+    - ``ATOMIC_MOVE`` -- Quality flag: ``move()`` is guaranteed atomic
+      under concurrent access (e.g. Local via ``os.rename``, Memory under
+      lock, SQL in a transaction). Does **not** gate a method — call
+      ``store.supports(Capability.ATOMIC_MOVE)`` before relying on
+      atomic rename semantics. Backends that implement move as
+      copy-then-delete (e.g. S3, Azure non-HNS) do not declare this
+      capability.
     - ``METADATA`` -- Retrieve file or folder metadata.
       Gates ``Store.get_file_info()`` and ``Store.get_folder_info()``.
     - ``GLOB`` -- Native pattern matching against file paths.
@@ -54,6 +63,7 @@ class Capability(enum.Enum):
     MOVE = "move"
     COPY = "copy"
     ATOMIC_WRITE = "atomic_write"
+    ATOMIC_MOVE = "atomic_move"
     METADATA = "metadata"
     GLOB = "glob"
     SEEKABLE_READ = "seekable_read"

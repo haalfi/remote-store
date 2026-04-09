@@ -31,6 +31,11 @@ log = logging.getLogger(__name__)
 class LocalBackend(Backend):
     """Local filesystem backend using only the Python standard library.
 
+    ``move()`` uses ``shutil.move``, which calls ``os.rename`` for
+    same-filesystem moves (atomic) but falls back to copy-then-delete
+    for cross-filesystem moves (not atomic).  ``ATOMIC_MOVE`` is
+    declared because within-root moves are always same-filesystem.
+
     Args:
         root: Absolute path to the root directory on the local filesystem.
     """

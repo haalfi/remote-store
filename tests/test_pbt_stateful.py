@@ -74,6 +74,8 @@ class BackendModel(RuleBasedStateMachine):
     @rule(path=_path)
     def read_bytes(self, path: str) -> None:
         """read_bytes must match the model."""
+        if path in _implicit_dirs(self.model):
+            return  # skip — reading a directory raises InvalidPath, not NotFound
         if path in self.model:
             result = self.backend.read_bytes(path)
             assert result == self.model[path], f"Content mismatch for {path!r}"

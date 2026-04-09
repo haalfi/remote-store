@@ -5,7 +5,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-128 — `Capability.ATOMIC_MOVE` enum member**
+  Added `ATOMIC_MOVE` to the `Capability` enum. Declared by Local, Memory,
+  SQLBlob; excluded from S3, S3-PyArrow, Azure, SFTP. Updated spec CAP-001
+  (+ new CAP-007 quality-flag invariant), capabilities matrix, formal layer
+  (BackendContract.dfy, MemoryBackend.dfy, POC/oracle.py), and conformance
+  tests. Note: `MemoryBackend-py/module_.py` (Dafny compiler output) was not
+  regenerated — tracked as ID-133. Related: BE-018, BK-140.
+
 ## Bugs
+
+- [x] **BUG-160 — PBT stateful model: `read_bytes` called on implicit directory**
+  `BackendModel.read_bytes` did not skip paths that are implicit directories
+  (created as side-effects of `write_new(path='d/0')`). Calling
+  `backend.read_bytes('d')` on such a path raises `InvalidPath`, not `NotFound`,
+  causing the `else` branch's `pytest.raises(NotFound)` to fail. Fixed by
+  adding an early-return guard: `if path in _implicit_dirs(self.model): return`.
+  Fixed in PR #386 (ID-128). See `tests/test_pbt_stateful.py`.
 
 - [x] **BUG-159 — S3 `read()` leaks file handle if stream wrapping fails**
   Fixed via `_safe_wrap()` helper in `_stream.py`. Both `S3Backend.read()`

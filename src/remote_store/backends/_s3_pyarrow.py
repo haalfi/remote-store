@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability))
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.ATOMIC_MOVE})
 
 log = logging.getLogger(__name__)
 
@@ -113,6 +113,11 @@ class S3PyArrowBackend(_S3Base):
     Uses PyArrow's C++ S3 filesystem for data-path operations (higher throughput
     for large files) and s3fs for control-path operations (listing, metadata,
     deletion).
+
+    ``move()`` is implemented as a PyArrow copy followed by an s3fs delete.
+    This is non-atomic: a crash or network error between the two steps may
+    leave both source and destination present.  ``ATOMIC_MOVE`` is not
+    declared.
 
     Args:
         bucket: S3 bucket name (required, non-empty).

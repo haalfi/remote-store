@@ -164,13 +164,13 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | HTTP/HTTPS (read-only) | *(built-in)* | stdlib | — | — | — |
 | Amazon S3 / MinIO | `remote-store[s3]` | `s3fs` | Yes | Yes | — (copy+delete) |
 | S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` + `s3fs` | Yes | Yes | — (copy+delete) |
-| SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | Yes** |
+| SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | —** |
 | Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: — |
 | SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | `sqlalchemy` | Yes | Yes | Yes |
 | SQL Query (read-only) | `remote-store[sql-query]` | `sqlalchemy` + `pyarrow` | -- | -- | -- |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
-\** Via `posix_rename` on most OpenSSH servers; falls back to copy+delete.
+\** Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.
 
 All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only (`{READ, METADATA}`). SQL Query is read-only (`{READ, LIST, METADATA, GLOB, SEEKABLE_READ}`) — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. Seekable reads are available on all backends via `Store.read_seekable()` — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
 
@@ -193,7 +193,8 @@ store.copy("src.txt", "dst.txt")                # copy
 store.delete("path/to/file.txt")                # delete
 
 store.child("subfolder")                        # scoped child store
-store.supports(Capability.ATOMIC_WRITE)         # runtime capability check
+store.supports(Capability.ATOMIC_WRITE)         # runtime capability check (gates a method)
+store.supports(Capability.ATOMIC_MOVE)          # quality flag — move() atomicity guarantee
 store.resolve("path/to/file.txt")               # resolution plan (introspection)
 store.ping()                                    # health check
 ```

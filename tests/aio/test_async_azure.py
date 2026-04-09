@@ -136,6 +136,8 @@ class TestAsyncAzureConstruction:
         for cap in Capability:
             if cap is Capability.SEEKABLE_READ:
                 assert not caps.supports(cap), "async-azure must not declare SEEKABLE_READ"
+            elif cap is Capability.ATOMIC_MOVE:
+                assert not caps.supports(cap), "async-azure must not declare ATOMIC_MOVE (copy-then-delete)"
             else:
                 assert caps.supports(cap), f"Missing capability: {cap.value}"
 

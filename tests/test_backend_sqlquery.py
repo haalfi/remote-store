@@ -132,6 +132,7 @@ class TestCapabilities:
         assert Capability.MOVE not in caps
         assert Capability.COPY not in caps
         assert Capability.ATOMIC_WRITE not in caps
+        assert Capability.ATOMIC_MOVE not in caps
 
 
 @pytest.mark.spec("SQL-QUERY-004")

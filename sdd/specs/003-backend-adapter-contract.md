@@ -10,7 +10,7 @@ The `Backend` ABC defines the contract all storage backends must implement. It i
 
 ### CAP-001: Capability Enum Members
 
-**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`, `SEEKABLE_READ`.
+**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `ATOMIC_MOVE`, `METADATA`, `GLOB`, `SEEKABLE_READ`.
 
 ### CAP-002: CapabilitySet Construction
 
@@ -42,6 +42,15 @@ for cap in cs:
 ### CAP-006: Immutability
 
 **Invariant:** `CapabilitySet` is immutable after construction. The internal set cannot be modified.
+
+### CAP-007: Quality-Flag Capabilities
+
+**Invariant:** Some capabilities are *quality flags* — they describe a behavioural property of an existing method rather than gating access to a new one. Declaring a quality flag does **not** enable any additional method; omitting it does **not** disable any method.
+
+**Current quality flags:**
+
+- `ATOMIC_MOVE` — `move()` is guaranteed atomic under concurrent access (i.e. any reader observes either the pre-move or the post-move state, never a partial state). Backends that implement move as copy-then-delete do **not** declare this flag. Callers **must not** assume atomicity; they **should** check `Store.supports(Capability.ATOMIC_MOVE)` before relying on atomic rename semantics.
+- `SEEKABLE_READ` — `read()` always returns a natively seekable stream (`stream.seekable()` is `True`) with zero overhead. Backends that omit this flag still support `Store.read_seekable()` via an optimized override or spool fallback, but `read()` itself may return a non-seekable stream. The flag describes a property of `read()` rather than gating any additional method.
 
 ---
 

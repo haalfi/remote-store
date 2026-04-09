@@ -82,7 +82,10 @@ class TestS3PyArrowConstruction:
         caps = s3pa_backend.capabilities
         assert isinstance(caps, CapabilitySet)
         for cap in Capability:
-            assert caps.supports(cap), f"Missing capability: {cap.value}"
+            if cap is Capability.ATOMIC_MOVE:
+                assert not caps.supports(cap), "S3-PyArrow must not declare ATOMIC_MOVE (copy-then-delete)"
+            else:
+                assert caps.supports(cap), f"Missing capability: {cap.value}"
 
     @pytest.mark.spec("S3PA-004")
     def test_lazy_connection(self) -> None:

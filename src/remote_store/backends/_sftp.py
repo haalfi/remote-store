@@ -44,7 +44,7 @@ T = TypeVar("T")
 
 log = logging.getLogger(__name__)
 
-_SFTP_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
+_SFTP_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB, Capability.ATOMIC_MOVE})
 
 # RFC 4253 compliant chunk size for SFTP data transfer
 _CHUNK_SIZE = 32768
@@ -159,6 +159,11 @@ def _load_host_keys_from_string(ssh: Any, keys_content: str) -> None:  # pragma:
 
 class SFTPBackend(Backend):
     """SFTP backend using pure paramiko.
+
+    ``move()`` attempts ``posix_rename`` (atomic on POSIX-compliant servers),
+    then falls back to ``rename``, and finally to a stream copy followed by
+    a delete.  Because atomicity cannot be guaranteed across all servers,
+    ``ATOMIC_MOVE`` is not declared.
 
     Args:
         host: SFTP server hostname (required, non-empty).

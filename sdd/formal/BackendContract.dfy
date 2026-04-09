@@ -47,7 +47,7 @@ datatype Result<T> = Ok(value: T) | Err(error: Error)
 
 datatype Capability =
   | CapRead | CapWrite | CapDelete | CapList | CapMove | CapCopy
-  | CapAtomicWrite | CapMetadata | CapGlob | CapSeekableRead
+  | CapAtomicWrite | CapAtomicMove | CapMetadata | CapGlob | CapSeekableRead
 
 // CapGlob is defined but the Glob method is intentionally excluded
 // from this contract — it is a capability-gated convenience method
@@ -339,7 +339,9 @@ trait Backend {
   // move(src, dst, overwrite)
   // ====================================================================
   // Gap 2: directory src → InvalidPath (not NotFound).
-  // Gap 5: atomicity is backend-dependent (postcondition covers final state).
+  // Gap 5: atomicity is backend-dependent — backends that guarantee atomic
+  //   rename declare CapAtomicMove; others use copy-then-delete.
+  //   Postcondition covers only the final state, not intermediate visibility.
   method Move(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
     modifies this
@@ -408,6 +410,7 @@ function CapabilityName(c: Capability): string
   case CapMove => "move"
   case CapCopy => "copy"
   case CapAtomicWrite => "atomic_write"
+  case CapAtomicMove => "atomic_move"
   case CapMetadata => "metadata"
   case CapGlob => "glob"
   case CapSeekableRead => "seekable_read"
