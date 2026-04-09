@@ -6,13 +6,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ---
 
 - [x] **BK-139c — Dafny-compiled oracle as conformance gate**
-  Compiled `MemoryBackend.dfy` to Python via `dafny translate py` (51 verified
+  Compiled `MemoryBackend.dfy` to Python via `dafny translate py` (53 verified
   proofs, 0 errors) and wrapped it as `DafnyOracleBackend` in
   `tests/backends/dafny_oracle.py`. Runs through the full conformance suite
   (150 passed, 3 expected skips). Validates the conformance suite: if the
   mathematically verified oracle passes a test, the test is known-correct.
   Absorbs ID-133 (regenerated `MemoryBackend-py/module_.py` with `CapAtomicMove`,
   `AncestorsTraversableCheck`, `IsFileMethod`, `IsFolderMethod`, `GetFolderInfo`).
+  Dafny spec updated: `EnsureParents` for implicit directory creation in
+  Write/Move/Copy, `FolderInfo` enriched with `file_count`/`total_size` —
+  adapter contains zero behavioral logic (pure type marshaling only).
   Deleted `sdd/formal/POC/` (handwritten oracle superseded by compiled oracle).
   Related: BK-139a, BK-139b, BK-140, ID-128.
 

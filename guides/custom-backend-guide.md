@@ -342,7 +342,7 @@ backend runs the full suite automatically.
 
 The conformance suite itself is validated by running it against a
 mathematically verified oracle compiled from the formal Dafny specification
-(`sdd/formal/MemoryBackend.dfy`, 51 verified proofs, 0 errors).  If the
+(`sdd/formal/MemoryBackend.dfy`, 53 verified proofs, 0 errors).  If the
 oracle passes a test, the test is known-correct.  This means passing the
 conformance suite is a strong guarantee of correctness — not just "matches
 what existing backends happen to do."  See [`sdd/formal/README.md`](https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md)

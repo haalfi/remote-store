@@ -1,11 +1,17 @@
 """Dafny-compiled MemoryBackend adapter — conformance oracle.
 
-Wraps the mathematically verified Dafny MemoryBackend (compiled to Python)
-behind the ``Backend`` ABC so it can be run through the conformance test suite.
+Thin wrapper that bridges Dafny types (``Seq[CodePoint]``, ``Map``,
+``Result``) to the Python ``Backend`` ABC.  All behavioral logic lives in
+the verified Dafny spec — this module does only type marshaling.
 
-**Principle**: the compiled oracle is correct by construction (51 verified
+**Principle**: the compiled oracle is correct by construction (53 verified
 proofs, 0 errors).  If the oracle fails a conformance test, the *test* has a
 bug — not the oracle.  See ``sdd/formal/README.md`` § Compiled Oracle.
+
+The only adapter-level special case is root path handling: Dafny's ``Path``
+type requires non-empty strings (``type Path = s: string | s != ""``), while
+the Python Backend ABC uses ``""`` for root.  Root is always-exists,
+always-folder, never-file by convention.
 """
 
 from __future__ import annotations
@@ -49,33 +55,27 @@ import module_ as _dafny_module  # noqa: E402
 # ---------------------------------------------------------------------------
 
 _BACKEND_NAME = "dafny-oracle"
+_ORACLE_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
 
 
 def _str_to_dafny(s: str) -> _dafny.Seq:
-    """Convert Python str to Dafny Seq[CodePoint]."""
     return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, s))
 
 
 def _dafny_to_str(seq: _dafny.Seq) -> str:
-    """Convert Dafny Seq[CodePoint] to Python str."""
     return "".join(str(cp) for cp in seq)
 
 
 def _bytes_to_dafny(data: bytes) -> _dafny.Seq:
-    """Convert Python bytes to Dafny seq<nat>."""
     return _dafny.Seq(list(data))
 
 
 def _dafny_to_bytes(seq: _dafny.Seq) -> bytes:
-    """Convert Dafny seq<nat> to Python bytes."""
     return bytes(seq)
 
 
 def _filename(path: str) -> str:
-    """Extract the last segment of a path."""
-    if "/" in path:
-        return path.rsplit("/", 1)[1]
-    return path
+    return path.rsplit("/", 1)[1] if "/" in path else path
 
 
 def _raise_if_err(result: object) -> object:
@@ -103,31 +103,21 @@ def _raise_if_err(result: object) -> object:
 
 
 # ---------------------------------------------------------------------------
-# Capabilities — mirror the Dafny spec (all except GLOB)
-# ---------------------------------------------------------------------------
-_ORACLE_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
-
-
-# ---------------------------------------------------------------------------
-# DafnyOracleBackend
+# DafnyOracleBackend — pure type-marshaling wrapper
 # ---------------------------------------------------------------------------
 
 
 class DafnyOracleBackend(Backend):
-    """Backend adapter wrapping the compiled Dafny MemoryBackend.
+    """Backend wrapping the compiled Dafny MemoryBackend (53 proofs, 0 errors).
 
-    Bridges Dafny types (``_dafny.Seq``, ``_dafny.Map``, ``_dafny.CodePoint``)
-    to the Python ``Backend`` interface.  The underlying Dafny implementation
-    is mathematically verified — 51 proofs, 0 errors.
+    This adapter contains zero behavioral logic — only type conversions
+    between Python and Dafny types, and the root-path type-boundary
+    special case (Dafny Path requires non-empty strings).
     """
 
     def __init__(self) -> None:
         self._mb = _dafny_module.MemoryBackend()
         self._mb.ctor__()
-        # Root ("") is handled at the adapter level — NOT inserted into the
-        # Dafny fs map because Dafny's Path type requires non-empty strings.
-
-    # -- properties -----------------------------------------------------------
 
     @property
     def name(self) -> str:
@@ -137,47 +127,35 @@ class DafnyOracleBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ORACLE_CAPABILITIES
 
-    # -- existence checks -----------------------------------------------------
+    # -- Root path: Dafny Path type forbids ""; handle at type boundary -------
 
     def exists(self, path: str) -> bool:
         if not path or path == ".":
             return True
-        dp = _str_to_dafny(path)
-        return bool(_raise_if_err(self._mb.Exists(dp)))
+        return bool(_raise_if_err(self._mb.Exists(_str_to_dafny(path))))
 
     def is_file(self, path: str) -> bool:
         if not path or path == ".":
             return False
-        dp = _str_to_dafny(path)
-        return bool(_raise_if_err(self._mb.IsFileMethod(dp)))
+        return bool(_raise_if_err(self._mb.IsFileMethod(_str_to_dafny(path))))
 
     def is_folder(self, path: str) -> bool:
         if not path or path == ".":
             return True
-        dp = _str_to_dafny(path)
-        return bool(_raise_if_err(self._mb.IsFolderMethod(dp)))
+        return bool(_raise_if_err(self._mb.IsFolderMethod(_str_to_dafny(path))))
 
-    # -- read -----------------------------------------------------------------
+    # -- Type marshaling: bytes <-> Dafny Seq, str <-> Seq[CodePoint] --------
 
     def read(self, path: str) -> io.BufferedReader:
-        dp = _str_to_dafny(path)
-        content = _raise_if_err(self._mb.Read(dp))
-        raw = _dafny_to_bytes(content)
-        return io.BufferedReader(io.BytesIO(raw))  # type: ignore[arg-type]
+        content = _raise_if_err(self._mb.Read(_str_to_dafny(path)))
+        return io.BufferedReader(io.BytesIO(_dafny_to_bytes(content)))  # type: ignore[arg-type]
 
     def read_bytes(self, path: str) -> bytes:
-        dp = _str_to_dafny(path)
-        content = _raise_if_err(self._mb.Read(dp))
-        return _dafny_to_bytes(content)
-
-    # -- write ----------------------------------------------------------------
+        return _dafny_to_bytes(_raise_if_err(self._mb.Read(_str_to_dafny(path))))
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         data = bytes(content) if isinstance(content, (bytes, bytearray, memoryview)) else content.read()
-        dp = _str_to_dafny(path)
-        dc = _bytes_to_dafny(data)
-        self._ensure_parents(path)
-        _raise_if_err(self._mb.Write(dp, dc, overwrite))
+        _raise_if_err(self._mb.Write(_str_to_dafny(path), _bytes_to_dafny(data), overwrite))
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         self.write(path, content, overwrite=overwrite)
@@ -192,104 +170,48 @@ class DafnyOracleBackend(Backend):
 
         return _ctx()
 
-    # -- delete ---------------------------------------------------------------
-
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
-        dp = _str_to_dafny(path)
-        _raise_if_err(self._mb.Delete(dp, missing_ok))
+        _raise_if_err(self._mb.Delete(_str_to_dafny(path), missing_ok))
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
-        dp = _str_to_dafny(path)
-        _raise_if_err(self._mb.DeleteFolder(dp, recursive, missing_ok))
+        _raise_if_err(self._mb.DeleteFolder(_str_to_dafny(path), recursive, missing_ok))
 
-    # -- listing --------------------------------------------------------------
+    # -- Return-type marshaling: Dafny FileInfo/FolderEntry -> Python models --
 
     def list_files(self, path: str, *, recursive: bool = False, max_depth: int | None = None) -> Iterator[FileInfo]:
         dp = _str_to_dafny(path if path else "")
-        dafny_max_depth = -1 if max_depth is None else max_depth
-        result = _raise_if_err(self._mb.ListFiles(dp, recursive, dafny_max_depth))
+        result = _raise_if_err(self._mb.ListFiles(dp, recursive, -1 if max_depth is None else max_depth))
         now = datetime.now(tz=timezone.utc)
         for fi in result:
             p = _dafny_to_str(fi.path)
-            yield FileInfo(
-                path=RemotePath(p),
-                name=_filename(p),
-                size=int(fi.size),
-                modified_at=now,
-            )
+            yield FileInfo(path=RemotePath(p), name=_filename(p), size=int(fi.size), modified_at=now)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
-        dp = _str_to_dafny(path if path else "")
-        result = _raise_if_err(self._mb.ListFolders(dp))
+        result = _raise_if_err(self._mb.ListFolders(_str_to_dafny(path if path else "")))
         for fe in result:
             p = _dafny_to_str(fe.path)
-            yield FolderEntry(
-                path=RemotePath(p),
-                name=_filename(p),
-            )
-
-    # -- metadata -------------------------------------------------------------
+            yield FolderEntry(path=RemotePath(p), name=_filename(p))
 
     def get_file_info(self, path: str) -> FileInfo:
-        dp = _str_to_dafny(path)
-        dafny_fi = _raise_if_err(self._mb.GetFileInfo(dp))
+        dafny_fi = _raise_if_err(self._mb.GetFileInfo(_str_to_dafny(path)))
         p = _dafny_to_str(dafny_fi.path)
         return FileInfo(
-            path=RemotePath(p),
-            name=_filename(p),
-            size=int(dafny_fi.size),
-            modified_at=datetime.now(tz=timezone.utc),
+            path=RemotePath(p), name=_filename(p), size=int(dafny_fi.size), modified_at=datetime.now(tz=timezone.utc)
         )
 
     def get_folder_info(self, path: str) -> FolderInfo:
-        dp = _str_to_dafny(path)
-        _raise_if_err(self._mb.GetFolderInfo(dp))
-        # Dafny returns minimal FolderInfo(path, name).
-        # Compute file_count and total_size by scanning the fs map.
-        file_count = 0
-        total_size = 0
-        for k in self._mb.fs.keys.Elements:
-            entry = self._mb.fs[k]
-            if entry.is_FileEntry and _dafny_module.default__.IsChildOf(k, dp):
-                file_count += 1
-                total_size += int(entry.info.size)
+        dafny_fi = _raise_if_err(self._mb.GetFolderInfo(_str_to_dafny(path)))
         return FolderInfo(
-            path=RemotePath(path),
-            file_count=file_count,
-            total_size=total_size,
+            path=RemotePath(_dafny_to_str(dafny_fi.path)),
+            file_count=int(dafny_fi.file__count),
+            total_size=int(dafny_fi.total__size),
         )
 
-    # -- move / copy ----------------------------------------------------------
-
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        ds = _str_to_dafny(src)
-        dd = _str_to_dafny(dst)
-        self._ensure_parents(dst)
-        _raise_if_err(self._mb.Move(ds, dd, overwrite))
+        _raise_if_err(self._mb.Move(_str_to_dafny(src), _str_to_dafny(dst), overwrite))
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        ds = _str_to_dafny(src)
-        dd = _str_to_dafny(dst)
-        self._ensure_parents(dst)
-        _raise_if_err(self._mb.Copy(ds, dd, overwrite))
-
-    # -- repr -----------------------------------------------------------------
+        _raise_if_err(self._mb.Copy(_str_to_dafny(src), _str_to_dafny(dst), overwrite))
 
     def __repr__(self) -> str:
         return "DafnyOracleBackend()"
-
-    # -- internal helpers -----------------------------------------------------
-
-    def _ensure_parents(self, path: str) -> None:
-        """Insert DirEntry nodes for every ancestor of *path*.
-
-        The Dafny spec uses an explicit ``fs`` map with ``DirEntry`` nodes.
-        Conformance tests expect ``write("a/b/c.txt", ...)`` to implicitly
-        create directories ``a`` and ``a/b``.
-        """
-        parts = path.split("/")
-        for i in range(1, len(parts)):
-            ancestor = "/".join(parts[:i])
-            dp = _str_to_dafny(ancestor)
-            if dp not in self._mb.fs:
-                self._mb.fs = self._mb.fs.set(dp, _dafny_module.Entry_DirEntry())

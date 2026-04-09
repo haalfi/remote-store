@@ -18,7 +18,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Added
 
 - **Dafny-compiled oracle as conformance gate** (BK-139c, ID-133): The
-  mathematically verified `MemoryBackend.dfy` (51 proofs, 0 errors) is now
+  mathematically verified `MemoryBackend.dfy` (53 proofs, 0 errors) is now
   compiled to Python and runs through the full conformance suite as
   `DafnyOracleBackend`. Validates the conformance suite: if the oracle
   passes a test, the test is known-correct. Handwritten POC oracle removed.

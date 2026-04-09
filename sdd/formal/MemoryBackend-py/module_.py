@@ -308,18 +308,18 @@ class FolderEntry_FolderEntry(FolderEntry, NamedTuple('FolderEntry', [('path', A
 class FolderInfo:
     @classmethod
     def default(cls, ):
-        return lambda: FolderInfo_FolderInfo(Path.default(), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")))
+        return lambda: FolderInfo_FolderInfo(Path.default(), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")), int(0), int(0))
     def __ne__(self, __o: object) -> bool:
         return not self.__eq__(__o)
     @property
     def is_FolderInfo(self) -> bool:
         return isinstance(self, FolderInfo_FolderInfo)
 
-class FolderInfo_FolderInfo(FolderInfo, NamedTuple('FolderInfo', [('path', Any), ('name', Any)])):
+class FolderInfo_FolderInfo(FolderInfo, NamedTuple('FolderInfo', [('path', Any), ('name', Any), ('file__count', Any), ('total__size', Any)])):
     def __dafnystr__(self) -> str:
-        return f'FolderInfo.FolderInfo({self.path.VerbatimString(True)}, {self.name.VerbatimString(True)})'
+        return f'FolderInfo.FolderInfo({self.path.VerbatimString(True)}, {self.name.VerbatimString(True)}, {_dafny.string_of(self.file__count)}, {_dafny.string_of(self.total__size)})'
     def __eq__(self, __o: object) -> bool:
-        return isinstance(__o, FolderInfo_FolderInfo) and self.path == __o.path and self.name == __o.name
+        return isinstance(__o, FolderInfo_FolderInfo) and self.path == __o.path and self.name == __o.name and self.file__count == __o.file__count and self.total__size == __o.total__size
     def __hash__(self) -> int:
         return super().__hash__()
 
@@ -508,6 +508,7 @@ class default__:
             return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "seekable_read"))
 
 
+
 class MemoryBackend(Backend):
     def  __init__(self):
         self._fs: _dafny.Map = _dafny.Map({})
@@ -605,6 +606,17 @@ class MemoryBackend(Backend):
             r = Result_Err(Error_NotFound(path, (self).name))
         return r
 
+    def EnsureParents(self, path):
+        d_0_i_: int
+        d_0_i_ = 1
+        while (d_0_i_) < (len(path)):
+            if ((path)[d_0_i_]) == (_dafny.CodePoint('/')):
+                d_1_prefix_: _dafny.Seq
+                d_1_prefix_ = _dafny.SeqWithoutIsStrInference((path)[:d_0_i_:])
+                if (d_1_prefix_) not in (self.fs):
+                    (self).fs = (self.fs).set(d_1_prefix_, Entry_DirEntry())
+            d_0_i_ = (d_0_i_) + (1)
+
     def Write(self, path, content, overwrite):
         r: Result = Result.default()()
         if ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry):
@@ -613,6 +625,7 @@ class MemoryBackend(Backend):
         if (((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry)) and (not(overwrite)):
             r = Result_Err(Error_AlreadyExists(path, (self).name))
             return r
+        (self).EnsureParents(path)
         d_0_info_: FileInfo
         d_0_info_ = FileInfo_FileInfo(path, path, len(content))
         (self).fs = (self.fs).set(path, Entry_FileEntry(content, d_0_info_))
@@ -780,7 +793,28 @@ class MemoryBackend(Backend):
             with _dafny.label("match0"):
                 if True:
                     if source0_.is_DirEntry:
-                        r = Result_Ok(FolderInfo_FolderInfo(path, path))
+                        d_0_file__count_: int
+                        d_0_file__count_ = 0
+                        d_1_total__size_: int
+                        d_1_total__size_ = 0
+                        d_2_remaining_: _dafny.Set
+                        d_2_remaining_ = (self.fs).keys
+                        while (d_2_remaining_) != (_dafny.Set({})):
+                            d_3_k_: _dafny.Seq
+                            with _dafny.label("_ASSIGN_SUCH_THAT_d_0"):
+                                assign_such_that_0_: _dafny.Seq
+                                for assign_such_that_0_ in (d_2_remaining_).Elements:
+                                    d_3_k_ = assign_such_that_0_
+                                    if Path._Is(d_3_k_):
+                                        if (d_3_k_) in (d_2_remaining_):
+                                            raise _dafny.Break("_ASSIGN_SUCH_THAT_d_0")
+                                raise Exception("assign-such-that search produced no value")
+                                pass
+                            d_2_remaining_ = (d_2_remaining_) - (_dafny.Set({d_3_k_}))
+                            if (((d_3_k_) in (self.fs)) and (((self.fs)[d_3_k_]).is_FileEntry)) and (default__.IsChildOf(d_3_k_, path)):
+                                d_0_file__count_ = (d_0_file__count_) + (1)
+                                d_1_total__size_ = (d_1_total__size_) + ((((self.fs)[d_3_k_]).info).size)
+                        r = Result_Ok(FolderInfo_FolderInfo(path, path, d_0_file__count_, d_1_total__size_))
                         raise _dafny.Break("match0")
                 if True:
                     r = Result_Err(Error_InvalidPath(path, (self).name))
@@ -806,6 +840,7 @@ class MemoryBackend(Backend):
         if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
             r = Result_Err(Error_AlreadyExists(dst, (self).name))
             return r
+        (self).EnsureParents(dst)
         d_0_srcEntry_: Entry
         d_0_srcEntry_ = (self.fs)[src]
         d_1_newInfo_: FileInfo
@@ -842,6 +877,7 @@ class MemoryBackend(Backend):
         if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
             r = Result_Err(Error_AlreadyExists(dst, (self).name))
             return r
+        (self).EnsureParents(dst)
         d_0_srcEntry_: Entry
         d_0_srcEntry_ = (self.fs)[src]
         d_1_newInfo_: FileInfo
@@ -857,4 +893,5 @@ class MemoryBackend(Backend):
         elif True:
             r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(cap), (self).name))
         return r
+
 

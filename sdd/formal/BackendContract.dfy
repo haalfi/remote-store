@@ -74,7 +74,9 @@ datatype FolderEntry = FolderEntry(
 
 datatype FolderInfo = FolderInfo(
   path: Path,
-  name: string
+  name: string,
+  file_count: nat,
+  total_size: nat
 )
 
 // ---------------------------------------------------------------------------
