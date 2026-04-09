@@ -8100,6 +8100,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-33-formal-verification-as-a-quality-gate-v0220" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 33: Formal Verification as a Quality Gate (v0.22.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8613,6 +8624,17 @@
     <span class="md-ellipsis">
       
         Phase 32: Backend Hardening (v0.21.1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-33-formal-verification-as-a-quality-gate-v0220" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 33: Formal Verification as a Quality Gate (v0.22.0)
       
     </span>
   </a>
@@ -9209,6 +9231,14 @@
 <p><strong><code>max_depth</code> was a specification gap.</strong> S3 (BUG-152) and Azure (BUG-155) both accepted <code>max_depth</code> but ignored it during listing traversal. The BFS implementations needed depth tracking at the traversal level, not post-hoc filtering. Local and Memory backends already had this right — the fix was aligning the cloud backends to match.</p>
 <p><strong><code>CachedStore</code> had two invalidation blind spots.</strong> Writing a nested path didn't invalidate ancestor directory metadata (BUG-137), and <code>child()</code> created an isolated cache instead of sharing the parent's (BUG-138). Both are subtle because they only manifest in multi-level directory structures with interleaved reads and writes.</p>
 <p><strong>Housekeeping shipped alongside.</strong> Examples were reorganized from a flat directory into seven topical subdirectories. The Pygments upper-bound pin was removed after pymdown-extensions fixed the upstream bug. <code>pyproject.toml</code> dependency lists were deduplicated via Hatch's <code>features</code> key (BK-138).</p>
+<h3 id="phase-33-formal-verification-as-a-quality-gate-v0220">Phase 33: Formal Verification as a Quality Gate (v0.22.0)<a class="headerlink" href="#phase-33-formal-verification-as-a-quality-gate-v0220" title="Permanent link">&para;</a></h3>
+<p>v0.22.0 crossed a line the previous releases were building toward: mathematically verified correctness running as part of the regular test suite.</p>
+<p><strong>The Dafny oracle became a conformance gate.</strong> The formal <code>MemoryBackend.dfy</code> (53 verified proofs, 0 errors) was compiled to Python via <code>dafny translate py</code> and registered as <code>DafnyOracleBackend</code>. It now runs through all 150 conformance tests on every CI run. If the oracle passes a test, the test is known-correct by construction — the test suite validates itself against a machine-verified reference. Handwritten oracle prototypes from the POC phase were deleted; the compiled oracle supersedes them.</p>
+<p><strong>A new capability flag exposed an atomicity gap.</strong> <code>Capability.ATOMIC_MOVE</code> was added to mark backends where <code>move()</code> is guaranteed atomic under concurrent access. Local, Memory, and SQLBlob declare it; S3, S3-PyArrow, Azure, and SFTP do not (all use copy-then-delete semantics). This made atomicity a queryable property — <code>store.supports(Capability.ATOMIC_MOVE)</code> — rather than documentation-only knowledge. The Dafny formal layer was updated in parallel.</p>
+<p><strong>Extended conformance: postconditions become tests.</strong> 42 new test functions (~53 parameterized cases per backend) were derived directly from Dafny <code>BackendContract.dfy</code> postconditions. They cover error fidelity, precondition ordering, listing completeness, depth filtering, move/copy semantics, resource cleanup, and operational consistency. Marked <code>@pytest.mark.extended_conformance</code> for CI isolation. Error fidelity testing at this level immediately surfaced <code>InvalidPath</code> vs <code>NotFound</code> inconsistencies across backends (ID-131).</p>
+<p><strong>Type-mismatch errors were systematically wrong.</strong> <code>read()</code>, <code>read_bytes()</code>, <code>delete()</code>, and related methods on wrong path types (file vs. directory) raised <code>NotFound</code> in several backends when the Dafny postconditions required <code>InvalidPath</code>. Fixed uniformly across LocalBackend, MemoryBackend, and SFTPBackend. Self-move and self-copy were also fixed: <code>src == dst</code> is now a no-op rather than leaking <code>SameFileError</code> or losing data.</p>
+<p><strong>Two bug-prevention mechanisms shipped.</strong> <code>ResourceWarning</code> <code>__del__</code> guards were added to SFTPBackend, AzureBackend, and AsyncAzureBackend — if <code>.close()</code> was never called, Python's garbage collector now emits a warning at the object boundary rather than silently leaking connections. The Ruff <code>BLE001</code> rule (blind exception) was enabled across the codebase; 44 intentional broad catches were annotated with <code># noqa: BLE001</code>, making accidental new catches visible immediately.</p>
+<p><strong>What changed in the way of working.</strong> This release showed that formal verification and test generation aren't separate activities — the same Dafny spec that proves the algorithm correct also produces the test oracles and reveals the gaps in the real backends. The investment in <code>sdd/formal/</code> from BK-140 paid a concrete dividend: the compiled oracle and the extended conformance suite are direct outputs of the formal layer, not additional work.</p>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
 <p>If you want to try this approach on your own project:</p>
 <ol>
