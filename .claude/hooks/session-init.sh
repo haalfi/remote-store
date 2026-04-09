@@ -53,9 +53,9 @@ if ! command -v hatch &>/dev/null; then
   fi
 fi
 
-# --- Install Dafny when BK-139c (dafny-python bridge) is active ---
+# --- Install Dafny if .dfy files exist in the repo ---
 DAFNY_VERSION="4.9.1"
-if ! command -v dafny &>/dev/null && echo "$PENDING" | grep -q 'BK-139c'; then
+if ! command -v dafny &>/dev/null && ls sdd/formal/*.dfy &>/dev/null 2>&1; then
   if _is_linux_container; then
     echo "dafny: not found — installing v${DAFNY_VERSION}..."
     _TMP=$(mktemp -d)

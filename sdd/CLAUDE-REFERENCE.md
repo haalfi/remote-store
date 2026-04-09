@@ -103,7 +103,7 @@ On-prem sessions get a warning; install manually.
 | Tool  | Purpose                          | Auto-install trigger            | Version |
 |-------|----------------------------------|---------------------------------|---------|
 | hatch | Runs all dev scripts             | Every session (if missing)      | latest  |
-| dafny | Verifies `sdd/formal/*.dfy`      | BK-139c is `[~]` in BACKLOG.md | 4.9.1   |
+| dafny | Verifies `sdd/formal/*.dfy`      | `sdd/formal/*.dfy` files exist in repo | 4.9.1   |
 
 **Manual install — hatch:**
 ```bash
