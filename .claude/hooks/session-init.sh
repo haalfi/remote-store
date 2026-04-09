@@ -55,14 +55,19 @@ fi
 
 # --- Install Dafny if .dfy files exist in the repo ---
 DAFNY_VERSION="4.9.1"
-if ! command -v dafny &>/dev/null && ls sdd/formal/*.dfy &>/dev/null 2>&1; then
+if ! command -v dafny &>/dev/null && ls sdd/formal/*.dfy &>/dev/null; then
   if _is_linux_container; then
     echo "dafny: not found — installing v${DAFNY_VERSION}..."
     _TMP=$(mktemp -d)
     _ZIP="dafny-${DAFNY_VERSION}-x64-ubuntu-20.04.zip"
     _URL="https://github.com/dafny-lang/dafny/releases/download/v${DAFNY_VERSION}/${_ZIP}"
-    if curl -fsSL --max-time 120 "$_URL" -o "$_TMP/$_ZIP" 2>/dev/null \
-       && unzip -q "$_TMP/$_ZIP" -d "$_TMP" 2>/dev/null; then
+    if ! curl -fsSL --max-time 120 "$_URL" -o "$_TMP/$_ZIP" 2>/dev/null; then
+      rm -rf "$_TMP"
+      echo "dafny: download failed — see sdd/CLAUDE-REFERENCE.md § Local toolchain"
+    elif ! command -v unzip &>/dev/null || ! unzip -q "$_TMP/$_ZIP" -d "$_TMP" 2>/dev/null; then
+      rm -rf "$_TMP"
+      echo "dafny: extract failed (unzip missing or corrupt zip) — see sdd/CLAUDE-REFERENCE.md § Local toolchain"
+    else
       mkdir -p /usr/local/lib/dafny
       cp -r "$_TMP/dafny/." /usr/local/lib/dafny/
       # Wrapper in /usr/local/bin ensures co-located DLLs are resolved
@@ -76,9 +81,6 @@ if ! command -v dafny &>/dev/null && ls sdd/formal/*.dfy &>/dev/null 2>&1; then
       else
         echo "dafny: install failed — see sdd/CLAUDE-REFERENCE.md § Local toolchain"
       fi
-    else
-      rm -rf "$_TMP"
-      echo "dafny: download failed — see sdd/CLAUDE-REFERENCE.md § Local toolchain"
     fi
   else
     echo "dafny: not found — install manually (see sdd/CLAUDE-REFERENCE.md § Local toolchain)"
@@ -86,7 +88,7 @@ if ! command -v dafny &>/dev/null && ls sdd/formal/*.dfy &>/dev/null 2>&1; then
 fi
 
 # --- Install gh on Linux containers if needed ---
-if ! command -v gh &>/dev/null && [ "$(uname -s 2>/dev/null)" = "Linux" ]; then
+if ! command -v gh &>/dev/null && _is_linux_container; then
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
