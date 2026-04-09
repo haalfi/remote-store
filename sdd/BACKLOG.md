@@ -48,7 +48,8 @@ Items graduate through the SDD pipeline:
 - [~] **BK-142 — Harden CodeQL CI: scope, query suite, gating, dep review, annotations**
   Current `codeql.yml` runs with defaults and is not gated — findings post to the
   Security tab but don't block merges. Five concrete improvements:
-  1. **Path filter** — skip CodeQL on doc-only PRs (mirrors `ci.yml` pattern).
+  1. **Path filter** — skip CodeQL on doc-only PRs via GitHub's native `on.paths`
+     trigger filter (distinct from `ci.yml`'s `changes` job approach).
   2. **Config file** (`.github/codeql/codeql-config.yml`) — scope analysis to
      `src/remote_store/`, upgrade query suite from default to `security-and-quality`.
   3. **Wire config into `codeql.yml`** — `config-file:` field on the init step.
