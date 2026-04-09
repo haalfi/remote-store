@@ -159,6 +159,15 @@ contradiction.
   specification-only in Dafny, preventing compiled assignments and
   return statements.  The MemoryBackend preserves `fs` on error paths
   by construction instead.
+- **`GetFolderInfo` aggregate fields unverified.** The `file_count` and
+  `total_size` fields are computed by a while-loop over `fs.Keys`, but
+  the postcondition only asserts `r.value.path == path`.  A verified
+  postcondition relating `file_count` to
+  `|set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)|` (and
+  `total_size` to the corresponding sum) would require a recursive
+  ghost function and loop invariant tracking processed elements.  The
+  values are correct by inspection; fully machine-checked verification
+  is deferred.
 
 ## Compiled oracle as conformance gate
 
@@ -188,6 +197,10 @@ The compiled oracle is **correct by construction** — 53 verified proofs,
 
 ### How to regenerate
 
+**Required Dafny version**: 4.9.1 (the version recorded in the `.dtr`
+manifest).  Using a different version may change the runtime library or
+compiled output format.
+
 When `MemoryBackend.dfy` changes, regenerate the compiled output:
 
 ```bash
@@ -203,6 +216,19 @@ before `Backend` is defined — a forward-reference error.  After regeneration,
 reorder `module_.py` so all ADT types and the `Backend` class appear before
 `MemoryBackend`.  The `default__` helper class (which uses `Path`) must also
 appear before `MemoryBackend`.
+
+Expected class order in `module_.py` (top to bottom):
+1. ADT types (`Error`, `Result`, `Entry`, `FileInfo`, `FolderInfo`,
+   `FolderEntry`, `Capability`)
+2. `Backend` (abstract base)
+3. `default__` (helper with `Path`, `IsChildOf`, `Depth`, etc.)
+4. `MemoryBackend` (compiled refinement)
+
+Verify the reordering is correct by importing the module:
+
+```bash
+python -c "import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import module_"
+```
 
 ### Running the oracle conformance tests
 

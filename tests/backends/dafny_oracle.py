@@ -179,15 +179,36 @@ class DafnyOracleBackend(Backend):
     # -- Return-type marshaling: Dafny FileInfo/FolderEntry -> Python models --
 
     def list_files(self, path: str, *, recursive: bool = False, max_depth: int | None = None) -> Iterator[FileInfo]:
-        dp = _str_to_dafny(path if path else "")
-        result = _raise_if_err(self._mb.ListFiles(dp, recursive, -1 if max_depth is None else max_depth))
+        if not path or path == ".":
+            # Root: Dafny Path forbids ""; enumerate fs at type boundary.
+            now = datetime.now(tz=timezone.utc)
+            for k, v in self._mb.fs.items():
+                if v.is_FileEntry:
+                    p = _dafny_to_str(k)
+                    depth = p.count("/")
+                    if not recursive and depth == 0:
+                        yield FileInfo(path=RemotePath(p), name=p, size=int(v.info.size), modified_at=now)
+                    elif recursive and (max_depth is None or depth <= max_depth):
+                        yield FileInfo(path=RemotePath(p), name=_filename(p), size=int(v.info.size), modified_at=now)
+            return
+        result = _raise_if_err(
+            self._mb.ListFiles(_str_to_dafny(path), recursive, -1 if max_depth is None else max_depth)
+        )
         now = datetime.now(tz=timezone.utc)
         for fi in result:
             p = _dafny_to_str(fi.path)
             yield FileInfo(path=RemotePath(p), name=_filename(p), size=int(fi.size), modified_at=now)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
-        result = _raise_if_err(self._mb.ListFolders(_str_to_dafny(path if path else "")))
+        if not path or path == ".":
+            # Root: Dafny Path forbids ""; enumerate fs at type boundary.
+            for k, v in self._mb.fs.items():
+                if v.is_DirEntry:
+                    p = _dafny_to_str(k)
+                    if "/" not in p:
+                        yield FolderEntry(path=RemotePath(p), name=p)
+            return
+        result = _raise_if_err(self._mb.ListFolders(_str_to_dafny(path)))
         for fe in result:
             p = _dafny_to_str(fe.path)
             yield FolderEntry(path=RemotePath(p), name=_filename(p))
@@ -200,6 +221,15 @@ class DafnyOracleBackend(Backend):
         )
 
     def get_folder_info(self, path: str) -> FolderInfo:
+        if not path or path == ".":
+            # Root: Dafny Path forbids ""; compute stats at type boundary.
+            file_count = 0
+            total_size = 0
+            for v in self._mb.fs.values():
+                if v.is_FileEntry:
+                    file_count += 1
+                    total_size += int(v.info.size)
+            return FolderInfo(path=RemotePath(""), file_count=file_count, total_size=total_size)
         dafny_fi = _raise_if_err(self._mb.GetFolderInfo(_str_to_dafny(path)))
         return FolderInfo(
             path=RemotePath(_dafny_to_str(dafny_fi.path)),
