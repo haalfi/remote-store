@@ -1262,3 +1262,29 @@ class TestAzureResolve:
         backend = _make_backend()
         plan = backend.resolve("file.txt")
         assert "account_url" in plan.details
+
+
+# =============================================================================
+# __del__ cleanup contract (BK-143)
+# =============================================================================
+
+
+class TestAzureDelCleanup:
+    """BK-143 (Error): AzureBackend.__del__ emits ResourceWarning and closes clients."""
+
+    @pytest.mark.spec("BK-143")
+    def test_del_emits_resource_warning_and_closes_client(self) -> None:
+        """__del__ emits ResourceWarning and calls .close() on the open container client."""
+        backend = _make_backend()
+        mock_cc = MagicMock(spec=ContainerClient)
+        backend._cc_instance = mock_cc  # internal: no public observable
+        with pytest.warns(ResourceWarning, match="Unclosed AzureBackend"):
+            backend.__del__()
+        mock_cc.close.assert_called_once()
+
+    @pytest.mark.spec("BK-143")
+    def test_del_is_safe_when_no_clients(self) -> None:
+        """__del__ does not raise or warn when no clients have been opened."""
+        backend = _make_backend()
+        result = backend.__del__()
+        assert result is None
