@@ -78,28 +78,35 @@ def _filename(path: str) -> str:
     return path.rsplit("/", 1)[1] if "/" in path else path
 
 
+_ERR_DISPATCH: dict[str, type[Exception]] = {
+    "is_NotFound": NotFound,
+    "is_AlreadyExists": AlreadyExists,
+    "is_InvalidPath": InvalidPath,
+    "is_DirectoryNotEmpty": DirectoryNotEmpty,
+}
+
+
 def _raise_if_err(result: object) -> object:
     """Convert Dafny Result_Err to remote_store exceptions, return Ok value."""
     if result.is_Err:  # type: ignore[union-attr]
         err = result.error  # type: ignore[union-attr]
         path_str = _dafny_to_str(err.path) if hasattr(err, "path") else ""
-        if err.is_NotFound:
-            raise NotFound(path=path_str, backend=_BACKEND_NAME)
-        if err.is_AlreadyExists:
-            raise AlreadyExists(path=path_str, backend=_BACKEND_NAME)
-        if err.is_InvalidPath:
-            raise InvalidPath(path=path_str, backend=_BACKEND_NAME)
-        if err.is_DirectoryNotEmpty:
-            raise DirectoryNotEmpty(path=path_str, backend=_BACKEND_NAME)
+        for attr, exc_cls in _ERR_DISPATCH.items():
+            if getattr(err, attr):
+                raise exc_cls(path=path_str, backend=_BACKEND_NAME)
         if err.is_CapabilityNotSupported:
-            raise CapabilityNotSupported(
-                capability=_dafny_to_str(err.capability),
-                backend=_BACKEND_NAME,
-            )
+            raise CapabilityNotSupported(capability=_dafny_to_str(err.capability), backend=_BACKEND_NAME)
         if err.is_BackendUnavailable:
-            msg = "Backend unavailable"
-            raise NotFound(message=msg, backend=_BACKEND_NAME)
+            raise NotFound(message="Backend unavailable", backend=_BACKEND_NAME)
     return result.value  # type: ignore[union-attr]
+
+
+def _to_file_info(path_str: str, size: int, now: datetime) -> FileInfo:
+    return FileInfo(path=RemotePath(path_str), name=_filename(path_str), size=size, modified_at=now)
+
+
+def _to_folder_entry(path_str: str) -> FolderEntry:
+    return FolderEntry(path=RemotePath(path_str), name=_filename(path_str))
 
 
 # ---------------------------------------------------------------------------
@@ -183,21 +190,19 @@ class DafnyOracleBackend(Backend):
             # Root: Dafny Path forbids ""; enumerate fs at type boundary.
             now = datetime.now(tz=timezone.utc)
             for k, v in self._mb.fs.items():
-                if v.is_FileEntry:
-                    p = _dafny_to_str(k)
-                    depth = p.count("/")
-                    if not recursive and depth == 0:
-                        yield FileInfo(path=RemotePath(p), name=p, size=int(v.info.size), modified_at=now)
-                    elif recursive and (max_depth is None or depth <= max_depth):
-                        yield FileInfo(path=RemotePath(p), name=_filename(p), size=int(v.info.size), modified_at=now)
+                if not v.is_FileEntry:
+                    continue
+                p = _dafny_to_str(k)
+                depth = p.count("/")
+                if not recursive and depth == 0 or recursive and (max_depth is None or depth <= max_depth):
+                    yield _to_file_info(p, int(v.info.size), now)
             return
         result = _raise_if_err(
             self._mb.ListFiles(_str_to_dafny(path), recursive, -1 if max_depth is None else max_depth)
         )
         now = datetime.now(tz=timezone.utc)
         for fi in result:
-            p = _dafny_to_str(fi.path)
-            yield FileInfo(path=RemotePath(p), name=_filename(p), size=int(fi.size), modified_at=now)
+            yield _to_file_info(_dafny_to_str(fi.path), int(fi.size), now)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         if not path or path == ".":
@@ -206,19 +211,14 @@ class DafnyOracleBackend(Backend):
                 if v.is_DirEntry:
                     p = _dafny_to_str(k)
                     if "/" not in p:
-                        yield FolderEntry(path=RemotePath(p), name=p)
+                        yield _to_folder_entry(p)
             return
-        result = _raise_if_err(self._mb.ListFolders(_str_to_dafny(path)))
-        for fe in result:
-            p = _dafny_to_str(fe.path)
-            yield FolderEntry(path=RemotePath(p), name=_filename(p))
+        for fe in _raise_if_err(self._mb.ListFolders(_str_to_dafny(path))):
+            yield _to_folder_entry(_dafny_to_str(fe.path))
 
     def get_file_info(self, path: str) -> FileInfo:
         dafny_fi = _raise_if_err(self._mb.GetFileInfo(_str_to_dafny(path)))
-        p = _dafny_to_str(dafny_fi.path)
-        return FileInfo(
-            path=RemotePath(p), name=_filename(p), size=int(dafny_fi.size), modified_at=datetime.now(tz=timezone.utc)
-        )
+        return _to_file_info(_dafny_to_str(dafny_fi.path), int(dafny_fi.size), datetime.now(tz=timezone.utc))
 
     def get_folder_info(self, path: str) -> FolderInfo:
         if not path or path == ".":
