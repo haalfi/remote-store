@@ -6,15 +6,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Fixed
-
-- **PBT stateful model: `read_bytes` on implicit directory** (BUG-160): The
-  `BackendModel.read_bytes` rule did not skip paths that are implicit directories
-  (created as a side-effect of writing a nested file). Calling `read_bytes('d')`
-  after `write_new('d/0')` raised `InvalidPath` instead of `NotFound`, causing
-  the `pytest.raises(NotFound)` guard to fail. Added an early-return guard for
-  directory paths.
-
 ### Added
 
 - **Dafny-compiled oracle as conformance gate** (BK-139c, ID-133): The
@@ -90,6 +81,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **PBT stateful model: `read_bytes` on implicit directory** (BUG-160): The
+  `BackendModel.read_bytes` rule did not skip paths that are implicit directories
+  (created as a side-effect of writing a nested file). Calling `read_bytes('d')`
+  after `write_new('d/0')` raised `InvalidPath` instead of `NotFound`, causing
+  the `pytest.raises(NotFound)` guard to fail. Added an early-return guard for
+  directory paths.
 - **ADR-0008 conformance: `ext.arrow` Tier 1 probe** (BK-141): Updated
   `StoreFileSystemHandler.__init__` to narrow exception catch from `Exception`
   to `(CapabilityNotSupported, TypeError, OSError)` and documented the
@@ -128,11 +125,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - **CodeQL hardening** (BK-142): Scoped CodeQL analysis to `src/remote_store/`
   via `.github/codeql/codeql-config.yml`; upgraded query suite from default to
-  `security-and-quality`; added `on.paths` trigger filter to skip doc-only PRs
-  (and self-trigger on workflow/config file changes); added `dependency-review`
-  job to catch CVEs in dependency changes on PRs; annotated intentional
-  `pickle.loads` (dagster ext) and `ruamel.yaml` safe-mode loader (yaml ext)
-  with CodeQL justification comments.
+  `security-and-quality`; added `on.paths` trigger filter on push to skip
+  doc-only merges; removed `paths` filter from `pull_request` trigger so the
+  "Analyze (Python)" status check is always posted (prevents branch-protection
+  merge blocks on non-code PRs); added `dependency-review` job to catch CVEs
+  in dependency changes on PRs; annotated intentional `pickle.loads` (dagster
+  ext) and `ruamel.yaml` safe-mode loader (yaml ext) with CodeQL justification
+  comments.
 
 ## [0.21.1] - 2026-04-03
 

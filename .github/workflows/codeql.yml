@@ -3,6 +3,10 @@ name: CodeQL
 # NOTE: To enforce CodeQL as a merge gate, add "CodeQL / Analyze (Python)"
 # as a required status check in GitHub → Settings → Branches → branch
 # protection rules for master. This cannot be configured in YAML.
+#
+# The pull_request trigger intentionally has NO paths filter so the
+# "Analyze (Python)" status check is always posted — otherwise GitHub
+# branch protection treats a skipped workflow as "pending" and blocks merge.
 
 on:
   push:
@@ -14,11 +18,6 @@ on:
       - '.github/codeql/**'
   pull_request:
     branches: [master]
-    paths:
-      - 'src/**'
-      - 'pyproject.toml'
-      - '.github/workflows/codeql.yml'
-      - '.github/codeql/**'
   schedule:
     - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC — full sweep regardless of paths
 
