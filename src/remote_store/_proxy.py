@@ -68,7 +68,7 @@ class ProxyStore(Store):
 
     def __eq__(self, other: object) -> bool:
         if type(other) is type(self):
-            return self._inner == other._inner  # type: ignore[union-attr]
+            return self._inner == other._inner
         return NotImplemented
 
     def __hash__(self) -> int:
