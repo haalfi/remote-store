@@ -5,13 +5,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-139c — Dafny-compiled oracle as conformance gate**
+  Compiled `MemoryBackend.dfy` to Python via `dafny translate py` (51 verified
+  proofs, 0 errors) and wrapped it as `DafnyOracleBackend` in
+  `tests/backends/dafny_oracle.py`. Runs through the full conformance suite
+  (150 passed, 3 expected skips). Validates the conformance suite: if the
+  mathematically verified oracle passes a test, the test is known-correct.
+  Absorbs ID-133 (regenerated `MemoryBackend-py/module_.py` with `CapAtomicMove`,
+  `AncestorsTraversableCheck`, `IsFileMethod`, `IsFolderMethod`, `GetFolderInfo`).
+  Deleted `sdd/formal/POC/` (handwritten oracle superseded by compiled oracle).
+  Related: BK-139a, BK-139b, BK-140, ID-128.
+
+- [x] **ID-133 — Regenerate `MemoryBackend-py/module_.py` after `CapAtomicMove` addition**
+  Absorbed into BK-139c. Regenerated with Dafny v4.9.1; class-ordering fix
+  applied (types/Backend moved before MemoryBackend). Related: ID-128.
+
 - [x] **ID-128 — `Capability.ATOMIC_MOVE` enum member**
   Added `ATOMIC_MOVE` to the `Capability` enum. Declared by Local, Memory,
   SQLBlob; excluded from S3, S3-PyArrow, Azure, SFTP. Updated spec CAP-001
   (+ new CAP-007 quality-flag invariant), capabilities matrix, formal layer
-  (BackendContract.dfy, MemoryBackend.dfy, POC/oracle.py), and conformance
-  tests. Note: `MemoryBackend-py/module_.py` (Dafny compiler output) was not
-  regenerated — tracked as ID-133. Related: BE-018, BK-140.
+  (BackendContract.dfy, MemoryBackend.dfy), and conformance tests.
+  `MemoryBackend-py/module_.py` regenerated in BK-139c. Related: BE-018, BK-140.
 
 ## Bugs
 

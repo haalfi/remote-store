@@ -159,3 +159,57 @@ contradiction.
   specification-only in Dafny, preventing compiled assignments and
   return statements.  The MemoryBackend preserves `fs` on error paths
   by construction instead.
+
+## Compiled oracle as conformance gate
+
+The Dafny `MemoryBackend` is compiled to Python via `dafny translate py`
+and wrapped behind the `Backend` ABC as `DafnyOracleBackend`.  This
+oracle runs through the full conformance test suite alongside all real
+backends.
+
+### Principle
+
+The compiled oracle is **correct by construction** — 51 verified proofs,
+0 errors.  The conformance testing logic is therefore:
+
+1. **Oracle passes a conformance test** → the test is known-correct and
+   can be trusted as a gate for real backends.
+2. **Oracle fails a conformance test** → the test has a bug.  Fix the
+   test, not the oracle.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `sdd/formal/MemoryBackend.dfy` | Source specification (verified) |
+| `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
+| `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
+| `tests/backends/dafny_oracle.py` | Adapter: compiled oracle → `Backend` ABC |
+
+### How to regenerate
+
+When `MemoryBackend.dfy` changes, regenerate the compiled output:
+
+```bash
+dafny verify sdd/formal/MemoryBackend.dfy          # confirm spec is valid
+dafny translate py sdd/formal/MemoryBackend.dfy \
+    --include-runtime --output sdd/formal/MemoryBackend
+```
+
+Dafny appends `-py` to the output directory name automatically.
+
+**Class-ordering fix**: Dafny's Python translator emits `MemoryBackend(Backend)`
+before `Backend` is defined — a forward-reference error.  After regeneration,
+reorder `module_.py` so all ADT types and the `Backend` class appear before
+`MemoryBackend`.  The `default__` helper class (which uses `Path`) must also
+appear before `MemoryBackend`.
+
+### Running the oracle conformance tests
+
+```bash
+pytest tests/backends/test_conformance.py -k "dafny-oracle" -v
+pytest tests/backends/test_conformance_extended.py -k "dafny-oracle" -v
+```
+
+Expected: all tests pass or self-skip (GLOB capability not declared).
+Any failure indicates a conformance suite bug.
