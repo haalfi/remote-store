@@ -4255,6 +4255,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4295,7 +4306,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal" class="md-nav__link">
+  <a href="#internal_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -4356,7 +4367,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_1" class="md-nav__link">
+  <a href="#internal_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -4439,7 +4450,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_2" class="md-nav__link">
+  <a href="#internal_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -4489,7 +4500,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_3" class="md-nav__link">
+  <a href="#internal_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -8968,6 +8979,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9008,7 +9030,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal" class="md-nav__link">
+  <a href="#internal_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -9069,7 +9091,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_1" class="md-nav__link">
+  <a href="#internal_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -9152,7 +9174,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_2" class="md-nav__link">
+  <a href="#internal_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -9202,7 +9224,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#internal_3" class="md-nav__link">
+  <a href="#internal_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Internal
@@ -10287,6 +10309,16 @@
   (BE-001–BE-025 + ancillary specs) and test count (50 Dafny-derived tests).</li>
 <li>Added "Quality &amp; Testing" section to README explaining testing dimensions (spec-driven development, unit tests, PBT, formal verification, mutation testing, benchmarks, examples).</li>
 </ul>
+<h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>CodeQL hardening</strong> (BK-142): Scoped CodeQL analysis to <code>src/remote_store/</code>
+  via <code>.github/codeql/codeql-config.yml</code>; upgraded query suite from default to
+  <code>security-and-quality</code>; added <code>on.paths</code> trigger filter to skip doc-only PRs
+  (and self-trigger on workflow/config file changes); added <code>dependency-review</code>
+  job to catch CVEs in dependency changes on PRs; annotated intentional
+  <code>pickle.loads</code> (dagster ext) and <code>ruamel.yaml</code> safe-mode loader (yaml ext)
+  with CodeQL justification comments.</li>
+</ul>
 <h2 id="0211-2026-04-03">[0.21.1] - 2026-04-03<a class="headerlink" href="#0211-2026-04-03" title="Permanent link">&para;</a></h2>
 <h3 id="fixed_2">Fixed<a class="headerlink" href="#fixed_2" title="Permanent link">&para;</a></h3>
 <ul>
@@ -10368,7 +10400,7 @@
   The docs index page reflects the new 7-section layout. All import paths,
   CI workflows, and docs references updated accordingly.</li>
 </ul>
-<h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
+<h3 id="internal_1">Internal<a class="headerlink" href="#internal_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Remove Pygments <code>&lt;2.21</code> upper-bound pin</strong>: pymdown-extensions 10.21.2
   fixed the <code>filename=None</code> highlight bug. Pygments is now unpinned above 2.18.</li>
@@ -10429,7 +10461,7 @@
 <li>Fix stale pandas reference in Dagster guide — Parquet serializer
   deserializes to a PyArrow Table, not a pandas DataFrame.</li>
 </ul>
-<h3 id="internal_1">Internal<a class="headerlink" href="#internal_1" title="Permanent link">&para;</a></h3>
+<h3 id="internal_2">Internal<a class="headerlink" href="#internal_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Test quality: TESTING.md compliance</strong> (BK-137): Fixed Rule 2 (sole
   <code>isinstance</code> → behavioral assertions) and Rule 7 (copy-paste → parametrize)
@@ -10705,7 +10737,7 @@
   and filtered listing patterns.</p>
 </li>
 </ul>
-<h3 id="internal_2">Internal<a class="headerlink" href="#internal_2" title="Permanent link">&para;</a></h3>
+<h3 id="internal_3">Internal<a class="headerlink" href="#internal_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong>CI test quality gates</strong> (BK-126): AST-based assertion checker
@@ -10822,7 +10854,7 @@
   API paths in docs, completed extensions table, fixed Sphinx-style remnants.</p>
 </li>
 </ul>
-<h3 id="internal_3">Internal<a class="headerlink" href="#internal_3" title="Permanent link">&para;</a></h3>
+<h3 id="internal_4">Internal<a class="headerlink" href="#internal_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong>S3 backend code deduplication</strong> (BK-011): extracted <code>_S3Base</code> base class,
