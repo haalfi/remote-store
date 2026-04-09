@@ -1,125 +1,175 @@
-import sys
-from typing import Callable, Any, TypeVar, NamedTuple
-from math import floor
-from itertools import count
+from typing import Any, NamedTuple
 
-import module_ as module_
 import _dafny as _dafny
+import module_ as module_
 import System_ as System_
 
-# Module: module_
 
+# Module: module_
 class Error:
     @classmethod
-    def default(cls, ):
-        return lambda: Error_NotFound(_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")))
+    def default(
+        cls,
+    ):
+        return lambda: Error_NotFound(
+            _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")),
+            _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")),
+        )
+
     def __ne__(self, __o: object) -> bool:
         return not self.__eq__(__o)
+
     @property
     def is_NotFound(self) -> bool:
         return isinstance(self, Error_NotFound)
+
     @property
     def is_AlreadyExists(self) -> bool:
         return isinstance(self, Error_AlreadyExists)
+
     @property
     def is_PermissionDenied(self) -> bool:
         return isinstance(self, Error_PermissionDenied)
+
     @property
     def is_InvalidPath(self) -> bool:
         return isinstance(self, Error_InvalidPath)
+
     @property
     def is_CapabilityNotSupported(self) -> bool:
         return isinstance(self, Error_CapabilityNotSupported)
+
     @property
     def is_DirectoryNotEmpty(self) -> bool:
         return isinstance(self, Error_DirectoryNotEmpty)
+
     @property
     def is_BackendUnavailable(self) -> bool:
         return isinstance(self, Error_BackendUnavailable)
 
-class Error_NotFound(Error, NamedTuple('NotFound', [('path', Any), ('backend', Any)])):
+
+class Error_NotFound(Error, NamedTuple("NotFound", [("path", Any), ("backend", Any)])):
     def __dafnystr__(self) -> str:
-        return f'Error.NotFound({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})'
+        return f"Error.NotFound({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Error_NotFound) and self.path == __o.path and self.backend == __o.backend
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Error_AlreadyExists(Error, NamedTuple('AlreadyExists', [('path', Any), ('backend', Any)])):
+
+class Error_AlreadyExists(Error, NamedTuple("AlreadyExists", [("path", Any), ("backend", Any)])):
     def __dafnystr__(self) -> str:
-        return f'Error.AlreadyExists({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})'
+        return f"Error.AlreadyExists({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Error_AlreadyExists) and self.path == __o.path and self.backend == __o.backend
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Error_PermissionDenied(Error, NamedTuple('PermissionDenied', [('path', Any), ('backend', Any)])):
+
+class Error_PermissionDenied(Error, NamedTuple("PermissionDenied", [("path", Any), ("backend", Any)])):
     def __dafnystr__(self) -> str:
-        return f'Error.PermissionDenied({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})'
+        return f"Error.PermissionDenied({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Error_PermissionDenied) and self.path == __o.path and self.backend == __o.backend
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Error_InvalidPath(Error, NamedTuple('InvalidPath', [('path', Any), ('backend', Any)])):
+
+class Error_InvalidPath(Error, NamedTuple("InvalidPath", [("path", Any), ("backend", Any)])):
     def __dafnystr__(self) -> str:
-        return f'Error.InvalidPath({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})'
+        return f"Error.InvalidPath({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Error_InvalidPath) and self.path == __o.path and self.backend == __o.backend
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Error_CapabilityNotSupported(Error, NamedTuple('CapabilityNotSupported', [('capability', Any), ('backend', Any)])):
+
+class Error_CapabilityNotSupported(
+    Error, NamedTuple("CapabilityNotSupported", [("capability", Any), ("backend", Any)])
+):
     def __dafnystr__(self) -> str:
-        return f'Error.CapabilityNotSupported({self.capability.VerbatimString(True)}, {self.backend.VerbatimString(True)})'
+        return (
+            f"Error.CapabilityNotSupported({self.capability.VerbatimString(True)}, {self.backend.VerbatimString(True)})"
+        )
+
     def __eq__(self, __o: object) -> bool:
-        return isinstance(__o, Error_CapabilityNotSupported) and self.capability == __o.capability and self.backend == __o.backend
+        return (
+            isinstance(__o, Error_CapabilityNotSupported)
+            and self.capability == __o.capability
+            and self.backend == __o.backend
+        )
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Error_DirectoryNotEmpty(Error, NamedTuple('DirectoryNotEmpty', [('path', Any), ('backend', Any)])):
+
+class Error_DirectoryNotEmpty(Error, NamedTuple("DirectoryNotEmpty", [("path", Any), ("backend", Any)])):
     def __dafnystr__(self) -> str:
-        return f'Error.DirectoryNotEmpty({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})'
+        return f"Error.DirectoryNotEmpty({self.path.VerbatimString(True)}, {self.backend.VerbatimString(True)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Error_DirectoryNotEmpty) and self.path == __o.path and self.backend == __o.backend
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Error_BackendUnavailable(Error, NamedTuple('BackendUnavailable', [('backend', Any)])):
+
+class Error_BackendUnavailable(Error, NamedTuple("BackendUnavailable", [("backend", Any)])):
     def __dafnystr__(self) -> str:
-        return f'Error.BackendUnavailable({self.backend.VerbatimString(True)})'
+        return f"Error.BackendUnavailable({self.backend.VerbatimString(True)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Error_BackendUnavailable) and self.backend == __o.backend
+
     def __hash__(self) -> int:
         return super().__hash__()
 
 
 class Result:
     @classmethod
-    def default(cls, ):
+    def default(
+        cls,
+    ):
         return lambda: Result_Err(Error.default()())
+
     def __ne__(self, __o: object) -> bool:
         return not self.__eq__(__o)
+
     @property
     def is_Ok(self) -> bool:
         return isinstance(self, Result_Ok)
+
     @property
     def is_Err(self) -> bool:
         return isinstance(self, Result_Err)
 
-class Result_Ok(Result, NamedTuple('Ok', [('value', Any)])):
+
+class Result_Ok(Result, NamedTuple("Ok", [("value", Any)])):
     def __dafnystr__(self) -> str:
-        return f'Result.Ok({_dafny.string_of(self.value)})'
+        return f"Result.Ok({_dafny.string_of(self.value)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Result_Ok) and self.value == __o.value
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Result_Err(Result, NamedTuple('Err', [('error', Any)])):
+
+class Result_Err(Result, NamedTuple("Err", [("error", Any)])):
     def __dafnystr__(self) -> str:
-        return f'Result.Err({_dafny.string_of(self.error)})'
+        return f"Result.Err({_dafny.string_of(self.error)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Result_Err) and self.error == __o.error
+
     def __hash__(self) -> int:
         return super().__hash__()
 
@@ -127,241 +177,357 @@ class Result_Err(Result, NamedTuple('Err', [('error', Any)])):
 class Capability:
     @_dafny.classproperty
     def AllSingletonConstructors(cls):
-        return [Capability_CapRead(), Capability_CapWrite(), Capability_CapDelete(), Capability_CapList(), Capability_CapMove(), Capability_CapCopy(), Capability_CapAtomicWrite(), Capability_CapAtomicMove(), Capability_CapMetadata(), Capability_CapGlob(), Capability_CapSeekableRead()]
+        return [
+            Capability_CapRead(),
+            Capability_CapWrite(),
+            Capability_CapDelete(),
+            Capability_CapList(),
+            Capability_CapMove(),
+            Capability_CapCopy(),
+            Capability_CapAtomicWrite(),
+            Capability_CapAtomicMove(),
+            Capability_CapMetadata(),
+            Capability_CapGlob(),
+            Capability_CapSeekableRead(),
+        ]
+
     @classmethod
-    def default(cls, ):
+    def default(
+        cls,
+    ):
         return lambda: Capability_CapRead()
+
     def __ne__(self, __o: object) -> bool:
         return not self.__eq__(__o)
+
     @property
     def is_CapRead(self) -> bool:
         return isinstance(self, Capability_CapRead)
+
     @property
     def is_CapWrite(self) -> bool:
         return isinstance(self, Capability_CapWrite)
+
     @property
     def is_CapDelete(self) -> bool:
         return isinstance(self, Capability_CapDelete)
+
     @property
     def is_CapList(self) -> bool:
         return isinstance(self, Capability_CapList)
+
     @property
     def is_CapMove(self) -> bool:
         return isinstance(self, Capability_CapMove)
+
     @property
     def is_CapCopy(self) -> bool:
         return isinstance(self, Capability_CapCopy)
+
     @property
     def is_CapAtomicWrite(self) -> bool:
         return isinstance(self, Capability_CapAtomicWrite)
+
     @property
     def is_CapAtomicMove(self) -> bool:
         return isinstance(self, Capability_CapAtomicMove)
+
     @property
     def is_CapMetadata(self) -> bool:
         return isinstance(self, Capability_CapMetadata)
+
     @property
     def is_CapGlob(self) -> bool:
         return isinstance(self, Capability_CapGlob)
+
     @property
     def is_CapSeekableRead(self) -> bool:
         return isinstance(self, Capability_CapSeekableRead)
 
-class Capability_CapRead(Capability, NamedTuple('CapRead', [])):
+
+class Capability_CapRead(Capability, NamedTuple("CapRead", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapRead'
+        return "Capability.CapRead"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapRead)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapWrite(Capability, NamedTuple('CapWrite', [])):
+
+class Capability_CapWrite(Capability, NamedTuple("CapWrite", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapWrite'
+        return "Capability.CapWrite"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapWrite)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapDelete(Capability, NamedTuple('CapDelete', [])):
+
+class Capability_CapDelete(Capability, NamedTuple("CapDelete", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapDelete'
+        return "Capability.CapDelete"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapDelete)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapList(Capability, NamedTuple('CapList', [])):
+
+class Capability_CapList(Capability, NamedTuple("CapList", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapList'
+        return "Capability.CapList"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapList)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapMove(Capability, NamedTuple('CapMove', [])):
+
+class Capability_CapMove(Capability, NamedTuple("CapMove", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapMove'
+        return "Capability.CapMove"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapMove)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapCopy(Capability, NamedTuple('CapCopy', [])):
+
+class Capability_CapCopy(Capability, NamedTuple("CapCopy", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapCopy'
+        return "Capability.CapCopy"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapCopy)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapAtomicWrite(Capability, NamedTuple('CapAtomicWrite', [])):
+
+class Capability_CapAtomicWrite(Capability, NamedTuple("CapAtomicWrite", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapAtomicWrite'
+        return "Capability.CapAtomicWrite"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapAtomicWrite)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapAtomicMove(Capability, NamedTuple('CapAtomicMove', [])):
+
+class Capability_CapAtomicMove(Capability, NamedTuple("CapAtomicMove", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapAtomicMove'
+        return "Capability.CapAtomicMove"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapAtomicMove)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapMetadata(Capability, NamedTuple('CapMetadata', [])):
+
+class Capability_CapMetadata(Capability, NamedTuple("CapMetadata", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapMetadata'
+        return "Capability.CapMetadata"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapMetadata)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapGlob(Capability, NamedTuple('CapGlob', [])):
+
+class Capability_CapGlob(Capability, NamedTuple("CapGlob", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapGlob'
+        return "Capability.CapGlob"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapGlob)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Capability_CapSeekableRead(Capability, NamedTuple('CapSeekableRead', [])):
+
+class Capability_CapSeekableRead(Capability, NamedTuple("CapSeekableRead", [])):
     def __dafnystr__(self) -> str:
-        return f'Capability.CapSeekableRead'
+        return "Capability.CapSeekableRead"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Capability_CapSeekableRead)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
 
 class Path:
-    def  __init__(self):
+    def __init__(self):
         pass
 
     @staticmethod
     def default():
         return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "a"))
+
     def _Is(source__):
         d_0_s_: _dafny.Seq = source__
         return (d_0_s_) != (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")))
 
+
 class FileInfo:
     @classmethod
-    def default(cls, ):
-        return lambda: FileInfo_FileInfo(Path.default(), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")), int(0))
+    def default(
+        cls,
+    ):
+        return lambda: FileInfo_FileInfo(
+            Path.default(), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")), 0
+        )
+
     def __ne__(self, __o: object) -> bool:
         return not self.__eq__(__o)
+
     @property
     def is_FileInfo(self) -> bool:
         return isinstance(self, FileInfo_FileInfo)
 
-class FileInfo_FileInfo(FileInfo, NamedTuple('FileInfo', [('path', Any), ('name', Any), ('size', Any)])):
+
+class FileInfo_FileInfo(FileInfo, NamedTuple("FileInfo", [("path", Any), ("name", Any), ("size", Any)])):
     def __dafnystr__(self) -> str:
-        return f'FileInfo.FileInfo({self.path.VerbatimString(True)}, {self.name.VerbatimString(True)}, {_dafny.string_of(self.size)})'
+        return f"FileInfo.FileInfo({self.path.VerbatimString(True)}, {self.name.VerbatimString(True)}, {_dafny.string_of(self.size)})"
+
     def __eq__(self, __o: object) -> bool:
-        return isinstance(__o, FileInfo_FileInfo) and self.path == __o.path and self.name == __o.name and self.size == __o.size
+        return (
+            isinstance(__o, FileInfo_FileInfo)
+            and self.path == __o.path
+            and self.name == __o.name
+            and self.size == __o.size
+        )
+
     def __hash__(self) -> int:
         return super().__hash__()
 
 
 class FolderEntry:
     @classmethod
-    def default(cls, ):
-        return lambda: FolderEntry_FolderEntry(Path.default(), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")))
+    def default(
+        cls,
+    ):
+        return lambda: FolderEntry_FolderEntry(
+            Path.default(), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
+        )
+
     def __ne__(self, __o: object) -> bool:
         return not self.__eq__(__o)
+
     @property
     def is_FolderEntry(self) -> bool:
         return isinstance(self, FolderEntry_FolderEntry)
 
-class FolderEntry_FolderEntry(FolderEntry, NamedTuple('FolderEntry', [('path', Any), ('name', Any)])):
+
+class FolderEntry_FolderEntry(FolderEntry, NamedTuple("FolderEntry", [("path", Any), ("name", Any)])):
     def __dafnystr__(self) -> str:
-        return f'FolderEntry.FolderEntry({self.path.VerbatimString(True)}, {self.name.VerbatimString(True)})'
+        return f"FolderEntry.FolderEntry({self.path.VerbatimString(True)}, {self.name.VerbatimString(True)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, FolderEntry_FolderEntry) and self.path == __o.path and self.name == __o.name
+
     def __hash__(self) -> int:
         return super().__hash__()
 
 
 class FolderInfo:
     @classmethod
-    def default(cls, ):
-        return lambda: FolderInfo_FolderInfo(Path.default(), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")), int(0), int(0))
+    def default(
+        cls,
+    ):
+        return lambda: FolderInfo_FolderInfo(
+            Path.default(), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")), 0, 0
+        )
+
     def __ne__(self, __o: object) -> bool:
         return not self.__eq__(__o)
+
     @property
     def is_FolderInfo(self) -> bool:
         return isinstance(self, FolderInfo_FolderInfo)
 
-class FolderInfo_FolderInfo(FolderInfo, NamedTuple('FolderInfo', [('path', Any), ('name', Any), ('file__count', Any), ('total__size', Any)])):
+
+class FolderInfo_FolderInfo(
+    FolderInfo, NamedTuple("FolderInfo", [("path", Any), ("name", Any), ("file__count", Any), ("total__size", Any)])
+):
     def __dafnystr__(self) -> str:
-        return f'FolderInfo.FolderInfo({self.path.VerbatimString(True)}, {self.name.VerbatimString(True)}, {_dafny.string_of(self.file__count)}, {_dafny.string_of(self.total__size)})'
+        return f"FolderInfo.FolderInfo({self.path.VerbatimString(True)}, {self.name.VerbatimString(True)}, {_dafny.string_of(self.file__count)}, {_dafny.string_of(self.total__size)})"
+
     def __eq__(self, __o: object) -> bool:
-        return isinstance(__o, FolderInfo_FolderInfo) and self.path == __o.path and self.name == __o.name and self.file__count == __o.file__count and self.total__size == __o.total__size
+        return (
+            isinstance(__o, FolderInfo_FolderInfo)
+            and self.path == __o.path
+            and self.name == __o.name
+            and self.file__count == __o.file__count
+            and self.total__size == __o.total__size
+        )
+
     def __hash__(self) -> int:
         return super().__hash__()
 
 
 class Entry:
     @classmethod
-    def default(cls, ):
+    def default(
+        cls,
+    ):
         return lambda: Entry_FileEntry(_dafny.Seq({}), FileInfo.default()())
+
     def __ne__(self, __o: object) -> bool:
         return not self.__eq__(__o)
+
     @property
     def is_FileEntry(self) -> bool:
         return isinstance(self, Entry_FileEntry)
+
     @property
     def is_DirEntry(self) -> bool:
         return isinstance(self, Entry_DirEntry)
 
-class Entry_FileEntry(Entry, NamedTuple('FileEntry', [('content', Any), ('info', Any)])):
+
+class Entry_FileEntry(Entry, NamedTuple("FileEntry", [("content", Any), ("info", Any)])):
     def __dafnystr__(self) -> str:
-        return f'Entry.FileEntry({_dafny.string_of(self.content)}, {_dafny.string_of(self.info)})'
+        return f"Entry.FileEntry({_dafny.string_of(self.content)}, {_dafny.string_of(self.info)})"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Entry_FileEntry) and self.content == __o.content and self.info == __o.info
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-class Entry_DirEntry(Entry, NamedTuple('DirEntry', [])):
+
+class Entry_DirEntry(Entry, NamedTuple("DirEntry", [])):
     def __dafnystr__(self) -> str:
-        return f'Entry.DirEntry'
+        return "Entry.DirEntry"
+
     def __eq__(self, __o: object) -> bool:
         return isinstance(__o, Entry_DirEntry)
+
     def __hash__(self) -> int:
         return super().__hash__()
 
 
 class Backend:
     pass
+
     @property
     def fs(self):
         return self._fs
+
     @fs.setter
     def fs(self, value):
         self._fs = value
+
     def Exists(self, path):
         pass
 
@@ -405,9 +571,8 @@ class Backend:
         pass
 
 
-
 class default__:
-    def  __init__(self):
+    def __init__(self):
         pass
 
     @staticmethod
@@ -441,7 +606,7 @@ class default__:
                 if (len(p)) == (0):
                     return (0) + (d_0___accumulator_)
                 elif True:
-                    d_0___accumulator_ = (d_0___accumulator_) + ((1 if ((p)[0]) == (_dafny.CodePoint('/')) else 0))
+                    d_0___accumulator_ = (d_0___accumulator_) + (1 if ((p)[0]) == (_dafny.CodePoint("/")) else 0)
                     in0_ = _dafny.SeqWithoutIsStrInference((p)[1::])
                     p = in0_
                     raise _dafny.TailCall()
@@ -449,25 +614,37 @@ class default__:
 
     @staticmethod
     def Depth(root, child):
-        if (len(child)) <= ((len(root)) + (1)):
-            return -1
-        elif (_dafny.SeqWithoutIsStrInference((child)[:len(root):])) != (root):
-            return -1
-        elif ((child)[len(root)]) != (_dafny.CodePoint('/')):
+        if (root) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "."))):
+            if (child) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "."))):
+                return -1
+            elif True:
+                return default__.SlashCount(child)
+        elif (len(child)) <= ((len(root)) + (1)) or (_dafny.SeqWithoutIsStrInference((child)[: len(root) :])) != (root) or ((child)[len(root)]) != (_dafny.CodePoint("/")):
             return -1
         elif True:
-            d_0_suffix_ = _dafny.SeqWithoutIsStrInference((child)[(len(root)) + (1)::])
+            d_0_suffix_ = _dafny.SeqWithoutIsStrInference((child)[(len(root)) + (1) : :])
             return default__.SlashCount(d_0_suffix_)
 
     @staticmethod
     def IsChildOf(child, parent):
-        return (((len(child)) > ((len(parent)) + (1))) and ((_dafny.SeqWithoutIsStrInference((child)[:len(parent):])) == (parent))) and (((child)[len(parent)]) == (_dafny.CodePoint('/')))
+        if (parent) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "."))):
+            return (child) != (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ".")))
+        elif True:
+            return (
+                ((len(child)) > ((len(parent)) + (1)))
+                and ((_dafny.SeqWithoutIsStrInference((child)[: len(parent) :])) == (parent))
+            ) and (((child)[len(parent)]) == (_dafny.CodePoint("/")))
 
     @staticmethod
     def AllAncestorsTraversable(fs, p):
         def lambda0_(forall_var_0_):
             d_0_i_: int = forall_var_0_
-            return not ((((0) < (d_0_i_)) and ((d_0_i_) < ((len(p)) - (1)))) and (((p)[d_0_i_]) == (_dafny.CodePoint('/')))) or ((not(default__.PathExists(fs, _dafny.SeqWithoutIsStrInference((p)[:d_0_i_:])))) or (default__.IsDir(fs, _dafny.SeqWithoutIsStrInference((p)[:d_0_i_:]))))
+            return not (
+                (((d_0_i_) > (0)) and ((d_0_i_) < ((len(p)) - (1)))) and (((p)[d_0_i_]) == (_dafny.CodePoint("/")))
+            ) or (
+                (not (default__.PathExists(fs, _dafny.SeqWithoutIsStrInference((p)[:d_0_i_:]))))
+                or (default__.IsDir(fs, _dafny.SeqWithoutIsStrInference((p)[:d_0_i_:])))
+            )
 
         return _dafny.quantifier(_dafny.IntegerRange((0) + (1), (len(p)) - (1)), True, lambda0_)
 
@@ -507,10 +684,13 @@ class default__:
         if True:
             return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "seekable_read"))
 
+    @_dafny.classproperty
+    def Root(instance):
+        return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "."))
 
 
 class MemoryBackend(Backend):
-    def  __init__(self):
+    def __init__(self):
         self._fs: _dafny.Map = _dafny.Map({})
         self._name: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
         self._capabilities: _dafny.Set = _dafny.Set({})
@@ -518,22 +698,40 @@ class MemoryBackend(Backend):
 
     def __dafnystr__(self) -> str:
         return "_module.MemoryBackend"
+
     @property
     def fs(self):
         return self._fs
+
     @fs.setter
     def fs(self, value):
         self._fs = value
+
     @property
     def name(self):
         return self._name
+
     @property
     def capabilities(self):
         return self._capabilities
+
     def ctor__(self):
         (self)._name = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "memory"))
-        (self)._capabilities = _dafny.Set({Capability_CapRead(), Capability_CapWrite(), Capability_CapDelete(), Capability_CapList(), Capability_CapMove(), Capability_CapCopy(), Capability_CapAtomicWrite(), Capability_CapAtomicMove(), Capability_CapMetadata(), Capability_CapSeekableRead()})
-        (self).fs = _dafny.Map({})
+        (self)._capabilities = _dafny.Set(
+            {
+                Capability_CapRead(),
+                Capability_CapWrite(),
+                Capability_CapDelete(),
+                Capability_CapList(),
+                Capability_CapMove(),
+                Capability_CapCopy(),
+                Capability_CapAtomicWrite(),
+                Capability_CapAtomicMove(),
+                Capability_CapMetadata(),
+                Capability_CapSeekableRead(),
+            }
+        )
+        (self).fs = _dafny.Map({default__.Root: Entry_DirEntry()})
 
     def Exists(self, path):
         r: Result = Result.default()()
@@ -578,7 +776,7 @@ class MemoryBackend(Backend):
         with _dafny.label("0"):
             while (d_0_i_) < ((len(path)) - (1)):
                 with _dafny.c_label("0"):
-                    if ((path)[d_0_i_]) == (_dafny.CodePoint('/')):
+                    if ((path)[d_0_i_]) == (_dafny.CodePoint("/")):
                         d_1_prefix_: _dafny.Seq
                         d_1_prefix_ = _dafny.SeqWithoutIsStrInference((path)[:d_0_i_:])
                         if ((d_1_prefix_) in (self.fs)) and (((self.fs)[d_1_prefix_]).is_FileEntry):
@@ -610,7 +808,7 @@ class MemoryBackend(Backend):
         d_0_i_: int
         d_0_i_ = 1
         while (d_0_i_) < (len(path)):
-            if ((path)[d_0_i_]) == (_dafny.CodePoint('/')):
+            if ((path)[d_0_i_]) == (_dafny.CodePoint("/")):
                 d_1_prefix_: _dafny.Seq
                 d_1_prefix_ = _dafny.SeqWithoutIsStrInference((path)[:d_0_i_:])
                 if (d_1_prefix_) not in (self.fs):
@@ -622,7 +820,7 @@ class MemoryBackend(Backend):
         if ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
-        if (((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry)) and (not(overwrite)):
+        if (((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry)) and (not (overwrite)):
             r = Result_Err(Error_AlreadyExists(path, (self).name))
             return r
         (self).EnsureParents(path)
@@ -642,6 +840,7 @@ class MemoryBackend(Backend):
                         r = Result_Err(Error_InvalidPath(path, (self).name))
                         raise _dafny.Break("match0")
                 if True:
+
                     def iife0_():
                         coll0_ = _dafny.Map()
                         compr_0_: _dafny.Seq
@@ -651,8 +850,9 @@ class MemoryBackend(Backend):
                                 if ((d_0_k_) in (self.fs)) and ((d_0_k_) != (path)):
                                     coll0_[d_0_k_] = (self.fs)[d_0_k_]
                         return _dafny.Map(coll0_)
+
                     (self).fs = iife0_()
-                    
+
                     r = Result_Ok(())
                 pass
         elif True:
@@ -667,28 +867,33 @@ class MemoryBackend(Backend):
         if ((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
-        if not(((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry)):
+        if not (((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry)):
             if missing__ok:
                 r = Result_Ok(())
             elif True:
                 r = Result_Err(Error_NotFound(path, (self).name))
             return r
-        if (not(recursive)) and (default__.HasChildren(self.fs, path)):
+        if (not (recursive)) and (default__.HasChildren(self.fs, path)):
             r = Result_Err(Error_DirectoryNotEmpty(path, (self).name))
             return r
         if recursive:
+
             def iife0_():
                 coll0_ = _dafny.Map()
                 compr_0_: _dafny.Seq
                 for compr_0_ in (self.fs).keys.Elements:
                     d_0_k_: _dafny.Seq = compr_0_
                     if Path._Is(d_0_k_):
-                        if (((d_0_k_) in (self.fs)) and ((d_0_k_) != (path))) and (not(default__.IsChildOf(d_0_k_, path))):
+                        if (((d_0_k_) in (self.fs)) and ((d_0_k_) != (path))) and (
+                            not (default__.IsChildOf(d_0_k_, path))
+                        ):
                             coll0_[d_0_k_] = (self.fs)[d_0_k_]
                 return _dafny.Map(coll0_)
+
             (self).fs = iife0_()
-            
+
         elif True:
+
             def iife1_():
                 coll1_ = _dafny.Map()
                 compr_1_: _dafny.Seq
@@ -698,8 +903,9 @@ class MemoryBackend(Backend):
                         if ((d_1_k_) in (self.fs)) and ((d_1_k_) != (path)):
                             coll1_[d_1_k_] = (self.fs)[d_1_k_]
                 return _dafny.Map(coll1_)
+
             (self).fs = iife1_()
-            
+
         r = Result_Ok(())
         return r
 
@@ -728,7 +934,7 @@ class MemoryBackend(Backend):
                 d_3_d_: int
                 d_3_d_ = default__.Depth(path, d_2_k_)
                 d_4_dominated_: bool
-                if not(recursive):
+                if not (recursive):
                     d_4_dominated_ = (d_3_d_) == (0)
                 elif (max__depth) >= (0):
                     d_4_dominated_ = (d_3_d_) <= (max__depth)
@@ -811,7 +1017,9 @@ class MemoryBackend(Backend):
                                 raise Exception("assign-such-that search produced no value")
                                 pass
                             d_2_remaining_ = (d_2_remaining_) - (_dafny.Set({d_3_k_}))
-                            if (((d_3_k_) in (self.fs)) and (((self.fs)[d_3_k_]).is_FileEntry)) and (default__.IsChildOf(d_3_k_, path)):
+                            if (((d_3_k_) in (self.fs)) and (((self.fs)[d_3_k_]).is_FileEntry)) and (
+                                default__.IsChildOf(d_3_k_, path)
+                            ):
                                 d_0_file__count_ = (d_0_file__count_) + (1)
                                 d_1_total__size_ = (d_1_total__size_) + ((((self.fs)[d_3_k_]).info).size)
                         r = Result_Ok(FolderInfo_FolderInfo(path, path, d_0_file__count_, d_1_total__size_))
@@ -828,7 +1036,7 @@ class MemoryBackend(Backend):
         if ((src) in (self.fs)) and (((self.fs)[src]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(src, (self).name))
             return r
-        if not(((src) in (self.fs)) and (((self.fs)[src]).is_FileEntry)):
+        if not (((src) in (self.fs)) and (((self.fs)[src]).is_FileEntry)):
             r = Result_Err(Error_NotFound(src, (self).name))
             return r
         if ((dst) in (self.fs)) and (((self.fs)[dst]).is_DirEntry):
@@ -837,7 +1045,7 @@ class MemoryBackend(Backend):
         if (src) == (dst):
             r = Result_Ok(())
             return r
-        if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
+        if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not (overwrite)):
             r = Result_Err(Error_AlreadyExists(dst, (self).name))
             return r
         (self).EnsureParents(dst)
@@ -847,6 +1055,7 @@ class MemoryBackend(Backend):
         d_1_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_0_srcEntry_).info).size)
         d_2_newEntry_: Entry
         d_2_newEntry_ = Entry_FileEntry((d_0_srcEntry_).content, d_1_newInfo_)
+
         def iife0_():
             coll0_ = _dafny.Map()
             compr_0_: _dafny.Seq
@@ -855,8 +1064,8 @@ class MemoryBackend(Backend):
                 if ((d_3_k_) in (self.fs)) and ((d_3_k_) != (src)):
                     coll0_[d_3_k_] = (self.fs)[d_3_k_]
             return _dafny.Map(coll0_)
-        (self).fs = (iife0_()
-        ).set(dst, d_2_newEntry_)
+
+        (self).fs = (iife0_()).set(dst, d_2_newEntry_)
         r = Result_Ok(())
         return r
 
@@ -865,7 +1074,7 @@ class MemoryBackend(Backend):
         if ((src) in (self.fs)) and (((self.fs)[src]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(src, (self).name))
             return r
-        if not(((src) in (self.fs)) and (((self.fs)[src]).is_FileEntry)):
+        if not (((src) in (self.fs)) and (((self.fs)[src]).is_FileEntry)):
             r = Result_Err(Error_NotFound(src, (self).name))
             return r
         if ((dst) in (self.fs)) and (((self.fs)[dst]).is_DirEntry):
@@ -874,7 +1083,7 @@ class MemoryBackend(Backend):
         if (src) == (dst):
             r = Result_Ok(())
             return r
-        if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
+        if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not (overwrite)):
             r = Result_Err(Error_AlreadyExists(dst, (self).name))
             return r
         (self).EnsureParents(dst)
@@ -893,5 +1102,3 @@ class MemoryBackend(Backend):
         elif True:
             r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(cap), (self).name))
         return r
-
-

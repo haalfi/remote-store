@@ -72,6 +72,11 @@ and maintainable:
 - **`src == dst` handling**: Move and Copy explicitly handle self-move
   and self-copy as no-ops, with assertions proving each postcondition
   holds for the identity case.
+- **Root as `"."`**: The Dafny `Path` type requires non-empty strings,
+  so root is modeled as `"."` — seeded as `DirEntry` in the constructor.
+  `IsChildOf` and `Depth` handle `"."` via dedicated branches.  The
+  Python adapter translates `""` → `"."` once in `_str_to_dafny`,
+  eliminating per-method root guards.
 
 ## Dafny ↔ Hypothesis PBT cross-reference
 

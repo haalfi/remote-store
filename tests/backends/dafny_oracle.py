@@ -8,10 +8,10 @@ the verified Dafny spec — this module does only type marshaling.
 proofs, 0 errors).  If the oracle fails a conformance test, the *test* has a
 bug — not the oracle.  See ``sdd/formal/README.md`` § Compiled Oracle.
 
-The only adapter-level special case is root path handling: Dafny's ``Path``
-type requires non-empty strings (``type Path = s: string | s != ""``), while
-the Python Backend ABC uses ``""`` for root.  Root is always-exists,
-always-folder, never-file by convention.
+Root path translation: the Python Backend ABC uses ``""`` for root, but
+Dafny's ``Path`` type requires non-empty strings.  The Dafny spec models
+root as ``"."`` (seeded as DirEntry in the constructor).  Translation
+happens once in ``_str_to_dafny`` — no per-method root guards needed.
 """
 
 from __future__ import annotations
@@ -59,7 +59,9 @@ _ORACLE_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
 
 
 def _str_to_dafny(s: str) -> _dafny.Seq:
-    return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, s))
+    """Convert Python str to Dafny Seq[CodePoint].  Maps root "" → "."."""
+    path = s if (s and s != ".") else "."
+    return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, path))
 
 
 def _dafny_to_str(seq: _dafny.Seq) -> str:
@@ -118,8 +120,9 @@ class DafnyOracleBackend(Backend):
     """Backend wrapping the compiled Dafny MemoryBackend (53 proofs, 0 errors).
 
     This adapter contains zero behavioral logic — only type conversions
-    between Python and Dafny types, and the root-path type-boundary
-    special case (Dafny Path requires non-empty strings).
+    between Python and Dafny types.  Root is modeled as "." in Dafny
+    (seeded in the constructor); ``_str_to_dafny`` translates "" → "."
+    at the single entry point.
     """
 
     def __init__(self) -> None:
@@ -134,24 +137,18 @@ class DafnyOracleBackend(Backend):
     def capabilities(self) -> CapabilitySet:
         return _ORACLE_CAPABILITIES
 
-    # -- Root path: Dafny Path type forbids ""; handle at type boundary -------
+    # -- Predicates (bool results, no model conversion) -------------------------
 
     def exists(self, path: str) -> bool:
-        if not path or path == ".":
-            return True
         return bool(_raise_if_err(self._mb.Exists(_str_to_dafny(path))))
 
     def is_file(self, path: str) -> bool:
-        if not path or path == ".":
-            return False
         return bool(_raise_if_err(self._mb.IsFileMethod(_str_to_dafny(path))))
 
     def is_folder(self, path: str) -> bool:
-        if not path or path == ".":
-            return True
         return bool(_raise_if_err(self._mb.IsFolderMethod(_str_to_dafny(path))))
 
-    # -- Type marshaling: bytes <-> Dafny Seq, str <-> Seq[CodePoint] --------
+    # -- Type marshaling: bytes <-> Dafny Seq, str <-> Seq[CodePoint] ----------
 
     def read(self, path: str) -> io.BufferedReader:
         content = _raise_if_err(self._mb.Read(_str_to_dafny(path)))
@@ -183,20 +180,9 @@ class DafnyOracleBackend(Backend):
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         _raise_if_err(self._mb.DeleteFolder(_str_to_dafny(path), recursive, missing_ok))
 
-    # -- Return-type marshaling: Dafny FileInfo/FolderEntry -> Python models --
+    # -- Return-type marshaling: Dafny FileInfo/FolderEntry -> Python models ----
 
     def list_files(self, path: str, *, recursive: bool = False, max_depth: int | None = None) -> Iterator[FileInfo]:
-        if not path or path == ".":
-            # Root: Dafny Path forbids ""; enumerate fs at type boundary.
-            now = datetime.now(tz=timezone.utc)
-            for k, v in self._mb.fs.items():
-                if not v.is_FileEntry:
-                    continue
-                p = _dafny_to_str(k)
-                depth = p.count("/")
-                if not recursive and depth == 0 or recursive and (max_depth is None or depth <= max_depth):
-                    yield _to_file_info(p, int(v.info.size), now)
-            return
         result = _raise_if_err(
             self._mb.ListFiles(_str_to_dafny(path), recursive, -1 if max_depth is None else max_depth)
         )
@@ -205,14 +191,6 @@ class DafnyOracleBackend(Backend):
             yield _to_file_info(_dafny_to_str(fi.path), int(fi.size), now)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
-        if not path or path == ".":
-            # Root: Dafny Path forbids ""; enumerate fs at type boundary.
-            for k, v in self._mb.fs.items():
-                if v.is_DirEntry:
-                    p = _dafny_to_str(k)
-                    if "/" not in p:
-                        yield _to_folder_entry(p)
-            return
         for fe in _raise_if_err(self._mb.ListFolders(_str_to_dafny(path))):
             yield _to_folder_entry(_dafny_to_str(fe.path))
 
@@ -221,18 +199,9 @@ class DafnyOracleBackend(Backend):
         return _to_file_info(_dafny_to_str(dafny_fi.path), int(dafny_fi.size), datetime.now(tz=timezone.utc))
 
     def get_folder_info(self, path: str) -> FolderInfo:
-        if not path or path == ".":
-            # Root: Dafny Path forbids ""; compute stats at type boundary.
-            file_count = 0
-            total_size = 0
-            for v in self._mb.fs.values():
-                if v.is_FileEntry:
-                    file_count += 1
-                    total_size += int(v.info.size)
-            return FolderInfo(path=RemotePath(""), file_count=file_count, total_size=total_size)
         dafny_fi = _raise_if_err(self._mb.GetFolderInfo(_str_to_dafny(path)))
         return FolderInfo(
-            path=RemotePath(_dafny_to_str(dafny_fi.path)),
+            path=RemotePath(path),
             file_count=int(dafny_fi.file__count),
             total_size=int(dafny_fi.total__size),
         )

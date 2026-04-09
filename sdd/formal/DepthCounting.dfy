@@ -53,6 +53,7 @@ lemma SlashCountZero(s: string)
 //   Depth == 0
 lemma ImmediateChildDepthIsZero(root: string, fileName: string)
   requires root != ""
+  requires root != "."  // Root uses Depth(".", child) = SlashCount(child); this lemma is for prefix-based roots.
   requires fileName != ""
   // Only fileName must be slash-free; root may contain slashes
   // (e.g. "data/raw/subdir").  Depth only examines the suffix
@@ -88,6 +89,7 @@ lemma ImmediateChildDepthIsZero(root: string, fileName: string)
 // Property 2: max_depth=0 includes immediate children.
 lemma MaxDepthZeroIsImmediate(root: string, fileName: string)
   requires root != ""
+  requires root != "."  // Root uses Depth(".", child) = SlashCount(child); this lemma is for prefix-based roots.
   requires fileName != ""
   requires forall i | 0 <= i < |fileName| :: fileName[i] != '/'
   ensures Depth(root, root + "/" + fileName) <= 0
@@ -105,14 +107,21 @@ lemma ChildHasNonNegativeDepth(root: string, child: string)
   requires IsChildOf(child, root)
   ensures Depth(root, child) >= 0
 {
-  // IsChildOf guarantees: |child| > |root| + 1, prefix match, separator.
-  // Depth's first three guards all pass, so it returns SlashCount(suffix) >= 0.
-  assert |child| > |root| + 1;
-  assert child[..|root|] == root;
-  assert child[|root|] == '/';
-  var suffix := child[|root| + 1..];
-  assert Depth(root, child) == SlashCount(suffix);
-  // SlashCount returns nat (>= 0).
+  if root == "." {
+    // IsChildOf(child, ".") means child != ".".
+    // Depth(".", child) == SlashCount(child) which is nat >= 0.
+    assert child != ".";
+    assert Depth(root, child) == SlashCount(child);
+  } else {
+    // IsChildOf guarantees: |child| > |root| + 1, prefix match, separator.
+    // Depth's first three guards all pass, so it returns SlashCount(suffix) >= 0.
+    assert |child| > |root| + 1;
+    assert child[..|root|] == root;
+    assert child[|root|] == '/';
+    var suffix := child[|root| + 1..];
+    assert Depth(root, child) == SlashCount(suffix);
+    // SlashCount returns nat (>= 0).
+  }
 }
 
 // Property 4: Depth filter is inclusive — depth == maxDepth passes.

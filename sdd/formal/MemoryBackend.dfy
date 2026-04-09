@@ -9,7 +9,7 @@ include "BackendContract.dfy"
 class MemoryBackend extends Backend {
 
   constructor ()
-    ensures fs == map[]
+    ensures fs == map[Root := DirEntry]
     ensures name == "memory"
     ensures capabilities == {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                              CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead}
@@ -17,7 +17,7 @@ class MemoryBackend extends Backend {
     name := "memory";
     capabilities := {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                      CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead};
-    fs := map[];
+    fs := map[Root := DirEntry];
   }
 
   method Exists(path: Path) returns (r: Result<bool>)
