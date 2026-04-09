@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-04-09
+
 ### Added
 
 - **Dafny-compiled oracle as conformance gate** (BK-139c, ID-133): The

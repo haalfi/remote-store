@@ -639,6 +639,22 @@ v0.21.1 was a pure bugfix release — no new features, no API changes. A systema
 
 **Housekeeping shipped alongside.** Examples were reorganized from a flat directory into seven topical subdirectories. The Pygments upper-bound pin was removed after pymdown-extensions fixed the upstream bug. `pyproject.toml` dependency lists were deduplicated via Hatch's `features` key (BK-138).
 
+### Phase 33: Formal Verification as a Quality Gate (v0.22.0)
+
+v0.22.0 crossed a line the previous releases were building toward: mathematically verified correctness running as part of the regular test suite.
+
+**The Dafny oracle became a conformance gate.** The formal `MemoryBackend.dfy` (53 verified proofs, 0 errors) was compiled to Python via `dafny translate py` and registered as `DafnyOracleBackend`. It now runs through all 150 conformance tests on every CI run. If the oracle passes a test, the test is known-correct by construction — the test suite validates itself against a machine-verified reference. Handwritten oracle prototypes from the POC phase were deleted; the compiled oracle supersedes them.
+
+**A new capability flag exposed an atomicity gap.** `Capability.ATOMIC_MOVE` was added to mark backends where `move()` is guaranteed atomic under concurrent access. Local, Memory, and SQLBlob declare it; S3, S3-PyArrow, Azure, and SFTP do not (all use copy-then-delete semantics). This made atomicity a queryable property — `store.supports(Capability.ATOMIC_MOVE)` — rather than documentation-only knowledge. The Dafny formal layer was updated in parallel.
+
+**Extended conformance: postconditions become tests.** 42 new test functions (~53 parameterized cases per backend) were derived directly from Dafny `BackendContract.dfy` postconditions. They cover error fidelity, precondition ordering, listing completeness, depth filtering, move/copy semantics, resource cleanup, and operational consistency. Marked `@pytest.mark.extended_conformance` for CI isolation. Error fidelity testing at this level immediately surfaced `InvalidPath` vs `NotFound` inconsistencies across backends (ID-131).
+
+**Type-mismatch errors were systematically wrong.** `read()`, `read_bytes()`, `delete()`, and related methods on wrong path types (file vs. directory) raised `NotFound` in several backends when the Dafny postconditions required `InvalidPath`. Fixed uniformly across LocalBackend, MemoryBackend, and SFTPBackend. Self-move and self-copy were also fixed: `src == dst` is now a no-op rather than leaking `SameFileError` or losing data.
+
+**Two bug-prevention mechanisms shipped.** `ResourceWarning` `__del__` guards were added to SFTPBackend, AzureBackend, and AsyncAzureBackend — if `.close()` was never called, Python's garbage collector now emits a warning at the object boundary rather than silently leaking connections. The Ruff `BLE001` rule (blind exception) was enabled across the codebase; 44 intentional broad catches were annotated with `# noqa: BLE001`, making accidental new catches visible immediately.
+
+**What changed in the way of working.** This release showed that formal verification and test generation aren't separate activities — the same Dafny spec that proves the algorithm correct also produces the test oracles and reveals the gaps in the real backends. The investment in `sdd/formal/` from BK-140 paid a concrete dividend: the compiled oracle and the extended conformance suite are direct outputs of the formal layer, not additional work.
+
 ## Reproducing This Workflow
 
 If you want to try this approach on your own project:
