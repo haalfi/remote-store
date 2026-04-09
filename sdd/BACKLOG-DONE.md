@@ -5,6 +5,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-142 — Harden CodeQL CI: scope, query suite, gating, dep review, annotations**
+  Scoped CodeQL analysis to `src/remote_store/` via config file; upgraded query
+  suite to `security-and-quality`; added `on.paths` filter on push (skip doc-only
+  merges); removed `paths` filter from `pull_request` trigger so the status check
+  is always posted (prevents branch-protection merge blocks); added
+  `dependency-review` job for CVE scanning on PRs; annotated intentional
+  `pickle.loads` and `ruamel.yaml` safe-mode loader with CodeQL justification
+  comments. Manual step: enable "CodeQL / Analyze (Python)" as a required status
+  check in GitHub branch protection settings.
+
 - [x] **BK-139c — Dafny-compiled oracle as conformance gate**
   Compiled `MemoryBackend.dfy` to Python via `dafny translate py` (53 verified
   proofs, 0 errors) and wrapped it as `DafnyOracleBackend` in
