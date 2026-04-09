@@ -95,6 +95,41 @@ Before committing, check whether your change has cross-file dependencies:
 
 ---
 
+## Local toolchain
+
+`session-init.sh` auto-installs on **Linux + root only** (claude.ai/code containers).
+On-prem sessions get a warning; install manually.
+
+| Tool  | Purpose                          | Auto-install trigger            | Version |
+|-------|----------------------------------|---------------------------------|---------|
+| hatch | Runs all dev scripts             | Every session (if missing)      | latest  |
+| dafny | Verifies `sdd/formal/*.dfy`      | BK-139c is `[~]` in BACKLOG.md | 4.9.1   |
+
+**Manual install — hatch:**
+```bash
+uv tool install hatch          # uv is present in the container env
+# fallback: python3 -m pip install hatch
+```
+
+**Manual install — dafny 4.9.1, Linux x64:**
+```bash
+curl -fsSL https://github.com/dafny-lang/dafny/releases/download/v4.9.1/dafny-4.9.1-x64-ubuntu-20.04.zip \
+  -o /tmp/dafny.zip
+unzip -q /tmp/dafny.zip -d /tmp/dafny-src
+mkdir -p /usr/local/lib/dafny
+cp -r /tmp/dafny-src/dafny/. /usr/local/lib/dafny/
+printf '#!/bin/bash\nexec /usr/local/lib/dafny/dafny "$@"\n' > /usr/local/bin/dafny
+chmod +x /usr/local/bin/dafny
+```
+
+**Manual install — dafny, macOS:**
+```bash
+brew install dafny
+# or download macos zip from https://github.com/dafny-lang/dafny/releases/tag/v4.9.1
+```
+
+---
+
 ## Repository layout
 
 ```
