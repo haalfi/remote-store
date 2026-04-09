@@ -889,13 +889,20 @@ class AsyncAzureBackend(AsyncBackend):
                 return
         except Exception:  # noqa: BLE001
             return
+        try:  # noqa: SIM105 — cannot use contextlib.suppress during shutdown
+            self._del_cleanup()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _del_cleanup(self) -> None:
+        """Emit ResourceWarning; called by __del__ without contextlib."""
         try:
             import warnings
 
             warnings.warn(
                 f"Unclosed {type(self).__name__}. Call .aclose() or use an async context manager.",
                 ResourceWarning,
-                stacklevel=1,
+                stacklevel=2,
             )
         except Exception:  # noqa: BLE001
             pass

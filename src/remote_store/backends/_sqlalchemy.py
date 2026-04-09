@@ -169,7 +169,6 @@ class ResultSerializer(Protocol):
         Returns:
             Serialized bytes.
         """
-        ...
 
 
 class ArrowSerializer:

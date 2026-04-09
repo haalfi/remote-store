@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-import os  # noqa: TC003
-from typing import BinaryIO, Union
+from typing import TYPE_CHECKING, BinaryIO, Union
+
+if TYPE_CHECKING:
+    import os
 
 PathLike = Union[str, "os.PathLike[str]"]  # noqa: UP007
 WritableContent = BinaryIO | bytes

@@ -45,6 +45,13 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-143 — Resolve all 31 open CodeQL security/quality alerts**
+  31 alerts on master (1 High, 1 Error, 2 Warning, 27 Note).
+  Covers: overly permissive file permissions (SFTP known_hosts), missing
+  `super().__init__()` in `ProxyStore`, `__eq__` not overridden, file not
+  always closed, unused imports, `...` stubs flagged as "statement has no
+  effect", overly complex `__del__` methods, empty except, unused globals.
+
 - [ ] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
   Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Items 4, 5, 7 shipped.

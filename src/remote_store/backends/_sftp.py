@@ -694,20 +694,26 @@ class SFTPBackend(Backend):
     # region: dunder methods
 
     def __del__(self) -> None:
-        # Guard against interpreter shutdown: module globals (contextlib,
-        # warnings) may already be None.  Use only inline try/except.
+        # Guard against interpreter shutdown: module globals may be None.
         try:
             if getattr(self, "_sftp_client", None) is None and getattr(self, "_ssh_client", None) is None:
                 return
         except Exception:  # noqa: BLE001
             return
+        try:  # noqa: SIM105 — cannot use contextlib.suppress during shutdown
+            self._del_cleanup()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _del_cleanup(self) -> None:
+        """Warn and inline-close clients; called by __del__ without contextlib."""
         try:
             import warnings
 
             warnings.warn(
                 f"Unclosed {type(self).__name__}. Call .close() or use a context manager.",
                 ResourceWarning,
-                stacklevel=1,
+                stacklevel=2,
             )
         except Exception:  # noqa: BLE001
             pass
@@ -877,7 +883,7 @@ class SFTPBackend(Backend):
         if parent and not os.path.isdir(parent):
             os.makedirs(parent, mode=0o700, exist_ok=True)
         if not os.path.isfile(path):
-            fd = os.open(path, os.O_CREAT | os.O_WRONLY, 0o644)
+            fd = os.open(path, os.O_CREAT | os.O_WRONLY, 0o600)
             os.close(fd)
 
     def _close_clients(self) -> None:

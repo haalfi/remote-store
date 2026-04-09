@@ -6,6 +6,21 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **CodeQL alerts** (BK-143): Resolved all 31 open CodeQL security/quality
+  alerts: overly permissive file permissions on SFTP `known_hosts` file
+  (`0o644` → `0o600`); missing `super().__init__()` in `ProxyStore` and
+  missing `__eq__`/`__hash__` override; refactored `read_seekable` to make
+  resource flow explicit; simplified overly-complex `__del__` methods by
+  extracting `_del_cleanup()` helpers (SFTP, Azure, AsyncAzure); replaced
+  empty `except: pass` with `contextlib.suppress`; removed unused `log`
+  logger and redundant imports; eliminated `...` no-op statements from
+  Protocol/abstract method stubs; fixed `cast("BinaryIO", …)` string
+  references to real `cast(BinaryIO, …)` calls; moved `import os` to
+  `TYPE_CHECKING`; made `_S3_CA_ENV_VARS` a default parameter so it is
+  referenced within its defining module.
+
 ## [0.22.0] - 2026-04-09
 
 ### Added

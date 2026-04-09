@@ -18,7 +18,7 @@ import contextlib
 import io
 import logging
 import tempfile
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, cast
 
 try:
     import pyarrow as pa  # type: ignore[import-untyped]
@@ -39,7 +39,6 @@ from remote_store._errors import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from typing import BinaryIO
 
     from remote_store._store import Store
 

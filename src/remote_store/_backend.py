@@ -147,18 +147,21 @@ class Backend(abc.ABC):
             InvalidPath: If *path* names a directory, not a file.
         """
         stream = self.read(path)
-        if stream.seekable():
-            return stream
-        spool: BinaryIO = _SeekableSpool(max_size=8 * 1024 * 1024)  # type: ignore[assignment]
-        try:
-            shutil.copyfileobj(stream, spool)
-        except BaseException:
-            spool.close()
-            raise
-        finally:
-            stream.close()
-        spool.seek(0)
-        return spool
+        if not stream.seekable():
+            # Not seekable — spool into a SpooledTemporaryFile; stream is
+            # always closed via the finally block regardless of outcome.
+            spool: BinaryIO = _SeekableSpool(max_size=8 * 1024 * 1024)  # type: ignore[assignment]
+            try:
+                shutil.copyfileobj(stream, spool)
+            except BaseException:
+                spool.close()
+                raise
+            finally:
+                stream.close()
+            spool.seek(0)
+            return spool
+        # Already seekable — caller owns the stream lifetime.
+        return stream
 
     @abc.abstractmethod
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:

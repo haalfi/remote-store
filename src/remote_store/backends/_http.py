@@ -61,11 +61,14 @@ class HttpResponse:
 class HttpTransport(Protocol):
     """Internal protocol for pluggable HTTP transports."""
 
-    def get(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse: ...
+    def get(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:
+        pass
 
-    def head(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse: ...
+    def head(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:
+        pass
 
-    def close(self) -> None: ...
+    def close(self) -> None:
+        pass
 
 
 _TransportMethod = Callable[[str, dict[str, str], float], HttpResponse]

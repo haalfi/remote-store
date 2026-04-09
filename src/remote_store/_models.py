@@ -26,12 +26,10 @@ class PathEntry(typing.Protocol):
     @property
     def name(self) -> str:
         """Entry name (final path component)."""
-        ...
 
     @property
     def path(self) -> RemotePath:
         """Normalized remote path."""
-        ...
 
 
 @dataclasses.dataclass(frozen=True)
