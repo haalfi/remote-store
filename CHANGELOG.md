@@ -117,6 +117,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   (BE-001–BE-025 + ancillary specs) and test count (50 Dafny-derived tests).
 - Added "Quality & Testing" section to README explaining testing dimensions (spec-driven development, unit tests, PBT, formal verification, mutation testing, benchmarks, examples).
 
+### Internal
+
+- **CodeQL hardening** (BK-142): Scoped CodeQL analysis to `src/remote_store/`
+  via `.github/codeql/codeql-config.yml`; upgraded query suite from default to
+  `security-and-quality`; added `on.paths` trigger filter to skip doc-only PRs
+  (and self-trigger on workflow/config file changes); added `dependency-review`
+  job to catch CVEs in dependency changes on PRs; annotated intentional
+  `pickle.loads` (dagster ext) and `ruamel.yaml` safe-mode loader (yaml ext)
+  with CodeQL justification comments.
+
 ## [0.21.1] - 2026-04-03
 
 ### Fixed

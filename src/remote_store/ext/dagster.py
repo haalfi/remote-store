@@ -100,7 +100,7 @@ class PickleSerializer:
 
     def deserialize(self, data: bytes) -> Any:
         """Deserialize using pickle."""
-        return pickle.loads(data)  # noqa: S301
+        return pickle.loads(data)  # noqa: S301  # CodeQL: intentional — caller explicitly selects PickleSerializer; data originates from the user's own store
 
 
 class JsonSerializer:

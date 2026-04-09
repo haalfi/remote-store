@@ -1,0 +1,7 @@
+name: "remote-store CodeQL config"
+
+queries:
+  - uses: security-and-quality
+
+paths:
+  - src/remote_store

@@ -45,6 +45,20 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [~] **BK-142 — Harden CodeQL CI: scope, query suite, gating, dep review, annotations**
+  Current `codeql.yml` runs with defaults and is not gated — findings post to the
+  Security tab but don't block merges. Five concrete improvements:
+  1. **Path filter** — skip CodeQL on doc-only PRs via GitHub's native `on.paths`
+     trigger filter (distinct from `ci.yml`'s `changes` job approach).
+  2. **Config file** (`.github/codeql/codeql-config.yml`) — scope analysis to
+     `src/remote_store/`, upgrade query suite from default to `security-and-quality`.
+  3. **Wire config into `codeql.yml`** — `config-file:` field on the init step.
+  4. **Dependency review** — add `dependency-review-action` job (CVEs in deps on PRs).
+  5. **Annotate intentional risks** — `ext/dagster.py` `pickle.loads` and
+     `ext/yaml.py` ruamel path; add structured comments so real findings stay visible.
+  Note: making CodeQL a required status check must be done in GitHub branch
+  protection settings (not in YAML) — document this as a manual step.
+
 - [~] **BK-139c — Dafny-Python bridge: unified oracle for backend conformance**
   POC completed (see `sdd/formal/POC/`). Proved two viable approaches to bridging
   formal Dafny specification and runtime Python testing.
