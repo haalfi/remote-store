@@ -50,7 +50,7 @@ def _get_yaml_loader() -> Callable[..., Any]:
         from ruamel.yaml import YAML
 
         _yaml = YAML(typ="safe")
-        return _yaml.load  # type: ignore[no-any-return]
+        return _yaml.load  # type: ignore[no-any-return]  # CodeQL: safe — YAML(typ="safe") disables arbitrary tag execution, equivalent to pyyaml safe_load
     except ImportError:
         pass
     raise ModuleNotFoundError(  # pragma: no cover

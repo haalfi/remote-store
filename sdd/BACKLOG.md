@@ -45,7 +45,7 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-142 — Harden CodeQL CI: scope, query suite, gating, dep review, annotations**
+- [~] **BK-142 — Harden CodeQL CI: scope, query suite, gating, dep review, annotations**
   Current `codeql.yml` runs with defaults and is not gated — findings post to the
   Security tab but don't block merges. Five concrete improvements:
   1. **Path filter** — skip CodeQL on doc-only PRs (mirrors `ci.yml` pattern).

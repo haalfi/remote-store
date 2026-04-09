@@ -1,12 +1,22 @@
 name: CodeQL
 
+# NOTE: To enforce CodeQL as a merge gate, add "CodeQL / Analyze (Python)"
+# as a required status check in GitHub → Settings → Branches → branch
+# protection rules for master. This cannot be configured in YAML.
+
 on:
   push:
     branches: [master]
+    paths:
+      - 'src/**'
+      - 'pyproject.toml'
   pull_request:
     branches: [master]
+    paths:
+      - 'src/**'
+      - 'pyproject.toml'
   schedule:
-    - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
+    - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC — full sweep regardless of paths
 
 jobs:
   analyze:
@@ -24,6 +34,22 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: python
+          config-file: .github/codeql/codeql-config.yml
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    # Only meaningful on PRs — compares dependency changes against known CVEs
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
