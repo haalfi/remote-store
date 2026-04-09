@@ -7816,6 +7816,10 @@ paramiko. Explicit host key verification and Azure Key Vault PEM support.</p>
 
 
         <p>SFTP backend using pure paramiko.</p>
+<p><code>move()</code> attempts <code>posix_rename</code> (atomic on POSIX-compliant servers),
+then falls back to <code>rename</code>, and finally to a stream copy followed by
+a delete.  Because atomicity cannot be guaranteed across all servers,
+<code>ATOMIC_MOVE</code> is not declared.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

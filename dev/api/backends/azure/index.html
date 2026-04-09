@@ -7816,6 +7816,11 @@ ADLS Gen2. Adapts at runtime to Hierarchical Namespace accounts.</p>
 <p>Uses the Blob SDK for non-HNS accounts (plain Blob Storage, Azurite) and
 the DataLake SDK for HNS accounts (ADLS Gen2) to get atomic rename and
 real directory support.</p>
+<p><code>move()</code> on non-HNS accounts is implemented as a server-side copy
+followed by a blob delete.  This is non-atomic: a failure between the
+two steps may leave both source and destination present.  HNS accounts
+use <code>rename_file</code> which is atomic, but since the backend cannot
+guarantee HNS at construction time, <code>ATOMIC_MOVE</code> is not declared.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

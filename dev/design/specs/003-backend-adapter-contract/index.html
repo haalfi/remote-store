@@ -4743,6 +4743,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#cap-007-quality-flag-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CAP-007: Quality-Flag Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8162,6 +8173,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#cap-007-quality-flag-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CAP-007: Quality-Flag Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8493,7 +8515,7 @@
 <hr />
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <h3 id="cap-001-capability-enum-members">CAP-001: Capability Enum Members<a class="headerlink" href="#cap-001-capability-enum-members" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>Capability</code> is an enum with members: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>.</p>
+<p><strong>Invariant:</strong> <code>Capability</code> is an enum with members: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>ATOMIC_MOVE</code>, <code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>.</p>
 <h3 id="cap-002-capabilityset-construction">CAP-002: CapabilitySet Construction<a class="headerlink" href="#cap-002-capabilityset-construction" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>CapabilitySet</code> is constructed from a <code>set[Capability]</code>.
 <strong>Example:</strong>
@@ -8513,6 +8535,13 @@
 </code></pre></div></p>
 <h3 id="cap-006-immutability">CAP-006: Immutability<a class="headerlink" href="#cap-006-immutability" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>CapabilitySet</code> is immutable after construction. The internal set cannot be modified.</p>
+<h3 id="cap-007-quality-flag-capabilities">CAP-007: Quality-Flag Capabilities<a class="headerlink" href="#cap-007-quality-flag-capabilities" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Some capabilities are <em>quality flags</em> — they describe a behavioural property of an existing method rather than gating access to a new one. Declaring a quality flag does <strong>not</strong> enable any additional method; omitting it does <strong>not</strong> disable any method.</p>
+<p><strong>Current quality flags:</strong></p>
+<ul>
+<li><code>ATOMIC_MOVE</code> — <code>move()</code> is guaranteed atomic under concurrent access (i.e. any reader observes either the pre-move or the post-move state, never a partial state). Backends that implement move as copy-then-delete do <strong>not</strong> declare this flag. Callers <strong>must not</strong> assume atomicity; they <strong>should</strong> check <code>Store.supports(Capability.ATOMIC_MOVE)</code> before relying on atomic rename semantics.</li>
+<li><code>SEEKABLE_READ</code> — <code>read()</code> always returns a natively seekable stream (<code>stream.seekable()</code> is <code>True</code>) with zero overhead. Backends that omit this flag still support <code>Store.read_seekable()</code> via an optimized override or spool fallback, but <code>read()</code> itself may return a non-seekable stream. The flag describes a property of <code>read()</code> rather than gating any additional method.</li>
+</ul>
 <hr />
 <h2 id="backend-abc">Backend ABC<a class="headerlink" href="#backend-abc" title="Permanent link">&para;</a></h2>
 <h3 id="be-001-abstract-base-class">BE-001: Abstract Base Class<a class="headerlink" href="#be-001-abstract-base-class" title="Permanent link">&para;</a></h3>

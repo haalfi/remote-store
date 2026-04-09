@@ -7777,6 +7777,10 @@ S3-compatible service (MinIO, DigitalOcean Spaces, etc.).</p>
 
 
         <p>S3-compatible object storage backend using s3fs.</p>
+<p><code>move()</code> is implemented as a server-side copy followed by a delete.
+This is non-atomic: a crash or network error between the two steps may
+leave both source and destination present.  <code>ATOMIC_MOVE</code> is not
+declared.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

@@ -8122,7 +8122,7 @@ use a Registry with declarative config:</p>
 <td><code>paramiko</code></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
-<td style="text-align: center;">Yes**</td>
+<td style="text-align: center;">—**</td>
 </tr>
 <tr>
 <td>Azure Blob / ADLS</td>
@@ -8151,7 +8151,7 @@ use a Registry with declarative config:</p>
 </tbody>
 </table>
 <p>* Same-filesystem only; cross-filesystem falls back to copy+delete.
-** Via <code>posix_rename</code> on most OpenSSH servers; falls back to copy+delete.</p>
+** Attempts <code>posix_rename</code> (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so <code>ATOMIC_MOVE</code> is not declared.</p>
 <p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only (<code>{READ, METADATA}</code>). SQL Query is read-only (<code>{READ, LIST, METADATA, GLOB, SEEKABLE_READ}</code>) — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. Seekable reads are available on all backends via <code>Store.read_seekable()</code> — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <p>The Store provides methods across read/write, browsing, management, and utility. Key highlights:</p>
@@ -8169,9 +8169,10 @@ use a Registry with declarative config:</p>
 <a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>                <span class="c1"># delete</span>
 <a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>
 <a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;subfolder&quot;</span><span class="p">)</span>                        <span class="c1"># scoped child store</span>
-<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_WRITE</span><span class="p">)</span>         <span class="c1"># runtime capability check</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>               <span class="c1"># resolution plan (introspection)</span>
-<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>                                    <span class="c1"># health check</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_WRITE</span><span class="p">)</span>         <span class="c1"># runtime capability check (gates a method)</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_MOVE</span><span class="p">)</span>          <span class="c1"># quality flag — move() atomicity guarantee</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>               <span class="c1"># resolution plan (introspection)</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>                                    <span class="c1"># health check</span>
 </code></pre></div>
 <p>For the full method list, see the <a href="https://docs.remotestore.dev/stable/api/store/">API reference</a>. All write, move, and copy methods accept <code>overwrite=True</code> to replace existing files.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>

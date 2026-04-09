@@ -7781,6 +7781,10 @@ that uses PyArrow's C++ S3 filesystem for higher throughput on large files.</p>
 Uses PyArrow's C++ S3 filesystem for data-path operations (higher throughput
 for large files) and s3fs for control-path operations (listing, metadata,
 deletion).</p>
+<p><code>move()</code> is implemented as a PyArrow copy followed by an s3fs delete.
+This is non-atomic: a crash or network error between the two steps may
+leave both source and destination present.  <code>ATOMIC_MOVE</code> is not
+declared.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

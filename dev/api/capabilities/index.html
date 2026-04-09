@@ -7837,7 +7837,9 @@
 
 
         <p>Operations a backend may support.</p>
-<p>Each value gates one or more <code>Store</code> methods.
+<p>Most values gate one or more <code>Store</code> methods; some are quality
+flags that inform callers about backend behaviour without gating a
+specific method (see <code>ATOMIC_MOVE</code>).
 Use <code>Store.supports()</code> to query at runtime.</p>
 <p>Values:</p>
 <ul>
@@ -7856,6 +7858,13 @@ Use <code>Store.supports()</code> to query at runtime.</p>
 <li><code>ATOMIC_WRITE</code> -- Write via temp-file-and-rename so readers never
   see partial content. Gates <code>Store.write_atomic()</code> and
   <code>Store.open_atomic()</code>.</li>
+<li><code>ATOMIC_MOVE</code> -- Quality flag: <code>move()</code> is guaranteed atomic
+  under concurrent access (e.g. Local via <code>os.rename</code>, Memory under
+  lock, SQL in a transaction). Does <strong>not</strong> gate a method — call
+  <code>store.supports(Capability.ATOMIC_MOVE)</code> before relying on
+  atomic rename semantics. Backends that implement move as
+  copy-then-delete (e.g. S3, Azure non-HNS) do not declare this
+  capability.</li>
 <li><code>METADATA</code> -- Retrieve file or folder metadata.
   Gates <code>Store.get_file_info()</code> and <code>Store.get_folder_info()</code>.</li>
 <li><code>GLOB</code> -- Native pattern matching against file paths.

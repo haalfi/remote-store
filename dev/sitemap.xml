@@ -2,874 +2,874 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.remotestore.dev/dev/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/SUMMARY/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/architecture/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/async/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/batch-operations/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/cache/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/capabilities-matrix/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/changelog/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/choosing-a-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/concurrency/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/contributing/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/custom-backend-guide/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/dagster/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/data-lake-patterns/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/development-story/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/extensions/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/further-reading/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/getting-started/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/glob-pattern-matching/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/health-check/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/migration/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/observe/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/parquet-datasets/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/performance/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/pyarrow-adapter/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/retry/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/security-model/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/transfer-operations/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/troubleshooting/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/aio/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/capabilities/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/config/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/errors/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/info/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/models/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/path/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/proxy/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/registry/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/sftp-utils/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/store/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/azure/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/http/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/local/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/memory/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/s3-pyarrow/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/s3/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/sftp/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/sql-blob/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/backends/sql-query/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/arrow/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/batch/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/cache/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/dagster/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/glob/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/integrity/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/observe/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/otel/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/parquet/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/partition/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/pydantic/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/streams/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/transfer/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/yaml/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/azure/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/http/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/local/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/memory/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/s3-pyarrow/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/s3/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/sftp/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/sql-blob/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/backends/sql-query/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/design-spec/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/process/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/testing-standards/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0001-architecture-store-registry-backends/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0002-config-resolution-no-merge/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0003-fsspec-is-implementation-detail/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0004-empty-path-semantics/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0005-native-path-resolution/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0006-documentation-architecture/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0007-docs-src-literate-nav/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0008-extension-architecture/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0009-glob-three-tier-design/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0010-observe-proxy-pattern/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0011-retry-per-backend-native/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0012-async-store-backend-api/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0013-drop-optional-extension-reexports/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0015-proxystore-publicly-documented/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0016-seekable-read-three-tier-design/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0017-seekable-read-on-store-api/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0018-sqlalchemy-two-class-architecture/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0019-multi-agent-orchestration/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0020-orchestrate-iterative-convergence/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-async-store-api-round2/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-async-store-api/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-azure-pyarrow-optimization/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-backend-contract-completeness/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-benchmark-suite-v2/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-bug-prevention-beyond-testing/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-dagster-extension/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-depth-limited-listing/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-docs-landing-page/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-example-testing/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-fastapi-docs/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-feature-discoverability/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-google-docstring-migration/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-health-check/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-logging-monitoring-tracing/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-medallion-dagster-showcase/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-openrouter-integration/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-readonly-http-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-resolve-spec-proposal/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-retry-policy/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-seekable-read/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-sqlalchemy-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-store-api-refinement/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-store-config/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-store-middleware-architecture/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-testing-best-practices/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/research/research-v1-communication-plan/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0001-azure-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0002-pyarrow-filesystem-adapter/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0003-s3-pyarrow-read-optimization/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0004-streaming-atomic-writes/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0005-code-deduplication/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0006-naming-inconsistencies/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0007-doc-cross-links/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0008-parquet-dataset-storage/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0009-multi-agent-orchestration/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-template/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/001-store-api/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/002-registry-config/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/003-backend-adapter-contract/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/004-path-model/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/005-error-model/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/006-streaming-io/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/007-atomic-writes/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/008-s3-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/009-sftp-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/010-native-path-resolution/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/011-s3-pyarrow-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/012-azure-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/013-memory-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/014-pyarrow-filesystem-adapter/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/015-store-child/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/016-ext-batch/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/017-ext-transfer/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/018-glob/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/019-ext-observe/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/020-credential-hygiene/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/021-config-loaders/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/022-streaming-atomic-writes/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/023-ext-cache/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/024-ext-partition/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/025-retry-policy/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/026-health-check/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/027-iter-children/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/028-read-text/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/029-async-store-backend-api/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/030-write-text/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/031-ext-dagster/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/032-http-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/033-ext-streams/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/034-ext-integrity/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/035-content-digest/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/036-seekable-read/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/037-depth-limited-listing/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/038-nonrecursive-folder-info/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/039-tls-ca-bundle/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/040-sql-blob-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/041-sql-query-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/042-ext-parquet/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/043-resolution-plan/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/async-store/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/atomic-writes/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/azure-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/batch-operations/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/caching/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/capabilities-and-errors/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/config-loaders/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/configuration/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/dagster-io-manager/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/dagster-v2-resource/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/error-handling/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/file-operations/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/glob-pattern-matching/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/health-check/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/http-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/medallion-dagster/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/memory-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/observe-hooks/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/otel-tracing/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/parquet-dataset/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/path-model/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/pyarrow-adapter/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/quickstart/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/retry-policy/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/s3-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/s3-listing-strategies/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/s3-pyarrow-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/sftp-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/sql-blob-backend/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/store-child/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/streaming-io/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/examples/transfer-operations/</loc>
-         <lastmod>2026-04-08</lastmod>
+         <lastmod>2026-04-09</lastmod>
     </url>
 </urlset>

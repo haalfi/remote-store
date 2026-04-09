@@ -7796,6 +7796,10 @@ Built-in, no extra dependencies required.</p>
 
 
         <p>Local filesystem backend using only the Python standard library.</p>
+<p><code>move()</code> uses <code>shutil.move</code>, which calls <code>os.rename</code> for
+same-filesystem moves (atomic) but falls back to copy-then-delete
+for cross-filesystem moves (not atomic).  <code>ATOMIC_MOVE</code> is
+declared because within-root moves are always same-filesystem.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

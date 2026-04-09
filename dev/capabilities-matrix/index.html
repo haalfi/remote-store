@@ -7865,6 +7865,18 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">—</td>
 </tr>
 <tr>
+<td>ATOMIC_MOVE</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
 <td>METADATA</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -7902,15 +7914,17 @@ at runtime before calling an operation.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Full support (10/10):</strong> Local, S3, S3-PyArrow, SQLBlob.</p>
-<p><strong>Near-full (9/10):</strong> Memory and SFTP lack native <code>GLOB</code>. Use the portable
-fallback <code>ext.glob.glob_files()</code> instead — see the
+<p><strong>Full support (11/11):</strong> Local, SQLBlob.</p>
+<p><strong>Near-full (10/11):</strong> Memory lacks native <code>GLOB</code>; use the portable
+fallback <code>ext.glob.glob_files()</code> — see the
 <a href="../glob-pattern-matching/">Glob Pattern Matching</a> guide.
-Azure lacks <code>SEEKABLE_READ</code> (forward-only chunk iterator) but supports
-<code>Store.read_seekable()</code> via an optimized HTTP Range reader.</p>
-<p><strong>Partial (5/10):</strong> SQLQuery is read-only (<code>READ</code>, <code>LIST</code>, <code>METADATA</code>, <code>GLOB</code>,
-<code>SEEKABLE_READ</code>).</p>
-<p><strong>Minimal (2/10):</strong> HTTP supports only <code>READ</code> and <code>METADATA</code> (read-only backend).</p>
+S3 and S3-PyArrow lack <code>ATOMIC_MOVE</code> (copy-then-delete semantics).</p>
+<p><strong>Partial support (9/11):</strong> SFTP lacks both <code>GLOB</code> and <code>ATOMIC_MOVE</code>.
+Azure lacks <code>SEEKABLE_READ</code> and <code>ATOMIC_MOVE</code> (forward-only chunk
+iterator, copy-then-delete move).</p>
+<p><strong>Read-only (5/11):</strong> SQLQuery supports only <code>READ</code>, <code>LIST</code>, <code>METADATA</code>, <code>GLOB</code>,
+and <code>SEEKABLE_READ</code>.</p>
+<p><strong>Minimal (2/11):</strong> HTTP supports only <code>READ</code> and <code>METADATA</code> (read-only backend).</p>
 <h2 id="querying-capabilities-at-runtime">Querying capabilities at runtime<a class="headerlink" href="#querying-capabilities-at-runtime" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -7926,6 +7940,18 @@ Azure lacks <code>SEEKABLE_READ</code> (forward-only chunk iterator) but support
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">with</span> <span class="n">seekable_read</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;report.csv&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span>
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># guaranteed seekable</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># Atomic move — quality flag, not a method gate.</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1"># move() is always callable (when MOVE is declared), but only atomic</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># on backends that declare ATOMIC_MOVE.</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_MOVE</span><span class="p">):</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="c1"># Atomic: readers see either the old or the new path, never both.</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">store</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">,</span> <span class="s2">&quot;prod/data.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="c1"># Non-atomic backend: copy-then-delete. A failure between the two</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="c1"># steps may leave both paths present — handle errors explicitly.</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="n">store</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">,</span> <span class="s2">&quot;prod/data.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
