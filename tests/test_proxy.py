@@ -252,3 +252,50 @@ class TestChildPropagation:
     def test_child_reads_inner_data(self, proxy: _TestProxy) -> None:
         child = proxy.child("dir")
         assert child.read_bytes("sub.txt") == b"sub content"
+
+
+# ---------------------------------------------------------------------------
+# __eq__ and __hash__ (BK-143)
+# ---------------------------------------------------------------------------
+
+
+class TestProxyEquality:
+    """BK-143: ProxyStore.__eq__ and __hash__ contract."""
+
+    @pytest.mark.spec("BK-143")
+    def test_equal_when_same_inner(self, inner: Store) -> None:
+        """Two proxies of the same type wrapping the same inner store are equal."""
+        p1 = _TestProxy(inner)
+        p2 = _TestProxy(inner)
+        assert p1 == p2
+
+    @pytest.mark.spec("BK-143")
+    def test_not_equal_when_different_inner(self, tmp_path: object) -> None:
+        """Two proxies wrapping different inner stores are not equal."""
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
+            s1 = Store(LocalBackend(d1))
+            s2 = Store(LocalBackend(d2))
+            assert _TestProxy(s1) != _TestProxy(s2)
+
+    @pytest.mark.spec("BK-143")
+    def test_not_equal_to_unrelated_type(self, proxy: _TestProxy) -> None:
+        """Comparing a proxy to an unrelated type returns False."""
+        assert proxy != "not a proxy"
+        assert proxy != 42
+
+    @pytest.mark.spec("BK-143")
+    def test_hash_equal_when_proxies_are_equal(self, inner: Store) -> None:
+        """Equal proxies must have equal hashes."""
+        p1 = _TestProxy(inner)
+        p2 = _TestProxy(inner)
+        assert p1 == p2
+        assert hash(p1) == hash(p2)
+
+    @pytest.mark.spec("BK-143")
+    def test_usable_in_set(self, inner: Store) -> None:
+        """Proxy can be stored in a set; two equal proxies deduplicate."""
+        p1 = _TestProxy(inner)
+        p2 = _TestProxy(inner)
+        assert len({p1, p2}) == 1

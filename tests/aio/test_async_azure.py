@@ -1657,10 +1657,19 @@ class TestAsyncAzureDelCleanup:
     """BK-143 (Error): AsyncAzureBackend.__del__ emits ResourceWarning."""
 
     @pytest.mark.spec("BK-143")
-    def test_del_emits_resource_warning(self) -> None:
-        """__del__ emits ResourceWarning when async clients are open."""
+    @pytest.mark.parametrize(
+        ("attr", "spec_cls"),
+        [
+            ("_cc_instance", ContainerClient),
+            ("_blob_service_instance", BlobServiceClient),
+            ("_fs_instance", FileSystemClient),
+            ("_datalake_service_instance", DataLakeServiceClient),
+        ],
+    )
+    def test_del_emits_resource_warning_for_each_client(self, attr: str, spec_cls: type) -> None:
+        """__del__ emits ResourceWarning whichever client attr is open."""
         backend = _make_backend()
-        backend._cc_instance = MagicMock(spec=ContainerClient)  # internal: no public observable
+        setattr(backend, attr, MagicMock(spec=spec_cls))  # internal: no public observable
         with pytest.warns(ResourceWarning, match="Unclosed AsyncAzureBackend"):
             backend.__del__()
 
