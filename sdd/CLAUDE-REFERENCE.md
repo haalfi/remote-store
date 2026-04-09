@@ -95,6 +95,17 @@ Before committing, check whether your change has cross-file dependencies:
 
 ---
 
+## Local toolchain
+
+`session-init.sh` auto-installs on Linux+root (claude.ai/code). On-prem: warn only.
+
+| Tool  | Auto-install trigger       | Version | Manual fallback                  |
+|-------|----------------------------|---------|----------------------------------|
+| hatch | always (if missing)        | latest  | `uv tool install hatch`          |
+| dafny | `sdd/formal/*.dfy` present | 4.9.1   | see `session-init.sh` for steps  |
+
+---
+
 ## Repository layout
 
 ```
