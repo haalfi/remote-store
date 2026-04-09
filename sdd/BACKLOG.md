@@ -81,6 +81,16 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
+### Formal Verification
+
+- [ ] **ID-133 — Regenerate `MemoryBackend-py/module_.py` after `CapAtomicMove` addition**
+  `sdd/formal/MemoryBackend.dfy` was updated in ID-128 to include `CapAtomicMove`,
+  but the Dafny-compiled Python output (`sdd/formal/MemoryBackend-py/module_.py`)
+  was not regenerated (no Dafny toolchain available in CI). Run:
+  `dafny translate py sdd/formal/MemoryBackend.dfy --include-runtime`
+  with Dafny 4.11.0+ and commit the result. The file must not be hand-edited.
+  Related: ID-128, BK-139c.
+
 ### API Surface Enhancements
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
