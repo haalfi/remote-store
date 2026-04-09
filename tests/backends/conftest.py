@@ -215,6 +215,7 @@ def http_server() -> Iterator[object | None]:
 
 _local_param = pytest.param("local", marks=pytest.mark.os_sensitive)
 _memory_param = pytest.param("memory")
+_dafny_oracle_param = pytest.param("dafny-oracle")
 
 
 @pytest.fixture(
@@ -226,6 +227,7 @@ _memory_param = pytest.param("memory")
         _s3_pyarrow_param,
         _sftp_param,
         _azure_param,
+        _dafny_oracle_param,
     ]
 )
 def backend(
@@ -321,6 +323,10 @@ def backend(
         b = ReadOnlyHttpBackend(base_url=http_server.url_for("/conformance/"), http_client="urllib")
         yield b
         b.close()
+    elif request.param == "dafny-oracle":
+        from tests.backends.dafny_oracle import DafnyOracleBackend
+
+        yield DafnyOracleBackend()
     elif request.param == "azure":
         from remote_store.backends._azure import AzureBackend
 

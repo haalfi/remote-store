@@ -72,6 +72,11 @@ and maintainable:
 - **`src == dst` handling**: Move and Copy explicitly handle self-move
   and self-copy as no-ops, with assertions proving each postcondition
   holds for the identity case.
+- **Root as `"."`**: The Dafny `Path` type requires non-empty strings,
+  so root is modeled as `"."` — seeded as `DirEntry` in the constructor.
+  `IsChildOf` and `Depth` handle `"."` via dedicated branches.  The
+  Python adapter translates `""` → `"."` once in `_str_to_dafny`,
+  eliminating per-method root guards.
 
 ## Dafny ↔ Hypothesis PBT cross-reference
 
@@ -159,3 +164,85 @@ contradiction.
   specification-only in Dafny, preventing compiled assignments and
   return statements.  The MemoryBackend preserves `fs` on error paths
   by construction instead.
+- **`GetFolderInfo` aggregate fields unverified.** The `file_count` and
+  `total_size` fields are computed by a while-loop over `fs.Keys`, but
+  the postcondition only asserts `r.value.path == path`.  A verified
+  postcondition relating `file_count` to
+  `|set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)|` (and
+  `total_size` to the corresponding sum) would require a recursive
+  ghost function and loop invariant tracking processed elements.  The
+  values are correct by inspection; fully machine-checked verification
+  is deferred (tracked as ID-134).
+
+## Compiled oracle as conformance gate
+
+The Dafny `MemoryBackend` is compiled to Python via `dafny translate py`
+and wrapped behind the `Backend` ABC as `DafnyOracleBackend`.  This
+oracle runs through the full conformance test suite alongside all real
+backends.
+
+### Principle
+
+The compiled oracle is **correct by construction** — 53 verified proofs,
+0 errors.  The conformance testing logic is therefore:
+
+1. **Oracle passes a conformance test** → the test is known-correct and
+   can be trusted as a gate for real backends.
+2. **Oracle fails a conformance test** → the test has a bug.  Fix the
+   test, not the oracle.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `sdd/formal/MemoryBackend.dfy` | Source specification (verified) |
+| `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
+| `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
+| `tests/backends/dafny_oracle.py` | Adapter: compiled oracle → `Backend` ABC |
+
+### How to regenerate
+
+**Required Dafny version**: 4.9.1 (the version recorded in the `.dtr`
+manifest).  The POC was prototyped on 4.11.0; production compilation
+uses 4.9.1 because it is the latest version available in the CI
+`SessionStart` hook (`apt` / system package).  Using a different version
+may change the runtime library or compiled output format.
+
+When `MemoryBackend.dfy` changes, regenerate the compiled output:
+
+```bash
+dafny verify sdd/formal/MemoryBackend.dfy          # confirm spec is valid
+dafny translate py sdd/formal/MemoryBackend.dfy \
+    --include-runtime --output sdd/formal/MemoryBackend
+```
+
+Dafny appends `-py` to the output directory name automatically.
+
+**Class-ordering fix**: Dafny's Python translator emits `MemoryBackend(Backend)`
+before `Backend` is defined — a forward-reference error.  After regeneration,
+reorder `module_.py` so all ADT types and the `Backend` class appear before
+`MemoryBackend`.  The `default__` helper class (which uses `Path`) must also
+appear before `MemoryBackend`.
+
+Expected class order in `module_.py` (top to bottom):
+1. ADT types (`Error`, `Result`, `Entry`, `FileInfo`, `FolderInfo`,
+   `FolderEntry`, `Capability`)
+2. `Backend` (abstract base)
+3. `default__` (helper with `Path`, `IsChildOf`, `Depth`, etc.)
+4. `MemoryBackend` (compiled refinement)
+
+Verify the reordering is correct by importing the module:
+
+```bash
+python -c "import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import module_"
+```
+
+### Running the oracle conformance tests
+
+```bash
+pytest tests/backends/test_conformance.py -k "dafny-oracle" -v
+pytest tests/backends/test_conformance_extended.py -k "dafny-oracle" -v
+```
+
+Expected: all tests pass or self-skip (GLOB capability not declared).
+Any failure indicates a conformance suite bug.

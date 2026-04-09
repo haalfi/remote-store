@@ -9,7 +9,7 @@ include "BackendContract.dfy"
 class MemoryBackend extends Backend {
 
   constructor ()
-    ensures fs == map[]
+    ensures fs == map[Root := DirEntry]
     ensures name == "memory"
     ensures capabilities == {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                              CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead}
@@ -17,7 +17,7 @@ class MemoryBackend extends Backend {
     name := "memory";
     capabilities := {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                      CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead};
-    fs := map[];
+    fs := map[Root := DirEntry];
   }
 
   method Exists(path: Path) returns (r: Result<bool>)
@@ -97,6 +97,36 @@ class MemoryBackend extends Backend {
     }
   }
 
+  // EnsureParents: insert DirEntry for every slash-aligned ancestor of path
+  // that does not already exist in fs.  Existing entries are never overwritten.
+  method EnsureParents(path: Path)
+    modifies this
+    ensures forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
+    ensures forall i | 0 < i < |path| && path[i] == '/' && path[..i] !in old(fs) ::
+      path[..i] in fs && fs[path[..i]].DirEntry?
+  {
+    var i := 1;
+    while i < |path|
+      invariant 1 <= i <= |path|
+      invariant forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
+      invariant forall k | k in fs && k !in old(fs) :: fs[k].DirEntry?
+      invariant forall j | 0 < j < i && path[j] == '/' && path[..j] !in old(fs) ::
+        path[..j] in fs && fs[path[..j]].DirEntry?
+    {
+      if path[i] == '/' {
+        var prefix := path[..i];
+        if prefix !in fs {
+          assert prefix !in old(fs);
+          // Different-length prefixes are distinct keys.
+          assert |prefix| == i;
+          assert forall j | 0 < j < i :: |path[..j]| == j && path[..j] != prefix;
+          fs := fs[prefix := DirEntry];
+        }
+      }
+      i := i + 1;
+    }
+  }
+
   method Write(path: Path, content: seq<nat>, overwrite: bool)
     returns (r: Result<()>)
     modifies this
@@ -122,6 +152,7 @@ class MemoryBackend extends Backend {
       return;
     }
 
+    EnsureParents(path);
     var info := FileInfo(path, path, |content|);
     fs := fs[path := FileEntry(content, info)];
     assert IsFile(fs, path);
@@ -354,6 +385,7 @@ class MemoryBackend extends Backend {
   }
 
   // GetFolderInfo: symmetric with GetFileInfo — file path → InvalidPath.
+  // Computes file_count and total_size by scanning the filesystem.
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
     ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
@@ -363,7 +395,22 @@ class MemoryBackend extends Backend {
       match fs[path]
       case DirEntry =>
         assert IsDir(fs, path);
-        r := Ok(FolderInfo(path, path));
+        // Compute file_count and total_size by iterating child files.
+        var file_count: nat := 0;
+        var total_size: nat := 0;
+        var remaining := fs.Keys;
+        while remaining != {}
+          invariant remaining <= fs.Keys
+          decreases remaining
+        {
+          var k :| k in remaining;
+          remaining := remaining - {k};
+          if k in fs && fs[k].FileEntry? && IsChildOf(k, path) {
+            file_count := file_count + 1;
+            total_size := total_size + fs[k].info.size;
+          }
+        }
+        r := Ok(FolderInfo(path, path, file_count, total_size));
       case FileEntry(_, _) =>
         assert IsFile(fs, path);
         r := Err(InvalidPath(path, name));
@@ -430,6 +477,7 @@ class MemoryBackend extends Backend {
       return;
     }
 
+    EnsureParents(dst);
     var srcEntry := fs[src];
     var newInfo := FileInfo(dst, dst, srcEntry.info.size);
     var newEntry := FileEntry(srcEntry.content, newInfo);
@@ -498,6 +546,7 @@ class MemoryBackend extends Backend {
       return;
     }
 
+    EnsureParents(dst);
     var srcEntry := fs[src];
     var newInfo := FileInfo(dst, dst, srcEntry.info.size);
     fs := fs[dst := FileEntry(srcEntry.content, newInfo)];

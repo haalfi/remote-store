@@ -184,6 +184,7 @@ contributing_text = _rewrite_links(
         "](sdd/DESIGN.md)": "](design/design-spec.md)",
         "](sdd/adrs/0008-extension-architecture.md)": "](design/adrs/0008-extension-architecture.md)",
         "](guides/custom-backend-guide.md)": "](custom-backend-guide.md)",
+        "](sdd/formal/README.md)": "](https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md)",
     },
 )
 with mkdocs_gen_files.open("contributing.md", "w") as f:

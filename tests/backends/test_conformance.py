@@ -666,7 +666,7 @@ class TestAtomicMoveCapability:
 
     # Backends exercised by the conformance fixture (conftest.py).
     # sql-blob and sql-query are not parameterised here; they have their own test modules.
-    _DECLARES = {"local", "memory"}
+    _DECLARES = {"local", "memory", "dafny-oracle"}
     _DOES_NOT_DECLARE = {"s3", "s3-pyarrow", "azure", "sftp", "http"}
 
     @pytest.mark.spec("CAP-001")

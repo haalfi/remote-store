@@ -68,7 +68,7 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 1. Write a spec in `sdd/specs/` or as an addendum in `sdd/specs/backends/<name>.md`
 2. Implement `Backend` ABC in `src/remote_store/backends/_<name>.py`
 3. Add a conformance fixture in `tests/backends/conftest.py`
-4. Both conformance suites run automatically: `tests/backends/test_conformance.py` (64 tests, BE-001–BE-022, BE-025 + ancillary specs) and `tests/backends/test_conformance_extended.py` (50 Dafny-derived tests, `@pytest.mark.extended_conformance`)
+4. Both conformance suites run automatically: `tests/backends/test_conformance.py` (64 tests, BE-001–BE-022, BE-025 + ancillary specs) and `tests/backends/test_conformance_extended.py` (50 Dafny-derived tests, `@pytest.mark.extended_conformance`). The suites are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md`](sdd/formal/README.md) § Compiled Oracle
 5. Add user-facing guide in `guides/backends/<name>.md` and register in `mkdocs.yml` nav
 6. Update `guides/backends/index.md` (Supported Backends table)
 7. Update `README.md` (Supported Backends table + Installation extras)

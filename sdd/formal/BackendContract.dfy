@@ -74,7 +74,9 @@ datatype FolderEntry = FolderEntry(
 
 datatype FolderInfo = FolderInfo(
   path: Path,
-  name: string
+  name: string,
+  file_count: nat,
+  total_size: nat
 )
 
 // ---------------------------------------------------------------------------
@@ -133,9 +135,17 @@ function SlashCount(p: string): nat
   else (if p[0] == '/' then 1 else 0) + SlashCount(p[1..])
 }
 
+// Root sentinel: "." represents the virtual root directory.
+// Dafny's Path type requires non-empty strings, so the Python
+// adapter maps "" → "." at the type boundary — one translation
+// point instead of per-method root guards.
+const Root: Path := "."
+
 function Depth(root: string, child: string): int
 {
-  if |child| <= |root| + 1 then -1
+  if root == "." then
+    (if child == "." then -1 else SlashCount(child))
+  else if |child| <= |root| + 1 then -1
   else if child[..|root|] != root then -1
   else if child[|root|] != '/' then -1
   else
@@ -145,9 +155,12 @@ function Depth(root: string, child: string): int
 
 predicate IsChildOf(child: string, parent: string)
 {
-  |child| > |parent| + 1 &&
-  child[..|parent|] == parent &&
-  child[|parent|] == '/'
+  if parent == "." then
+    child != "."
+  else
+    |child| > |parent| + 1 &&
+    child[..|parent|] == parent &&
+    child[|parent|] == '/'
 }
 
 // All ancestors of p are directories (no file-as-directory-component).
