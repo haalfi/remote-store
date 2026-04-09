@@ -339,7 +339,9 @@ trait Backend {
   // move(src, dst, overwrite)
   // ====================================================================
   // Gap 2: directory src → InvalidPath (not NotFound).
-  // Gap 5: atomicity is backend-dependent (postcondition covers final state).
+  // Gap 5: atomicity is backend-dependent — backends that guarantee atomic
+  //   rename declare CapAtomicMove; others use copy-then-delete.
+  //   Postcondition covers only the final state, not intermediate visibility.
   method Move(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
     modifies this

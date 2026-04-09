@@ -16,7 +16,7 @@ at runtime before calling an operation.
 | MOVE           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
 | COPY           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
 | ATOMIC_WRITE   | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
-| ATOMIC_MOVE    | Yes | Yes | —   | —   | —          | —  | —     | Yes     | —         |
+| ATOMIC_MOVE    | Yes | Yes | —   | —   | —   | —  | —     | Yes | —   |
 | METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | GLOB           | Yes | —  | —   | Yes | Yes | —  | Yes | Yes | Yes |
 | SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | — | Yes | Yes |
@@ -55,16 +55,17 @@ with seekable_read(store, "report.csv") as f:
     header = f.read(128)
     f.seek(0)  # guaranteed seekable
 
-# Atomic move — quality flag, not a method gate
-# move() is always callable (when MOVE is supported), but only atomic
-# when the backend declares ATOMIC_MOVE.
+# Atomic move — quality flag, not a method gate.
+# move() is always callable (when MOVE is declared), but only atomic
+# on backends that declare ATOMIC_MOVE.
 if store.supports(Capability.ATOMIC_MOVE):
+    # Atomic: readers see either the old or the new path, never both.
     store.move("staging/data.parquet", "prod/data.parquet")
 else:
-    # copy-then-delete: a crash between steps leaves duplicates
-    # consider writing to destination first, then deleting source
-    store.move("staging/data.parquet", "prod/data.parquet")
-    assert not store.exists("staging/data.parquet"), "source not removed — manual cleanup needed"
+    # Non-atomic backend: copy-then-delete. A failure between the two
+    # steps may leave both paths present — handle errors explicitly.
+    store.copy("staging/data.parquet", "prod/data.parquet")
+    store.delete("staging/data.parquet")
 ```
 
 ## See also
