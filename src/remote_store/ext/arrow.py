@@ -18,7 +18,7 @@ import contextlib
 import io
 import logging
 import tempfile
-from typing import TYPE_CHECKING, Any, BinaryIO, cast
+from typing import TYPE_CHECKING, Any
 
 try:
     import pyarrow as pa  # type: ignore[import-untyped]
@@ -110,7 +110,7 @@ class _StoreSink(io.RawIOBase):
         try:
             self._buf.seek(0)
             with _map_errors():
-                self._store.write(self._path, cast("BinaryIO", self._buf), overwrite=True)
+                self._store.write(self._path, self._buf, overwrite=True)  # type: ignore[arg-type]
         finally:
             with contextlib.suppress(Exception):
                 self._buf.close()

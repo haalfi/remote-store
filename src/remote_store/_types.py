@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, BinaryIO, Union
+import os
+from typing import BinaryIO, Union
 
-if TYPE_CHECKING:
-    import os
-
-PathLike = Union[str, "os.PathLike[str]"]  # noqa: UP007
+PathLike = Union[str, os.PathLike[str]]  # noqa: UP007
 WritableContent = BinaryIO | bytes
 Extras = dict[str, object]
