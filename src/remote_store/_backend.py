@@ -147,7 +147,12 @@ class Backend(abc.ABC):
             InvalidPath: If *path* names a directory, not a file.
         """
         stream = self.read(path)
-        if not stream.seekable():
+        try:
+            seekable = stream.seekable()
+        except BaseException:
+            stream.close()
+            raise
+        if not seekable:
             # Not seekable — spool into a SpooledTemporaryFile; stream is
             # always closed via the finally block regardless of outcome.
             spool: BinaryIO = _SeekableSpool(max_size=8 * 1024 * 1024)  # type: ignore[assignment]
