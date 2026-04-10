@@ -3,10 +3,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, cast
-
-if TYPE_CHECKING:
-    from typing import BinaryIO
+from typing import BinaryIO, cast  # noqa: TCH003 — runtime ref needed for CodeQL
 
 from remote_store._errors import BackendUnavailable
 from remote_store.backends._http import HttpResponse
@@ -69,7 +66,7 @@ class RequestsTransport:
         return HttpResponse(
             status=resp.status_code,
             headers=resp_headers,
-            body=cast("BinaryIO", _Urllib3StreamAdapter(resp.raw)),
+            body=cast(BinaryIO, _Urllib3StreamAdapter(resp.raw)),  # noqa: TC006
         )
 
     def head(self, url: str, headers: dict[str, str], timeout: float) -> HttpResponse:
@@ -82,7 +79,7 @@ class RequestsTransport:
         return HttpResponse(
             status=resp.status_code,
             headers=resp_headers,
-            body=cast("BinaryIO", io.BytesIO(b"")),
+            body=cast(BinaryIO, io.BytesIO(b"")),  # noqa: TC006
         )
 
     def close(self) -> None:
