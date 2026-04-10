@@ -7,7 +7,7 @@ import io
 import logging
 import threading
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, BinaryIO, cast
+from typing import TYPE_CHECKING, Any, BinaryIO
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -89,7 +89,7 @@ class MemoryBackend(Backend):
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             snapshot = bytes(node.data)
-        return io.BufferedReader(cast(io.RawIOBase, io.BytesIO(snapshot)))  # noqa: TC006
+        return io.BytesIO(snapshot)
 
     def read_bytes(self, path: str) -> bytes:
         segments = self._split_path(path)

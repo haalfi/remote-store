@@ -353,7 +353,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if row is None:
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
             data = row[0]
-        return io.BufferedReader(cast(io.RawIOBase, io.BytesIO(data)))  # noqa: TC006
+        return io.BytesIO(data)
 
     def read_bytes(self, path: str) -> bytes:
         self._validate_path(path)
@@ -976,7 +976,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
             columns = list(result.keys())
             rows = result.fetchall()
         data = self._serializer.serialize(rows, columns, fmt)
-        return io.BufferedReader(cast(io.RawIOBase, io.BytesIO(data)))  # noqa: TC006
+        return io.BytesIO(data)
 
     def read_bytes(self, path: str) -> bytes:
         self._validate_path(path)
