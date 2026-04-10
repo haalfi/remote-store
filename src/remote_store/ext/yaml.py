@@ -15,11 +15,19 @@ Accepts either [pyyaml](https://pyyaml.org/) or [ruamel.yaml](https://yaml.readt
 
 from __future__ import annotations
 
+import importlib.util
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
+
+# Fail-fast: raise at import time if neither yaml library is installed,
+# consistent with all other optional-dep extensions (arrow, parquet, …).
+if importlib.util.find_spec("yaml") is None and importlib.util.find_spec("ruamel.yaml") is None:
+    raise ModuleNotFoundError(  # pragma: no cover
+        "YAML support requires pyyaml or ruamel.yaml. Install with: pip install 'remote-store[yaml]'"
+    )
 
 from remote_store._config import RegistryConfig
 
