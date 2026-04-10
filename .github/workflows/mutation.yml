@@ -6,11 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: "Mutation scope to run (blank = all)"
+        description: "Mutation scope to run"
         required: false
+        default: "all"
         type: choice
         options:
-          - ""
+          - all
           - core-api
           - core-infra
           - ext-proxy
@@ -31,7 +32,7 @@ jobs:
     steps:
       - id: set-scopes
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.scope }}" = "" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.scope }}" = "all" ]; then
             echo 'scopes=["core-api","core-infra","ext-proxy","ext-format","backends-local","backends-cloud"]' >> "$GITHUB_OUTPUT"
           else
             echo 'scopes=["${{ github.event.inputs.scope }}"]' >> "$GITHUB_OUTPUT"
