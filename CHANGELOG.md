@@ -8,13 +8,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
-- **Pages deployment failure** (BUG-144): GitHub's built-in
-  `pages-build-deployment` workflow failed with "Multiple artifacts named
-  'github-pages'" because the release docs job issued two separate pushes to
-  `gh-pages`. Batched mike operations into a single push and added an explicit
-  `pages` job using `upload-pages-artifact@v3` + `deploy-pages@v4` (Node 20),
-  which also eliminates the Node 22 `DEP0040` punycode deprecation warning.
-  **Note:** repo Pages source must be set to "GitHub Actions" in Settings → Pages.
+- **Pages deployment failure** (BUG-144): Batch mike pushes into one and
+  replace built-in deployment with explicit `deploy-pages@v4` (Node 20) job,
+  fixing "Multiple artifacts" error and `DEP0040` punycode warning.
 
 ### Internal
 
