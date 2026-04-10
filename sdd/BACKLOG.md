@@ -39,7 +39,15 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-*(none)*
+- [~] **BUG-144 — Pages deployment fails: multiple artifacts + punycode deprecation**
+  GitHub's built-in `pages-build-deployment` workflow (`deploy-pages@v5`, Node 22)
+  fails with "Multiple artifacts named 'github-pages'" (count 3) because
+  `deploy-release` did two separate `mike --push` calls, each triggering a
+  deployment. Node 22 also emits `DEP0040` punycode deprecation warning.
+  Fix: batch mike operations into a single push; add explicit `pages` job
+  using `upload-pages-artifact@v3` + `deploy-pages@v4` (Node 20) to replace
+  the built-in workflow. Requires Pages source set to "GitHub Actions" in
+  repo settings.
 
 ---
 
