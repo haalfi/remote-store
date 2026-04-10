@@ -5,6 +5,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-145 — Mutation testing CI workflow (manual + scheduled)**
+  Added `.github/workflows/mutation.yml` with `workflow_dispatch` (manual) and
+  weekly `schedule` (Saturday 05:00 UTC) triggers. Matrix strategy runs all 6
+  scoped mutation targets in parallel (`core-api`, `core-infra`, `ext-proxy`,
+  `ext-format`, `backends-local`, `backends-cloud`). Cloud-backend scope
+  conditionally starts MinIO, Azurite, and SFTP Docker services. HTML reports
+  uploaded as artifacts with 30-day retention. Gremlins cache persisted across
+  runs via `actions/cache` (keyed on source hash). Report-only initially;
+  threshold gate can be added later. PR #399.
+
 - [x] **BUG-144 — Pages deployment fails: multiple artifacts + punycode deprecation**
   Duplicate `mike --push` calls triggered multiple built-in deployments.
   Fix: single push + explicit `pages` job with `deploy-pages@v4` (Node 20).
