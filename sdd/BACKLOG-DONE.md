@@ -5,6 +5,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-144 — Pages deployment fails: multiple artifacts + punycode deprecation**
+  Duplicate `mike --push` calls triggered multiple built-in deployments.
+  Fix: single push + explicit `pages` job with `deploy-pages@v4` (Node 20).
+
 - [x] **BK-143 — Resolve all 31 open CodeQL security/quality alerts** (v0.22.1)
   Resolved all 31 alerts: file permissions, resource cleanup (`__del__`
   helpers), unused imports, type-stub no-ops. Regression tests added for
