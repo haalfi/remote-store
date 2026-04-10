@@ -261,6 +261,33 @@ class CachedStore(ProxyStore):
         self._misses = 0
         self._stats_lock = threading.Lock()
 
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not type(self):
+            return NotImplemented
+        assert isinstance(other, CachedStore)
+        return (
+            self._inner == other._inner
+            and self._cache is other._cache
+            and self._ttl == other._ttl
+            and self._max_content_size == other._max_content_size
+            and self._max_listing_size == other._max_listing_size
+            and self._max_entries == other._max_entries
+            and self._prefix == other._prefix
+        )
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self._inner,
+                id(self._cache),
+                self._ttl,
+                self._max_content_size,
+                self._max_listing_size,
+                self._max_entries,
+                self._prefix,
+            )
+        )
+
     # region: properties
 
     @property

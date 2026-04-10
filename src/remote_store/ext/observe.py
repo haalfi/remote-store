@@ -162,6 +162,15 @@ class ObservedStore(ProxyStore):
         self._hooks = hooks
         self._around = around
 
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not type(self):
+            return NotImplemented
+        assert isinstance(other, ObservedStore)
+        return self._inner == other._inner and self._hooks is other._hooks and self._around is other._around
+
+    def __hash__(self) -> int:
+        return hash((hash(self._inner), id(self._hooks), id(self._around)))
+
     def __repr__(self) -> str:
         return f"ObservedStore(inner={self._inner!r})"
 
