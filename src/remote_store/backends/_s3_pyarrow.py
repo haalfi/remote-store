@@ -201,7 +201,7 @@ class S3PyArrowBackend(_S3Base):
     def read(self, path: str) -> BinaryIO:
         with self._pyarrow_errors(path):
             pa_file = self._pa_fs.open_input_file(self._pa_path(path))
-            return cast(
+            return cast(  # noqa: TC006
                 "BinaryIO",
                 _safe_wrap(
                     pa_file,
@@ -243,9 +243,9 @@ class S3PyArrowBackend(_S3Base):
             max_size=8 * 1024 * 1024,
         )
         try:
-            yield cast("BinaryIO", buf)
+            yield cast(BinaryIO, buf)  # noqa: TC006
             buf.seek(0)
-            self.write(path, cast("BinaryIO", buf), overwrite=overwrite)
+            self.write(path, cast(BinaryIO, buf), overwrite=overwrite)  # noqa: TC006
         finally:
             buf.close()
 

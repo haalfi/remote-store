@@ -147,10 +147,10 @@ class UrllibTransport:
                 timeout=timeout,
             )
             resp_headers = {k.lower(): v for k, v in resp.getheaders()}
-            return HttpResponse(status=resp.status, headers=resp_headers, body=cast("BinaryIO", resp))
+            return HttpResponse(status=resp.status, headers=resp_headers, body=cast(BinaryIO, resp))  # noqa: TC006
         except urllib.error.HTTPError as exc:
             resp_headers = {k.lower(): v for k, v in exc.headers.items()} if exc.headers else {}
-            return HttpResponse(status=exc.code, headers=resp_headers, body=cast("BinaryIO", io.BytesIO(b"")))
+            return HttpResponse(status=exc.code, headers=resp_headers, body=cast(BinaryIO, io.BytesIO(b"")))  # noqa: TC006
         except (urllib.error.URLError, OSError, TimeoutError) as exc:
             raise BackendUnavailable(
                 f"HTTP request failed: {exc}",
@@ -292,7 +292,7 @@ class ReadOnlyHttpBackend(Backend):
         except Exception:
             resp.body.close()
             raise
-        return cast("BinaryIO", _ErrorMappingStream(resp.body, self._map_stream_error, path))
+        return cast(BinaryIO, _ErrorMappingStream(resp.body, self._map_stream_error, path))  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
         """Buffered-read a file via GET."""
