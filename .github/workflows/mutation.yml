@@ -22,6 +22,7 @@ on:
 env:
   UV_SYSTEM_PYTHON: 1
   UV_LINK_MODE: copy
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # Compute which scopes to run. schedule = all; manual dispatch = filtered.
