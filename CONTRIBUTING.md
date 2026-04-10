@@ -311,8 +311,8 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Verify HEAD is the merge commit: `git log --oneline -1`
 - [ ] Tag the merge commit: `git tag vX.Y.Z` (or `git tag vX.Y.Z <sha>` if master advanced)
 - [ ] Push the tag: `git push origin vX.Y.Z`
-- [ ] Create GitHub Release from the tag — this triggers both `publish.yml` (PyPI) and versioned docs deploy
-- [ ] Watch `publish.yml` — confirm it completes successfully
+- [ ] Create GitHub Release from the tag — this triggers `publish.yml` (PyPI + Codecov) and versioned docs deploy
+- [ ] Watch `publish.yml` — confirm it completes successfully (PyPI publish + coverage upload)
 - [ ] Delete the release branch: `git push origin --delete release-vX.Y.Z`
 
 #### Phase 5: Post-release verification
