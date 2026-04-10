@@ -106,7 +106,7 @@ jobs:
       # via PYTEST_ADDOPTS which pytest picks up automatically.
       - name: Run mutate-${{ matrix.scope }}
         env:
-          PYTEST_ADDOPTS: "--no-cov --gremlin-report=html --gremlins-html-dir=mutation-report"
+          PYTEST_ADDOPTS: "--no-cov -W ignore::UserWarning:pytest_gremlins.plugin --gremlin-report=html --gremlins-html-dir=mutation-report"
         run: hatch run mutate-${{ matrix.scope }}
 
       # --- Upload HTML report ---
