@@ -14,6 +14,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Mutation testing CI workflow** (BK-145): Added `.github/workflows/mutation.yml`
+  with manual (`workflow_dispatch`) and weekly scheduled (`cron`, Saturdays 05:00
+  UTC) triggers. Runs all 6 scoped mutation targets in parallel via matrix
+  strategy, uploads HTML reports as artifacts, and writes job summaries.
+  Cloud-backend scope starts MinIO/Azurite/SFTP services. Gremlins cache
+  persisted across runs via `actions/cache`.
+
 - **Codecov upload moved to publish workflow**: Coverage is now uploaded to
   Codecov on `release: published` (in `publish.yml`) rather than on every CI
   run. Ensures Codecov reflects released versions only, matching PyPI. The

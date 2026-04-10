@@ -45,6 +45,13 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [~] **BK-145 — Mutation testing CI workflow (manual + scheduled)**
+  Add `.github/workflows/mutation.yml` with `workflow_dispatch` (manual) and
+  weekly `schedule` triggers. Matrix strategy across all 6 scoped mutation
+  targets. Cloud-backend scope starts Docker services (MinIO, Azurite, SFTP).
+  HTML reports uploaded as artifacts. Report-only initially (no threshold gate).
+  - Ref: research-testing-best-practices.md §3.7
+
 - [ ] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
   Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Items 4, 5, 7 shipped.
