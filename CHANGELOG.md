@@ -6,6 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Internal
+
+- **Codecov upload moved to publish workflow**: Coverage is now uploaded to
+  Codecov on `release: published` (in `publish.yml`) rather than on every CI
+  run. Ensures Codecov reflects released versions only, matching PyPI. The
+  `coverage` job runs after a successful `publish` (`needs: publish`), starts
+  Azurite, runs the full suite at the 95% threshold, and uploads `coverage.xml`.
+
 ## [0.22.1] - 2026-04-10
 
 ### Fixed

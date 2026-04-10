@@ -41,6 +41,7 @@ jobs:
           packages-dir: dist/
 
   coverage:
+    needs: publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
