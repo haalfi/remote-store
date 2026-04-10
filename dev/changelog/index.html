@@ -10318,11 +10318,21 @@
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Codecov upload moved to publish workflow</strong>: Coverage is now uploaded to
+<li>
+<p><strong>Mutation testing CI workflow</strong> (BK-145): Added <code>.github/workflows/mutation.yml</code>
+  with manual (<code>workflow_dispatch</code>) and weekly scheduled (<code>cron</code>, Saturdays 05:00
+  UTC) triggers. Runs all 6 scoped mutation targets in parallel via matrix
+  strategy, uploads HTML reports as artifacts, and writes job summaries.
+  Cloud-backend scope starts MinIO/Azurite/SFTP services. Gremlins cache
+  persisted across runs via <code>actions/cache</code>.</p>
+</li>
+<li>
+<p><strong>Codecov upload moved to publish workflow</strong>: Coverage is now uploaded to
   Codecov on <code>release: published</code> (in <code>publish.yml</code>) rather than on every CI
   run. Ensures Codecov reflects released versions only, matching PyPI. The
   <code>coverage</code> job runs after a successful <code>publish</code> (<code>needs: publish</code>), starts
-  Azurite, runs the full suite at the 95% threshold, and uploads <code>coverage.xml</code>.</li>
+  Azurite, runs the full suite at the 95% threshold, and uploads <code>coverage.xml</code>.</p>
+</li>
 </ul>
 <h2 id="0221-2026-04-10">[0.22.1] - 2026-04-10<a class="headerlink" href="#0221-2026-04-10" title="Permanent link">&para;</a></h2>
 <h3 id="fixed_1">Fixed<a class="headerlink" href="#fixed_1" title="Permanent link">&para;</a></h3>
