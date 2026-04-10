@@ -8,13 +8,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
-- **String-literal `cast()` arguments removed** (BK-146): All
-  `cast("TypeName", value)` call sites replaced with actual type expressions
-  (`cast(TypeName, value)`), eliminating CodeQL `py/cast-string-literal`
-  alerts and the ruff TC006 rule across `_stream.py`, `ext/cache.py`, and
-  all affected backends. `FileInfo`/`FolderInfo` moved to unconditional
-  runtime imports in `cache.py` so they are available as real `cast()` type
-  arguments.
+- **`cast()` correctness** (BK-146): All `cast("TypeName", value)` patterns
+  replaced with `cast(TypeName, value) # noqa: TC006`. `BytesIO`-wrapped-in-
+  `BufferedReader` pattern removed — `BytesIO` is `BufferedIOBase` and should
+  be returned directly. `FileInfo`/`FolderInfo` promoted to runtime imports in
+  `cache.py`.
 
 - **Pages deployment failure** (BUG-144): Batch mike pushes into one and
   replace built-in deployment with explicit `deploy-pages@v4` (Node 20) job,

@@ -9,6 +9,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Proves the streaming contract -- round-robin SHA-256 verification and
   `tracemalloc` memory profiling across all backends. PR #403.
 
+- [x] **BK-146 — Eliminate string-literal `cast()` arguments (CodeQL + ruff)**
+  All `cast("TypeName", value)` call sites replaced with `cast(TypeName, value) # noqa: TC006`.
+  `BytesIO`-over-`BufferedReader` pattern removed (`BytesIO` is `BufferedIOBase`, returning it
+  directly is correct). `FileInfo`/`FolderInfo` moved to runtime imports in `cache.py`.
+  PR #401.
+
 - [x] **BK-145 — Mutation testing CI workflow (manual + scheduled)**
   Added `.github/workflows/mutation.yml` with `workflow_dispatch` (manual) and
   weekly `schedule` (Saturday 05:00 UTC) triggers. Matrix strategy runs all 6
