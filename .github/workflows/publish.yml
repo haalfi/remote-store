@@ -39,3 +39,29 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Start Azurite
+        run: |
+          docker run -d --name azurite -p 10000:10000 \
+            mcr.microsoft.com/azure-storage/azurite:3.35.0 \
+            azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
+          for i in $(seq 1 30); do
+            nc -z 127.0.0.1 10000 && break || sleep 1
+          done
+          nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v8.0.0
+      - run: uv pip install -e ".[dev]"
+      - name: Run tests with coverage
+        run: pytest --cov=remote_store --cov-report=xml --cov-fail-under=95
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
