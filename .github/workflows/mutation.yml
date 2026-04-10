@@ -94,7 +94,7 @@ jobs:
 
       # --- Gremlins cache (content-hash based, survives across runs) ---
       - name: Restore gremlins cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .gremlins_cache
           key: gremlins-${{ matrix.scope }}-${{ hashFiles('src/**/*.py') }}
@@ -106,13 +106,13 @@ jobs:
       # via PYTEST_ADDOPTS which pytest picks up automatically.
       - name: Run mutate-${{ matrix.scope }}
         env:
-          PYTEST_ADDOPTS: "--gremlin-report=html --gremlins-html-dir=mutation-report"
+          PYTEST_ADDOPTS: "--no-cov --gremlin-report=html --gremlins-html-dir=mutation-report"
         run: hatch run mutate-${{ matrix.scope }}
 
       # --- Upload HTML report ---
       - name: Upload mutation report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: mutation-report-${{ matrix.scope }}
           path: mutation-report/
@@ -127,7 +127,7 @@ jobs:
 
       - name: Upload outcome
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: mutation-outcome-${{ matrix.scope }}
           path: outcome/
@@ -152,7 +152,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all outcomes
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: mutation-outcome-*
           path: outcomes
