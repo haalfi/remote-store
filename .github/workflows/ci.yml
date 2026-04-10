@@ -107,8 +107,14 @@ jobs:
       # Python, causing test skips that reduce coverage.
       - name: Run tests with coverage
         run: >-
-          pytest --cov=remote_store --cov-report=term-missing
+          pytest --cov=remote_store --cov-report=term-missing --cov-report=xml
           ${{ matrix.python-version == '3.13' && '--cov-fail-under=95' || '--cov-fail-under=90' }}
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.13'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
 
   test-cross-platform:
     needs: [changes]
