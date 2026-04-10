@@ -5,10 +5,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-- [x] **BK-143 — Resolve all 31 open CodeQL security/quality alerts**
+- [x] **BK-143 — Resolve all 31 open CodeQL security/quality alerts** (v0.22.1)
   Resolved all 31 alerts: file permissions, resource cleanup (`__del__`
   helpers), unused imports, type-stub no-ops. Regression tests added for
   the High (file permissions) and Error (unclosed resources) findings.
+  Follow-up: `BinaryIO` kept as runtime import to prevent CodeQL false
+  positives from ruff's `TCH003`/`TC006` auto-quoting.
 
 - [x] **BK-142 — Harden CodeQL CI: scope, query suite, gating, dep review, annotations**
   Scoped CodeQL analysis to `src/remote_store/` via config file; upgraded query

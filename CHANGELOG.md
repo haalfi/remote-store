@@ -6,11 +6,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-04-10
+
 ### Fixed
 
 - **CodeQL alerts** (BK-143): Resolved all 31 open CodeQL security/quality
   alerts — SFTP `known_hosts` permissions (`0o644` → `0o600`), resource
-  cleanup, unused imports, and type-stub no-ops.
+  cleanup, unused imports, and type-stub no-ops. Follow-up: kept `BinaryIO`
+  as a runtime import (suppressing `TCH003`/`TC006`) so `cast(BinaryIO, ...)`
+  call sites remain genuinely used at runtime and are not flagged by CodeQL.
 
 ## [0.22.0] - 2026-04-09
 
