@@ -6,6 +6,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pages deployment failure** (BUG-144): Batch mike pushes into one and
+  replace built-in deployment with explicit `deploy-pages@v4` (Node 20) job,
+  fixing "Multiple artifacts" error and `DEP0040` punycode warning.
+
 ### Internal
 
 - **Codecov upload moved to publish workflow**: Coverage is now uploaded to
