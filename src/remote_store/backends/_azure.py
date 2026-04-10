@@ -336,7 +336,7 @@ class AzureBackend(Backend):
             # RawIOBase directly, and BufferedReader's seek-invalidates-buffer
             # behavior would turn each PythonFile.read_at() into a new HTTP
             # request even for adjacent reads. Matches S3PyArrowBackend pattern.
-            return cast("BinaryIO", _ErrorMappingStream(raw, self._classify, path))
+            return cast(BinaryIO, _ErrorMappingStream(raw, self._classify, path))  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
@@ -414,9 +414,9 @@ class AzureBackend(Backend):
                 max_size=8 * 1024 * 1024,
             )
             try:
-                yield cast("BinaryIO", buf)
+                yield cast(BinaryIO, buf)  # noqa: TC006
                 buf.seek(0)
-                self.write(path, cast("BinaryIO", buf), overwrite=overwrite)
+                self.write(path, cast(BinaryIO, buf), overwrite=overwrite)  # noqa: TC006
             finally:
                 buf.close()
         else:
@@ -445,7 +445,7 @@ class AzureBackend(Backend):
                 max_size=8 * 1024 * 1024,
             )
             try:  # pragma: no cover -- HNS only
-                yield cast("BinaryIO", buf_hns)
+                yield cast(BinaryIO, buf_hns)  # noqa: TC006
                 buf_hns.seek(0)
                 with self._errors(path):
                     tmp_fc = self._fs.get_file_client(tmp_path)

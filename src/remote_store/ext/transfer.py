@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, BinaryIO, cast  # noqa: TCH003 — runtime ref needed for CodeQL
 
 from remote_store.ext.streams import ProgressReader
 
@@ -26,7 +26,6 @@ log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from typing import BinaryIO
 
     from remote_store._store import Store
 
@@ -66,7 +65,7 @@ def upload(
     with open(path, "rb") as fh:
         source: BinaryIO = fh
         if on_progress is not None:
-            source = cast("BinaryIO", ProgressReader(fh, on_progress))
+            source = cast(BinaryIO, ProgressReader(fh, on_progress))  # noqa: TC006
         store.write(remote_path, source, overwrite=overwrite)
 
 
@@ -104,7 +103,7 @@ def download(
 
     stream: BinaryIO = store.read(remote_path)
     if on_progress is not None:
-        stream = cast("BinaryIO", ProgressReader(stream, on_progress))
+        stream = cast(BinaryIO, ProgressReader(stream, on_progress))  # noqa: TC006
     try:
         with open(dest, "wb") as fh:
             while True:
@@ -146,7 +145,7 @@ def transfer(
     try:
         source: BinaryIO = stream
         if on_progress is not None:
-            source = cast("BinaryIO", ProgressReader(stream, on_progress))
+            source = cast(BinaryIO, ProgressReader(stream, on_progress))  # noqa: TC006
         dst_store.write(dst_path, source, overwrite=overwrite)
     finally:
         stream.close()

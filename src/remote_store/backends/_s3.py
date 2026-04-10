@@ -135,12 +135,12 @@ class S3Backend(_S3Base):
     def read(self, path: str) -> BinaryIO:
         with self._s3fs_errors(path):
             f: BinaryIO = self._fs.open(self._s3_path(path), "rb")
-            return cast(
+            return cast(  # noqa: TC006
                 "BinaryIO",
                 _safe_wrap(
                     f,
                     lambda s: _ErrorMappingStream(s, self._classify_error, path),
-                    lambda s: io.BufferedReader(cast("io.RawIOBase", s)),
+                    lambda s: io.BufferedReader(cast(io.RawIOBase, s)),  # noqa: TC006
                 ),
             )
 
@@ -172,9 +172,9 @@ class S3Backend(_S3Base):
             max_size=8 * 1024 * 1024,
         )
         try:
-            yield cast("BinaryIO", buf)
+            yield cast(BinaryIO, buf)  # noqa: TC006
             buf.seek(0)
-            self.write(path, cast("BinaryIO", buf), overwrite=overwrite)
+            self.write(path, cast(BinaryIO, buf), overwrite=overwrite)  # noqa: TC006
         finally:
             buf.close()
 
