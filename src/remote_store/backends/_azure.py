@@ -320,7 +320,7 @@ class AzureBackend(Backend):
             downloader = bc.download_blob(max_concurrency=self._max_concurrency)
             raw = _AzureBinaryIO(downloader.chunks())
             try:
-                return io.BufferedReader(cast("io.RawIOBase", _ErrorMappingStream(raw, self._classify, path)))
+                return io.BufferedReader(cast(io.RawIOBase, _ErrorMappingStream(raw, self._classify, path)))  # noqa: TC006
             except BaseException:
                 with contextlib.suppress(Exception):
                     raw.close()

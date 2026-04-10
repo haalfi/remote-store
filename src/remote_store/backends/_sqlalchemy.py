@@ -111,7 +111,7 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
     def unwrap(self, type_hint: type[T]) -> T:
         """Return the SQLAlchemy ``Engine`` if requested."""
         if type_hint is Engine or (isinstance(type_hint, type) and issubclass(type_hint, Engine)):
-            return cast("T", self._engine)
+            return cast(T, self._engine)  # noqa: TC006
         return super().unwrap(type_hint)
 
     @contextlib.contextmanager
@@ -353,7 +353,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if row is None:
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
             data = row[0]
-        return io.BufferedReader(cast("io.RawIOBase", io.BytesIO(data)))
+        return io.BufferedReader(cast(io.RawIOBase, io.BytesIO(data)))  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
         self._validate_path(path)
@@ -976,7 +976,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
             columns = list(result.keys())
             rows = result.fetchall()
         data = self._serializer.serialize(rows, columns, fmt)
-        return io.BufferedReader(cast("io.RawIOBase", io.BytesIO(data)))
+        return io.BufferedReader(cast(io.RawIOBase, io.BytesIO(data)))  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
         self._validate_path(path)

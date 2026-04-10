@@ -70,7 +70,7 @@ class _ErrorMappingStream(io.RawIOBase):
 
     def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         try:
-            return cast("int", self._inner.readinto(b))
+            return cast(int, self._inner.readinto(b))  # noqa: TC006
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 
@@ -80,14 +80,14 @@ class _ErrorMappingStream(io.RawIOBase):
     def read(self, size: int = -1) -> bytes | None:
         try:
             data = self._inner.read(size)
-            return cast("bytes | None", data)
+            return cast(bytes | None, data)  # noqa: TC006
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 
     def readline(self, size: int = -1) -> bytes:  # type: ignore[override]
         try:
             data = self._inner.readline(size)
-            return cast("bytes", data)
+            return cast(bytes, data)  # noqa: TC006
         except OSError as exc:
             raise self._mapper(exc, self._path) from exc
 

@@ -39,7 +39,13 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-*(none)*
+- [ ] **BK-146 — Eliminate string-literal `cast()` arguments (CodeQL + ruff)**
+  All `cast("TypeName", value)` call sites replaced with actual type expressions
+  so CodeQL's `py/cast-string-literal` and ruff TC006 don't fire.
+  Affects: `_stream.py`, `ext/cache.py`, `backends/_memory.py`,
+  `backends/_azure.py`, `backends/_sftp.py`, `backends/_sqlalchemy.py`.
+  `FileInfo`/`FolderInfo` moved from `TYPE_CHECKING`-only to runtime imports
+  in `cache.py` (no circular-import risk — `_models.py` is stdlib-only).
 
 ---
 
