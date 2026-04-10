@@ -8111,6 +8111,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-34-security-hardening-v0221" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 34: Security Hardening (v0.22.1)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8635,6 +8646,17 @@
     <span class="md-ellipsis">
       
         Phase 33: Formal Verification as a Quality Gate (v0.22.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-34-security-hardening-v0221" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 34: Security Hardening (v0.22.1)
       
     </span>
   </a>
@@ -9239,6 +9261,11 @@
 <p><strong>Type-mismatch errors were systematically wrong.</strong> <code>read()</code>, <code>read_bytes()</code>, <code>delete()</code>, and related methods on wrong path types (file vs. directory) raised <code>NotFound</code> in several backends when the Dafny postconditions required <code>InvalidPath</code>. Fixed uniformly across LocalBackend, MemoryBackend, and SFTPBackend. Self-move and self-copy were also fixed: <code>src == dst</code> is now a no-op rather than leaking <code>SameFileError</code> or losing data.</p>
 <p><strong>Two bug-prevention mechanisms shipped.</strong> <code>ResourceWarning</code> <code>__del__</code> guards were added to SFTPBackend, AzureBackend, and AsyncAzureBackend — if <code>.close()</code> was never called, Python's garbage collector now emits a warning at the object boundary rather than silently leaking connections. The Ruff <code>BLE001</code> rule (blind exception) was enabled across the codebase; 44 intentional broad catches were annotated with <code># noqa: BLE001</code>, making accidental new catches visible immediately.</p>
 <p><strong>What changed in the way of working.</strong> This release showed that formal verification and test generation aren't separate activities — the same Dafny spec that proves the algorithm correct also produces the test oracles and reveals the gaps in the real backends. The investment in <code>sdd/formal/</code> from BK-140 paid a concrete dividend: the compiled oracle and the extended conformance suite are direct outputs of the formal layer, not additional work.</p>
+<h3 id="phase-34-security-hardening-v0221">Phase 34: Security Hardening (v0.22.1)<a class="headerlink" href="#phase-34-security-hardening-v0221" title="Permanent link">&para;</a></h3>
+<p>v0.22.1 was a pure security and code-quality patch — no new features, no API changes.</p>
+<p><strong>Static analysis caught real issues.</strong> Enabling the CodeQL <code>security-and-quality</code> query suite (BK-142) surfaced 31 findings. Most were code style (unused imports, <code>...</code> no-ops in Protocol stubs), but a handful were genuine: SFTP <code>known_hosts</code> was created with <code>0o644</code> instead of <code>0o600</code>, making it world-readable; <code>__del__</code> cleanup logic was complex enough to risk exceptions swallowing errors; <code>ProxyStore</code> skipped <code>super().__init__()</code>; empty <code>except/pass</code> blocks swallowed exceptions silently. All 31 were resolved in BK-143.</p>
+<p><strong>The ruff/CodeQL interaction was non-obvious.</strong> A follow-up pass fixed a subtle interplay: ruff's <code>TCH003</code> rule moves <code>BinaryIO</code> to a <code>TYPE_CHECKING</code> block and <code>TC006</code> auto-quotes <code>cast(BinaryIO, x)</code> → <code>cast("BinaryIO", x)</code>. Both transformations make <code>BinaryIO</code> appear unused to CodeQL at runtime. Fix: suppress both rules so the symbol stays as a live runtime import directly referenced by <code>cast()</code>.</p>
+<p><strong>Patch releases keep the codebase trustworthy.</strong> Not every release adds features. v0.22.1 demonstrates that security findings from static analysis are worth a PyPI publish — users running automated vulnerability scans should see clean results.</p>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
 <p>If you want to try this approach on your own project:</p>
 <ol>

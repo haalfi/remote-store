@@ -4208,7 +4208,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0221-2026-04-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.22.1] - 2026-04-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.22.1] - 2026-04-10">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -8949,7 +8960,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0221-2026-04-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.22.1] - 2026-04-10
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.22.1] - 2026-04-10">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -10232,11 +10254,14 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h2 id="0221-2026-04-10">[0.22.1] - 2026-04-10<a class="headerlink" href="#0221-2026-04-10" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>CodeQL alerts</strong> (BK-143): Resolved all 31 open CodeQL security/quality
   alerts — SFTP <code>known_hosts</code> permissions (<code>0o644</code> → <code>0o600</code>), resource
-  cleanup, unused imports, and type-stub no-ops.</li>
+  cleanup, unused imports, and type-stub no-ops. Follow-up: kept <code>BinaryIO</code>
+  as a runtime import (suppressing <code>TCH003</code>/<code>TC006</code>) so <code>cast(BinaryIO, ...)</code>
+  call sites remain genuinely used at runtime and are not flagged by CodeQL.</li>
 </ul>
 <h2 id="0220-2026-04-09">[0.22.0] - 2026-04-09<a class="headerlink" href="#0220-2026-04-09" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
