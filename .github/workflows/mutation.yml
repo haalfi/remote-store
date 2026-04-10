@@ -102,11 +102,12 @@ jobs:
             gremlins-${{ matrix.scope }}-
 
       # --- Run mutation testing ---
+      # Hatch scripts don't forward extra CLI args, so inject report flags
+      # via PYTEST_ADDOPTS which pytest picks up automatically.
       - name: Run mutate-${{ matrix.scope }}
-        run: >-
-          hatch run mutate-${{ matrix.scope }}
-          --gremlin-report=html
-          --gremlins-html-dir=mutation-report
+        env:
+          PYTEST_ADDOPTS: "--gremlin-report=html --gremlins-html-dir=mutation-report"
+        run: hatch run mutate-${{ matrix.scope }}
 
       # --- Upload HTML report ---
       - name: Upload mutation report
