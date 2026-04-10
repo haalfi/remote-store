@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import io
-from typing import BinaryIO, cast
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from typing import BinaryIO
 
 from remote_store._errors import BackendUnavailable
 from remote_store.backends._http import HttpResponse
