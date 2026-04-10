@@ -8734,8 +8734,8 @@ errors.</p>
 <li>[ ] Verify HEAD is the merge commit: <code>git log --oneline -1</code></li>
 <li>[ ] Tag the merge commit: <code>git tag vX.Y.Z</code> (or <code>git tag vX.Y.Z &lt;sha&gt;</code> if master advanced)</li>
 <li>[ ] Push the tag: <code>git push origin vX.Y.Z</code></li>
-<li>[ ] Create GitHub Release from the tag — this triggers both <code>publish.yml</code> (PyPI) and versioned docs deploy</li>
-<li>[ ] Watch <code>publish.yml</code> — confirm it completes successfully</li>
+<li>[ ] Create GitHub Release from the tag — this triggers <code>publish.yml</code> (PyPI + Codecov) and versioned docs deploy</li>
+<li>[ ] Watch <code>publish.yml</code> — confirm it completes successfully (PyPI publish + coverage upload)</li>
 <li>[ ] Delete the release branch: <code>git push origin --delete release-vX.Y.Z</code></li>
 </ul>
 <h4 id="phase-5-post-release-verification">Phase 5: Post-release verification<a class="headerlink" href="#phase-5-post-release-verification" title="Permanent link">&para;</a></h4>
