@@ -39,10 +39,7 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-- [~] **BUG-144 — Pages deployment fails: multiple artifacts + punycode deprecation**
-  Duplicate `mike --push` calls triggered multiple built-in deployments.
-  Fix: single push + explicit `pages` job with `deploy-pages@v4` (Node 20).
-  Requires Pages source → "GitHub Actions" in repo settings.
+*(none)*
 
 ---
 
