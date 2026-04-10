@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
-import logging
 import threading
 import time
 from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, cast, runtime_checkable
@@ -33,8 +32,6 @@ if TYPE_CHECKING:
     from remote_store._models import FileInfo, FolderEntry, FolderInfo
     from remote_store._store import Store
     from remote_store._types import WritableContent
-
-log = logging.getLogger(__name__)
 
 __all__ = [
     "CacheBackend",
@@ -89,27 +86,21 @@ class CacheBackend(Protocol):
 
     def get(self, key: tuple[str, ...]) -> Any:
         """Return the cached value, or raise ``KeyError`` on a cache miss."""
-        ...
 
     def set(self, key: tuple[str, ...], value: Any, ttl: float) -> None:
         """Store *value* under *key* with a time-to-live in seconds."""
-        ...
 
     def delete(self, key: tuple[str, ...]) -> None:
         """Remove *key* from the cache (no-op if absent)."""
-        ...
 
     def clear(self) -> None:
         """Remove all entries from the cache."""
-        ...
 
     def clear_prefix(self, prefix: str) -> None:
         """Remove all entries whose first key component matches *prefix*."""
-        ...
 
     def size(self) -> int:
         """Return the number of entries currently in the cache."""
-        ...
 
 
 # ---------------------------------------------------------------------------
@@ -270,6 +261,33 @@ class CachedStore(ProxyStore):
         self._misses = 0
         self._stats_lock = threading.Lock()
 
+    def __eq__(self, other: object) -> bool:
+        if type(other) is not type(self):
+            return NotImplemented
+        assert isinstance(other, CachedStore)
+        return (
+            self._inner == other._inner
+            and self._cache is other._cache
+            and self._ttl == other._ttl
+            and self._max_content_size == other._max_content_size
+            and self._max_listing_size == other._max_listing_size
+            and self._max_entries == other._max_entries
+            and self._prefix == other._prefix
+        )
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self._inner,
+                id(self._cache),
+                self._ttl,
+                self._max_content_size,
+                self._max_listing_size,
+                self._max_entries,
+                self._prefix,
+            )
+        )
+
     # region: properties
 
     @property
@@ -379,12 +397,10 @@ class CachedStore(ProxyStore):
         # Uses self._cache.get() directly to avoid polluting hit/miss stats.
         skip_cache = False
         if self._max_content_size is not None:
-            try:
+            with contextlib.suppress(KeyError, AttributeError):
                 fi = self._cache.get(("get_file_info", path))
                 if fi.size > self._max_content_size:
                     skip_cache = True
-            except (KeyError, AttributeError):
-                pass
         result = self._inner.read_bytes(path)
         if not skip_cache and (self._max_content_size is None or len(result) <= self._max_content_size):
             self._cache.set(key, result, self._ttl)

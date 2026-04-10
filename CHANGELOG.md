@@ -6,6 +6,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **CodeQL alerts** (BK-143): Resolved all 31 open CodeQL security/quality
+  alerts — SFTP `known_hosts` permissions (`0o644` → `0o600`), resource
+  cleanup, unused imports, and type-stub no-ops.
+
 ## [0.22.0] - 2026-04-09
 
 ### Added

@@ -56,17 +56,23 @@ class ProxyStore(Store):
     _inner: Store
 
     def __init__(self, inner: Store) -> None:
-        # Centralized private-attribute coupling.
-        # If Store's internals change, only this needs updating.
-        self._inner = inner
-        self._backend = inner._backend
-        self._root = inner._root
+        super().__init__(inner._backend, inner._root)
+        # Proxy does not own the backend — closing the proxy must not close it.
         self._owns_backend = False
+        self._inner = inner
 
     @property
     def inner(self) -> Store:
         """The wrapped Store instance."""
         return self._inner
+
+    def __eq__(self, other: object) -> bool:
+        if type(other) is type(self):
+            return self._inner == other._inner
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self._inner)
 
     # ------------------------------------------------------------------
     # child() propagation

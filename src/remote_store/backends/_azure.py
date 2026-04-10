@@ -741,8 +741,7 @@ class AzureBackend(Backend):
     # region: dunder methods
 
     def __del__(self) -> None:
-        # Guard against interpreter shutdown: module globals (contextlib,
-        # warnings) may already be None.  Use only inline try/except.
+        # Guard against interpreter shutdown: module globals may be None.
         try:
             has_clients = any(
                 (
@@ -756,13 +755,20 @@ class AzureBackend(Backend):
                 return
         except Exception:  # noqa: BLE001
             return
+        try:  # noqa: SIM105 — cannot use contextlib.suppress during shutdown
+            self._del_cleanup()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _del_cleanup(self) -> None:
+        """Warn and inline-close clients; called by __del__ without contextlib."""
         try:
             import warnings
 
             warnings.warn(
                 f"Unclosed {type(self).__name__}. Call .close() or use a context manager.",
                 ResourceWarning,
-                stacklevel=1,
+                stacklevel=2,
             )
         except Exception:  # noqa: BLE001
             pass

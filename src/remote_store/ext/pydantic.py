@@ -22,7 +22,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 try:
-    import pydantic  # noqa: F401
     from pydantic import SecretStr
 except ModuleNotFoundError as _exc:  # pragma: no cover
     raise ModuleNotFoundError(

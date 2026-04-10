@@ -5,6 +5,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-143 — Resolve all 31 open CodeQL security/quality alerts**
+  Resolved all 31 alerts: file permissions, resource cleanup (`__del__`
+  helpers), unused imports, type-stub no-ops. Regression tests added for
+  the High (file permissions) and Error (unclosed resources) findings.
+
 - [x] **BK-142 — Harden CodeQL CI: scope, query suite, gating, dep review, annotations**
   Scoped CodeQL analysis to `src/remote_store/` via config file; upgraded query
   suite to `security-and-quality`; added `on.paths` filter on push (skip doc-only

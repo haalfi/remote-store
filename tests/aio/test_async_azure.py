@@ -1646,3 +1646,36 @@ class TestAsyncAzureCloseCredential:
         backend = _make_backend()
         await backend.aclose()
         assert backend._resolved_credential is None  # internal: no public observable
+
+
+# =============================================================================
+# __del__ cleanup contract (BK-143)
+# =============================================================================
+
+
+class TestAsyncAzureDelCleanup:
+    """BK-143 (Error): AsyncAzureBackend.__del__ emits ResourceWarning."""
+
+    @pytest.mark.spec("BK-143")
+    @pytest.mark.parametrize(
+        ("attr", "spec_cls"),
+        [
+            ("_cc_instance", ContainerClient),
+            ("_blob_service_instance", BlobServiceClient),
+            ("_fs_instance", FileSystemClient),
+            ("_datalake_service_instance", DataLakeServiceClient),
+        ],
+    )
+    def test_del_emits_resource_warning_for_each_client(self, attr: str, spec_cls: type) -> None:
+        """__del__ emits ResourceWarning whichever client attr is open."""
+        backend = _make_backend()
+        setattr(backend, attr, MagicMock(spec=spec_cls))  # internal: no public observable
+        with pytest.warns(ResourceWarning, match="Unclosed AsyncAzureBackend"):
+            backend.__del__()
+
+    @pytest.mark.spec("BK-143")
+    def test_del_is_safe_when_no_clients(self) -> None:
+        """__del__ does not raise or warn when no clients have been opened."""
+        backend = _make_backend()
+        result = backend.__del__()
+        assert result is None

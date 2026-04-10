@@ -1262,3 +1262,51 @@ class TestAzureResolve:
         backend = _make_backend()
         plan = backend.resolve("file.txt")
         assert "account_url" in plan.details
+
+
+# =============================================================================
+# __del__ cleanup contract (BK-143)
+# =============================================================================
+
+
+class TestAzureDelCleanup:
+    """BK-143 (Error): AzureBackend.__del__ emits ResourceWarning and closes clients."""
+
+    @pytest.mark.spec("BK-143")
+    @pytest.mark.parametrize(
+        ("attr", "spec_cls"),
+        [
+            ("_cc_instance", ContainerClient),
+            ("_blob_service_instance", BlobServiceClient),
+            ("_fs_instance", FileSystemClient),
+            ("_datalake_service_instance", DataLakeServiceClient),
+        ],
+    )
+    def test_del_closes_each_client_attr(self, attr: str, spec_cls: type) -> None:
+        """__del__ emits ResourceWarning and closes whichever client attr is open."""
+        backend = _make_backend()
+        mock = MagicMock(spec=spec_cls)
+        setattr(backend, attr, mock)  # internal: no public observable
+        with pytest.warns(ResourceWarning, match="Unclosed AzureBackend"):
+            backend.__del__()
+        mock.close.assert_called_once()
+
+    @pytest.mark.spec("BK-143")
+    def test_del_continues_closing_after_exception(self) -> None:
+        """__del__ closes remaining clients even if one raises on .close()."""
+        backend = _make_backend()
+        mock_cc = MagicMock(spec=ContainerClient)
+        mock_cc.close.side_effect = RuntimeError("network error")
+        mock_bs = MagicMock(spec=BlobServiceClient)
+        backend._cc_instance = mock_cc  # internal: no public observable
+        backend._blob_service_instance = mock_bs  # internal: no public observable
+        with pytest.warns(ResourceWarning, match="Unclosed AzureBackend"):
+            backend.__del__()
+        mock_bs.close.assert_called_once()
+
+    @pytest.mark.spec("BK-143")
+    def test_del_is_safe_when_no_clients(self) -> None:
+        """__del__ does not raise or warn when no clients have been opened."""
+        backend = _make_backend()
+        result = backend.__del__()
+        assert result is None

@@ -465,6 +465,63 @@ class TestSFTPLifecycle:
         with pytest.raises(CapabilityNotSupported):
             sftp_backend.unwrap(str)
 
+    @pytest.mark.spec("BK-143")
+    def test_del_emits_resource_warning_and_closes_clients(self) -> None:
+        """BK-143 (Error): __del__ emits ResourceWarning and closes open SFTP/SSH clients."""
+        from unittest.mock import MagicMock
+
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        mock_sftp = MagicMock(spec=paramiko.SFTPClient)
+        mock_ssh = MagicMock(spec=paramiko.SSHClient)
+        backend._sftp_client = mock_sftp  # internal: no public observable
+        backend._ssh_client = mock_ssh  # internal: no public observable
+        with pytest.warns(ResourceWarning, match="Unclosed SFTPBackend"):
+            backend.__del__()
+        mock_sftp.close.assert_called_once()
+        mock_ssh.close.assert_called_once()
+
+    @pytest.mark.spec("BK-143")
+    @pytest.mark.parametrize(("set_sftp", "set_ssh"), [(True, False), (False, True)])
+    def test_del_closes_partial_clients(self, set_sftp: bool, set_ssh: bool) -> None:
+        """__del__ handles the case where only one of the two clients is open."""
+        from unittest.mock import MagicMock
+
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        mock_sftp = MagicMock(spec=paramiko.SFTPClient) if set_sftp else None
+        mock_ssh = MagicMock(spec=paramiko.SSHClient) if set_ssh else None
+        if mock_sftp is not None:
+            backend._sftp_client = mock_sftp  # internal: no public observable
+        if mock_ssh is not None:
+            backend._ssh_client = mock_ssh  # internal: no public observable
+        with pytest.warns(ResourceWarning, match="Unclosed SFTPBackend"):
+            backend.__del__()
+        if mock_sftp is not None:
+            mock_sftp.close.assert_called_once()
+        if mock_ssh is not None:
+            mock_ssh.close.assert_called_once()
+
+    @pytest.mark.spec("BK-143")
+    def test_del_continues_closing_after_sftp_exception(self) -> None:
+        """__del__ closes SSH client even when SFTP .close() raises."""
+        from unittest.mock import MagicMock
+
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        mock_sftp = MagicMock(spec=paramiko.SFTPClient)
+        mock_sftp.close.side_effect = RuntimeError("sftp error")
+        mock_ssh = MagicMock(spec=paramiko.SSHClient)
+        backend._sftp_client = mock_sftp  # internal: no public observable
+        backend._ssh_client = mock_ssh  # internal: no public observable
+        with pytest.warns(ResourceWarning, match="Unclosed SFTPBackend"):
+            backend.__del__()
+        mock_ssh.close.assert_called_once()
+
+    @pytest.mark.spec("BK-143")
+    def test_del_is_safe_when_no_clients(self) -> None:
+        """BK-143 (Error): __del__ does not raise or warn when no clients are open."""
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        result = backend.__del__()
+        assert result is None
+
 
 # endregion
 
@@ -540,6 +597,15 @@ class TestSFTPHelpers:
         assert fi.name == "test.txt"
         assert fi.size == 42
         assert fi.modified_at is not None
+
+    @pytest.mark.spec("BK-143")
+    def test_ensure_known_hosts_file_creates_with_mode_600(self) -> None:
+        """BK-143 (High): known_hosts must be created with mode 0o600, not more permissive."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "known_hosts")
+            SFTPBackend._ensure_known_hosts_file(path)
+            mode = os.stat(path).st_mode & 0o777
+            assert mode == 0o600, f"expected 0o600, got {oct(mode)}"
 
 
 # endregion

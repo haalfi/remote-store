@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import os  # noqa: TC003
+import os
 from typing import BinaryIO, Union
 
-PathLike = Union[str, "os.PathLike[str]"]  # noqa: UP007
+PathLike = Union[str, os.PathLike[str]]  # noqa: UP007
 WritableContent = BinaryIO | bytes
 Extras = dict[str, object]

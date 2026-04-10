@@ -53,7 +53,7 @@ _S3_CA_ENV_VARS: tuple[str, ...] = ("AWS_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_
 
 def _resolve_tls_ca_bundle(
     explicit: str | None,
-    env_vars: tuple[str, ...],
+    env_vars: tuple[str, ...] = _S3_CA_ENV_VARS,
 ) -> str | None:
     """Resolve CA bundle: explicit param > env vars (in order) > None."""
     if explicit is not None:
@@ -88,7 +88,6 @@ class _S3Base(Backend):
     @abc.abstractmethod
     def _s3fs(self) -> Any:
         """Return the s3fs ``S3FileSystem`` instance."""
-        ...
 
     # endregion
 

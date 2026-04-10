@@ -77,11 +77,9 @@ class Serializer(Protocol):
 
     def serialize(self, obj: Any) -> bytes:
         """Convert a Python object to bytes."""
-        ...
 
     def deserialize(self, data: bytes) -> Any:
         """Convert bytes back to a Python object."""
-        ...
 
 
 # ---------------------------------------------------------------------------
