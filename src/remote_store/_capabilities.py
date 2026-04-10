@@ -61,6 +61,7 @@ class Capability(enum.Enum):
       **not** declare this flag.  Callers can use
       ``store.supports(Capability.LAZY_READ)`` to know whether partial
       reads avoid loading the entire file.
+      See also: spec SIO-009 in ``sdd/specs/006-streaming-io.md``.
     """
 
     READ = "read"

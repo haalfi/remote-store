@@ -69,6 +69,20 @@ else:
     # steps may leave both paths present — handle errors explicitly.
     store.copy("staging/data.parquet", "prod/data.parquet")
     store.delete("staging/data.parquet")
+
+# Lazy read — quality flag. read() always works, but on backends without
+# LAZY_READ the entire file is loaded into memory before the stream is
+# returned. Use this flag to decide whether partial reads are efficient.
+if store.supports(Capability.LAZY_READ):
+    # Stream is connected to the native source; only the bytes you read
+    # are transferred. Safe to read a small prefix of a large file.
+    with store.read("large_file.bin") as f:
+        header = f.read(256)
+else:
+    # Data is pre-loaded; reading any amount costs the full file.
+    # For large files prefer read_bytes() or avoid partial reads.
+    data = store.read_bytes("large_file.bin")
+    header = data[:256]
 ```
 
 ## See also
