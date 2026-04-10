@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
     from remote_store._types import WritableContent
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB, Capability.LAZY_READ})
 
 log = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class MemoryBackend(Backend):
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             snapshot = bytes(node.data)
-        return io.BufferedReader(io.BytesIO(snapshot))
+        return io.BytesIO(snapshot)
 
     def read_bytes(self, path: str) -> bytes:
         segments = self._split_path(path)

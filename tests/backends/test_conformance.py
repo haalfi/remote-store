@@ -501,16 +501,31 @@ class TestBackendToKey:
 
 
 class TestStreamingConformance:
-    """SIO-001, SIO-003: streaming must not load entire files into memory."""
+    """SIO-001, SIO-003: streaming semantics."""
 
     @pytest.mark.spec("SIO-001")
-    def test_read_returns_true_stream_not_bytesio(self, backend: Backend) -> None:
-        """read() must return a true streaming handle, not a BytesIO wrapper."""
+    def test_read_returns_readable_stream(self, backend: Backend) -> None:
+        """read() must return a readable BinaryIO stream with correct content."""
         _require(backend, Capability.WRITE)
         backend.write("stream_test.bin", b"hello streaming")
         stream = backend.read("stream_test.bin")
-        assert not isinstance(stream, io.BytesIO), "read() must not wrap content in BytesIO -- this defeats streaming"
+        assert stream.readable(), "read() must return a readable stream"
         assert stream.read() == b"hello streaming"
+        stream.close()
+
+    @pytest.mark.spec("SIO-009")
+    def test_read_is_lazy(self, backend: Backend) -> None:
+        """Backends declaring LAZY_READ must not return a BytesIO-backed stream."""
+        _require(backend, Capability.WRITE, Capability.LAZY_READ)
+        backend.write("lazy_test.bin", b"lazy read test")
+        stream = backend.read("lazy_test.bin")
+        # Unwrap one level of buffering (e.g. BufferedReader wrapping a raw
+        # stream) before checking — we want the innermost handle.
+        inner = getattr(stream, "raw", stream)
+        assert not isinstance(inner, io.BytesIO), (
+            "Backend declares LAZY_READ but read() returned a BytesIO-backed stream"
+        )
+        assert stream.read() == b"lazy read test"
         stream.close()
 
     @pytest.mark.spec("SIO-001")

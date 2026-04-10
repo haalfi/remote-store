@@ -44,7 +44,7 @@ except ImportError as _imp_err:  # pragma: no cover
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability))
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.LAZY_READ})
 _QUERY_CAPABILITIES = CapabilitySet(
     {Capability.READ, Capability.LIST, Capability.METADATA, Capability.GLOB, Capability.SEEKABLE_READ}
 )
@@ -353,7 +353,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if row is None:
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
             data = row[0]
-        return io.BufferedReader(io.BytesIO(data))
+        return io.BytesIO(data)
 
     def read_bytes(self, path: str) -> bytes:
         self._validate_path(path)
@@ -976,7 +976,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
             columns = list(result.keys())
             rows = result.fetchall()
         data = self._serializer.serialize(rows, columns, fmt)
-        return io.BufferedReader(io.BytesIO(data))
+        return io.BytesIO(data)
 
     def read_bytes(self, path: str) -> bytes:
         self._validate_path(path)

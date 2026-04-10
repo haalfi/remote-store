@@ -8,11 +8,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
-- **`cast()` correctness** (BK-146): All `cast("TypeName", value)` patterns
-  replaced with `cast(TypeName, value) # noqa: TC006`. `BytesIO`-wrapped-in-
-  `BufferedReader` pattern removed — `BytesIO` is `BufferedIOBase` and should
-  be returned directly. `FileInfo`/`FolderInfo` promoted to runtime imports in
-  `cache.py`.
+- **`cast()` correctness and `Capability.LAZY_READ`** (BK-146): All
+  `cast("TypeName", value)` patterns replaced with `cast(TypeName, value)
+  # noqa: TC006`. Hidden `BufferedReader` wrappers removed from S3, Azure, and
+  SQL backends — `BytesIO` is `BufferedIOBase` and is returned directly. Added
+  `Capability.LAZY_READ` quality flag to distinguish backends that stream
+  lazily from the native source (Local, HTTP, S3, S3-PyArrow, SFTP, Azure)
+  from those that pre-load into memory (Memory, SQLBlob, SQLQuery).
+  `FileInfo`/`FolderInfo` promoted to runtime imports in `cache.py`.
 
 - **Pages deployment failure** (BUG-144): Batch mike pushes into one and
   replace built-in deployment with explicit `deploy-pages@v4` (Node 20) job,

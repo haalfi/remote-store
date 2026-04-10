@@ -66,3 +66,8 @@ chunk = stream.read(4096)
 **Invariant:** `Capability.SEEKABLE_READ` indicates that `Backend.read()` always returns a seekable stream (`stream.seekable()` is `True`).
 **Postconditions:** This is a static guarantee — callers can check `store.supports(Capability.SEEKABLE_READ)` once at setup time instead of checking every stream. All backends support `Store.read_seekable()` regardless of this capability — the capability indicates zero-overhead (no spooling needed).
 **See also:** [036-seekable-read.md](036-seekable-read.md), [ADR-0017](../adrs/0017-seekable-read-on-store-api.md).
+
+## SIO-009: Lazy Read Capability
+
+**Invariant:** `Capability.LAZY_READ` indicates that `Backend.read()` fetches data lazily on demand from the native source. Backends that load the full file contents into memory before returning a stream do **not** declare this capability.
+**Postconditions:** When `Capability.LAZY_READ` is declared, reading only the first `N` bytes of a file avoids transferring the remaining bytes from the storage backend. Callers can use `store.supports(Capability.LAZY_READ)` to decide whether partial reads are efficient. Backends without `LAZY_READ` (e.g. in-memory, SQL blob) still return a valid `BinaryIO` stream — it just contains pre-loaded data.
