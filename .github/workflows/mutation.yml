@@ -30,9 +30,10 @@ jobs:
       fail-fast: false
       matrix:
         scope: [core-api, core-infra, ext-proxy, ext-format, backends-local, backends-cloud]
-    # Skip scopes that don't match the manual input (if provided)
+    # On schedule: run all scopes. On manual dispatch: filter by input.
     if: >-
-      github.event.inputs.scope == ''
+      github.event_name == 'schedule'
+      || github.event.inputs.scope == ''
       || github.event.inputs.scope == matrix.scope
     steps:
       - uses: actions/checkout@v6
@@ -94,7 +95,7 @@ jobs:
         run: >-
           hatch run mutate-${{ matrix.scope }}
           --gremlin-report=html
-          --gremlin-report-dir=mutation-report
+          --gremlins-html-dir=mutation-report
 
       # --- Upload HTML report ---
       - name: Upload mutation report
@@ -105,7 +106,22 @@ jobs:
           path: mutation-report/
           retention-days: 30
 
-      # --- Job summary ---
+      # --- Record scope outcome for summary job ---
+      - name: Record outcome
+        if: always()
+        run: |
+          mkdir -p outcome
+          echo "${{ job.status }}" > outcome/${{ matrix.scope }}
+
+      - name: Upload outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-outcome-${{ matrix.scope }}
+          path: outcome/
+          retention-days: 1
+
+      # --- Per-scope job summary ---
       - name: Write job summary
         if: always()
         run: |
@@ -123,13 +139,26 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - name: Download all outcomes
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mutation-outcome-*
+          path: outcomes
+          merge-multiple: true
+
       - name: Aggregate results
         run: |
           echo "## Mutation Testing Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Scope | Result |" >> "$GITHUB_STEP_SUMMARY"
           echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          results='${{ toJSON(needs.mutate.result) }}'
-          echo "| All scopes | ${results} |" >> "$GITHUB_STEP_SUMMARY"
+          for scope in core-api core-infra ext-proxy ext-format backends-local backends-cloud; do
+            if [ -f "outcomes/${scope}" ]; then
+              result=$(cat "outcomes/${scope}")
+            else
+              result="skipped"
+            fi
+            echo "| ${scope} | ${result} |" >> "$GITHUB_STEP_SUMMARY"
+          done
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Download individual HTML reports from the **Artifacts** section above." >> "$GITHUB_STEP_SUMMARY"
