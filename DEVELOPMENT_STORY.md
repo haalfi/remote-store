@@ -655,6 +655,16 @@ v0.22.0 crossed a line the previous releases were building toward: mathematicall
 
 **What changed in the way of working.** This release showed that formal verification and test generation aren't separate activities — the same Dafny spec that proves the algorithm correct also produces the test oracles and reveals the gaps in the real backends. The investment in `sdd/formal/` from BK-140 paid a concrete dividend: the compiled oracle and the extended conformance suite are direct outputs of the formal layer, not additional work.
 
+### Phase 34: Security Hardening (v0.22.1)
+
+v0.22.1 was a pure security and code-quality patch — no new features, no API changes.
+
+**Static analysis caught real issues.** Enabling the CodeQL `security-and-quality` query suite (BK-142) surfaced 31 findings. Most were code style (unused imports, `...` no-ops in Protocol stubs), but a handful were genuine: SFTP `known_hosts` was created with `0o644` instead of `0o600`, making it world-readable; `__del__` cleanup logic was complex enough to risk exceptions swallowing errors; `ProxyStore` skipped `super().__init__()`; empty `except/pass` blocks swallowed exceptions silently. All 31 were resolved in BK-143.
+
+**The ruff/CodeQL interaction was non-obvious.** A follow-up pass fixed a subtle interplay: ruff's `TCH003` rule moves `BinaryIO` to a `TYPE_CHECKING` block and `TC006` auto-quotes `cast(BinaryIO, x)` → `cast("BinaryIO", x)`. Both transformations make `BinaryIO` appear unused to CodeQL at runtime. Fix: suppress both rules so the symbol stays as a live runtime import directly referenced by `cast()`.
+
+**Patch releases keep the codebase trustworthy.** Not every release adds features. v0.22.1 demonstrates that security findings from static analysis are worth a PyPI publish — users running automated vulnerability scans should see clean results.
+
 ## Reproducing This Workflow
 
 If you want to try this approach on your own project:
