@@ -23,18 +23,28 @@ env:
   UV_LINK_MODE: copy
 
 jobs:
+  # Compute which scopes to run. schedule = all; manual dispatch = filtered.
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      scopes: ${{ steps.set-scopes.outputs.scopes }}
+    steps:
+      - id: set-scopes
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.scope }}" = "" ]; then
+            echo 'scopes=["core-api","core-infra","ext-proxy","ext-format","backends-local","backends-cloud"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'scopes=["${{ github.event.inputs.scope }}"]' >> "$GITHUB_OUTPUT"
+          fi
+
   mutate:
+    needs: [setup]
     name: mutate-${{ matrix.scope }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        scope: [core-api, core-infra, ext-proxy, ext-format, backends-local, backends-cloud]
-    # On schedule: run all scopes. On manual dispatch: filter by input.
-    if: >-
-      github.event_name == 'schedule'
-      || github.event.inputs.scope == ''
-      || github.event.inputs.scope == matrix.scope
+        scope: ${{ fromJSON(needs.setup.outputs.scopes) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -135,7 +145,7 @@ jobs:
 
   summary:
     name: Mutation Summary
-    needs: [mutate]
+    needs: [setup, mutate]
     if: always()
     runs-on: ubuntu-latest
     steps:
