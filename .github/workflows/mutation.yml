@@ -22,7 +22,7 @@ on:
 env:
   UV_SYSTEM_PYTHON: 1
   UV_LINK_MODE: copy
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   # Compute which scopes to run. schedule = all; manual dispatch = filtered.
@@ -113,7 +113,7 @@ jobs:
       # --- Upload HTML report ---
       - name: Upload mutation report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: mutation-report-${{ matrix.scope }}
           path: mutation-report/
@@ -128,7 +128,7 @@ jobs:
 
       - name: Upload outcome
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: mutation-outcome-${{ matrix.scope }}
           path: outcome/
@@ -153,7 +153,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all outcomes
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: mutation-outcome-*
           path: outcomes
