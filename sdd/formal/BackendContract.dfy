@@ -178,7 +178,7 @@ predicate AllAncestorsTraversable(fs: Filesystem, p: Path)
 // ---------------------------------------------------------------------------
 
 // The set of child files under a path.
-function ChildFiles(fs: Filesystem, path: Path): set<Path>
+ghost function ChildFiles(fs: Filesystem, path: Path): set<Path>
 {
   set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)
 }
@@ -510,7 +510,7 @@ lemma WriteReadConsistency(
 // sum is the same regardless of which element we factor out.
 // Proof: for the non-trivial case, prove the IH for every possible
 // element the function could have picked, via `forall` statements.
-lemma SumSizesRemove(fs: Filesystem, keys: set<Path>, x: Path)
+lemma {:induction false} SumSizesRemove(fs: Filesystem, keys: set<Path>, x: Path)
   requires x in keys
   requires forall k | k in keys :: k in fs && fs[k].FileEntry?
   ensures SumSizes(fs, keys) == fs[x].info.size + SumSizes(fs, keys - {x})
@@ -536,7 +536,7 @@ lemma SumSizesRemove(fs: Filesystem, keys: set<Path>, x: Path)
 }
 
 // Corollary: adding one element to SumSizes (ID-134).
-lemma SumSizesAddOne(fs: Filesystem, s: set<Path>, k: Path)
+lemma {:induction false} SumSizesAddOne(fs: Filesystem, s: set<Path>, k: Path)
   requires k !in s
   requires forall p | p in (s + {k}) :: p in fs && fs[p].FileEntry?
   ensures SumSizes(fs, s + {k}) == SumSizes(fs, s) + fs[k].info.size
