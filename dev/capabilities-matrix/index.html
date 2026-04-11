@@ -7912,19 +7912,33 @@ at runtime before calling an operation.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 </tr>
+<tr>
+<td>LAZY_READ</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
 </tbody>
 </table>
-<p><strong>Full support (11/11):</strong> Local, SQLBlob.</p>
-<p><strong>Near-full (10/11):</strong> Memory lacks native <code>GLOB</code>; use the portable
-fallback <code>ext.glob.glob_files()</code> — see the
-<a href="../glob-pattern-matching/">Glob Pattern Matching</a> guide.
-S3 and S3-PyArrow lack <code>ATOMIC_MOVE</code> (copy-then-delete semantics).</p>
-<p><strong>Partial support (9/11):</strong> SFTP lacks both <code>GLOB</code> and <code>ATOMIC_MOVE</code>.
-Azure lacks <code>SEEKABLE_READ</code> and <code>ATOMIC_MOVE</code> (forward-only chunk
-iterator, copy-then-delete move).</p>
-<p><strong>Read-only (5/11):</strong> SQLQuery supports only <code>READ</code>, <code>LIST</code>, <code>METADATA</code>, <code>GLOB</code>,
+<p><strong>Full support (12/12):</strong> Local.</p>
+<p><strong>Near-full (11/12):</strong> S3 and S3-PyArrow lack <code>ATOMIC_MOVE</code> (copy-then-delete
+semantics). SQLBlob lacks <code>LAZY_READ</code> — the entire blob is loaded into memory
+before a stream is returned.</p>
+<p><strong>Partial support (10/12):</strong> Memory lacks native <code>GLOB</code> and <code>LAZY_READ</code> (all
+data lives in process memory; use the portable fallback
+<code>ext.glob.glob_files()</code> — see the <a href="../glob-pattern-matching/">Glob Pattern Matching</a> guide).
+SFTP lacks both <code>GLOB</code> and <code>ATOMIC_MOVE</code>.
+Azure lacks <code>SEEKABLE_READ</code> and <code>ATOMIC_MOVE</code> (forward-only chunk iterator,
+copy-then-delete move).</p>
+<p><strong>Read-only (5/12):</strong> SQLQuery supports only <code>READ</code>, <code>LIST</code>, <code>METADATA</code>, <code>GLOB</code>,
 and <code>SEEKABLE_READ</code>.</p>
-<p><strong>Minimal (2/11):</strong> HTTP supports only <code>READ</code> and <code>METADATA</code> (read-only backend).</p>
+<p><strong>Minimal (3/12):</strong> HTTP supports only <code>READ</code>, <code>METADATA</code>, and <code>LAZY_READ</code> (read-only backend).</p>
 <h2 id="querying-capabilities-at-runtime">Querying capabilities at runtime<a class="headerlink" href="#querying-capabilities-at-runtime" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -7952,6 +7966,20 @@ and <code>SEEKABLE_READ</code>.</p>
 <a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="c1"># steps may leave both paths present — handle errors explicitly.</span>
 <a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="n">store</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">,</span> <span class="s2">&quot;prod/data.parquet&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;staging/data.parquet&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="c1"># Lazy read — quality flag. read() always works, but on backends without</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="c1"># LAZY_READ the entire file is loaded into memory before the stream is</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="c1"># returned. Use this flag to decide whether partial reads are efficient.</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">LAZY_READ</span><span class="p">):</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="c1"># Stream is connected to the native source; only the bytes you read</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>    <span class="c1"># are transferred. Safe to read a small prefix of a large file.</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>    <span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;large_file.bin&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>        <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">256</span><span class="p">)</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>    <span class="c1"># Data is pre-loaded; reading any amount costs the full file.</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>    <span class="c1"># For large files prefer read_bytes() or avoid partial reads.</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;large_file.bin&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>    <span class="n">header</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:</span><span class="mi">256</span><span class="p">]</span>
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

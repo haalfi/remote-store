@@ -2370,6 +2370,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7995,6 +8006,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8306,6 +8328,79 @@ immediately if the file does not exist.</p>
 <li><strong>Pattern matching:</strong> Use <code>glob(pattern)</code> (internally uses flat stream with filtering) rather than custom folder traversal.</li>
 <li><strong>Note:</strong> Do not parallelize any listing — single flat streams are already optimal.</li>
 </ul>
+<h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
+<p>11 of 12 capabilities are supported. <code>ATOMIC_MOVE</code> is not supported.</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Supported</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>READ</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>WRITE</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>LIST</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MOVE</code></td>
+<td>Yes</td>
+<td>Copy + delete (not atomic)</td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td>Yes</td>
+<td>Server-side copy</td>
+</tr>
+<tr>
+<td><code>ATOMIC_WRITE</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ATOMIC_MOVE</code></td>
+<td>--</td>
+<td>S3 has no native rename; move is copy + delete</td>
+</tr>
+<tr>
+<td><code>METADATA</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>GLOB</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>SEEKABLE_READ</code></td>
+<td>Yes</td>
+<td>s3fs streams are natively seekable</td>
+</tr>
+<tr>
+<td><code>LAZY_READ</code></td>
+<td>Yes</td>
+<td>Data is streamed from S3 on demand via s3fs</td>
+</tr>
+</tbody>
+</table>
 <h2 id="caveats">Caveats<a class="headerlink" href="#caveats" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><code>move()</code> is not atomic.</strong> S3 has no native rename operation. <code>move()</code> is implemented as copy + delete. If the process crashes between the two steps, both source and destination will exist.</li>

@@ -8229,7 +8229,7 @@
 <h3 id="using-an-existing-table">Using an existing table<a class="headerlink" href="#using-an-existing-table" title="Permanent link">&para;</a></h3>
 <p>Set <code>create_table=False</code> to use a pre-existing table. Minimum required columns: <code>key TEXT</code> (primary key) and <code>data BLOB</code>. Optional columns (<code>size</code>, <code>modified_at</code>, <code>content_type</code>, <code>digest</code>, <code>extra</code>) are detected automatically; missing ones degrade gracefully.</p>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
-<p>All 10 capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>.</p>
+<p>11 of 12 capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>ATOMIC_MOVE</code>, <code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>. Does not declare <code>LAZY_READ</code> — the entire blob is loaded into memory before a stream is returned.</p>
 <ul>
 <li><code>write_atomic()</code> delegates to <code>write()</code> — single SQL statements are inherently atomic.</li>
 <li><code>glob()</code> uses SQL-side narrowing (SQLite <code>GLOB</code> or <code>LIKE</code>) then client-side regex to enforce standard glob semantics (GLOB-014).</li>

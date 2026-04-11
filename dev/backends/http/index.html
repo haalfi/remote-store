@@ -8269,7 +8269,7 @@
 
 
 <h1 id="http-backend-read-only">HTTP Backend (Read-Only)<a class="headerlink" href="#http-backend-read-only" title="Permanent link">&para;</a></h1>
-<p>The HTTP backend reads files from HTTP/HTTPS URLs. Capabilities: <code>{READ, METADATA}</code> only -- write, delete, list, move, and copy operations are not supported.</p>
+<p>The HTTP backend reads files from HTTP/HTTPS URLs. Capabilities: <code>{READ, METADATA, LAZY_READ}</code> only -- write, delete, list, move, and copy operations are not supported.</p>
 <p><strong>Primary use cases:</strong> government open data portals, dataset registries, static file servers, CDN-hosted assets, package archives, public APIs serving files.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
@@ -8362,49 +8362,75 @@
 </tbody>
 </table>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
+<p>3 of 12 capabilities are supported. This is a read-only backend.</p>
 <table>
 <thead>
 <tr>
 <th>Capability</th>
 <th>Supported</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>READ</td>
+<td><code>READ</code></td>
 <td>Yes</td>
+<td></td>
 </tr>
 <tr>
-<td>METADATA</td>
+<td><code>WRITE</code></td>
+<td>--</td>
+<td></td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>--</td>
+<td></td>
+</tr>
+<tr>
+<td><code>LIST</code></td>
+<td>--</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MOVE</code></td>
+<td>--</td>
+<td></td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td>--</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ATOMIC_WRITE</code></td>
+<td>--</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ATOMIC_MOVE</code></td>
+<td>--</td>
+<td></td>
+</tr>
+<tr>
+<td><code>METADATA</code></td>
 <td>Yes</td>
+<td>Maps HTTP headers to <code>FileInfo</code> fields</td>
 </tr>
 <tr>
-<td>WRITE</td>
+<td><code>GLOB</code></td>
 <td>--</td>
+<td></td>
 </tr>
 <tr>
-<td>DELETE</td>
+<td><code>SEEKABLE_READ</code></td>
 <td>--</td>
+<td>HTTP responses are forward-only streams</td>
 </tr>
 <tr>
-<td>LIST</td>
-<td>--</td>
-</tr>
-<tr>
-<td>MOVE</td>
-<td>--</td>
-</tr>
-<tr>
-<td>COPY</td>
-<td>--</td>
-</tr>
-<tr>
-<td>ATOMIC_WRITE</td>
-<td>--</td>
-</tr>
-<tr>
-<td>GLOB</td>
-<td>--</td>
+<td><code>LAZY_READ</code></td>
+<td>Yes</td>
+<td>Data is streamed from the HTTP response body on demand</td>
 </tr>
 </tbody>
 </table>

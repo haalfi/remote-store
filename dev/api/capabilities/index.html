@@ -7876,6 +7876,14 @@ Use <code>Store.supports()</code> to query at runtime.</p>
   <code>read()</code> and <code>read_seekable()</code> with zero overhead.
   Backends without this capability still support
   <code>read_seekable()</code> via an optimized override or spool fallback.</li>
+<li><code>LAZY_READ</code> -- Quality flag: <code>read()</code> fetches data lazily on
+  demand from the native source rather than loading the entire file
+  into memory before returning.  Backends that pre-load the full
+  file contents (e.g. in-memory backends, SQL blob stores) do
+  <strong>not</strong> declare this flag.  Callers can use
+  <code>store.supports(Capability.LAZY_READ)</code> to know whether partial
+  reads avoid loading the entire file.
+  See also: spec SIO-009 in <code>sdd/specs/006-streaming-io.md</code>.</li>
 </ul>
 
 

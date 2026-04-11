@@ -2181,6 +2181,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7802,6 +7813,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7912,6 +7934,79 @@
 <td><code>root</code></td>
 <td><code>str</code></td>
 <td>Root directory for file storage (required)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
+<p>All 12 capabilities are supported. The local backend is the reference implementation.</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Supported</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>READ</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>WRITE</code></td>
+<td>Yes</td>
+<td>Creates intermediate directories automatically</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>LIST</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MOVE</code></td>
+<td>Yes</td>
+<td><code>shutil.move()</code> -- atomic on same filesystem, copy+delete across filesystems</td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ATOMIC_WRITE</code></td>
+<td>Yes</td>
+<td><code>os.replace()</code> -- truly atomic</td>
+</tr>
+<tr>
+<td><code>ATOMIC_MOVE</code></td>
+<td>Yes</td>
+<td><code>os.replace()</code> on same filesystem</td>
+</tr>
+<tr>
+<td><code>METADATA</code></td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>GLOB</code></td>
+<td>Yes</td>
+<td>Native <code>pathlib.glob()</code></td>
+</tr>
+<tr>
+<td><code>SEEKABLE_READ</code></td>
+<td>Yes</td>
+<td>OS file descriptors are natively seekable</td>
+</tr>
+<tr>
+<td><code>LAZY_READ</code></td>
+<td>Yes</td>
+<td>Data is read from the filesystem on demand</td>
 </tr>
 </tbody>
 </table>

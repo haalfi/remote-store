@@ -8039,7 +8039,7 @@ the full fallback chain and config examples.</p>
 integration: when PyArrow reads Parquet files through the
 <a href="../../pyarrow-adapter/">adapter</a>, it uses C++ range requests and I/O coalescing
 directly — no Python in the loop.</p>
-<p>Both backends support all capabilities and are fully interchangeable — switch by changing the <code>type</code> in your config.</p>
+<p>Both backends support 11 of 12 capabilities (only <code>ATOMIC_MOVE</code> is missing) and are fully interchangeable -- switch by changing the <code>type</code> in your config.</p>
 <h2 id="escape-hatch">Escape Hatch<a class="headerlink" href="#escape-hatch" title="Permanent link">&para;</a></h2>
 <p>Access the underlying filesystems when you need protocol-level features:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyarrow.fs</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3FileSystem</span> <span class="k">as</span> <span class="n">PyArrowS3</span>

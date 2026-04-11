@@ -7978,7 +7978,7 @@
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
 <p><code>MemoryBackend()</code> takes no constructor arguments. The backend starts empty.</p>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
-<p>All 8 capabilities are supported: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>.</p>
+<p>10 of 12 capabilities are supported: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>ATOMIC_MOVE</code>, <code>METADATA</code>, <code>SEEKABLE_READ</code>. Does not declare <code>GLOB</code> (no native pattern matching — use <code>ext.glob.glob_files()</code> as a portable fallback) or <code>LAZY_READ</code> (all data lives in process memory; streams wrap pre-loaded bytes).</p>
 <p><code>write_atomic()</code> behaves identically to <code>write()</code> — in-memory writes are inherently atomic.</p>
 <h2 id="folder-semantics">Folder Semantics<a class="headerlink" href="#folder-semantics" title="Permanent link">&para;</a></h2>
 <p>Folders are explicit tree nodes, not virtual prefixes:</p>
