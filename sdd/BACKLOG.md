@@ -86,12 +86,14 @@ Items graduate through the SDD pipeline:
      4 MiB) would reduce HTTP overhead (~16x fewer requests) but empirical
      testing showed 8 MiB pipe cost with 4 MiB blocks (SDK holds 2 blocks).
      Needs careful tuning with `min_large_block_upload_threshold`.
-  6. **Async streaming integrity test** (MEDIUM): The e2e streaming test
-     only covers sync backends. Add an async variant using `AsyncAzureBackend`
-     to verify the block-size defaults work for async uploads too. Requires
-     an async `transfer()` equivalent or direct `store.write()` loop.
 
 ### Testing & Verification
+
+- [ ] **ID-138 — Async streaming integrity e2e test**
+  The e2e streaming test only covers sync backends. Add an async variant
+  using `AsyncAzureBackend` to verify the block-size defaults work for
+  async uploads too. Requires an async `transfer()` equivalent or direct
+  `store.write()` loop.
 
 - [ ] **ID-136 — Document SQL backend non-lazy write as by-design**
   `SQLBlobBackend.write()` materializes the full stream into memory because
