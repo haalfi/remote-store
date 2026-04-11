@@ -127,7 +127,10 @@ def test_name(backend: SQLBlobBackend) -> None:
 def test_capabilities(backend: SQLBlobBackend) -> None:
     caps = backend.capabilities
     for cap in Capability:
-        assert cap in caps, f"Missing capability: {cap}"
+        if cap is Capability.LAZY_READ:
+            assert cap not in caps, "SQLBlob pre-loads blobs into memory — must NOT declare LAZY_READ"
+        else:
+            assert cap in caps, f"Missing capability: {cap}"
     # Explicit assertion: SQLBlob move() runs inside a transaction — atomic.
     assert Capability.ATOMIC_MOVE in caps, "SQLBlob must declare ATOMIC_MOVE (transactional move)"
 

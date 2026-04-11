@@ -25,6 +25,7 @@ class TestCapabilityEnum:
             "METADATA",
             "GLOB",
             "SEEKABLE_READ",
+            "LAZY_READ",
         }
         actual = {c.name for c in Capability}
         assert actual == expected
@@ -44,6 +45,7 @@ class TestCapabilityEnum:
             pytest.param("METADATA", "metadata", id="metadata"),
             pytest.param("GLOB", "glob", id="glob"),
             pytest.param("SEEKABLE_READ", "seekable_read", id="seekable_read"),
+            pytest.param("LAZY_READ", "lazy_read", id="lazy_read"),
         ],
     )
     def test_values(self, member: str, expected_value: str) -> None:

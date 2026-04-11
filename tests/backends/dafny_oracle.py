@@ -55,7 +55,7 @@ import module_ as _dafny_module  # noqa: E402
 # ---------------------------------------------------------------------------
 
 _BACKEND_NAME = "dafny-oracle"
-_ORACLE_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
+_ORACLE_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB, Capability.LAZY_READ})
 
 
 def _str_to_dafny(s: str) -> _dafny.Seq:
@@ -150,9 +150,9 @@ class DafnyOracleBackend(Backend):
 
     # -- Type marshaling: bytes <-> Dafny Seq, str <-> Seq[CodePoint] ----------
 
-    def read(self, path: str) -> io.BufferedReader:
+    def read(self, path: str) -> io.BytesIO:
         content = _raise_if_err(self._mb.Read(_str_to_dafny(path)))
-        return io.BufferedReader(io.BytesIO(_dafny_to_bytes(content)))  # type: ignore[arg-type]
+        return io.BytesIO(_dafny_to_bytes(content))
 
     def read_bytes(self, path: str) -> bytes:
         return _dafny_to_bytes(_raise_if_err(self._mb.Read(_str_to_dafny(path))))

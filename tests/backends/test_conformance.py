@@ -501,16 +501,40 @@ class TestBackendToKey:
 
 
 class TestStreamingConformance:
-    """SIO-001, SIO-003: streaming must not load entire files into memory."""
+    """SIO-001, SIO-003, SIO-009: streaming semantics.
+
+    SIO-001 only requires a readable BinaryIO at start-of-stream. Pre-loading
+    the full file into memory before returning (e.g. BytesIO) is acceptable for
+    backends that do not declare LAZY_READ. The LAZY_READ conformance tests below
+    enforce the laziness contract only on backends that declare it.
+    """
 
     @pytest.mark.spec("SIO-001")
-    def test_read_returns_true_stream_not_bytesio(self, backend: Backend) -> None:
-        """read() must return a true streaming handle, not a BytesIO wrapper."""
+    def test_read_returns_readable_stream(self, backend: Backend) -> None:
+        """read() must return a readable BinaryIO stream with correct content."""
         _require(backend, Capability.WRITE)
         backend.write("stream_test.bin", b"hello streaming")
         stream = backend.read("stream_test.bin")
-        assert not isinstance(stream, io.BytesIO), "read() must not wrap content in BytesIO -- this defeats streaming"
+        assert stream.readable(), "read() must return a readable stream"
         assert stream.read() == b"hello streaming"
+        stream.close()
+
+    @pytest.mark.spec("SIO-009")
+    def test_read_is_lazy(self, backend: Backend) -> None:
+        """Backends declaring LAZY_READ must not return a BytesIO-backed stream."""
+        _require(backend, Capability.WRITE, Capability.LAZY_READ)
+        backend.write("lazy_test.bin", b"lazy read test")
+        stream = backend.read("lazy_test.bin")
+        # Peel every layer of buffering until we reach a stream with no further
+        # `.raw` attribute — this guards against multi-level wrappers such as
+        # BufferedReader(CustomWrapper(BytesIO(...))).
+        inner = stream
+        while hasattr(inner, "raw"):
+            inner = inner.raw  # type: ignore[union-attr]
+        assert not isinstance(inner, io.BytesIO), (
+            "Backend declares LAZY_READ but read() returned a BytesIO-backed stream"
+        )
+        assert stream.read() == b"lazy read test"
         stream.close()
 
     @pytest.mark.spec("SIO-001")
@@ -528,6 +552,38 @@ class TestStreamingConformance:
             assert len(chunk) <= 100
             chunks.append(chunk)
         assert b"".join(chunks) == content
+        stream.close()
+
+    @pytest.mark.spec("SIO-001")
+    def test_read_eof_returns_empty_bytes_not_none(self, backend: Backend) -> None:
+        """read() at EOF must return b'' (empty bytes), not None."""
+        _require(backend, Capability.WRITE)
+        backend.write("eof_test.bin", b"x")
+        stream = backend.read("eof_test.bin")
+        data = stream.read()
+        assert data == b"x"
+        eof = stream.read()
+        assert eof == b"", f"Expected b'' at EOF, got {eof!r}"
+        eof2 = stream.read(10)
+        assert eof2 == b"", f"Expected b'' at EOF with size hint, got {eof2!r}"
+        stream.close()
+
+    @pytest.mark.spec("SIO-009")
+    def test_read_is_lazy_readinto(self, backend: Backend) -> None:
+        """LAZY_READ streams must support readinto() via the RawIOBase protocol."""
+        _require(backend, Capability.WRITE, Capability.LAZY_READ)
+        content = b"readinto test data"
+        backend.write("readinto_test.bin", content)
+        stream = backend.read("readinto_test.bin")
+        # Reach the raw layer for readinto() — BufferedReader handles readinto
+        # at the buffered level, but we want to exercise the raw stream.
+        raw = stream
+        while hasattr(raw, "raw"):
+            raw = raw.raw  # type: ignore[union-attr]
+        buf = bytearray(len(content))
+        n = raw.readinto(buf)
+        assert isinstance(n, int), f"readinto() must return int, got {type(n).__name__}"
+        assert n > 0, "readinto() must return > 0 bytes on a non-empty stream"
         stream.close()
 
     @pytest.mark.spec("SIO-001")

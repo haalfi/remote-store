@@ -27,6 +27,25 @@ with Registry(config) as registry:
 |--------|------|-------------|
 | `root` | `str` | Root directory for file storage (required) |
 
+## Capabilities
+
+All 12 capabilities are supported. The local backend is the reference implementation.
+
+| Capability | Supported | Notes |
+|------------|-----------|-------|
+| `READ` | Yes | |
+| `WRITE` | Yes | Creates intermediate directories automatically |
+| `DELETE` | Yes | |
+| `LIST` | Yes | |
+| `MOVE` | Yes | `shutil.move()` -- atomic on same filesystem, copy+delete across filesystems |
+| `COPY` | Yes | |
+| `ATOMIC_WRITE` | Yes | `os.replace()` -- truly atomic |
+| `ATOMIC_MOVE` | Yes | `os.replace()` on same filesystem |
+| `METADATA` | Yes | |
+| `GLOB` | Yes | Native `pathlib.glob()` |
+| `SEEKABLE_READ` | Yes | OS file descriptors are natively seekable |
+| `LAZY_READ` | Yes | Data is read from the filesystem on demand |
+
 ## Caveats
 
 - **`overwrite=False` has a TOCTOU race.** The exists-check and write are separate operations. Concurrent writers can both pass the check and overwrite each other.

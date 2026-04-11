@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_CAPABILITIES = CapabilitySet({Capability.READ, Capability.METADATA})
+_CAPABILITIES = CapabilitySet({Capability.READ, Capability.METADATA, Capability.LAZY_READ})
 
 _TRANSIENT_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
 

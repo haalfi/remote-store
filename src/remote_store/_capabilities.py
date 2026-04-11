@@ -54,6 +54,14 @@ class Capability(enum.Enum):
       ``read()`` and ``read_seekable()`` with zero overhead.
       Backends without this capability still support
       ``read_seekable()`` via an optimized override or spool fallback.
+    - ``LAZY_READ`` -- Quality flag: ``read()`` fetches data lazily on
+      demand from the native source rather than loading the entire file
+      into memory before returning.  Backends that pre-load the full
+      file contents (e.g. in-memory backends, SQL blob stores) do
+      **not** declare this flag.  Callers can use
+      ``store.supports(Capability.LAZY_READ)`` to know whether partial
+      reads avoid loading the entire file.
+      See also: spec SIO-009 in ``sdd/specs/006-streaming-io.md``.
     """
 
     READ = "read"
@@ -67,6 +75,7 @@ class Capability(enum.Enum):
     METADATA = "metadata"
     GLOB = "glob"
     SEEKABLE_READ = "seekable_read"
+    LAZY_READ = "lazy_read"
 
 
 class CapabilitySet:

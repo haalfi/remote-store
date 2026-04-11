@@ -201,14 +201,8 @@ class S3PyArrowBackend(_S3Base):
     def read(self, path: str) -> BinaryIO:
         with self._pyarrow_errors(path):
             pa_file = self._pa_fs.open_input_file(self._pa_path(path))
-            return cast(  # noqa: TC006
-                "BinaryIO",
-                _safe_wrap(
-                    pa_file,
-                    _PyArrowBinaryIO,
-                    lambda s: _ErrorMappingStream(s, self._classify_error, path),
-                ),
-            )
+            stream = _safe_wrap(pa_file, _PyArrowBinaryIO, lambda s: _ErrorMappingStream(s, self._classify_error, path))
+            return cast(BinaryIO, stream)  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
         with self._pyarrow_errors(path):

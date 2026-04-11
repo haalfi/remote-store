@@ -7,7 +7,7 @@ All I/O in `remote_store` is streaming-first. Read operations return `BinaryIO` 
 ## SIO-001: Streaming Reads
 
 **Invariant:** `Backend.read(path)` returns a `BinaryIO` stream positioned at the start.
-**Postconditions:** The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use `Store.read_seekable()`.
+**Postconditions:** The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use `Store.read_seekable()`. Pre-loading the full file into memory before returning (e.g. returning `io.BytesIO`) is acceptable for backends that do not declare `Capability.LAZY_READ` — the requirement is only that a valid `BinaryIO` is returned, not that data is fetched lazily. See SIO-009.
 **Acquire-then-wrap safety invariant:** Between acquiring a raw native handle
 (e.g. an s3fs file object, a paramiko `SFTPFile`, an Azure downloader) and
 returning the wrapped `BinaryIO` to the caller, the backend MUST guarantee the
@@ -66,3 +66,8 @@ chunk = stream.read(4096)
 **Invariant:** `Capability.SEEKABLE_READ` indicates that `Backend.read()` always returns a seekable stream (`stream.seekable()` is `True`).
 **Postconditions:** This is a static guarantee — callers can check `store.supports(Capability.SEEKABLE_READ)` once at setup time instead of checking every stream. All backends support `Store.read_seekable()` regardless of this capability — the capability indicates zero-overhead (no spooling needed).
 **See also:** [036-seekable-read.md](036-seekable-read.md), [ADR-0017](../adrs/0017-seekable-read-on-store-api.md).
+
+## SIO-009: Lazy Read Capability
+
+**Invariant:** `Capability.LAZY_READ` indicates that `Backend.read()` fetches data lazily on demand from the native source. Backends that load the full file contents into memory before returning a stream do **not** declare this capability.
+**Postconditions:** When `Capability.LAZY_READ` is declared, the stream is connected to the native source and data is pulled as the caller reads. Reading only a small prefix of a large file is expected to avoid loading the full file, though the exact savings depend on backend-level buffering (e.g. s3fs read-ahead, TCP receive buffers). Callers can use `store.supports(Capability.LAZY_READ)` to decide whether partial reads are likely efficient. Backends without `LAZY_READ` (e.g. in-memory, SQL blob) still return a valid `BinaryIO` stream — it just wraps pre-loaded data.

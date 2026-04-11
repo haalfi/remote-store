@@ -1,6 +1,6 @@
 # HTTP Backend (Read-Only)
 
-The HTTP backend reads files from HTTP/HTTPS URLs. Capabilities: `{READ, METADATA}` only -- write, delete, list, move, and copy operations are not supported.
+The HTTP backend reads files from HTTP/HTTPS URLs. Capabilities: `{READ, METADATA, LAZY_READ}` only -- write, delete, list, move, and copy operations are not supported.
 
 **Primary use cases:** government open data portals, dataset registries, static file servers, CDN-hosted assets, package archives, public APIs serving files.
 
@@ -59,17 +59,22 @@ with Registry(config) as registry:
 
 ## Capabilities
 
-| Capability | Supported |
-|---|---|
-| READ | Yes |
-| METADATA | Yes |
-| WRITE | -- |
-| DELETE | -- |
-| LIST | -- |
-| MOVE | -- |
-| COPY | -- |
-| ATOMIC_WRITE | -- |
-| GLOB | -- |
+3 of 12 capabilities are supported. This is a read-only backend.
+
+| Capability | Supported | Notes |
+|---|---|---|
+| `READ` | Yes | |
+| `WRITE` | -- | |
+| `DELETE` | -- | |
+| `LIST` | -- | |
+| `MOVE` | -- | |
+| `COPY` | -- | |
+| `ATOMIC_WRITE` | -- | |
+| `ATOMIC_MOVE` | -- | |
+| `METADATA` | Yes | Maps HTTP headers to `FileInfo` fields |
+| `GLOB` | -- | |
+| `SEEKABLE_READ` | -- | HTTP responses are forward-only streams |
+| `LAZY_READ` | Yes | Data is streamed from the HTTP response body on demand |
 
 ## HTTP Library
 

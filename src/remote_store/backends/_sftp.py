@@ -309,7 +309,7 @@ class SFTPBackend(Backend):
             f: BinaryIO = self._sftp.file(sftp_path, "r")
             try:
                 raw = _ErrorMappingStream(f, self._map_exception, path)
-                return io.BufferedReader(cast("io.RawIOBase", raw))
+                return io.BufferedReader(cast(io.RawIOBase, raw))  # noqa: TC006
             except Exception:
                 f.close()
                 raise
