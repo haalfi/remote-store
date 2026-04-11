@@ -26,7 +26,8 @@ at runtime before calling an operation.
 
 **Near-full (11/12):** S3 and S3-PyArrow lack `ATOMIC_MOVE` (copy-then-delete
 semantics). SQLBlob lacks `LAZY_READ` — the entire blob is loaded into memory
-before a stream is returned.
+before a stream is returned. Writes also materialize the full stream before
+the SQL INSERT/UPDATE because BLOB columns require complete data.
 
 **Partial support (10/12):** Memory lacks native `GLOB` and `LAZY_READ` (all
 data lives in process memory; use the portable fallback

@@ -46,6 +46,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+### Documentation
+
+- **SQL blob non-lazy write documented as by-design** (ID-136): Backend guide
+  and capabilities matrix now note that `write()` materializes the full stream
+  into memory before the SQL INSERT/UPDATE, inherent to BLOB column semantics.
+
+### Internal
+
 - **Streaming integrity test hardened** (BUG-161, BUG-162): Memory and chunk
   violations are now hard failures instead of warnings. Non-lazy destinations
   (SQL BLOB) are exempt from chunk-count checks (by-design, ID-136).
