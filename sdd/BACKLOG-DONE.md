@@ -9,12 +9,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Proves the streaming contract -- round-robin SHA-256 verification and
   `tracemalloc` memory profiling across all backends. PR #403.
 
-- [x] **BK-146 — Eliminate string-literal `cast()` arguments (CodeQL + ruff)**
+- [x] **BK-146 — Eliminate string-literal `cast()` arguments (CodeQL + ruff); add `Capability.LAZY_READ`**
   All `cast("TypeName", value)` call sites replaced with `cast(TypeName, value) # noqa: TC006`.
   `BufferedReader`-over-`BytesIO` pattern removed from Memory and SQL backends (`BytesIO` is
   `BufferedIOBase`, returning it directly is correct). `BufferedReader` also removed from S3
   (s3fs `AbstractBufferedFile` already provides internal buffering).
   `FileInfo`/`FolderInfo` moved to runtime imports in `cache.py`.
+  Added `Capability.LAZY_READ` quality flag: distinguishes backends that fetch data lazily
+  from the native source (Local, HTTP, S3, S3-PyArrow, SFTP, Azure) from those that
+  pre-load into memory (Memory, SQLBlob, SQLQuery). Spec SIO-009 added; conformance tests
+  `test_read_is_lazy` and `test_read_is_lazy_readinto` added; capabilities matrix, backend
+  guides (sql-blob, memory, sftp), and `FEATURES.md` updated.
   PR #401.
 
 - [x] **BK-145 — Mutation testing CI workflow (manual + scheduled)**

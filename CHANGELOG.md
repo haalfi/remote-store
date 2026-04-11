@@ -6,17 +6,22 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **`Capability.LAZY_READ`** (BK-146): New quality flag that indicates `read()`
+  fetches data lazily on demand from the native source. Backends that pre-load
+  the full file into memory before returning a stream (Memory, SQLBlob, SQLQuery)
+  do not declare it. Declared by Local, HTTP, S3, S3-PyArrow, SFTP, and Azure.
+  Spec SIO-009 added; conformance tests added; capabilities matrix, backend
+  guides, and `FEATURES.md` updated.
+
 ### Fixed
 
-- **`cast()` correctness and `Capability.LAZY_READ`** (BK-146): All
-  `cast("TypeName", value)` patterns replaced with `cast(TypeName, value)
-  # noqa: TC006`. Removed redundant `BufferedReader`-over-`BytesIO` wrappers in
-  Memory and SQL backends (`BytesIO` is `BufferedIOBase` and needs no extra
-  buffering). Removed `BufferedReader` from S3 backend — s3fs
-  `AbstractBufferedFile` already provides internal buffering. Added
-  `Capability.LAZY_READ` quality flag to distinguish backends that stream
-  lazily from the native source (Local, HTTP, S3, S3-PyArrow, SFTP, Azure)
-  from those that pre-load into memory (Memory, SQLBlob, SQLQuery).
+- **`cast()` string-literal removal** (BK-146): All `cast("TypeName", value)`
+  patterns replaced with `cast(TypeName, value) # noqa: TC006`. Removed redundant
+  `BufferedReader`-over-`BytesIO` wrappers in Memory and SQL backends (`BytesIO`
+  is `BufferedIOBase` and needs no extra buffering). Removed `BufferedReader` from
+  S3 backend — s3fs `AbstractBufferedFile` already provides internal buffering.
   `FileInfo`/`FolderInfo` promoted to runtime imports in `cache.py`.
 
 - **Pages deployment failure** (BUG-144): Batch mike pushes into one and

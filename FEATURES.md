@@ -129,7 +129,7 @@ Backends implement storage-specific behavior behind the Store API.
 | `sftp` | SFTP via paramiko | `SFTPBackend` | `pip install remote-store[sftp]` | No | All except GLOB and ATOMIC_MOVE |
 | `azure` | Azure Data Lake Storage via Azure SDK | `AzureBackend` | `pip install remote-store[azure]` | No | All except SEEKABLE_READ and ATOMIC_MOVE |
 | `sql-blob` | SQL blob store via SQLAlchemy | `SQLBlobBackend` | `pip install remote-store[sql]` | No | All except LAZY_READ |
-| `sql-query` | SQL query store for tabular data via SQLAlchemy + PyArrow | `SQLQueryBackend` | `pip install remote-store[sql-query]` | No | READ, LIST, METADATA, GLOB, SEEKABLE_READ |
+| `sql-query` | SQL query store for tabular data via SQLAlchemy + PyArrow | `SQLQueryBackend` | `pip install remote-store[sql-query]` | No | READ, LIST, METADATA, GLOB, SEEKABLE_READ — no LAZY_READ (data serialized to memory before returning) |
 
 ---
 
