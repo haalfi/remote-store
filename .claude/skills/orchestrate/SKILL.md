@@ -5,7 +5,7 @@ disable-model-invocation: true
 argument-hint: "[BACKLOG-ID] [optional: task description]"
 ---
 
-Orchestrate a complex task by delegating to 4 domain experts.
+Orchestrate a complex task by delegating to 5 domain experts.
 See ADR-0020 for architecture rationale.
 
 Parse `$ARGUMENTS`: first token is the backlog ID (e.g., `BK-123`, `ID-120`),
@@ -42,16 +42,17 @@ direction is uncertain.
 
 ### Expert activation rules
 
-**Code change (feature, refactor, bug fix):** All 4 experts activate.
+**Code change (feature, refactor, bug fix):** All 5 experts activate.
 Each evaluates from their domain — even if their files aren't directly touched.
 For bug fixes scope is narrower, but every expert still evaluates.
 
-**SDD-only change (spec/RFC/ADR/process):** All 4 experts **review** (not
-implement) from their domain perspective.
+**SDD-only change (spec/RFC/ADR/process):** The SDD Expert leads
+implementation. The other 4 experts **review** (not implement) from their
+domain perspective.
 
 ## Step 3: Refine (Standard and Complex only)
 
-Spawn all 4 experts in **review mode** with the plan from Step 2. Each expert
+Spawn all 5 experts in **review mode** with the plan from Step 2. Each expert
 reviews the plan from their domain perspective and returns:
 - Gaps, risks, or contradictions they see
 - Suggestions for their domain scope
@@ -75,7 +76,7 @@ bug-fix protocol in CLAUDE.md (backlog → changelog → failing test → fix):
    the bug, conforming to the full testing guide (`sdd/TESTING.md`).
 2. Verify the test fails for the right reason.
 3. Then spawn remaining experts (Store & Backend, Extension, Documentation)
-   to fix the bug and assess impact.
+   to fix the bug, plus the **SDD Expert** to assess spec/ADR impact.
 
 ### Store & Backend Expert
 
@@ -215,6 +216,38 @@ OUTPUT: assessment, files created/modified (if any), nav changes,
 README/CHANGELOG recommendations for orchestrator.
 ```
 
+### SDD Expert
+
+```
+You are the SDD (Spec-Driven Development) expert for remote-store.
+
+IDENTITY: Spec guardian — you verify that specs, ADRs, and process
+guides remain correct, concise, consistent, and free of contradictions
+after this change.
+
+DOMAIN: sdd/ (specs, ADRs, RFCs, formal, process guides)
+
+FOUNDATION — read before evaluating:
+- sdd/000-process.md, sdd/DESIGN.md
+- Specs and ADRs relevant to the task
+
+TASK: [orchestrator fills this — always includes: "Evaluate whether
+specs, ADRs, or process guides need updating given this change."]
+
+CONSTRAINTS:
+- Spec vs code conflict → flag it (both directions).
+- Stay in sdd/ — do not touch code, tests, or user-facing docs.
+- Even if no sdd/ files change, report your assessment.
+
+DONE WHEN:
+- Touched specs verified against the implementation.
+- ADR coverage assessed (new ADR drafted or "not needed" with reasoning).
+- Process guides confirmed accurate or updated.
+
+OUTPUT: assessment (spec consistency, ADR coverage, process doc accuracy),
+files created/modified (if any), issues found with evidence.
+```
+
 ## Step 5: Consolidate (Standard and Complex only)
 
 After all experts complete, collect and categorize results:
@@ -233,7 +266,7 @@ and wait.
 
 ## Step 6: Review
 
-Spawn all 4 experts in **review mode** — each reviews *all output from all
+Spawn all 5 experts in **review mode** — each reviews *all output from all
 experts*, not just their own domain. Each returns:
 - Issues found (with file, line, category)
 - "Clean — no issues" if nothing to report
@@ -243,7 +276,7 @@ experts*, not just their own domain. Each returns:
 **Standard/Complex mode:** If issues found:
 1. Route each issue to the responsible expert for fixing.
 2. Re-spawn affected experts with targeted fix tasks.
-3. Re-review (all 4 experts again). **Max 2 review rounds total.**
+3. Re-review (all 5 experts again). **Max 2 review rounds total.**
 4. If issues remain after 2 rounds → present to user for decision.
 
 ## Step 7: Finish

@@ -30,6 +30,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **SDD Expert in orchestrate skill** (BK-147): Added a 5th domain expert
+  focused on spec-code consistency, ADR coverage, and process guide accuracy.
+  Scoped to `sdd/` (specs, ADRs, RFCs, formal, process guides).
+
 - **Mutation testing CI workflow** (BK-145): Added `.github/workflows/mutation.yml`
   with manual (`workflow_dispatch`) and weekly scheduled (`cron`, Saturdays 05:00
   UTC) triggers. Runs all 6 scoped mutation targets in parallel via matrix
