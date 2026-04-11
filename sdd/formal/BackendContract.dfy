@@ -602,7 +602,8 @@ lemma {:induction false} SumSizesSeqPermutation(
     assert multiset(xs) == multiset{head} + multiset(xs');
     assert multiset(ys) == multiset(ys[..i]) + multiset{head} + multiset(ys[i+1..]);
     assert multiset(ys') == multiset(ys[..i]) + multiset(ys[i+1..]);
-    assert multiset(xs') == multiset(ys');
+    // Pointwise: both sides agree on every element after cancelling head.
+    assert forall x :: multiset(xs')[x] == multiset(ys')[x];
     SumSizesSeqPermutation(fs, xs', ys');
     SumSizesSeqRemoveAt(fs, ys, i);
   }
