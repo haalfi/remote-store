@@ -93,6 +93,12 @@ Use `/review-pr` for PR reviews, not the built-in `/review` CLI command.
 
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
 
+## Repo skills
+
+Repo-specific skills live in `.claude/skills/`. When the user references a skill
+by name or intent (e.g. "use the experts", "orchestrate this", "audit the code",
+"create a PR", "preview the build"), read the matching `SKILL.md` and follow it.
+
 Ignore AGENTS.md; this file defines Claude Code behavior for this repo.
 
 ---
