@@ -5,6 +5,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-161 — Azure `write()` buffers entire stream into memory**
+  Set `max_single_put_size`, `max_block_size` (256 KiB), and
+  `min_large_block_upload_threshold` (1) on both `BlobServiceClient` and
+  `DataLakeServiceClient` so uploads use staged blocks. PR #407.
+
+- [x] **BUG-162 — Transfer pipe layer ~2 MiB overhead**
+  All backends now use `_COPY_BUFSIZE` (256 KiB) for `shutil.copyfileobj`
+  instead of platform default (1 MiB on Windows). Azure block size also
+  set to 256 KiB. E2e streaming test hardened: warnings → assertions,
+  random file size (7--14 MiB), random backend order. PR #407.
+
 - [x] **BK-147 — Add SDD Expert to orchestrate skill**
   5th domain expert focused on spec-code consistency, ADR coverage, and
   process guide accuracy. Scoped to `sdd/` only. PR #405.

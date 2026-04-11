@@ -20,6 +20,12 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
+# BUG-162: Explicit copy buffer size for shutil.copyfileobj.  On Windows
+# the default (shutil.COPY_BUFSIZE = 1 MiB) causes the transfer pipe layer
+# to hold two chunks simultaneously (current + previous), exceeding the
+# 1 MiB pipe-memory threshold.  256 KiB keeps peak pipe cost < 1 MiB.
+_COPY_BUFSIZE = 256 * 1024
+
 
 class _SeekableSpool(tempfile.SpooledTemporaryFile):  # type: ignore[type-arg]
     """SpooledTemporaryFile subclass that exposes ``seekable()``.
@@ -157,7 +163,7 @@ class Backend(abc.ABC):
             # always closed via the finally block regardless of outcome.
             spool: BinaryIO = _SeekableSpool(max_size=8 * 1024 * 1024)  # type: ignore[assignment]
             try:
-                shutil.copyfileobj(stream, spool)
+                shutil.copyfileobj(stream, spool, _COPY_BUFSIZE)
             except BaseException:
                 spool.close()
                 raise

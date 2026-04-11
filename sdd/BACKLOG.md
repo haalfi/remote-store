@@ -39,7 +39,13 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-*(none)*
+- [ ] **BUG-163 — `_ensure_known_hosts_file` 0o600 not enforced on Windows**
+  `SFTPBackend._ensure_known_hosts_file()` creates the file with
+  `os.open(path, O_CREAT | O_WRONLY, 0o600)` but NTFS ignores POSIX mode
+  bits -- the file is created with `0o666`. The test
+  `test_ensure_known_hosts_file_creates_with_mode_600` correctly catches
+  this. Fix either the code (Windows ACL or accept NTFS limitation) or
+  the test (skip on Windows where POSIX permissions are meaningless).
 
 ---
 
@@ -56,7 +62,45 @@ Items graduate through the SDD pipeline:
 
 ## Ideas
 
+### Streaming & Memory Optimization
+
+- [ ] **ID-137 — Reduce per-backend streaming overhead**
+  E2e streaming integrity test (8+ runs, 7--14 MiB, random order) identified
+  four optimization opportunities:
+  1. **PyArrow S3 upload buffer ~4 MiB constant** (HIGH): `open_output_stream()`
+     allocates ~4 MiB regardless of file size. Investigate buffer-size options
+     on `pyarrow.fs.S3FileSystem` (`background_writes`, etc.).
+  2. **Memory backend zero-copy read** (MEDIUM): `read()` does `bytes(node.data)`
+     + `BytesIO()`, copying the full file. A `memoryview`-based approach could
+     eliminate one copy (must consider thread-safety under `_lock`).
+  3. **SFTP 32 KiB chunk size** (LOW): `_CHUNK_SIZE = 32768` produces 250--400
+     chunks for 10 MiB. Increasing to 256 KiB could reduce syscall overhead
+     without affecting correctness.
+  4. **Non-lazy -> memory ~10% overhead** (LOW): `sftp -> memory` and
+     `azure -> memory` consistently show total ≈ file_size × 1.1. Understand
+     the source of the extra ~10%.
+  5. **Decouple Azure `max_block_size` from `_COPY_BUFSIZE`** (MEDIUM):
+     Currently both are 256 KiB. `_COPY_BUFSIZE` controls Python-level
+     `shutil.copyfileobj` chunking (memory), while `max_block_size` controls
+     HTTP PUT request size (network I/O). A larger `max_block_size` (e.g.
+     4 MiB) would reduce HTTP overhead (~16x fewer requests) but empirical
+     testing showed 8 MiB pipe cost with 4 MiB blocks (SDK holds 2 blocks).
+     Needs careful tuning with `min_large_block_upload_threshold`.
+
 ### Testing & Verification
+
+- [ ] **ID-138 — Async streaming integrity e2e test**
+  The e2e streaming test only covers sync backends. Add an async variant
+  using `AsyncAzureBackend` to verify the block-size defaults work for
+  async uploads too. Requires an async `transfer()` equivalent or direct
+  `store.write()` loop.
+
+- [~] **ID-136 — Document SQL backend non-lazy write as by-design**
+  `SQLBlobBackend.write()` materializes the full stream into memory because
+  SQL BLOB columns require complete data for INSERT/UPDATE. This is inherent
+  to SQL storage and cannot be streamed. Code comment shipped (PR #407).
+  Remaining: note in
+  backend docs.
 
 ### Formal Verification
 

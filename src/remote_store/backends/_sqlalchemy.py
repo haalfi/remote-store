@@ -370,6 +370,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         self._validate_path(path)
+        # SQL BLOB columns require full materialization; streaming writes
+        # are not possible.  This is by-design (ID-136).
         raw = content if isinstance(content, bytes) else content.read()
 
         if self._max_blob_size is not None and len(raw) > self._max_blob_size:

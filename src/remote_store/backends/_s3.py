@@ -8,6 +8,7 @@ import tempfile
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
+from remote_store._backend import _COPY_BUFSIZE
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
@@ -149,7 +150,7 @@ class S3Backend(_S3Base):
                 self._fs.pipe_file(self._s3_path(path), content)
             else:
                 with self._fs.open(self._s3_path(path), "wb") as f:
-                    shutil.copyfileobj(content, f)
+                    shutil.copyfileobj(content, f, _COPY_BUFSIZE)
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         # S3 PUT is inherently atomic (S3-010)
