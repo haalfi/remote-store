@@ -53,6 +53,14 @@ Items graduate through the SDD pipeline:
   `__getattr__` delegation or `RawIOBase.read()` internal buffering causes
   unnecessary allocations.
 
+- [ ] **BUG-163 — `_ensure_known_hosts_file` 0o600 not enforced on Windows**
+  `SFTPBackend._ensure_known_hosts_file()` creates the file with
+  `os.open(path, O_CREAT | O_WRONLY, 0o600)` but NTFS ignores POSIX mode
+  bits -- the file is created with `0o666`. The test
+  `test_ensure_known_hosts_file_creates_with_mode_600` correctly catches
+  this. Fix either the code (Windows ACL or accept NTFS limitation) or
+  the test (skip on Windows where POSIX permissions are meaningless).
+
 ---
 
 ## Backlog (Prioritized)
