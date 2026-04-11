@@ -39,6 +39,8 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
+*(none)*
+
 ---
 
 ## Backlog (Prioritized)
@@ -93,6 +95,15 @@ Items graduate through the SDD pipeline:
   to SQL storage and cannot be streamed. Code comment shipped (PR #407).
   Remaining: note in
   backend docs.
+
+### Formal Verification
+
+- [ ] **ID-134c — Remove SumSizesAddOneLocal workaround after Dafny upgrade**
+  `MemoryBackend.dfy` duplicates `SumSizesAddOne` as a file-local lemma
+  because Dafny 4.9.1 fails to emit the Boogie procedure for lemmas from
+  included files that transitively use `:|` in ghost functions (`SetToSeq`).
+  When Dafny is upgraded past 4.9.1, try calling `SumSizesAddOne` directly;
+  if it works, delete `SumSizesAddOneLocal` and the workaround comment.
 
 ### API Surface Enhancements
 
