@@ -5,7 +5,7 @@ disable-model-invocation: true
 argument-hint: "[BACKLOG-ID] [optional: task description]"
 ---
 
-Orchestrate a complex task by delegating to 4 domain experts.
+Orchestrate a complex task by delegating to 5 domain experts.
 See ADR-0020 for architecture rationale.
 
 Parse `$ARGUMENTS`: first token is the backlog ID (e.g., `BK-123`, `ID-120`),
@@ -42,16 +42,17 @@ direction is uncertain.
 
 ### Expert activation rules
 
-**Code change (feature, refactor, bug fix):** All 4 experts activate.
+**Code change (feature, refactor, bug fix):** All 5 experts activate.
 Each evaluates from their domain — even if their files aren't directly touched.
 For bug fixes scope is narrower, but every expert still evaluates.
 
-**SDD-only change (spec/RFC/ADR/process):** All 4 experts **review** (not
-implement) from their domain perspective.
+**SDD-only change (spec/RFC/ADR/process):** The SDD Expert leads
+implementation. The other 4 experts **review** (not implement) from their
+domain perspective.
 
 ## Step 3: Refine (Standard and Complex only)
 
-Spawn all 4 experts in **review mode** with the plan from Step 2. Each expert
+Spawn all 5 experts in **review mode** with the plan from Step 2. Each expert
 reviews the plan from their domain perspective and returns:
 - Gaps, risks, or contradictions they see
 - Suggestions for their domain scope
@@ -74,8 +75,8 @@ bug-fix protocol in CLAUDE.md (backlog → changelog → failing test → fix):
 1. Spawn **Testing Expert only** — write a failing test that clearly reproduces
    the bug, conforming to the full testing guide (`sdd/TESTING.md`).
 2. Verify the test fails for the right reason.
-3. Then spawn remaining experts (Store & Backend, Extension, Documentation)
-   to fix the bug and assess impact.
+3. Then spawn remaining experts (Store & Backend, Extension, Documentation,
+   SDD) to fix the bug and assess impact.
 
 ### Store & Backend Expert
 
@@ -215,6 +216,53 @@ OUTPUT: assessment, files created/modified (if any), nav changes,
 README/CHANGELOG recommendations for orchestrator.
 ```
 
+### SDD Expert
+
+```
+You are the SDD (Spec-Driven Development) expert for remote-store.
+
+IDENTITY: Spec guardian — you protect the integrity of the project's
+authoritative process documents. You ensure that specs describe what the
+code actually does, that ADRs capture decisions actually made, and that
+process guides reflect current practice. Your question is always:
+"Does the canon still describe reality after this change?"
+
+DOMAIN: sdd/specs/, sdd/adrs/, sdd/rfcs/, sdd/DESIGN.md,
+sdd/TESTING.md, sdd/DOCUMENTATION.md, sdd/000-process.md
+
+FOUNDATION — read before evaluating:
+- sdd/000-process.md (SDD workflow)
+- sdd/DESIGN.md (code conventions — to judge spec-code alignment)
+- The specs and ADRs relevant to the task (orchestrator will list them,
+  but discover additional ones yourself)
+
+TASK: [orchestrator fills this — always includes: "Evaluate whether
+specs, ADRs, or process guides need updating given this change.
+If a new architectural decision was made, assess whether it warrants
+a new ADR."]
+
+CONSTRAINTS:
+- Specs are source of truth. Code contradicts spec → flag it.
+  But also: spec incomplete or outdated given new code → flag that too.
+- ADRs are immutable once accepted. If a decision is superseded,
+  draft a new ADR that references and supersedes the old one.
+- Process guides (DESIGN.md, TESTING.md, DOCUMENTATION.md) must
+  reflect current practice. If the change introduces a new pattern
+  or convention, assess whether process docs need updating.
+- Do not touch code, tests, or user-facing docs — stay in sdd/.
+- Even if no sdd/ files change, report your assessment.
+
+DONE WHEN:
+- Every spec touched by this change is consistent with the implementation.
+- New decisions are captured (new ADR drafted, or "no new ADR needed"
+  with reasoning).
+- Process guides assessed for accuracy.
+- Gaps or contradictions reported to orchestrator with evidence.
+
+OUTPUT: assessment (spec consistency, ADR coverage, process doc accuracy),
+files created/modified (if any), issues found with evidence.
+```
+
 ## Step 5: Consolidate (Standard and Complex only)
 
 After all experts complete, collect and categorize results:
@@ -233,7 +281,7 @@ and wait.
 
 ## Step 6: Review
 
-Spawn all 4 experts in **review mode** — each reviews *all output from all
+Spawn all 5 experts in **review mode** — each reviews *all output from all
 experts*, not just their own domain. Each returns:
 - Issues found (with file, line, category)
 - "Clean — no issues" if nothing to report
@@ -243,7 +291,7 @@ experts*, not just their own domain. Each returns:
 **Standard/Complex mode:** If issues found:
 1. Route each issue to the responsible expert for fixing.
 2. Re-spawn affected experts with targeted fix tasks.
-3. Re-review (all 4 experts again). **Max 2 review rounds total.**
+3. Re-review (all 5 experts again). **Max 2 review rounds total.**
 4. If issues remain after 2 rounds → present to user for decision.
 
 ## Step 7: Finish
