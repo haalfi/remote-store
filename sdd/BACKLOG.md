@@ -89,7 +89,6 @@ Items graduate through the SDD pipeline:
   async uploads too. Requires an async `transfer()` equivalent or direct
   `store.write()` loop.
 
-
 ### Formal Verification
 
 - [ ] **ID-134c — Remove SumSizesAddOneLocal workaround after Dafny upgrade**

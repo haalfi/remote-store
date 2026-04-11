@@ -44,13 +44,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   replace built-in deployment with explicit `deploy-pages@v4` (Node 20) job,
   fixing "Multiple artifacts" error and `DEP0040` punycode warning.
 
-### Internal
-
 ### Documentation
 
-- **SQL blob non-lazy write documented as by-design** (ID-136): Backend guide
-  and capabilities matrix now note that `write()` materializes the full stream
-  into memory before the SQL INSERT/UPDATE, inherent to BLOB column semantics.
+- **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
+  and docstring updated.
 
 ### Internal
 

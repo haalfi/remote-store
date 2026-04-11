@@ -6,9 +6,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ---
 
 - [x] **ID-136 — Document SQL backend non-lazy write as by-design**
-  `SQLBlobBackend.write()` materializes the full stream into memory because
-  SQL BLOB columns require complete data for INSERT/UPDATE. Code comment
-  shipped in PR #407; backend guide and capabilities matrix updated.
+  Backend guide, capabilities matrix, and docstring updated. Code comment
+  shipped in PR #407.
 
 - [x] **ID-134 — Verify `GetFolderInfo` aggregate fields (`file_count`, `total_size`) in Dafny postcondition**
   Part 1 (PR #406): Ghost infrastructure — `ChildFiles`, `SetToSeq`,
