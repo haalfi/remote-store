@@ -3,7 +3,8 @@
 Proves three properties of the remote-store streaming contract:
 
 1. **Data integrity** (hard fail) -- a 10 MiB file survives a full round-robin
-   transfer across every read/write backend with identical SHA-256 at each hop.
+   transfer across all available read/write backends with identical SHA-256 at
+   each hop.
 2. **Chunked streaming** (warning) -- ``transfer()`` reads data in multiple
    chunks, never as a single ``read()`` of the full file.  Verified via the
    ``on_progress`` callback which fires per chunk.
@@ -11,8 +12,9 @@ Proves three properties of the remote-store streaming contract:
    filtered to ``remote_store`` source files only (dependencies excluded):
 
    - **Pipe cost**: allocations from the transfer layer
-     (``ext/transfer.py``, ``ext/streams.py``, ``_stream.py``) -- should
-     always be tiny regardless of backends.
+     (``ext/transfer.py``, ``ext/streams.py``, ``_stream.py``).  Note:
+     ``_stream.py`` wraps backend streams, so held references may inflate
+     pipe cost depending on the backend.
    - **Total cost**: allocations from all ``remote_store`` code including
      backends -- expected to vary by backend type.  Non-lazy backends
      (Memory, SQL) legitimately buffer; lazy backends should stay lean.
@@ -24,6 +26,7 @@ allocations (what **remote-store** costs), not native buffers from ``boto3``,
 just post-cleanup state.
 
 Requires: ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
+Run with: ``pytest -m integration tests/e2e/test_streaming_integrity.py -s``
 """
 
 from __future__ import annotations
@@ -32,9 +35,10 @@ import gc
 import hashlib
 import random
 import tracemalloc
+import uuid
 import warnings
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -63,8 +67,8 @@ DRAIN_CHUNK = 1_048_576  # 1 MiB read chunks for checksum verification
 PIPE_THRESHOLD = 1 * 1_048_576  # 1 MiB -- transfer.py + streams.py + _stream.py
 
 # Total cost thresholds (as multipliers of FILE_SIZE).
-LAZY_THRESHOLD_FACTOR = 0.5  # lazy backends: peak < 5 MiB for a 10 MiB file
-NON_LAZY_THRESHOLD_FACTOR = 2.0  # non-lazy backends buffer the file; allow headroom
+LAZY_THRESHOLD_FACTOR = 0.5  # lazy backends: peak < 50% of FILE_SIZE
+NON_LAZY_THRESHOLD_FACTOR = 2.0  # non-lazy backends buffer the file; peak < 200%
 
 # Backends that buffer entire files in Python memory by design.
 _NON_LAZY_BACKENDS = frozenset({"memory", "sql-blob"})
@@ -143,8 +147,11 @@ def _make_payload() -> tuple[bytes, str]:
     return data, digest
 
 
-def _verify_checksum(store: Store, path: str, expected: str) -> None:
-    """Read *path* from *store* through ChecksumReader, assert SHA-256."""
+def _verify_checksum(store: Store, path: str, expected: str) -> str:
+    """Read *path* from *store* through ChecksumReader, assert SHA-256.
+
+    Returns the computed hex digest for use in direct assertions.
+    """
     raw: BinaryIO = store.read(path)
     stream = ChecksumReader(raw, algorithm="sha256")
     try:
@@ -156,11 +163,17 @@ def _verify_checksum(store: Store, path: str, expected: str) -> None:
     assert actual == expected, (
         f"Checksum mismatch after transfer to {store!r}: expected {expected[:16]}..., got {actual[:16]}..."
     )
+    return actual
 
 
-def _is_lazy(store: Store) -> bool:
-    """Return True if the backend streams lazily (does not buffer full file)."""
-    return store._backend.name not in _NON_LAZY_BACKENDS
+def _backend_name(store: Store) -> str:
+    """Return the backend's name string."""
+    return store._backend.name
+
+
+def _is_lazy_name(name: str) -> bool:
+    """Return True if *name* is a lazy (streaming) backend."""
+    return name not in _NON_LAZY_BACKENDS
 
 
 def _snapshot_filtered(filters: list[tracemalloc.Filter]) -> int:
@@ -172,7 +185,9 @@ def _snapshot_filtered(filters: list[tracemalloc.Filter]) -> int:
 
 def _measure_transfer(
     src: Store,
+    src_name: str,
     dst: Store,
+    dst_name: str,
     path: str,
 ) -> HopResult:
     """Transfer *path* from *src* to *dst*, collecting all measurements.
@@ -180,9 +195,6 @@ def _measure_transfer(
     Returns a ``HopResult`` with chunk behavior and two memory measurements
     (pipe layer and total remote_store), sampled per chunk during streaming.
     """
-    src_name = src._backend.name
-    dst_name = dst._backend.name
-
     gc.collect()
     chunks: list[int] = []
     pipe_peak = 0
@@ -207,7 +219,9 @@ def _measure_transfer(
     # Remove trailing zero from final _sample(0) for chunk stats.
     chunk_sizes = [c for c in chunks if c > 0]
 
-    both_lazy = _is_lazy(src) and _is_lazy(dst)
+    src_lazy = _is_lazy_name(src_name)
+    dst_lazy = _is_lazy_name(dst_name)
+    both_lazy = src_lazy and dst_lazy
     factor = LAZY_THRESHOLD_FACTOR if both_lazy else NON_LAZY_THRESHOLD_FACTOR
 
     return HopResult(
@@ -216,8 +230,8 @@ def _measure_transfer(
         max_chunk=max(chunk_sizes) if chunk_sizes else 0,
         pipe_peak=pipe_peak,
         total_peak=total_peak,
-        src_lazy=_is_lazy(src),
-        dst_lazy=_is_lazy(dst),
+        src_lazy=src_lazy,
+        dst_lazy=dst_lazy,
         total_threshold=int(FILE_SIZE * factor),
     )
 
@@ -233,8 +247,18 @@ def seeded_payload() -> tuple[bytes, str]:
     return _make_payload()
 
 
-# Optional store helpers -- build stores directly using availability checks
+# Store chain fixture -- builds stores directly using availability checks
 # from conftest, so the test degrades its chain instead of being skipped.
+# Tracks cleanup resources (boto3 clients, Azure services, SFTP paths)
+# for proper teardown matching conftest patterns.
+
+
+@dataclass
+class _CleanupEntry:
+    """Resources to clean up after test completes."""
+
+    kind: str  # "s3", "sftp", "azure"
+    extras: dict[str, Any] = field(default_factory=dict)
 
 
 @pytest.fixture
@@ -243,12 +267,14 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
 
     Always includes memory first.  Docker backends are only included when
     reachable.  SQL (SQLite in-memory) is always available.
-    Stores are closed after the test completes.
+    All infrastructure (buckets, containers, directories) is cleaned up
+    after the test completes.
     """
     from remote_store import Store
     from remote_store.backends._memory import MemoryBackend
 
     stores: list[tuple[str, Store]] = []
+    cleanups: list[_CleanupEntry] = []
 
     # Memory -- always available.
     mem = Store(backend=MemoryBackend())
@@ -265,7 +291,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
             MINIO_SECRET_KEY,
         )
 
-        tag = __import__("uuid").uuid4().hex[:8]
+        tag = uuid.uuid4().hex[:8]
         bucket = f"e2e-stream-{tag}"
         client = boto3.client(
             "s3",
@@ -289,6 +315,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
                 ),
             )
         )
+        cleanups.append(_CleanupEntry("s3", {"client": client, "bucket": bucket}))
 
     # SFTP
     if _sftp_available():
@@ -297,7 +324,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
         from tests.e2e.conftest import SFTP_HOST, SFTP_PASS, SFTP_PORT, SFTP_USER
 
-        tag = __import__("uuid").uuid4().hex[:8]
+        tag = uuid.uuid4().hex[:8]
         base_path = f"/upload/e2e-stream-{tag}"
         transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
         transport.connect(username=SFTP_USER, password=SFTP_PASS)
@@ -324,6 +351,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
                 ),
             )
         )
+        cleanups.append(_CleanupEntry("sftp", {"base_path": base_path}))
 
     # Azure (Azurite)
     if _azurite_available():
@@ -332,7 +360,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
         from remote_store.backends._azure import AzureBackend
         from tests.e2e.conftest import AZURITE_CONN_STR
 
-        tag = __import__("uuid").uuid4().hex[:8]
+        tag = uuid.uuid4().hex[:8]
         container = f"e2e-stream-{tag}"
         service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
         service.create_container(container)
@@ -342,6 +370,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
                 Store(backend=AzureBackend(container=container, connection_string=AZURITE_CONN_STR)),
             )
         )
+        cleanups.append(_CleanupEntry("azure", {"service": service, "container": container}))
 
     # S3-PyArrow
     if _s3_pyarrow_available():
@@ -354,7 +383,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
             MINIO_SECRET_KEY,
         )
 
-        tag = __import__("uuid").uuid4().hex[:8]
+        tag = uuid.uuid4().hex[:8]
         bucket = f"e2e-stream-pa-{tag}"
         client = boto3.client(
             "s3",
@@ -378,6 +407,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
                 ),
             )
         )
+        cleanups.append(_CleanupEntry("s3", {"client": client, "bucket": bucket}))
 
     # SQL (SQLite in-memory) -- always available.
     try:
@@ -389,8 +419,25 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
 
     yield stores
 
+    # -- Teardown: close stores, then clean up infrastructure. -------------
     for _name, store in stores:
         store.close()
+
+    for entry in cleanups:
+        if entry.kind == "s3":
+            from tests.e2e.conftest import _paginated_delete_s3
+
+            _paginated_delete_s3(entry.extras["client"], entry.extras["bucket"])
+            entry.extras["client"].delete_bucket(Bucket=entry.extras["bucket"])
+
+        elif entry.kind == "sftp":
+            from tests.e2e.conftest import SFTP_HOST, SFTP_PASS, SFTP_PORT, SFTP_USER, _sftp_cleanup
+
+            _sftp_cleanup(SFTP_HOST, SFTP_PORT, SFTP_USER, entry.extras["base_path"], SFTP_PASS)
+
+        elif entry.kind == "azure":
+            entry.extras["service"].delete_container(entry.extras["container"])
+            entry.extras["service"].close()
 
 
 # ---------------------------------------------------------------------------
@@ -468,11 +515,11 @@ class TestStreamingIntegrity:
 
         Chain: Memory -> S3 -> SFTP -> Azure -> S3-PyArrow -> SQL -> Memory
         Unavailable backends are dropped from the chain.  The test requires
-        at least one non-Memory backend to be meaningful.
+        at least one lazy (streaming) backend to be meaningful.
 
         Checksum mismatches **fail** the test (data integrity is non-negotiable).
-        Streaming violations (chunk count, memory thresholds) **warn** so the
-        test surfaces regressions without blocking CI.
+        Memory and chunk behavior violations **warn** so the test surfaces
+        regressions without blocking CI.
         """
         payload, expected_sha = seeded_payload
 
@@ -481,8 +528,10 @@ class TestStreamingIntegrity:
         memory_name, memory_store = chain[0]
         chain.append((memory_name, memory_store))
 
-        if len(chain) < 3:  # need at least memory -> X -> memory
-            pytest.skip("Only memory available -- nothing to prove")
+        # Require at least one lazy backend for the test to be meaningful.
+        has_lazy = any(_is_lazy_name(name) for name, _ in chain)
+        if not has_lazy:
+            pytest.skip("No streaming (lazy) backend available")
 
         # -- Seed the file into the first store. ---------------------------
         memory_store.write(PATH, payload, overwrite=True)
@@ -492,11 +541,11 @@ class TestStreamingIntegrity:
         results: list[HopResult] = []
 
         for i in range(len(chain) - 1):
-            _src_name, src_store = chain[i]
-            _dst_name, dst_store = chain[i + 1]
+            src_name, src_store = chain[i]
+            dst_name, dst_store = chain[i + 1]
 
             # Transfer with all measurements.
-            result = _measure_transfer(src_store, dst_store, PATH)
+            result = _measure_transfer(src_store, src_name, dst_store, dst_name, PATH)
             results.append(result)
 
             # Verify integrity at destination (hard fail).
@@ -506,8 +555,10 @@ class TestStreamingIntegrity:
             if src_store is not dst_store:
                 src_store.delete(PATH)
 
+        # -- Final direct checksum on the last destination. ----------------
+        _final_name, final_store = chain[-1]
+        final_digest = _verify_checksum(final_store, PATH, expected_sha)
+        assert final_digest == expected_sha, "Round-robin checksum mismatch at final destination"
+
         # -- Report (visible with pytest -s, warnings always visible). -----
         _emit_report(results)
-
-        # Explicit assert so CI check_test_assertions.py sees it.
-        assert len(results) == len(chain) - 1
