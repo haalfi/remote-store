@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
-from remote_store._backend import Backend
+from remote_store._backend import _COPY_BUFSIZE, Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
@@ -823,6 +823,14 @@ class AzureBackend(Backend):
             from azure.storage.blob import BlobServiceClient
 
             opts: dict[str, Any] = dict(self._client_options)
+            # BUG-161: force staged-block upload for large streams.
+            # BUG-162: use small blocks to keep pipe-layer memory bounded
+            # (the SDK holds ~2 blocks simultaneously during staged upload).
+            # Users can override via client_options for throughput tuning.
+            _blk = _COPY_BUFSIZE
+            opts.setdefault("max_single_put_size", _blk)
+            opts.setdefault("max_block_size", _blk)
+            opts.setdefault("min_large_block_upload_threshold", 1)
             azure_retry = self._build_azure_retry()
             if azure_retry is not None and "retry_policy" not in opts:
                 opts["retry_policy"] = azure_retry
@@ -851,6 +859,11 @@ class AzureBackend(Backend):
             from azure.storage.filedatalake import DataLakeServiceClient
 
             opts: dict[str, Any] = dict(self._client_options)
+            # BUG-161/BUG-162: same block-size defaults as Blob SDK.
+            _blk = _COPY_BUFSIZE
+            opts.setdefault("max_single_put_size", _blk)
+            opts.setdefault("max_block_size", _blk)
+            opts.setdefault("min_large_block_upload_threshold", 1)
             azure_retry = self._build_azure_retry()
             if azure_retry is not None and "retry_policy" not in opts:
                 opts["retry_policy"] = azure_retry

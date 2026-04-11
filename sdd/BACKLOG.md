@@ -39,7 +39,19 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-*(none)*
+- [~] **BUG-161 — Azure `write()` buffers entire stream into memory**
+  `AzureBackend.write()` passes no chunking parameters to `upload_blob()`.
+  The Azure SDK internally calls `content.read()` without a size limit,
+  slurping the full stream. For a 10 MiB file the e2e test shows 1 chunk
+  of 10 MiB. Fix: set `max_single_put_size` and `max_block_size` defaults
+  on the `BlobServiceClient` so streams > 4 MiB use staged-block upload.
+
+- [~] **BUG-162 — Transfer pipe layer ~2 MiB overhead**
+  The e2e streaming integrity test measures ~2 MiB allocated inside the
+  transfer pipe (`_ErrorMappingStream` + `ProgressReader` + `transfer()`),
+  exceeding the 1 MiB threshold. Investigate whether `ProgressReader`'s
+  `__getattr__` delegation or `RawIOBase.read()` internal buffering causes
+  unnecessary allocations.
 
 ---
 
@@ -56,7 +68,31 @@ Items graduate through the SDD pipeline:
 
 ## Ideas
 
+### Streaming & Memory Optimization
+
+- [ ] **ID-137 — Reduce per-backend streaming overhead**
+  E2e streaming integrity test (8+ runs, 7--14 MiB, random order) identified
+  four optimization opportunities:
+  1. **PyArrow S3 upload buffer ~4 MiB constant** (HIGH): `open_output_stream()`
+     allocates ~4 MiB regardless of file size. Investigate buffer-size options
+     on `pyarrow.fs.S3FileSystem` (`background_writes`, etc.).
+  2. **Memory backend zero-copy read** (MEDIUM): `read()` does `bytes(node.data)`
+     + `BytesIO()`, copying the full file. A `memoryview`-based approach could
+     eliminate one copy (must consider thread-safety under `_lock`).
+  3. **SFTP 32 KiB chunk size** (LOW): `_CHUNK_SIZE = 32768` produces 250--400
+     chunks for 10 MiB. Increasing to 256 KiB could reduce syscall overhead
+     without affecting correctness.
+  4. **Non-lazy -> memory ~10% overhead** (LOW): `sftp -> memory` and
+     `azure -> memory` consistently show total ≈ file_size × 1.1. Understand
+     the source of the extra ~10%.
+
 ### Testing & Verification
+
+- [ ] **ID-136 — Document SQL backend non-lazy write as by-design**
+  `SQLBlobBackend.write()` materializes the full stream into memory because
+  SQL BLOB columns require complete data for INSERT/UPDATE. This is inherent
+  to SQL storage and cannot be streamed. Add a code comment and note in
+  backend docs.
 
 ### Formal Verification
 

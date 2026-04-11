@@ -17,6 +17,18 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **Azure chunked upload** (BUG-161): `AzureBackend.write()` now uses
+  staged-block upload for streams larger than 4 MiB instead of buffering
+  the entire stream into memory. Sets `max_single_put_size` and
+  `max_block_size` defaults (4 MiB) on the `BlobServiceClient`. Users can
+  override via `client_options`.
+
+- **Transfer pipe memory overhead** (BUG-162): All backends now use an
+  explicit 256 KiB copy buffer for `shutil.copyfileobj` instead of the
+  platform default (1 MiB on Windows). This keeps peak pipe-layer memory
+  (two live chunks: current read + previous write) well under the 1 MiB
+  streaming threshold.
+
 - **`cast()` string-literal removal** (BK-146): All `cast("TypeName", value)`
   patterns replaced with `cast(TypeName, value) # noqa: TC006`. Removed redundant
   `BufferedReader`-over-`BytesIO` wrappers in Memory and SQL backends (`BytesIO`
@@ -29,6 +41,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   fixing "Multiple artifacts" error and `DEP0040` punycode warning.
 
 ### Internal
+
+- **Streaming integrity test hardened** (BUG-161, BUG-162): Memory and chunk
+  violations are now hard failures instead of warnings. Non-lazy destinations
+  (SQL BLOB) are exempt from chunk-count checks (by-design, ID-136).
 
 - **SDD Expert in orchestrate skill** (BK-147): Added a 5th domain expert
   focused on spec-code consistency, ADR coverage, and process guide accuracy.

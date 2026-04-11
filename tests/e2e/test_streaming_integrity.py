@@ -2,13 +2,14 @@
 
 Proves three properties of the remote-store streaming contract:
 
-1. **Data integrity** (hard fail) -- a 10 MiB file survives a full round-robin
-   transfer across all available read/write backends with identical SHA-256 at
-   each hop.
-2. **Chunked streaming** (warning) -- ``transfer()`` reads data in multiple
+1. **Data integrity** (hard fail) -- a randomly-sized file (7--14 MiB) survives
+   a full round-robin transfer across all available read/write backends (in
+   random order) with identical SHA-256 at each hop.
+2. **Chunked streaming** (hard fail) -- ``transfer()`` reads data in multiple
    chunks, never as a single ``read()`` of the full file.  Verified via the
-   ``on_progress`` callback which fires per chunk.
-3. **Memory discipline** (warning) -- two memory measurements per hop, both
+   ``on_progress`` callback which fires per chunk.  Non-lazy destinations
+   (SQL BLOB) are exempt because they must materialize the full stream.
+3. **Memory discipline** (hard fail) -- two memory measurements per hop, both
    filtered to ``remote_store`` source files only (dependencies excluded):
 
    - **Pipe cost**: allocations from the transfer layer
@@ -36,7 +37,6 @@ import hashlib
 import random
 import tracemalloc
 import uuid
-import warnings
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -61,14 +61,19 @@ if TYPE_CHECKING:
 # Tunables
 # ---------------------------------------------------------------------------
 
-FILE_SIZE = 10 * 1_048_576  # 10 MiB
+FILE_SIZE_MIN = 7 * 1_048_576  # 7 MiB
+FILE_SIZE_MAX = 14 * 1_048_576  # 14 MiB
 DRAIN_CHUNK = 1_048_576  # 1 MiB read chunks for checksum verification
 
-# Pipe cost: transfer layer should be tiny regardless of backends.
-PIPE_THRESHOLD = 1 * 1_048_576  # 1 MiB -- transfer.py + streams.py + _stream.py
+# Pipe cost: transfer layer overhead (transfer.py + streams.py + _stream.py).
+# With _COPY_BUFSIZE = 256 KiB, peak is 2 * 256 KiB = 512 KiB (current +
+# previous chunk).  Threshold at 768 KiB gives 50% headroom.
+PIPE_THRESHOLD = 768 * 1024  # 768 KiB
 
-# Total cost thresholds (as multipliers of FILE_SIZE).
-LAZY_THRESHOLD_FACTOR = 0.5  # lazy backends: peak < 50% of FILE_SIZE
+# Total cost thresholds (as multipliers of file_size).
+# Lazy backends carry a ~4 MiB fixed cost (PyArrow S3 upload buffer),
+# so with 7 MiB minimum file size the factor must be > 4/7 ≈ 0.57.
+LAZY_THRESHOLD_FACTOR = 0.65  # lazy backends: peak < 65% of file_size
 NON_LAZY_THRESHOLD_FACTOR = 2.0  # non-lazy backends buffer the file; peak < 200%
 
 PATH = "streaming-integrity-test.bin"
@@ -84,15 +89,6 @@ _TOTAL_FILTER = [tracemalloc.Filter(True, "*remote_store*")]
 
 
 # ---------------------------------------------------------------------------
-# Custom warning
-# ---------------------------------------------------------------------------
-
-
-class StreamingMemoryWarning(UserWarning):
-    """Emitted when a transfer hop exceeds a memory threshold."""
-
-
-# ---------------------------------------------------------------------------
 # Measurement result
 # ---------------------------------------------------------------------------
 
@@ -102,6 +98,7 @@ class HopResult:
     """Measurements collected for a single transfer hop."""
 
     hop: str
+    file_size: int
     # Chunk behavior
     chunk_count: int = 0
     max_chunk: int = 0
@@ -129,7 +126,7 @@ class HopResult:
 
     @property
     def chunks_ok(self) -> bool:
-        return self.chunk_count > 1 and self.max_chunk < FILE_SIZE
+        return self.chunk_count > 1 and self.max_chunk < self.file_size
 
 
 # ---------------------------------------------------------------------------
@@ -137,10 +134,10 @@ class HopResult:
 # ---------------------------------------------------------------------------
 
 
-def _make_payload() -> tuple[bytes, str]:
-    """Generate a deterministic pseudo-random 10 MiB payload and its SHA-256."""
+def _make_payload(size: int) -> tuple[bytes, str]:
+    """Generate a deterministic pseudo-random payload of *size* bytes with SHA-256."""
     rng = random.Random(42)  # noqa: S311 -- deterministic, not security
-    data = rng.randbytes(FILE_SIZE)
+    data = rng.randbytes(size)
     digest = hashlib.sha256(data).hexdigest()
     return data, digest
 
@@ -177,6 +174,7 @@ def _measure_transfer(
     dst: Store,
     dst_name: str,
     path: str,
+    file_size: int,
 ) -> HopResult:
     """Transfer *path* from *src* to *dst*, collecting all measurements.
 
@@ -214,13 +212,14 @@ def _measure_transfer(
 
     return HopResult(
         hop=f"{src_name} -> {dst_name}",
+        file_size=file_size,
         chunk_count=len(chunk_sizes),
         max_chunk=max(chunk_sizes) if chunk_sizes else 0,
         pipe_peak=pipe_peak,
         total_peak=total_peak,
         src_lazy=src_lazy,
         dst_lazy=dst_lazy,
-        total_threshold=int(FILE_SIZE * factor),
+        total_threshold=int(file_size * factor),
     )
 
 
@@ -230,9 +229,11 @@ def _measure_transfer(
 
 
 @pytest.fixture(scope="module")
-def seeded_payload() -> tuple[bytes, str]:
-    """Deterministic 10 MiB payload with its SHA-256 hex digest."""
-    return _make_payload()
+def seeded_payload() -> tuple[bytes, str, int]:
+    """Random-sized (7--14 MiB) payload with its SHA-256 hex digest."""
+    size = random.randint(FILE_SIZE_MIN, FILE_SIZE_MAX)  # noqa: S311
+    data, digest = _make_payload(size)
+    return data, digest, size
 
 
 # Store chain fixture -- builds stores directly using availability checks
@@ -439,19 +440,31 @@ _HEADER = (
 )
 
 
-def _emit_report(results: list[HopResult]) -> None:
-    """Print a summary table and emit warnings for threshold violations."""
+def _emit_report(results: list[HopResult]) -> list[str]:
+    """Print a summary table and return failure messages for violations.
+
+    Streaming violations are hard failures, not warnings.  Non-lazy
+    destinations (e.g. SQL BLOB) are exempt from ``chunks_ok`` and
+    ``pipe_ok`` because they materialize the full stream by design,
+    which inflates both chunk count and pipe measurements (ID-136).
+    """
+    failures: list[str] = []
     print(_HEADER)  # noqa: T201
     for r in results:
         lazy_tag = "lazy" if r.both_lazy else "non-lazy"
         issues: list[str] = []
-        if not r.chunks_ok:
-            issues.append("chunks")
-        if not r.pipe_ok:
-            issues.append("pipe")
+        # Non-lazy destinations legitimately read the full stream in one
+        # chunk (ID-136), inflating both chunk and pipe measurements.
+        if not r.dst_lazy:
+            pass  # exempt from chunks_ok and pipe_ok
+        else:
+            if not r.chunks_ok:
+                issues.append("chunks")
+            if not r.pipe_ok:
+                issues.append("pipe")
         if not r.total_ok:
             issues.append("total")
-        status = "OK" if not issues else f"WARN({','.join(issues)})"
+        status = "OK" if not issues else f"FAIL({','.join(issues)})"
 
         print(  # noqa: T201
             f"  {r.hop:30s}  {r.chunk_count:6d}  "
@@ -461,26 +474,23 @@ def _emit_report(results: list[HopResult]) -> None:
             f"{lazy_tag:8s}  {status}"
         )
 
-        if not r.chunks_ok:
-            warnings.warn(
-                f"{r.hop}: not chunked (count={r.chunk_count}, max_chunk={r.max_chunk / 1_048_576:.2f} MiB)",
-                StreamingMemoryWarning,
-                stacklevel=2,
-            )
-        if not r.pipe_ok:
-            warnings.warn(
-                f"{r.hop}: pipe memory {r.pipe_peak / 1_048_576:.2f} MiB "
-                f"> threshold {r.pipe_threshold / 1_048_576:.2f} MiB",
-                StreamingMemoryWarning,
-                stacklevel=2,
-            )
-        if not r.total_ok:
-            warnings.warn(
-                f"{r.hop} ({lazy_tag}): total memory {r.total_peak / 1_048_576:.2f} MiB "
-                f"> threshold {r.total_threshold / 1_048_576:.2f} MiB",
-                StreamingMemoryWarning,
-                stacklevel=2,
-            )
+        for issue in issues:
+            if issue == "chunks":
+                failures.append(
+                    f"{r.hop}: not chunked (count={r.chunk_count}, max_chunk={r.max_chunk / 1_048_576:.2f} MiB)"
+                )
+            elif issue == "pipe":
+                failures.append(
+                    f"{r.hop}: pipe memory {r.pipe_peak / 1_048_576:.2f} MiB "
+                    f"> threshold {r.pipe_threshold / 1_048_576:.2f} MiB"
+                )
+            elif issue == "total":
+                failures.append(
+                    f"{r.hop} ({lazy_tag}): total memory "
+                    f"{r.total_peak / 1_048_576:.2f} MiB "
+                    f"> threshold {r.total_threshold / 1_048_576:.2f} MiB"
+                )
+    return failures
 
 
 # ---------------------------------------------------------------------------
@@ -496,25 +506,33 @@ class TestStreamingIntegrity:
     def test_roundrobin_checksum_and_memory(
         self,
         store_chain: list[tuple[str, Store]],
-        seeded_payload: tuple[bytes, str],
+        seeded_payload: tuple[bytes, str, int],
     ) -> None:
-        """Transfer a 10 MiB file around all backends, verifying SHA-256
-        and streaming behavior at every hop.
+        """Transfer a randomly-sized file (7--14 MiB) around all backends in
+        random order, verifying SHA-256 and streaming behavior at every hop.
 
-        Chain: Memory -> S3 -> SFTP -> Azure -> S3-PyArrow -> SQL -> Memory
-        Unavailable backends are dropped from the chain.  The test requires
-        at least one lazy (streaming) backend to be meaningful.
+        The chain always starts and ends with Memory.  Other backends are
+        shuffled randomly so ordering bugs cannot hide behind a fixed chain.
+        Unavailable backends are dropped.  The test requires at least one
+        lazy (streaming) backend to be meaningful.
 
         Checksum mismatches **fail** the test (data integrity is non-negotiable).
-        Memory and chunk behavior violations **warn** so the test surfaces
-        regressions without blocking CI.
+        Memory and chunk behavior violations **fail** the test -- streaming
+        is a core promise and violations are defects (BUG-161, BUG-162).
+        Non-lazy destinations (SQL) are exempt from chunk-count checks
+        because they must materialize the full stream by design (ID-136).
         """
-        payload, expected_sha = seeded_payload
+        payload, expected_sha, file_size = seeded_payload
 
-        # Close the loop: append memory again as final destination.
-        chain = list(store_chain)
-        memory_name, memory_store = chain[0]
-        chain.append((memory_name, memory_store))
+        # Build chain: memory first, shuffled middle, memory last.
+        memory_name, memory_store = store_chain[0]
+        middle = list(store_chain[1:])
+        random.shuffle(middle)
+        chain = [(memory_name, memory_store), *middle, (memory_name, memory_store)]
+
+        order = " -> ".join(name for name, _ in chain)
+        print(f"\n  File size: {file_size / 1_048_576:.1f} MiB")  # noqa: T201
+        print(f"  Chain: {order}")  # noqa: T201
 
         # Require at least one lazy backend for the test to be meaningful.
         has_lazy = any(store.supports(Capability.LAZY_READ) for _, store in chain)
@@ -533,7 +551,14 @@ class TestStreamingIntegrity:
             dst_name, dst_store = chain[i + 1]
 
             # Transfer with all measurements.
-            result = _measure_transfer(src_store, src_name, dst_store, dst_name, PATH)
+            result = _measure_transfer(
+                src_store,
+                src_name,
+                dst_store,
+                dst_name,
+                PATH,
+                file_size,
+            )
             results.append(result)
 
             # Verify integrity at destination (hard fail).
@@ -547,8 +572,7 @@ class TestStreamingIntegrity:
         _final_name, final_store = chain[-1]
         _verify_checksum(final_store, PATH, expected_sha)
 
-        # -- Report (visible with pytest -s, warnings always visible). -----
-        _emit_report(results)
-
-        # Assert the loop actually ran (satisfies check_test_assertions.py).
-        assert results
+        # -- Report + assert streaming contract. ----------------------------
+        failures = _emit_report(results)
+        assert results  # loop actually ran (satisfies check_test_assertions.py)
+        assert not failures, "Streaming contract violations:\n" + "\n".join(failures)

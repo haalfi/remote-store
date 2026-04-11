@@ -9,6 +9,7 @@ import tempfile
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
+from remote_store._backend import _COPY_BUFSIZE
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
@@ -219,7 +220,7 @@ class S3PyArrowBackend(_S3Base):
                 if isinstance(content, bytes):
                     out.write(content)
                 else:
-                    shutil.copyfileobj(content, out)
+                    shutil.copyfileobj(content, out, _COPY_BUFSIZE)
             finally:
                 out.close()
 

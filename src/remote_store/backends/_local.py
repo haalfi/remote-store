@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO
 
-from remote_store._backend import Backend
+from remote_store._backend import _COPY_BUFSIZE, Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound, PermissionDenied
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
@@ -161,7 +161,7 @@ class LocalBackend(Backend):
                 full.write_bytes(content)
             else:
                 with open(str(full), "wb") as f:
-                    shutil.copyfileobj(content, f)
+                    shutil.copyfileobj(content, f, _COPY_BUFSIZE)
         except IsADirectoryError:
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except PermissionError:
@@ -181,7 +181,7 @@ class LocalBackend(Backend):
                     if isinstance(content, bytes):
                         f.write(content)
                     else:
-                        shutil.copyfileobj(content, f)
+                        shutil.copyfileobj(content, f, _COPY_BUFSIZE)
                 os.replace(tmp_path, str(full))
             except BaseException:
                 with contextlib.suppress(OSError):
