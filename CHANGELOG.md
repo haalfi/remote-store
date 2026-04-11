@@ -23,11 +23,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   both `BlobServiceClient` and `DataLakeServiceClient`. Users can override
   via `client_options` for throughput tuning on large files.
 
-- **Transfer pipe memory overhead** (BUG-162): All backends now use an
-  explicit 256 KiB copy buffer for `shutil.copyfileobj` instead of the
-  platform default (1 MiB on Windows). This keeps peak pipe-layer memory
-  (two live chunks: current read + previous write) well under the 1 MiB
-  streaming threshold.
+- **Transfer pipe memory overhead** (BUG-162): Backends that relied on the
+  platform-default `shutil.copyfileobj` buffer (1 MiB on Windows) now use
+  an explicit 256 KiB copy buffer. This keeps peak pipe-layer memory (two
+  live chunks: current read + previous write) well under the streaming
+  threshold. SFTP was unaffected (already used 32 KiB chunks).
 
 - **`cast()` string-literal removal** (BK-146): All `cast("TypeName", value)`
   patterns replaced with `cast(TypeName, value) # noqa: TC006`. Removed redundant

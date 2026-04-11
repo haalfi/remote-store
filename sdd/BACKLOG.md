@@ -39,20 +39,6 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-- [~] **BUG-161 — Azure `write()` buffers entire stream into memory**
-  `AzureBackend.write()` passes no chunking parameters to `upload_blob()`.
-  The Azure SDK internally calls `content.read()` without a size limit,
-  slurping the full stream. For a 10 MiB file the e2e test shows 1 chunk
-  of 10 MiB. Fix: set `max_single_put_size` and `max_block_size` defaults
-  (256 KiB) on the `BlobServiceClient` so uploads use staged blocks.
-
-- [~] **BUG-162 — Transfer pipe layer ~2 MiB overhead**
-  The e2e streaming integrity test measures ~2 MiB allocated inside the
-  transfer pipe (`_ErrorMappingStream` + `ProgressReader` + `transfer()`),
-  exceeding the 1 MiB threshold. Investigate whether `ProgressReader`'s
-  `__getattr__` delegation or `RawIOBase.read()` internal buffering causes
-  unnecessary allocations.
-
 - [ ] **BUG-163 — `_ensure_known_hosts_file` 0o600 not enforced on Windows**
   `SFTPBackend._ensure_known_hosts_file()` creates the file with
   `os.open(path, O_CREAT | O_WRONLY, 0o600)` but NTFS ignores POSIX mode
@@ -93,6 +79,13 @@ Items graduate through the SDD pipeline:
   4. **Non-lazy -> memory ~10% overhead** (LOW): `sftp -> memory` and
      `azure -> memory` consistently show total ≈ file_size × 1.1. Understand
      the source of the extra ~10%.
+  5. **Decouple Azure `max_block_size` from `_COPY_BUFSIZE`** (MEDIUM):
+     Currently both are 256 KiB. `_COPY_BUFSIZE` controls Python-level
+     `shutil.copyfileobj` chunking (memory), while `max_block_size` controls
+     HTTP PUT request size (network I/O). A larger `max_block_size` (e.g.
+     4 MiB) would reduce HTTP overhead (~16x fewer requests) but empirical
+     testing showed 8 MiB pipe cost with 4 MiB blocks (SDK holds 2 blocks).
+     Needs careful tuning with `min_large_block_upload_threshold`.
 
 ### Testing & Verification
 

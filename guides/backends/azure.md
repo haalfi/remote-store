@@ -77,7 +77,7 @@ backend = AzureBackend(
 | `sas_token` | `str` | `None` | Shared Access Signature token |
 | `connection_string` | `str` | `None` | Azure Storage connection string |
 | `credential` | `Any` | `None` | Any credential object (e.g. `DefaultAzureCredential()`) |
-| `client_options` | `dict` | `None` | Extra kwargs passed to `DataLakeServiceClient` |
+| `client_options` | `dict` | `None` | Extra kwargs passed to service clients (see [Upload tuning](#upload-tuning)) |
 | `max_concurrency` | `int` | `1` | Parallel connections for uploads/downloads (>1 benefits large files) |
 
 At least one of `account_name`, `account_url`, or `connection_string` must be provided.
@@ -145,6 +145,32 @@ import io
 
 data = backend.read_bytes("large-file.bin")
 seekable_stream = io.BytesIO(data)
+```
+
+## Upload tuning
+
+The library sets conservative upload defaults on the Azure service clients
+to keep memory usage bounded during streaming transfers:
+
+| Setting | Library default | SDK default |
+|---------|----------------|-------------|
+| `max_single_put_size` | 256 KiB | 64 MiB |
+| `max_block_size` | 256 KiB | 4 MiB |
+| `min_large_block_upload_threshold` | 1 | 4 MiB + 1 |
+
+These defaults cause uploads to use staged-block requests with small blocks.
+For large files where upload throughput matters more than memory, override
+via `client_options`:
+
+```python
+AzureBackend(
+    container="my-container",
+    connection_string="...",
+    client_options={
+        "max_single_put_size": 8 * 1024 * 1024,   # 8 MiB
+        "max_block_size": 4 * 1024 * 1024,          # 4 MiB
+    },
+)
 ```
 
 ## Escape Hatch
