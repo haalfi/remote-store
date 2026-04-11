@@ -75,8 +75,8 @@ bug-fix protocol in CLAUDE.md (backlog → changelog → failing test → fix):
 1. Spawn **Testing Expert only** — write a failing test that clearly reproduces
    the bug, conforming to the full testing guide (`sdd/TESTING.md`).
 2. Verify the test fails for the right reason.
-3. Then spawn remaining experts (Store & Backend, Extension, Documentation,
-   SDD) to fix the bug and assess impact.
+3. Then spawn remaining experts (Store & Backend, Extension, Documentation)
+   to fix the bug, plus the **SDD Expert** to assess spec/ADR impact.
 
 ### Store & Backend Expert
 
@@ -227,8 +227,8 @@ code actually does, that ADRs capture decisions actually made, and that
 process guides reflect current practice. Your question is always:
 "Does the canon still describe reality after this change?"
 
-DOMAIN: sdd/specs/, sdd/adrs/, sdd/rfcs/, sdd/DESIGN.md,
-sdd/TESTING.md, sdd/DOCUMENTATION.md, sdd/000-process.md
+DOMAIN: sdd/specs/, sdd/adrs/, sdd/rfcs/, sdd/formal/,
+sdd/DESIGN.md, sdd/TESTING.md, sdd/DOCUMENTATION.md, sdd/000-process.md
 
 FOUNDATION — read before evaluating:
 - sdd/000-process.md (SDD workflow)

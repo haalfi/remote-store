@@ -45,6 +45,10 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [~] **BK-147 — Add SDD Expert to orchestrate skill**
+  5th domain expert focused on spec-code consistency, ADR coverage, and
+  process guide accuracy. Scoped to `sdd/` only.
+
 - [ ] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
   Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Items 4, 5, 7 shipped.
