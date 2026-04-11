@@ -5,6 +5,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-163 — `_ensure_known_hosts_file` 0o600 not enforced on Windows**
+  NTFS ignores POSIX mode bits; `os.open(..., 0o600)` creates the file with
+  `0o666`. Mode-assertion test now skipped on Windows with explanatory note.
+  New cross-platform test asserts file creation succeeds without raising. PR #408.
+
 - [x] **BUG-161 — Azure `write()` buffers entire stream into memory**
   Set `max_single_put_size`, `max_block_size` (256 KiB), and
   `min_large_block_upload_threshold` (1) on both `BlobServiceClient` and

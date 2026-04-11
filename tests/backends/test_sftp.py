@@ -599,10 +599,21 @@ class TestSFTPHelpers:
         assert fi.size == 42
         assert fi.modified_at is not None
 
-    @pytest.mark.skipif(sys.platform == "win32", reason="NTFS ignores POSIX mode bits")
     @pytest.mark.spec("BK-143")
+    def test_ensure_known_hosts_file_creates_file(self) -> None:
+        """_ensure_known_hosts_file creates the file when absent (all platforms)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "known_hosts")
+            SFTPBackend._ensure_known_hosts_file(path)
+            assert os.path.isfile(path)
+
+    @pytest.mark.spec("BK-143")
+    @pytest.mark.skipif(sys.platform == "win32", reason="NTFS ignores POSIX mode bits")
     def test_ensure_known_hosts_file_creates_with_mode_600(self) -> None:
-        """BK-143 (High): known_hosts must be created with mode 0o600, not more permissive."""
+        """BK-143 (High): known_hosts must be created with mode 0o600, not more permissive.
+
+        Windows: BK-143 mode invariant not enforced — NTFS ignores POSIX mode bits.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "known_hosts")
             SFTPBackend._ensure_known_hosts_file(path)
