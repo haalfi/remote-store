@@ -597,6 +597,8 @@ class MemoryBackend extends Backend {
 // MemoryBackend methods — Dafny 4.9.1 fails to emit the Boogie procedure
 // for lemmas from included files that transitively use `:|` in ghost
 // functions (SetToSeq).  These local wrappers reproduce the proofs.
+// TODO: Remove once Dafny upgrades past 4.9.1 and the Boogie resolution
+// bug is fixed.  Keep in sync with SumSizesAddOne in BackendContract.dfy.
 
 lemma {:induction false} SumSizesAddOneLocal(fs: Filesystem, s: set<Path>, k: Path)
   requires k !in s
