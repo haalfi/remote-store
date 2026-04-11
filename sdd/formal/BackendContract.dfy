@@ -184,9 +184,12 @@ ghost function ChildFiles(fs: Filesystem, path: Path): set<Path>
 }
 
 // Convert a finite set to a sequence (ghost, nondeterministic order).
+// The multiset-count ensure lets callers prove multiset equality
+// between SetToSeq outputs for different sets.
 ghost function SetToSeq(s: set<Path>): seq<Path>
   ensures |SetToSeq(s)| == |s|
   ensures forall x :: x in s <==> x in SetToSeq(s)
+  ensures forall x :: multiset(SetToSeq(s))[x] == (if x in s then 1 else 0)
   decreases s
 {
   if s == {} then []
@@ -554,10 +557,22 @@ lemma {:induction false} SumSizesSeqRemoveAt(
   if i == 0 {
     assert ys[..0] + ys[1..] == ys[1..];
   } else {
+    // IH: SumSizesSeq(ys[1..]) == fs[ys[i]].size + SumSizesSeq(ys[1..i] + ys[i+1..])
     SumSizesSeqRemoveAt(fs, ys[1..], i - 1);
     assert ys[1..][..i-1] == ys[1..i];
     assert ys[1..][i..] == ys[i+1..];
+    // Connect: ys[..i] + ys[i+1..] starts with ys[0], rest is ys[1..i] + ys[i+1..]
     assert ys[..i] == [ys[0]] + ys[1..i];
+    var removed := ys[..i] + ys[i+1..];
+    assert removed == [ys[0]] + (ys[1..i] + ys[i+1..]);
+    assert removed[0] == ys[0];
+    assert removed[1..] == ys[1..i] + ys[i+1..];
+    // SumSizesSeq(removed) == fs[ys[0]].size + SumSizesSeq(ys[1..i] + ys[i+1..])
+    // SumSizesSeq(ys) == fs[ys[0]].size + SumSizesSeq(ys[1..])  [by def]
+    //                 == fs[ys[0]].size + fs[ys[i]].size + SumSizesSeq(ys[1..i] + ys[i+1..])  [by IH]
+    // postcondition: fs[ys[i]].size + SumSizesSeq(removed)
+    //              = fs[ys[i]].size + fs[ys[0]].size + SumSizesSeq(ys[1..i] + ys[i+1..])
+    // Equal by commutativity of nat addition.
   }
 }
 
@@ -580,8 +595,9 @@ lemma {:induction false} SumSizesSeqPermutation(
     var i :| 0 <= i < |ys| && ys[i] == head;
     var xs' := xs[1..];
     var ys' := ys[..i] + ys[i+1..];
-    assert multiset(xs') == multiset(xs) - multiset{head};
-    assert multiset(ys') == multiset(ys) - multiset{head};
+    // Help Dafny see multiset decomposition via seq concatenation.
+    assert xs == [head] + xs';
+    assert ys == ys[..i] + [ys[i]] + ys[i+1..];
     SumSizesSeqPermutation(fs, xs', ys');
     SumSizesSeqRemoveAt(fs, ys, i);
   }
@@ -597,6 +613,11 @@ lemma {:induction false} SumSizesAddOne(fs: Filesystem, s: set<Path>, k: Path)
 {
   var combined := SetToSeq(s + {k});
   var base := SetToSeq(s);
+  // Prove multiset equality pointwise using SetToSeq's count ensure.
+  // combined has each element of s+{k} exactly once.
+  // base+[k] has each element of s once (from base) plus k once.
+  // Since k !in s, both multisets agree on every element.
+  assert forall x :: multiset(combined)[x] == multiset(base + [k])[x];
   SumSizesSeqPermutation(fs, combined, base + [k]);
   SumSizesSeqAppend(fs, base, k);
 }
