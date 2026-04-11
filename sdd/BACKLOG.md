@@ -95,10 +95,11 @@ Items graduate through the SDD pipeline:
   async uploads too. Requires an async `transfer()` equivalent or direct
   `store.write()` loop.
 
-- [ ] **ID-136 — Document SQL backend non-lazy write as by-design**
+- [~] **ID-136 — Document SQL backend non-lazy write as by-design**
   `SQLBlobBackend.write()` materializes the full stream into memory because
   SQL BLOB columns require complete data for INSERT/UPDATE. This is inherent
-  to SQL storage and cannot be streamed. Add a code comment and note in
+  to SQL storage and cannot be streamed. Code comment shipped (PR #407).
+  Remaining: note in
   backend docs.
 
 ### Formal Verification
