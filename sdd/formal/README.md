@@ -39,7 +39,15 @@ requirements as machine-checkable pre/postconditions so that:
 
 ## Running the verifier
 
-Install [Dafny](https://github.com/dafny-lang/dafny) (v4.9.1+), then:
+**Local (Docker)** — no Dafny install required:
+
+```bash
+bash scripts/dafny_verify.sh                      # all four files
+bash scripts/dafny_verify.sh BackendContract.dfy   # single file
+```
+
+**Native** — install [Dafny](https://github.com/dafny-lang/dafny)
+(v4.9.1+), then:
 
 ```bash
 dafny verify sdd/formal/BackendContract.dfy
