@@ -49,8 +49,8 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 
 - [ ] **[Agent]** Push release branch to origin
 - [ ] **[Agent]** Create PR with link to this checklist
-- [ ] **[User]** Review, approve, and merge PR to master
-- [ ] **[Agent]** Confirm CI green on merge commit
+- [ ] **[User]** Review, approve, and merge PR to master — then tell agent "merged"
+- [ ] **[Agent]** (Waits for user confirmation, then) Confirm CI green on merge commit
 - [ ] **[Agent]** Create GitHub Release directly on GitHub (template below; triggers publish.yml + docs deploy)
 - [ ] **[Agent]** Confirm publish.yml succeeds
 - [ ] **[Agent]** Delete release branch
@@ -76,7 +76,7 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 
 **Links:**
 - [Full Changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md#xyz---yyyy-mm-dd)
-- [Compare v0.22.0...v0.22.1](https://github.com/haalfi/remote-store/compare/vX.Y.Z-1...vX.Y.Z)
+- [Compare vPREV...vX.Y.Z](https://github.com/haalfi/remote-store/compare/vPREV...vX.Y.Z)
 ```
 
 ## Phase 5: Post-release verification
