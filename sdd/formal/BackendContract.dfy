@@ -598,12 +598,13 @@ lemma {:induction false} SumSizesSeqPermutation(
     // Help Dafny see multiset decomposition via seq concatenation.
     assert xs == [head] + xs';
     assert ys == ys[..i] + [ys[i]] + ys[i+1..];
-    // Derive multiset(xs') == multiset(ys') by removing head from both.
+    // Derive multiset(xs') == multiset(ys') by cancelling multiset{head}.
     assert multiset(xs) == multiset{head} + multiset(xs');
-    assert multiset(ys) == multiset(ys[..i]) + multiset{head} + multiset(ys[i+1..]);
     assert multiset(ys') == multiset(ys[..i]) + multiset(ys[i+1..]);
-    // Pointwise: both sides agree on every element after cancelling head.
-    assert forall x :: multiset(xs')[x] == multiset(ys')[x];
+    assert multiset(ys) == multiset{head} + multiset(ys');
+    // Now: multiset{head} + multiset(xs') == multiset{head} + multiset(ys')
+    // Dafny can cancel the common term.
+    assert multiset{head} + multiset(xs') == multiset{head} + multiset(ys');
     SumSizesSeqPermutation(fs, xs', ys');
     SumSizesSeqRemoveAt(fs, ys, i);
   }
