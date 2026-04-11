@@ -7929,7 +7929,8 @@ at runtime before calling an operation.</p>
 <p><strong>Full support (12/12):</strong> Local.</p>
 <p><strong>Near-full (11/12):</strong> S3 and S3-PyArrow lack <code>ATOMIC_MOVE</code> (copy-then-delete
 semantics). SQLBlob lacks <code>LAZY_READ</code> — the entire blob is loaded into memory
-before a stream is returned.</p>
+before a stream is returned. Writes also materialize the full stream before
+the SQL INSERT/UPDATE because BLOB columns require complete data.</p>
 <p><strong>Partial support (10/12):</strong> Memory lacks native <code>GLOB</code> and <code>LAZY_READ</code> (all
 data lives in process memory; use the portable fallback
 <code>ext.glob.glob_files()</code> — see the <a href="../glob-pattern-matching/">Glob Pattern Matching</a> guide).

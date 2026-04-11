@@ -7806,8 +7806,19 @@ SQLAlchemy-supported SQL database.</p>
 <p>Uses a SQL table as key-value storage. Each row holds one "file"
 with its key, data, and metadata. SQLite receives WAL mode and
 PRAGMA tuning automatically.</p>
-<p>All 10 capabilities are supported.</p>
+<p>11 of 12 capabilities are supported (all except <code>LAZY_READ</code>).</p>
 
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p><strong>Non-lazy reads and writes.</strong> Both <code>read()</code> and <code>write()</code>
+materialize the full content in memory. <code>read()</code> loads the
+entire BLOB before returning a stream (no <code>LAZY_READ</code>).
+<code>write()</code> reads the full stream before issuing the SQL
+INSERT/UPDATE because BLOB columns require complete data in a
+single statement. For files larger than process memory, use a
+blob-storage backend (S3, Local, Azure) instead.</p>
+</details>
 
 
 
