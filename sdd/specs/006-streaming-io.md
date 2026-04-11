@@ -7,7 +7,7 @@ All I/O in `remote_store` is streaming-first. Read operations return `BinaryIO` 
 ## SIO-001: Streaming Reads
 
 **Invariant:** `Backend.read(path)` returns a `BinaryIO` stream positioned at the start.
-**Postconditions:** The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use `Store.read_seekable()`.
+**Postconditions:** The caller is responsible for consuming and closing the stream. The returned stream is not guaranteed to be seekable. Seekability is a backend-level property (e.g. local files are seekable, HTTP-based streams typically are not), not a Store API contract. Callers that require seekability should use `Store.read_seekable()`. Pre-loading the full file into memory before returning (e.g. returning `io.BytesIO`) is acceptable for backends that do not declare `Capability.LAZY_READ` — the requirement is only that a valid `BinaryIO` is returned, not that data is fetched lazily. See SIO-009.
 **Acquire-then-wrap safety invariant:** Between acquiring a raw native handle
 (e.g. an s3fs file object, a paramiko `SFTPFile`, an Azure downloader) and
 returning the wrapped `BinaryIO` to the caller, the backend MUST guarantee the

@@ -96,7 +96,7 @@ Set `create_table=False` to use a pre-existing table. Minimum required columns: 
 
 ## Capabilities
 
-All 10 capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`, `SEEKABLE_READ`.
+11 of 12 capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `ATOMIC_MOVE`, `METADATA`, `GLOB`, `SEEKABLE_READ`. Does not declare `LAZY_READ` — the entire blob is loaded into memory before a stream is returned.
 
 - `write_atomic()` delegates to `write()` — single SQL statements are inherently atomic.
 - `glob()` uses SQL-side narrowing (SQLite `GLOB` or `LIKE`) then client-side regex to enforce standard glob semantics (GLOB-014).

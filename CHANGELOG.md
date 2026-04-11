@@ -10,8 +10,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - **`cast()` correctness and `Capability.LAZY_READ`** (BK-146): All
   `cast("TypeName", value)` patterns replaced with `cast(TypeName, value)
-  # noqa: TC006`. Hidden `BufferedReader` wrappers removed from S3, Azure, and
-  SQL backends — `BytesIO` is `BufferedIOBase` and is returned directly. Added
+  # noqa: TC006`. Removed redundant `BufferedReader`-over-`BytesIO` wrappers in
+  Memory and SQL backends (`BytesIO` is `BufferedIOBase` and needs no extra
+  buffering). Removed `BufferedReader` from S3 backend — s3fs
+  `AbstractBufferedFile` already provides internal buffering. Added
   `Capability.LAZY_READ` quality flag to distinguish backends that stream
   lazily from the native source (Local, HTTP, S3, S3-PyArrow, SFTP, Azure)
   from those that pre-load into memory (Memory, SQLBlob, SQLQuery).

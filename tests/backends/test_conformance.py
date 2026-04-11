@@ -501,7 +501,13 @@ class TestBackendToKey:
 
 
 class TestStreamingConformance:
-    """SIO-001, SIO-003: streaming semantics."""
+    """SIO-001, SIO-003, SIO-009: streaming semantics.
+
+    SIO-001 only requires a readable BinaryIO at start-of-stream. Pre-loading
+    the full file into memory before returning (e.g. BytesIO) is acceptable for
+    backends that do not declare LAZY_READ. The LAZY_READ conformance tests below
+    enforce the laziness contract only on backends that declare it.
+    """
 
     @pytest.mark.spec("SIO-001")
     def test_read_returns_readable_stream(self, backend: Backend) -> None:

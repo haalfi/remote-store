@@ -11,8 +11,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 - [x] **BK-146 — Eliminate string-literal `cast()` arguments (CodeQL + ruff)**
   All `cast("TypeName", value)` call sites replaced with `cast(TypeName, value) # noqa: TC006`.
-  `BytesIO`-over-`BufferedReader` pattern removed (`BytesIO` is `BufferedIOBase`, returning it
-  directly is correct). `FileInfo`/`FolderInfo` moved to runtime imports in `cache.py`.
+  `BufferedReader`-over-`BytesIO` pattern removed from Memory and SQL backends (`BytesIO` is
+  `BufferedIOBase`, returning it directly is correct). `BufferedReader` also removed from S3
+  (s3fs `AbstractBufferedFile` already provides internal buffering).
+  `FileInfo`/`FolderInfo` moved to runtime imports in `cache.py`.
   PR #401.
 
 - [x] **BK-145 — Mutation testing CI workflow (manual + scheduled)**
