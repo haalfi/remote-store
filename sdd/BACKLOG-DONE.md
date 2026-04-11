@@ -5,6 +5,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-135 — E2e streaming integrity test**
+  Proves the streaming contract -- round-robin SHA-256 verification and
+  `tracemalloc` memory profiling across all backends. PR #403.
+
 - [x] **BK-145 — Mutation testing CI workflow (manual + scheduled)**
   Added `.github/workflows/mutation.yml` with `workflow_dispatch` (manual) and
   weekly `schedule` (Saturday 05:00 UTC) triggers. Matrix strategy runs all 6

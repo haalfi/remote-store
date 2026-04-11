@@ -310,3 +310,16 @@ def sftp_lake() -> Iterator[Store]:
     yield store
     store.close()
     _sftp_cleanup(SFTP_HOST, SFTP_PORT, SFTP_USER, base_path, SFTP_PASS)
+
+
+@pytest.fixture
+def sql_lake() -> Iterator[Store]:
+    """SQLite-backed blob store (always available, no Docker needed)."""
+    pytest.importorskip("sqlalchemy")
+
+    from remote_store.backends._sqlalchemy import SQLBlobBackend
+
+    backend = SQLBlobBackend(url="sqlite://")
+    store = Store(backend=backend)
+    yield store
+    store.close()

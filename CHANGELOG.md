@@ -21,6 +21,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Cloud-backend scope starts MinIO/Azurite/SFTP services. Gremlins cache
   persisted across runs via `actions/cache`.
 
+- **E2e streaming integrity test** (ID-135): Proves the streaming contract --
+  round-robin SHA-256 verification and `tracemalloc` memory profiling across
+  all backends.
+
 - **Codecov upload moved to publish workflow**: Coverage is now uploaded to
   Codecov on `release: published` (in `publish.yml`) rather than on every CI
   run. Ensures Codecov reflects released versions only, matching PyPI. The
