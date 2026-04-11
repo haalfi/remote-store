@@ -10426,7 +10426,10 @@ rename and real directory support.</p>
 )
           –
           <div class="doc-md-description">
-            <p>Additional options passed to service clients.</p>
+            <p>Additional options passed to service clients.
+The library sets <code>max_single_put_size</code>, <code>max_block_size</code>,
+and <code>min_large_block_upload_threshold</code> defaults for streaming
+memory discipline; user-supplied values take precedence.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
