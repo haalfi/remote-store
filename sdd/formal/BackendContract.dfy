@@ -174,6 +174,47 @@ predicate AllAncestorsTraversable(fs: Filesystem, p: Path)
 }
 
 // ---------------------------------------------------------------------------
+// §5b  Aggregate helpers (ID-134)
+// ---------------------------------------------------------------------------
+
+// The set of child files under a path.
+ghost function ChildFiles(fs: Filesystem, path: Path): set<Path>
+{
+  set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)
+}
+
+// Convert a finite set to a sequence (ghost, nondeterministic order).
+// The multiset-count ensure lets callers prove multiset equality
+// between SetToSeq outputs for different sets.
+ghost function SetToSeq(s: set<Path>): seq<Path>
+  ensures |SetToSeq(s)| == |s|
+  ensures forall x :: x in s <==> x in SetToSeq(s)
+  ensures forall x :: multiset(SetToSeq(s))[x] == (if x in s then 1 else 0)
+  decreases s
+{
+  if s == {} then []
+  else
+    var x :| x in s;
+    [x] + SetToSeq(s - {x})
+}
+
+// Sum file sizes over a sequence of paths (deterministic recursion).
+ghost function SumSizesSeq(fs: Filesystem, keys: seq<Path>): nat
+  requires forall k | k in keys :: k in fs && fs[k].FileEntry?
+{
+  if |keys| == 0 then 0
+  else fs[keys[0]].info.size + SumSizesSeq(fs, keys[1..])
+}
+
+// Sum file sizes over a set — delegates to seq-based sum via SetToSeq.
+// Ghost because SetToSeq uses `:|`.
+ghost function SumSizes(fs: Filesystem, keys: set<Path>): nat
+  requires forall k | k in keys :: k in fs && fs[k].FileEntry?
+{
+  SumSizesSeq(fs, SetToSeq(keys))
+}
+
+// ---------------------------------------------------------------------------
 // §6  Backend contract  (abstract trait)
 // ---------------------------------------------------------------------------
 // Precondition evaluation order (Gap 1 / BE-008) is encoded by the
@@ -480,6 +521,107 @@ lemma WriteReadConsistency(
   assert newFs[path].FileEntry?;
   assert IsFile(newFs, path);
   assert newFs[path].content == content;
+}
+
+// Appending one element to a seq-based sum (ID-134).
+// Classic induction on |xs|: base |xs|==0 trivial, step follows
+// from commutativity of nat addition (a + (b + c) == b + (a + c)).
+lemma {:induction false} SumSizesSeqAppend(
+  fs: Filesystem, xs: seq<Path>, k: Path
+)
+  requires forall p | p in xs :: p in fs && fs[p].FileEntry?
+  requires k in fs && fs[k].FileEntry?
+  ensures SumSizesSeq(fs, xs + [k]) == SumSizesSeq(fs, xs) + fs[k].info.size
+  decreases |xs|
+{
+  if |xs| == 0 {
+    assert xs + [k] == [k];
+  } else {
+    assert (xs + [k])[0] == xs[0];
+    assert (xs + [k])[1..] == xs[1..] + [k];
+    SumSizesSeqAppend(fs, xs[1..], k);
+  }
+}
+
+// Removing element at index i from a seq-based sum (ID-134).
+// SumSizesSeq(ys) == ys[i].size + SumSizesSeq(ys[..i] + ys[i+1..])
+lemma {:induction false} SumSizesSeqRemoveAt(
+  fs: Filesystem, ys: seq<Path>, i: int
+)
+  requires 0 <= i < |ys|
+  requires forall p | p in ys :: p in fs && fs[p].FileEntry?
+  ensures SumSizesSeq(fs, ys) ==
+    fs[ys[i]].info.size + SumSizesSeq(fs, ys[..i] + ys[i+1..])
+  decreases i
+{
+  if i == 0 {
+    assert ys[..0] + ys[1..] == ys[1..];
+  } else {
+    // IH: SumSizesSeq(ys[1..]) == fs[ys[i]].size + SumSizesSeq(ys[1..i] + ys[i+1..])
+    SumSizesSeqRemoveAt(fs, ys[1..], i - 1);
+    assert ys[1..][..i-1] == ys[1..i];
+    assert ys[1..][i..] == ys[i+1..];
+    // Connect: ys[..i] + ys[i+1..] starts with ys[0], rest is ys[1..i] + ys[i+1..]
+    assert ys[..i] == [ys[0]] + ys[1..i];
+    var removed := ys[..i] + ys[i+1..];
+    assert removed == [ys[0]] + (ys[1..i] + ys[i+1..]);
+    assert removed[0] == ys[0];
+    assert removed[1..] == ys[1..i] + ys[i+1..];
+    // SumSizesSeq(removed) == fs[ys[0]].size + SumSizesSeq(ys[1..i] + ys[i+1..])
+    // SumSizesSeq(ys) == fs[ys[0]].size + SumSizesSeq(ys[1..])  [by def]
+    //                 == fs[ys[0]].size + fs[ys[i]].size + SumSizesSeq(ys[1..i] + ys[i+1..])  [by IH]
+    // postcondition: fs[ys[i]].size + SumSizesSeq(removed)
+    //              = fs[ys[i]].size + fs[ys[0]].size + SumSizesSeq(ys[1..i] + ys[i+1..])
+    // Equal by commutativity of nat addition.
+  }
+}
+
+// Two sequences with the same multiset of elements yield the same sum.
+// Induction on |xs|: remove xs[0] from both, recurse.
+lemma {:induction false} SumSizesSeqPermutation(
+  fs: Filesystem, xs: seq<Path>, ys: seq<Path>
+)
+  requires forall p | p in xs :: p in fs && fs[p].FileEntry?
+  requires forall p | p in ys :: p in fs && fs[p].FileEntry?
+  requires multiset(xs) == multiset(ys)
+  ensures SumSizesSeq(fs, xs) == SumSizesSeq(fs, ys)
+  decreases |xs|
+{
+  if |xs| == 0 {
+    assert |ys| == 0;
+  } else {
+    var head := xs[0];
+    assert head in multiset(ys);
+    var i :| 0 <= i < |ys| && ys[i] == head;
+    var xs' := xs[1..];
+    var ys' := ys[..i] + ys[i+1..];
+    // Derive multiset(xs') == multiset(ys') by subtracting head from precondition.
+    assert xs == [head] + xs';
+    assert ys == ys[..i] + [ys[i]] + ys[i+1..];
+    assert multiset(xs') == multiset(xs) - multiset{head};
+    assert multiset(ys') == multiset(ys) - multiset{head};
+    SumSizesSeqPermutation(fs, xs', ys');
+    SumSizesSeqRemoveAt(fs, ys, i);
+  }
+}
+
+// Adding one element to a set-based SumSizes (ID-134).
+// Bridges from set to seq: SetToSeq(s + {k}) is a permutation of
+// SetToSeq(s) + [k], and SumSizesSeq is permutation-invariant.
+lemma {:induction false} SumSizesAddOne(fs: Filesystem, s: set<Path>, k: Path)
+  requires k !in s
+  requires forall p | p in (s + {k}) :: p in fs && fs[p].FileEntry?
+  ensures SumSizes(fs, s + {k}) == SumSizes(fs, s) + fs[k].info.size
+{
+  var combined := SetToSeq(s + {k});
+  var base := SetToSeq(s);
+  // Prove multiset equality pointwise using SetToSeq's count ensure.
+  // combined has each element of s+{k} exactly once.
+  // base+[k] has each element of s once (from base) plus k once.
+  // Since k !in s, both multisets agree on every element.
+  assert forall x :: multiset(combined)[x] == multiset(base + [k])[x];
+  SumSizesSeqPermutation(fs, combined, base + [k]);
+  SumSizesSeqAppend(fs, base, k);
 }
 
 // Move is not a no-op when src != dst.

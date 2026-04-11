@@ -46,6 +46,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   violations are now hard failures instead of warnings. Non-lazy destinations
   (SQL BLOB) are exempt from chunk-count checks (by-design, ID-136).
 
+- **Dafny ghost infrastructure for `GetFolderInfo` aggregate verification**
+  (ID-134, part 1): Added `ChildFiles`, `SumSizes`, and `SumSizesAddOne`
+  to `BackendContract.dfy`. Pure additions — no existing postconditions changed.
+
 - **SDD Expert in orchestrate skill** (BK-147): Added a 5th domain expert
   focused on spec-code consistency, ADR coverage, and process guide accuracy.
   Scoped to `sdd/` (specs, ADRs, RFCs, formal, process guides).

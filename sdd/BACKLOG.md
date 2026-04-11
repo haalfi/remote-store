@@ -104,7 +104,7 @@ Items graduate through the SDD pipeline:
 
 ### Formal Verification
 
-- [ ] **ID-134 — Verify `GetFolderInfo` aggregate fields (`file_count`, `total_size`) in Dafny postcondition**
+- [~] **ID-134 — Verify `GetFolderInfo` aggregate fields (`file_count`, `total_size`) in Dafny postcondition**
   The `GetFolderInfo` counting loop in `MemoryBackend.dfy` computes `file_count`
   and `total_size` but the postcondition only asserts `r.Ok? && r.value.path == path`.
   Adding `ensures r.value.file_count == |set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)|`
