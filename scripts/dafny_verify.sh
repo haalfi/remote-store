@@ -7,6 +7,9 @@
 # and downloads the Dafny release with bundled Z3.
 set -euo pipefail
 
+# Disable MSYS/Git-Bash automatic path conversion (mangles Docker -v mounts).
+export MSYS_NO_PATHCONV=1
+
 DAFNY_VERSION=4.9.1
 DAFNY_SHA256=697ee703b39414b3904dc8c132e51481982f52205c1658f3374d313a284d43eb
 IMAGE=mcr.microsoft.com/dotnet/sdk:8.0

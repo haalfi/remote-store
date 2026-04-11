@@ -387,7 +387,10 @@ trait Backend {
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
     ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsDir(fs, path)       ==> r.Ok? && r.value.path == path
+    ensures IsDir(fs, path)       ==>
+      r.Ok? && r.value.path == path
+      && r.value.file_count == |ChildFiles(fs, path)|
+      && r.value.total_size == SumSizes(fs, ChildFiles(fs, path))
 
   // ====================================================================
   // move(src, dst, overwrite)

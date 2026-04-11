@@ -108,7 +108,7 @@ some may not yet exist in the `tests/` directory.
 | `GetFileInfo: IsDir → InvalidPath` | `test_get_file_info_on_directory_raises_error` | `get_file_info(dir)` → error |
 | `GetFolderInfo: IsFile → InvalidPath` | `test_get_folder_info_on_file_raises_error` | `get_folder_info(file)` → error |
 | `GetFolderInfo: !PathExists → NotFound` | `test_get_folder_info_missing_raises_not_found` | `get_folder_info(missing)` → `NotFound` |
-| `GetFolderInfo: IsDir → Ok` | `test_get_folder_info` | `get_folder_info(dir)` → success |
+| `GetFolderInfo: IsDir → Ok + aggregates` | `test_get_folder_info` | `get_folder_info(dir)` → success, `file_count` and `total_size` verified |
 | `ListFiles: ensures r.Ok?` | `test_list_files_missing_path_yields_empty` | `list_files(missing)` → `[]`, no error |
 | `ListFiles: depth ≤ max_depth` | `test_list_files_recursive_max_depth` | Depth boundary inclusive |
 | `ListFiles: completeness` | `test_list_files_all_results_are_children` | All results are children of path |
@@ -172,15 +172,12 @@ contradiction.
   specification-only in Dafny, preventing compiled assignments and
   return statements.  The MemoryBackend preserves `fs` on error paths
   by construction instead.
-- **`GetFolderInfo` aggregate fields unverified.** The `file_count` and
-  `total_size` fields are computed by a while-loop over `fs.Keys`, but
-  the postcondition only asserts `r.value.path == path`.  A verified
-  postcondition relating `file_count` to
-  `|set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)|` (and
-  `total_size` to the corresponding sum) would require a recursive
-  ghost function and loop invariant tracking processed elements.  The
-  values are correct by inspection; fully machine-checked verification
-  is deferred (tracked as ID-134).
+- **`GetFolderInfo` aggregate fields verified (ID-134).** The
+  `GetFolderInfo` postcondition asserts `file_count ==
+  |ChildFiles(fs, path)|` and `total_size == SumSizes(fs,
+  ChildFiles(fs, path))`.  The `MemoryBackend` loop proves these via
+  ghost set tracking (`counted == ChildFiles(fs, path) * visited`)
+  and `SumSizesAddOne` induction at each iteration.
 
 ## Compiled oracle as conformance gate
 
@@ -191,7 +188,7 @@ backends.
 
 ### Principle
 
-The compiled oracle is **correct by construction** — 53 verified proofs,
+The compiled oracle is **correct by construction** — 55 verified proofs,
 0 errors.  The conformance testing logic is therefore:
 
 1. **Oracle passes a conformance test** → the test is known-correct and

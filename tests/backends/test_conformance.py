@@ -388,6 +388,7 @@ class TestBackendMetadata:
         assert fi.size == 11
 
     @pytest.mark.spec("BE-017")
+    @pytest.mark.spec("ID-134")
     def test_get_folder_info(self, backend: Backend) -> None:
         _require(backend, Capability.WRITE)
         _seed(backend, {"fi/a.txt": b"aaa", "fi/b.txt": b"bb"})
@@ -395,6 +396,17 @@ class TestBackendMetadata:
         assert isinstance(fi, FolderInfo)
         assert fi.file_count == 2
         assert fi.total_size == 5
+
+    @pytest.mark.spec("BE-017")
+    @pytest.mark.spec("ID-134")
+    def test_get_folder_info_excludes_subdirs(self, backend: Backend) -> None:
+        _require(backend, Capability.WRITE)
+        _seed(backend, {"mix/a.txt": b"aaa", "mix/sub/b.txt": b"bb"})
+        fi = backend.get_folder_info("mix")
+        # ChildFiles counts all files recursively under path, including sub/b.txt.
+        assert fi.file_count == 2
+        assert fi.total_size == 5
+        # DirEntry nodes (mix/sub/) must not be counted.
 
     @pytest.mark.spec("BE-016")
     def test_file_info_not_found(self, backend: Backend) -> None:

@@ -5,6 +5,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-134 — Verify `GetFolderInfo` aggregate fields (`file_count`, `total_size`) in Dafny postcondition**
+  Part 1 (PR #406): Ghost infrastructure — `ChildFiles`, `SetToSeq`,
+  `SumSizesSeq`, `SumSizes`, and five induction lemmas in
+  `BackendContract.dfy`. Part 2: Strengthened `GetFolderInfo` postcondition
+  to assert `file_count == |ChildFiles(fs, path)|` and `total_size ==
+  SumSizes(fs, ChildFiles(fs, path))`. `MemoryBackend.dfy` proves the loop
+  correct via ghost set tracking and `SumSizesAddOne` induction.
+
 - [x] **BUG-163 — `_ensure_known_hosts_file` 0o600 not enforced on Windows**
   NTFS ignores POSIX mode bits; `os.open(..., 0o600)` creates the file with
   `0o666`. Mode-assertion test now skipped on Windows with explanatory note.

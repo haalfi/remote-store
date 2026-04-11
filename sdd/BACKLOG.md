@@ -39,6 +39,8 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
+*(none)*
+
 ---
 
 ## Backlog (Prioritized)
@@ -96,13 +98,12 @@ Items graduate through the SDD pipeline:
 
 ### Formal Verification
 
-- [~] **ID-134 — Verify `GetFolderInfo` aggregate fields (`file_count`, `total_size`) in Dafny postcondition**
-  The `GetFolderInfo` counting loop in `MemoryBackend.dfy` computes `file_count`
-  and `total_size` but the postcondition only asserts `r.Ok? && r.value.path == path`.
-  Adding `ensures r.value.file_count == |set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)|`
-  (and a sum-based postcondition for `total_size`) would make these fields verified
-  by construction.  Requires loop invariants tracking partial counts/sums against
-  a ghost set — non-trivial Dafny proof work.
+- [ ] **ID-134c — Remove SumSizesAddOneLocal workaround after Dafny upgrade**
+  `MemoryBackend.dfy` duplicates `SumSizesAddOne` as a file-local lemma
+  because Dafny 4.9.1 fails to emit the Boogie procedure for lemmas from
+  included files that transitively use `:|` in ghost functions (`SetToSeq`).
+  When Dafny is upgraded past 4.9.1, try calling `SumSizesAddOne` directly;
+  if it works, delete `SumSizesAddOneLocal` and the workaround comment.
 
 ### API Surface Enhancements
 
