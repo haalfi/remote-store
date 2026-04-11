@@ -5,7 +5,7 @@ disable-model-invocation: true
 argument-hint: "[patch|minor|major]"
 ---
 
-Canonical checklist: `CONTRIBUTING.md` § Release. If this skill drifts, CONTRIBUTING.md wins.
+**Authority:** Release template (§ Phase 4) is authoritative here. Full checklist structure in `CONTRIBUTING.md` § Release—SKILL.md references it there.
 
 Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patch = bugfix/refactor, no bump = CI/docs only.
 
