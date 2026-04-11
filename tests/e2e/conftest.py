@@ -315,7 +315,7 @@ def sftp_lake() -> Iterator[Store]:
 @pytest.fixture
 def sql_lake() -> Iterator[Store]:
     """SQLite-backed blob store (always available, no Docker needed)."""
-    sa = pytest.importorskip("sqlalchemy")  # noqa: F841
+    pytest.importorskip("sqlalchemy")
 
     from remote_store.backends._sqlalchemy import SQLBlobBackend
 

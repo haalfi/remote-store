@@ -233,6 +233,166 @@ def seeded_payload() -> tuple[bytes, str]:
     return _make_payload()
 
 
+# Optional store helpers -- build stores directly using availability checks
+# from conftest, so the test degrades its chain instead of being skipped.
+
+
+@pytest.fixture
+def store_chain():  # -> Iterator[list[tuple[str, Store]]]
+    """Yield a list of ``(name, store)`` pairs for all available backends.
+
+    Always includes memory first.  Docker backends are only included when
+    reachable.  SQL (SQLite in-memory) is always available.
+    Stores are closed after the test completes.
+    """
+    from remote_store import Store
+    from remote_store.backends._memory import MemoryBackend
+
+    stores: list[tuple[str, Store]] = []
+
+    # Memory -- always available.
+    mem = Store(backend=MemoryBackend())
+    stores.append(("memory", mem))
+
+    # S3 (s3fs)
+    if _minio_available():
+        import boto3
+
+        from remote_store.backends._s3 import S3Backend
+        from tests.e2e.conftest import (
+            MINIO_ACCESS_KEY,
+            MINIO_ENDPOINT,
+            MINIO_SECRET_KEY,
+        )
+
+        tag = __import__("uuid").uuid4().hex[:8]
+        bucket = f"e2e-stream-{tag}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=MINIO_ENDPOINT,
+            aws_access_key_id=MINIO_ACCESS_KEY,
+            aws_secret_access_key=MINIO_SECRET_KEY,
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        stores.append(
+            (
+                "s3",
+                Store(
+                    backend=S3Backend(
+                        bucket=bucket,
+                        key=MINIO_ACCESS_KEY,
+                        secret=MINIO_SECRET_KEY,
+                        region_name="us-east-1",
+                        endpoint_url=MINIO_ENDPOINT,
+                    )
+                ),
+            )
+        )
+
+    # SFTP
+    if _sftp_available():
+        import paramiko
+
+        from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+        from tests.e2e.conftest import SFTP_HOST, SFTP_PASS, SFTP_PORT, SFTP_USER
+
+        tag = __import__("uuid").uuid4().hex[:8]
+        base_path = f"/upload/e2e-stream-{tag}"
+        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+        transport.connect(username=SFTP_USER, password=SFTP_PASS)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        assert sftp is not None
+        try:
+            sftp.mkdir(base_path)
+        finally:
+            sftp.close()
+            transport.close()
+        stores.append(
+            (
+                "sftp",
+                Store(
+                    backend=SFTPBackend(
+                        host=SFTP_HOST,
+                        port=SFTP_PORT,
+                        username=SFTP_USER,
+                        password=SFTP_PASS,
+                        base_path=base_path,
+                        host_key_policy=HostKeyPolicy.AUTO_ADD,
+                        connect_kwargs={"allow_agent": False, "look_for_keys": False},
+                    )
+                ),
+            )
+        )
+
+    # Azure (Azurite)
+    if _azurite_available():
+        from azure.storage.blob import BlobServiceClient
+
+        from remote_store.backends._azure import AzureBackend
+        from tests.e2e.conftest import AZURITE_CONN_STR
+
+        tag = __import__("uuid").uuid4().hex[:8]
+        container = f"e2e-stream-{tag}"
+        service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
+        service.create_container(container)
+        stores.append(
+            (
+                "azure",
+                Store(backend=AzureBackend(container=container, connection_string=AZURITE_CONN_STR)),
+            )
+        )
+
+    # S3-PyArrow
+    if _s3_pyarrow_available():
+        import boto3
+
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+        from tests.e2e.conftest import (
+            MINIO_ACCESS_KEY,
+            MINIO_ENDPOINT,
+            MINIO_SECRET_KEY,
+        )
+
+        tag = __import__("uuid").uuid4().hex[:8]
+        bucket = f"e2e-stream-pa-{tag}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=MINIO_ENDPOINT,
+            aws_access_key_id=MINIO_ACCESS_KEY,
+            aws_secret_access_key=MINIO_SECRET_KEY,
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        stores.append(
+            (
+                "s3-pyarrow",
+                Store(
+                    backend=S3PyArrowBackend(
+                        bucket=bucket,
+                        key=MINIO_ACCESS_KEY,
+                        secret=MINIO_SECRET_KEY,
+                        region_name="us-east-1",
+                        endpoint_url=MINIO_ENDPOINT,
+                    )
+                ),
+            )
+        )
+
+    # SQL (SQLite in-memory) -- always available.
+    try:
+        from remote_store.backends._sqlalchemy import SQLBlobBackend
+
+        stores.append(("sql-blob", Store(backend=SQLBlobBackend(url="sqlite://"))))
+    except ImportError:
+        pass
+
+    yield stores
+
+    for _name, store in stores:
+        store.close()
+
+
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
@@ -300,12 +460,7 @@ class TestStreamingIntegrity:
 
     def test_roundrobin_checksum_and_memory(
         self,
-        memory_lake: Store,
-        s3_lake: Store,
-        sftp_lake: Store,
-        azurite_lake: Store,
-        s3_pyarrow_lake: Store,
-        sql_lake: Store,
+        store_chain: list[tuple[str, Store]],
         seeded_payload: tuple[bytes, str],
     ) -> None:
         """Transfer a 10 MiB file around all backends, verifying SHA-256
@@ -321,28 +476,17 @@ class TestStreamingIntegrity:
         """
         payload, expected_sha = seeded_payload
 
-        # -- Build the chain dynamically from available backends. -----------
-        chain: list[tuple[str, Store]] = [("memory", memory_lake)]
-
-        if _minio_available():
-            chain.append(("s3", s3_lake))
-        if _sftp_available():
-            chain.append(("sftp", sftp_lake))
-        if _azurite_available():
-            chain.append(("azure", azurite_lake))
-        if _s3_pyarrow_available():
-            chain.append(("s3-pyarrow", s3_pyarrow_lake))
-        # SQL is always available (SQLite in-memory).
-        chain.append(("sql", sql_lake))
-        # Return to memory to close the loop.
-        chain.append(("memory", memory_lake))
+        # Close the loop: append memory again as final destination.
+        chain = list(store_chain)
+        memory_name, memory_store = chain[0]
+        chain.append((memory_name, memory_store))
 
         if len(chain) < 3:  # need at least memory -> X -> memory
-            pytest.skip("No Docker backends available for round-robin")
+            pytest.skip("Only memory available -- nothing to prove")
 
         # -- Seed the file into the first store. ---------------------------
-        memory_lake.write(PATH, payload, overwrite=True)
-        _verify_checksum(memory_lake, PATH, expected_sha)
+        memory_store.write(PATH, payload, overwrite=True)
+        _verify_checksum(memory_store, PATH, expected_sha)
 
         # -- Round-robin with checksum + memory measurement. ---------------
         results: list[HopResult] = []
