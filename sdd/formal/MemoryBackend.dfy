@@ -389,7 +389,10 @@ class MemoryBackend extends Backend {
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
     ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsDir(fs, path)       ==> r.Ok? && r.value.path == path
+    ensures IsDir(fs, path)       ==>
+      r.Ok? && r.value.path == path
+      && r.value.file_count == |ChildFiles(fs, path)|
+      && r.value.total_size == SumSizes(fs, ChildFiles(fs, path))
   {
     if path in fs {
       match fs[path]
@@ -399,17 +402,33 @@ class MemoryBackend extends Backend {
         var file_count: nat := 0;
         var total_size: nat := 0;
         var remaining := fs.Keys;
+        ghost var visited: set<Path> := {};
+        ghost var counted: set<Path> := {};
         while remaining != {}
           invariant remaining <= fs.Keys
+          invariant visited == fs.Keys - remaining
+          // counted is exactly the child files we've seen so far.
+          invariant counted == ChildFiles(fs, path) * visited
+          invariant file_count == |counted|
+          invariant total_size == SumSizes(fs, counted)
           decreases remaining
         {
           var k :| k in remaining;
+          // k is in remaining, so not yet in visited, so not yet in counted.
+          assert k !in visited;
+          assert k !in counted;
           remaining := remaining - {k};
+          visited := visited + {k};
           if k in fs && fs[k].FileEntry? && IsChildOf(k, path) {
+            assert k in ChildFiles(fs, path);
+            SumSizesAddOneLocal(fs, counted, k);
+            counted := counted + {k};
             file_count := file_count + 1;
             total_size := total_size + fs[k].info.size;
           }
         }
+        assert visited == fs.Keys;
+        assert counted == ChildFiles(fs, path);
         r := Ok(FolderInfo(path, path, file_count, total_size));
       case FileEntry(_, _) =>
         assert IsFile(fs, path);
@@ -569,6 +588,26 @@ class MemoryBackend extends Backend {
       r := Err(CapabilityNotSupported(CapabilityName(cap), name));
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Local lemma wrappers (Dafny 4.9.1 Boogie bug workaround)
+// ---------------------------------------------------------------------------
+// SumSizesAddOne from BackendContract.dfy cannot be called directly in
+// MemoryBackend methods — Dafny 4.9.1 fails to emit the Boogie procedure
+// for lemmas from included files that transitively use `:|` in ghost
+// functions (SetToSeq).  These local wrappers reproduce the proofs.
+
+lemma {:induction false} SumSizesAddOneLocal(fs: Filesystem, s: set<Path>, k: Path)
+  requires k !in s
+  requires forall p | p in (s + {k}) :: p in fs && fs[p].FileEntry?
+  ensures SumSizes(fs, s + {k}) == SumSizes(fs, s) + fs[k].info.size
+{
+  var combined := SetToSeq(s + {k});
+  var base := SetToSeq(s);
+  assert forall x :: multiset(combined)[x] == multiset(base + [k])[x];
+  SumSizesSeqPermutation(fs, combined, base + [k]);
+  SumSizesSeqAppend(fs, base, k);
 }
 
 // ---------------------------------------------------------------------------

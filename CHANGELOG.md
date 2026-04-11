@@ -54,6 +54,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   (ID-134, part 1): Added `ChildFiles`, `SumSizes`, and `SumSizesAddOne`
   to `BackendContract.dfy`. Pure additions — no existing postconditions changed.
 
+- **Verified `GetFolderInfo` aggregate postcondition** (ID-134, part 2):
+  Strengthened `GetFolderInfo` postcondition to assert `file_count ==
+  |ChildFiles(fs, path)|` and `total_size == SumSizes(fs, ChildFiles(fs,
+  path))`. `MemoryBackend.dfy` refinement proves the loop computes these
+  correctly via ghost set tracking and `SumSizesAddOne` induction.
+
 - **SDD Expert in orchestrate skill** (BK-147): Added a 5th domain expert
   focused on spec-code consistency, ADR coverage, and process guide accuracy.
   Scoped to `sdd/` (specs, ADRs, RFCs, formal, process guides).

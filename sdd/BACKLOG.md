@@ -94,16 +94,6 @@ Items graduate through the SDD pipeline:
   Remaining: note in
   backend docs.
 
-### Formal Verification
-
-- [~] **ID-134 — Verify `GetFolderInfo` aggregate fields (`file_count`, `total_size`) in Dafny postcondition**
-  The `GetFolderInfo` counting loop in `MemoryBackend.dfy` computes `file_count`
-  and `total_size` but the postcondition only asserts `r.Ok? && r.value.path == path`.
-  Adding `ensures r.value.file_count == |set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)|`
-  (and a sum-based postcondition for `total_size`) would make these fields verified
-  by construction.  Requires loop invariants tracking partial counts/sums against
-  a ghost set — non-trivial Dafny proof work.
-
 ### API Surface Enhancements
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
