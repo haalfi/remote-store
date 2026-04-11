@@ -47,11 +47,36 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 
 ## Phase 4: Ship
 
-- [ ] Push branch, open PR, CI green, get review approval
-- [ ] Merge to master, CI green on merge commit
-- [ ] Tag **the merge commit**: `git tag vX.Y.Z` → `git push origin vX.Y.Z`
-- [ ] Create GitHub Release from tag (triggers publish.yml + docs deploy)
+- [ ] Push branch and create PR automatically
+- [ ] Get review approval and merge to master
+- [ ] Confirm CI green on merge commit
+- [ ] Create GitHub Release directly on GitHub (template below; triggers publish.yml + docs deploy)
 - [ ] Confirm publish.yml succeeds
+
+### Release Template
+
+**Title:** `vX.Y.Z`
+
+**Description:**
+```markdown
+## What's Changed
+
+### Added
+- Feature 1: Brief description
+- Feature 2: Brief description
+
+### Fixed
+- Issue 1: Brief description
+- Issue 2: Brief description
+
+### Internal
+- Change 1: Brief description
+
+**Links:**
+- [Full Changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md#xyz---yyyy-mm-dd)
+- [Compare v0.22.0...v0.22.1](https://github.com/haalfi/remote-store/compare/vX.Y.Z-1...vX.Y.Z)
+```
+
 - [ ] Delete release branch
 
 ## Phase 5: Post-release verification
