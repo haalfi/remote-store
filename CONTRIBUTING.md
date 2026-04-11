@@ -304,16 +304,17 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 #### Phase 4: Ship
 
-- [ ] Push branch, open PR, wait for CI green
-- [ ] Request PR review — wait for approval before merging
-- [ ] Merge PR to master
-- [ ] Wait for CI to pass on the merge commit (multi-platform source of truth)
-- [ ] Verify HEAD is the merge commit: `git log --oneline -1`
-- [ ] Tag the merge commit: `git tag vX.Y.Z` (or `git tag vX.Y.Z <sha>` if master advanced)
-- [ ] Push the tag: `git push origin vX.Y.Z`
-- [ ] Create GitHub Release from the tag — this triggers `publish.yml` (PyPI + Codecov) and versioned docs deploy
-- [ ] Watch `publish.yml` — confirm it completes successfully (PyPI publish + coverage upload)
-- [ ] Delete the release branch: `git push origin --delete release-vX.Y.Z`
+_Automated by skill agent (`/release`). User role: review and merge PR only._
+
+- [ ] **[Agent]** Push release branch to origin
+- [ ] **[Agent]** Create PR with link to checklist
+- [ ] **[User]** Review, approve, and merge PR to master — then notify agent
+- [ ] **[Agent]** Confirm CI green on merge commit
+- [ ] **[Agent]** Create GitHub Release directly on GitHub using template (no local tags) — this triggers `publish.yml` (PyPI + Codecov) and versioned docs deploy
+- [ ] **[Agent]** Watch `publish.yml` — confirm it completes successfully (PyPI publish + coverage upload)
+- [ ] **[Agent]** Delete the release branch
+
+_Release template: title = version, description = "What's Changed" header with condensed sections (Added, Fixed, Internal), two links (CHANGELOG.md + git version diff). See `.claude/skills/release/SKILL.md` § Phase 4 for full template._
 
 #### Phase 5: Post-release verification
 

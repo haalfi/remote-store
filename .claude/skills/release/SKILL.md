@@ -5,7 +5,7 @@ disable-model-invocation: true
 argument-hint: "[patch|minor|major]"
 ---
 
-Canonical checklist: `CONTRIBUTING.md` § Release. If this skill drifts, CONTRIBUTING.md wins.
+**Authority:** Release template (§ Phase 4) is authoritative here. Full checklist structure in `CONTRIBUTING.md` § Release—SKILL.md references it there.
 
 Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patch = bugfix/refactor, no bump = CI/docs only.
 
@@ -45,14 +45,32 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [ ] `pip install dist/*.whl` → version matches
 - [ ] Conda recipe version matches
 
-## Phase 4: Ship
+## Phase 4: Ship (Skill Agent)
 
-- [ ] Push branch, open PR, CI green, get review approval
-- [ ] Merge to master, CI green on merge commit
-- [ ] Tag **the merge commit**: `git tag vX.Y.Z` → `git push origin vX.Y.Z`
-- [ ] Create GitHub Release from tag (triggers publish.yml + docs deploy)
-- [ ] Confirm publish.yml succeeds
-- [ ] Delete release branch
+- [ ] **[Agent]** Push release branch to origin
+- [ ] **[Agent]** Create PR with link to this checklist
+- [ ] **[User]** Review, approve, and merge PR to master — then tell agent "merged"
+- [ ] **[Agent]** (Waits for user confirmation, then) Confirm CI green on merge commit
+- [ ] **[Agent]** Create GitHub Release directly on GitHub (template below; triggers publish.yml + docs deploy)
+- [ ] **[Agent]** Confirm publish.yml succeeds
+- [ ] **[Agent]** Delete release branch
+
+### Release Template
+
+**Title:** `vX.Y.Z`
+
+**Description:**
+```markdown
+## What's Changed
+
+<Extract sections from [Unreleased] in CHANGELOG.md and condense by section,
+ following the section order in sdd/CLAUDE-REFERENCE.md § Ripple-check table.
+ For each section with content, use brief bullet points (1 line per item, bold topic prefix)>
+
+**Links:**
+- [Full Changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md#xyz---yyyy-mm-dd)
+- [Compare vPREV...vX.Y.Z](https://github.com/haalfi/remote-store/compare/vPREV...vX.Y.Z)
+```
 
 ## Phase 5: Post-release verification
 
