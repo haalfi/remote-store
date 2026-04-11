@@ -42,6 +42,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from remote_store import Capability
 from remote_store.ext.streams import ChecksumReader
 from remote_store.ext.transfer import transfer
 from tests.e2e.conftest import (
@@ -69,9 +70,6 @@ PIPE_THRESHOLD = 1 * 1_048_576  # 1 MiB -- transfer.py + streams.py + _stream.py
 # Total cost thresholds (as multipliers of FILE_SIZE).
 LAZY_THRESHOLD_FACTOR = 0.5  # lazy backends: peak < 50% of FILE_SIZE
 NON_LAZY_THRESHOLD_FACTOR = 2.0  # non-lazy backends buffer the file; peak < 200%
-
-# Backends that buffer entire files in Python memory by design.
-_NON_LAZY_BACKENDS = frozenset({"memory", "sql-blob"})
 
 PATH = "streaming-integrity-test.bin"
 
@@ -166,11 +164,6 @@ def _verify_checksum(store: Store, path: str, expected: str) -> str:
     return actual
 
 
-def _is_lazy_name(name: str) -> bool:
-    """Return True if *name* is a lazy (streaming) backend."""
-    return name not in _NON_LAZY_BACKENDS
-
-
 def _snapshot_filtered(filters: list[tracemalloc.Filter]) -> int:
     """Return total bytes currently allocated matching *filters*."""
     snapshot = tracemalloc.take_snapshot()
@@ -214,8 +207,8 @@ def _measure_transfer(
     # Remove trailing zero from final _sample(0) for chunk stats.
     chunk_sizes = [c for c in chunks if c > 0]
 
-    src_lazy = _is_lazy_name(src_name)
-    dst_lazy = _is_lazy_name(dst_name)
+    src_lazy = src.supports(Capability.LAZY_READ)
+    dst_lazy = dst.supports(Capability.LAZY_READ)
     both_lazy = src_lazy and dst_lazy
     factor = LAZY_THRESHOLD_FACTOR if both_lazy else NON_LAZY_THRESHOLD_FACTOR
 
@@ -524,7 +517,7 @@ class TestStreamingIntegrity:
         chain.append((memory_name, memory_store))
 
         # Require at least one lazy backend for the test to be meaningful.
-        has_lazy = any(_is_lazy_name(name) for name, _ in chain)
+        has_lazy = any(store.supports(Capability.LAZY_READ) for _, store in chain)
         if not has_lazy:
             pytest.skip("No streaming (lazy) backend available")
 
