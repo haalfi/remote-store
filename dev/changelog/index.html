@@ -10389,6 +10389,13 @@
   to <code>BackendContract.dfy</code>. Pure additions — no existing postconditions changed.</p>
 </li>
 <li>
+<p><strong>Verified <code>GetFolderInfo</code> aggregate postcondition</strong> (ID-134, part 2):
+  Strengthened <code>GetFolderInfo</code> postcondition to assert <code>file_count ==
+  |ChildFiles(fs, path)|</code> and <code>total_size == SumSizes(fs, ChildFiles(fs,
+  path))</code>. <code>MemoryBackend.dfy</code> refinement proves the loop computes these
+  correctly via ghost set tracking and <code>SumSizesAddOne</code> induction.</p>
+</li>
+<li>
 <p><strong>SDD Expert in orchestrate skill</strong> (BK-147): Added a 5th domain expert
   focused on spec-code consistency, ADR coverage, and process guide accuracy.
   Scoped to <code>sdd/</code> (specs, ADRs, RFCs, formal, process guides).</p>
