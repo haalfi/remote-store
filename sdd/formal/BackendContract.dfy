@@ -174,6 +174,29 @@ predicate AllAncestorsTraversable(fs: Filesystem, p: Path)
 }
 
 // ---------------------------------------------------------------------------
+// §5b  Aggregate helpers (ID-134)
+// ---------------------------------------------------------------------------
+
+// The set of child files under a path.
+function ChildFiles(fs: Filesystem, path: Path): set<Path>
+{
+  set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)
+}
+
+// Recursive sum of file sizes over a finite set of paths.
+// Order-independent: the nondeterministic pick `:|` yields the same
+// total regardless of removal order (proved by SumSizesAddOne).
+function SumSizes(fs: Filesystem, keys: set<Path>): nat
+  requires forall k | k in keys :: k in fs && fs[k].FileEntry?
+  decreases keys
+{
+  if keys == {} then 0
+  else
+    var k :| k in keys;
+    fs[k].info.size + SumSizes(fs, keys - {k})
+}
+
+// ---------------------------------------------------------------------------
 // §6  Backend contract  (abstract trait)
 // ---------------------------------------------------------------------------
 // Precondition evaluation order (Gap 1 / BE-008) is encoded by the
@@ -480,6 +503,29 @@ lemma WriteReadConsistency(
   assert newFs[path].FileEntry?;
   assert IsFile(newFs, path);
   assert newFs[path].content == content;
+}
+
+// Adding one element to SumSizes (ID-134).
+// Proves: SumSizes(fs, s + {k}) == SumSizes(fs, s) + fs[k].info.size
+// regardless of which element the `:|` operator picks internally.
+lemma SumSizesAddOne(fs: Filesystem, s: set<Path>, k: Path)
+  requires k !in s
+  requires forall p | p in (s + {k}) :: p in fs && fs[p].FileEntry?
+  ensures SumSizes(fs, s + {k}) == SumSizes(fs, s) + fs[k].info.size
+{
+  if s == {} {
+    assert s + {k} == {k};
+  } else {
+    var x :| x in (s + {k});
+    if x == k {
+      assert (s + {k}) - {k} == s;
+    } else {
+      assert x in s;
+      var s' := s - {x};
+      assert (s + {k}) - {x} == s' + {k};
+      SumSizesAddOne(fs, s', k);
+    }
+  }
 }
 
 // Move is not a no-op when src != dst.
