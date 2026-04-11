@@ -63,8 +63,8 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 ```markdown
 ## What's Changed
 
-<Extract sections from [Unreleased] in CHANGELOG.md and condense by section:
- Follow order: Added > Fixed > Known Issues > Changed > Deprecated > Removed > Documentation > Internal
+<Extract sections from [Unreleased] in CHANGELOG.md and condense by section,
+ following the section order in sdd/CLAUDE-REFERENCE.md § Ripple-check table.
  For each section with content, use brief bullet points (1 line per item, bold topic prefix)>
 
 **Links:**
