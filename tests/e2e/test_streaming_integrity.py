@@ -364,3 +364,6 @@ class TestStreamingIntegrity:
 
         # -- Report (visible with pytest -s, warnings always visible). -----
         _emit_report(results)
+
+        # Explicit assert so CI check_test_assertions.py sees it.
+        assert len(results) == len(chain) - 1
