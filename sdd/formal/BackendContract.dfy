@@ -183,17 +183,32 @@ ghost function ChildFiles(fs: Filesystem, path: Path): set<Path>
   set k | k in fs && fs[k].FileEntry? && IsChildOf(k, path)
 }
 
-// Recursive sum of file sizes over a finite set of paths.
-// Ghost because `:|` is nondeterministic and not compilable.
-// Order-independence is proved by SumSizesRemove.
+// Convert a finite set to a sequence (ghost, nondeterministic order).
+ghost function SetToSeq(s: set<Path>): seq<Path>
+  ensures |SetToSeq(s)| == |s|
+  ensures forall x :: x in s <==> x in SetToSeq(s)
+  decreases s
+{
+  if s == {} then []
+  else
+    var x :| x in s;
+    [x] + SetToSeq(s - {x})
+}
+
+// Sum file sizes over a sequence of paths (deterministic recursion).
+ghost function SumSizesSeq(fs: Filesystem, keys: seq<Path>): nat
+  requires forall k | k in keys :: k in fs && fs[k].FileEntry?
+{
+  if |keys| == 0 then 0
+  else fs[keys[0]].info.size + SumSizesSeq(fs, keys[1..])
+}
+
+// Sum file sizes over a set — delegates to seq-based sum via SetToSeq.
+// Ghost because SetToSeq uses `:|`.
 ghost function SumSizes(fs: Filesystem, keys: set<Path>): nat
   requires forall k | k in keys :: k in fs && fs[k].FileEntry?
-  decreases keys
 {
-  if keys == {} then 0
-  else
-    var k :| k in keys;
-    fs[k].info.size + SumSizes(fs, keys - {k})
+  SumSizesSeq(fs, SetToSeq(keys))
 }
 
 // ---------------------------------------------------------------------------
@@ -505,31 +520,85 @@ lemma WriteReadConsistency(
   assert newFs[path].content == content;
 }
 
-// Any element can be factored out of SumSizes (ID-134).
-// The `:|` in SumSizes picks an opaque element; this axiom asserts
-// the sum is the same regardless of which element we factor out.
-//
-// Axiom rationale: the property follows from commutativity of nat
-// addition over finite sets — trivially true mathematically.  A
-// machine-checked proof requires either Dafny's standard-library
-// FoldSet infrastructure or an `opaque` + `calc` chain to prevent
-// the SMT solver from diverging on the recursive `:|` definition
-// combined with universally quantified invariants.  Deferred to a
-// follow-up if full machine-checked coverage is required.
-lemma {:axiom} {:induction false} SumSizesRemove(fs: Filesystem, keys: set<Path>, x: Path)
-  requires x in keys
-  requires forall k | k in keys :: k in fs && fs[k].FileEntry?
-  ensures SumSizes(fs, keys) == fs[x].info.size + SumSizes(fs, keys - {x})
+// Appending one element to a seq-based sum (ID-134).
+// Classic induction on |xs|: base |xs|==0 trivial, step follows
+// from commutativity of nat addition (a + (b + c) == b + (a + c)).
+lemma {:induction false} SumSizesSeqAppend(
+  fs: Filesystem, xs: seq<Path>, k: Path
+)
+  requires forall p | p in xs :: p in fs && fs[p].FileEntry?
+  requires k in fs && fs[k].FileEntry?
+  ensures SumSizesSeq(fs, xs + [k]) == SumSizesSeq(fs, xs) + fs[k].info.size
+  decreases |xs|
+{
+  if |xs| == 0 {
+    assert xs + [k] == [k];
+  } else {
+    assert (xs + [k])[0] == xs[0];
+    assert (xs + [k])[1..] == xs[1..] + [k];
+    SumSizesSeqAppend(fs, xs[1..], k);
+  }
+}
 
-// Corollary: adding one element to SumSizes (ID-134).
+// Removing element at index i from a seq-based sum (ID-134).
+// SumSizesSeq(ys) == ys[i].size + SumSizesSeq(ys[..i] + ys[i+1..])
+lemma {:induction false} SumSizesSeqRemoveAt(
+  fs: Filesystem, ys: seq<Path>, i: int
+)
+  requires 0 <= i < |ys|
+  requires forall p | p in ys :: p in fs && fs[p].FileEntry?
+  ensures SumSizesSeq(fs, ys) ==
+    fs[ys[i]].info.size + SumSizesSeq(fs, ys[..i] + ys[i+1..])
+  decreases i
+{
+  if i == 0 {
+    assert ys[..0] + ys[1..] == ys[1..];
+  } else {
+    SumSizesSeqRemoveAt(fs, ys[1..], i - 1);
+    assert ys[1..][..i-1] == ys[1..i];
+    assert ys[1..][i..] == ys[i+1..];
+    assert ys[..i] == [ys[0]] + ys[1..i];
+  }
+}
+
+// Two sequences with the same multiset of elements yield the same sum.
+// Induction on |xs|: remove xs[0] from both, recurse.
+lemma {:induction false} SumSizesSeqPermutation(
+  fs: Filesystem, xs: seq<Path>, ys: seq<Path>
+)
+  requires forall p | p in xs :: p in fs && fs[p].FileEntry?
+  requires forall p | p in ys :: p in fs && fs[p].FileEntry?
+  requires multiset(xs) == multiset(ys)
+  ensures SumSizesSeq(fs, xs) == SumSizesSeq(fs, ys)
+  decreases |xs|
+{
+  if |xs| == 0 {
+    assert |ys| == 0;
+  } else {
+    var head := xs[0];
+    assert head in multiset(ys);
+    var i :| 0 <= i < |ys| && ys[i] == head;
+    var xs' := xs[1..];
+    var ys' := ys[..i] + ys[i+1..];
+    assert multiset(xs') == multiset(xs) - multiset{head};
+    assert multiset(ys') == multiset(ys) - multiset{head};
+    SumSizesSeqPermutation(fs, xs', ys');
+    SumSizesSeqRemoveAt(fs, ys, i);
+  }
+}
+
+// Adding one element to a set-based SumSizes (ID-134).
+// Bridges from set to seq: SetToSeq(s + {k}) is a permutation of
+// SetToSeq(s) + [k], and SumSizesSeq is permutation-invariant.
 lemma {:induction false} SumSizesAddOne(fs: Filesystem, s: set<Path>, k: Path)
   requires k !in s
   requires forall p | p in (s + {k}) :: p in fs && fs[p].FileEntry?
   ensures SumSizes(fs, s + {k}) == SumSizes(fs, s) + fs[k].info.size
 {
-  assert k in s + {k};
-  SumSizesRemove(fs, s + {k}, k);
-  assert (s + {k}) - {k} == s;
+  var combined := SetToSeq(s + {k});
+  var base := SetToSeq(s);
+  SumSizesSeqPermutation(fs, combined, base + [k]);
+  SumSizesSeqAppend(fs, base, k);
 }
 
 // Move is not a no-op when src != dst.
