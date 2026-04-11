@@ -529,6 +529,7 @@ class TestStreamingIntegrity:
         self,
         store_chain: list[tuple[str, Store]],
         seeded_payload: tuple[bytes, str, int, random.Random],
+        record_property: Any,
     ) -> None:
         """Transfer a randomly-sized file (7--14 MiB) around all backends in
         random order, verifying SHA-256 and streaming behavior at every hop.
@@ -553,8 +554,24 @@ class TestStreamingIntegrity:
         chain = [(memory_name, memory_store), *middle, (memory_name, memory_store)]
 
         order = " -> ".join(name for name, _ in chain)
-        print(f"\n  File size: {file_size / 1_048_576:.1f} MiB")  # noqa: T201
+        all_names = [name for name, _ in store_chain]
+        skipped = sorted(
+            {"s3", "sftp", "azure", "s3-pyarrow", "sql-blob"} - set(all_names),
+        )
+
+        # Surface test context in CI output (JUnit XML + failure messages).
+        record_property("file_size_mib", f"{file_size / 1_048_576:.1f}")
+        record_property("chain", order)
+        if skipped:
+            record_property("skipped_backends", ", ".join(skipped))
+
+        size_str = f"{file_size / 1_048_576:.1f} MiB"
+        skip_str = f"  Skipped backends: {', '.join(skipped)}" if skipped else ""
+        # Visible with pytest -s; also embedded in assertion messages below.
+        print(f"\n  File size: {size_str}")  # noqa: T201
         print(f"  Chain: {order}")  # noqa: T201
+        if skipped:
+            print(f"  Skipped: {', '.join(skipped)}")  # noqa: T201
 
         # Require at least one lazy backend for the test to be meaningful.
         has_lazy = any(store.supports(Capability.LAZY_READ) for _, store in chain)
@@ -596,5 +613,9 @@ class TestStreamingIntegrity:
 
         # -- Report + assert streaming contract. ----------------------------
         failures = _emit_report(results)
-        assert results  # loop actually ran (satisfies check_test_assertions.py)
-        assert not failures, "Streaming contract violations:\n" + "\n".join(failures)
+        # Context header for CI failure messages (visible without -s).
+        ctx = f"File: {size_str} | Chain: {order}"
+        if skip_str:
+            ctx += f" | {skip_str.strip()}"
+        assert results, f"No hops executed. {ctx}"
+        assert not failures, f"Streaming contract violations ({ctx}):\n" + "\n".join(failures)
