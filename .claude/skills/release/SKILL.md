@@ -63,16 +63,9 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 ```markdown
 ## What's Changed
 
-### Added
-- Feature 1: Brief description
-- Feature 2: Brief description
-
-### Fixed
-- Issue 1: Brief description
-- Issue 2: Brief description
-
-### Internal
-- Change 1: Brief description
+<Extract sections from [Unreleased] in CHANGELOG.md and condense by section:
+ Follow order: Added > Fixed > Known Issues > Changed > Deprecated > Removed > Documentation > Internal
+ For each section with content, use brief bullet points (1 line per item, bold topic prefix)>
 
 **Links:**
 - [Full Changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md#xyz---yyyy-mm-dd)
