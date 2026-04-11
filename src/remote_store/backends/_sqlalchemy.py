@@ -222,7 +222,16 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     with its key, data, and metadata. SQLite receives WAL mode and
     PRAGMA tuning automatically.
 
-    All 10 capabilities are supported.
+    11 of 12 capabilities are supported (all except ``LAZY_READ``).
+
+    Note:
+        **Non-lazy reads and writes.** Both ``read()`` and ``write()``
+        materialize the full content in memory. ``read()`` loads the
+        entire BLOB before returning a stream (no ``LAZY_READ``).
+        ``write()`` reads the full stream before issuing the SQL
+        INSERT/UPDATE because BLOB columns require complete data in a
+        single statement. For files larger than process memory, use a
+        blob-storage backend (S3, Local, Azure) instead.
     """
 
     def __init__(
