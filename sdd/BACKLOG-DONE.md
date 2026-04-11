@@ -1147,8 +1147,6 @@ Items that shipped outside a version bump, newest first.
 - [x] **ID-052 — Custom domain: remotestore.dev**
 - [x] **ID-051 — Sweep stale backlog references in docs and guides**
 - [x] **ID-050 — End-to-end integration tests against Docker backends**
-  Extended with streaming integrity test: round-robin SHA-256 + memory
-  discipline across all backends. PR #403.
 - [x] **ID-049 — Enable GitHub Vigilant Mode**
 - [x] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
 - [x] **ID-044 — Harden examples into assertion-based expectation tests**
