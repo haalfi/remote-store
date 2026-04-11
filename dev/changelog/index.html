@@ -10327,6 +10327,11 @@
   persisted across runs via <code>actions/cache</code>.</p>
 </li>
 <li>
+<p><strong>E2e streaming integrity test</strong> (ID-135): Proves the streaming contract --
+  round-robin SHA-256 verification and <code>tracemalloc</code> memory profiling across
+  all backends.</p>
+</li>
+<li>
 <p><strong>Codecov upload moved to publish workflow</strong>: Coverage is now uploaded to
   Codecov on <code>release: published</code> (in <code>publish.yml</code>) rather than on every CI
   run. Ensures Codecov reflects released versions only, matching PyPI. The
