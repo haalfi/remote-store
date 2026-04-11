@@ -8726,18 +8726,17 @@ errors.</p>
 <li>[ ] Conda recipe: version in <code>packaging/conda-forge/recipe.yaml</code> matches release version</li>
 </ul>
 <h4 id="phase-4-ship">Phase 4: Ship<a class="headerlink" href="#phase-4-ship" title="Permanent link">&para;</a></h4>
+<p><em>Automated by skill agent (<code>/release</code>). User role: review and merge PR only.</em></p>
 <ul>
-<li>[ ] Push branch, open PR, wait for CI green</li>
-<li>[ ] Request PR review — wait for approval before merging</li>
-<li>[ ] Merge PR to master</li>
-<li>[ ] Wait for CI to pass on the merge commit (multi-platform source of truth)</li>
-<li>[ ] Verify HEAD is the merge commit: <code>git log --oneline -1</code></li>
-<li>[ ] Tag the merge commit: <code>git tag vX.Y.Z</code> (or <code>git tag vX.Y.Z &lt;sha&gt;</code> if master advanced)</li>
-<li>[ ] Push the tag: <code>git push origin vX.Y.Z</code></li>
-<li>[ ] Create GitHub Release from the tag — this triggers <code>publish.yml</code> (PyPI + Codecov) and versioned docs deploy</li>
-<li>[ ] Watch <code>publish.yml</code> — confirm it completes successfully (PyPI publish + coverage upload)</li>
-<li>[ ] Delete the release branch: <code>git push origin --delete release-vX.Y.Z</code></li>
+<li>[ ] <strong>[Agent]</strong> Push release branch to origin</li>
+<li>[ ] <strong>[Agent]</strong> Create PR with link to checklist</li>
+<li>[ ] <strong>[User]</strong> Review, approve, and merge PR to master — then notify agent</li>
+<li>[ ] <strong>[Agent]</strong> Confirm CI green on merge commit</li>
+<li>[ ] <strong>[Agent]</strong> Create GitHub Release directly on GitHub using template (no local tags) — this triggers <code>publish.yml</code> (PyPI + Codecov) and versioned docs deploy</li>
+<li>[ ] <strong>[Agent]</strong> Watch <code>publish.yml</code> — confirm it completes successfully (PyPI publish + coverage upload)</li>
+<li>[ ] <strong>[Agent]</strong> Delete the release branch</li>
 </ul>
+<p><em>Release template: title = version, description = "What's Changed" header with condensed sections (Added, Fixed, Internal), two links (CHANGELOG.md + git version diff). See <code>.claude/skills/release/SKILL.md</code> § Phase 4 for full template.</em></p>
 <h4 id="phase-5-post-release-verification">Phase 5: Post-release verification<a class="headerlink" href="#phase-5-post-release-verification" title="Permanent link">&para;</a></h4>
 <ul>
 <li>[ ] PyPI: <code>pip install remote-store==X.Y.Z</code> in a fresh venv, verify version and README renders on pypi.org</li>
