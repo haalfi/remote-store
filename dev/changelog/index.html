@@ -10358,6 +10358,11 @@
   threshold. SFTP was unaffected (already used 32 KiB chunks).</p>
 </li>
 <li>
+<p><strong><code>known_hosts</code> mode test skipped on Windows</strong> (BUG-163): NTFS ignores POSIX
+  mode bits; mode-assertion test now skipped on Windows. File-creation check
+  retained on all platforms.</p>
+</li>
+<li>
 <p><strong><code>cast()</code> string-literal removal</strong> (BK-146): All <code>cast("TypeName", value)</code>
   patterns replaced with <code>cast(TypeName, value) # noqa: TC006</code>. Removed redundant
   <code>BufferedReader</code>-over-<code>BytesIO</code> wrappers in Memory and SQL backends (<code>BytesIO</code>
