@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, TypeVar
 
+from remote_store._backend import _COPY_BUFSIZE
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
@@ -60,6 +61,9 @@ class AsyncAzureBackend(AsyncBackend):
         connection_string: Azure Storage connection string.
         credential: Any credential object (e.g. ``DefaultAzureCredential()``).
         client_options: Additional options passed to service clients.
+            The library sets ``max_single_put_size``, ``max_block_size``,
+            and ``min_large_block_upload_threshold`` defaults for streaming
+            memory discipline; user-supplied values take precedence.
         retry: Retry policy for transient failures.
         max_concurrency: Maximum number of parallel connections for
             uploads and downloads (default ``1`` -- sequential).
@@ -121,6 +125,11 @@ class AsyncAzureBackend(AsyncBackend):
             from azure.storage.blob.aio import BlobServiceClient
 
             opts: dict[str, Any] = dict(self._client_options)
+            # BUG-161/BUG-162: force staged-block upload, keep memory bounded.
+            _blk = _COPY_BUFSIZE
+            opts.setdefault("max_single_put_size", _blk)
+            opts.setdefault("max_block_size", _blk)
+            opts.setdefault("min_large_block_upload_threshold", 1)  # 1 byte = always stage
             azure_retry = build_azure_retry(self._retry)
             if azure_retry is not None and "retry_policy" not in opts:
                 opts["retry_policy"] = azure_retry
@@ -149,6 +158,11 @@ class AsyncAzureBackend(AsyncBackend):
             from azure.storage.filedatalake.aio import DataLakeServiceClient
 
             opts: dict[str, Any] = dict(self._client_options)
+            # BUG-161/BUG-162: same block-size defaults as Blob SDK.
+            _blk = _COPY_BUFSIZE
+            opts.setdefault("max_single_put_size", _blk)
+            opts.setdefault("max_block_size", _blk)
+            opts.setdefault("min_large_block_upload_threshold", 1)  # 1 byte = always stage
             azure_retry = build_azure_retry(self._retry)
             if azure_retry is not None and "retry_policy" not in opts:
                 opts["retry_policy"] = azure_retry
