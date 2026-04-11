@@ -95,9 +95,9 @@ For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENC
 
 ## Repo skills
 
-Repo-specific skills live in `.claude/skills/`. When the user references a skill
-by name or intent (e.g. "use the experts", "orchestrate this", "audit the code",
-"create a PR", "preview the build"), read the matching `SKILL.md` and follow it.
+Repo-specific skills live in `.claude/skills/`. When the user mentions "skill"
+(e.g. "use the orchestrate skill", "run the /pr skill"), read the matching
+`SKILL.md` in `.claude/skills/` and follow it.
 
 Ignore AGENTS.md; this file defines Claude Code behavior for this repo.
 
