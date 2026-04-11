@@ -239,6 +239,11 @@ CONSTRAINTS:
 - Stay in sdd/ — do not touch code, tests, or user-facing docs.
 - Even if no sdd/ files change, report your assessment.
 
+DONE WHEN:
+- Touched specs verified against the implementation.
+- ADR coverage assessed (new ADR drafted or "not needed" with reasoning).
+- Process guides confirmed accurate or updated.
+
 OUTPUT: assessment (spec consistency, ADR coverage, process doc accuracy),
 files created/modified (if any), issues found with evidence.
 ```

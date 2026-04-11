@@ -5,6 +5,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-147 — Add SDD Expert to orchestrate skill**
+  5th domain expert focused on spec-code consistency, ADR coverage, and
+  process guide accuracy. Scoped to `sdd/` only. PR #405.
+
 - [x] **ID-135 — E2e streaming integrity test**
   Proves the streaming contract -- round-robin SHA-256 verification and
   `tracemalloc` memory profiling across all backends. PR #403.
