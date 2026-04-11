@@ -4,7 +4,7 @@ Thin wrapper that bridges Dafny types (``Seq[CodePoint]``, ``Map``,
 ``Result``) to the Python ``Backend`` ABC.  All behavioral logic lives in
 the verified Dafny spec — this module does only type marshaling.
 
-**Principle**: the compiled oracle is correct by construction (53 verified
+**Principle**: the compiled oracle is correct by construction (55 verified
 proofs, 0 errors).  If the oracle fails a conformance test, the *test* has a
 bug — not the oracle.  See ``sdd/formal/README.md`` § Compiled Oracle.
 
@@ -117,7 +117,7 @@ def _to_folder_entry(path_str: str) -> FolderEntry:
 
 
 class DafnyOracleBackend(Backend):
-    """Backend wrapping the compiled Dafny MemoryBackend (53 proofs, 0 errors).
+    """Backend wrapping the compiled Dafny MemoryBackend (55 proofs, 0 errors).
 
     This adapter contains zero behavioral logic — only type conversions
     between Python and Dafny types.  Root is modeled as "." in Dafny

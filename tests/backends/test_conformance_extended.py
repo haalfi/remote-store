@@ -268,6 +268,39 @@ class TestGetFolderInfoErrorFidelity:
             backend.get_folder_info("ec_missing_gfo")
 
 
+class TestGetFolderInfoAggregates:
+    """BackendContract.GetFolderInfo aggregate postconditions (ID-134).
+
+    Dafny: IsDir(path) ==>
+      r.Ok?
+      && r.value.file_count == |ChildFiles(fs, path)|
+      && r.value.total_size == SumSizes(fs, ChildFiles(fs, path))
+
+    Proved in MemoryBackend.dfy via ghost set tracking and SumSizesAddOne
+    induction at each loop iteration.
+    """
+
+    @pytest.mark.spec("BE-017")
+    @pytest.mark.spec("ID-134")
+    def test_get_folder_info_file_count_and_total_size(self, backend: Backend) -> None:
+        """IsDir ==> file_count == |ChildFiles|, total_size == SumSizes."""
+        _require(backend, Capability.WRITE)
+        _seed(backend, {"gfa/a.txt": b"aaa", "gfa/b.txt": b"bb"})
+        fi = backend.get_folder_info("gfa")
+        assert fi.file_count == 2
+        assert fi.total_size == 5
+
+    @pytest.mark.spec("BE-017")
+    @pytest.mark.spec("ID-134")
+    def test_get_folder_info_counts_recursive_children(self, backend: Backend) -> None:
+        """ChildFiles is the full recursive set — subdirectory files are counted."""
+        _require(backend, Capability.WRITE)
+        _seed(backend, {"gfr/a.txt": b"aaa", "gfr/sub/b.txt": b"bb"})
+        fi = backend.get_folder_info("gfr")
+        assert fi.file_count == 2
+        assert fi.total_size == 5
+
+
 # ===========================================================================
 # §2  Listing — Dafny §6 ListFiles / ListFolders postconditions
 # ===========================================================================

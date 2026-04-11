@@ -108,7 +108,7 @@ some may not yet exist in the `tests/` directory.
 | `GetFileInfo: IsDir → InvalidPath` | `test_get_file_info_on_directory_raises_error` | `get_file_info(dir)` → error |
 | `GetFolderInfo: IsFile → InvalidPath` | `test_get_folder_info_on_file_raises_error` | `get_folder_info(file)` → error |
 | `GetFolderInfo: !PathExists → NotFound` | `test_get_folder_info_missing_raises_not_found` | `get_folder_info(missing)` → `NotFound` |
-| `GetFolderInfo: IsDir → Ok + aggregates` | `test_get_folder_info` | `get_folder_info(dir)` → success, `file_count` and `total_size` verified |
+| `GetFolderInfo: IsDir → Ok + aggregates` | `test_get_folder_info_file_count_and_total_size`, `test_get_folder_info_counts_recursive_children` | `get_folder_info(dir)` → success, `file_count` and `total_size` verified |
 | `ListFiles: ensures r.Ok?` | `test_list_files_missing_path_yields_empty` | `list_files(missing)` → `[]`, no error |
 | `ListFiles: depth ≤ max_depth` | `test_list_files_recursive_max_depth` | Depth boundary inclusive |
 | `ListFiles: completeness` | `test_list_files_all_results_are_children` | All results are children of path |

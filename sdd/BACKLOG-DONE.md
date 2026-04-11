@@ -12,10 +12,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 - [x] **ID-134 — Verify `GetFolderInfo` aggregate fields (`file_count`, `total_size`) in Dafny postcondition**
   Part 1 (PR #406): Ghost infrastructure — `ChildFiles`, `SetToSeq`,
   `SumSizesSeq`, `SumSizes`, and five induction lemmas in
-  `BackendContract.dfy`. Part 2: Strengthened `GetFolderInfo` postcondition
-  to assert `file_count == |ChildFiles(fs, path)|` and `total_size ==
-  SumSizes(fs, ChildFiles(fs, path))`. `MemoryBackend.dfy` proves the loop
-  correct via ghost set tracking and `SumSizesAddOne` induction.
+  `BackendContract.dfy`. Part 2 (PR #409): Strengthened `GetFolderInfo`
+  postcondition to assert `file_count == |ChildFiles(fs, path)|` and
+  `total_size == SumSizes(fs, ChildFiles(fs, path))`. `MemoryBackend.dfy`
+  proves the loop correct via ghost set tracking and `SumSizesAddOne`
+  induction. 55 verified proofs total. `MemoryBackend-py/module_.py` did not
+  need regeneration — all ID-134 changes are ghost-only (lemmas, invariants,
+  ghost variables produce no compiled Python output). Extended conformance
+  tests added: `TestGetFolderInfoAggregates` in `test_conformance_extended.py`
+  bridges Dafny postcondition to oracle-backed test suite.
 
 - [x] **BUG-163 — `_ensure_known_hosts_file` 0o600 not enforced on Windows**
   NTFS ignores POSIX mode bits; `os.open(..., 0o600)` creates the file with
