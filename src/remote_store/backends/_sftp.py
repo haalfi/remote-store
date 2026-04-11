@@ -883,6 +883,7 @@ class SFTPBackend(Backend):
         if parent and not os.path.isdir(parent):
             os.makedirs(parent, mode=0o700, exist_ok=True)
         if not os.path.isfile(path):
+            # mode=0o600 is enforced on Unix; NTFS ignores POSIX mode bits on Windows.
             fd = os.open(path, os.O_CREAT | os.O_WRONLY, 0o600)
             os.close(fd)
 

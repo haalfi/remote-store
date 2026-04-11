@@ -29,6 +29,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   live chunks: current read + previous write) well under the streaming
   threshold. SFTP was unaffected (already used 32 KiB chunks).
 
+- **`known_hosts` mode test skipped on Windows** (BUG-163): NTFS ignores POSIX
+  mode bits; mode-assertion test now skipped on Windows. File-creation check
+  retained on all platforms.
+
 - **`cast()` string-literal removal** (BK-146): All `cast("TypeName", value)`
   patterns replaced with `cast(TypeName, value) # noqa: TC006`. Removed redundant
   `BufferedReader`-over-`BytesIO` wrappers in Memory and SQL backends (`BytesIO`
