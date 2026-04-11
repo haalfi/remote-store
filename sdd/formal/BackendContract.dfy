@@ -184,9 +184,9 @@ function ChildFiles(fs: Filesystem, path: Path): set<Path>
 }
 
 // Recursive sum of file sizes over a finite set of paths.
-// Order-independent: the nondeterministic pick `:|` yields the same
-// total regardless of removal order (proved by SumSizesAddOne).
-function SumSizes(fs: Filesystem, keys: set<Path>): nat
+// Ghost because `:|` is nondeterministic and not compilable.
+// Order-independence is proved by SumSizesRemove.
+ghost function SumSizes(fs: Filesystem, keys: set<Path>): nat
   requires forall k | k in keys :: k in fs && fs[k].FileEntry?
   decreases keys
 {
@@ -505,27 +505,45 @@ lemma WriteReadConsistency(
   assert newFs[path].content == content;
 }
 
-// Adding one element to SumSizes (ID-134).
-// Proves: SumSizes(fs, s + {k}) == SumSizes(fs, s) + fs[k].info.size
-// regardless of which element the `:|` operator picks internally.
+// Any element can be factored out of SumSizes (ID-134).
+// The `:|` in SumSizes picks an opaque element; this lemma proves the
+// sum is the same regardless of which element we factor out.
+// Proof: for the non-trivial case, prove the IH for every possible
+// element the function could have picked, via `forall` statements.
+lemma SumSizesRemove(fs: Filesystem, keys: set<Path>, x: Path)
+  requires x in keys
+  requires forall k | k in keys :: k in fs && fs[k].FileEntry?
+  ensures SumSizes(fs, keys) == fs[x].info.size + SumSizes(fs, keys - {x})
+  decreases keys
+{
+  if keys != {x} {
+    // |keys| >= 2.  SumSizes(keys) unfolds to fs[y].size + SumSizes(keys - {y})
+    // for some y chosen by `:|`.  We don't know if y == x, so prove the
+    // IH for all possible y != x and let the solver pick the right one.
+    forall y | y in keys && y != x
+      ensures SumSizes(fs, keys - {y}) == fs[x].info.size + SumSizes(fs, keys - {y} - {x})
+    {
+      assert x in keys - {y};
+      SumSizesRemove(fs, keys - {y}, x);
+    }
+    forall y | y in keys && y != x
+      ensures SumSizes(fs, keys - {x}) == fs[y].info.size + SumSizes(fs, keys - {x} - {y})
+    {
+      assert y in keys - {x};
+      SumSizesRemove(fs, keys - {x}, y);
+    }
+  }
+}
+
+// Corollary: adding one element to SumSizes (ID-134).
 lemma SumSizesAddOne(fs: Filesystem, s: set<Path>, k: Path)
   requires k !in s
   requires forall p | p in (s + {k}) :: p in fs && fs[p].FileEntry?
   ensures SumSizes(fs, s + {k}) == SumSizes(fs, s) + fs[k].info.size
 {
-  if s == {} {
-    assert s + {k} == {k};
-  } else {
-    var x :| x in (s + {k});
-    if x == k {
-      assert (s + {k}) - {k} == s;
-    } else {
-      assert x in s;
-      var s' := s - {x};
-      assert (s + {k}) - {x} == s' + {k};
-      SumSizesAddOne(fs, s', k);
-    }
-  }
+  assert k in s + {k};
+  SumSizesRemove(fs, s + {k}, k);
+  assert (s + {k}) - {k} == s;
 }
 
 // Move is not a no-op when src != dst.
