@@ -44,6 +44,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   replace built-in deployment with explicit `deploy-pages@v4` (Node 20) job,
   fixing "Multiple artifacts" error and `DEP0040` punycode warning.
 
+### Documentation
+
+- **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
+  and docstring updated.
+
 ### Internal
 
 - **Streaming integrity test hardened** (BUG-161, BUG-162): Memory and chunk

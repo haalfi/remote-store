@@ -5,6 +5,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-136 — Document SQL backend non-lazy write as by-design**
+  Backend guide, capabilities matrix, and docstring updated. Code comment
+  shipped in PR #407.
+
 - [x] **ID-134 — Verify `GetFolderInfo` aggregate fields (`file_count`, `total_size`) in Dafny postcondition**
   Part 1 (PR #406): Ghost infrastructure — `ChildFiles`, `SetToSeq`,
   `SumSizesSeq`, `SumSizes`, and five induction lemmas in
