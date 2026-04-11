@@ -97,7 +97,7 @@ For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENC
 
 Repo-specific skills live in `.claude/skills/`. When the user mentions "skill"
 (e.g. "use the orchestrate skill", "run the /pr skill"), read the matching
-`SKILL.md` in `.claude/skills/` and follow it.
+`SKILL.md` in `.claude/skills/` for context, then serve the user's request.
 
 Ignore AGENTS.md; this file defines Claude Code behavior for this repo.
 
