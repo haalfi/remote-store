@@ -44,7 +44,7 @@ Items graduate through the SDD pipeline:
   The Azure SDK internally calls `content.read()` without a size limit,
   slurping the full stream. For a 10 MiB file the e2e test shows 1 chunk
   of 10 MiB. Fix: set `max_single_put_size` and `max_block_size` defaults
-  on the `BlobServiceClient` so streams > 4 MiB use staged-block upload.
+  (256 KiB) on the `BlobServiceClient` so uploads use staged blocks.
 
 - [~] **BUG-162 — Transfer pipe layer ~2 MiB overhead**
   The e2e streaming integrity test measures ~2 MiB allocated inside the

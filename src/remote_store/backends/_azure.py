@@ -166,6 +166,9 @@ class AzureBackend(Backend):
         connection_string: Azure Storage connection string.
         credential: Any credential object (e.g. ``DefaultAzureCredential()``).
         client_options: Additional options passed to service clients.
+            The library sets ``max_single_put_size``, ``max_block_size``,
+            and ``min_large_block_upload_threshold`` defaults for streaming
+            memory discipline; user-supplied values take precedence.
         max_concurrency: Maximum number of parallel connections for
             uploads and downloads (default ``1`` -- sequential).
     """
@@ -830,7 +833,7 @@ class AzureBackend(Backend):
             _blk = _COPY_BUFSIZE
             opts.setdefault("max_single_put_size", _blk)
             opts.setdefault("max_block_size", _blk)
-            opts.setdefault("min_large_block_upload_threshold", 1)
+            opts.setdefault("min_large_block_upload_threshold", 1)  # 1 byte = always stage
             azure_retry = self._build_azure_retry()
             if azure_retry is not None and "retry_policy" not in opts:
                 opts["retry_policy"] = azure_retry
@@ -863,7 +866,7 @@ class AzureBackend(Backend):
             _blk = _COPY_BUFSIZE
             opts.setdefault("max_single_put_size", _blk)
             opts.setdefault("max_block_size", _blk)
-            opts.setdefault("min_large_block_upload_threshold", 1)
+            opts.setdefault("min_large_block_upload_threshold", 1)  # 1 byte = always stage
             azure_retry = self._build_azure_retry()
             if azure_retry is not None and "retry_policy" not in opts:
                 opts["retry_policy"] = azure_retry

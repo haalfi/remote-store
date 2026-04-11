@@ -228,12 +228,28 @@ def _measure_transfer(
 # ---------------------------------------------------------------------------
 
 
+def _test_rng() -> random.Random:
+    """Create a seeded RNG for reproducible test randomness.
+
+    The seed is derived from ``PYTHONHASHSEED`` when set (deterministic CI),
+    otherwise from system entropy.  The seed is printed so failures can be
+    reproduced by setting ``PYTHONHASHSEED`` to the logged value.
+    """
+    import os
+
+    env_seed = os.environ.get("PYTHONHASHSEED")
+    seed = int(env_seed) if env_seed and env_seed.isdigit() else random.randrange(2**32)  # noqa: S311
+    print(f"  Streaming test seed: {seed} (reproduce with PYTHONHASHSEED={seed})")  # noqa: T201
+    return random.Random(seed)  # noqa: S311
+
+
 @pytest.fixture(scope="module")
-def seeded_payload() -> tuple[bytes, str, int]:
-    """Random-sized (7--14 MiB) payload with its SHA-256 hex digest."""
-    size = random.randint(FILE_SIZE_MIN, FILE_SIZE_MAX)  # noqa: S311
+def seeded_payload() -> tuple[bytes, str, int, random.Random]:
+    """Random-sized (7--14 MiB) payload with its SHA-256 hex digest and RNG."""
+    rng = _test_rng()
+    size = rng.randint(FILE_SIZE_MIN, FILE_SIZE_MAX)
     data, digest = _make_payload(size)
-    return data, digest, size
+    return data, digest, size, rng
 
 
 # Store chain fixture -- builds stores directly using availability checks
@@ -445,18 +461,24 @@ def _emit_report(results: list[HopResult]) -> list[str]:
 
     Streaming violations are hard failures, not warnings.  Non-lazy
     destinations (e.g. SQL BLOB) are exempt from ``chunks_ok`` and
-    ``pipe_ok`` because they materialize the full stream by design,
-    which inflates both chunk count and pipe measurements (ID-136).
+    ``pipe_ok`` because they call ``source.read()`` without a size limit,
+    reading the full stream in one call.  This inflates chunk count to 1
+    and inflates pipe measurements because ``tracemalloc`` attributes the
+    full ``bytes`` allocation to the calling Python frame in
+    ``_ErrorMappingStream.read()`` / ``ProgressReader.read()`` (ID-136).
+    The ``total_ok`` check still applies to non-lazy destinations.
     """
     failures: list[str] = []
     print(_HEADER)  # noqa: T201
     for r in results:
         lazy_tag = "lazy" if r.both_lazy else "non-lazy"
         issues: list[str] = []
-        # Non-lazy destinations legitimately read the full stream in one
-        # chunk (ID-136), inflating both chunk and pipe measurements.
+        # Non-lazy destinations call source.read() without a size limit,
+        # reading the full stream at once.  This inflates both chunk count
+        # (1 chunk = full file) and pipe measurements (tracemalloc
+        # attributes the bytes allocation to _ErrorMappingStream.read).
         if not r.dst_lazy:
-            pass  # exempt from chunks_ok and pipe_ok
+            pass  # exempt from chunks_ok and pipe_ok; total_ok still applies
         else:
             if not r.chunks_ok:
                 issues.append("chunks")
@@ -506,7 +528,7 @@ class TestStreamingIntegrity:
     def test_roundrobin_checksum_and_memory(
         self,
         store_chain: list[tuple[str, Store]],
-        seeded_payload: tuple[bytes, str, int],
+        seeded_payload: tuple[bytes, str, int, random.Random],
     ) -> None:
         """Transfer a randomly-sized file (7--14 MiB) around all backends in
         random order, verifying SHA-256 and streaming behavior at every hop.
@@ -522,12 +544,12 @@ class TestStreamingIntegrity:
         Non-lazy destinations (SQL) are exempt from chunk-count checks
         because they must materialize the full stream by design (ID-136).
         """
-        payload, expected_sha, file_size = seeded_payload
+        payload, expected_sha, file_size, rng = seeded_payload
 
         # Build chain: memory first, shuffled middle, memory last.
         memory_name, memory_store = store_chain[0]
         middle = list(store_chain[1:])
-        random.shuffle(middle)
+        rng.shuffle(middle)
         chain = [(memory_name, memory_store), *middle, (memory_name, memory_store)]
 
         order = " -> ".join(name for name, _ in chain)

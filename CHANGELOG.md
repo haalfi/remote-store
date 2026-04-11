@@ -18,10 +18,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Fixed
 
 - **Azure chunked upload** (BUG-161): `AzureBackend.write()` now uses
-  staged-block upload for streams larger than 4 MiB instead of buffering
-  the entire stream into memory. Sets `max_single_put_size` and
-  `max_block_size` defaults (4 MiB) on the `BlobServiceClient`. Users can
-  override via `client_options`.
+  staged-block upload instead of buffering the entire stream into memory.
+  Sets `max_single_put_size` and `max_block_size` defaults (256 KiB) on
+  both `BlobServiceClient` and `DataLakeServiceClient`. Users can override
+  via `client_options` for throughput tuning on large files.
 
 - **Transfer pipe memory overhead** (BUG-162): All backends now use an
   explicit 256 KiB copy buffer for `shutil.copyfileobj` instead of the
