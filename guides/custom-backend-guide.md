@@ -47,7 +47,7 @@ Every backend starts with these imports. The key types:
 | [`Capability`](api/capabilities.md), [`CapabilitySet`](api/capabilities.md) | Declare supported operations |
 | [`NotFound`](api/errors.md), [`AlreadyExists`](api/errors.md), ... | Normalized error types |
 | [`FileInfo`](api/models.md), [`FolderEntry`](api/models.md), [`FolderInfo`](api/models.md) | Return types for listing and metadata |
-| [`RemotePath`](api/path.md) | Immutable, validated path type |
+| [`RemotePath`](api/models.md) | Immutable, validated path type |
 | `WritableContent` | Type alias: `bytes \| BinaryIO` |
 
 ---
@@ -192,7 +192,7 @@ returns the stream as-is.
 - `recursive=False` (default) yields only immediate children.
 - `list_folders()` is always non-recursive — only immediate subfolders.
 - Non-existent paths yield nothing (no exception).
-- [`FileInfo`](api/models.md)`.path` must be a [`RemotePath`](api/path.md).
+- [`FileInfo`](api/models.md)`.path` must be a [`RemotePath`](api/models.md).
 
 ---
 
@@ -342,8 +342,8 @@ backend runs the full suite automatically.
 
 The conformance suite itself is validated by running it against a
 mathematically verified oracle compiled from the formal Dafny specification
-(`sdd/formal/MemoryBackend.dfy`, 55 verified proofs, 0 errors).  If the
-oracle passes a test, the test is known-correct.  This means passing the
+(`sdd/formal/MemoryBackend.dfy`).  If the oracle passes a test, the test
+is known-correct.  This means passing the
 conformance suite is a strong guarantee of correctness — not just "matches
 what existing backends happen to do."  See [`sdd/formal/README.md`](https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md)
 § Compiled Oracle for details.
