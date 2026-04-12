@@ -66,8 +66,8 @@ def _capabilities() -> None:
     # --8<-- [start:capabilities]
     from remote_store import Capability
 
-    store.supports(Capability.GLOB)  # True for Local, S3, S3-PyArrow, Azure
-    store.supports(Capability.ATOMIC_WRITE)  # True for all except HTTP
+    store.supports(Capability.GLOB)  # True for most backends; see capabilities matrix
+    store.supports(Capability.ATOMIC_WRITE)  # True for most backends; see capabilities matrix
     # --8<-- [end:capabilities]
 
 

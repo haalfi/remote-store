@@ -2,7 +2,7 @@
 
 Demonstrates different ways to create and use RegistryConfig, including
 credential hygiene with Secret, from_dict() auto-wrapping, and
-configuration for S3, S3-PyArrow, SFTP, Azure, and HTTP backends.
+configuration examples across multiple backends.
 """
 
 from __future__ import annotations

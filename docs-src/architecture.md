@@ -74,13 +74,13 @@ Each error carries structured attributes: `message`, `path`, and `backend`.
 
 ## Extension model
 
-Extensions in `ext.*` add functionality without modifying the core:
+Extensions in `ext.*` add functionality without modifying the core — covering
+observability, caching, glob pattern matching, PyArrow integration, and more.
+Some extensions are always available (no extra dependencies); others require
+optional extras such as `arrow`, `otel`, or `dagster`.
 
-- **Unconditional** (no extra deps): `ext.batch`, `ext.cache`, `ext.glob`,
-  `ext.integrity`, `ext.observe`, `ext.partition`, `ext.streams`, `ext.transfer`
-- **Optional** (extra deps): `ext.arrow` (pyarrow), `ext.dagster` (dagster),
-  `ext.otel` (opentelemetry), `ext.parquet` (pyarrow), `ext.pydantic` (pydantic),
-  `ext.yaml` (pyyaml / ruamel.yaml)
+See the [Extensions guide](extensions.md) for the full list and installation
+instructions.
 
 Extensions follow the contract defined in
 [ADR-0008](design/adrs/0008-extension-architecture.md):

@@ -55,6 +55,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   logically; updated all references consistently. Standardized ext module docstrings
   to MkDocs admonition syntax.
 
+- **Documentation: apply content-longevity rules to Guides, Explanation, and Examples** (BK-149b):
+  Pseudo-precise values, exhaustive enumerations, and stale counts removed from
+  Guides, Explanation, Getting Started, README, and example docstrings. Completes BK-149.
+
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.
 

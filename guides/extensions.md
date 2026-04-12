@@ -26,9 +26,8 @@ on top of the core Store API.
 
 ### Always-available extensions (pure Python)
 
-`ext.batch`, `ext.cache`, `ext.glob`, `ext.integrity`, `ext.observe`,
-`ext.partition`, `ext.streams`, and `ext.transfer`
-have no extra dependencies. They are re-exported from the top-level package:
+Extensions with no extra dependencies (marked `*(none)*` in the table above)
+are re-exported from the top-level package for convenience:
 
 ```python
 from remote_store import batch_delete, glob_files, observe, upload, download

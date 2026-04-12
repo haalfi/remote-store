@@ -25,7 +25,7 @@ Every backend is a subclass of [`Backend`](api/backend.md). The contract is
 straightforward:
 
 1. **Declare capabilities** — which operations does your backend support?
-2. **Implement abstract members** — 16 methods and 2 properties covering CRUD, listing, and metadata.
+2. **Implement abstract members** — methods and properties covering CRUD, listing, and metadata. See [Abstract methods](#abstract-methods-must-implement) for the full list.
 3. **Map all exceptions** — native errors must become `remote_store` errors. No leaks.
 
 The [`Store`](api/store.md) class wraps your backend, adds path validation, capability gating,
@@ -312,9 +312,9 @@ code/type, and raise the appropriate remote-store error with `from exc`.
 
 remote-store ships two conformance test files that validate any backend against
 the formal `BackendContract` specification. Backends contributed to the repo
-plug into this infrastructure and run ~114 test scenarios per backend
-automatically (64 basic + 50 extended). Standalone backends can either reuse this suite or write focused
-tests against the same categories.
+plug into this infrastructure and run through the full suite automatically.
+Standalone backends can either reuse this suite or write focused tests against
+the same categories.
 
 ---
 
@@ -322,8 +322,8 @@ tests against the same categories.
 
 | File | Coverage | Run with |
 |---|---|---|
-| [`test_conformance.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance.py) | 64 tests — BE-001–BE-022, BE-025 + SAW, ITER, SIO, GLOB, NPR, RES specs: identity, capabilities, `exists`, `is_file`/`is_folder`, read, write, delete, list, streaming, glob, native path, resolution | `pytest tests/backends/test_conformance.py` |
-| [`test_conformance_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance_extended.py) | 50 Dafny-derived tests: error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup | `pytest -m extended_conformance` |
+| [`test_conformance.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance.py) | Basic suite: identity, capabilities, `exists`, `is_file`/`is_folder`, read, write, delete, list, streaming, glob, native path, resolution | `pytest tests/backends/test_conformance.py` |
+| [`test_conformance_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance_extended.py) | Extended (Dafny-derived): error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup | `pytest -m extended_conformance` |
 
 Both files share the same parameterized `backend` fixture — every registered
 backend runs the full suite automatically.
