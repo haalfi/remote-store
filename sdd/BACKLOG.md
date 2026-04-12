@@ -46,12 +46,8 @@ Items graduate through the SDD pipeline:
 ## Backlog (Prioritized)
 
 - [ ] **BK-149 — Apply CONTENT-RULES.md to existing README, guides, and docstrings**
-  `sdd/CONTENT-RULES.md` (BK-148) defines the rules; this item applies them.
-  Patterns to fix: pseudo-precise values in narrative, exhaustive inline lists,
-  capability detail duplicated from FEATURES.md, source-code facts in guides.
-  Scope: `README.md`, `guides/`, `docs-src/`, and docstrings where the patterns
-  were found. See `sdd/research/research-doc-content-longevity.md` for the
-  original findings.
+  Cleanup pass against the rules established in BK-148. Findings in
+  `sdd/research/research-doc-content-longevity.md`.
 
 - [ ] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
