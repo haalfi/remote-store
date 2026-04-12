@@ -88,6 +88,7 @@ Before committing, check whether your change has cross-file dependencies:
 | Share a process insight or lesson learned | `DEVELOPMENT_STORY.md`                               |
 | Check or update code style conventions   | `sdd/DESIGN.md`                                      |
 | Check or update testing quality rules    | `sdd/TESTING.md`                                     |
+| Check or update doc content quality rules | `sdd/CONTENT-RULES.md`                              |
 | Understand the full SDD workflow         | `sdd/000-process.md`                                 |
 | Add or update a backend guide            | `guides/backends/` + docs nav                        |
 | Run a quick smoke test                   | `examples/` — pick one and run it                    |

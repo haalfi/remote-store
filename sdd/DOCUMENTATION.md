@@ -4,6 +4,8 @@
 
 Authoritative source for documentation structure, standards, and placement rules for `remote-store`. Governs all docs work: new pages, restructuring, and reviews.
 
+When writing or reviewing any documentation (README, guides, docstrings, and inline comments), also apply the rules in `sdd/CONTENT-RULES.md` to keep content accurate over time.
+
 ## Rules
 
 ### 1. Diataxis placement
@@ -103,8 +105,6 @@ The README must contain:
   capability detail links to `FEATURES.md` and the capabilities matrix
 - Link to full documentation site, CHANGELOG, and CONTRIBUTING
 - License, supported Python versions, project status badge
-
-Apply `sdd/CONTENT-RULES.md` when writing or reviewing any README section.
 
 ### 7. Research document rules
 

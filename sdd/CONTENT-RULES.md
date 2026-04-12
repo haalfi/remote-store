@@ -14,6 +14,8 @@ Derived from `sdd/research/research-doc-content-longevity.md`.
    — Before writing any sentence, ask: "Would this still be accurate in 6 months?"
    If not, it belongs in a linked SSoT or generated artefact — not in stable prose.
 
+All rules below are `[review-enforced]` today. Future enhancements may add CI-enforced rules (e.g., grepping for pseudo-precise values, or detecting exhaustive-list duplication via diff analysis), but the current rules are all reviewed by humans.
+
 2. **Describe principles, not enumerations** [review-enforced]
    — Write what the system does and why. List 2–3 representative examples and link
    to the authoritative source. Never reproduce an exhaustive list inline —
@@ -43,7 +45,7 @@ Derived from `sdd/research/research-doc-content-longevity.md`.
 
 ### Examples (bad → good)
 
-```python
+```text
 # Rule 3 — no pseudo-precise values in prose
 # bad
 "For S3, reads add 0.7 ms (+15%) over boto3; listing is 29× faster."
