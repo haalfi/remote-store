@@ -39,7 +39,12 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-*(none)*
+- [~] **BUG-164 — `docs.yml` `pages` job blocked by environment protection rules on release tags**
+  When a GitHub Release is published, `docs.yml` runs in the tag context
+  (`refs/tags/vX.Y.Z`). The `pages` job requires the `github-pages` environment,
+  whose protection rules only allow branch refs — so the deployment is rejected.
+  Fix: move the `pages` job to a separate workflow triggered by `push` to `gh-pages`
+  (the branch mike already pushes to), so the deployment context is always a branch ref.
 
 ---
 

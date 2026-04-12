@@ -13,8 +13,6 @@ env:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -64,21 +62,3 @@ jobs:
           mike deploy "$VERSION" latest --update-aliases
           mike set-default latest
           git push origin gh-pages
-
-  pages:
-    needs: [deploy-dev, deploy-release]
-    if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-release.result == 'success')
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: gh-pages
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - id: deployment
-        uses: actions/deploy-pages@v4

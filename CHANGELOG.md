@@ -6,6 +6,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Docs pages deployment on release tags** (BUG-164): `pages` job moved to a
+  dedicated `gh-pages-deploy.yml` workflow triggered by push to `gh-pages`. Eliminates
+  the `github-pages` environment protection rule failure when `docs.yml` ran in a
+  tag ref context on release events.
+
 ## [0.23.0] - 2026-04-12
 
 ### Added
