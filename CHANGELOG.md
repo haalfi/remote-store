@@ -58,12 +58,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.
 
-- **Further Reading refresh**: Expanded to surface Specs, ADRs, RFCs, Testing
-  Standards, Content Rules, Changelog, and the community/policy files
-  (Contributing, Security, Code of Conduct, Citation). Fixed stale GitHub link
-  for Development Story to point at the in-site page. Removed Contributing and
-  Development Story from the top navigation: both remain reachable via
-  Further Reading.
+- **Further Reading refresh**: Page now surfaces Specs, ADRs, RFCs, and
+  community/policy files. Contributing and Development Story dropped from the
+  top nav; both remain reachable via Further Reading.
 
 - **Azure backend guide** (ID-137): Updated `max_block_size` and
   `max_single_put_size` library defaults from 256 KiB to 1 MiB.
