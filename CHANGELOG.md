@@ -50,6 +50,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   keeps prose from drifting out of sync with code and generated artefacts.
   `DOCUMENTATION.md` and `CLAUDE.md` updated to reference it.
 
+- **Apply content longevity rules to existing docs** (BK-149): Removed stale counts
+  ("X of 12 capabilities", "55 verified proofs") and pseudo-precise values from guides.
+  Standardized module-level docstring examples to use MkDocs admonition syntax
+  (`!!! example`) for consistent visual scoping. Capability descriptions across
+  backend guides now use stable prose ("supports all except X") instead of hardcoded
+  numbers. Backend-specific and reference pages restructured per DOCUMENTATION.md
+  building blocks.
+
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.
 
