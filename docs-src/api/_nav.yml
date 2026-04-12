@@ -6,7 +6,6 @@
 - SFTPUtils: sftp-utils.md
 - Config: config.md
 - Models: models.md
-- RemotePath: path.md
 - Capabilities: capabilities.md
 - Errors: errors.md
 - Backends: backends/
