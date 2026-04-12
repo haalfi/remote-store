@@ -66,18 +66,20 @@ FILE_SIZE_MAX = 14 * 1_048_576  # 14 MiB
 DRAIN_CHUNK = 1_048_576  # 1 MiB read chunks for checksum verification
 
 # Pipe cost: transfer layer overhead (transfer.py + streams.py + _stream.py).
-# _COPY_BUFSIZE controls the pipe chunk size (currently 256 KiB); peak is
-# ~2 * _COPY_BUFSIZE (current + previous chunk in flight).  This measures
-# the transfer-layer pipe cost only — Azure SDK block size (_AZURE_BLOCK_SIZE,
-# 1 MiB) is an SDK-internal setting and does not affect this threshold.
-# Threshold at 768 KiB gives 50% headroom over 2 * 256 KiB = 512 KiB.
-PIPE_THRESHOLD = 768 * 1024  # 768 KiB
+# Most backends read in _COPY_BUFSIZE (256 KiB) chunks; when Azure is the
+# write destination, the Azure SDK calls source_stream.read(_AZURE_BLOCK_SIZE)
+# (1 MiB), so the pipe holds one 1 MiB buffer.  Threshold at 1.5 MiB gives
+# 50% headroom over the 1 MiB Azure block size.
+PIPE_THRESHOLD = 1536 * 1024  # 1.5 MiB
 
 # Total cost thresholds (as multipliers of file_size).
-# Lazy backends carry a ~4 MiB fixed cost (PyArrow S3 upload buffer),
-# so with 7 MiB minimum file size the factor must be > 4/7 ≈ 0.57.
+# Lazy-lazy hops carry a ~4 MiB floor from s3fs multipart upload staging
+# (observed even with no PyArrow backend involved).  With 7 MiB minimum
+# file size the factor must be > 4/7 ≈ 0.57.
 LAZY_THRESHOLD_FACTOR = 0.65  # lazy backends: peak < 65% of file_size
-NON_LAZY_THRESHOLD_FACTOR = 2.0  # non-lazy backends buffer the file; peak < 200%
+NON_LAZY_THRESHOLD_FACTOR = 2.2  # non-lazy backends buffer the file; peak < 220%
+# 2.0× base (source + destination copy) + ~0.2× headroom for Python bytearray
+# growth over-allocation (~12.5%) and tracemalloc measurement noise.
 
 PATH = "streaming-integrity-test.bin"
 
