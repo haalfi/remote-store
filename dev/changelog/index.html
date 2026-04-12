@@ -3078,90 +3078,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/info/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Info
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/sftp-utils/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SFTPUtils
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/config/" class="md-nav__link">
         
   
@@ -3198,34 +3114,6 @@
     
   
     Models
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/path/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    RemotePath
   
 
     
@@ -3301,6 +3189,90 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../api/backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/info/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Info
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sftp-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3313,7 +3285,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3335,14 +3307,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3658,7 +3630,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3680,14 +3652,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_14" id="__nav_4_1_14_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_13" id="__nav_4_1_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_14">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -10432,6 +10404,12 @@
 <p><strong>Documentation content longevity rules</strong> (BK-148): New <code>sdd/CONTENT-RULES.md</code>
   keeps prose from drifting out of sync with code and generated artefacts.
   <code>DOCUMENTATION.md</code> and <code>CLAUDE.md</code> updated to reference it.</p>
+</li>
+<li>
+<p><strong>Documentation: remove stale enumerations, unify API references</strong> (BK-149):
+  Removed hardcoded counts from guides and docstrings. Reordered Capability enum
+  logically; updated all references consistently. Standardized ext module docstrings
+  to MkDocs admonition syntax.</p>
 </li>
 <li>
 <p><strong>SQL blob non-lazy write</strong> (ID-136): Backend guide, capabilities matrix,

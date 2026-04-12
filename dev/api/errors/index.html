@@ -16,7 +16,7 @@
         <link rel="prev" href="../capabilities/">
       
       
-        <link rel="next" href="../backends/">
+        <link rel="next" href="../backend/">
       
       
         
@@ -3080,90 +3080,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../info/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Info
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../sftp-utils/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SFTPUtils
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../config/" class="md-nav__link">
         
   
@@ -3200,34 +3116,6 @@
     
   
     Models
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../path/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    RemotePath
   
 
     
@@ -3449,6 +3337,90 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../info/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Info
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sftp-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3461,7 +3433,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3483,14 +3455,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3806,7 +3778,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3828,14 +3800,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_14" id="__nav_4_1_14_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_13" id="__nav_4_1_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_14">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -8036,10 +8008,8 @@
 
 
         <p>Raised when a file or folder does not exist.</p>
-<p>Raised by <code>Store.read()</code>, <code>Store.read_bytes()</code>, <code>Store.delete()</code>,
-<code>Store.delete_folder()</code>, <code>Store.get_file_info()</code>,
-<code>Store.get_folder_info()</code>, <code>Store.move()</code>, and <code>Store.copy()</code>
-when the target path does not exist.</p>
+<p>Raised by read, delete, metadata, move, and copy operations when the
+target path does not exist.</p>
 
 
 
@@ -8094,9 +8064,8 @@ when the target path does not exist.</p>
 
 
         <p>Raised when a target already exists and overwrite is not allowed.</p>
-<p>Raised by <code>Store.write()</code>, <code>Store.write_atomic()</code>,
-<code>Store.open_atomic()</code>, <code>Store.move()</code>, and <code>Store.copy()</code>
-when <code>overwrite=False</code> (the default) and the destination exists.</p>
+<p>Raised by write and copy operations when <code>overwrite=False</code> (the
+default) and the destination already exists.</p>
 
 
 
@@ -8268,10 +8237,10 @@ file path).</p>
 
 
         <p>Raised when an operation requires an unsupported capability.</p>
-<p>Raised by capability-gated methods (<code>Store.glob()</code>,
-<code>Store.write_atomic()</code>, <code>Store.open_atomic()</code>, <code>Store.unwrap()</code>)
-and by <code>CapabilitySet.require()</code> when a backend does not declare
-the needed capability.</p>
+<p>Raised by capability-gated Store methods and by
+<code>CapabilitySet.require()</code> when a backend does not declare the
+needed capability. Check <code>Store.supports()</code> before calling
+capability-gated methods.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

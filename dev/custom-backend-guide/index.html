@@ -3584,90 +3584,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/info/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Info
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/sftp-utils/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SFTPUtils
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/config/" class="md-nav__link">
         
   
@@ -3704,34 +3620,6 @@
     
   
     Models
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/path/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    RemotePath
   
 
     
@@ -3807,6 +3695,90 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../api/backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/info/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Info
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sftp-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3819,7 +3791,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3841,14 +3813,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4164,7 +4136,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -4186,14 +4158,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_14" id="__nav_4_1_14_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_13" id="__nav_4_1_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_14">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -8724,7 +8696,7 @@ and scoping. You implement the raw operations; <code>Store</code> handles the po
 <td>Return types for listing and metadata</td>
 </tr>
 <tr>
-<td><a href="../api/path/"><code>RemotePath</code></a></td>
+<td><a href="../api/models/"><code>RemotePath</code></a></td>
 <td>Immutable, validated path type</td>
 </tr>
 <tr>
@@ -8752,57 +8724,8 @@ and scoping. You implement the raw operations; <code>Store</code> handles the po
 <p><strong>Capabilities gate Store methods.</strong> If you don't declare <code>ATOMIC_WRITE</code>, calls
 to <code>store.write_atomic()</code> raise <code>CapabilityNotSupported</code> automatically — you
 don't need to handle it.</p>
-<p>The 10 capabilities and what they gate:</p>
-<table>
-<thead>
-<tr>
-<th>Capability</th>
-<th>Store methods</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>READ</code></td>
-<td><code>read()</code>, <code>read_bytes()</code>, <code>read_seekable()</code></td>
-</tr>
-<tr>
-<td><code>WRITE</code></td>
-<td><code>write()</code></td>
-</tr>
-<tr>
-<td><code>DELETE</code></td>
-<td><code>delete()</code>, <code>delete_folder()</code></td>
-</tr>
-<tr>
-<td><code>LIST</code></td>
-<td><code>list_files()</code>, <code>list_folders()</code>, <code>iter_children()</code></td>
-</tr>
-<tr>
-<td><code>MOVE</code></td>
-<td><code>move()</code></td>
-</tr>
-<tr>
-<td><code>COPY</code></td>
-<td><code>copy()</code></td>
-</tr>
-<tr>
-<td><code>ATOMIC_WRITE</code></td>
-<td><code>write_atomic()</code>, <code>open_atomic()</code></td>
-</tr>
-<tr>
-<td><code>METADATA</code></td>
-<td><code>get_file_info()</code>, <code>get_folder_info()</code></td>
-</tr>
-<tr>
-<td><code>GLOB</code></td>
-<td><code>glob()</code></td>
-</tr>
-<tr>
-<td><code>SEEKABLE_READ</code></td>
-<td><code>read()</code> always returns seekable streams</td>
-</tr>
-</tbody>
-</table>
+<p>Each capability gates specific Store methods. See the
+<a href="../api/capabilities/">Capability reference</a> for the full list.</p>
 <hr />
 <h2 id="step-3-constructor-and-properties">Step 3: Constructor and properties<a class="headerlink" href="#step-3-constructor-and-properties" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rs:&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -9126,7 +9049,7 @@ returns the stream as-is.</p>
 <li><code>recursive=False</code> (default) yields only immediate children.</li>
 <li><code>list_folders()</code> is always non-recursive — only immediate subfolders.</li>
 <li>Non-existent paths yield nothing (no exception).</li>
-<li><a href="../api/models/"><code>FileInfo</code></a><code>.path</code> must be a <a href="../api/path/"><code>RemotePath</code></a>.</li>
+<li><a href="../api/models/"><code>FileInfo</code></a><code>.path</code> must be a <a href="../api/models/"><code>RemotePath</code></a>.</li>
 </ul>
 <hr />
 <h2 id="step-10-metadata">Step 10: Metadata<a class="headerlink" href="#step-10-metadata" title="Permanent link">&para;</a></h2>
@@ -9413,8 +9336,8 @@ tests against the same categories.</p>
 backend runs the full suite automatically.</p>
 <p>The conformance suite itself is validated by running it against a
 mathematically verified oracle compiled from the formal Dafny specification
-(<code>sdd/formal/MemoryBackend.dfy</code>, 55 verified proofs, 0 errors).  If the
-oracle passes a test, the test is known-correct.  This means passing the
+(<code>sdd/formal/MemoryBackend.dfy</code>).  If the oracle passes a test, the test
+is known-correct.  This means passing the
 conformance suite is a strong guarantee of correctness — not just "matches
 what existing backends happen to do."  See <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a>
 § Compiled Oracle for details.</p>

@@ -3271,90 +3271,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/info/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Info
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/sftp-utils/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SFTPUtils
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/config/" class="md-nav__link">
         
   
@@ -3391,34 +3307,6 @@
     
   
     Models
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/path/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    RemotePath
   
 
     
@@ -3494,6 +3382,90 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../api/backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/info/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Info
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/sftp-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3506,7 +3478,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3528,14 +3500,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3851,7 +3823,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3873,14 +3845,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_14" id="__nav_4_1_14_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_13" id="__nav_4_1_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_14">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -8191,78 +8163,8 @@
 <li><strong>Retry</strong> — transient SSH errors (<code>SSHException</code>, <code>OSError</code>, <code>EOFError</code>) are retried up to 3 times with exponential backoff (2 s min, 10 s max).</li>
 </ul>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
-<p>The SFTP backend supports 10 of 12 capabilities. <code>GLOB</code> and <code>ATOMIC_MOVE</code> are not supported.</p>
-<table>
-<thead>
-<tr>
-<th>Capability</th>
-<th>Supported</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>READ</code></td>
-<td>Yes</td>
-<td></td>
-</tr>
-<tr>
-<td><code>WRITE</code></td>
-<td>Yes</td>
-<td>Creates intermediate directories automatically</td>
-</tr>
-<tr>
-<td><code>DELETE</code></td>
-<td>Yes</td>
-<td></td>
-</tr>
-<tr>
-<td><code>LIST</code></td>
-<td>Yes</td>
-<td></td>
-</tr>
-<tr>
-<td><code>MOVE</code></td>
-<td>Yes</td>
-<td>Uses <code>posix_rename</code> with fallback</td>
-</tr>
-<tr>
-<td><code>COPY</code></td>
-<td>Yes</td>
-<td>Read + write (no server-side copy in SFTP)</td>
-</tr>
-<tr>
-<td><code>ATOMIC_WRITE</code></td>
-<td>Yes</td>
-<td>Temp file + rename (see caveat below)</td>
-</tr>
-<tr>
-<td><code>ATOMIC_MOVE</code></td>
-<td>—</td>
-<td>Not supported (non-atomic rename semantics)</td>
-</tr>
-<tr>
-<td><code>METADATA</code></td>
-<td>Yes</td>
-<td></td>
-</tr>
-<tr>
-<td><code>GLOB</code></td>
-<td>—</td>
-<td>Not supported — use <code>ext.glob.glob_files()</code></td>
-</tr>
-<tr>
-<td><code>SEEKABLE_READ</code></td>
-<td>Yes</td>
-<td><code>BufferedReader</code> wraps the paramiko stream</td>
-</tr>
-<tr>
-<td><code>LAZY_READ</code></td>
-<td>Yes</td>
-<td>Data is pulled lazily from the SFTP server</td>
-</tr>
-</tbody>
-</table>
+<p>The SFTP backend supports all capabilities except <code>GLOB</code> and <code>ATOMIC_MOVE</code>.
+See the <a href="../../capabilities-matrix/">capabilities matrix</a> for full details.</p>
 <div class="admonition warning">
 <p class="admonition-title">Atomic write caveat</p>
 <p>Atomic writes use a temp file (<code>.~tmp.&lt;name&gt;.&lt;uuid&gt;</code>) and rename. If the

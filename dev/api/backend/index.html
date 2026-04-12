@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://docs.remotestore.dev/dev/api/backend/">
       
       
-        <link rel="prev" href="../info/">
+        <link rel="prev" href="../errors/">
       
       
-        <link rel="next" href="../sftp-utils/">
+        <link rel="next" href="../info/">
       
       
         
@@ -3080,14 +3080,98 @@
   
   
     <li class="md-nav__item">
-      <a href="../info/" class="md-nav__link">
+      <a href="../config/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Info
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../capabilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors
   
 
     
@@ -3176,7 +3260,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Backend">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Identity">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -3200,6 +3295,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-existence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking Existence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Checking Existence">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.Backend.exists" class="md-nav__link">
@@ -3234,6 +3346,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reading">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#remote_store.Backend.read" class="md-nav__link">
     <span class="md-ellipsis">
@@ -3266,6 +3395,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.Backend.write" class="md-nav__link">
@@ -3300,6 +3446,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deleting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deleting">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#remote_store.Backend.delete" class="md-nav__link">
     <span class="md-ellipsis">
@@ -3322,6 +3485,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#listing-and-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing and Iteration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Listing and Iteration">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#remote_store.Backend.list_files" class="md-nav__link">
     <span class="md-ellipsis">
@@ -3338,50 +3518,6 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;list_folders
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_file_info
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_folder_info
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;move
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;copy
       
     </span>
   </a>
@@ -3410,6 +3546,112 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.get_file_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_file_info
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.get_folder_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_folder_info
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;copy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introspection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Introspection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.resolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
           <li class="md-nav__item">
   <a href="#remote_store.Backend.to_key" class="md-nav__link">
     <span class="md-ellipsis">
@@ -3432,16 +3674,22 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.resolve" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve
+        Lifecycle
       
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Lifecycle">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.Backend.check_health" class="md-nav__link">
@@ -3481,10 +3729,49 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../info/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Info
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3524,146 +3811,6 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../config/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Config
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../models/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Models
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../path/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    RemotePath
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../capabilities/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Capabilities
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../errors/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Errors
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
     
     
     
@@ -3676,7 +3823,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3698,14 +3845,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4021,7 +4168,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -4043,14 +4190,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_14" id="__nav_4_1_14_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_13" id="__nav_4_1_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_14">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -8025,7 +8172,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Backend">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Identity">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -8049,6 +8207,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-existence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking Existence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Checking Existence">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.Backend.exists" class="md-nav__link">
@@ -8083,6 +8258,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reading">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#remote_store.Backend.read" class="md-nav__link">
     <span class="md-ellipsis">
@@ -8115,6 +8307,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.Backend.write" class="md-nav__link">
@@ -8149,6 +8358,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deleting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deleting">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#remote_store.Backend.delete" class="md-nav__link">
     <span class="md-ellipsis">
@@ -8171,6 +8397,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#listing-and-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing and Iteration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Listing and Iteration">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#remote_store.Backend.list_files" class="md-nav__link">
     <span class="md-ellipsis">
@@ -8187,50 +8430,6 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;list_folders
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_file_info
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_folder_info
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;move
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;copy
       
     </span>
   </a>
@@ -8259,6 +8458,112 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.get_file_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_file_info
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.get_folder_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_folder_info
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;copy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introspection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Introspection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Backend.resolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
           <li class="md-nav__item">
   <a href="#remote_store.Backend.to_key" class="md-nav__link">
     <span class="md-ellipsis">
@@ -8281,16 +8586,22 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#remote_store.Backend.resolve" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve
+        Lifecycle
       
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Lifecycle">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.Backend.check_health" class="md-nav__link">
@@ -8327,6 +8638,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -8392,6 +8714,25 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
 
 
 
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><div class="admonition note">
+<p class="admonition-title">Implementing a backend</p>
+<p>Subclass <code>Backend</code> and implement all abstract methods. Map every
+backend-native exception to a <code>remote_store</code> error — native exceptions
+must never leak to callers.</p>
+</div>
+<hr />
+<h2 id="identity">Identity<a class="headerlink" href="#identity" title="Permanent link">&para;</a></h2>
+
+
 <div class="doc doc-object doc-attribute">
 
 
@@ -8409,7 +8750,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Unique identifier for this backend type (e.g. <code>'local'</code>, <code>'s3'</code>).</p>
 
@@ -8434,15 +8775,14 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">capabilities</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CapabilitySet (remote_store._capabilities.CapabilitySet)" href="../capabilities/#remote_store.CapabilitySet">CapabilitySet</a></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Declared capabilities of this backend.</p>
 
     </div>
 
-</div>
-
-
+</div><hr />
+<h2 id="checking-existence">Checking Existence<a class="headerlink" href="#checking-existence" title="Permanent link">&para;</a></h2>
 
 
 <div class="doc doc-object doc-function">
@@ -8460,7 +8800,7 @@ exceptions must never leak — they must be mapped to <code>remote_store</code> 
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Check if a file or folder exists. Never raises <code>NotFound</code>.</p>
 <p>Returns <code>False</code> if any ancestor of <em>path</em> is a file (file-as-directory-component),
@@ -8518,7 +8858,7 @@ as traversal cannot proceed.</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Return <code>True</code> if <code>path</code> is an existing file.</p>
 <p>Returns <code>False</code> if the path does not exist, or if any ancestor of <em>path</em>
@@ -8576,7 +8916,7 @@ is a file (file-as-directory-component).</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_folder</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Return <code>True</code> if <code>path</code> is an existing folder.</p>
 <p>Returns <code>False</code> if the path does not exist, or if any ancestor of <em>path</em>
@@ -8617,7 +8957,9 @@ is a file (file-as-directory-component).</p>
 
     </div>
 
-</div>
+</div><hr />
+<h2 id="reading">Reading<a class="headerlink" href="#reading" title="Permanent link">&para;</a></h2>
+
 
 <div class="doc doc-object doc-function">
 
@@ -8634,7 +8976,7 @@ is a file (file-as-directory-component).</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.BinaryIO">BinaryIO</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Open a file for reading and return a binary stream.</p>
 
@@ -8702,7 +9044,7 @@ is a file (file-as-directory-component).</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bytes">bytes</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Read the full content of a file as bytes.</p>
 
@@ -8766,7 +9108,7 @@ is a file (file-as-directory-component).</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_seekable</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.BinaryIO">BinaryIO</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Open a file for random-access reading and return a seekable stream.</p>
 <p>The default implementation delegates to <code>read()</code>.  If the returned
@@ -8824,7 +9166,15 @@ HTTP Range requests on each <code>read()</code> call.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Default implementation</p>
+<p>The default spools the stream into a <code>SpooledTemporaryFile</code> (up to 8 MB
+in RAM, beyond that on disk) when the backend stream is not already
+seekable. Override for efficiency when the backend supports range reads.</p>
 </div>
+<hr />
+<h2 id="writing">Writing<a class="headerlink" href="#writing" title="Permanent link">&para;</a></h2>
+
 
 <div class="doc doc-object doc-function">
 
@@ -8846,7 +9196,7 @@ HTTP Range requests on each <code>read()</code> call.</p>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Write content to a file.</p>
 
@@ -8925,7 +9275,7 @@ HTTP Range requests on each <code>read()</code> call.</p>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Write content atomically via temp file + rename.</p>
 
@@ -9008,7 +9358,7 @@ HTTP Range requests on each <code>read()</code> call.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="contextlib.AbstractContextManager">AbstractContextManager</span></span><span class="p">[</span><span class="n"><span title="typing.BinaryIO">BinaryIO</span></span><span class="p">]</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Yield a writable file object backed by a temporary location.</p>
 <p>On successful exit the temp file is atomically promoted to <em>path</em>.
@@ -9066,7 +9416,9 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
 
     </div>
 
-</div>
+</div><hr />
+<h2 id="deleting">Deleting<a class="headerlink" href="#deleting" title="Permanent link">&para;</a></h2>
+
 
 <div class="doc doc-object doc-function">
 
@@ -9083,7 +9435,7 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing_ok</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Delete a file.</p>
 
@@ -9155,7 +9507,7 @@ not silenced by <em>missing_ok</em>).</p>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Delete a folder.</p>
 
@@ -9221,7 +9573,9 @@ not silenced by <em>missing_ok</em>).</p>
 
     </div>
 
-</div>
+</div><hr />
+<h2 id="listing-and-iteration">Listing and Iteration<a class="headerlink" href="#listing-and-iteration" title="Permanent link">&para;</a></h2>
+
 
 <div class="doc doc-object doc-function">
 
@@ -9248,7 +9602,7 @@ not silenced by <em>missing_ok</em>).</p>
    (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>List files under <code>path</code>.</p>
 
@@ -9331,7 +9685,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
    (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>List immediate subfolders under <code>path</code>.</p>
 
@@ -9373,6 +9727,141 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="remote_store.Backend.iter_children" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">iter_children</span>
+
+
+<a href="#remote_store.Backend.iter_children" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">iter_children</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Yield both files and folders under <code>path</code> in a single pass.</p>
+<p>Files are yielded as <code>FileInfo</code> objects, folders as
+<code>FolderEntry</code> objects. The default implementation chains
+<code>list_files()</code> and <code>list_folders()</code>. Backends that can fetch
+both in a single I/O call should override this for efficiency.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend-relative folder key, or <code>""</code> for the root.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a> | <a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
+          –
+          <div class="doc-md-description">
+            <p>An iterator of <code>FileInfo</code> (files) and <code>FolderEntry</code> (folders).</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div><div class="admonition note">
+<p class="admonition-title">Default implementation</p>
+<p>Chains <code>list_files()</code> then <code>list_folders()</code>. Override when the backend
+can fetch both in a single I/O call.</p>
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Backend.glob" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">glob</span>
+
+
+<a href="#remote_store.Backend.glob" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Match files against a glob pattern.</p>
+<p>Non-abstract — backends with native glob support override this
+and add <code>Capability.GLOB</code> to their capability set.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>pattern</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Glob pattern (e.g., <code>"data/*.csv"</code>, <code>"**/*.txt"</code>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the backend lacks <code>GLOB</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div><div class="admonition note">
+<p class="admonition-title">Non-abstract</p>
+<p>The default raises <code>CapabilityNotSupported</code>. Backends that provide native
+glob support override this and declare <code>Capability.GLOB</code>.</p>
+</div>
+<hr />
+<h2 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="remote_store.Backend.get_file_info" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_file_info</span>
 
@@ -9390,7 +9879,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
    (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Get metadata for a file.</p>
 
@@ -9468,7 +9957,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
    (remote_store._models.FolderInfo)" href="../models/#remote_store.FolderInfo">FolderInfo</a></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Get metadata for a folder.</p>
 
@@ -9524,7 +10013,9 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 
     </div>
 
-</div>
+</div><hr />
+<h2 id="file-operations">File Operations<a class="headerlink" href="#file-operations" title="Permanent link">&para;</a></h2>
+
 
 <div class="doc doc-object doc-function">
 
@@ -9543,7 +10034,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Move or rename a file.</p>
 <p>When <code>src == dst</code> the call is a no-op (data preserved).</p>
@@ -9627,7 +10118,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Copy a file.</p>
 <p>When <code>src == dst</code> the call is a no-op (data preserved).</p>
@@ -9692,226 +10183,9 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 
     </div>
 
-</div>
+</div><hr />
+<h2 id="introspection">Introspection<a class="headerlink" href="#introspection" title="Permanent link">&para;</a></h2>
 
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.Backend.iter_children" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">iter_children</span>
-
-
-<a href="#remote_store.Backend.iter_children" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">iter_children</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
-
-
-  
-      dataclass
-   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
-
-
-  
-      dataclass
-   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Yield both files and folders under <code>path</code> in a single pass.</p>
-<p>Files are yielded as <code>FileInfo</code> objects, folders as
-<code>FolderEntry</code> objects. The default implementation chains
-<code>list_files()</code> and <code>list_folders()</code>. Backends that can fetch
-both in a single I/O call should override this for efficiency.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>path</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Backend-relative folder key, or <code>""</code> for the root.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="collections.abc.Iterator">Iterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
-
-
-  
-      dataclass
-   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a> | <a class="autorefs autorefs-internal" title="            FolderEntry
-
-
-  
-      dataclass
-   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
-          –
-          <div class="doc-md-description">
-            <p>An iterator of <code>FileInfo</code> (files) and <code>FolderEntry</code> (folders).</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.Backend.glob" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">glob</span>
-
-
-<a href="#remote_store.Backend.glob" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
-
-
-  
-      dataclass
-   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Match files against a glob pattern.</p>
-<p>Non-abstract — backends with native glob support override this
-and add <code>Capability.GLOB</code> to their capability set.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>pattern</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Glob pattern (e.g., <code>"data/*.csv"</code>, <code>"**/*.txt"</code>).</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If the backend lacks <code>GLOB</code>.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.Backend.to_key" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">to_key</span>
-
-
-<a href="#remote_store.Backend.to_key" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_key</span><span class="p">(</span><span class="n">native_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Convert a backend-native path to a backend-relative key.</p>
-<p>Strips the backend's own root/prefix from the path. The default
-implementation is the identity function — backends with a native
-root (filesystem path, bucket prefix, base_path) override this.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>native_path</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Absolute or backend-native path string.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="str">str</span></code>
-          –
-          <div class="doc-md-description">
-            <p>Path relative to the backend's root.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.Backend.native_path" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">native_path</span>
-
-
-<a href="#remote_store.Backend.native_path" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Convert a backend-relative key to the backend-native path.</p>
-<p>The inverse of <code>to_key()</code>. The default implementation is the
-identity function — backends with a native root (bucket, base_path)
-override this to prepend their prefix.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>path</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Backend-relative key.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="str">str</span></code>
-          –
-          <div class="doc-md-description">
-            <p>Backend-native path usable with the native handle from <code>unwrap()</code>.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
 
 <div class="doc doc-object doc-function">
 
@@ -9929,7 +10203,7 @@ override this to prepend their prefix.</p>
    (remote_store._resolution.ResolutionPlan)" href="../models/#remote_store.ResolutionPlan">ResolutionPlan</a></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Return a <code>ResolutionPlan</code> describing how <em>path</em> maps to storage.</p>
 <p>Pure introspection -- no I/O is performed.  Backends override this
@@ -9985,6 +10259,104 @@ to populate <code>details</code> with backend-specific context.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="remote_store.Backend.to_key" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">to_key</span>
+
+
+<a href="#remote_store.Backend.to_key" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_key</span><span class="p">(</span><span class="n">native_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Convert a backend-native path to a backend-relative key.</p>
+<p>Strips the backend's own root/prefix from the path. The default
+implementation is the identity function — backends with a native
+root (filesystem path, bucket prefix, base_path) override this.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>native_path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Absolute or backend-native path string.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Path relative to the backend's root.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Backend.native_path" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">native_path</span>
+
+
+<a href="#remote_store.Backend.native_path" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Convert a backend-relative key to the backend-native path.</p>
+<p>The inverse of <code>to_key()</code>. The default implementation is the
+identity function — backends with a native root (bucket, base_path)
+override this to prepend their prefix.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend-relative key.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Backend-native path usable with the native handle from <code>unwrap()</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div><hr />
+<h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="remote_store.Backend.check_health" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">check_health</span>
 
@@ -9993,7 +10365,7 @@ to populate <code>details</code> with backend-specific context.</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">check_health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Verify the backend is reachable and credentials are valid.</p>
 <p>The default implementation is a no-op (always succeeds). Backends
@@ -10042,7 +10414,7 @@ check using the cheapest possible read-only operation.</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Release resources. Default is a no-op.</p>
 
@@ -10062,7 +10434,7 @@ check using the cheapest possible read-only operation.</p>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap</span><span class="p">(</span><span class="n">type_hint</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="remote_store._backend.T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="remote_store._backend.T">T</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Return the native backend handle if it matches the requested type.</p>
 
@@ -10094,15 +10466,15 @@ check using the cheapest possible read-only operation.</p>
 
     </div>
 
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div>
+</div><p><strong>Related types:</strong> <a href="../capabilities/"><code>CapabilitySet</code></a>,
+<a href="../models/"><code>FileInfo</code></a>, <a href="../models/"><code>FolderInfo</code></a>,
+<a href="../models/"><code>FolderEntry</code></a>, <a href="../models/"><code>ResolutionPlan</code></a>.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../custom-backend-guide/">Build Your Own Backend</a> — step-by-step guide to implementing a custom backend</li>
+<li><a href="../../capabilities-matrix/">Capabilities Matrix</a> — per-backend capability comparison</li>
+<li><a href="../errors/">Errors</a> — error types backends must raise</li>
+</ul>
 
 
 

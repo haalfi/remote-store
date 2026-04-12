@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://docs.remotestore.dev/dev/api/capabilities/">
       
       
-        <link rel="prev" href="../path/">
+        <link rel="prev" href="../models/">
       
       
         <link rel="next" href="../errors/">
@@ -3080,90 +3080,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../info/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Info
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../sftp-utils/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SFTPUtils
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../config/" class="md-nav__link">
         
   
@@ -3200,34 +3116,6 @@
     
   
     Models
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../path/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    RemotePath
   
 
     
@@ -3411,6 +3299,90 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../info/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Info
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sftp-utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPUtils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3423,7 +3395,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3445,14 +3417,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3768,7 +3740,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3790,14 +3762,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_14" id="__nav_4_1_14_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_13" id="__nav_4_1_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_14_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_14">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -7867,9 +7839,10 @@
         <p>Operations a backend may support.</p>
 <p>Most values gate one or more <code>Store</code> methods; some are quality
 flags that inform callers about backend behaviour without gating a
-specific method (see <code>ATOMIC_MOVE</code>).
+specific method (see <code>ATOMIC_MOVE</code>, <code>SEEKABLE_READ</code>, <code>LAZY_READ</code>).
 Use <code>Store.supports()</code> to query at runtime.</p>
 <p>Values:</p>
+<p><em>Core I/O</em></p>
 <ul>
 <li><code>READ</code> -- Stream or bulk-read file content.
   Gates <code>Store.read()</code> and <code>Store.read_bytes()</code>.</li>
@@ -7877,12 +7850,24 @@ Use <code>Store.supports()</code> to query at runtime.</p>
   Gates <code>Store.write()</code>.</li>
 <li><code>DELETE</code> -- Remove files and folders.
   Gates <code>Store.delete()</code> and <code>Store.delete_folder()</code>.</li>
+</ul>
+<p><em>Navigation</em></p>
+<ul>
 <li><code>LIST</code> -- Enumerate files and subfolders.
   Gates <code>Store.list_files()</code> and <code>Store.list_folders()</code>.</li>
+<li><code>GLOB</code> -- Native pattern matching against file paths.
+  Gates <code>Store.glob()</code>. Not all backends support this — use
+  <code>ext.glob.glob_files()</code> as a portable fallback.</li>
+</ul>
+<p><em>File operations</em></p>
+<ul>
 <li><code>MOVE</code> -- Rename or relocate a file within the same backend.
   Gates <code>Store.move()</code>.</li>
 <li><code>COPY</code> -- Duplicate a file within the same backend.
   Gates <code>Store.copy()</code>.</li>
+</ul>
+<p><em>Atomic variants</em></p>
+<ul>
 <li><code>ATOMIC_WRITE</code> -- Write via temp-file-and-rename so readers never
   see partial content. Gates <code>Store.write_atomic()</code> and
   <code>Store.open_atomic()</code>.</li>
@@ -7893,24 +7878,26 @@ Use <code>Store.supports()</code> to query at runtime.</p>
   atomic rename semantics. Backends that implement move as
   copy-then-delete (e.g. S3, Azure non-HNS) do not declare this
   capability.</li>
+</ul>
+<p><em>Metadata</em></p>
+<ul>
 <li><code>METADATA</code> -- Retrieve file or folder metadata.
   Gates <code>Store.get_file_info()</code> and <code>Store.get_folder_info()</code>.</li>
-<li><code>GLOB</code> -- Native pattern matching against file paths.
-  Gates <code>Store.glob()</code>. Not all backends support this -- use
-  <code>ext.glob.glob_files()</code> as a portable fallback.</li>
+</ul>
+<p><em>Quality flags</em></p>
+<ul>
 <li><code>SEEKABLE_READ</code> -- <code>Store.read()</code> always returns a seekable
   stream (<code>stream.seekable()</code> is <code>True</code>).  Backends that
   declare this capability return seekable streams from both
   <code>read()</code> and <code>read_seekable()</code> with zero overhead.
   Backends without this capability still support
   <code>read_seekable()</code> via an optimized override or spool fallback.</li>
-<li><code>LAZY_READ</code> -- Quality flag: <code>read()</code> fetches data lazily on
-  demand from the native source rather than loading the entire file
-  into memory before returning.  Backends that pre-load the full
-  file contents (e.g. in-memory backends, SQL blob stores) do
-  <strong>not</strong> declare this flag.  Callers can use
-  <code>store.supports(Capability.LAZY_READ)</code> to know whether partial
-  reads avoid loading the entire file.
+<li><code>LAZY_READ</code> -- <code>read()</code> fetches data lazily on demand from the
+  native source rather than loading the entire file into memory before
+  returning.  Backends that pre-load the full file contents (e.g.
+  in-memory backends, SQL blob stores) do <strong>not</strong> declare this flag.
+  Callers can use <code>store.supports(Capability.LAZY_READ)</code> to know
+  whether partial reads avoid loading the entire file.
   See also: spec SIO-009 in <code>sdd/specs/006-streaming-io.md</code>.</li>
 </ul>
 
