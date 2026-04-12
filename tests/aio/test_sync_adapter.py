@@ -322,3 +322,26 @@ class TestSyncAdapterErrorPropagation:
         adapter = SyncBackendAdapter(MemoryBackend())
         result = await adapter.delete("ghost.txt", missing_ok=True)
         assert result is None
+
+
+class TestSyncAdapterGlob:
+    """ASYNC-048: glob wraps sync backend glob via asyncio.to_thread."""
+
+    @pytest.mark.spec("ASYNC-048")
+    async def test_glob_yields_matching_files(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        from remote_store.backends._local import LocalBackend
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir()
+            (data_dir / "a.csv").write_bytes(b"1")
+            (data_dir / "b.parquet").write_bytes(b"2")
+            (data_dir / "c.csv").write_bytes(b"3")
+            backend = LocalBackend(root=tmp)
+            adapter = SyncBackendAdapter(backend)
+            results = [info async for info in adapter.glob("data/*.csv")]
+            names = {r.name for r in results}
+            assert names == {"a.csv", "c.csv"}

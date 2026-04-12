@@ -494,3 +494,128 @@ class TestAsyncMemoryLifecycle:
         async with AsyncMemoryBackend() as backend:
             await backend.write("f.txt", b"data")
             assert await backend.read_bytes("f.txt") == b"data"
+
+
+class TestAsyncMemoryDeleteFolderEdgeCases:
+    """Cover delete_folder parent-not-found branches (lines 256-258)."""
+
+    @pytest.mark.spec("ASYNC-013")
+    async def test_delete_folder_parent_not_found_raises(self) -> None:
+        backend = AsyncMemoryBackend()
+        with pytest.raises(NotFound, match="not found"):
+            await backend.delete_folder("no_parent/child")
+
+    @pytest.mark.spec("ASYNC-013")
+    async def test_delete_folder_parent_not_found_missing_ok(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.delete_folder("no_parent/child", missing_ok=True)
+        assert result is None
+
+
+class TestAsyncMemoryListFoldersEdgeCases:
+    """Cover list_folders early return for nonexistent path (line 334)."""
+
+    @pytest.mark.spec("ASYNC-015")
+    async def test_list_folders_nonexistent_returns_empty(self) -> None:
+        backend = AsyncMemoryBackend()
+        folders = [f async for f in backend.list_folders("nonexistent")]
+        assert folders == []
+
+
+class TestAsyncMemoryGetFileInfoEdgeCases:
+    """Cover get_file_info empty path (line 391)."""
+
+    @pytest.mark.spec("ASYNC-016")
+    async def test_get_file_info_empty_path_raises(self) -> None:
+        backend = AsyncMemoryBackend()
+        with pytest.raises(NotFound, match="not found"):
+            await backend.get_file_info("")
+
+
+class TestAsyncMemoryMoveEdgeCases:
+    """Cover move edge cases: empty dst, same-path directory, missing parent, dst-is-dir (lines 460, 468, 475, 487)."""
+
+    @pytest.mark.spec("ASYNC-018")
+    async def test_move_empty_dst_raises(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("src.txt", b"data")
+        with pytest.raises(InvalidPath, match="must not be empty"):
+            await backend.move("src.txt", "")
+
+    @pytest.mark.spec("ASYNC-018")
+    async def test_move_same_path_not_a_file_raises_not_found(self) -> None:
+        # src == dst but the path is not a file (line 468)
+        backend = AsyncMemoryBackend()
+        with pytest.raises(NotFound, match="not found"):
+            await backend.move("nonexistent", "nonexistent")
+
+    @pytest.mark.spec("ASYNC-018")
+    async def test_move_missing_parent_raises_not_found(self) -> None:
+        # src_parent does not exist (line 475)
+        backend = AsyncMemoryBackend()
+        with pytest.raises(NotFound, match="not found"):
+            await backend.move("no_parent/file.txt", "dst.txt")
+
+    @pytest.mark.spec("ASYNC-018")
+    async def test_move_dst_is_directory_raises_invalid_path(self) -> None:
+        # dst exists as a directory (line 487)
+        backend = AsyncMemoryBackend()
+        await backend.write("src.txt", b"data")
+        await backend.write("existing_dir/f.txt", b"x")
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            await backend.move("src.txt", "existing_dir")
+
+
+class TestAsyncMemoryCopyEdgeCases:
+    """Cover copy edge cases: empty dst, dst-is-dir (lines 521, 535)."""
+
+    @pytest.mark.spec("ASYNC-019")
+    async def test_copy_empty_dst_raises(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("src.txt", b"data")
+        with pytest.raises(InvalidPath, match="must not be empty"):
+            await backend.copy("src.txt", "")
+
+    @pytest.mark.spec("ASYNC-019")
+    async def test_copy_dst_is_directory_raises_invalid_path(self) -> None:
+        # dst exists as a directory (line 535)
+        backend = AsyncMemoryBackend()
+        await backend.write("src.txt", b"data")
+        await backend.write("existing_dir/f.txt", b"x")
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            await backend.copy("src.txt", "existing_dir")
+
+
+class TestAsyncMemoryTraverseEdgeCases:
+    """Cover _traverse non-dir intermediate node (line 570) and _ensure_parents file conflict (line 587)."""
+
+    @pytest.mark.spec("ASYNC-014")
+    async def test_list_files_through_file_returns_empty(self) -> None:
+        # _traverse returns None when a file is encountered mid-path (line 570)
+        backend = AsyncMemoryBackend()
+        await backend.write("a.txt", b"data")
+        files = [f async for f in backend.list_files("a.txt/deep")]
+        assert files == []
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_through_existing_file_raises_invalid_path(self) -> None:
+        # _ensure_parents raises when a path segment is already a file (line 587)
+        backend = AsyncMemoryBackend()
+        await backend.write("a/file.txt", b"data")
+        with pytest.raises(InvalidPath, match="exists as a file"):
+            await backend.write("a/file.txt/nested.txt", b"data")
+
+
+class TestAsyncMemoryListFilesDepthFilter:
+    """Cover list_files max_depth directory pruning (line 694)."""
+
+    @pytest.mark.spec("ASYNC-014")
+    async def test_list_files_max_depth_prunes_deep_directories(self) -> None:
+        # At depth >= max_depth a subdirectory is skipped (line 694 hit)
+        backend = AsyncMemoryBackend()
+        await backend.write("a/b/shallow.txt", b"x")
+        await backend.write("a/b/c/deep.txt", b"x")
+        files = [f async for f in backend.list_files("", recursive=True, max_depth=2)]
+        names = {f.name for f in files}
+        assert "shallow.txt" in names
+        assert "deep.txt" not in names

@@ -512,6 +512,43 @@ class TestBug138:
 
         assert cs.read_bytes("sub/file.txt") == b"version2"  # must be fresh
 
+
+# ---------------------------------------------------------------------------
+# CachedStore __eq__, __hash__, __repr__, _invalidate_listings fallback
+# ---------------------------------------------------------------------------
+
+
+class TestCachedStoreDunder:
+    """CachedStore identity and representation methods."""
+
+    def test_eq_different_type_returns_not_implemented(self, cached: CachedStore) -> None:
+        assert cached.__eq__("not-a-store") is NotImplemented
+
+    def test_hash_is_stable(self, cached: CachedStore) -> None:
+        assert hash(cached) == hash(cached)
+
+    def test_repr_includes_max_content_size(self, store: Store) -> None:
+        cs = cache(store, ttl=30.0, max_content_size=1024)
+        assert "1024" in repr(cs)
+
+    def test_repr_includes_max_listing_size(self, store: Store) -> None:
+        cs = cache(store, ttl=30.0, max_listing_size=512)
+        assert "512" in repr(cs)
+
+    def test_invalidate_listings_fallback_no_clear_prefixes(self, store: Store) -> None:
+        """_invalidate_listings falls back to clear_prefix loop when clear_prefixes absent."""
+        cs = cache(store, ttl=60.0)
+        # Temporarily remove the batch clear_prefixes method to exercise the loop
+        batch_fn = cs._cache.__class__.__dict__.get("clear_prefixes")  # noqa: SLF001
+        try:
+            if batch_fn is not None:
+                del cs._cache.__class__.clear_prefixes  # type: ignore[attr-defined]  # noqa: SLF001
+            # Should not raise; exercises the per-prefix loop
+            cs.invalidate("a.txt")
+        finally:
+            if batch_fn is not None:
+                cs._cache.__class__.clear_prefixes = batch_fn  # type: ignore[attr-defined]  # noqa: SLF001
+
     @pytest.mark.spec("BUG-138")
     @pytest.mark.spec("CACHE-016")
     def test_child_write_invalidates_parent_exists(self) -> None:

@@ -102,3 +102,20 @@ class TestAsyncBackendSyncMethods:
         backend = AsyncMemoryBackend()
         with pytest.raises(CapabilityNotSupported, match="does not expose native handle"):
             backend.unwrap(dict)
+
+
+class TestAsyncBackendIterChildrenDefault:
+    """ASYNC-029: AsyncBackend.iter_children default chains list_files + list_folders (lines 326-329)."""
+
+    @pytest.mark.spec("ASYNC-029")
+    async def test_iter_children_base_class_chains_list_files_and_folders(self) -> None:
+        # Call the BASE class iter_children (which delegates to list_files + list_folders)
+        # by invoking it unbound on an AsyncMemoryBackend instance.
+        backend = AsyncMemoryBackend()
+        await backend.write("file.txt", b"data")
+        await backend.write("sub/child.txt", b"data")
+
+        results = [entry async for entry in AsyncBackend.iter_children(backend, "")]
+        names = {e.name for e in results}
+        assert "file.txt" in names
+        assert "sub" in names

@@ -161,6 +161,54 @@ class TestDatasetManifest:
         with pytest.raises((AttributeError, TypeError), match="cannot|frozen|read.only"):
             manifest.dataset_key = "other"  # type: ignore[misc]
 
+    # -- ManifestCorrupted str/repr (parquet.py lines 88, 91-99) -----------
+
+    @pytest.mark.spec("PDS-008")
+    def test_manifest_corrupted_str_no_reason(self) -> None:
+        e = ManifestCorrupted("bad manifest")
+        assert str(e) == "bad manifest"
+
+    @pytest.mark.spec("PDS-008")
+    def test_manifest_corrupted_repr_contains_class(self) -> None:
+        e = ManifestCorrupted("bad manifest", path="ds/x", reason="missing field")
+        r = repr(e)
+        assert "ManifestCorrupted" in r
+        assert "ds/x" in r
+        assert "missing field" in r
+
+    # -- from_json type-validation branches (lines 164, 179, 184, 194, 199, 204) --
+
+    _BASE = {
+        "dataset_key": "x",
+        "parts": ["data.parquet"],
+        "row_count": 10,
+        "schema_hash": "abc",
+        "compression": "zstd",
+        "created_at_utc": "2026-01-01T00:00:00Z",
+    }
+
+    @pytest.mark.spec("PDS-008")
+    @pytest.mark.parametrize(
+        ("override", "match"),
+        [
+            pytest.param({"dataset_key": 99}, "dataset_key", id="dataset_key-not-str"),
+            pytest.param({"parts": "not-a-list"}, "parts", id="parts-not-list"),
+            pytest.param({"schema_hash": 42}, "schema_hash", id="schema_hash-not-str"),
+            pytest.param({"compression": ["zstd"]}, "compression", id="compression-not-str"),
+            pytest.param({"created_at_utc": 20260101}, "created_at_utc", id="created_at_utc-not-str"),
+        ],
+    )
+    def test_from_json_wrong_field_type(self, override: dict, match: str) -> None:
+        data = json.dumps({**self._BASE, **override})
+        with pytest.raises(ManifestCorrupted, match=match):
+            DatasetManifest.from_json(data)
+
+    @pytest.mark.spec("PDS-008")
+    def test_from_json_non_dict_json(self) -> None:
+        """Parsed JSON that is not a dict raises ManifestCorrupted."""
+        with pytest.raises(ManifestCorrupted, match="object"):
+            DatasetManifest.from_json(json.dumps([1, 2, 3]))
+
 
 # ---------------------------------------------------------------------------
 # TestWriteDataset -- PDS-001, PDS-002, PDS-005, PDS-011
@@ -236,6 +284,21 @@ class TestWriteDataset:
         meta = {"pipeline": "etl", "version": "3"}
         manifest = pds.write_dataset(sample_table, "ds/meta", metadata=meta)
         assert manifest.metadata == meta
+
+    @pytest.mark.spec("PDS-011")
+    def test_write_overwrite_requires_delete_capability(self, sample_table: pa.Table) -> None:
+        """write_dataset(overwrite=True) raises CapabilityNotSupported if DELETE absent."""
+        from unittest.mock import create_autospec
+
+        no_delete = create_autospec(Backend, spec_set=True)
+        from remote_store._capabilities import CapabilitySet
+
+        no_delete.capabilities = CapabilitySet(frozenset({Capability.ATOMIC_WRITE, Capability.READ}))
+        no_delete.name = "mock"
+        store = Store(no_delete)
+        pds = ParquetDatasetStore(store)
+        with pytest.raises(CapabilityNotSupported, match="DELETE|delete"):
+            pds.write_dataset(sample_table, "ds/x", overwrite=True)
 
     @pytest.mark.spec("PDS-004")
     def test_write_schema_hash_deterministic(self, pds: ParquetDatasetStore, sample_table: pa.Table) -> None:
