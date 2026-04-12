@@ -23,7 +23,7 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [ ] README: backends table, installation extras, API table, badges current
 - [ ] Specs vs code: `pytest -m spec` as proxy
 - [ ] `hatch run examples` passes; review notebooks if API changed
-- [ ] Guides accurate for new/changed backends
+- [ ] Guides accurate for new/changed backends; apply `sdd/CONTENT-RULES.md`
 - [ ] DEVELOPMENT_STORY.md section (pre-1.0 only)
 
 ## Phase 2: Version bump (release branch)

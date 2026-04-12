@@ -17,6 +17,8 @@ Confirm with the user: **target** (which files — code, tests, docs, specs, any
 
 Read the target files. For each finding record: `file:line`, category (Bug/Security/Spec/Consistency/Performance/Docs), severity (High/Medium/Low), evidence.
 
+**`Docs` findings:** apply `sdd/CONTENT-RULES.md`; cite the rule number in the evidence.
+
 ## Step 3: Report
 
 ```
