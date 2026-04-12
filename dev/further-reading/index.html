@@ -13,10 +13,8 @@
         <link rel="canonical" href="https://docs.remotestore.dev/dev/further-reading/">
       
       
-        <link rel="prev" href="../contributing/">
+        <link rel="prev" href="../design/research/research-v1-communication-plan/">
       
-      
-        <link rel="next" href="../development-story/">
       
       
         
@@ -325,25 +323,6 @@
   
   
   
-  
-    <li class="md-tabs__item">
-      <a href="../contributing/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Contributing
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
     
   
   
@@ -355,25 +334,6 @@
     
   
   Further Reading
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../development-story/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Development Story
 
       </a>
     </li>
@@ -7517,33 +7477,6 @@
       
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Contributing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
     
   
   
@@ -7618,10 +7551,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation-as-code" class="md-nav__link">
+  <a href="#code-and-testing-conventions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Documentation as Code
+        Code and testing conventions
       
     </span>
   </a>
@@ -7629,10 +7562,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#research-documents" class="md-nav__link">
+  <a href="#documentation-philosophy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Research Documents
+        Documentation philosophy
       
     </span>
   </a>
@@ -7640,10 +7573,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#development-story" class="md-nav__link">
+  <a href="#research" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Development Story
+        Research
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project history
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#community-and-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Community and policy
       
     </span>
   </a>
@@ -7654,33 +7609,6 @@
   
 </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../development-story/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Development Story
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -7723,10 +7651,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation-as-code" class="md-nav__link">
+  <a href="#code-and-testing-conventions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Documentation as Code
+        Code and testing conventions
       
     </span>
   </a>
@@ -7734,10 +7662,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#research-documents" class="md-nav__link">
+  <a href="#documentation-philosophy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Research Documents
+        Documentation philosophy
       
     </span>
   </a>
@@ -7745,10 +7673,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#development-story" class="md-nav__link">
+  <a href="#research" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Development Story
+        Research
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project history
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#community-and-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Community and policy
       
     </span>
   </a>
@@ -7776,32 +7726,49 @@
 
 
 <h1 id="further-reading">Further Reading<a class="headerlink" href="#further-reading" title="Permanent link">&para;</a></h1>
+<p>For readers who want to understand <em>why</em> remote-store is shaped the way it is:
+the methodology, the decisions, and the research behind the code.</p>
 <h2 id="spec-driven-development">Spec-Driven Development<a class="headerlink" href="#spec-driven-development" title="Permanent link">&para;</a></h2>
-<p>The project follows <strong>Spec-Driven Development (SDD)</strong>: every feature starts as
-a specification before any code is written. Architecture decisions are recorded
-as ADRs, open questions go through RFCs.</p>
+<p>Every feature starts as a specification. Architecture decisions are recorded
+as ADRs; open design questions go through RFCs. The trail is kept on purpose:
+any behavior in the library can be traced back to the document that defined it.</p>
 <ul>
-<li><a href="../design/process/">SDD Process</a> — the methodology behind specs, ADRs, and RFCs</li>
-<li><a href="../design/design-spec/">Design Document</a> — code style, conventions, and internal patterns</li>
+<li><a href="../design/process/">SDD Process</a>: specs, ADRs, and RFCs as a workflow</li>
+<li><a href="../design/specs/">Specs</a>: the contract for each feature</li>
+<li><a href="../design/adrs/">Architecture Decision Records</a>: decisions made, with context</li>
+<li><a href="../design/rfcs/">RFCs</a>: proposals and explorations</li>
 </ul>
-<h2 id="documentation-as-code">Documentation as Code<a class="headerlink" href="#documentation-as-code" title="Permanent link">&para;</a></h2>
-<p>Documentation follows the same rigour as code. The site is organised using the
-<a href="https://diataxis.fr/">Diataxis</a> framework — separating tutorials, how-to
-guides, reference, and explanation so readers find what they need without
-wading through the wrong kind of content.</p>
+<h2 id="code-and-testing-conventions">Code and testing conventions<a class="headerlink" href="#code-and-testing-conventions" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="https://github.com/haalfi/remote-store/blob/master/sdd/DOCUMENTATION.md">Documentation Master</a> — the authoritative guide for writing and organizing documentation</li>
+<li><a href="../design/design-spec/">Design Document</a>: code style, naming, internal patterns</li>
+<li><a href="../design/testing-standards/">Testing Standards</a>: what "tested" means here</li>
 </ul>
-<h2 id="research-documents">Research Documents<a class="headerlink" href="#research-documents" title="Permanent link">&para;</a></h2>
-<p>Before specifying a feature we explore the design space — compare libraries,
-evaluate trade-offs, and document findings. We present these studies here
-because they may be useful to readers facing similar decisions in their own
-projects.</p>
+<h2 id="documentation-philosophy">Documentation philosophy<a class="headerlink" href="#documentation-philosophy" title="Permanent link">&para;</a></h2>
+<p>Documentation is held to the same standard as code: reviewed, versioned, and
+organised so readers find the right <em>kind</em> of page for their task. The site
+follows the <a href="https://diataxis.fr/">Diataxis</a> framework: tutorials, how-to
+guides, reference, and explanation kept apart on purpose.</p>
+<ul>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/sdd/DOCUMENTATION.md">Documentation Standards</a>: structure and placement rules</li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/sdd/CONTENT-RULES.md">Content Rules</a>: how we keep prose accurate over time</li>
+</ul>
+<h2 id="research">Research<a class="headerlink" href="#research" title="Permanent link">&para;</a></h2>
+<p>Before specifying a feature we survey the design space: compare libraries,
+evaluate trade-offs, document findings. These studies may be useful to readers
+facing similar decisions in their own projects.</p>
 <p>Browse the full collection on the <a href="../design/research/">Research</a> page.</p>
-<h2 id="development-story">Development Story<a class="headerlink" href="#development-story" title="Permanent link">&para;</a></h2>
-<p><a href="https://github.com/haalfi/remote-store/blob/master/DEVELOPMENT_STORY.md">DEVELOPMENT_STORY.md</a>
-captures how the project and package evolved over time — the timeline, the
-tooling choices, and the lessons learned along the way.</p>
+<h2 id="project-history">Project history<a class="headerlink" href="#project-history" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../development-story/">Development Story</a>: how the project and tooling evolved</li>
+<li><a href="../changelog/">Changelog</a>: the release-by-release record</li>
+</ul>
+<h2 id="community-and-policy">Community and policy<a class="headerlink" href="#community-and-policy" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../contributing/">Contributing</a>: how to propose changes</li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/SECURITY.md">Security policy</a>: reporting vulnerabilities</li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/CODE_OF_CONDUCT.md">Code of Conduct</a></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/CITATION.cff">Citation</a>: how to cite remote-store</li>
+</ul>
 
 
 
