@@ -58,23 +58,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.
 
-- **Further Reading refresh**: Page now surfaces the spec/decision trail, code
-  and doc conventions, and community/policy files. Contributing and Development
-  Story dropped from the top nav; both remain reachable via Further Reading.
-
-- **Further Reading deduplicated against Design index**: Removed the
-  SDD / conventions / research enumeration from `further-reading.md` and
-  replaced it with a single pointer to `design/`. Eliminates the duplicate
-  listing introduced alongside the refresh (CONTENT-RULES rule 4).
-  Documentation-convention and community/policy links kept in place.
-
-- **Design index completed**: `design/` now surfaces all `sdd/` process
-  documents. Added `documentation-standards.md` and `content-rules.md`
-  include-wrappers for `sdd/DOCUMENTATION.md` and `sdd/CONTENT-RULES.md`.
-  Added `Audits` section: `gen_pages.py` now scans `sdd/audits/` and
-  generates `design/audits/index.md` plus per-audit wrapper pages (8 audits).
-  Further Reading documentation-convention links updated from GitHub to
-  on-site relative links.
+- **Design index and Further Reading reshaped** (BK-150): `design/` now
+  surfaces every `sdd/` process document — Design, Testing, Documentation
+  Standards, Content Rules, Process — plus a new Audits section generated
+  from `sdd/audits/` (8 audits). `further-reading.md` stops duplicating
+  the SDD trail and points at `design/` instead; it keeps only
+  documentation-convention and community/policy links (Contributing,
+  Dev Story, Changelog, Security, Code of Conduct, Citation).
+  Contributing and Development Story dropped from the top nav.
 
 - **Azure backend guide** (ID-137): Updated `max_block_size` and
   `max_single_put_size` library defaults from 256 KiB to 1 MiB.
