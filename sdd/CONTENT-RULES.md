@@ -10,10 +10,6 @@ Derived from `sdd/research/research-doc-content-longevity.md`.
 
 ## Rules
 
-All rules are `[review-enforced]` today. Future enhancements may add CI checks
-(e.g., grep patterns for pseudo-precise values, diff analysis for list duplication);
-the tag will differentiate when that happens.
-
 1. **The 6-month test** [review-enforced]
    — Before writing any sentence, ask: "Would this still be accurate in 6 months?"
    If not, it belongs in a linked SSoT or generated artefact — not in stable prose.
@@ -66,7 +62,7 @@ the tag will differentiate when that happens.
 
 ### How the rules interact
 
-Rules 2–5 are all expressions of the same principle: **stable prose describes
+The detail rules are all expressions of the same principle: **stable prose describes
 shape; volatile detail lives in its authoritative location.** The positive side
 of the same coin: a document is the SSoT for its own stable core — its purpose,
 principles, and design intent. Other documents link to it for those things; they
