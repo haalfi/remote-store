@@ -67,6 +67,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   violations are now hard failures instead of warnings. Non-lazy destinations
   (SQL BLOB) are exempt from chunk-count checks (by-design, ID-136).
 
+- **Dafny upgraded to 4.11.0** (ID-134c): Removed `SumSizesAddOneLocal` workaround
+  — Boogie cross-file lemma bug fixed in 4.11.0. Toolchain updated throughout
+  (CI, `session-init.sh`, `dafny_verify.sh`, README); ubuntu-22.04 zip used
+  (20.04 not published for 4.11.0).
+
 - **Dafny ghost infrastructure for `GetFolderInfo` aggregate verification**
   (ID-134, part 1): Added `ChildFiles`, `SumSizes`, and `SumSizesAddOne`
   to `BackendContract.dfy`. Pure additions — no existing postconditions changed.

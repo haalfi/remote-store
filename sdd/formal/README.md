@@ -47,7 +47,7 @@ bash scripts/dafny_verify.sh BackendContract.dfy   # single file
 ```
 
 **Native** — install [Dafny](https://github.com/dafny-lang/dafny)
-(v4.9.1+), then:
+(v4.11.0+), then:
 
 ```bash
 dafny verify sdd/formal/BackendContract.dfy
@@ -188,7 +188,7 @@ backends.
 
 ### Principle
 
-The compiled oracle is **correct by construction** — 55 verified proofs,
+The compiled oracle is **correct by construction** — 53 verified proofs,
 0 errors.  The conformance testing logic is therefore:
 
 1. **Oracle passes a conformance test** → the test is known-correct and
@@ -207,13 +207,19 @@ The compiled oracle is **correct by construction** — 55 verified proofs,
 
 ### How to regenerate
 
-**Required Dafny version**: 4.9.1 (the version recorded in the `.dtr`
-manifest).  The POC was prototyped on 4.11.0; production compilation
-uses 4.9.1 because it is the latest version available in the CI
-`SessionStart` hook (`apt` / system package).  Using a different version
-may change the runtime library or compiled output format.
+**Required Dafny version**: 4.11.0 (matches CI and local toolchain).
+The `.dtr` manifest records the version used for the last compilation run;
+it will update automatically on the next `dafny translate py` invocation.
+Using a different version may change the runtime library or compiled output format.
 
-When `MemoryBackend.dfy` changes, regenerate the compiled output:
+**Ghost-only changes** (lemmas, invariants, ghost variables, postconditions)
+are erased at compile time and produce no Python output — regeneration is not
+needed.  The `.dtr` version may legitimately trail the toolchain version after
+a ghost-only upgrade; it will advance on the next full compilation run.
+
+**Non-ghost changes** (method bodies, datatype definitions, function
+implementations) do require regeneration.  When `MemoryBackend.dfy` has such
+changes, regenerate the compiled output:
 
 ```bash
 dafny verify sdd/formal/MemoryBackend.dfy          # confirm spec is valid

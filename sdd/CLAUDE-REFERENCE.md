@@ -103,7 +103,7 @@ Before committing, check whether your change has cross-file dependencies:
 | Tool  | Auto-install trigger       | Version | Manual fallback                  |
 |-------|----------------------------|---------|----------------------------------|
 | hatch | always (if missing)        | latest  | `uv tool install hatch`          |
-| dafny | `sdd/formal/*.dfy` present | 4.9.1   | see `session-init.sh` for steps  |
+| dafny | `sdd/formal/*.dfy` present | 4.11.0  | see `session-init.sh` for steps  |
 
 ---
 

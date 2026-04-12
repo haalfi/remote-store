@@ -10,8 +10,8 @@ set -euo pipefail
 # Disable MSYS/Git-Bash automatic path conversion (mangles Docker -v mounts).
 export MSYS_NO_PATHCONV=1
 
-DAFNY_VERSION=4.9.1
-DAFNY_SHA256=697ee703b39414b3904dc8c132e51481982f52205c1658f3374d313a284d43eb
+DAFNY_VERSION=4.11.0
+DAFNY_SHA256=a46a9ff7cdd720f7955854c78e95df13f4cfe6b80691b05f8654fe19e8267179
 IMAGE=mcr.microsoft.com/dotnet/sdk:8.0
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -24,7 +24,7 @@ fi
 # Build verify commands: download Dafny release with bundled Z3
 CMDS="apt-get update -qq > /dev/null 2>&1"
 CMDS="$CMDS && apt-get install -y -qq unzip > /dev/null 2>&1"
-CMDS="$CMDS && curl -sSL https://github.com/dafny-lang/dafny/releases/download/v${DAFNY_VERSION}/dafny-${DAFNY_VERSION}-x64-ubuntu-20.04.zip -o /tmp/dafny.zip"
+CMDS="$CMDS && curl -sSL https://github.com/dafny-lang/dafny/releases/download/v${DAFNY_VERSION}/dafny-${DAFNY_VERSION}-x64-ubuntu-22.04.zip -o /tmp/dafny.zip"
 CMDS="$CMDS && echo '${DAFNY_SHA256}  /tmp/dafny.zip' | sha256sum --check --quiet"
 CMDS="$CMDS && unzip -q /tmp/dafny.zip -d /opt"
 CMDS="$CMDS && chmod +x /opt/dafny/dafny /opt/dafny/z3/bin/z3-*"

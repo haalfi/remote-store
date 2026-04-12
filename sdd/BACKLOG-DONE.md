@@ -5,6 +5,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-134c — Remove SumSizesAddOneLocal workaround after Dafny upgrade**
+  Dafny 4.11.0 fixes the Boogie procedure emission bug for lemmas from included
+  files that transitively use `:|` in ghost functions. Replaced
+  `SumSizesAddOneLocal` call with direct `SumSizesAddOne` from
+  `BackendContract.dfy`; deleted the local duplicate lemma and workaround
+  comment. Verification: 53 proofs (was 55 — 2-lemma reduction is the deleted
+  duplicate). Script and toolchain reference updated to 4.11.0/ubuntu-22.04.
+
 - [x] **BK-148 — Documentation content longevity rules**
   New `sdd/CONTENT-RULES.md` keeps prose from drifting out of sync with code
   and generated artefacts; `sdd/research/research-doc-content-longevity.md`

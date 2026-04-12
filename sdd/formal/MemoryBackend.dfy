@@ -421,7 +421,7 @@ class MemoryBackend extends Backend {
           visited := visited + {k};
           if k in fs && fs[k].FileEntry? && IsChildOf(k, path) {
             assert k in ChildFiles(fs, path);
-            SumSizesAddOneLocal(fs, counted, k);
+            SumSizesAddOne(fs, counted, k);
             counted := counted + {k};
             file_count := file_count + 1;
             total_size := total_size + fs[k].info.size;
@@ -588,29 +588,6 @@ class MemoryBackend extends Backend {
       r := Err(CapabilityNotSupported(CapabilityName(cap), name));
     }
   }
-}
-
-// ---------------------------------------------------------------------------
-// File-local lemma wrappers (Dafny 4.9.1 Boogie bug workaround, ID-134c)
-// ---------------------------------------------------------------------------
-// SumSizesAddOne from BackendContract.dfy cannot be called directly in
-// MemoryBackend methods — Dafny 4.9.1 fails to emit the Boogie procedure
-// for lemmas from included files that transitively use `:|` in ghost
-// functions (SetToSeq).  These module-level wrappers reproduce the proofs.
-// TODO(ID-134c): Remove once Dafny upgrades past 4.9.1 and the Boogie
-// resolution bug is fixed.  Keep in sync with SumSizesAddOne in
-// BackendContract.dfy.
-
-lemma {:induction false} SumSizesAddOneLocal(fs: Filesystem, s: set<Path>, k: Path)
-  requires k !in s
-  requires forall p | p in (s + {k}) :: p in fs && fs[p].FileEntry?
-  ensures SumSizes(fs, s + {k}) == SumSizes(fs, s) + fs[k].info.size
-{
-  var combined := SetToSeq(s + {k});
-  var base := SetToSeq(s);
-  assert forall x :: multiset(combined)[x] == multiset(base + [k])[x];
-  SumSizesSeqPermutation(fs, combined, base + [k]);
-  SumSizesSeqAppend(fs, base, k);
 }
 
 // ---------------------------------------------------------------------------
