@@ -32,8 +32,9 @@ class MyBackend(Backend):
 register_backend("my-backend", MyBackend)
 ```
 
-See the `Backend` class in `src/remote_store/_backend.py` for the full
-interface to implement.
+See the [Backend API reference](../api/backend.md) for the full interface to
+implement, and the [Build Your Own Backend](../custom-backend-guide.md) guide
+for a step-by-step walkthrough.
 
 ## See also
 

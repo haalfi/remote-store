@@ -45,11 +45,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-149b — Apply CONTENT-RULES.md to Guides, Explanation, and remaining sections**
-  Continuation of BK-149 (Reference section shipped in PR #416). Covers
-  Guides, Explanation, Getting Started, and any remaining stale enumerations
-  or pseudo-precise values outside the API reference. Findings in
-  `sdd/research/research-doc-content-longevity.md`.
 
 ---
 

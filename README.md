@@ -172,7 +172,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.
 
-All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only (`{READ, METADATA}`). SQL Query is read-only (`{READ, LIST, METADATA, GLOB, SEEKABLE_READ}`) — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback `ext.glob.glob_files()`. Seekable reads are available on all backends via `Store.read_seekable()` — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
+All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available on all backends via `Store.read_seekable()`. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
 
 ## Store API
 
@@ -203,7 +203,7 @@ For the full method list, see the [API reference](https://docs.remotestore.dev/s
 
 ## Performance
 
-For S3, reads add 0.7 ms (+15%) over raw boto3; listing is 29x faster (s3fs caching). For Azure, reads add 0.1 ms (+1%); writes add 2.4 ms (+17%). For SFTP, reads add 3.3 ms (+34%); writes add 1.6 ms (+7%). See the [performance guide](https://docs.remotestore.dev/stable/performance/) for full comparative benchmarks, methodology, and per-operation breakdowns.
+Per-operation overhead is small relative to network round-trip time for most workloads. S3 listing is significantly faster via s3fs connection caching. See the [performance guide](https://docs.remotestore.dev/stable/performance/) for full comparative benchmarks, methodology, and per-operation breakdowns.
 
 ## Extensions
 
@@ -229,7 +229,7 @@ Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the
 Storage behavior must be predictable and correct. We verify this across multiple dimensions:
 
 - **Spec-driven development:** behavior specifications are the source of truth; tests link directly to them. *Prevents feature drift.*
-- **Extensive unit tests:** 95%+ coverage across all backends, focused on behavior. *Catches integration issues early.*
+- **Extensive unit tests:** high coverage across all backends, focused on behavior. *Catches integration issues early.*
 - **Design by Contract:** pre/post conditions and invariants catch incorrect usage early. *Fails fast on misuse.*
 - **Property-based testing:** randomized input generation surfaces edge cases no hand-written test would find. *Finds blind spots.*
 - **Formal verification:** critical paths are proven correct in Dafny before implementation. *Eliminates logic errors.*
@@ -251,8 +251,8 @@ There are several excellent Python libraries for file I/O across backends. Here 
 
 | | fsspec | smart_open | cloudpathlib | obstore | **remote-store** |
 |---|---|---|---|---|---|
-| API surface | ~56 methods | `open()` only | pathlib-style | ~10 methods | 29 methods |
-| Backends | 30+ filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
+| API surface | many methods | `open()` only | pathlib-style | ~10 methods | full Store API |
+| Backends | many filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
 | SFTP | via sshfs | Yes | — | — | Built-in |
 | Streaming I/O | Yes | Yes | — (downloads) | Bytes-oriented | Yes (BinaryIO) |
 | Atomic writes | — | — | — | — | Yes (capability-gated) |
@@ -261,7 +261,7 @@ There are several excellent Python libraries for file I/O across backends. Here 
 | Config model | Per-filesystem | URI-based | Per-client | Per-store kwargs | Immutable Registry |
 | Runtime deps | Yes | Minimal | SDK-based | Rust binary | Zero (core) |
 
-*Comparison as of March 2026. Method counts and feature sets may change as these libraries evolve.*
+*Feature sets may change as these libraries evolve. Check each project's documentation for the current state.*
 
 **In short:** `remote-store` is for teams that need more than `open()` (smart_open) but less than a full filesystem abstraction (fsspec), with streaming, SFTP, atomic writes, observability, and immutable config. Under the hood, it delegates to the same libraries you'd pick anyway (`s3fs`/`boto3`, `paramiko`, Azure SDK, PyArrow).
 

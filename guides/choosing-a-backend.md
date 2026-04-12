@@ -27,12 +27,13 @@ This guide helps you pick the right `remote-store` backend for your use case.
    Lacks native glob (use `ext.glob` fallback).
 
 6. **Store blobs in a relational database (SQLite, PostgreSQL, etc.)?** Use **SQLBlob**.
-   Full capabilities (10/10). Useful for embedded storage, metadata-heavy
-   workloads, or environments where a database is already available.
+   Full capabilities — read, write, list, move, copy, glob, atomic writes, and more.
+   Useful for embedded storage, metadata-heavy workloads, or environments where a
+   database is already available.
 
 7. **Materialize SQL queries as files (read-only)?** Use **SQLQuery**.
    Executes a SQL query and exposes the result as Parquet, CSV, or Arrow IPC.
-   Read-only (5 capabilities). Useful for ETL pipelines and data exports.
+   Read and metadata only. Useful for ETL pipelines and data exports.
 
 8. **Read-only HTTP/HTTPS endpoint?** Use **HTTP**.
    Public data, static file servers, REST APIs. Read and metadata only — no

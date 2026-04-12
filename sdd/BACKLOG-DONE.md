@@ -18,6 +18,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   relative links now that the pages exist (DOCUMENTATION.md § 4).
   PR #420.
 
+- [x] **BK-149b — Apply CONTENT-RULES.md to Guides, Explanation, and remaining sections**
+  Guides, Explanation, Getting Started, and README: pseudo-precise values removed
+  from performance prose and comparison table; manually-maintained benchmark
+  snapshot replaced with pointer to generated comparative tables; inline extension
+  enumerations replaced with principle descriptions; capability counts removed from
+  backend decision guide; conformance test counts removed from custom-backend guide;
+  security SLAs deferred to SECURITY.md; source path replaced with API reference
+  link. Completes BK-149.
+
 - [x] **BK-149 — Apply CONTENT-RULES.md to Reference section (part 1)**
   Reference section cleanup: stale capability counts removed from 8 backend
   guides; duplicate capability tables replaced with links to

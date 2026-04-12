@@ -68,12 +68,8 @@ Report security issues via
 [GitHub Security Advisories](https://github.com/haalfi/remote-store/security/advisories/new),
 not public issues.
 
-- **Response:** Acknowledgement within 72 hours, status update within 7 days
-- **Scope:** `remote-store` package and official backends only
-- **Fixes:** Released as patch versions on the latest supported release
-
 See [SECURITY.md](https://github.com/haalfi/remote-store/blob/master/SECURITY.md)
-for the full policy.
+for response timelines, scope, and the fix policy.
 
 ## See also
 
