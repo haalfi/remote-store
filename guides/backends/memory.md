@@ -43,6 +43,7 @@ with Registry(config) as registry:
 ## Capabilities
 
 Supports all capabilities except `GLOB` (no native pattern matching — use `ext.glob.glob_files()` as a portable fallback) and `LAZY_READ` (all data lives in process memory; streams wrap pre-loaded bytes).
+See the [capabilities matrix](../capabilities-matrix.md) for full details.
 
 `write_atomic()` behaves identically to `write()` — in-memory writes are inherently atomic.
 

@@ -120,21 +120,7 @@ Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` h
 ## Capabilities
 
 Supports all capabilities except `SEEKABLE_READ` and `ATOMIC_MOVE`.
-
-| Capability | Supported | Notes |
-|------------|-----------|-------|
-| `READ` | Yes | Streaming reads via `_AzureBinaryIO` adapter |
-| `WRITE` | Yes | |
-| `DELETE` | Yes | |
-| `LIST` | Yes | |
-| `MOVE` | Yes | Atomic on HNS, copy+delete on non-HNS |
-| `COPY` | Yes | Server-side copy |
-| `ATOMIC_WRITE` | Yes | Temp file + rename (HNS) or direct PUT (non-HNS) |
-| `ATOMIC_MOVE` | -- | Not supported (copy+delete semantics, even on HNS rename is not guaranteed atomic for blobs) |
-| `METADATA` | Yes | |
-| `GLOB` | Yes | |
-| `SEEKABLE_READ` | -- | Forward-only chunk iterator; use `read_seekable()` for spooled seekability |
-| `LAZY_READ` | Yes | Data is fetched on demand from Azure Blob Storage |
+See the [capabilities matrix](../capabilities-matrix.md) for full details.
 
 ## Streaming
 
