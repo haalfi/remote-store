@@ -188,7 +188,7 @@ backends.
 
 ### Principle
 
-The compiled oracle is **correct by construction** — 55 verified proofs,
+The compiled oracle is **correct by construction** — 53 verified proofs,
 0 errors.  The conformance testing logic is therefore:
 
 1. **Oracle passes a conformance test** → the test is known-correct and
