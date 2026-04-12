@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-04-12
+
 ### Added
 
 - **`Capability.LAZY_READ`** (BK-146): New quality flag that indicates `read()`
