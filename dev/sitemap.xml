@@ -309,7 +309,15 @@
          <lastmod>2026-04-12</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/content-rules/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/design-spec/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/documentation-standards/</loc>
          <lastmod>2026-04-12</lastmod>
     </url>
     <url>
@@ -402,6 +410,42 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/adrs/0020-orchestrate-iterative-convergence/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/audits/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/audits/audit-001-adversarial-review/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/audits/audit-002-design-compliance/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/audits/audit-003-documentation/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/audits/audit-004-docs-structural-consistency/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/audits/audit-005-laziness-memory/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/audits/audit-006-docs-list-completeness/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/audits/audit-007-test-behavior-assertions/</loc>
+         <lastmod>2026-04-12</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/audits/audit-008-package-bugs/</loc>
          <lastmod>2026-04-12</lastmod>
     </url>
     <url>
