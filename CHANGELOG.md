@@ -62,7 +62,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Standards, Content Rules, Changelog, and the community/policy files
   (Contributing, Security, Code of Conduct, Citation). Fixed stale GitHub link
   for Development Story to point at the in-site page. Removed Contributing and
-  Development Story from the top navigation — both remain reachable via
+  Development Story from the top navigation: both remain reachable via
   Further Reading.
 
 - **Azure backend guide** (ID-137): Updated `max_block_size` and
