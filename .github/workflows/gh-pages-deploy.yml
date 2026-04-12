@@ -1,8 +1,9 @@
 name: Deploy GitHub Pages
 
 on:
-  push:
-    branches: [gh-pages]
+  workflow_run:
+    workflows: ["Docs"]
+    types: [completed]
 
 permissions:
   pages: write
@@ -14,6 +15,7 @@ concurrency:
 
 jobs:
   pages:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
