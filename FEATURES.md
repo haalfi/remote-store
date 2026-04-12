@@ -1,4 +1,4 @@
-# Features — remote-store v0.22.1
+# Features — remote-store v0.23.0
 
 Authoritative snapshot of the Store API, capabilities, backends,
 extensions, and install extras for the current version. Updated each
