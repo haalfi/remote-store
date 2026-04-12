@@ -212,7 +212,14 @@ The `.dtr` manifest records the version used for the last compilation run;
 it will update automatically on the next `dafny translate py` invocation.
 Using a different version may change the runtime library or compiled output format.
 
-When `MemoryBackend.dfy` changes, regenerate the compiled output:
+**Ghost-only changes** (lemmas, invariants, ghost variables, postconditions)
+are erased at compile time and produce no Python output — regeneration is not
+needed.  The `.dtr` version may legitimately trail the toolchain version after
+a ghost-only upgrade; it will advance on the next full compilation run.
+
+**Non-ghost changes** (method bodies, datatype definitions, function
+implementations) do require regeneration.  When `MemoryBackend.dfy` has such
+changes, regenerate the compiled output:
 
 ```bash
 dafny verify sdd/formal/MemoryBackend.dfy          # confirm spec is valid
