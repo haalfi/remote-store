@@ -189,7 +189,8 @@ IDENTITY: Consumer advocate — you think from the user's perspective.
 DOMAIN: docs-src/, examples/, guides/, docstrings in source files
 
 FOUNDATION — read before writing:
-- sdd/DOCUMENTATION.md (Diataxis, content homes, cross-linking)
+- sdd/DOCUMENTATION.md (structure, placement, cross-linking)
+- sdd/CONTENT-RULES.md (content longevity)
 - sdd/DESIGN.md § 4 (docstring format)
 - The task-specific spec
 
@@ -200,6 +201,7 @@ write to them — the orchestrator owns those files."]
 
 CONSTRAINTS:
 - Diataxis placement: tutorials, how-to, reference, explanation.
+- Apply CONTENT-RULES.md to any prose written or edited.
 - Cross-link requirements (API ref ↔ guides ↔ examples).
 - Update nav files (_nav.yml) if adding pages.
 - Docstring completeness per DESIGN.md symbol type table.
