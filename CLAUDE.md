@@ -27,13 +27,9 @@ extensions, capabilities, and install extras for the current version.
 
 ## Bug-fix protocol
 
-Strict order — no skipping:
-
-1. Backlog entry (`sdd/BACKLOG.md`)
-2. CHANGELOG entry (`[Unreleased]`)
-3. Failing test that reproduces the bug -- **write it, run it, see it fail**
-4. Fix (make the test pass) -- **run the test again, see it pass**
-5. Commit all together (or mark `[~]`)
+See `sdd/000-process.md` § Rule 6 for the canonical pipeline (BACKLOG →
+CHANGELOG → failing TEST → FIX → COMMIT together). Per principle 6, **write
+the failing test, run it, see it fail** before implementing the fix.
 
 ## Backlog (mandatory)
 
@@ -44,24 +40,10 @@ Strict order — no skipping:
 
 ## Dev commands
 
-All scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.scripts]`. Run `hatch run` to see available commands. Key ones:
+Scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.scripts]`.
+Run `hatch run` to list them. `hatch run all` is the pre-commit gate.
 
-```bash
-hatch run test              # pytest, 95% coverage required
-hatch run lint              # ruff check + format
-hatch run typecheck         # mypy strict on src/
-hatch run notebooks         # execute tutorial notebooks (no Jupyter needed)
-hatch run check-test-quality # assertion + mock-spec CI checks
-hatch run mutate-core-api      # mutation testing: Store, proxy, stream, glob, backend base
-hatch run mutate-core-infra    # mutation testing: capabilities, errors, config, models, path, registry
-hatch run mutate-ext-proxy     # mutation testing: arrow, batch, cache, observe, otel, partition, ...
-hatch run mutate-ext-format    # mutation testing: parquet, yaml, pydantic, dagster
-hatch run mutate-backends-local  # mutation testing: local, memory, http, sql backends
-hatch run mutate-backends-cloud  # mutation testing: s3, sftp, azure backends
-hatch run docs              # serve docs locally
-hatch run docs-build        # build docs (strict mode)
-hatch run all               # lint + format-check + typecheck + test-cov + examples + notebooks
-```
+Claude-specific shell constraints:
 
 - **No `&&`, `||`, or `;`.** Split into separate Bash tool calls for auto-approval.
 - **No heredoc in git commits.** `git commit -m "$(cat <<'EOF'...)"` breaks the `Bash(git:*)` auto-approve pattern. Use multiple `-m` flags instead.

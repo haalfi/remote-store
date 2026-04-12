@@ -45,6 +45,12 @@ The full SDD pipeline is described in [`sdd/000-process.md`](sdd/000-process.md)
 3. **Accept**: The RFC graduates to a spec in `sdd/specs/`. It now defines the contract.
 4. **Implement**: Open a follow-up PR with tests (referencing spec IDs) and implementation.
 
+## Bug Fixes
+
+Bug fixes follow a strict pipeline: BACKLOG → CHANGELOG → failing TEST → FIX →
+COMMIT together. See [`sdd/000-process.md`](sdd/000-process.md) § Rule 6 for
+the canonical rule.
+
 ## Repository Structure
 
 ```text
@@ -68,7 +74,7 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 1. Write a spec in `sdd/specs/` or as an addendum in `sdd/specs/backends/<name>.md`
 2. Implement `Backend` ABC in `src/remote_store/backends/_<name>.py`
 3. Add a conformance fixture in `tests/backends/conftest.py`
-4. Both conformance suites run automatically: `tests/backends/test_conformance.py` (64 tests, BE-001–BE-022, BE-025 + ancillary specs) and `tests/backends/test_conformance_extended.py` (50 Dafny-derived tests, `@pytest.mark.extended_conformance`). The suites are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md`](sdd/formal/README.md) § Compiled Oracle
+4. Both conformance suites run automatically: `tests/backends/test_conformance.py` (spec-traced) and `tests/backends/test_conformance_extended.py` (Dafny-derived, `@pytest.mark.extended_conformance`). The suites are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md`](sdd/formal/README.md) § Compiled Oracle
 5. Add user-facing guide in `guides/backends/<name>.md` and register in `mkdocs.yml` nav
 6. Update `guides/backends/index.md` (Supported Backends table)
 7. Update `README.md` (Supported Backends table + Installation extras)
