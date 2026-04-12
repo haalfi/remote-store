@@ -10,11 +10,13 @@ Derived from `sdd/research/research-doc-content-longevity.md`.
 
 ## Rules
 
+All rules are `[review-enforced]` today. Future enhancements may add CI checks
+(e.g., grep patterns for pseudo-precise values, diff analysis for list duplication);
+the tag will differentiate when that happens.
+
 1. **The 6-month test** [review-enforced]
    — Before writing any sentence, ask: "Would this still be accurate in 6 months?"
    If not, it belongs in a linked SSoT or generated artefact — not in stable prose.
-
-All rules below are `[review-enforced]` today. Future enhancements may add CI-enforced rules (e.g., grepping for pseudo-precise values, or detecting exhaustive-list duplication via diff analysis), but the current rules are all reviewed by humans.
 
 2. **Describe principles, not enumerations** [review-enforced]
    — Write what the system does and why. List 2–3 representative examples and link
@@ -36,10 +38,6 @@ All rules below are `[review-enforced]` today. Future enhancements may add CI-en
    — API signatures, capability sets, type annotations, default values live in code.
    Docs describe the pattern and link to the reference; they do not reproduce the
    values.
-
-6. **Notes for supplementary docstring context** [review-enforced]
-   — Context that does not fit Args/Returns/Raises goes in a `Notes:` block, not
-   scattered inline or appended to the summary line.
 
 ## Guides
 
@@ -73,7 +71,3 @@ OTel, Cache, Streams, Integrity, Dagster IO manager, YAML config, Pydantic confi
 Rules 2–5 are all expressions of the same principle: **stable prose describes
 shape; volatile detail lives in its authoritative location.** When in doubt,
 ask rule 1.
-
-Rule 6 is narrower — it applies only to docstrings — but follows the same
-logic: supplementary context that belongs "somewhere" has a designated place
-(Notes) rather than drifting into prose that breaks the mkdocstrings layout.

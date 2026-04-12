@@ -57,7 +57,7 @@ The following principles were evaluated as a basis for rules:
 
 ## Decision
 
-These principles became six rules in `sdd/CONTENT-RULES.md`. The rules are
+These principles became five rules in `sdd/CONTENT-RULES.md`. The rules are
 phrased in the same format as `sdd/TESTING.md`: numbered, review-enforced,
 with bad→good examples to make the distinction concrete.
 
@@ -76,5 +76,5 @@ follows as a normal development task.
   capabilities, and extras for each release.
 - **Benchmark output** remains auto-generated; the narrative links to it.
 - **Docstring completeness rules** (Args/Returns/Raises) in `sdd/DOCUMENTATION.md`
-  rule 3 are unchanged; rule 6 (Notes) in CONTENT-RULES.md adds a placement
-  rule for supplementary context.
+  rule 3 are unchanged; a Notes-placement sentence was added there for
+  supplementary context.

@@ -46,13 +46,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Documentation
 
-- **Documentation content longevity rules** (ID-018): New `sdd/CONTENT-RULES.md`
-  (6 rules in TESTING.md format) to prevent staleness patterns in prose: the
+- **Documentation content longevity rules**: New `sdd/CONTENT-RULES.md`
+  (5 rules in TESTING.md format) to prevent staleness patterns in prose: the
   6-month test, principles over enumerations, no pseudo-precise values, one copy
-  per fact, source-code facts in source, Notes for docstrings. Research doc
-  records the analysis. `CLAUDE.md` updated with new Documentation conventions
-  section. `DOCUMENTATION.md` § 6 (README requirements) tightened to deprecate
-  exhaustive tables in favor of linked references.
+  per fact, source-code facts in source. Research doc records the analysis.
+  `CLAUDE.md` updated with new Documentation conventions section.
+  `DOCUMENTATION.md` § 6 (README requirements) tightened to deprecate
+  exhaustive tables in favor of linked references; § 3 (docstring completeness)
+  gained Notes-placement guidance.
 
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.

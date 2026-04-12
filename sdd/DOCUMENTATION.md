@@ -51,6 +51,8 @@ Format and style rules are in `sdd/DESIGN.md` § 4. This section covers what mkd
 | Enum | -- | -- | -- | -- |
 | Error class | -- | -- | -- | -- |
 
+Supplementary context that does not fit Args/Returns/Raises goes in a `Notes:` block, not scattered inline or appended to the summary line.
+
 No TODOs or placeholders in published docstrings.
 
 ### 4. Cross-linking requirements
