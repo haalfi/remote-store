@@ -4,6 +4,12 @@ Scope: contributor workflow, development setup, release process, and consistency
 
 This project follows **Spec-Driven Development (SDD)**: every feature starts as a specification before any code is written. See [`sdd/000-process.md`](sdd/000-process.md) for the full methodology.
 
+## Project Principles
+
+The universal working principles for this repo are listed in
+[`CLAUDE.md`](CLAUDE.md) § Principles. They apply to any contributor,
+not only automated agents.
+
 ## Authoritative Document Format
 
 Internal process and reference documents follow a fixed structure.
@@ -211,7 +217,10 @@ See [`sdd/DESIGN.md`](sdd/DESIGN.md) for the full code style conventions.
 
 ## Test Requirements
 
-- Every spec section must have at least one test with `@pytest.mark.spec("ID")`
+See [`sdd/TESTING.md`](sdd/TESTING.md) for testing quality rules. Spec
+traceability and test-per-spec obligations are in
+[`sdd/000-process.md`](sdd/000-process.md) § Rules 1–2.
+
 - Run `pytest -m spec` to verify all spec-derived tests pass
 - Run `pytest --cov=remote_store` for coverage reports
 

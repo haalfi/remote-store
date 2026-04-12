@@ -62,11 +62,13 @@ these when writing or reviewing any README, guide, or docstring.
 
 ## Code conventions
 
-See `sdd/DESIGN.md` for the full code style rules. Key points:
+See `sdd/DESIGN.md` for code style rules. See `sdd/000-process.md` § Rules for
+spec/test traceability obligations. Run `hatch run lint` before committing.
 
-- Tests: `@pytest.mark.spec("ID")` for spec traceability.
-- New features require a spec in `sdd/specs/`. Ops changes (CI, docs) skip specs.
-- Run `hatch run lint` before committing.
+## Testing conventions
+
+See `sdd/TESTING.md` for testing quality rules (assertion depth, mock discipline,
+spec tracing). Applies to all new or changed tests.
 
 ## GitHub operations
 
