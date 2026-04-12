@@ -68,6 +68,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   listing introduced alongside the refresh (CONTENT-RULES rule 4).
   Documentation-convention and community/policy links kept in place.
 
+- **Design index completed**: `design/` now surfaces all `sdd/` process
+  documents. Added `documentation-standards.md` and `content-rules.md`
+  include-wrappers for `sdd/DOCUMENTATION.md` and `sdd/CONTENT-RULES.md`.
+  Added `Audits` section: `gen_pages.py` now scans `sdd/audits/` and
+  generates `design/audits/index.md` plus per-audit wrapper pages (8 audits).
+  Further Reading documentation-convention links updated from GitHub to
+  on-site relative links.
+
 - **Azure backend guide** (ID-137): Updated `max_block_size` and
   `max_single_put_size` library defaults from 256 KiB to 1 MiB.
 

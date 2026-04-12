@@ -14,8 +14,8 @@ document-by-document record.
 
 How this documentation is written and kept accurate over time:
 
-- [Documentation Standards](https://github.com/haalfi/remote-store/blob/master/sdd/DOCUMENTATION.md): structure and placement rules
-- [Content Rules](https://github.com/haalfi/remote-store/blob/master/sdd/CONTENT-RULES.md): keeping prose accurate over time
+- [Documentation Standards](design/documentation-standards.md): structure and placement rules
+- [Content Rules](design/content-rules.md): keeping prose accurate over time
 
 ## Project history
 
