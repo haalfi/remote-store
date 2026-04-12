@@ -50,24 +50,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   and docstring updated.
 
 - **Azure backend guide** (ID-137): Updated `max_block_size` and
-  `max_single_put_size` library-default values from 256 KiB to 1 MiB in
-  the settings reference table.
+  `max_single_put_size` library defaults from 256 KiB to 1 MiB.
 
 ### Internal
 
-- **Streaming overhead reduction** (ID-137): Memory backend `read()` now
-  constructs `BytesIO` directly inside the lock, eliminating an intermediate
-  `bytes` allocation. SFTP chunk size raised from 32 KiB to 256 KiB,
-  reducing Python-level round-trips on modern SSH servers (paramiko fragments
-  internally per SSH packet limits). Azure `max_block_size` and
-  `max_single_put_size` raised from 256 KiB to 1 MiB via a dedicated
-  `_AZURE_BLOCK_SIZE` constant, decoupling the HTTP block granularity from
-  the pipe-layer copy buffer; this yields 4× fewer staged-block requests per
-  upload while keeping SDK peak memory at ~2 MiB (within the streaming
-  threshold). S3-PyArrow `open_output_stream` now passes
-  `buffer_size=_COPY_BUFSIZE` (256 KiB). Memory backend write over-allocation
-  (~10% above file size) confirmed as standard Python `bytearray` growth
-  behavior, not a code defect.
+- **Streaming overhead reduction** (ID-137): Reduced per-hop allocations
+  across Memory, SFTP, Azure, and S3-PyArrow backends. Azure block size
+  decoupled from the pipe-layer copy buffer; streaming integrity thresholds
+  recalibrated from e2e measurements.
 
 - **Streaming integrity test hardened** (BUG-161, BUG-162): Memory and chunk
   violations are now hard failures instead of warnings. Non-lazy destinations
