@@ -46,7 +46,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Documentation
 
-- **Documentation content longevity rules**: New `sdd/CONTENT-RULES.md`
+- **Documentation content longevity rules** (BK-148): New `sdd/CONTENT-RULES.md`
   (5 rules in TESTING.md format) to prevent staleness patterns in prose: the
   6-month test, principles over enumerations, no pseudo-precise values, one copy
   per fact, source-code facts in source. Research doc records the analysis.
