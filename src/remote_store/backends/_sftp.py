@@ -46,9 +46,8 @@ log = logging.getLogger(__name__)
 
 _SFTP_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB, Capability.ATOMIC_MOVE})
 
-# 256 KiB: reduces round-trips on modern SSH servers while staying
-# within typical negotiated channel window sizes (paramiko fragments
-# internally per SSH packet limits).
+# 256 KiB: reduces round-trips on modern SSH servers; paramiko fragments
+# each write internally at the negotiated SSH packet size limit.
 _CHUNK_SIZE = 262144
 
 

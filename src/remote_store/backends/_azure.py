@@ -47,10 +47,13 @@ _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.SEEKABLE_READ, C
 
 log = logging.getLogger(__name__)
 
-# Staged-block upload granularity. Azure SDK holds ~2 blocks in memory
-# simultaneously; 1 MiB keeps SDK peak to ~2 MiB, well within the
-# streaming test threshold (65% of min 7 MiB file = 4.55 MiB).
-# Users can override via client_options for throughput tuning.
+# Staged-block upload granularity — intentionally separate from _COPY_BUFSIZE.
+# _COPY_BUFSIZE (256 KiB) controls Python-level pipe chunking for Local/SFTP/S3.
+# _AZURE_BLOCK_SIZE controls HTTP PUT request size for the Azure staged-block
+# protocol; the Azure SDK reads the source stream in this-sized chunks.
+# 1 MiB: SDK peak ≈ 2 × 1 MiB = 2 MiB, within the 4.55 MiB lazy threshold
+# (65% × 7 MiB min file).  Yields ~4× fewer staged-block HTTP requests vs
+# the previous 256 KiB value.  Users can override via client_options.
 _AZURE_BLOCK_SIZE = 1 * 1024 * 1024  # 1 MiB
 
 

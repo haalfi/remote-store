@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from remote_store._backend import _COPY_BUFSIZE
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
@@ -22,6 +21,7 @@ from remote_store._errors import (
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
+from remote_store.backends._azure import _AZURE_BLOCK_SIZE
 from remote_store.backends._azure_common import (
     azure_path as _azure_path_fn,
 )
@@ -126,7 +126,7 @@ class AsyncAzureBackend(AsyncBackend):
 
             opts: dict[str, Any] = dict(self._client_options)
             # BUG-161/BUG-162: force staged-block upload, keep memory bounded.
-            _blk = _COPY_BUFSIZE
+            _blk = _AZURE_BLOCK_SIZE
             opts.setdefault("max_single_put_size", _blk)
             opts.setdefault("max_block_size", _blk)
             opts.setdefault("min_large_block_upload_threshold", 1)  # 1 byte = always stage
@@ -159,7 +159,7 @@ class AsyncAzureBackend(AsyncBackend):
 
             opts: dict[str, Any] = dict(self._client_options)
             # BUG-161/BUG-162: same block-size defaults as Blob SDK.
-            _blk = _COPY_BUFSIZE
+            _blk = _AZURE_BLOCK_SIZE
             opts.setdefault("max_single_put_size", _blk)
             opts.setdefault("max_block_size", _blk)
             opts.setdefault("min_large_block_upload_threshold", 1)  # 1 byte = always stage
