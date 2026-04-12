@@ -62,6 +62,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   and doc conventions, and community/policy files. Contributing and Development
   Story dropped from the top nav; both remain reachable via Further Reading.
 
+- **Further Reading deduplicated against Design index**: Removed the
+  SDD / conventions / research enumeration from `further-reading.md` and
+  replaced it with a single pointer to `design/`. Eliminates the duplicate
+  listing introduced alongside the refresh (CONTENT-RULES rule 4).
+  Documentation-convention and community/policy links kept in place.
+
 - **Azure backend guide** (ID-137): Updated `max_block_size` and
   `max_single_put_size` library defaults from 256 KiB to 1 MiB.
 
