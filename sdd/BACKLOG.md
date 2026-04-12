@@ -49,18 +49,75 @@ Items graduate through the SDD pipeline:
   Cleanup pass against the rules established in BK-148. Findings in
   `sdd/research/research-doc-content-longevity.md`.
 
-- [ ] **BK-139b — Implement remaining bug prevention measures from research**
-  Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
-  Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Items 4, 5, 7 shipped.
-  Remaining:
-  6. `scripts/check_error_handling.py` AST script (~80 lines) — deferred until
-     items 4–5 prove insufficient; conformance error fidelity tests may suffice.
-
 ---
 
 ## Ideas
 
 ### Streaming & Memory Optimization
+
+- [ ] **ID-140 — SQLBlob lazy reads for SQLite & PostgreSQL**
+  The current blanket claim that `SQLBlobBackend` cannot do lazy reads is too
+  strong (see spec 040 SQL-BLOB-020, `_sqlalchemy.py:47` excluding
+  `Capability.LAZY_READ`). Both primary dialects have a path to honest
+  `LAZY_READ`; MySQL does not. This item captures the direction — **no
+  implementation yet**.
+
+  **SQLite (Py 3.11+):** `sqlite3.Connection.blobopen(table, col, rowid)`
+  returns a seekable, chunked `Blob` handle. Reachable through SQLAlchemy via
+  `sa_conn.connection.driver_connection`. Requires a `SELECT rowid FROM t
+  WHERE key = :key` lookup first, and only works when the user-supplied table
+  has an implicit rowid (i.e. not `WITHOUT ROWID`). Genuine streaming.
+
+  **PostgreSQL (`bytea`, our current schema):** no native blob handle API.
+  Pseudo-stream via repeated `SELECT substring(data FROM :off FOR :len) FROM
+  t WHERE key = :k`. Client memory stays bounded (satisfies LAZY_READ
+  semantics per spec 006 line 70-73), but each chunk is a round trip, and on
+  compressed TOAST (`EXTENDED`, the default) the server must decompress per
+  call. `ALTER COLUMN data SET STORAGE EXTERNAL` makes substring cheap at
+  the cost of disk space — caller-controlled tradeoff.
+
+  **PostgreSQL Large Objects (`lo_*`):** genuine streaming via
+  `psycopg.connection.lobject()`, but requires an `oid` column and manual
+  lifecycle (`lo_unlink` on delete/overwrite/move, otherwise we leak).
+  Different storage model — belongs in a separate backend variant
+  (e.g. `sql-largeobject`), not a retrofit to `SQLBlobBackend`.
+
+  **MySQL:** no streaming story. Same `SUBSTRING()` pseudo-stream is
+  possible but out of scope here (not a primary target).
+
+  **Constraints & gotchas:**
+  - `requires-python = ">=3.10"` (`pyproject.toml:11`) stays. SQLite
+    `blobopen` is 3.11+ → runtime check, fall back to current eager path on
+    3.10.
+  - Capability becomes **per-instance, dialect-conditional** — new pattern
+    in this codebase; no other backend varies capabilities at runtime.
+    Consider whether `Capability` set should be computed in `__init__` and
+    cached, and how `store.supports()` interacts with it.
+  - Connection lifetime: streaming handle must keep the DBAPI connection
+    checked out until the returned `BinaryIO.close()`. Needs a wrapper that
+    owns both.
+  - Custom tables (`create_table=False`): rowid may not exist; substring
+    path is schema-agnostic and works as a universal fallback.
+
+  **Ripple checks when picked up** (per `sdd/CLAUDE-REFERENCE.md`):
+  - Spec 040 SQL-BLOB-003 (capabilities list) and SQL-BLOB-020 (`read()`).
+  - Spec 006 streaming-io — capability semantics already fit.
+  - `FEATURES.md` capability matrix.
+  - `tests/test_backend_sqlblob.py:131` asserts LAZY_READ is NOT declared —
+    must split into dialect-conditional assertions.
+  - Behavioral test: large blob (e.g. 50 MiB) read in 4 KiB chunks with
+    bounded RSS.
+  - CHANGELOG, this file.
+
+  **Open decisions for whoever picks this up:**
+  1. SQLite-only first, or SQLite + PG `bytea` substring together?
+  2. Declare `LAZY_READ` for PG substring path given the per-chunk
+     round-trip cost, or reserve LAZY_READ for "true" lazy and add a
+     separate `CHUNKED_READ` quality flag?
+  3. PG Large Objects as a follow-up backend — separate idea, own ID.
+
+  Related: ID-136 (non-lazy **write** is by-design; this item is about
+  **reads** only — writes remain eager).
 
 ### Testing & Verification
 
@@ -129,6 +186,16 @@ Items graduate through the SDD pipeline:
 ## Icebox
 
 Deferred indefinitely — revisit only if demand or circumstances change.
+
+- [ ] **BK-139b — Implement remaining bug prevention measures from research**
+  Items 1–3 shipped as BK-139a; items 4, 5, 7 shipped as BK-139b (see
+  BACKLOG-DONE.md). Only item 6 remains: `scripts/check_error_handling.py`
+  (~80 lines) — an AST script flagging broad exception handlers that silently
+  return without checking `errno`. Deferred because BLE rules (item 4) and the
+  extended conformance error-fidelity category (item 5) cover the same
+  error-swallowing bug class with less maintenance overhead. Reactivate if a
+  new error-swallowing bug escapes those nets.
+  Related: [research](research/research-bug-prevention-beyond-testing.md).
 
 - [ ] **ID-114 — PyArrow-style bucket path support (research)**
   PyArrow convention: `"bucket/prefix"` embeds bucket in path. Current
