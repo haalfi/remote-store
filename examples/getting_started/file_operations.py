@@ -1,7 +1,7 @@
-"""File operations — the full Store API demonstrated.
+"""File operations — core Store operations demonstrated.
 
-Covers: read, write, delete, delete_folder, move, copy, list, metadata,
-is_file, is_folder, supports, and to_key — using the local backend.
+Covers read/write, delete, move, copy, listing, metadata, and capability
+checks — using the local backend.
 """
 
 from __future__ import annotations
