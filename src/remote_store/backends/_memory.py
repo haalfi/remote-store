@@ -88,8 +88,8 @@ class MemoryBackend(Backend):
                 raise InvalidPath(f"Not a file: {path}", path=path, backend="memory")
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
-            snapshot = bytes(node.data)
-        return io.BytesIO(snapshot)
+            result = io.BytesIO(node.data)
+        return result
 
     def read_bytes(self, path: str) -> bytes:
         segments = self._split_path(path)

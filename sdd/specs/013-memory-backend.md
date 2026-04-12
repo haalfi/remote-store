@@ -223,34 +223,35 @@ documents memory-specific behavior only.
 
 ### MEM-010: read() — Stream Type
 
-**Invariant:** `read(path)` returns a `BinaryIO` that is **not** `io.BytesIO`.
+**Invariant:** `read(path)` returns a `BinaryIO` that is a seekable, closable
+`io.BytesIO` wrapping an independent copy of the file content.
 
 **Implementation:**
 ```python
 def read(self, path: str) -> BinaryIO:
     with self._lock:
         entry = ...  # traverse to _FileEntry, raise NotFound if missing
-        snapshot = bytes(entry.data)  # immutable copy under lock
-    return io.BufferedReader(io.BytesIO(snapshot))
+        result = io.BytesIO(node.data)  # copy happens inside the lock
+    return result
 ```
-The `bytes()` copy is taken under the lock so that a concurrent `write()` cannot
-mutate the `bytearray` while the snapshot is being created. The lock is released
-before the `BufferedReader` wrapper is returned — the caller reads from an
-immutable copy without holding the lock. The returned stream is seekable and
-closable.
+`io.BytesIO(bytearray)` copies the buffer immediately during `__init__`,
+before the lock is released. The returned `BytesIO` therefore holds an
+independent snapshot: a concurrent `write()` that mutates the `bytearray`
+after the lock releases cannot affect the caller's copy. The lock is held only
+for the traversal and the copy; the caller reads from the returned stream
+without holding the lock.
 
-**Contract note:** `io.BufferedReader` officially wraps `io.RawIOBase`, and
-`io.BytesIO` extends `io.BufferedIOBase`, not `RawIOBase`. However, CPython
-(and all known implementations) accepts `BytesIO` as a `BufferedReader`
-argument because `BytesIO` implements the required `readinto()` / `read()`
-protocol. This works on CPython 3.10–3.14 and PyPy. If a future runtime
-rejects this, the fallback is a thin `io.RawIOBase` subclass that delegates
-`readinto()` to a `memoryview` over the content bytes — trivial to implement.
+**Allocation rationale:** Constructing `BytesIO` directly from `node.data`
+eliminates the intermediate `bytes(node.data)` object that a two-step approach
+(`snapshot = bytes(node.data); return io.BytesIO(snapshot)`) would require.
+One copy instead of two — the byte buffer is allocated once, inside the
+`BytesIO`, under the lock.
 
-**Rationale:** The conformance test `test_read_returns_true_stream_not_bytesio`
-exists because `BytesIO` is a sign that a backend loaded everything into memory
-instead of streaming. For a memory backend that distinction is moot — the data
-*is* memory — but the wrapping is trivial and maintains conformance.
+**Note:** This returns a plain `io.BytesIO`. The conformance test
+`test_read_returns_true_stream_not_bytesio` does not apply to `MemoryBackend`
+— that test targets backends that naively return `BytesIO` *without* copying
+(i.e., exposing a live internal buffer). Here the copy is always made, so the
+returned `BytesIO` is independent and safe.
 
 ### MEM-011: read_bytes() — Copy Semantics
 
@@ -393,9 +394,9 @@ where contention is rare.
 **Postconditions:** The lock is never held during caller consumption of returned
 data. Specifically:
 
-- `read()` snapshots `bytes(entry.data)` under the lock, wraps in
-  `BufferedReader`, releases the lock, then returns the wrapper. The caller
-  reads from the wrapper without holding the lock.
+- `read()` constructs `io.BytesIO(node.data)` under the lock — the constructor
+  copies the buffer immediately — then releases the lock and returns the
+  `BytesIO`. The caller reads from an independent copy without holding the lock.
 - `list_files()` and `list_folders()` **eagerly collect** all results into a
   list under the lock, release it, then return `iter(list)`. This avoids
   holding the lock during caller iteration (which would deadlock if the caller

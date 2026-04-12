@@ -215,7 +215,7 @@ class S3PyArrowBackend(_S3Base):
             if not overwrite and self._s3fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
         with self._pyarrow_errors(path):
-            out = self._pa_fs.open_output_stream(self._pa_path(path))
+            out = self._pa_fs.open_output_stream(self._pa_path(path), buffer_size=_COPY_BUFSIZE)
             try:
                 if isinstance(content, bytes):
                     out.write(content)

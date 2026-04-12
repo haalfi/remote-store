@@ -295,6 +295,12 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 **Invariant:** The `client_options` dict is merged into both the `BlobServiceClient` and `DataLakeServiceClient` configurations, allowing advanced settings (custom timeouts, retry policies, proxies, API version overrides, etc.).
 **Postconditions:** Explicit constructor parameters (`account_key`, `sas_token`, `credential`, etc.) take precedence over keys in `client_options`.
 
+### AZ-035: Staged-Block Upload Defaults
+
+**Invariant:** `_blob_service` and `_datalake_service` set `max_block_size` and `max_single_put_size` to `_AZURE_BLOCK_SIZE` (1 MiB) via `setdefault`, and force `min_large_block_upload_threshold = 1` (1 byte — always stage). User-supplied `client_options` values take precedence (AZ-031).
+
+**Rationale:** Bounds Azure SDK in-flight memory to ~2 × `_AZURE_BLOCK_SIZE` ≈ 2 MiB, within the streaming integrity threshold (65% × 7 MiB minimum file). `_AZURE_BLOCK_SIZE` is kept separate from `_COPY_BUFSIZE` (the pipe-layer copy buffer) because HTTP block granularity and Python-level streaming are independent concerns.
+
 ### AZ-032: Default Credential Chain
 
 **Invariant:** When no explicit credential is provided (`account_key`, `sas_token`, `connection_string`, and `credential` are all `None`), the backend attempts to use `DefaultAzureCredential` from `azure-identity`.

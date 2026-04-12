@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
 
-from remote_store._backend import _COPY_BUFSIZE, Backend
+from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
@@ -46,6 +46,15 @@ T = TypeVar("T")
 _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.SEEKABLE_READ, Capability.ATOMIC_MOVE})
 
 log = logging.getLogger(__name__)
+
+# Staged-block upload granularity — intentionally separate from _COPY_BUFSIZE.
+# _COPY_BUFSIZE (256 KiB) controls Python-level pipe chunking for Local/SFTP/S3.
+# _AZURE_BLOCK_SIZE controls HTTP PUT request size for the Azure staged-block
+# protocol; the Azure SDK reads the source stream in this-sized chunks.
+# 1 MiB: SDK peak ≈ 2 × 1 MiB = 2 MiB, within the 4.55 MiB lazy threshold
+# (65% × 7 MiB min file).  Yields ~4× fewer staged-block HTTP requests vs
+# the previous 256 KiB value.  Users can override via client_options.
+_AZURE_BLOCK_SIZE = 1 * 1024 * 1024  # 1 MiB
 
 
 class _AzureBinaryIO(io.RawIOBase):
@@ -827,10 +836,7 @@ class AzureBackend(Backend):
 
             opts: dict[str, Any] = dict(self._client_options)
             # BUG-161: force staged-block upload for large streams.
-            # BUG-162: use small blocks to keep pipe-layer memory bounded
-            # (the SDK holds ~2 blocks simultaneously during staged upload).
-            # Users can override via client_options for throughput tuning.
-            _blk = _COPY_BUFSIZE
+            _blk = _AZURE_BLOCK_SIZE
             opts.setdefault("max_single_put_size", _blk)
             opts.setdefault("max_block_size", _blk)
             opts.setdefault("min_large_block_upload_threshold", 1)  # 1 byte = always stage
@@ -862,8 +868,7 @@ class AzureBackend(Backend):
             from azure.storage.filedatalake import DataLakeServiceClient
 
             opts: dict[str, Any] = dict(self._client_options)
-            # BUG-161/BUG-162: same block-size defaults as Blob SDK.
-            _blk = _COPY_BUFSIZE
+            _blk = _AZURE_BLOCK_SIZE
             opts.setdefault("max_single_put_size", _blk)
             opts.setdefault("max_block_size", _blk)
             opts.setdefault("min_large_block_upload_threshold", 1)  # 1 byte = always stage

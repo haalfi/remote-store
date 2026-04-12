@@ -49,7 +49,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.
 
+- **Azure backend guide** (ID-137): Updated `max_block_size` and
+  `max_single_put_size` library defaults from 256 KiB to 1 MiB.
+
 ### Internal
+
+- **Streaming overhead reduction** (ID-137): Reduced per-hop allocations
+  across Memory, SFTP, Azure, and S3-PyArrow backends. Azure block size
+  decoupled from the pipe-layer copy buffer; streaming integrity thresholds
+  recalibrated from e2e measurements.
 
 - **Streaming integrity test hardened** (BUG-161, BUG-162): Memory and chunk
   violations are now hard failures instead of warnings. Non-lazy destinations
