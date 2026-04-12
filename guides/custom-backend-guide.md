@@ -63,7 +63,7 @@ to `store.write_atomic()` raise `CapabilityNotSupported` automatically — you
 don't need to handle it.
 
 Each capability gates specific Store methods. See the
-[Capabilities Matrix](capabilities-matrix.md) for the full list.
+[Capability reference](api/capabilities.md) for the full list.
 
 ---
 
