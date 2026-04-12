@@ -5,6 +5,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-164 — `docs.yml` `pages` job blocked by environment protection rules on release tags**
+  `docs.yml` ran in tag ref context (`refs/tags/vX.Y.Z`) on `release: published` events;
+  the `github-pages` environment protection rules only allow branch refs. Extracted the
+  `pages` job into a new `gh-pages-deploy.yml` triggered by `workflow_run` on `Docs`
+  completion — which always runs in the default branch context (branch ref), satisfying
+  the environment protection. (`push: gh-pages` was ruled out: `GITHUB_TOKEN` pushes
+  do not re-trigger workflows.) Removed now-unused `pages` and `id-token` permissions
+  from `docs.yml`.
+  PR #424.
+
 - [x] **BK-150 — Design index and Further Reading reshape**
   Fixed the mixed-mode / overlap state left after PR #418. `design/` now
   surfaces every `sdd/` process document: added `documentation-standards.md`
