@@ -46,6 +46,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Documentation
 
+- **Documentation content longevity rules** (BK-148): New `sdd/CONTENT-RULES.md`
+  keeps prose from drifting out of sync with code and generated artefacts.
+  `DOCUMENTATION.md` and `CLAUDE.md` updated to reference it.
+
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.
 

@@ -5,6 +5,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-148 — Documentation content longevity rules**
+  New `sdd/CONTENT-RULES.md` keeps prose from drifting out of sync with code
+  and generated artefacts; `sdd/research/research-doc-content-longevity.md`
+  records the motivating analysis. Wired into the existing doc ecosystem via
+  `CLAUDE.md`, `DOCUMENTATION.md`, `CONTRIBUTING.md`, and `CLAUDE-REFERENCE.md`.
+  Cleanup of existing docs against the rules is tracked as BK-149. PR #413.
+
 - [x] **ID-137 — Reduce per-backend streaming overhead**
   All five sub-items addressed: (1) S3-PyArrow `open_output_stream` now passes
   `buffer_size=_COPY_BUFSIZE`; (2) Memory `read()` constructs `BytesIO`

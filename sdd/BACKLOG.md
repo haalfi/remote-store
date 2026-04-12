@@ -45,6 +45,10 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-149 — Apply CONTENT-RULES.md to existing README, guides, and docstrings**
+  Cleanup pass against the rules established in BK-148. Findings in
+  `sdd/research/research-doc-content-longevity.md`.
+
 - [ ] **BK-139b — Implement remaining bug prevention measures from research**
   Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
   Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Items 4, 5, 7 shipped.
