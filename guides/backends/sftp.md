@@ -111,7 +111,7 @@ backend = SFTPBackend(
 
 ## Capabilities
 
-The SFTP backend supports 10 of 12 capabilities. `GLOB` and `ATOMIC_MOVE` are not supported.
+The SFTP backend supports all capabilities except `GLOB` and `ATOMIC_MOVE`.
 
 | Capability | Supported | Notes |
 |------------|-----------|-------|

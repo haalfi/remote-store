@@ -119,7 +119,7 @@ Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` h
 
 ## Capabilities
 
-10 of 12 capabilities are supported. `SEEKABLE_READ` and `ATOMIC_MOVE` are not supported.
+Supports all capabilities except `SEEKABLE_READ` and `ATOMIC_MOVE`.
 
 | Capability | Supported | Notes |
 |------------|-----------|-------|

@@ -29,7 +29,7 @@ with Registry(config) as registry:
 
 ## Capabilities
 
-All 12 capabilities are supported. The local backend is the reference implementation.
+All capabilities are supported. The local backend is the reference implementation.
 
 | Capability | Supported | Notes |
 |------------|-----------|-------|

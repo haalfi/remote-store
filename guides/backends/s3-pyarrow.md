@@ -83,7 +83,7 @@ PyArrow reads Parquet files through the
 [adapter](../pyarrow-adapter.md), it uses C++ range requests and I/O coalescing
 directly — no Python in the loop.
 
-Both backends support 11 of 12 capabilities (only `ATOMIC_MOVE` is missing) and are fully interchangeable -- switch by changing the `type` in your config.
+Both backends support all capabilities except `ATOMIC_MOVE` and are fully interchangeable -- switch by changing the `type` in your config.
 
 ## Escape Hatch
 

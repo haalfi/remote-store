@@ -42,7 +42,7 @@ with Registry(config) as registry:
 
 ## Capabilities
 
-10 of 12 capabilities are supported: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `ATOMIC_MOVE`, `METADATA`, `SEEKABLE_READ`. Does not declare `GLOB` (no native pattern matching — use `ext.glob.glob_files()` as a portable fallback) or `LAZY_READ` (all data lives in process memory; streams wrap pre-loaded bytes).
+Supports all capabilities except `GLOB` (no native pattern matching — use `ext.glob.glob_files()` as a portable fallback) and `LAZY_READ` (all data lives in process memory; streams wrap pre-loaded bytes).
 
 `write_atomic()` behaves identically to `write()` — in-memory writes are inherently atomic.
 

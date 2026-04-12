@@ -59,7 +59,7 @@ with Registry(config) as registry:
 
 ## Capabilities
 
-3 of 12 capabilities are supported. This is a read-only backend.
+This is a read-only backend. Only read-related capabilities are supported.
 
 | Capability | Supported | Notes |
 |---|---|---|
