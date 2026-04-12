@@ -49,13 +49,6 @@ Items graduate through the SDD pipeline:
   Cleanup pass against the rules established in BK-148. Findings in
   `sdd/research/research-doc-content-longevity.md`.
 
-- [ ] **BK-139b — Implement remaining bug prevention measures from research**
-  Follow-up on [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md).
-  Items 1–3 shipped (see BK-139a in BACKLOG-DONE.md). Items 4, 5, 7 shipped.
-  Remaining:
-  6. `scripts/check_error_handling.py` AST script (~80 lines) — deferred until
-     items 4–5 prove insufficient; conformance error fidelity tests may suffice.
-
 ---
 
 ## Ideas
@@ -216,6 +209,16 @@ Items graduate through the SDD pipeline:
 ## Icebox
 
 Deferred indefinitely — revisit only if demand or circumstances change.
+
+- [ ] **BK-139b — Implement remaining bug prevention measures from research**
+  Items 1–3 shipped as BK-139a; items 4, 5, 7 shipped as BK-139b (see
+  BACKLOG-DONE.md). Only item 6 remains: `scripts/check_error_handling.py`
+  (~80 lines) — an AST script flagging broad exception handlers that silently
+  return without checking `errno`. Deferred because BLE rules (item 4) and the
+  extended conformance error-fidelity category (item 5) cover the same
+  error-swallowing bug class with less maintenance overhead. Reactivate if a
+  new error-swallowing bug escapes those nets.
+  Related: [research](research/research-bug-prevention-beyond-testing.md).
 
 - [ ] **ID-114 — PyArrow-style bucket path support (research)**
   PyArrow convention: `"bucket/prefix"` embeds bucket in path. Current
