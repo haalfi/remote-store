@@ -182,9 +182,11 @@ contributing_text = _rewrite_links(
         "](sdd/000-process.md)": "](design/process.md)",
         "](sdd/rfcs/rfc-template.md)": "](design/rfcs/rfc-template.md)",
         "](sdd/DESIGN.md)": "](design/design-spec.md)",
+        "](sdd/TESTING.md)": "](design/testing-standards.md)",
         "](sdd/adrs/0008-extension-architecture.md)": "](design/adrs/0008-extension-architecture.md)",
         "](guides/custom-backend-guide.md)": "](custom-backend-guide.md)",
         "](sdd/formal/README.md)": "](https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md)",
+        "](CLAUDE.md)": "](https://github.com/haalfi/remote-store/blob/master/CLAUDE.md)",
     },
 )
 with mkdocs_gen_files.open("contributing.md", "w") as f:
