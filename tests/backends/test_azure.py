@@ -10,7 +10,7 @@ from __future__ import annotations
 import io
 import uuid
 from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -1310,3 +1310,60 @@ class TestAzureDelCleanup:
         backend = _make_backend()
         result = backend.__del__()
         assert result is None
+
+
+# =============================================================================
+# _blob_service opts (AZ-022, AZ-031)
+# =============================================================================
+
+
+class TestBlobServiceOpts:
+    """AZ-022, AZ-031: _blob_service passes correct block-size opts to BlobServiceClient."""
+
+    _CONN_STR = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KXkJ4MIK7JUCA==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+
+    @pytest.mark.spec("AZ-022")
+    def test_blob_service_default_block_size(self) -> None:
+        """_blob_service passes max_block_size=1 MiB and max_single_put_size=1 MiB by default."""
+        backend = AzureBackend(container="test", connection_string=self._CONN_STR)
+
+        captured_kwargs: dict[str, Any] = {}
+
+        def fake_from_conn_str(conn_str: str, **kwargs: Any) -> MagicMock:
+            captured_kwargs.update(kwargs)
+            return MagicMock(spec=BlobServiceClient)
+
+        with patch(
+            "azure.storage.blob.BlobServiceClient.from_connection_string",
+            side_effect=fake_from_conn_str,
+        ):
+            _ = backend._blob_service
+
+        assert captured_kwargs["max_block_size"] == 1 * 1024 * 1024
+        assert captured_kwargs["max_single_put_size"] == 1 * 1024 * 1024
+
+    @pytest.mark.spec("AZ-031")
+    def test_blob_service_client_options_override_wins(self) -> None:
+        """User-supplied client_options values take precedence over library defaults."""
+        custom_block = 512 * 1024
+        backend = AzureBackend(
+            container="test",
+            connection_string=self._CONN_STR,
+            client_options={"max_block_size": custom_block},
+        )
+
+        captured_kwargs: dict[str, Any] = {}
+
+        def fake_from_conn_str(conn_str: str, **kwargs: Any) -> MagicMock:
+            captured_kwargs.update(kwargs)
+            return MagicMock(spec=BlobServiceClient)
+
+        with patch(
+            "azure.storage.blob.BlobServiceClient.from_connection_string",
+            side_effect=fake_from_conn_str,
+        ):
+            _ = backend._blob_service
+
+        # User override wins; max_single_put_size falls back to the library default.
+        assert captured_kwargs["max_block_size"] == custom_block
+        assert captured_kwargs["max_single_put_size"] == 1 * 1024 * 1024

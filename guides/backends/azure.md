@@ -154,8 +154,8 @@ to keep memory usage bounded during streaming transfers:
 
 | Setting | Library default | SDK default |
 |---------|----------------|-------------|
-| `max_single_put_size` | 256 KiB | 64 MiB |
-| `max_block_size` | 256 KiB | 4 MiB |
+| `max_single_put_size` | 1 MiB | 64 MiB |
+| `max_block_size` | 1 MiB | 4 MiB |
 | `min_large_block_upload_threshold` | 1 | 4 MiB + 1 |
 
 These defaults cause uploads to use staged-block requests with small blocks.

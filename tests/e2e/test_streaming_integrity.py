@@ -66,8 +66,11 @@ FILE_SIZE_MAX = 14 * 1_048_576  # 14 MiB
 DRAIN_CHUNK = 1_048_576  # 1 MiB read chunks for checksum verification
 
 # Pipe cost: transfer layer overhead (transfer.py + streams.py + _stream.py).
-# With _COPY_BUFSIZE = 256 KiB, peak is 2 * 256 KiB = 512 KiB (current +
-# previous chunk).  Threshold at 768 KiB gives 50% headroom.
+# _COPY_BUFSIZE controls the pipe chunk size (currently 256 KiB); peak is
+# ~2 * _COPY_BUFSIZE (current + previous chunk in flight).  This measures
+# the transfer-layer pipe cost only — Azure SDK block size (_AZURE_BLOCK_SIZE,
+# 1 MiB) is an SDK-internal setting and does not affect this threshold.
+# Threshold at 768 KiB gives 50% headroom over 2 * 256 KiB = 512 KiB.
 PIPE_THRESHOLD = 768 * 1024  # 768 KiB
 
 # Total cost thresholds (as multipliers of file_size).

@@ -5,6 +5,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-137 — Reduce per-backend streaming overhead**
+  All five sub-items addressed: (1) S3-PyArrow `open_output_stream` now passes
+  `buffer_size=_COPY_BUFSIZE`; (2) Memory `read()` constructs `BytesIO`
+  directly inside the lock (one fewer allocation); (3) SFTP `_CHUNK_SIZE`
+  raised 32 KiB → 256 KiB; (4) Memory write ~10% over-allocation confirmed
+  as standard Python `bytearray` growth, by-design; (5) Azure
+  `max_block_size`/`max_single_put_size` raised 256 KiB → 1 MiB via new
+  `_AZURE_BLOCK_SIZE` constant, decoupled from `_COPY_BUFSIZE`.
+  Azure backend guide table updated. Spec MEM-010 updated.
+
 - [x] **ID-136 — Document SQL backend non-lazy write as by-design**
   Backend guide, capabilities matrix, and docstring updated. Code comment
   shipped in PR #407.

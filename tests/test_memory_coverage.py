@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import io
 
 import pytest
@@ -267,7 +268,6 @@ class TestMemoryListingCorrectness:
     @pytest.mark.spec("BK-123")
     def test_concurrent_write_and_listing_no_deadlock(self, mb: MemoryBackend) -> None:
         """Concurrent writes + listings must not deadlock."""
-        import concurrent.futures
 
         mb.write("init.txt", b"seed")
 
@@ -351,3 +351,60 @@ class TestMemoryBackendResolve:
     def test_details_is_empty(self, mb: MemoryBackend) -> None:
         plan = mb.resolve("file.txt")
         assert len(plan.details) == 0
+
+
+# ---------------------------------------------------------------------------
+# MEM-010: concurrent read+write — no torn reads
+# ---------------------------------------------------------------------------
+
+
+class TestMemoryReadConcurrency:
+    """MEM-010: read() lock scope covers the full byte-copy; readers see only whole payloads."""
+
+    @pytest.mark.spec("MEM-010")
+    def test_concurrent_read_write_no_torn_data(self, mb: MemoryBackend) -> None:
+        """Concurrent readers and writers must not produce partial (torn) payloads.
+
+        Writers overwrite the key alternating between two known payloads.
+        Every completed read must return exactly one of those two payloads —
+        never a mix of bytes from both.
+        """
+        payload_a = b"A" * 50_000
+        payload_b = b"B" * 50_000
+        valid = {payload_a, payload_b}
+
+        mb.write("f.bin", payload_a)
+
+        errors: list[Exception] = []
+        bad_reads: list[bytes] = []
+
+        def reader() -> None:
+            try:
+                for _ in range(50):
+                    result = mb.read("f.bin").read()
+                    if result not in valid:
+                        bad_reads.append(result)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(exc)
+
+        def writer() -> None:
+            try:
+                for i in range(50):
+                    payload = payload_a if i % 2 == 0 else payload_b
+                    mb.write("f.bin", payload, overwrite=True)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(exc)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            futures = [pool.submit(reader) for _ in range(4)]
+            futures += [pool.submit(writer) for _ in range(4)]
+            concurrent.futures.wait(futures, timeout=30)
+            for f in futures:
+                if not f.done():
+                    pytest.fail("Deadlock detected: thread did not complete within 30s")
+
+        assert not errors, f"Concurrent operations raised: {errors}"
+        assert not bad_reads, (
+            f"Torn read detected: {len(bad_reads)} result(s) were neither payload_a nor payload_b. "
+            f"First bad result length: {len(bad_reads[0])}"
+        )

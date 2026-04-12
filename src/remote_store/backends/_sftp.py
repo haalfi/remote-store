@@ -46,8 +46,10 @@ log = logging.getLogger(__name__)
 
 _SFTP_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB, Capability.ATOMIC_MOVE})
 
-# RFC 4253 compliant chunk size for SFTP data transfer
-_CHUNK_SIZE = 32768
+# 256 KiB: reduces round-trips on modern SSH servers while staying
+# within typical negotiated channel window sizes (paramiko fragments
+# internally per SSH packet limits).
+_CHUNK_SIZE = 262144
 
 
 # region: host key policy
