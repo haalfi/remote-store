@@ -83,8 +83,8 @@ your environment with `hatch run bench-report` (summary) or
 `hatch run bench-report-user` (condensed with verdicts).
 
 For a full per-backend comparison of remote-store against the raw SDK and
-fsspec, see the [Detailed Comparative Tables](#detailed-comparative-tables)
-section below.
+fsspec, see the Detailed Comparative Tables section on the
+[Performance page](https://docs.remotestore.dev/stable/performance/).
 
 ## Caveats
 
