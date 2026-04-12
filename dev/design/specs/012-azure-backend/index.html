@@ -5412,6 +5412,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#az-035-staged-block-upload-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-035: Staged-Block Upload Defaults
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#az-032-default-credential-chain" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8703,6 +8714,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#az-035-staged-block-upload-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-035: Staged-Block Upload Defaults
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#az-032-default-credential-chain" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8982,6 +9004,9 @@
 <h3 id="az-031-client-options-passthrough">AZ-031: Client Options Passthrough<a class="headerlink" href="#az-031-client-options-passthrough" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The <code>client_options</code> dict is merged into both the <code>BlobServiceClient</code> and <code>DataLakeServiceClient</code> configurations, allowing advanced settings (custom timeouts, retry policies, proxies, API version overrides, etc.).
 <strong>Postconditions:</strong> Explicit constructor parameters (<code>account_key</code>, <code>sas_token</code>, <code>credential</code>, etc.) take precedence over keys in <code>client_options</code>.</p>
+<h3 id="az-035-staged-block-upload-defaults">AZ-035: Staged-Block Upload Defaults<a class="headerlink" href="#az-035-staged-block-upload-defaults" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>_blob_service</code> and <code>_datalake_service</code> set <code>max_block_size</code> and <code>max_single_put_size</code> to <code>_AZURE_BLOCK_SIZE</code> (1 MiB) via <code>setdefault</code>, and force <code>min_large_block_upload_threshold = 1</code> (1 byte — always stage). User-supplied <code>client_options</code> values take precedence (AZ-031).</p>
+<p><strong>Rationale:</strong> Bounds Azure SDK in-flight memory to ~2 × <code>_AZURE_BLOCK_SIZE</code> ≈ 2 MiB, within the streaming integrity threshold (65% × 7 MiB minimum file). <code>_AZURE_BLOCK_SIZE</code> is kept separate from <code>_COPY_BUFSIZE</code> (the pipe-layer copy buffer) because HTTP block granularity and Python-level streaming are independent concerns.</p>
 <h3 id="az-032-default-credential-chain">AZ-032: Default Credential Chain<a class="headerlink" href="#az-032-default-credential-chain" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When no explicit credential is provided (<code>account_key</code>, <code>sas_token</code>, <code>connection_string</code>, and <code>credential</code> are all <code>None</code>), the backend attempts to use <code>DefaultAzureCredential</code> from <code>azure-identity</code>.
 <strong>Raises:</strong> <code>BackendUnavailable</code> if <code>azure-identity</code> is not installed and no explicit credential is provided.

@@ -10400,11 +10400,23 @@
 </ul>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>SQL blob non-lazy write</strong> (ID-136): Backend guide, capabilities matrix,
-  and docstring updated.</li>
+<li>
+<p><strong>SQL blob non-lazy write</strong> (ID-136): Backend guide, capabilities matrix,
+  and docstring updated.</p>
+</li>
+<li>
+<p><strong>Azure backend guide</strong> (ID-137): Updated <code>max_block_size</code> and
+  <code>max_single_put_size</code> library defaults from 256 KiB to 1 MiB.</p>
+</li>
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>Streaming overhead reduction</strong> (ID-137): Reduced per-hop allocations
+  across Memory, SFTP, Azure, and S3-PyArrow backends. Azure block size
+  decoupled from the pipe-layer copy buffer; streaming integrity thresholds
+  recalibrated from e2e measurements.</p>
+</li>
 <li>
 <p><strong>Streaming integrity test hardened</strong> (BUG-161, BUG-162): Memory and chunk
   violations are now hard failures instead of warnings. Non-lazy destinations

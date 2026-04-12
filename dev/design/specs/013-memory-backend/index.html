@@ -8873,30 +8873,31 @@ debugger tooltip triggering <code>repr</code> on a 10M-file backend).</p>
 <p>All operations follow the <code>Backend</code> ABC contract (spec 003). This section
 documents memory-specific behavior only.</p>
 <h3 id="mem-010-read-stream-type">MEM-010: read() — Stream Type<a class="headerlink" href="#mem-010-read-stream-type" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> that is <strong>not</strong> <code>io.BytesIO</code>.</p>
+<p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> that is a seekable, closable
+<code>io.BytesIO</code> wrapping an independent copy of the file content.</p>
 <p><strong>Implementation:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="n">entry</span> <span class="o">=</span> <span class="o">...</span>  <span class="c1"># traverse to _FileEntry, raise NotFound if missing</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="n">snapshot</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># immutable copy under lock</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="k">return</span> <span class="n">io</span><span class="o">.</span><span class="n">BufferedReader</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">snapshot</span><span class="p">))</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># copy happens inside the lock</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="k">return</span> <span class="n">result</span>
 </code></pre></div>
-The <code>bytes()</code> copy is taken under the lock so that a concurrent <code>write()</code> cannot
-mutate the <code>bytearray</code> while the snapshot is being created. The lock is released
-before the <code>BufferedReader</code> wrapper is returned — the caller reads from an
-immutable copy without holding the lock. The returned stream is seekable and
-closable.</p>
-<p><strong>Contract note:</strong> <code>io.BufferedReader</code> officially wraps <code>io.RawIOBase</code>, and
-<code>io.BytesIO</code> extends <code>io.BufferedIOBase</code>, not <code>RawIOBase</code>. However, CPython
-(and all known implementations) accepts <code>BytesIO</code> as a <code>BufferedReader</code>
-argument because <code>BytesIO</code> implements the required <code>readinto()</code> / <code>read()</code>
-protocol. This works on CPython 3.10–3.14 and PyPy. If a future runtime
-rejects this, the fallback is a thin <code>io.RawIOBase</code> subclass that delegates
-<code>readinto()</code> to a <code>memoryview</code> over the content bytes — trivial to implement.</p>
-<p><strong>Rationale:</strong> The conformance test <code>test_read_returns_true_stream_not_bytesio</code>
-exists because <code>BytesIO</code> is a sign that a backend loaded everything into memory
-instead of streaming. For a memory backend that distinction is moot — the data
-<em>is</em> memory — but the wrapping is trivial and maintains conformance.</p>
+<code>io.BytesIO(bytearray)</code> copies the buffer immediately during <code>__init__</code>,
+before the lock is released. The returned <code>BytesIO</code> therefore holds an
+independent snapshot: a concurrent <code>write()</code> that mutates the <code>bytearray</code>
+after the lock releases cannot affect the caller's copy. The lock is held only
+for the traversal and the copy; the caller reads from the returned stream
+without holding the lock.</p>
+<p><strong>Allocation rationale:</strong> Constructing <code>BytesIO</code> directly from <code>node.data</code>
+eliminates the intermediate <code>bytes(node.data)</code> object that a two-step approach
+(<code>snapshot = bytes(node.data); return io.BytesIO(snapshot)</code>) would require.
+One copy instead of two — the byte buffer is allocated once, inside the
+<code>BytesIO</code>, under the lock.</p>
+<p><strong>Note:</strong> This returns a plain <code>io.BytesIO</code>. The conformance test
+<code>test_read_returns_true_stream_not_bytesio</code> does not apply to <code>MemoryBackend</code>
+— that test targets backends that naively return <code>BytesIO</code> <em>without</em> copying
+(i.e., exposing a live internal buffer). Here the copy is always made, so the
+returned <code>BytesIO</code> is independent and safe.</p>
 <h3 id="mem-011-read_bytes-copy-semantics">MEM-011: read_bytes() — Copy Semantics<a class="headerlink" href="#mem-011-read_bytes-copy-semantics" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>read_bytes(path)</code> returns <code>bytes(entry.data)</code>.</p>
 <p>The caller receives an immutable copy. Mutations to the returned bytes cannot
@@ -9000,9 +9001,9 @@ where contention is rare.</p>
 <p><strong>Postconditions:</strong> The lock is never held during caller consumption of returned
 data. Specifically:</p>
 <ul>
-<li><code>read()</code> snapshots <code>bytes(entry.data)</code> under the lock, wraps in
-  <code>BufferedReader</code>, releases the lock, then returns the wrapper. The caller
-  reads from the wrapper without holding the lock.</li>
+<li><code>read()</code> constructs <code>io.BytesIO(node.data)</code> under the lock — the constructor
+  copies the buffer immediately — then releases the lock and returns the
+  <code>BytesIO</code>. The caller reads from an independent copy without holding the lock.</li>
 <li><code>list_files()</code> and <code>list_folders()</code> <strong>eagerly collect</strong> all results into a
   list under the lock, release it, then return <code>iter(list)</code>. This avoids
   holding the lock during caller iteration (which would deadlock if the caller
