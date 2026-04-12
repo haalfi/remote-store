@@ -3,9 +3,9 @@
 Runs during the MkDocs build via mkdocs-gen-files.  Static authored content
 lives in docs-src/ (the docs_dir).  This script handles only:
 
-  1. Scanning sdd/ for specs, ADRs, RFCs, and research docs
+  1. Scanning sdd/ for specs, ADRs, RFCs, audits, and research docs
   2. Filling .tmpl templates with dynamic rows
-  3. Creating include-wrapper pages for each spec/ADR/RFC
+  3. Creating include-wrapper pages for each spec/ADR/RFC/audit
   4. Rewriting links in contributing.md and design/process.md
   5. Copying assets/ into the virtual filesystem
   5b. Scanning examples/ and generating wrapper pages (ID-058)
@@ -44,7 +44,7 @@ def _scan_entries(
         if p.stem in skip:
             continue
         # Extract number from the filename
-        if p.stem.startswith("rfc-"):
+        if p.stem.startswith(("rfc-", "audit-")):
             parts = p.stem.split("-", 2)
             num = parts[1] if len(parts) > 1 else p.stem
         else:
@@ -83,6 +83,11 @@ research_entries = _scan_entries(
     "research-*.md",
     prefix_patterns=["Research: "],
 )
+audit_entries = _scan_entries(
+    ROOT / "sdd" / "audits",
+    "audit-*.md",
+    prefix_patterns=["Audit {num} -- ", "Audit {num} — "],
+)
 
 # ---------------------------------------------------------------------------
 # 2. Fill .tmpl templates → write as virtual pages
@@ -106,6 +111,12 @@ tmpl = (DOCS_SRC / "design" / "rfcs" / "_index.tmpl").read_text(encoding="utf-8"
 with mkdocs_gen_files.open("design/rfcs/index.md", "w") as f:
     f.write(tmpl.replace("{{ rfc_rows }}", rfc_rows))
 
+# --- design/audits/index.md ---
+audit_rows = "\n".join(f"| {num} | [{title}]({slug}.md) |" for num, slug, title in audit_entries)
+tmpl = (DOCS_SRC / "design" / "audits" / "_index.tmpl").read_text(encoding="utf-8")
+with mkdocs_gen_files.open("design/audits/index.md", "w") as f:
+    f.write(tmpl.replace("{{ audit_rows }}", audit_rows))
+
 # --- design/research/index.md ---
 research_rows = "\n".join(f"| {title} | [{title}]({slug}.md) |" for _num, slug, title in research_entries)
 tmpl = (DOCS_SRC / "design" / "research" / "_index.tmpl").read_text(encoding="utf-8")
@@ -116,6 +127,7 @@ with mkdocs_gen_files.open("design/research/index.md", "w") as f:
 spec_links = "\n".join(f"- [{num}: {title}](specs/{slug}.md)" for num, slug, title in spec_entries)
 adr_links = "\n".join(f"- [{num}: {title}](adrs/{slug}.md)" for num, slug, title in adr_entries)
 rfc_links = "\n".join(f"- [{num}: {title}](rfcs/{slug}.md)" for num, slug, title in rfc_entries)
+audit_links = "\n".join(f"- [{num}: {title}](audits/{slug}.md)" for num, slug, title in audit_entries)
 research_links = "\n".join(f"- [{title}](research/{slug}.md)" for _num, slug, title in research_entries)
 tmpl = (DOCS_SRC / "design" / "_index.tmpl").read_text(encoding="utf-8")
 with mkdocs_gen_files.open("design/index.md", "w") as f:
@@ -123,6 +135,7 @@ with mkdocs_gen_files.open("design/index.md", "w") as f:
         tmpl.replace("{{ spec_links }}", spec_links)
         .replace("{{ adr_links }}", adr_links)
         .replace("{{ rfc_links }}", rfc_links)
+        .replace("{{ audit_links }}", audit_links)
         .replace("{{ research_links }}", research_links)
     )
 
@@ -146,6 +159,11 @@ for _num, slug, _title in adr_entries:
 for _num, slug, _title in rfc_entries:
     content = (ROOT / "sdd" / "rfcs" / f"{slug}.md").read_text(encoding="utf-8")
     with mkdocs_gen_files.open(f"design/rfcs/{slug}.md", "w") as f:
+        f.write(content)
+
+for _num, slug, _title in audit_entries:
+    content = (ROOT / "sdd" / "audits" / f"{slug}.md").read_text(encoding="utf-8")
+    with mkdocs_gen_files.open(f"design/audits/{slug}.md", "w") as f:
         f.write(content)
 
 for _num, slug, _title in research_entries:

@@ -5,6 +5,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-150 — Design index and Further Reading reshape**
+  Fixed the mixed-mode / overlap state left after PR #418. `design/` now
+  surfaces every `sdd/` process document: added `documentation-standards.md`
+  and `content-rules.md` include-wrappers for `sdd/DOCUMENTATION.md` and
+  `sdd/CONTENT-RULES.md`; added Audits section — `gen_pages.py` scans
+  `sdd/audits/` and generates `design/audits/index.md` plus per-audit wrapper
+  pages; `_scan_entries` extended to accept `audit-NNN-*` stems.
+  `further-reading.md` stops duplicating the SDD / conventions / research
+  enumeration (CONTENT-RULES rule 4 — one copy per fact) and points at
+  `design/`; documentation-convention links switched from GitHub to on-site
+  relative links now that the pages exist (DOCUMENTATION.md § 4).
+  PR #420.
+
 - [x] **BK-149 — Apply CONTENT-RULES.md to Reference section (part 1)**
   Reference section cleanup: stale capability counts removed from 8 backend
   guides; duplicate capability tables replaced with links to

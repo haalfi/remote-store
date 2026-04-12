@@ -58,9 +58,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.
 
-- **Further Reading refresh**: Page now surfaces the spec/decision trail, code
-  and doc conventions, and community/policy files. Contributing and Development
-  Story dropped from the top nav; both remain reachable via Further Reading.
+- **Design index and Further Reading reshaped** (BK-150): `design/` now
+  surfaces every `sdd/` process document — Design, Testing, Documentation
+  Standards, Content Rules, Process — plus a new Audits section generated
+  from `sdd/audits/`. `further-reading.md` stops duplicating
+  the SDD trail and points at `design/` instead; it keeps only
+  documentation-convention and community/policy links (Contributing,
+  Dev Story, Changelog, Security, Code of Conduct, Citation).
+  Contributing and Development Story dropped from the top nav.
 
 - **Azure backend guide** (ID-137): Updated `max_block_size` and
   `max_single_put_size` library defaults from 256 KiB to 1 MiB.
