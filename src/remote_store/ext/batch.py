@@ -4,18 +4,18 @@ All functions call Store methods one-by-one by default (sequential). Pass
 ``concurrent=True`` to use a ``ThreadPoolExecutor``
 for parallel I/O — cloud backends benefit significantly from this.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.batch import batch_delete, batch_copy, batch_exists
+    ```python
+    from remote_store.ext.batch import batch_delete, batch_copy, batch_exists
 
-result = batch_delete(store, ["a.txt", "b.txt"], missing_ok=True)
-result = batch_copy(store, [("a.txt", "copy.txt")], overwrite=True)
-exists_map = batch_exists(store, ["a.txt", "missing.txt"])
+    result = batch_delete(store, ["a.txt", "b.txt"], missing_ok=True)
+    result = batch_copy(store, [("a.txt", "copy.txt")], overwrite=True)
+    exists_map = batch_exists(store, ["a.txt", "missing.txt"])
 
-# Parallel execution (cloud backends):
-result = batch_delete(store, keys, concurrent=True, max_workers=8)
-```
+    # Parallel execution (cloud backends):
+    result = batch_delete(store, keys, concurrent=True, max_workers=8)
+    ```
 """
 
 from __future__ import annotations

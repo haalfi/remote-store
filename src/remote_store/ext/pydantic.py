@@ -2,19 +2,19 @@
 
 Install with ``pip install "remote-store[pydantic]"``.
 
-Usage:
+!!! example
 
-```python
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from remote_store.ext.pydantic import from_pydantic
+    ```python
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+    from remote_store.ext.pydantic import from_pydantic
 
-class MySettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="RS_", env_nested_delimiter="__")
-    backends: dict = {}
-    stores: dict = {}
+    class MySettings(BaseSettings):
+        model_config = SettingsConfigDict(env_prefix="RS_", env_nested_delimiter="__")
+        backends: dict = {}
+        stores: dict = {}
 
-config = from_pydantic(MySettings())
-```
+    config = from_pydantic(MySettings())
+    ```
 """
 
 from __future__ import annotations

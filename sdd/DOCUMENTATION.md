@@ -53,6 +53,11 @@ Format and style rules are in `sdd/DESIGN.md` § 4. This section covers what mkd
 
 Supplementary context that does not fit Args/Returns/Raises goes in a `Notes:` block, not scattered inline or appended to the summary line.
 
+Use ``Example:`` (not ``Usage:``) for code snippets in docstrings. In class/function
+docstrings, mkdocstrings renders ``Example:`` as a collapsible box. For module-level
+docstrings, use MkDocs admonition syntax: ``!!! example`` with indented code blocks
+(Google sections don't parse in module docstrings).
+
 No TODOs or placeholders in published docstrings.
 
 ### 4. Cross-linking requirements
@@ -146,3 +151,105 @@ Cross-references replace duplication, but actionable checklists should be co-loc
 | `guides/cache.md` | `ext.cache` API | `[CachedStore](../api/ext/cache.md)` |
 | `Store.read` docstring | Streaming guide | `See the [Streaming Guide](../guides/streaming.md)` |
 | `guides/backends/s3.md` | Capabilities matrix | `[Capabilities](../capabilities-matrix.md)` |
+
+## 8. API page building blocks
+
+Reusable structural blocks for `docs-src/api/` pages. `store.md` is the
+canonical example. Apply the appropriate page-type template (see below) and
+compose from these blocks.
+
+### Blocks
+
+**Class header** — renders the class summary only; methods follow in explicit
+sections.
+
+```markdown
+::: remote_store.ClassName
+    options:
+      members: false
+
+!!! note "Key behavioral fact"
+    One-sentence callout for a fact that callers must know before reading
+    any method (e.g. thread safety, context-manager usage, immutability).
+```
+
+**Method section** — groups related methods under a heading; each method gets
+its own directive so admonitions can be inserted between them.
+
+```markdown
+## Section Name
+
+::: remote_store.ClassName.method_one
+    options:
+      show_root_heading: true
+      heading_level: 3
+
+!!! note "Backend-specific behavior"
+    Short callout that applies to the method(s) above.
+
+::: remote_store.ClassName.method_two
+    options:
+      show_root_heading: true
+      heading_level: 3
+```
+
+**Behavioral note** — inline admonition between methods for backend-dependent
+or surprising behavior.
+
+```markdown
+!!! note "Ordering and laziness"
+    Short, concrete statement. One or two sentences max.
+```
+
+**Warning block** — marks non-portable or backend-specific API surface.
+
+```markdown
+!!! warning "Backend-specific methods"
+    Methods in this section expose backend internals. Using them ties your
+    code to a specific backend. For portable alternatives, use the methods
+    above.
+```
+
+**Backend behavior matrix** — cross-backend comparison table; only include
+when behavioral variation is significant enough to warrant a lookup table.
+
+```markdown
+## Backend Behavior Matrix
+
+| Behavior | [Local](../backends/local.md) | [S3](../backends/s3.md) | ... |
+|----------|-------------------------------|-------------------------|-----|
+| Row description | value | value | ... |
+
+Verify against actual code before relying on these in production.
+```
+
+**Related types** — inline footer line linking to companion types.
+
+```markdown
+**Related types:** [`TypeA`](models.md), [`TypeB`](capabilities.md).
+```
+
+**See also** — footer section; every API page requires at least one entry
+(its primary guide or a matching example).
+
+```markdown
+## See also
+
+- [Guide name](../guide-path.md) — one-line description
+- [Example name](../examples/example-path.md) — one-line description
+```
+
+### Page-type templates
+
+| Page type | Required blocks | Optional blocks |
+|---|---|---|
+| **Rich class** (Store, AsyncStore) | Class header, Method sections, See also | Behavioral notes, Warning block, Behavior matrix, Related types |
+| **Protocol / ABC** (Backend) | Class header, Method sections, See also | Behavioral notes |
+| **Support class** (ProxyStore, Registry, Config, Models, RemotePath, Info, SFTPUtils) | Intro prose or class header, `:::` (all members), See also | Behavioral notes |
+| **Enum / flags** (Capability, CapabilitySet) | `:::` per type, See also | -- |
+| **Error hierarchy** (Errors) | Flat `:::` per error class, See also | -- |
+
+**Intro prose** (support classes) — one short paragraph before the `:::`
+directive when the class needs orientation that does not fit in the docstring
+(e.g. design rationale, relationship to other classes). Keep it under 4
+sentences; link to an ADR for deeper background.
