@@ -1,7 +1,7 @@
 """Async Store -- async/await usage with any backend.
 
-Demonstrates the async Store API: reading, writing, streaming, listing,
-child stores, and context manager lifecycle.
+Demonstrates the async Store API with read, write, listing, and child
+store patterns.
 """
 
 from __future__ import annotations
