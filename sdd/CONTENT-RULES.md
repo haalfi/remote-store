@@ -30,9 +30,8 @@ the tag will differentiate when that happens.
 
 4. **One copy per fact** [review-enforced]
    — Every fact lives in exactly one authoritative place; everywhere else is a link
-   or a paraphrase of the principle. Extras → `pyproject.toml`. Capabilities →
-   `FEATURES.md`. Method signatures → source code. README and guides link; they
-   do not copy.
+   or a paraphrase of the principle. The authoritative home for each content type
+   is in `sdd/DOCUMENTATION.md` § 2. README and guides link; they do not copy.
 
 5. **Source-code facts stay in source** [review-enforced]
    — API signatures, capability sets, type annotations, default values live in code.
@@ -52,8 +51,7 @@ the tag will differentiate when that happens.
 
 # Rule 2 — principle over exhaustive list
 # bad
-"Extensions: PyArrow adapter, Parquet, Batch, Transfer, Observability hooks,
-OTel, Cache, Streams, Integrity, Dagster IO manager, YAML config, Pydantic config."
+"Extensions: <ext-A>, <ext-B>, <ext-C>, <ext-D>, ... <ext-N>."
 # good
 "Extensions add observability, caching, and analytical integrations — see FEATURES.md."
 
@@ -69,5 +67,7 @@ OTel, Cache, Streams, Integrity, Dagster IO manager, YAML config, Pydantic confi
 ### How the rules interact
 
 Rules 2–5 are all expressions of the same principle: **stable prose describes
-shape; volatile detail lives in its authoritative location.** When in doubt,
-ask rule 1.
+shape; volatile detail lives in its authoritative location.** The positive side
+of the same coin: a document is the SSoT for its own stable core — its purpose,
+principles, and design intent. Other documents link to it for those things; they
+do not restate them. When in doubt, ask rule 1.
