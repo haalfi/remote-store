@@ -72,6 +72,12 @@ hatch run all               # lint + format-check + typecheck + test-cov + examp
 - Branch naming: `id-021-store-child`, `fix-streaming-io`, `af-008-credential-masking`, etc.
 - Push the feature branch; the user will create PRs or ask you to.
 
+## Documentation conventions
+
+See `sdd/DOCUMENTATION.md` for structure and placement rules.
+See `sdd/CONTENT-RULES.md` for content quality and longevity rules — apply
+these when writing or reviewing any README, guide, or docstring.
+
 ## Code conventions
 
 See `sdd/DESIGN.md` for the full code style rules. Key points:

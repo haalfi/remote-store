@@ -97,10 +97,14 @@ The README must contain:
 - When NOT to use it (scope boundaries)
 - Installation instructions (base + extras)
 - Minimal working example with expected output
-- Store API overview (method table or summary)
-- Supported backends table
+- Store API overview — a short summary with a link to the API reference; not a
+  method table (that belongs in the reference docs)
+- Supported backends — backend name, install extra, and underlying library;
+  capability detail links to `FEATURES.md` and the capabilities matrix
 - Link to full documentation site, CHANGELOG, and CONTRIBUTING
 - License, supported Python versions, project status badge
+
+Apply `sdd/CONTENT-RULES.md` when writing or reviewing any README section.
 
 ### 7. Research document rules
 

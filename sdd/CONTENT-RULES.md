@@ -1,0 +1,77 @@
+# Documentation Content Rules
+
+## Intent & Scope
+
+Rules for writing documentation that stays accurate over time. Companion to
+`sdd/DOCUMENTATION.md` (structure and placement). Applies to all content:
+README, guides, docstrings, and inline doc comments.
+
+Derived from `sdd/research/research-doc-content-longevity.md`.
+
+## Rules
+
+1. **The 6-month test** [review-enforced]
+   — Before writing any sentence, ask: "Would this still be accurate in 6 months?"
+   If not, it belongs in a linked SSoT or generated artefact — not in stable prose.
+
+2. **Describe principles, not enumerations** [review-enforced]
+   — Write what the system does and why. List 2–3 representative examples and link
+   to the authoritative source. Never reproduce an exhaustive list inline —
+   copies become lies.
+
+3. **No pseudo-precise values in narrative** [review-enforced]
+   — Exact counts, latency figures, and percentages belong in generated artefacts
+   (FEATURES.md, benchmark output, API reference). In prose: qualitative categories
+   and a link. Write "significantly faster via caching" + link — not "+17% / 29×".
+
+4. **One copy per fact** [review-enforced]
+   — Every fact lives in exactly one authoritative place; everywhere else is a link
+   or a paraphrase of the principle. Extras → `pyproject.toml`. Capabilities →
+   `FEATURES.md`. Method signatures → source code. README and guides link; they
+   do not copy.
+
+5. **Source-code facts stay in source** [review-enforced]
+   — API signatures, capability sets, type annotations, default values live in code.
+   Docs describe the pattern and link to the reference; they do not reproduce the
+   values.
+
+6. **Notes for supplementary docstring context** [review-enforced]
+   — Context that does not fit Args/Returns/Raises goes in a `Notes:` block, not
+   scattered inline or appended to the summary line.
+
+## Guides
+
+### Examples (bad → good)
+
+```python
+# Rule 3 — no pseudo-precise values in prose
+# bad
+"For S3, reads add 0.7 ms (+15%) over boto3; listing is 29× faster."
+# good
+"S3 listing is significantly faster via s3fs caching. See the performance guide."
+
+# Rule 2 — principle over exhaustive list
+# bad
+"Extensions: PyArrow adapter, Parquet, Batch, Transfer, Observability hooks,
+OTel, Cache, Streams, Integrity, Dagster IO manager, YAML config, Pydantic config."
+# good
+"Extensions add observability, caching, and analytical integrations — see FEATURES.md."
+
+# Rule 4 — one copy per fact
+# bad: capability table in README copied from FEATURES.md
+# good: "See the capabilities matrix for full backend support detail."
+
+# Rule 5 — source-code facts stay in source
+# bad in README: a method-by-method table listing every Store method
+# good: "See the Store API reference for the full method list."
+```
+
+### How the rules interact
+
+Rules 2–5 are all expressions of the same principle: **stable prose describes
+shape; volatile detail lives in its authoritative location.** When in doubt,
+ask rule 1.
+
+Rule 6 is narrower — it applies only to docstrings — but follows the same
+logic: supplementary context that belongs "somewhere" has a designated place
+(Notes) rather than drifting into prose that breaks the mkdocstrings layout.
