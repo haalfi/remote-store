@@ -62,20 +62,8 @@ Every backend starts with these imports. The key types:
 to `store.write_atomic()` raise `CapabilityNotSupported` automatically — you
 don't need to handle it.
 
-The 10 capabilities and what they gate:
-
-| Capability | Store methods |
-|---|---|
-| `READ` | `read()`, `read_bytes()`, `read_seekable()` |
-| `WRITE` | `write()` |
-| `DELETE` | `delete()`, `delete_folder()` |
-| `LIST` | `list_files()`, `list_folders()`, `iter_children()` |
-| `MOVE` | `move()` |
-| `COPY` | `copy()` |
-| `ATOMIC_WRITE` | `write_atomic()`, `open_atomic()` |
-| `METADATA` | `get_file_info()`, `get_folder_info()` |
-| `GLOB` | `glob()` |
-| `SEEKABLE_READ` | `read()` always returns seekable streams |
+Each capability gates specific Store methods. See the
+[Capabilities Matrix](capabilities-matrix.md) for the full list.
 
 ---
 

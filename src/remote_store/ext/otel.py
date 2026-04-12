@@ -14,12 +14,12 @@ zero-cost no-ops.
     store = observe(store, **otel_hooks())
     ```
 
-Or as a one-liner:
+    Or as a one-liner:
 
-```python
-from remote_store.ext.otel import otel_observe
-observed = otel_observe(store)
-```
+    ```python
+    from remote_store.ext.otel import otel_observe
+    observed = otel_observe(store)
+    ```
 
 Requires: ``pip install "remote-store[otel]"``
 """

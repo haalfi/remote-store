@@ -56,6 +56,8 @@ Before committing, check whether your change has cross-file dependencies:
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
 |                            | `guides/backends/index.md`,                               |
 |                            | `sdd/DOCUMENTATION.md` § Content homes                    |
+| **An API reference page**  | `sdd/DOCUMENTATION.md` § 8 — page-type templates          |
+| (new or restructured)      | and building blocks for required sections                 |
 | **A bug fix**              | `sdd/BACKLOG.md` (item), `CHANGELOG.md` (`[Unreleased]`),|
 |                            | failing test **before** the fix, spec if the bug          |
 |                            | contradicts a spec invariant                              |

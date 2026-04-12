@@ -5,6 +5,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-149 — Apply CONTENT-RULES.md to Reference section (part 1)**
+  Reference section cleanup: stale capability counts removed from 8 backend
+  guides; duplicate capability tables replaced with links to
+  `capabilities-matrix.md`; Capability enum reordered logically; RemotePath
+  unified into `models.md` (path.md deleted); API pages rebuilt with
+  DOCUMENTATION.md § 8 building blocks; ext module docstrings converted to
+  MkDocs admonition syntax. Remainder (Guides, Explanation) tracked as BK-149b.
+  PR #416.
+
 - [x] **ID-134c — Remove SumSizesAddOneLocal workaround after Dafny upgrade**
   Dafny 4.11.0 fixes the Boogie procedure emission bug for lemmas from included
   files that transitively use `:|` in ghost functions. Replaced
