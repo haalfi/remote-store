@@ -1322,7 +1322,7 @@ class TestBlobServiceOpts:
 
     _CONN_STR = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KXkJ4MIK7JUCA==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
 
-    @pytest.mark.spec("AZ-022")
+    @pytest.mark.spec("AZ-035")
     def test_blob_service_default_block_size(self) -> None:
         """_blob_service passes max_block_size=1 MiB and max_single_put_size=1 MiB by default."""
         backend = AzureBackend(container="test", connection_string=self._CONN_STR)
