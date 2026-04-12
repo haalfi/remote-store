@@ -10,9 +10,9 @@ as ADRs; open design questions go through RFCs. The trail is kept on purpose:
 any behavior in the library can be traced back to the document that defined it.
 
 - [SDD Process](design/process.md): specs, ADRs, and RFCs as a workflow
-- [Specs](design/specs/): the contract for each feature
-- [Architecture Decision Records](design/adrs/): decisions made, with context
-- [RFCs](design/rfcs/): proposals and explorations
+- [Specs](design/specs/index.md): the contract for each feature
+- [Architecture Decision Records](design/adrs/index.md): decisions made, with context
+- [RFCs](design/rfcs/index.md): proposals and explorations
 
 ## Code and testing conventions
 
@@ -35,7 +35,7 @@ Before specifying a feature we survey the design space: compare libraries,
 evaluate trade-offs, document findings. These studies may be useful to readers
 facing similar decisions in their own projects.
 
-Browse the full collection on the [Research](design/research/) page.
+Browse the full collection on the [Research](design/research/index.md) page.
 
 ## Project history
 
