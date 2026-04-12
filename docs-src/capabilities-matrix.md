@@ -13,40 +13,40 @@ at runtime before calling an operation.
 | WRITE          | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
 | DELETE         | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
 | LIST           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | Yes |
+| GLOB           | Yes | —   | —   | Yes | Yes | —   | Yes | Yes | Yes |
 | MOVE           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
 | COPY           | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
 | ATOMIC_WRITE   | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
-| ATOMIC_MOVE    | Yes | Yes | —   | —   | —   | —  | —     | Yes | —   |
+| ATOMIC_MOVE    | Yes | Yes | —   | —   | —   | —   | —   | Yes | —   |
 | METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| GLOB           | Yes | —  | —   | Yes | Yes | —  | Yes | Yes | Yes |
-| SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | — | Yes | Yes |
-| LAZY_READ      | Yes | —   | Yes | Yes | Yes | Yes | Yes | — | —  |
+| SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | —   | Yes | Yes |
+| LAZY_READ      | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   | —   |
 
-**Full support (12/12):** Local.
+**Full support:** Local.
 
-**Near-full (11/12):** S3 and S3-PyArrow lack `ATOMIC_MOVE` (copy-then-delete
+**Near-full:** S3 and S3-PyArrow lack `ATOMIC_MOVE` (copy-then-delete
 semantics). SQLBlob lacks `LAZY_READ` — the entire blob is loaded into memory
 before a stream is returned. Writes also materialize the full stream before
 the SQL INSERT/UPDATE because BLOB columns require complete data.
 
-**Partial support (10/12):** Memory lacks native `GLOB` and `LAZY_READ` (all
+**Partial support:** Memory lacks native `GLOB` and `LAZY_READ` (all
 data lives in process memory; use the portable fallback
 `ext.glob.glob_files()` — see the [Glob Pattern Matching](glob-pattern-matching.md) guide).
 SFTP lacks both `GLOB` and `ATOMIC_MOVE`.
 Azure lacks `SEEKABLE_READ` and `ATOMIC_MOVE` (forward-only chunk iterator,
 copy-then-delete move).
 
-**Read-only (5/12):** SQLQuery supports only `READ`, `LIST`, `METADATA`, `GLOB`,
-and `SEEKABLE_READ`.
+**Read-only:** SQLQuery supports `READ`, `LIST`, `METADATA`, `GLOB`,
+and `SEEKABLE_READ` — no write operations.
 
-**Minimal (3/12):** HTTP supports only `READ`, `METADATA`, and `LAZY_READ` (read-only backend).
+**Minimal:** HTTP supports `READ`, `METADATA`, and `LAZY_READ` (read-only backend).
 
 ## Querying capabilities at runtime
 
 ```python
 from remote_store import Capability
 
-if Capability.GLOB in store.capabilities():
+if store.supports(Capability.GLOB):
     results = store.glob("**/*.csv")
 else:
     from remote_store import glob_files

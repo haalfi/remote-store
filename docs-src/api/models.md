@@ -1,5 +1,7 @@
 # Models
 
+::: remote_store.RemotePath
+
 ::: remote_store.PathEntry
 
 ::: remote_store.ContentDigest

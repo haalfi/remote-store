@@ -34,8 +34,8 @@ class AsyncMemoryBackend(AsyncBackend):
     drop-in async backend for unit testing, interactive exploration, and
     documentation examples.
 
-    All 8 capabilities are supported.  The full conformance suite passes
-    with zero skips.
+    Supports all capabilities except ``GLOB``.  The full conformance suite
+    passes with zero skips.
     """
 
     def __init__(self) -> None:

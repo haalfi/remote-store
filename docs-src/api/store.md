@@ -251,7 +251,7 @@ relying on these in production.
 
 **Related types:** `WritableContent = BinaryIO | bytes`,
 [`FileInfo`](models.md), [`FolderInfo`](models.md),
-[`ResolutionPlan`](models.md), [`RemotePath`](path.md),
+[`ResolutionPlan`](models.md), [`RemotePath`](models.md),
 [`Capability`](capabilities.md).
 
 ## See also

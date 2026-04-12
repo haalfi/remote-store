@@ -26,7 +26,7 @@ def demo(store):
     """Capability system and error handling. Returns results dict."""
     results = {}
 
-    # --- All 9 capabilities ---
+    # --- Capability enum ---
     print("=== Capability Enum ===\n")
     all_caps = list(Capability)
     results["all_capabilities"] = [c.value for c in all_caps]

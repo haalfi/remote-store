@@ -4,16 +4,16 @@ Pure functions for computing and verifying file integrity.  These compose
 ``store.read()`` with [ChecksumReader][remote_store.ext.streams.ChecksumReader]
 internally — users don't need to manage stream lifecycle.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.integrity import checksum, verify
+    ```python
+    from remote_store.ext.integrity import checksum, verify
 
-algorithm, hex_digest = checksum(store, "data/file.bin")
-print(algorithm, hex_digest)
+    algorithm, hex_digest = checksum(store, "data/file.bin")
+    print(algorithm, hex_digest)
 
-ok = verify(store, "data/file.bin", expected="a3f2b8...", algorithm="sha256")
-```
+    ok = verify(store, "data/file.bin", expected="a3f2b8...", algorithm="sha256")
+    ```
 """
 
 from __future__ import annotations

@@ -44,13 +44,6 @@ backend. Methods are grouped by capability gate. Query at runtime with
 | `write(path, content)` | Create or overwrite a file |
 | `write_text(path, text)` | Write a string as a file |
 
-### ATOMIC_WRITE
-
-| Method | Description |
-|---|---|
-| `write_atomic(path, content)` | Write via temp-and-rename (no partial reads) |
-| `open_atomic(path)` | Context manager for streaming atomic writes |
-
 ### DELETE
 
 | Method | Description |
@@ -66,6 +59,12 @@ backend. Methods are grouped by capability gate. Query at runtime with
 | `list_folders(path)` | Enumerate subfolders under a path |
 | `iter_children(path)` | Iterate files and folders together |
 
+### GLOB
+
+| Method | Description |
+|---|---|
+| `glob(pattern)` | Native pattern matching on file paths |
+
 ### MOVE
 
 | Method | Description |
@@ -78,18 +77,19 @@ backend. Methods are grouped by capability gate. Query at runtime with
 |---|---|
 | `copy(src, dst)` | Duplicate within same backend |
 
+### ATOMIC_WRITE
+
+| Method | Description |
+|---|---|
+| `write_atomic(path, content)` | Write via temp-and-rename (no partial reads) |
+| `open_atomic(path)` | Context manager for streaming atomic writes |
+
 ### METADATA
 
 | Method | Description |
 |---|---|
 | `get_file_info(path)` | Retrieve file metadata (size, modified, etc.) |
 | `get_folder_info(path)` | Retrieve folder metadata and contents |
-
-### GLOB
-
-| Method | Description |
-|---|---|
-| `glob(pattern)` | Native pattern matching on file paths |
 
 ---
 
@@ -104,12 +104,12 @@ Query at runtime with `store.supports(Capability.X)`.
 | `WRITE` | Create or overwrite files | `write()`, `write_text()` |
 | `DELETE` | Remove files and folders | `delete()`, `delete_folder()` |
 | `LIST` | Enumerate files and subfolders | `list_files()`, `list_folders()`, `iter_children()` |
+| `GLOB` | Native pattern matching on file paths | `glob()` |
 | `MOVE` | Rename/relocate within same backend | `move()` |
 | `COPY` | Duplicate within same backend | `copy()` |
 | `ATOMIC_WRITE` | Write via temp-and-rename (no partial reads) | `write_atomic()`, `open_atomic()` |
 | `ATOMIC_MOVE` | `move()` is guaranteed atomic under concurrent access | — (quality flag for `move()`) |
 | `METADATA` | Retrieve file/folder metadata | `get_file_info()`, `get_folder_info()` |
-| `GLOB` | Native pattern matching on file paths | `glob()` |
 | `SEEKABLE_READ` | `read()` returns natively seekable streams | — (quality flag, not a method gate) |
 | `LAZY_READ` | `read()` fetches data lazily from the native source; partial reads avoid loading the entire file | — (quality flag, not a method gate) |
 
