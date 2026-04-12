@@ -67,12 +67,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   violations are now hard failures instead of warnings. Non-lazy destinations
   (SQL BLOB) are exempt from chunk-count checks (by-design, ID-136).
 
-- **Dafny upgraded to 4.11.0** (ID-134c): Removed `SumSizesAddOneLocal`
-  workaround in `MemoryBackend.dfy`; direct cross-file calls to `SumSizesAddOne`
-  now work correctly. Boogie procedure emission bug for `:|`-using ghost functions
-  is fixed in 4.11.0. Proof count: 53 verified (was 55 with duplicate lemma).
-  CI workflow, `session-init.sh`, `dafny_verify.sh`, and `sdd/formal/README.md`
-  all updated to 4.11.0/ubuntu-22.04 (ubuntu-20.04 binary not published for 4.11.0).
+- **Dafny upgraded to 4.11.0** (ID-134c): Removed `SumSizesAddOneLocal` workaround
+  — Boogie cross-file lemma bug fixed in 4.11.0. Toolchain updated throughout
+  (CI, `session-init.sh`, `dafny_verify.sh`, README); ubuntu-22.04 zip used
+  (20.04 not published for 4.11.0).
 
 - **Dafny ghost infrastructure for `GetFolderInfo` aggregate verification**
   (ID-134, part 1): Added `ChildFiles`, `SumSizes`, and `SumSizesAddOne`
