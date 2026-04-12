@@ -140,7 +140,7 @@ if __name__ == "__main__":
     finally:
         backend.close()
 
-    # --- All 4 authentication methods (commented out) ---
+    # --- Authentication methods (commented out) ---
     #
     # # 1. Account key
     # backend = AzureBackend(
