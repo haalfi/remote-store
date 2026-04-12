@@ -56,16 +56,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   to MkDocs admonition syntax.
 
 - **Documentation: apply content-longevity rules to Guides, Explanation, and Examples** (BK-149b):
-  Removed pseudo-precise values and exhaustive enumerations from Guides, Explanation,
-  Getting Started, and example docstrings. Performance prose converted to qualitative
-  descriptions; manually-maintained benchmark table replaced with a pointer to generated
-  comparative tables. Extension lists in architecture overview and extensions guide
-  replaced with principle descriptions linking to the full reference. Capability counts
-  removed from backend decision guide. Conformance test counts removed from custom-backend
-  guide. Security policy SLAs deferred to `SECURITY.md`. Source paths replaced with API
-  reference links. README performance blurb and comparison table updated accordingly.
-  Example docstrings with stale backend name lists updated to point to the capabilities
-  matrix instead.
+  Pseudo-precise values, exhaustive enumerations, and stale counts removed from
+  Guides, Explanation, Getting Started, README, and example docstrings. Completes BK-149.
 
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.
