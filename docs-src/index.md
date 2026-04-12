@@ -91,7 +91,8 @@ Extras like `[s3]` or `[sftp]` bring in only the backend you need.
 
 ### Proven libraries underneath
 
-`s3fs`, `paramiko`, Azure SDK — remote-store adapts, they execute.
+Established libraries like `s3fs`, `paramiko`, and the Azure SDK do the
+real work — remote-store adapts, they execute.
 Backends delegate to the packages you'd pick yourself.
 
 ### Backend-native when possible
@@ -105,8 +106,9 @@ natively, remote-store uses that. Where not, a portable fallback steps in.
 
 ### Extensions sit beside, not around
 
-Caching, observability, batch operations, PyArrow — import what you need
-from `remote_store.ext`. Your Store code doesn't change.
+Extensions like caching, observability, batch operations, and PyArrow
+integration — import what you need from `remote_store.ext`.
+Your Store code doesn't change.
 
 ---
 
@@ -120,6 +122,8 @@ extension. The hooks are public.
 
 store = Store(MyBackend(...))  # works with all extensions
 ```
+
+See the [custom backend guide](custom-backend-guide.md) for a step-by-step walkthrough.
 
 ---
 
@@ -142,23 +146,10 @@ See [Getting Started](getting-started.md) for a complete walkthrough.
 
 ---
 
-## Start here
+## Where to go next
 
-- New to remote-store → [Tutorial](getting-started.md)
-- Minimal working example → [Quickstart](examples/quickstart.md)
-
-## Common tasks
-
-- Read and write files → [File Operations](examples/file-operations.md)
-- Stream large files → [Streaming I/O](examples/streaming-io.md)
-- Work with S3 → [S3 Backend](examples/s3-backend.md)
-- Handle errors → [Error Handling](examples/error-handling.md)
-- Use caching → [Caching](examples/caching.md)
-
-## Go deeper
-
-- All guides → [Backends](backends/index.md) · [Extensions](extensions.md)
-- API reference → [Store API](api/store.md)
-- Capabilities → [Capabilities matrix](capabilities-matrix.md)
-- Architecture and design → [Architecture](architecture.md)
-- Further readings → [Further Reading](further-reading.md)
+- **[Getting Started](getting-started.md)** — install, tutorial, and runnable examples
+- **Guides** — [Backends](backends/index.md) · [Extensions](extensions.md) · [Choosing a Backend](choosing-a-backend.md) · [Data Lake Patterns](data-lake-patterns.md) · [and more](backends/index.md)
+- **Reference** — [API](api/index.md) · [Capabilities Matrix](capabilities-matrix.md) · [Changelog](changelog.md)
+- **Explanation** — [Architecture](architecture.md) · [Performance](performance.md) · [Concurrency](concurrency.md) · [Security](security-model.md)
+- **[Further Reading](further-reading.md)**
