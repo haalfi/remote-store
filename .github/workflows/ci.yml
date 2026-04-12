@@ -246,7 +246,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dafny-lang/setup-dafny-action@be023fc606339d46ed6b077dcb8614d0279ded31  # v1.9.1
         with:
-          dafny-version: '4.9.1'
+          dafny-version: '4.11.0'
       - name: Verify formal specifications
         run: |
           dafny verify sdd/formal/BackendContract.dfy

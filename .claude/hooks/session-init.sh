@@ -54,12 +54,12 @@ if ! command -v hatch &>/dev/null; then
 fi
 
 # --- Install Dafny if .dfy files exist in the repo ---
-DAFNY_VERSION="4.9.1"
+DAFNY_VERSION="4.11.0"
 if ! command -v dafny &>/dev/null && ls sdd/formal/*.dfy &>/dev/null; then
   if _is_linux_container; then
     echo "dafny: not found — installing v${DAFNY_VERSION}..."
     _TMP=$(mktemp -d)
-    _ZIP="dafny-${DAFNY_VERSION}-x64-ubuntu-20.04.zip"
+    _ZIP="dafny-${DAFNY_VERSION}-x64-ubuntu-22.04.zip"
     _URL="https://github.com/dafny-lang/dafny/releases/download/v${DAFNY_VERSION}/${_ZIP}"
     if ! curl -fsSL --max-time 120 "$_URL" -o "$_TMP/$_ZIP" 2>/dev/null; then
       rm -rf "$_TMP"
