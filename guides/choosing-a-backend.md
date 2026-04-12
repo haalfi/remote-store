@@ -27,7 +27,7 @@ This guide helps you pick the right `remote-store` backend for your use case.
    Lacks native glob (use `ext.glob` fallback).
 
 6. **Store blobs in a relational database (SQLite, PostgreSQL, etc.)?** Use **SQLBlob**.
-   Full capabilities — read, write, list, move, copy, glob, atomic writes, and more.
+   Broad capability set — read, write, list, move, copy, glob, and atomic writes.
    Useful for embedded storage, metadata-heavy workloads, or environments where a
    database is already available.
 
