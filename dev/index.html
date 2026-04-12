@@ -564,32 +564,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#start-here" class="md-nav__link">
+  <a href="#where-to-go-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Start here
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#common-tasks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Common tasks
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#go-deeper" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Go deeper
+        Where to go next
       
     </span>
   </a>
@@ -7905,32 +7883,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#start-here" class="md-nav__link">
+  <a href="#where-to-go-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Start here
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#common-tasks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Common tasks
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#go-deeper" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Go deeper
+        Where to go next
       
     </span>
   </a>
@@ -8029,19 +7985,21 @@ yourself.</p>
 <p>Install only what you use. <code>pip install remote-store</code> pulls in nothing.
 Extras like <code>[s3]</code> or <code>[sftp]</code> bring in only the backend you need.</p>
 <h3 id="proven-libraries-underneath">Proven libraries underneath<a class="headerlink" href="#proven-libraries-underneath" title="Permanent link">&para;</a></h3>
-<p><code>s3fs</code>, <code>paramiko</code>, Azure SDK — remote-store adapts, they execute.
+<p>Established libraries like <code>s3fs</code>, <code>paramiko</code>, and the Azure SDK do the
+real work — remote-store adapts, they execute.
 Backends delegate to the packages you'd pick yourself.</p>
 <h3 id="backend-native-when-possible">Backend-native when possible<a class="headerlink" href="#backend-native-when-possible" title="Permanent link">&para;</a></h3>
 <p><code>glob()</code> and atomic writes work everywhere. Where the backend supports them
 natively, remote-store uses that. Where not, a portable fallback steps in.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">)</span>  <span class="c1"># True for Local, S3, S3-PyArrow, Azure</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_WRITE</span><span class="p">)</span>  <span class="c1"># True for all except HTTP</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">)</span>  <span class="c1"># True for most backends; see capabilities matrix</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">ATOMIC_WRITE</span><span class="p">)</span>  <span class="c1"># True for most backends; see capabilities matrix</span>
 </code></pre></div>
 <h3 id="extensions-sit-beside-not-around">Extensions sit beside, not around<a class="headerlink" href="#extensions-sit-beside-not-around" title="Permanent link">&para;</a></h3>
-<p>Caching, observability, batch operations, PyArrow — import what you need
-from <code>remote_store.ext</code>. Your Store code doesn't change.</p>
+<p>Extensions like caching, observability, batch operations, and PyArrow
+integration — import what you need from <code>remote_store.ext</code>.
+Your Store code doesn't change.</p>
 <hr />
 <h2 id="bring-your-own">Bring your own<a class="headerlink" href="#bring-your-own" title="Permanent link">&para;</a></h2>
 <p>Implement the <code>Backend</code> protocol for a new storage target. Or write an
@@ -8056,6 +8014,7 @@ extension. The hooks are public.</p>
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">MyBackend</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>  <span class="c1"># works with all extensions</span>
 </code></pre></div>
+<p>See the <a href="custom-backend-guide/">custom backend guide</a> for a step-by-step walkthrough.</p>
 <hr />
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span>remote-store<span class="o">[</span>s3<span class="o">]</span>
@@ -8069,26 +8028,13 @@ extension. The hooks are public.</p>
 </code></pre></div>
 <p>See <a href="getting-started/">Getting Started</a> for a complete walkthrough.</p>
 <hr />
-<h2 id="start-here">Start here<a class="headerlink" href="#start-here" title="Permanent link">&para;</a></h2>
+<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
 <ul>
-<li>New to remote-store → <a href="getting-started/">Tutorial</a></li>
-<li>Minimal working example → <a href="examples/quickstart/">Quickstart</a></li>
-</ul>
-<h2 id="common-tasks">Common tasks<a class="headerlink" href="#common-tasks" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Read and write files → <a href="examples/file-operations/">File Operations</a></li>
-<li>Stream large files → <a href="examples/streaming-io/">Streaming I/O</a></li>
-<li>Work with S3 → <a href="examples/s3-backend/">S3 Backend</a></li>
-<li>Handle errors → <a href="examples/error-handling/">Error Handling</a></li>
-<li>Use caching → <a href="examples/caching/">Caching</a></li>
-</ul>
-<h2 id="go-deeper">Go deeper<a class="headerlink" href="#go-deeper" title="Permanent link">&para;</a></h2>
-<ul>
-<li>All guides → <a href="backends/">Backends</a> · <a href="extensions/">Extensions</a></li>
-<li>API reference → <a href="api/store/">Store API</a></li>
-<li>Capabilities → <a href="capabilities-matrix/">Capabilities matrix</a></li>
-<li>Architecture and design → <a href="architecture/">Architecture</a></li>
-<li>Further readings → <a href="further-reading/">Further Reading</a></li>
+<li><strong><a href="getting-started/">Getting Started</a></strong> — install, tutorial, and runnable examples</li>
+<li><strong>Guides</strong> — <a href="backends/">Backends</a> · <a href="extensions/">Extensions</a> · <a href="choosing-a-backend/">Choosing a Backend</a> · <a href="data-lake-patterns/">and more</a></li>
+<li><strong>Reference</strong> — <a href="api/">API</a> · <a href="capabilities-matrix/">Capabilities Matrix</a> · <a href="changelog/">Changelog</a></li>
+<li><strong>Explanation</strong> — <a href="architecture/">Architecture</a> · <a href="performance/">Performance</a> · <a href="concurrency/">Concurrency</a></li>
+<li><strong><a href="further-reading/">Further Reading</a></strong></li>
 </ul>
 
 

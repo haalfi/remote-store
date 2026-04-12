@@ -8620,7 +8620,7 @@ listing, metadata, error mapping, and capability declarations.</p>
 straightforward:</p>
 <ol>
 <li><strong>Declare capabilities</strong> — which operations does your backend support?</li>
-<li><strong>Implement abstract members</strong> — 16 methods and 2 properties covering CRUD, listing, and metadata.</li>
+<li><strong>Implement abstract members</strong> — methods and properties covering CRUD, listing, and metadata. See <a href="#abstract-methods-must-implement">Abstract methods</a> for the full list.</li>
 <li><strong>Map all exceptions</strong> — native errors must become <code>remote_store</code> errors. No leaks.</li>
 </ol>
 <p>The <a href="../api/store/"><code>Store</code></a> class wraps your backend, adds path validation, capability gating,
@@ -9298,9 +9298,9 @@ code/type, and raise the appropriate remote-store error with <code>from exc</cod
 <h2 id="testing-your-backend">Testing your backend<a class="headerlink" href="#testing-your-backend" title="Permanent link">&para;</a></h2>
 <p>remote-store ships two conformance test files that validate any backend against
 the formal <code>BackendContract</code> specification. Backends contributed to the repo
-plug into this infrastructure and run ~114 test scenarios per backend
-automatically (64 basic + 50 extended). Standalone backends can either reuse this suite or write focused
-tests against the same categories.</p>
+plug into this infrastructure and run through the full suite automatically.
+Standalone backends can either reuse this suite or write focused tests against
+the same categories.</p>
 <hr />
 <h3 id="conformance-suite-overview">Conformance suite overview<a class="headerlink" href="#conformance-suite-overview" title="Permanent link">&para;</a></h3>
 <table>
@@ -9314,12 +9314,12 @@ tests against the same categories.</p>
 <tbody>
 <tr>
 <td><a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance.py"><code>test_conformance.py</code></a></td>
-<td>64 tests — BE-001–BE-022, BE-025 + SAW, ITER, SIO, GLOB, NPR, RES specs: identity, capabilities, <code>exists</code>, <code>is_file</code>/<code>is_folder</code>, read, write, delete, list, streaming, glob, native path, resolution</td>
+<td>Basic suite: identity, capabilities, <code>exists</code>, <code>is_file</code>/<code>is_folder</code>, read, write, delete, list, streaming, glob, native path, resolution</td>
 <td><code>pytest tests/backends/test_conformance.py</code></td>
 </tr>
 <tr>
 <td><a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/test_conformance_extended.py"><code>test_conformance_extended.py</code></a></td>
-<td>50 Dafny-derived tests: error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup</td>
+<td>Extended (Dafny-derived): error fidelity, precondition ordering, depth filtering, move/copy semantics, resource cleanup</td>
 <td><code>pytest -m extended_conformance</code></td>
 </tr>
 </tbody>

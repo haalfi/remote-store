@@ -8144,7 +8144,7 @@ use a Registry with declarative config:</p>
 </table>
 <p>* Same-filesystem only; cross-filesystem falls back to copy+delete.
 ** Attempts <code>posix_rename</code> (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so <code>ATOMIC_MOVE</code> is not declared.</p>
-<p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only (<code>{READ, METADATA}</code>). SQL Query is read-only (<code>{READ, LIST, METADATA, GLOB, SEEKABLE_READ}</code>) — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is supported natively by Local, S3, S3-PyArrow, and Azure; for others use the portable fallback <code>ext.glob.glob_files()</code>. Seekable reads are available on all backends via <code>Store.read_seekable()</code> — zero-overhead on seekable backends, HTTP Range reader on Azure, spool fallback on HTTP. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
+<p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback <code>ext.glob.glob_files()</code> works with any <code>LIST</code>-capable backend. Seekable reads are available on all backends via <code>Store.read_seekable()</code>. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <p>The Store provides methods across read/write, browsing, management, and utility. Key highlights:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → str</span>
@@ -8168,7 +8168,7 @@ use a Registry with declarative config:</p>
 </code></pre></div>
 <p>For the full method list, see the <a href="https://docs.remotestore.dev/stable/api/store/">API reference</a>. All write, move, and copy methods accept <code>overwrite=True</code> to replace existing files.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
-<p>For S3, reads add 0.7 ms (+15%) over raw boto3; listing is 29x faster (s3fs caching). For Azure, reads add 0.1 ms (+1%); writes add 2.4 ms (+17%). For SFTP, reads add 3.3 ms (+34%); writes add 1.6 ms (+7%). See the <a href="https://docs.remotestore.dev/stable/performance/">performance guide</a> for full comparative benchmarks, methodology, and per-operation breakdowns.</p>
+<p>Per-operation overhead is small relative to network round-trip time for most workloads. S3 listing is significantly faster via s3fs connection caching. See the <a href="https://docs.remotestore.dev/stable/performance/">performance guide</a> for full comparative benchmarks, methodology, and per-operation breakdowns.</p>
 <h2 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h2>
 <p>The core library handles storage operations. Extensions add optional capabilities on top — e.g. PyArrow integration, observability, caching, or bulk operations. All live in <code>remote_store.ext</code>; import only what you need.</p>
 <table>
@@ -8237,7 +8237,7 @@ use a Registry with declarative config:</p>
 <p>Storage behavior must be predictable and correct. We verify this across multiple dimensions:</p>
 <ul>
 <li><strong>Spec-driven development:</strong> behavior specifications are the source of truth; tests link directly to them. <em>Prevents feature drift.</em></li>
-<li><strong>Extensive unit tests:</strong> 95%+ coverage across all backends, focused on behavior. <em>Catches integration issues early.</em></li>
+<li><strong>Extensive unit tests:</strong> high coverage across all backends, focused on behavior. <em>Catches integration issues early.</em></li>
 <li><strong>Design by Contract:</strong> pre/post conditions and invariants catch incorrect usage early. <em>Fails fast on misuse.</em></li>
 <li><strong>Property-based testing:</strong> randomized input generation surfaces edge cases no hand-written test would find. <em>Finds blind spots.</em></li>
 <li><strong>Formal verification:</strong> critical paths are proven correct in Dafny before implementation. <em>Eliminates logic errors.</em></li>
@@ -8268,15 +8268,15 @@ use a Registry with declarative config:</p>
 <tbody>
 <tr>
 <td>API surface</td>
-<td>~56 methods</td>
+<td>many methods</td>
 <td><code>open()</code> only</td>
 <td>pathlib-style</td>
 <td>~10 methods</td>
-<td>29 methods</td>
+<td>full Store API</td>
 </tr>
 <tr>
 <td>Backends</td>
-<td>30+ filesystems</td>
+<td>many filesystems</td>
 <td>S3, GCS, Az, SFTP</td>
 <td>S3, GCS, Azure</td>
 <td>S3, GCS, Azure</td>
@@ -8340,7 +8340,7 @@ use a Registry with declarative config:</p>
 </tr>
 </tbody>
 </table>
-<p><em>Comparison as of March 2026. Method counts and feature sets may change as these libraries evolve.</em></p>
+<p><em>Feature sets may change as these libraries evolve. Check each project's documentation for the current state.</em></p>
 <p><strong>In short:</strong> <code>remote-store</code> is for teams that need more than <code>open()</code> (smart_open) but less than a full filesystem abstraction (fsspec), with streaming, SFTP, atomic writes, observability, and immutable config. Under the hood, it delegates to the same libraries you'd pick anyway (<code>s3fs</code>/<code>boto3</code>, <code>paramiko</code>, Azure SDK, PyArrow).</p>
 
 

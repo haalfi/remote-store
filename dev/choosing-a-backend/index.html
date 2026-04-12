@@ -7807,13 +7807,14 @@
 </li>
 <li>
 <p><strong>Store blobs in a relational database (SQLite, PostgreSQL, etc.)?</strong> Use <strong>SQLBlob</strong>.
-   Full capabilities (10/10). Useful for embedded storage, metadata-heavy
-   workloads, or environments where a database is already available.</p>
+   Broad capability set — read, write, list, move, copy, glob, and atomic writes.
+   Useful for embedded storage, metadata-heavy workloads, or environments where a
+   database is already available.</p>
 </li>
 <li>
 <p><strong>Materialize SQL queries as files (read-only)?</strong> Use <strong>SQLQuery</strong>.
    Executes a SQL query and exposes the result as Parquet, CSV, or Arrow IPC.
-   Read-only (5 capabilities). Useful for ETL pipelines and data exports.</p>
+   Read and metadata only. Useful for ETL pipelines and data exports.</p>
 </li>
 <li>
 <p><strong>Read-only HTTP/HTTPS endpoint?</strong> Use <strong>HTTP</strong>.
