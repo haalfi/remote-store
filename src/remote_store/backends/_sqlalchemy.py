@@ -222,7 +222,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     with its key, data, and metadata. SQLite receives WAL mode and
     PRAGMA tuning automatically.
 
-    11 of 12 capabilities are supported (all except ``LAZY_READ``).
+    Supports all capabilities except ``LAZY_READ``.
 
     Note:
         **Non-lazy reads and writes.** Both ``read()`` and ``write()``

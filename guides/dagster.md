@@ -228,7 +228,7 @@ Requires `pip install "remote-store[dagster,arrow]"`.
 - [Dagster v2 resource example](examples/dagster-v2-resource.md) — config-driven
   Store construction with `RemoteStoreIOManager`
 - [Medallion + Dagster Showcase](examples/medallion-dagster.md) — end-to-end
-  Bronze/Silver/Gold pipeline demonstrating 4 extensions over live MeteoSwiss data
+  Bronze/Silver/Gold pipeline demonstrating extensions over live MeteoSwiss data
 - [Data Lake Patterns](data-lake-patterns.md) — medallion architecture with
   `Store.child()` and PyArrow, complementary to Dagster orchestration
 - [PyArrow Adapter](pyarrow-adapter.md) — use Store as a PyArrow filesystem

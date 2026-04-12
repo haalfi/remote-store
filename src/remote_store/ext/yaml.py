@@ -2,13 +2,13 @@
 
 Install with ``pip install "remote-store[yaml]"``.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.yaml import from_yaml
+    ```python
+    from remote_store.ext.yaml import from_yaml
 
-config = from_yaml("remote-store.yaml")
-```
+    config = from_yaml("remote-store.yaml")
+    ```
 
 Accepts either [pyyaml](https://pyyaml.org/) or [ruamel.yaml](https://yaml.readthedocs.io/) as the parser.
 """

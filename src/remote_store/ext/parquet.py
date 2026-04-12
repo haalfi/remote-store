@@ -2,15 +2,15 @@
 
 Install with ``pip install "remote-store[arrow]"``.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.parquet import ParquetDatasetStore
+    ```python
+    from remote_store.ext.parquet import ParquetDatasetStore
 
-pds = ParquetDatasetStore(store)
-manifest = pds.write_dataset(table, "silver/orders")
-table = pds.read_dataset("silver/orders")
-```
+    pds = ParquetDatasetStore(store)
+    manifest = pds.write_dataset(table, "silver/orders")
+    table = pds.read_dataset("silver/orders")
+    ```
 """
 
 from __future__ import annotations

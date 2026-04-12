@@ -5,21 +5,21 @@ emit OpenTelemetry traces and metrics.  Depends only on ``opentelemetry-api``
 (not the SDK); if no SDK is configured at runtime, all OTel calls become
 zero-cost no-ops.
 
-Usage:
+!!! example
 
-```python
-from remote_store import observe
-from remote_store.ext.otel import otel_hooks
+    ```python
+    from remote_store import observe
+    from remote_store.ext.otel import otel_hooks
 
-store = observe(store, **otel_hooks())
-```
+    store = observe(store, **otel_hooks())
+    ```
 
-Or as a one-liner:
+    Or as a one-liner:
 
-```python
-from remote_store.ext.otel import otel_observe
-observed = otel_observe(store)
-```
+    ```python
+    from remote_store.ext.otel import otel_observe
+    observed = otel_observe(store)
+    ```
 
 Requires: ``pip install "remote-store[otel]"``
 """

@@ -3,17 +3,17 @@
 Wraps a Store in a proxy that caches read-only operations (existence checks,
 metadata, listings, content) and automatically invalidates on mutations.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.cache import cache
+    ```python
+    from remote_store.ext.cache import cache
 
-cached = cache(store, ttl=300)
-data = cached.read_bytes("key.csv")   # backend call
-data = cached.read_bytes("key.csv")   # cache hit
-cached.write("key.csv", b"new", overwrite=True)  # invalidates
-data = cached.read_bytes("key.csv")   # backend call again
-```
+    cached = cache(store, ttl=300)
+    data = cached.read_bytes("key.csv")   # backend call
+    data = cached.read_bytes("key.csv")   # cache hit
+    cached.write("key.csv", b"new", overwrite=True)  # invalidates
+    data = cached.read_bytes("key.csv")   # backend call again
+    ```
 """
 
 from __future__ import annotations

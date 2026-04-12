@@ -77,13 +77,13 @@ the full fallback chain and config examples.
 | Minimal dependencies | `s3` (only needs `s3fs`) |
 | PyArrow already in your stack | `s3-pyarrow` (zero extra deps) |
 
-S3-PyArrow's C++ data path adds per-call overhead that makes sequential reads
-~2x slower than the regular S3 backend. The advantage is native PyArrow
-integration: when PyArrow reads Parquet files through the
+S3-PyArrow's C++ data path adds per-call overhead for sequential reads compared
+to the regular S3 backend. The advantage is native PyArrow integration: when
+PyArrow reads Parquet files through the
 [adapter](../pyarrow-adapter.md), it uses C++ range requests and I/O coalescing
 directly — no Python in the loop.
 
-Both backends support 11 of 12 capabilities (only `ATOMIC_MOVE` is missing) and are fully interchangeable -- switch by changing the `type` in your config.
+Both backends support all capabilities except `ATOMIC_MOVE` and are fully interchangeable -- switch by changing the `type` in your config.
 
 ## Escape Hatch
 

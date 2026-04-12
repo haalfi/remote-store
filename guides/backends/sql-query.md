@@ -47,7 +47,9 @@ Keys are resolved by exact lookup in the `queries` dict. The serialization forma
 
 ## Capabilities
 
-`READ`, `LIST`, `METADATA`, `GLOB`, `SEEKABLE_READ`. All write operations raise `CapabilityNotSupported`.
+Read-only: supports `READ`, `LIST`, `METADATA`, `GLOB`, and `SEEKABLE_READ`.
+All write operations raise `CapabilityNotSupported`.
+See the [capabilities matrix](../capabilities-matrix.md) for full details.
 
 ## Custom serializers
 

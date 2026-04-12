@@ -4,18 +4,18 @@ Composable ``BinaryIO`` wrappers that operate at the stream level, not the
 Store level.  No proxy wrapping is needed — just wrap the stream returned
 by ``store.read()`` or passed to ``store.write()``.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.streams import ProgressReader, ChecksumReader
+    ```python
+    from remote_store.ext.streams import ProgressReader, ChecksumReader
 
-stream = ChecksumReader(
-    ProgressReader(store.read("file.bin"), callback=update_bar),
-    algorithm="sha256",
-)
-data = stream.read()
-assert stream.hexdigest() == expected_hex
-```
+    stream = ChecksumReader(
+        ProgressReader(store.read("file.bin"), callback=update_bar),
+        algorithm="sha256",
+    )
+    data = stream.read()
+    assert stream.hexdigest() == expected_hex
+    ```
 """
 
 from __future__ import annotations

@@ -111,22 +111,8 @@ backend = SFTPBackend(
 
 ## Capabilities
 
-The SFTP backend supports 10 of 12 capabilities. `GLOB` and `ATOMIC_MOVE` are not supported.
-
-| Capability | Supported | Notes |
-|------------|-----------|-------|
-| `READ` | Yes | |
-| `WRITE` | Yes | Creates intermediate directories automatically |
-| `DELETE` | Yes | |
-| `LIST` | Yes | |
-| `MOVE` | Yes | Uses `posix_rename` with fallback |
-| `COPY` | Yes | Read + write (no server-side copy in SFTP) |
-| `ATOMIC_WRITE` | Yes | Temp file + rename (see caveat below) |
-| `ATOMIC_MOVE` | — | Not supported (non-atomic rename semantics) |
-| `METADATA` | Yes | |
-| `GLOB` | — | Not supported — use `ext.glob.glob_files()` |
-| `SEEKABLE_READ` | Yes | `BufferedReader` wraps the paramiko stream |
-| `LAZY_READ` | Yes | Data is pulled lazily from the SFTP server |
+The SFTP backend supports all capabilities except `GLOB` and `ATOMIC_MOVE`.
+See the [capabilities matrix](../capabilities-matrix.md) for full details.
 
 !!! warning "Atomic write caveat"
     Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the

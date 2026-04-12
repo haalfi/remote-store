@@ -59,22 +59,8 @@ with Registry(config) as registry:
 
 ## Capabilities
 
-3 of 12 capabilities are supported. This is a read-only backend.
-
-| Capability | Supported | Notes |
-|---|---|---|
-| `READ` | Yes | |
-| `WRITE` | -- | |
-| `DELETE` | -- | |
-| `LIST` | -- | |
-| `MOVE` | -- | |
-| `COPY` | -- | |
-| `ATOMIC_WRITE` | -- | |
-| `ATOMIC_MOVE` | -- | |
-| `METADATA` | Yes | Maps HTTP headers to `FileInfo` fields |
-| `GLOB` | -- | |
-| `SEEKABLE_READ` | -- | HTTP responses are forward-only streams |
-| `LAZY_READ` | Yes | Data is streamed from the HTTP response body on demand |
+This is a read-only backend. Only read-related capabilities are supported.
+See the [capabilities matrix](../capabilities-matrix.md) for full details.
 
 ## HTTP Library
 

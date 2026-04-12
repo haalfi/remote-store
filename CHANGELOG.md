@@ -50,6 +50,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   keeps prose from drifting out of sync with code and generated artefacts.
   `DOCUMENTATION.md` and `CLAUDE.md` updated to reference it.
 
+- **Documentation: remove stale enumerations, unify API references** (BK-149):
+  Removed hardcoded counts from guides and docstrings. Reordered Capability enum
+  logically; updated all references consistently. Standardized ext module docstrings
+  to MkDocs admonition syntax.
+
 - **SQL blob non-lazy write** (ID-136): Backend guide, capabilities matrix,
   and docstring updated.
 

@@ -96,7 +96,10 @@ Set `create_table=False` to use a pre-existing table. Minimum required columns: 
 
 ## Capabilities
 
-11 of 12 capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `ATOMIC_MOVE`, `METADATA`, `GLOB`, `SEEKABLE_READ`. Does not declare `LAZY_READ` — the entire blob is loaded into memory before a stream is returned.
+Supports all capabilities except `LAZY_READ` — the entire blob is loaded into memory before a stream is returned.
+See the [capabilities matrix](../capabilities-matrix.md) for full details.
+
+### Implementation notes
 
 - **Non-lazy writes.** `write()` materializes the full stream into memory
   before issuing the SQL INSERT/UPDATE. This is inherent to SQL BLOB columns,

@@ -8,15 +8,15 @@ Use ``glob_files`` when you need full recursive glob patterns (``**``,
 wildcards in directory segments) and want portable behavior across all
 backends.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.glob import glob_files
+    ```python
+    from remote_store.ext.glob import glob_files
 
-# Works with any backend — uses native glob or list+filter fallback
-for info in glob_files(store, "data/**/*.csv"):
-    print(info.path, info.size)
-```
+    # Works with any backend — uses native glob or list+filter fallback
+    for info in glob_files(store, "data/**/*.csv"):
+        print(info.path, info.size)
+    ```
 """
 
 from __future__ import annotations

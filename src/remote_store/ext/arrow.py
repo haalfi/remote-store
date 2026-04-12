@@ -2,14 +2,14 @@
 
 Install with ``pip install "remote-store[arrow]"``.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.arrow import pyarrow_fs
+    ```python
+    from remote_store.ext.arrow import pyarrow_fs
 
-fs = pyarrow_fs(store)
-pq.write_table(table, "data.parquet", filesystem=fs)
-```
+    fs = pyarrow_fs(store)
+    pq.write_table(table, "data.parquet", filesystem=fs)
+    ```
 """
 
 from __future__ import annotations

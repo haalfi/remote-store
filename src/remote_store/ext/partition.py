@@ -4,18 +4,18 @@ Utilities for constructing and deconstructing partition paths like
 ``year=2026/month=03/day=01/data.parquet``, commonly used in Parquet
 data lake workflows.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.partition import partition_path, parse_partition
+    ```python
+    from remote_store.ext.partition import partition_path, parse_partition
 
-path = partition_path("data.parquet", year=2026, month="03")
-# -> "year=2026/month=03/data.parquet"
+    path = partition_path("data.parquet", year=2026, month="03")
+    # -> "year=2026/month=03/data.parquet"
 
-parsed = parse_partition(path)
-# -> ParsedPartition(partitions={"year": "2026", "month": "03"},
-#                     filename="data.parquet")
-```
+    parsed = parse_partition(path)
+    # -> ParsedPartition(partitions={"year": "2026", "month": "03"},
+    #                     filename="data.parquet")
+    ```
 """
 
 from __future__ import annotations

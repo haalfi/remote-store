@@ -629,7 +629,7 @@ def _gen_example_index() -> str:
         if key == "medallion_dagster":
             lines.append(
                 "| [Medallion + Dagster Showcase](medallion-dagster.md) | "
-                "End-to-end Bronze/Silver/Gold pipeline with Dagster, 4 extensions, live MeteoSwiss data |"
+                "End-to-end Bronze/Silver/Gold pipeline with Dagster and live MeteoSwiss data |"
             )
 
     lines.extend(

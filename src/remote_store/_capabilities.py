@@ -16,10 +16,12 @@ class Capability(enum.Enum):
 
     Most values gate one or more ``Store`` methods; some are quality
     flags that inform callers about backend behaviour without gating a
-    specific method (see ``ATOMIC_MOVE``).
+    specific method (see ``ATOMIC_MOVE``, ``SEEKABLE_READ``, ``LAZY_READ``).
     Use ``Store.supports()`` to query at runtime.
 
     Values:
+
+    *Core I/O*
 
     - ``READ`` -- Stream or bulk-read file content.
       Gates ``Store.read()`` and ``Store.read_bytes()``.
@@ -27,12 +29,24 @@ class Capability(enum.Enum):
       Gates ``Store.write()``.
     - ``DELETE`` -- Remove files and folders.
       Gates ``Store.delete()`` and ``Store.delete_folder()``.
+
+    *Navigation*
+
     - ``LIST`` -- Enumerate files and subfolders.
       Gates ``Store.list_files()`` and ``Store.list_folders()``.
+    - ``GLOB`` -- Native pattern matching against file paths.
+      Gates ``Store.glob()``. Not all backends support this — use
+      ``ext.glob.glob_files()`` as a portable fallback.
+
+    *File operations*
+
     - ``MOVE`` -- Rename or relocate a file within the same backend.
       Gates ``Store.move()``.
     - ``COPY`` -- Duplicate a file within the same backend.
       Gates ``Store.copy()``.
+
+    *Atomic variants*
+
     - ``ATOMIC_WRITE`` -- Write via temp-file-and-rename so readers never
       see partial content. Gates ``Store.write_atomic()`` and
       ``Store.open_atomic()``.
@@ -43,37 +57,45 @@ class Capability(enum.Enum):
       atomic rename semantics. Backends that implement move as
       copy-then-delete (e.g. S3, Azure non-HNS) do not declare this
       capability.
+
+    *Metadata*
+
     - ``METADATA`` -- Retrieve file or folder metadata.
       Gates ``Store.get_file_info()`` and ``Store.get_folder_info()``.
-    - ``GLOB`` -- Native pattern matching against file paths.
-      Gates ``Store.glob()``. Not all backends support this -- use
-      ``ext.glob.glob_files()`` as a portable fallback.
+
+    *Quality flags*
+
     - ``SEEKABLE_READ`` -- ``Store.read()`` always returns a seekable
       stream (``stream.seekable()`` is ``True``).  Backends that
       declare this capability return seekable streams from both
       ``read()`` and ``read_seekable()`` with zero overhead.
       Backends without this capability still support
       ``read_seekable()`` via an optimized override or spool fallback.
-    - ``LAZY_READ`` -- Quality flag: ``read()`` fetches data lazily on
-      demand from the native source rather than loading the entire file
-      into memory before returning.  Backends that pre-load the full
-      file contents (e.g. in-memory backends, SQL blob stores) do
-      **not** declare this flag.  Callers can use
-      ``store.supports(Capability.LAZY_READ)`` to know whether partial
-      reads avoid loading the entire file.
+    - ``LAZY_READ`` -- ``read()`` fetches data lazily on demand from the
+      native source rather than loading the entire file into memory before
+      returning.  Backends that pre-load the full file contents (e.g.
+      in-memory backends, SQL blob stores) do **not** declare this flag.
+      Callers can use ``store.supports(Capability.LAZY_READ)`` to know
+      whether partial reads avoid loading the entire file.
       See also: spec SIO-009 in ``sdd/specs/006-streaming-io.md``.
     """
 
+    # Core I/O
     READ = "read"
     WRITE = "write"
     DELETE = "delete"
+    # Navigation
     LIST = "list"
+    GLOB = "glob"
+    # File operations
     MOVE = "move"
     COPY = "copy"
+    # Atomic variants
     ATOMIC_WRITE = "atomic_write"
     ATOMIC_MOVE = "atomic_move"
+    # Metadata
     METADATA = "metadata"
-    GLOB = "glob"
+    # Quality flags
     SEEKABLE_READ = "seekable_read"
     LAZY_READ = "lazy_read"
 

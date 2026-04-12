@@ -3,15 +3,15 @@
 All functions stream data and never load full files into memory.
 An optional ``on_progress`` callback fires per chunk with the byte count.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.transfer import upload, download, transfer
+    ```python
+    from remote_store.ext.transfer import upload, download, transfer
 
-upload(store, "local/file.txt", "remote/key.txt", overwrite=True)
-download(store, "remote/key.txt", "local/file.txt", overwrite=True)
-transfer(src_store, "src.txt", dst_store, "dst.txt", overwrite=True)
-```
+    upload(store, "local/file.txt", "remote/key.txt", overwrite=True)
+    download(store, "remote/key.txt", "local/file.txt", overwrite=True)
+    transfer(src_store, "src.txt", dst_store, "dst.txt", overwrite=True)
+    ```
 """
 
 from __future__ import annotations

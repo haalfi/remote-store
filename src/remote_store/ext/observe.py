@@ -4,17 +4,17 @@ Wraps a Store in a proxy that fires user-defined callbacks before and after
 each operation, enabling logging, metrics, auditing, and tracing without
 modifying business code.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.observe import observe
+    ```python
+    from remote_store.ext.observe import observe
 
-def on_write(event):
-    print(f"Wrote {event.path} in {event.duration_ms:.1f}ms")
+    def on_write(event):
+        print(f"Wrote {event.path} in {event.duration_ms:.1f}ms")
 
-observed = observe(store, on_write=on_write)
-observed.write("key.txt", b"hello")
-```
+    observed = observe(store, on_write=on_write)
+    observed.write("key.txt", b"hello")
+    ```
 """
 
 from __future__ import annotations

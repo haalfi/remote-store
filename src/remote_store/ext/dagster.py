@@ -6,13 +6,13 @@ without duplicating config into dagster-aws / dagster-azure.
 
 Install with ``pip install "remote-store[dagster]"``.
 
-Usage:
+!!! example
 
-```python
-from remote_store.ext.dagster import dagster_io_manager
+    ```python
+    from remote_store.ext.dagster import dagster_io_manager
 
-io_mgr = dagster_io_manager(store, serializer="pickle")
-```
+    io_mgr = dagster_io_manager(store, serializer="pickle")
+    ```
 """
 
 from __future__ import annotations

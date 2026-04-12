@@ -314,7 +314,7 @@ These extensions work well with data lake workflows:
 ## See also
 
 - [Medallion + Dagster Showcase](examples/medallion-dagster.md) — end-to-end
-  Bronze/Silver/Gold pipeline demonstrating 4 extensions over live MeteoSwiss data
+  Bronze/Silver/Gold pipeline demonstrating extensions over live MeteoSwiss data
 - [Data Lake Medallion notebook](https://github.com/haalfi/remote-store/blob/master/examples/notebooks/04_data_lake_medallion.ipynb) — runnable end-to-end Bronze/Silver/Gold pipeline
 - [Dagster Integration](dagster.md) — use any Store as a Dagster IO manager for orchestrated pipelines
 - [PyArrow FileSystem Adapter](pyarrow-adapter.md) — adapter configuration and tiered read strategy
