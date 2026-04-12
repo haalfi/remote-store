@@ -61,7 +61,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **Design index and Further Reading reshaped** (BK-150): `design/` now
   surfaces every `sdd/` process document — Design, Testing, Documentation
   Standards, Content Rules, Process — plus a new Audits section generated
-  from `sdd/audits/` (8 audits). `further-reading.md` stops duplicating
+  from `sdd/audits/`. `further-reading.md` stops duplicating
   the SDD trail and points at `design/` instead; it keeps only
   documentation-convention and community/policy links (Contributing,
   Dev Story, Changelog, Security, Code of Conduct, Citation).

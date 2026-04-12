@@ -11,7 +11,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   and `content-rules.md` include-wrappers for `sdd/DOCUMENTATION.md` and
   `sdd/CONTENT-RULES.md`; added Audits section — `gen_pages.py` scans
   `sdd/audits/` and generates `design/audits/index.md` plus per-audit wrapper
-  pages (8 audits); `_scan_entries` extended to accept `audit-NNN-*` stems.
+  pages; `_scan_entries` extended to accept `audit-NNN-*` stems.
   `further-reading.md` stops duplicating the SDD / conventions / research
   enumeration (CONTENT-RULES rule 4 — one copy per fact) and points at
   `design/`; documentation-convention links switched from GitHub to on-site
