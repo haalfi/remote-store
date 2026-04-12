@@ -762,6 +762,7 @@ _scanned_sections: dict[str, list[tuple[str, str]]] = {
     "design/specs": [(f"{num}: {title}", f"design/specs/{slug}.md") for num, slug, title in spec_entries],
     "design/adrs": [(f"{num}: {title}", f"design/adrs/{slug}.md") for num, slug, title in adr_entries],
     "design/rfcs": [(f"{num}: {title}", f"design/rfcs/{slug}.md") for num, slug, title in rfc_entries],
+    "design/audits": [(f"{num}: {title}", f"design/audits/{slug}.md") for num, slug, title in audit_entries],
     "design/research": [(title, f"design/research/{slug}.md") for _num, slug, title in research_entries],
 }
 

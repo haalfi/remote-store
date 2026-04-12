@@ -7,7 +7,7 @@ policy.
 ## Spec-Driven Development
 
 The full spec / ADR / RFC / research trail lives on the
-[Design index](design/). Start there for the methodology and the
+[Design index](design/index.md). Start there for the methodology and the
 document-by-document record.
 
 ## Documentation conventions

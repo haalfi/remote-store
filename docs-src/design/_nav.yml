@@ -1,10 +1,10 @@
-- Design Document: design-spec.md
-- Testing Standards: testing-standards.md
-- Documentation Standards: documentation-standards.md
 - Content Rules: content-rules.md
+- Design Document: design-spec.md
+- Documentation Standards: documentation-standards.md
 - Process: process.md
-- Specs: specs/
+- Testing Standards: testing-standards.md
 - ADRs: adrs/
-- RFCs: rfcs/
 - Audits: audits/
+- RFCs: rfcs/
 - Research: research/
+- Specs: specs/
