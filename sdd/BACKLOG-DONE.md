@@ -6,15 +6,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ---
 
 - [x] **BK-148 — Documentation content longevity rules**
-  New `sdd/CONTENT-RULES.md` (5 rules in TESTING.md format) to prevent
-  staleness patterns in prose: the 6-month test, principles over enumerations,
-  no pseudo-precise values, one copy per fact, source-code facts stay in
-  source. Research doc `sdd/research/research-doc-content-longevity.md`
-  records the motivating analysis. `CLAUDE.md`, `sdd/DOCUMENTATION.md`
-  (§§ 3, 6), `CONTRIBUTING.md`, and `sdd/CLAUDE-REFERENCE.md` updated to
-  wire the new document into the existing authoritative-document ecosystem.
-  Separate cleanup of existing README/guides/docstrings against these rules
-  is tracked as future work. PR #413.
+  New `sdd/CONTENT-RULES.md` keeps prose from drifting out of sync with code
+  and generated artefacts; `sdd/research/research-doc-content-longevity.md`
+  records the motivating analysis. Wired into the existing doc ecosystem via
+  `CLAUDE.md`, `DOCUMENTATION.md`, `CONTRIBUTING.md`, and `CLAUDE-REFERENCE.md`.
+  Cleanup of existing docs against the rules is tracked as future work. PR #413.
 
 - [x] **ID-137 — Reduce per-backend streaming overhead**
   All five sub-items addressed: (1) S3-PyArrow `open_output_stream` now passes
