@@ -6965,6 +6965,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../design/research/research-doc-content-longevity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation Content Longevity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../design/research/research-docs-landing-page/" class="md-nav__link">
         
   
@@ -7580,6 +7608,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#project-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#authoritative-document-format" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7656,6 +7695,17 @@
     <span class="md-ellipsis">
       
         Spec-First Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
       
     </span>
   </a>
@@ -8045,6 +8095,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#project-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#authoritative-document-format" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8121,6 +8182,17 @@
     <span class="md-ellipsis">
       
         Spec-First Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
       
     </span>
   </a>
@@ -8441,6 +8513,10 @@
 <h1 id="contributing-to-remote-store">Contributing to Remote Store<a class="headerlink" href="#contributing-to-remote-store" title="Permanent link">&para;</a></h1>
 <p>Scope: contributor workflow, development setup, release process, and consistency checklists for <code>remote-store</code>.</p>
 <p>This project follows <strong>Spec-Driven Development (SDD)</strong>: every feature starts as a specification before any code is written. See <a href="../design/process/"><code>sdd/000-process.md</code></a> for the full methodology.</p>
+<h2 id="project-principles">Project Principles<a class="headerlink" href="#project-principles" title="Permanent link">&para;</a></h2>
+<p>The universal working principles for this repo are listed in
+<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md"><code>CLAUDE.md</code></a> § Principles. They apply to any contributor,
+not only automated agents.</p>
 <h2 id="authoritative-document-format">Authoritative Document Format<a class="headerlink" href="#authoritative-document-format" title="Permanent link">&para;</a></h2>
 <p>Internal process and reference documents follow a fixed structure.</p>
 <h3 id="principle">Principle<a class="headerlink" href="#principle" title="Permanent link">&para;</a></h3>
@@ -8453,7 +8529,7 @@
 </ol>
 <p>Sections 1 and 2 alone must be sufficient to understand the document's purpose and obligations.</p>
 <h3 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h3>
-<p>Applies to root-level process documents in <code>sdd/</code> (000-process.md, DESIGN.md, DOCUMENTATION.md, TESTING.md, CLAUDE-REFERENCE.md). Does not apply to specs, ADRs, RFCs, research, audits, BACKLOG.md, README, CHANGELOG, DEVELOPMENT_STORY, CLAUDE.md, or CONTRIBUTING.md (which follow their own formats).</p>
+<p>Applies to root-level process documents in <code>sdd/</code> (000-process.md, DESIGN.md, DOCUMENTATION.md, TESTING.md, CONTENT-RULES.md, CLAUDE-REFERENCE.md). Does not apply to specs, ADRs, RFCs, research, audits, BACKLOG.md, README, CHANGELOG, DEVELOPMENT_STORY, CLAUDE.md, or CONTRIBUTING.md (which follow their own formats).</p>
 <h3 id="cross-check">Cross-check<a class="headerlink" href="#cross-check" title="Permanent link">&para;</a></h3>
 <p>Every sentence and section must pass this test: <em>"this would force different behavior in situation X."</em> If it does not, it is decoration — rewrite as a rule or remove.</p>
 <h3 id="exclusions">Exclusions<a class="headerlink" href="#exclusions" title="Permanent link">&para;</a></h3>
@@ -8471,6 +8547,10 @@
 <li><strong>Accept</strong>: The RFC graduates to a spec in <code>sdd/specs/</code>. It now defines the contract.</li>
 <li><strong>Implement</strong>: Open a follow-up PR with tests (referencing spec IDs) and implementation.</li>
 </ol>
+<h2 id="bug-fixes">Bug Fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h2>
+<p>Bug fixes follow a strict pipeline: BACKLOG → CHANGELOG → failing TEST → FIX →
+COMMIT together. See <a href="../design/process/"><code>sdd/000-process.md</code></a> § Rule 6 for
+the canonical rule.</p>
 <h2 id="repository-structure">Repository Structure<a class="headerlink" href="#repository-structure" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sdd/
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  000-process.md              # How specs work in this repo
@@ -8488,7 +8568,7 @@ walkthrough of the <code>Backend</code> contract, error mapping, and capabilitie
 <li>Write a spec in <code>sdd/specs/</code> or as an addendum in <code>sdd/specs/backends/&lt;name&gt;.md</code></li>
 <li>Implement <code>Backend</code> ABC in <code>src/remote_store/backends/_&lt;name&gt;.py</code></li>
 <li>Add a conformance fixture in <code>tests/backends/conftest.py</code></li>
-<li>Both conformance suites run automatically: <code>tests/backends/test_conformance.py</code> (64 tests, BE-001–BE-022, BE-025 + ancillary specs) and <code>tests/backends/test_conformance_extended.py</code> (50 Dafny-derived tests, <code>@pytest.mark.extended_conformance</code>). The suites are validated by a Dafny-compiled oracle — see <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a> § Compiled Oracle</li>
+<li>Both conformance suites run automatically: <code>tests/backends/test_conformance.py</code> (spec-traced) and <code>tests/backends/test_conformance_extended.py</code> (Dafny-derived, <code>@pytest.mark.extended_conformance</code>). The suites are validated by a Dafny-compiled oracle — see <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a> § Compiled Oracle</li>
 <li>Add user-facing guide in <code>guides/backends/&lt;name&gt;.md</code> and register in <code>mkdocs.yml</code> nav</li>
 <li>Update <code>guides/backends/index.md</code> (Supported Backends table)</li>
 <li>Update <code>README.md</code> (Supported Backends table + Installation extras)</li>
@@ -8597,8 +8677,10 @@ for persistence across sessions.</p>
 <li><strong>Coverage:</strong> Target &gt;= 95%</li>
 </ul>
 <h2 id="test-requirements">Test Requirements<a class="headerlink" href="#test-requirements" title="Permanent link">&para;</a></h2>
+<p>See <a href="../design/testing-standards/"><code>sdd/TESTING.md</code></a> for testing quality rules. Spec
+traceability and test-per-spec obligations are in
+<a href="../design/process/"><code>sdd/000-process.md</code></a> § Rules 1–2.</p>
 <ul>
-<li>Every spec section must have at least one test with <code>@pytest.mark.spec("ID")</code></li>
 <li>Run <code>pytest -m spec</code> to verify all spec-derived tests pass</li>
 <li>Run <code>pytest --cov=remote_store</code> for coverage reports</li>
 </ul>
