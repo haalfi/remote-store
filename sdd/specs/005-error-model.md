@@ -103,6 +103,29 @@ with pytest.raises(DirectoryNotEmpty):
     store.delete_folder("folder", recursive=False)
 ```
 
+## ERR-013: ResourceLocked
+
+**Invariant:** Raised when a target resource exists and the caller is
+authorised, but the resource is currently locked by another session
+or process and the operation cannot proceed.
+**Preconditions:** Caller targets a valid, accessible path whose
+backing resource is held by another session (for example, an Office
+co-authoring session, a SharePoint checked-out document, or a
+concurrent upload session on the same item).
+**Postconditions:** `path` and `backend` attributes are set. An
+optional `lock_owner: str | None` attribute is reserved for backends
+that can surface the holder; it is `None` when the backend cannot
+determine ownership.
+**Retry guidance:** Not treated as transient by the default retry
+policy. Callers decide their own retry cadence, if any.
+**Example:**
+```python
+with pytest.raises(ResourceLocked):
+    store.write("contracts/report.docx", content, overwrite=True)
+```
+**See also:** [ADR-0024](../adrs/0024-resource-locked-error.md),
+[044-graph-backend.md](044-graph-backend.md) (GR-045).
+
 ## Extension-scoped errors
 
 Extension-specific errors inherit from `RemoteStoreError` but live in their

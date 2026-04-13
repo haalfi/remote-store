@@ -136,18 +136,34 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
+- [ ] **ID-128 — Async-to-sync backend adapter ADR**
+  ADR-0012 covers the sync→async direction (`SyncBackendAdapter`) but
+  not the inverse. The Graph backend (ID-127) is async-native and the
+  sync `Store` API needs to wrap it. Decide and document the
+  async→sync mechanism: private event-loop ownership, cancellation
+  propagation, behaviour when the caller is already inside a running
+  loop, `nest-asyncio` interaction. Either reuse existing adapter
+  machinery in the opposite direction or introduce
+  `AsyncBackendSyncAdapter`. Must land before (or with) the ID-127
+  implementation PR.
+  - Refs: [RFC-0010 § Async posture](rfcs/rfc-0010-graph-backend.md),
+    [ADR-0012](adrs/0012-async-store-backend-api.md).
+
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint
   document libraries via the Microsoft Graph REST API. Single `drive_id`
   parameter selects the target drive.
-  - Capabilities: all 10 likely supportable (real folders, server-side
-    copy/move, Range-header seeks, temp-file atomic writes).
-  - Auth: OAuth 2.0 — client-credentials (daemon) and/or device-code
-    (interactive).
-  - SDK options: direct REST via `httpx` (minimal deps), `msgraph-sdk`
-    (official), or `Office365-REST-Python-Client` (mature).
+  - Design: [RFC-0010](rfcs/rfc-0010-graph-backend.md),
+    [ADR-0021](adrs/0021-graph-sdk-choice.md) (SDK),
+    [ADR-0022](adrs/0022-graph-auth-model.md) (auth),
+    [ADR-0023](adrs/0023-async-monitor-polling.md) (async polling),
+    [ADR-0024](adrs/0024-resource-locked-error.md) (ResourceLocked error).
+  - Spec: [044-graph-backend.md](specs/044-graph-backend.md)
+    (GR-001..GR-057; RET-015 in [spec 025](specs/025-retry-policy.md);
+    ERR-013 in [spec 005](specs/005-error-model.md)).
   - Reference: Azure backend (`_azure.py`) — closest architectural parallel.
-  - Next: RFC scoping auth model, path mapping, and SDK choice.
+  - Depends on: ID-128 (async→sync adapter ADR).
+  - Next: implementation per spec 044.
 
 - [ ] **ID-121 — CompositeStore (research complete)**
   `CompositeStore(Store)` — core Store subclass (not extension) that composes

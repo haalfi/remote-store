@@ -171,6 +171,12 @@ for _num, slug, _title in research_entries:
     # Research docs may link to sibling sdd/ files (e.g. ../TESTING.md).
     # In the docs tree these live at design/<name>.md with different slugs.
     content = content.replace("../TESTING.md", "../testing-standards.md")
+    # FEATURES.md lives at the repo root, not in the docs tree. Rewrite
+    # research-doc links to the GitHub blob URL so mkdocs --strict is happy.
+    content = content.replace(
+        "../../FEATURES.md",
+        "https://github.com/haalfi/remote-store/blob/master/FEATURES.md",
+    )
     with mkdocs_gen_files.open(f"design/research/{slug}.md", "w") as f:
         f.write(content)
 
