@@ -8883,8 +8883,8 @@ synchronous code paths.</p>
 SharePoint, and Teams. A Graph-first backend gives us one auth model,
 one permission model, one path/item-id scheme, and one module to
 maintain instead of three. Legacy SharePoint REST is a fallback only if
-a specific Store operation is genuinely unavailable on Graph — and the
-ten Store operations we target are all on Graph.</p>
+a specific Store operation is genuinely unavailable on Graph — and all
+Store operations we target are available on Graph.</p>
 <p>Users on Microsoft 365 tenants currently have no supported way to plug
 <code>remote-store</code> into their existing OneDrive or SharePoint document
 libraries without wrapping the raw REST API themselves. Closing that
@@ -8923,8 +8923,7 @@ gap is the point of this RFC.</p>
 <p><strong>Module:</strong> <code>remote_store.backends._graph</code>
 <strong>Name:</strong> <code>"graph"</code>
 <strong>Optional extra:</strong> <code>pip install "remote-store[graph]"</code>
-<strong>Dependencies:</strong> <code>httpx</code>, <code>msal</code>, <code>platformdirs</code> (used by the
-built-in <code>GraphAuth</code> token cache; see ADR-0022)
+<strong>Dependencies:</strong> see ADR-0021 for the locked dependency set.
 <strong>Spec:</strong> <code>sdd/specs/044-graph-backend.md</code> (GR-001 through GR-057,
 contiguous; topic-grouped by section order)</p>
 <p>The backend name is <code>"graph"</code> rather than <code>"onedrive"</code> or <code>"sharepoint"</code>
@@ -8932,8 +8931,8 @@ because a single instance can target any of those services depending on
 the <code>drive_id</code> resolved at construction. The name reflects the unified
 API, not the user-visible product.</p>
 <h3 id="sdk-decision">SDK decision<a class="headerlink" href="#sdk-decision" title="Permanent link">&para;</a></h3>
-<p>Evaluated honestly against the narrow surface we need (~12 endpoints,
-async-native, custom polling and upload-session logic):</p>
+<p>Evaluated honestly against the narrow surface we need (a small set of
+endpoints, async-native, custom polling and upload-session logic):</p>
 <table>
 <thead>
 <tr>
@@ -9043,223 +9042,16 @@ can also go async; both reuse the same poller.</p>
 interval, backoff, timeout, transient-5xx handling, cancellation — is
 specified in ADR-0023 and referenced by the spec (GR-026).</p>
 <h3 id="capability-matrix">Capability matrix<a class="headerlink" href="#capability-matrix" title="Permanent link">&para;</a></h3>
-<p>Honest, not 12/12. <code>--</code> (dash) indicates a capability not declared.</p>
-<table>
-<thead>
-<tr>
-<th>Capability</th>
-<th>Declared</th>
-<th>Rationale</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>READ</code></td>
-<td>Yes</td>
-<td><code>GET /content</code> via <code>@microsoft.graph.downloadUrl</code>.</td>
-</tr>
-<tr>
-<td><code>WRITE</code></td>
-<td>Yes</td>
-<td><code>PUT /content</code> or upload session.</td>
-</tr>
-<tr>
-<td><code>DELETE</code></td>
-<td>Yes</td>
-<td><code>DELETE /items/{id}</code> (resolved from path).</td>
-</tr>
-<tr>
-<td><code>LIST</code></td>
-<td>Yes</td>
-<td><code>/children</code> endpoint with <code>@odata.nextLink</code> pagination.</td>
-</tr>
-<tr>
-<td><code>MOVE</code></td>
-<td>Yes</td>
-<td><code>PATCH</code> with new <code>parentReference</code>; may-be-async.</td>
-</tr>
-<tr>
-<td><code>COPY</code></td>
-<td>Yes</td>
-<td><code>POST copy</code>; async with monitor URL.</td>
-</tr>
-<tr>
-<td><code>METADATA</code></td>
-<td>Yes</td>
-<td><code>GET /items/{path}</code> with <code>$select</code>.</td>
-</tr>
-<tr>
-<td><code>GLOB</code></td>
-<td>--</td>
-<td>No native glob. <code>ext.glob</code> (prefix + fnmatch over <code>list_files</code>) serves the need.</td>
-</tr>
-<tr>
-<td><code>ATOMIC_WRITE</code></td>
-<td>Yes</td>
-<td>Small PUT is atomic service-side; upload-session is atomic on commit.</td>
-</tr>
-<tr>
-<td><code>ATOMIC_MOVE</code></td>
-<td>--</td>
-<td>Graph move may be async; atomicity is not guaranteed.</td>
-</tr>
-<tr>
-<td><code>LAZY_READ</code></td>
-<td>Yes</td>
-<td>Range reads via the download URL avoid loading the full file.</td>
-</tr>
-<tr>
-<td><code>SEEKABLE_READ</code></td>
-<td>--</td>
-<td>Graph streams are forward-only. <code>Store.read_seekable()</code> falls back to the default spool per ADR-0017.</td>
-</tr>
-</tbody>
-</table>
-<p>The spec pins the declaration in GR-003 and the rationale in
-GR-012 through GR-027.</p>
+<p>Honest capability declarations are central to this backend's design — several capabilities are
+explicitly withheld with rationale (for example, <code>SEEKABLE_READ</code> is withheld because Graph
+streams are forward-only; <code>ATOMIC_MOVE</code> because Graph move may be asynchronous). See GR-003
+in <code>sdd/specs/044-graph-backend.md</code> for the complete declaration and per-capability rationale.</p>
 <h3 id="error-mapping">Error mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h3>
 <p>Graph returns structured error bodies with a <code>code</code> field under
 <code>error</code>. The mapping uses HTTP status plus <code>code</code>, not string
-matching. <code>backend</code> is set to <code>"graph"</code> on every mapped error.</p>
-<table>
-<thead>
-<tr>
-<th>HTTP</th>
-<th>Graph code</th>
-<th>remote_store error</th>
-<th>Retryable?</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>400</td>
-<td><code>invalidRequest</code></td>
-<td><code>RemoteStoreError</code></td>
-<td>--</td>
-<td>Bad request; typically a caller bug.</td>
-</tr>
-<tr>
-<td>401</td>
-<td><code>InvalidAuthenticationToken</code></td>
-<td>(re-acquire + retry once)</td>
-<td>Internal</td>
-<td>One-shot token refresh; on second failure raise <code>PermissionDenied</code>.</td>
-</tr>
-<tr>
-<td>401</td>
-<td><code>unauthenticated</code></td>
-<td><code>PermissionDenied</code></td>
-<td>--</td>
-<td>Not recoverable by re-auth alone.</td>
-</tr>
-<tr>
-<td>401</td>
-<td><code>tokenNotFound</code></td>
-<td><code>PermissionDenied</code></td>
-<td>--</td>
-<td>Terminal; no refresh attempt (GR-029).</td>
-</tr>
-<tr>
-<td>401</td>
-<td><code>invalidRequest</code> (401 scope)</td>
-<td><code>PermissionDenied</code></td>
-<td>--</td>
-<td>Terminal; no refresh attempt (GR-029).</td>
-</tr>
-<tr>
-<td>401</td>
-<td>any other <code>code</code></td>
-<td><code>PermissionDenied</code></td>
-<td>--</td>
-<td>Only <code>InvalidAuthenticationToken</code> triggers the one-shot refresh (GR-029).</td>
-</tr>
-<tr>
-<td>403</td>
-<td><code>accessDenied</code></td>
-<td><code>PermissionDenied</code></td>
-<td>--</td>
-<td></td>
-</tr>
-<tr>
-<td>404</td>
-<td><code>itemNotFound</code> (item/path scope)</td>
-<td><code>NotFound</code></td>
-<td>--</td>
-<td></td>
-</tr>
-<tr>
-<td>404</td>
-<td><code>resourceNotFound</code> / drive scope</td>
-<td><code>BackendUnavailable</code></td>
-<td>--</td>
-<td>Drive misconfigured or deleted (GR-031).</td>
-</tr>
-<tr>
-<td>404</td>
-<td>Any other code at item scope</td>
-<td><code>NotFound</code></td>
-<td>--</td>
-<td>Backend does not discriminate hidden-<code>accessDenied</code>-as-404 (GR-031).</td>
-</tr>
-<tr>
-<td>409</td>
-<td><code>nameAlreadyExists</code></td>
-<td><code>AlreadyExists</code></td>
-<td>--</td>
-<td>Respect <code>conflictBehavior</code> for writes.</td>
-</tr>
-<tr>
-<td>409</td>
-<td><code>invalidRange</code></td>
-<td><code>RemoteStoreError</code></td>
-<td>--</td>
-<td>Upload-session <code>Content-Range</code> mismatch; not retried.</td>
-</tr>
-<tr>
-<td>416</td>
-<td><code>invalidRange</code></td>
-<td><code>RemoteStoreError</code></td>
-<td>--</td>
-<td>Range read beyond EOF.</td>
-</tr>
-<tr>
-<td>423</td>
-<td><code>resourceLocked</code></td>
-<td><code>ResourceLocked</code></td>
-<td>--</td>
-<td>ADR-0024. Not retried by default policy.</td>
-</tr>
-<tr>
-<td>429</td>
-<td><code>activityLimitReached</code></td>
-<td><code>BackendUnavailable</code></td>
-<td>Yes</td>
-<td><code>Retry-After</code> surfaced to the retry extension.</td>
-</tr>
-<tr>
-<td>500, 502, 503, 504</td>
-<td>(varies)</td>
-<td><code>BackendUnavailable</code></td>
-<td>Yes</td>
-<td>Retry per policy.</td>
-</tr>
-<tr>
-<td>507</td>
-<td><code>insufficientStorage</code> / <code>quotaLimitReached</code></td>
-<td><code>BackendUnavailable</code></td>
-<td>--</td>
-<td>Quota exhausted; context carries <code>quota.*</code> fields. Not retryable (GR-054).</td>
-</tr>
-<tr>
-<td>Network / timeout</td>
-<td>(httpx exceptions)</td>
-<td><code>BackendUnavailable</code></td>
-<td>Yes</td>
-<td></td>
-</tr>
-</tbody>
-</table>
+matching — no fragile string parsing. <code>backend</code> is set to <code>"graph"</code>
+on every mapped error. See GR-028 through GR-045 in
+<code>sdd/specs/044-graph-backend.md</code> for the complete mapping table.</p>
 <h3 id="throttling">Throttling<a class="headerlink" href="#throttling" title="Permanent link">&para;</a></h3>
 <p>Graph throttling is mapped to <code>BackendUnavailable</code> with the
 <code>Retry-After</code> header value propagated so the retry policy can honour
@@ -9418,8 +9210,8 @@ deferred in GR-011 so the deferral is tracked.</p>
 <ul>
 <li><strong>Backends.</strong> New <code>graph</code> backend. <code>FEATURES.md</code> row added in the
   implementation phase.</li>
-<li><strong>Extras.</strong> New <code>graph</code> extra in <code>pyproject.toml</code> pulling <code>httpx</code>
-  and <code>msal</code>.</li>
+<li><strong>Extras.</strong> New <code>graph</code> extra in <code>pyproject.toml</code>. See ADR-0021 for
+  the locked dependency set.</li>
 <li><strong>Spec 005 (errors).</strong> Amended in this PR to add ERR-013
   <code>ResourceLocked</code>.</li>
 <li><strong>Spec 025 (retry).</strong> Amended in this PR to add RET-015 Graph retry
