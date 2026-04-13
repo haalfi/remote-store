@@ -429,6 +429,10 @@
          <lastmod>2026-04-13</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0025-async-to-sync-backend-adapter/</loc>
+         <lastmod>2026-04-13</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/audits/</loc>
          <lastmod>2026-04-13</lastmod>
     </url>
