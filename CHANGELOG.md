@@ -17,6 +17,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Async-to-sync backend adapter — ADR draft** (ID-141): drafted
+  `sdd/adrs/0025-async-to-sync-backend-adapter.md`; updated RFC-0010
+  § Async posture. Prerequisite for the ID-127 Graph implementation
+  PR; ID-142 tracks the deferred `ASYNC-NNN` spec block.
 - **Microsoft Graph backend — SDD artifacts** (ID-127): accepted
   `sdd/rfcs/rfc-0010-graph-backend.md`, ADRs `sdd/adrs/0021-graph-sdk-choice.md`
   (SDK choice), `sdd/adrs/0022-graph-auth-model.md` (auth model),

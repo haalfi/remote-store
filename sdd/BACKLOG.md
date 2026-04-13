@@ -136,18 +136,13 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
-- [ ] **ID-128 — Async-to-sync backend adapter ADR**
-  ADR-0012 covers the sync→async direction (`SyncBackendAdapter`) but
-  not the inverse. The Graph backend (ID-127) is async-native and the
-  sync `Store` API needs to wrap it. Decide and document the
-  async→sync mechanism: private event-loop ownership, cancellation
-  propagation, behaviour when the caller is already inside a running
-  loop, `nest-asyncio` interaction. Either reuse existing adapter
-  machinery in the opposite direction or introduce
-  `AsyncBackendSyncAdapter`. Must land before (or with) the ID-127
-  implementation PR.
-  - Refs: [RFC-0010 § Async posture](rfcs/rfc-0010-graph-backend.md),
-    [ADR-0012](adrs/0012-async-store-backend-api.md).
+- [ ] **ID-142 — `ASYNC-NNN` spec block + test doubles for `AsyncBackendSyncAdapter`**
+  Allocate the 14 numbered invariants enumerated in
+  [ADR-0025 § Followups](adrs/0025-async-to-sync-backend-adapter.md)
+  and add `_HangingAsyncBackend` / `_RaisingAsyncBackend` test
+  doubles. Lands before — or with — the ID-127 implementation PR.
+  - Depends on: ID-141.
+  - Blocks: ID-127 implementation PR.
 
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint
@@ -162,7 +157,9 @@ Items graduate through the SDD pipeline:
     (GR-001..GR-057; RET-015 in [spec 025](specs/025-retry-policy.md);
     ERR-013 in [spec 005](specs/005-error-model.md)).
   - Reference: Azure backend (`_azure.py`) — closest architectural parallel.
-  - Depends on: ID-128 (async→sync adapter ADR).
+  - Depends on: ID-141 (async→sync adapter ADR), ID-142 (`ASYNC-NNN`
+    spec block for the adapter — gives the test suite spec IDs to
+    trace).
   - Next: implementation per spec 044.
 
 - [ ] **ID-121 — CompositeStore (research complete)**

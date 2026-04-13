@@ -164,16 +164,14 @@ implementation:
   mirror image of `SyncBackendAdapter` (which wraps sync into async).
 
 ADR-0012 specifies only the sync→async direction (`SyncBackendAdapter`).
-The async→sync direction has non-trivial design surface — private
-event-loop ownership, cancellation propagation, behaviour when the
-caller is already inside a running loop, `nest-asyncio` interaction —
-and therefore requires its own ADR rather than being decided implicitly
-during the Graph implementation pass. Tracked as **ID-128** in
-`sdd/BACKLOG.md`; that ADR must land before (or together with) the
-Graph implementation PR. Whatever shape it takes (reuse of existing
-adapter machinery in the opposite direction, or a new
-`AsyncBackendSyncAdapter` companion), the wrapper must preserve the
-flat capability set and all error mappings.
+The async→sync direction is decided in **ADR-0025**: a new
+`AsyncBackendSyncAdapter` owns a private event loop on a dedicated
+thread, submits coroutines via `asyncio.run_coroutine_threadsafe`,
+fails fast when invoked from a running loop, and does not depend on
+`nest_asyncio`. It must preserve the flat capability set and all
+error mappings unchanged. Tracked as **ID-141** in `sdd/BACKLOG.md`;
+that ADR must land before (or together with) the Graph implementation
+PR.
 
 ### Async monitor-URL polling
 
