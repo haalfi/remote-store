@@ -146,7 +146,7 @@ Items graduate through the SDD pipeline:
     [ADR-0023](adrs/0023-async-monitor-polling.md) (async polling),
     [ADR-0024](adrs/0024-resource-locked-error.md) (ResourceLocked error).
   - Spec: [044-graph-backend.md](specs/044-graph-backend.md)
-    (GR-001..GR-056; RET-015 in [spec 025](specs/025-retry-policy.md);
+    (GR-001..GR-057; RET-015 in [spec 025](specs/025-retry-policy.md);
     ERR-013 in [spec 005](specs/005-error-model.md)).
   - Reference: Azure backend (`_azure.py`) — closest architectural parallel.
   - Next: implementation per spec 044.

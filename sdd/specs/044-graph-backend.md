@@ -39,6 +39,7 @@ GraphBackend(
     http_client: httpx.AsyncClient | None = None,
     retry: RetryPolicy | None = None,
     upload_chunk_size: int = 10 * 1024 * 1024,  # 10 MiB
+    copy_timeout: float | None = None,
     client_options: dict[str, Any] | None = None,
 )
 ```
@@ -89,8 +90,9 @@ first use.
 
 **Invariant:** `drive_id` must be a non-empty string. `token_provider`
 must be callable. `upload_chunk_size` must be a positive multiple of
-320 KiB (Graph's alignment requirement). Violations raise `ValueError`
-at construction time.
+320 KiB (Graph's alignment requirement). `copy_timeout`, when set,
+must be a positive float. Violations raise `ValueError` at
+construction time.
 **Postconditions:** Drive existence and caller permissions are not
 validated at construction; they surface on the first operation and
 are mapped per GR-028 through GR-033.
@@ -168,6 +170,48 @@ across every backend. Item-id mode is deferred to a future RFC; this
 spec ID reserves the contract slot so a later addition can reference
 `GR-011` as the point of extension.
 
+### GR-057: `resolve_drive_id` Helper
+
+**Invariant:** The public helper `resolve_drive_id(target, *,
+token_provider, http_client=None) -> str` resolves a drive id from
+one of three target shapes and returns the opaque Graph
+`drive.id` string for use as `GraphBackend(drive_id=...)`. It is a
+sync function; internally it runs an async resolution under a
+private event loop (per ADR-0012 sync-wrapper pattern).
+
+**Accepted target shapes:**
+
+1. **OneDrive (personal / business of the authenticated user).**
+   The literal string `"me"` resolves the authenticated user's
+   default drive via `GET /me/drive`.
+2. **SharePoint document library.** A site URL (e.g.
+   `https://contoso.sharepoint.com/sites/marketing`), optionally
+   followed by a document library name in `(site_url,
+   library_name)` tuple form. A bare site URL selects the site's
+   default drive (`GET /sites/{site_id}/drive`); the tuple form
+   selects a named drive from `GET /sites/{site_id}/drives` by
+   matching `drive.name`.
+3. **Teams channel.** A `{team_id, channel_id}` mapping (dict with
+   those two keys) resolves via `GET /teams/{team_id}/channels/
+   {channel_id}/filesFolder` to that channel's backing drive id.
+
+**Raises:**
+
+- `InvalidPath` when `target` does not match any accepted shape or
+  when the SharePoint `library_name` does not exist on the site.
+- `NotFound` when the site/team/channel id resolves but returns 404
+  (deleted or inaccessible).
+- `PermissionDenied` when Graph returns 403 for the lookup.
+- Other Graph-mapped errors per GR-028..GR-034, GR-045, GR-054.
+
+**Rationale:** Citizen developers rarely have a raw `drive_id` at
+hand — they have a SharePoint URL, a Teams channel, or just "my
+OneDrive". Exposing the three accepted shapes as one helper keeps
+the `GraphBackend` constructor contract simple (`drive_id: str`)
+while providing an ergonomic on-ramp. The helper is separate from
+the backend so it is testable and usable without instantiating a
+full `GraphBackend` first.
+
 ---
 
 ## Read Operations
@@ -208,6 +252,13 @@ bytes=<start>-<end>` header directly to the
 `/content` endpoint. This helper is **not** a public Store method;
 it services the non-seekable read pipeline and the spool fallback
 for `read_seekable()`. `SEEKABLE_READ` remains withheld (GR-003).
+**SharePoint caveat:** On some SharePoint-backed drives the
+pre-signed download URL has been observed to ignore or reject
+`Range` headers depending on tenant configuration (WebDAV-style
+backends in particular). When the server returns the full entity
+(`200 OK` to a `Range` request) or rejects the range with `416`
+outside the valid extent, the backend falls back to the spool
+strategy rather than pretending to stream.
 **Rationale:** The `/content` endpoint returns `302` redirecting to
 the download URL, and only the download URL honours `Range`
 reliably. The download URL is pre-signed; no `Authorization` header
@@ -243,6 +294,13 @@ eTag values rather than silently returning a mixed-version byte
 stream.
 **Postconditions:** The re-fetch is bounded by `RetryPolicy`;
 exhaustion raises `BackendUnavailable`.
+**SharePoint caveat:** Some SharePoint drive backings issue
+download URLs that reject subsequent `Range` requests even while
+unexpired. If the re-fetched URL yields a `200` (full body) or
+non-`416` `4xx` to a `Range` request, the backend treats the
+download URL as range-incapable and completes the remaining bytes
+by re-reading from offset zero into the existing spool rather than
+streaming mid-file.
 
 ---
 
@@ -259,6 +317,13 @@ size <= 4 MiB uses `PUT /drives/{drive_id}/root:{encoded_path}:/content`.
 - The write is atomic at the service level.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
 `InvalidPath` if the path names a folder.
+**Note on the 4 MiB threshold:** Graph documents the
+`PUT .../content` endpoint as suitable for files up to ~4 MiB and
+recommends upload sessions beyond that. In practice the endpoint
+accepts larger payloads (commonly up to ~60 MiB) but the behaviour
+is not contractually guaranteed and varies by drive backing store.
+4 MiB is the conservative default the backend uses; it is not a
+tuning knob in v1.
 
 ### GR-019: Large-File Write via Upload Session
 
@@ -403,8 +468,21 @@ monitor URL.
 GR-027) using the shared `_async_monitor` module (ADR-0023).
 **Postconditions:**
 - Initial interval defaults to 1 s; ceiling 30 s; multiplicative
-  backoff factor 2; overall timeout honours `RetryPolicy.timeout`
-  when set.
+  backoff factor 2.
+- Overall poll budget is controlled by a dedicated
+  `copy_timeout: float | None` parameter on `GraphBackend.__init__`
+  (default `None`, meaning no backend-imposed ceiling — the operation
+  runs until Graph reports terminal status). `RetryPolicy.timeout` is
+  **not** used as the poll budget: `RetryPolicy.timeout` bounds a
+  retry loop on the order of seconds, whereas a copy of a large item
+  can legitimately take minutes, so conflating the two would
+  prematurely abort long copies. A caller who wants a wall-clock
+  bound on `copy`/`move` sets `copy_timeout` explicitly.
+- On `copy_timeout` expiry the poller raises
+  `BackendUnavailable(context={"monitor_url": ..., "poll_count": ...,
+  "last_status": ...})`. The server-side operation is **not**
+  cancelled (Graph monitor URLs have no public cancel endpoint); the
+  caller is expected to check the final state out-of-band if needed.
 - `Retry-After` on poll responses overrides the computed interval
   when larger.
 - `5xx` responses during polling are treated as `pending`, not
@@ -475,11 +553,16 @@ No `httpx` or `msal` exceptions propagate to callers (per BE-021).
 
 ### GR-029: 401 InvalidAuthenticationToken
 
-**Invariant:** On `401 InvalidAuthenticationToken`, the backend
-re-invokes `token_provider` and retries the request once. A second
-`401` raises `PermissionDenied`.
+**Invariant:** On `401` with `error.code == "InvalidAuthenticationToken"`,
+the backend re-invokes `token_provider` and retries the request once.
+A second `401` with the same code raises `PermissionDenied`.
 **Postconditions:** This handling is independent of `RetryPolicy` —
-it is a one-shot refresh, not a retry loop.
+it is a one-shot refresh, not a retry loop. `401` responses with any
+other `error.code` (e.g. `unauthenticated`, `tokenNotFound`,
+`invalidRequest` at 401 scope) map directly to `PermissionDenied`
+without a refresh attempt; the token is valid but the caller lacks
+the required permission for this operation, and refreshing would not
+change the outcome.
 
 ### GR-030: 403 accessDenied
 
@@ -552,6 +635,12 @@ Graph returns them (e.g. `quota.total`, `quota.used`,
 **Postconditions:** Not retryable by the default policy — the
 condition does not clear on short-term retry. Callers diagnose via
 the context fields and react at their own cadence.
+**Upstream limits:** Graph enforces a documented maximum single-file
+size of 250 GiB per upload session for OneDrive and SharePoint
+drives (smaller on consumer OneDrive). The backend does not
+pre-validate against this limit; attempts to upload larger files
+surface as `507` / `quotaLimitReached` from Graph and reach the
+caller via this mapping.
 
 ### GR-055: 416 invalidRange on Range Read
 
@@ -621,6 +710,12 @@ the `quickXorHash`, `sha1Hash`, and `sha256Hash` values from Graph's
   `FileInfo.digest`; the Graph backend leaves `digest` unset
   unless a single authoritative hash is selected by a future
   extension.
+- **Availability caveat:** Graph's `/children` list endpoint
+  frequently omits `file.hashes` on SharePoint-backed drives even
+  when a per-item `GET /items/{id}` would return them. Callers
+  that require hashes should fetch individual items; the backend
+  does not paper over the gap by back-filling hashes during list
+  operations.
 
 ### GR-050: Drive-Id as Store Identity
 

@@ -66,7 +66,7 @@ gap is the point of this RFC.
 **Name:** `"graph"`
 **Optional extra:** `pip install "remote-store[graph]"`
 **Dependencies:** `httpx`, `msal`
-**Spec:** `sdd/specs/044-graph-backend.md` (GR-001 through GR-056,
+**Spec:** `sdd/specs/044-graph-backend.md` (GR-001 through GR-057,
 non-contiguous; topic-grouped)
 
 The backend name is `"graph"` rather than `"onedrive"` or `"sharepoint"`
@@ -389,10 +389,11 @@ deferred in GR-011 so the deferral is tracked.
 ## Impact
 
 - **Public API.** Adds `GraphBackend`, `GraphAuth`, and
-  `resolve_drive_id` under `remote_store.backends._graph`
-  (re-exported per the optional-extension import rules in ADR-0013:
-  users import from the canonical module path). Adds `ResourceLocked`
-  to the top-level error exports.
+  `resolve_drive_id` under `remote_store.backends._graph`, re-exported
+  from `remote_store.backends` behind a guarded import (the pattern
+  used for every optional-dependency backend in
+  `src/remote_store/backends/__init__.py`). Adds `ResourceLocked` to
+  the top-level error exports.
 - **Backwards compatibility.** Purely additive. No existing behaviour
   changes except the new `ResourceLocked` error class — which is
   unreachable from backends other than Graph.
@@ -411,10 +412,10 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   implementation phase.
 - **Extras.** New `graph` extra in `pyproject.toml` pulling `httpx`
   and `msal`.
-- **Spec 005 (errors).** Amended to add ERR-013 `ResourceLocked`.
-- **Spec 025 (retry).** Amended to add RET-015 Graph retry mapping
-  (the amendment lands in the implementation phase; the RFC pins the
-  contract).
+- **Spec 005 (errors).** Amended in this PR to add ERR-013
+  `ResourceLocked`.
+- **Spec 025 (retry).** Amended in this PR to add RET-015 Graph retry
+  mapping.
 - **Capabilities.** No new capabilities; existing flags used as
   declared.
 - **ADRs.** ADR-0021, ADR-0022, ADR-0023, ADR-0024 all new.

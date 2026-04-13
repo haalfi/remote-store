@@ -6,18 +6,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Design
-
-- **Microsoft Graph backend — SDD artifacts** (ID-127): accepted
-  `sdd/rfcs/rfc-0010-graph-backend.md`, ADRs `sdd/adrs/0021-graph-sdk-choice.md`
-  (SDK choice), `sdd/adrs/0022-graph-auth-model.md` (auth model),
-  `sdd/adrs/0023-async-monitor-polling.md` (async monitor polling), and
-  `sdd/adrs/0024-resource-locked-error.md` (`ResourceLocked` error), plus
-  `sdd/specs/044-graph-backend.md` (GR-001..GR-056). Amends
-  `sdd/specs/005-error-model.md` with ERR-013 (`ResourceLocked`) and
-  `sdd/specs/025-retry-policy.md` with RET-015 (Graph retry mapping).
-  No runtime changes.
-
 ### Fixed
 
 - **Docs pages deployment on release tags** (BUG-164): `pages` job moved to a
@@ -29,6 +17,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Microsoft Graph backend — SDD artifacts** (ID-127): accepted
+  `sdd/rfcs/rfc-0010-graph-backend.md`, ADRs `sdd/adrs/0021-graph-sdk-choice.md`
+  (SDK choice), `sdd/adrs/0022-graph-auth-model.md` (auth model),
+  `sdd/adrs/0023-async-monitor-polling.md` (async monitor polling), and
+  `sdd/adrs/0024-resource-locked-error.md` (`ResourceLocked` error), plus
+  `sdd/specs/044-graph-backend.md` (GR-001..GR-057). Amends
+  `sdd/specs/005-error-model.md` with ERR-013 (`ResourceLocked`) and
+  `sdd/specs/025-retry-policy.md` with RET-015 (Graph retry mapping).
+  No runtime changes.
 - **Test-quality cleanup on coverage PR** (BK-151): cross-platform-safe tests,
   real assertions on previously mock-only checks, `spec=` on every `MagicMock()`.
 
