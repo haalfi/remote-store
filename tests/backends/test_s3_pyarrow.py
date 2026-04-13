@@ -918,9 +918,11 @@ class TestPyArrowBinaryIOMethods:
     def _make_raw(self, *, seekable: bool = True, tell_pos: int = 0) -> tuple[object, object]:
         from unittest.mock import MagicMock
 
+        import pyarrow as pa
+
         from remote_store.backends._s3_pyarrow import _PyArrowBinaryIO
 
-        mock_pa = MagicMock()
+        mock_pa = MagicMock(spec=pa.NativeFile)
         mock_pa.seekable.return_value = seekable
         mock_pa.tell.return_value = tell_pos
         return _PyArrowBinaryIO(mock_pa), mock_pa
@@ -976,7 +978,9 @@ class TestS3PyArrowRetryNonDefaultParams:
             bucket="test-bucket",
             retry=RetryPolicy(max_attempts=5, backoff_base=2.0),  # non-default backoff_base
         )
-        mock_fs = MagicMock()
+        import pyarrow.fs as pa_fs
+
+        mock_fs = MagicMock(spec=pa_fs.S3FileSystem)
         with (
             caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_pyarrow"),
             patch("pyarrow.fs.S3FileSystem", return_value=mock_fs),
@@ -997,7 +1001,9 @@ class TestS3PyArrowRetryNonDefaultParams:
             bucket="test-bucket",
             retry=RetryPolicy(max_attempts=3, backoff_base=2.0),  # non-default
         )
-        mock_fs = MagicMock()
+        import s3fs as _s3fs
+
+        mock_fs = MagicMock(spec=_s3fs.S3FileSystem)
         with (
             caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_pyarrow"),
             patch("s3fs.S3FileSystem", return_value=mock_fs),

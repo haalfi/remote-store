@@ -201,7 +201,9 @@ class TestLocalBackendToKeyRoot:
     def test_to_key_root_returns_empty_string(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             backend = LocalBackend(root=tmp)
-            assert backend.to_key(tmp) == ""
+            # Use the backend's own root representation so the comparison is
+            # robust to Windows short-path (8.3) normalisation of `tmp`.
+            assert backend.to_key(backend.native_path("")) == ""
 
     def test_to_key_root_normalizes_trailing_slash(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

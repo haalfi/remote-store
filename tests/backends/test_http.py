@@ -458,20 +458,20 @@ class TestHttpxStreamAdapter:
 
     def test_readable_returns_true(self) -> None:
         pytest.importorskip("httpx")
-        from unittest.mock import MagicMock, create_autospec
+        from unittest.mock import create_autospec
 
         import httpx
 
         from remote_store.backends._http_httpx import _HttpxStreamAdapter
 
         resp = create_autospec(httpx.Response, spec_set=False)
-        resp.iter_bytes = MagicMock(return_value=iter([]))
+        resp.iter_bytes = lambda **_kwargs: iter([])
         adapter = _HttpxStreamAdapter(resp)
         assert adapter.readable() is True
 
     def test_next_chunk_converts_stream_error(self) -> None:
         pytest.importorskip("httpx")
-        from unittest.mock import MagicMock, create_autospec
+        from unittest.mock import create_autospec
 
         import httpx
 
@@ -483,14 +483,14 @@ class TestHttpxStreamAdapter:
             raise httpx.StreamError("stream closed")
             yield  # make it a generator
 
-        resp.iter_bytes = MagicMock(return_value=_raise_on_next())
+        resp.iter_bytes = lambda **_kwargs: _raise_on_next()
         adapter = _HttpxStreamAdapter(resp)
         with pytest.raises(OSError, match="stream closed"):
             adapter.readinto(bytearray(10))
 
     def test_read_all_converts_stream_error(self) -> None:
         pytest.importorskip("httpx")
-        from unittest.mock import MagicMock, create_autospec
+        from unittest.mock import create_autospec
 
         import httpx
 
@@ -502,7 +502,7 @@ class TestHttpxStreamAdapter:
             yield b"first"
             raise httpx.StreamError("mid-stream error")
 
-        resp.iter_bytes = MagicMock(return_value=_bad_iter())
+        resp.iter_bytes = lambda **_kwargs: _bad_iter()
         adapter = _HttpxStreamAdapter(resp)
         with pytest.raises(OSError, match="mid-stream"):
             adapter.read(-1)
