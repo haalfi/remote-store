@@ -5,6 +5,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-141 — Async-to-sync backend adapter ADR**
+  Drafted [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md):
+  `AsyncBackendSyncAdapter` owns a private event loop on a dedicated
+  thread, submits via `asyncio.run_coroutine_threadsafe`, fails fast
+  when invoked from a running loop, no `nest_asyncio` dependency,
+  per-capability translation (`SEEKABLE_READ` masked, rest forwarded),
+  `open_atomic` synthesised over `write_atomic`. Updated RFC-0010
+  § Async posture. Spec-ID allocation deferred to ID-142
+  (prerequisite for the ID-127 implementation PR). PR #435.
+
 - [x] **BK-151 — PR #426 test-quality cleanup**
   Addressed review feedback on the ID-013b coverage PR: removed `os.getuid()`
   at module import (Windows collection crash); monkeypatched `tempfile.mkstemp`

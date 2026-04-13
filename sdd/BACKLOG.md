@@ -144,21 +144,6 @@ Items graduate through the SDD pipeline:
   - Depends on: ID-141.
   - Blocks: ID-127 implementation PR.
 
-- [~] **ID-141 — Async-to-sync backend adapter ADR**
-  ADR-0012 covers the sync→async direction (`SyncBackendAdapter`) but
-  not the inverse. The Graph backend (ID-127) is async-native and the
-  sync `Store` API needs to wrap it. Decide and document the
-  async→sync mechanism: private event-loop ownership, cancellation
-  propagation, behaviour when the caller is already inside a running
-  loop, `nest-asyncio` interaction. Either reuse existing adapter
-  machinery in the opposite direction or introduce
-  `AsyncBackendSyncAdapter`. Must land before (or with) the ID-127
-  implementation PR.
-  - Draft: [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md).
-  - Refs: [RFC-0010 § Async posture](rfcs/rfc-0010-graph-backend.md),
-    [ADR-0012](adrs/0012-async-store-backend-api.md).
-  - Followup: ID-142 (`ASYNC-NNN` spec block).
-
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint
   document libraries via the Microsoft Graph REST API. Single `drive_id`
