@@ -98,23 +98,37 @@ hybrid model needs.
 - Non-I/O methods (`name`, `capabilities`, `to_key`, `native_path`,
   `resolve`, `unwrap`) delegate directly to the wrapped async backend
   without the loop, mirroring `SyncBackendAdapter`'s passthrough.
+- I/O methods that return scalars or `None` — `exists`, `is_file`,
+  `is_folder`, `read_bytes`, `get_file_info`, `get_folder_info`,
+  `move`, `copy`, `delete`, `delete_folder`, **`check_health`** —
+  follow the standard submit-and-block pattern. `check_health()`
+  is explicitly **not** a no-op: connectivity errors from the
+  wrapped async backend must reach the sync caller verbatim.
 
 ### Streaming iterators and open streams
 
 - `read(path)` returns a sync file-like stream whose `read(n)` pumps
-  chunks out of the backend's `AsyncIterator[bytes]`. Each `read(n)`
-  submits an `__anext__` coroutine to the loop and blocks. `close()`
-  submits the async iterator's `aclose()` to the loop.
+  chunks out of the backend's `AsyncIterator[bytes]`. The stream
+  holds an internal byte buffer (`memoryview` slice) carrying the
+  unread tail of the most recently fetched chunk: `read(n)` first
+  drains that buffer, and only submits a new `__anext__` coroutine
+  when the buffer is empty and more bytes are still required.
+  This satisfies the `BinaryIO` contract that `read(n)` returns at
+  most *n* bytes even when the backend yields larger chunks.
+  `close()` submits the async iterator's `aclose()` to the loop.
 - `list_files`, `list_folders`, `glob`, `iter_children` return sync
   iterators backed by the same chunk-pull pattern. Materialising the
   full listing up front is **not** acceptable: native-async backends
   exist precisely to stream, and the sync wrapper must preserve that.
 - The underlying async iterator handle lives on the loop; every
   step crosses the thread boundary via `run_coroutine_threadsafe`.
-- **Single-chunk buffering invariant.** The adapter holds at most
-  one in-flight chunk per stream/iterator at a time. No look-ahead,
-  no read-ahead pool — the bridge must not reintroduce the memory
-  bloat that materialising the full listing would cause.
+- **Single-chunk in-flight invariant.** The adapter has at most one
+  outstanding `__anext__` per stream/iterator: no look-ahead, no
+  read-ahead pool, no parallel prefetch. The unread tail of the
+  most recently fetched chunk (held in the `read()` stream's byte
+  buffer described above) is the *only* sanctioned per-stream
+  buffer. The bridge must not reintroduce the memory bloat that
+  materialising the full listing would cause.
 
 ### Write-side content
 
@@ -124,6 +138,12 @@ hybrid model needs.
   next sync chunk on a worker thread via `asyncio.to_thread` inside
   the submitted coroutine, so the event loop never blocks on the
   caller's iterator.
+- `write_atomic(path, content, …)` follows the identical pattern:
+  same `AsyncIterator[bytes]` adaptation for iterator inputs, same
+  submit-and-block flow. The `ATOMIC_WRITE` capability gate is
+  enforced by the wrapped async backend, not the adapter — the
+  adapter forwards the call unchanged and lets the backend raise
+  `CapabilityNotSupported` if the gate is closed.
 
 ### Cancellation
 

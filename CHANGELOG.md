@@ -18,19 +18,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Internal
 
 - **Async-to-sync backend adapter — ADR draft** (ID-141):
-  `sdd/adrs/0025-async-to-sync-backend-adapter.md` drafted. Specifies
-  `AsyncBackendSyncAdapter` with a private event loop in a dedicated
-  background thread, `run_coroutine_threadsafe`-based submission,
-  cancellation propagation via `concurrent.futures.Future.cancel()`,
-  fail-fast on invocation from a running loop, and no `nest_asyncio`
-  dependency. Prerequisite for the ID-127 Graph implementation PR.
-  Includes single-chunk-buffering invariant for streaming, explicit
-  ordering guidance for concurrent sync callers, an explicit
-  ADR-0012 § Async-posture link clarifying the sync API is not
-  coroutine-safe, and a Risks subsection covering misuse, cancel
-  races, worker-thread starvation, and loop-teardown timeout.
-  Backlog item renumbered from ID-128 (collision with completed
-  `Capability.ATOMIC_MOVE` item). RFC-0010 reference updated.
+  `sdd/adrs/0025-async-to-sync-backend-adapter.md` drafted; RFC-0010
+  § Async posture updated to point at the decided design.
+  Prerequisite for the ID-127 Graph implementation PR.
   No runtime changes.
 - **Microsoft Graph backend — SDD artifacts** (ID-127): accepted
   `sdd/rfcs/rfc-0010-graph-backend.md`, ADRs `sdd/adrs/0021-graph-sdk-choice.md`
