@@ -38,7 +38,9 @@ wheel), stable, and used by `azure-identity` internally.
 Build the backend on `httpx` (async client) plus `msal` for token
 acquisition and cache serialization.
 
-The `graph` optional extra installs `httpx` and `msal`. The backend
+The `graph` optional extra installs `httpx`, `msal`, and
+`platformdirs` (the latter used by the built-in `GraphAuth` for
+resolving the MSAL token-cache path; see ADR-0022). The backend
 constructs an `httpx.AsyncClient` internally and treats Graph as a
 narrow REST surface with hand-written request helpers, pagination, and
 error mapping.

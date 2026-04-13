@@ -343,6 +343,13 @@ used. Consequently:
   determine the total length before opening the session. Callers that
   want to avoid the spool must supply an explicit `content_length` (or
   `size`) at the write call site.
+- **Spool-file location:** When an on-disk spill occurs, the temporary
+  file is written to the current working directory rather than the
+  system temp dir. This follows the project-wide convention for
+  temporary-file placement (cross-drive / small-`TMPDIR` environments,
+  particularly Windows, where the system temp volume may lack space
+  for multi-GiB uploads). The policy is owned by this spec, not
+  `tempfile` defaults; the implementation passes an explicit `dir=`.
 **Postconditions:**
 - The upload is atomic on commit: the item becomes visible only
   after the final chunk succeeds.
@@ -478,6 +485,15 @@ GR-027) using the shared `_async_monitor` module (ADR-0023).
   can legitimately take minutes, so conflating the two would
   prematurely abort long copies. A caller who wants a wall-clock
   bound on `copy`/`move` sets `copy_timeout` explicitly.
+- **`copy_timeout=None` is intentional but unsafe by default.** With
+  no ceiling, a `copy()`/`move()` against an unresponsive Graph
+  endpoint can block the caller indefinitely. The backend does **not**
+  substitute a fallback timeout. Callers that cannot tolerate an
+  unbounded wait must either (a) set `copy_timeout` to a finite value
+  at `GraphBackend.__init__`, or (b) wrap the call in an external
+  ceiling (e.g. `asyncio.timeout(...)` for async callers, thread-level
+  cancellation for sync). The documentation-phase guide for this
+  backend must call this out.
 - On `copy_timeout` expiry the poller raises
   `BackendUnavailable(context={"monitor_url": ..., "poll_count": ...,
   "last_status": ...})`. The server-side operation is **not**
@@ -526,18 +542,24 @@ contacting Graph. Source existence is not verified on the self-copy
 path. Callers that want an existence check for the self-copy case
 call `exists(src)` explicitly.
 
-### GR-056: Cross-Drive Operations Rejected
+### GR-056: Cross-Drive Operations Are Structurally Impossible
 
-**Invariant:** `copy(src, dst)` and `move(src, dst)` reject
-destinations that imply a different drive from the backend's
-configured `drive_id`. The backend detects cross-drive destinations
-when `dst` is an absolute Graph URL or carries an explicit
-`drive_id` that differs from the backend's, and raises
-`InvalidPath` with a message naming both drive ids.
-**Rationale:** Each `GraphBackend` is scoped to one drive (RFC-0010
-non-goal). Cross-drive transfers are not silently supported; a
-future RFC may add a composite path, at which point this ID is the
-extension point.
+**Invariant:** `copy(src, dst)` and `move(src, dst)` cannot address
+a different drive from the backend's configured `drive_id`. There
+is no detection branch at runtime: Store paths are `/`-rooted POSIX
+strings (PATH-001, GR-009) with no syntax for embedding a
+`drive_id`, a site id, or an absolute Graph URL. A `GraphBackend`
+instance is scoped to exactly one drive (GR-050); every `src` and
+`dst` it sees resolves against that drive by construction.
+**Rationale:** Cross-drive transfers would require either a path
+grammar extension or a composite-store abstraction. Neither is in
+scope. This ID exists as the extension point should a future RFC
+introduce either mechanism; until then it documents the vacuous
+condition so reviewers do not look for a runtime check that cannot
+be written against the current path model.
+**No runtime check required:** Implementations MUST NOT introduce a
+synthetic cross-drive detector (e.g. URL-parsing `dst`) — doing so
+would advertise a capability the API surface does not admit.
 
 ---
 
@@ -770,14 +792,25 @@ logging records.
 
 **Invariant:** `close()` (and `aclose()` on the async path) closes
 the backend's `httpx.AsyncClient`, flushes the MSAL token cache to
-disk if the built-in `GraphAuth` owns it, and cancels any pending
-monitor-URL pollers.
+disk if the built-in `GraphAuth` owns it, cancels any pending
+monitor-URL pollers, and issues best-effort `DELETE` against any
+upload sessions the backend currently owns.
 **Postconditions:**
 - Safe to call multiple times.
 - User-supplied `http_client` instances are not closed — the caller
   owns that resource.
 - After close, subsequent operations re-initialise the HTTP client
   on demand (consistent with `AzureBackend.close()` — AZ-029).
+- **Upload-session abort on close:** For every in-flight upload
+  session whose URL is reachable from the backend (i.e. a `write()`
+  call is mid-chunk-loop when `close()` fires), the backend issues
+  `DELETE {sessionUrl}` as described in GR-024. Failures are
+  swallowed — `close()` must not raise on cleanup. This mirrors the
+  GR-024 unrecoverable-failure path; the difference is only the
+  trigger.
+- **Monitor pollers** are cancelled cooperatively (`asyncio.Task.cancel`
+  on async, futures cancelled on sync); the server-side copy/move
+  continues per GR-026's "server-side operation not cancelled" note.
 
 ---
 

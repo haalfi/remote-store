@@ -65,7 +65,8 @@ gap is the point of this RFC.
 **Module:** `remote_store.backends._graph`
 **Name:** `"graph"`
 **Optional extra:** `pip install "remote-store[graph]"`
-**Dependencies:** `httpx`, `msal`
+**Dependencies:** `httpx`, `msal`, `platformdirs` (used by the
+built-in `GraphAuth` token cache; see ADR-0022)
 **Spec:** `sdd/specs/044-graph-backend.md` (GR-001 through GR-057,
 non-contiguous; topic-grouped)
 
@@ -214,6 +215,9 @@ matching. `backend` is set to `"graph"` on every mapped error.
 | 400 | `invalidRequest` | `RemoteStoreError` | -- | Bad request; typically a caller bug. |
 | 401 | `InvalidAuthenticationToken` | (re-acquire + retry once) | Internal | One-shot token refresh; on second failure raise `PermissionDenied`. |
 | 401 | `unauthenticated` | `PermissionDenied` | -- | Not recoverable by re-auth alone. |
+| 401 | `tokenNotFound` | `PermissionDenied` | -- | Terminal; no refresh attempt (GR-029). |
+| 401 | `invalidRequest` (401 scope) | `PermissionDenied` | -- | Terminal; no refresh attempt (GR-029). |
+| 401 | any other `code` | `PermissionDenied` | -- | Only `InvalidAuthenticationToken` triggers the one-shot refresh (GR-029). |
 | 403 | `accessDenied` | `PermissionDenied` | -- | |
 | 404 | `itemNotFound` (item/path scope) | `NotFound` | -- | |
 | 404 | `resourceNotFound` / drive scope | `BackendUnavailable` | -- | Drive misconfigured or deleted (GR-031). |
