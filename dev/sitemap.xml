@@ -413,6 +413,22 @@
          <lastmod>2026-04-13</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0021-graph-sdk-choice/</loc>
+         <lastmod>2026-04-13</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0022-graph-auth-model/</loc>
+         <lastmod>2026-04-13</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0023-async-monitor-polling/</loc>
+         <lastmod>2026-04-13</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0024-resource-locked-error/</loc>
+         <lastmod>2026-04-13</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/audits/</loc>
          <lastmod>2026-04-13</lastmod>
     </url>
@@ -605,6 +621,10 @@
          <lastmod>2026-04-13</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-0010-graph-backend/</loc>
+         <lastmod>2026-04-13</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/rfcs/rfc-template/</loc>
          <lastmod>2026-04-13</lastmod>
     </url>
@@ -782,6 +802,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/043-resolution-plan/</loc>
+         <lastmod>2026-04-13</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/044-graph-backend/</loc>
          <lastmod>2026-04-13</lastmod>
     </url>
     <url>
