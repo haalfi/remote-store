@@ -184,7 +184,7 @@ specified in ADR-0023 and referenced by the spec (GR-026).
 
 ### Capability matrix
 
-Honest, not 10/10. `--` (dash) indicates a capability not declared.
+Honest, not 12/12. `--` (dash) indicates a capability not declared.
 
 | Capability | Declared | Rationale |
 |---|---|---|
