@@ -143,6 +143,44 @@ in backend config sections into a `RetryPolicy` instance.
 parameter.
 **Postconditions:** Passing `retry` raises `TypeError` from the constructor.
 
+### RET-015: Graph Retry Mapping
+
+**Invariant:** `GraphBackend` accepts `retry: RetryPolicy | None = None` and
+honours all five fields in-backend, because `httpx` has no native retry
+mechanism.
+**Mapping:**
+- `max_attempts` -> maximum number of attempts per individual request
+  (chunk PUT, metadata GET, monitor poll, etc.).
+- `backoff_base` and `backoff_max` -> exponential backoff of the form
+  `min(backoff_max, backoff_base * 2**attempt)` between attempts.
+- `jitter` -> additive uniform random delay in `[0, jitter]` on each wait.
+- `timeout` -> overall wall-clock budget for the retry loop; exhaustion
+  raises the last-observed mapped error (typically `BackendUnavailable`).
+**Retry-After precedence:** When the server response carries a
+`Retry-After` header (HTTP-date per RFC 7231, or delta-seconds), the
+backend waits for at least that duration before the next attempt,
+overriding the computed `backoff_base * 2**attempt` whenever the header
+value is larger.
+**Retryable conditions:**
+- HTTP `5xx` responses (`500`, `502`, `503`, `504`).
+- HTTP `429 activityLimitReached`.
+- Transport errors: connection reset, read/write/connect timeouts, DNS
+  resolution failures.
+**Terminal (non-retryable) conditions:**
+- `ResourceLocked` (ERR-013, HTTP `423 resourceLocked`).
+- `PermissionDenied` (HTTP `403 accessDenied`, or second `401` after
+  one-shot token refresh).
+- `NotFound` (HTTP `404 itemNotFound` at item scope).
+- `InvalidPath`.
+**Upload-session scope:** Chunk-level PUT requests retry independently
+per this policy. A session-level operation does not restart on chunk
+failure; `nextExpectedRanges` drives resumption (GR-023). Session URL
+expiry raises a terminal error and is not retried.
+**Postconditions:**
+- When `retry is None`, uses `RetryPolicy()` defaults (3 attempts,
+  1-60 s exponential backoff, 1 s jitter).
+- When `retry` is provided, replaces defaults entirely.
+
 ---
 
 ## Public API
