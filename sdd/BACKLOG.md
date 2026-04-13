@@ -136,26 +136,12 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
-- [ ] **ID-142 — `ASYNC-NNN` spec block + test infrastructure for `AsyncBackendSyncAdapter`**
-  ADR-0025 records the design in prose; this item lands the
-  numbered spec IDs and test-infrastructure deliverables the
-  implementation PR will trace against. The full enumeration of
-  the 14 invariants the block must pin (single-chunk pump,
-  `read(n)` short-read semantics, fail-fast / closed-adapter
-  exception stems, capability translation, `open_atomic` spool
-  semantics, `unwrap` default, error-preservation, lifecycle drain,
-  concurrent-callers no-deadlock, async-iterator failure modes,
-  write-side mid-write failure, `__aenter__`/`__aexit__`,
-  `check_health` failure-path) is in ADR-0025 § Followups. Lands as
-  a spec amendment (likely to
-  `sdd/specs/003-backend-adapter-contract.md` or a new spec) plus
-  test-infrastructure scaffolding (`tests/aio/_doubles.py` with
-  `_HangingAsyncBackend` / `_RaisingAsyncBackend`, mirror parity
-  test pattern). Lands before — or together with — the ID-127
-  implementation PR.
-  - Refs: [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md)
-    § Followups, [ADR-0012](adrs/0012-async-store-backend-api.md).
-  - Depends on: ID-141 (ADR draft).
+- [ ] **ID-142 — `ASYNC-NNN` spec block + test doubles for `AsyncBackendSyncAdapter`**
+  Allocate the 14 numbered invariants enumerated in
+  [ADR-0025 § Followups](adrs/0025-async-to-sync-backend-adapter.md)
+  and add `_HangingAsyncBackend` / `_RaisingAsyncBackend` test
+  doubles. Lands before — or with — the ID-127 implementation PR.
+  - Depends on: ID-141.
   - Blocks: ID-127 implementation PR.
 
 - [~] **ID-141 — Async-to-sync backend adapter ADR**
