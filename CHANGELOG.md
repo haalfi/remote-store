@@ -17,12 +17,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
-- **Test-quality cleanup on coverage PR** (BK-151): dropped `os.getuid()` at
-  module import (Windows collection crash), monkeypatched `tempfile.mkstemp`
-  to exercise `PermissionDenied` cross-platform, added `spec=` to every
-  `MagicMock()` for `scripts/check_mock_spec.py`, added `caplog` assertions to
-  S3-PyArrow retry debug-log tests, and replaced a class-dict mutation in the
-  cache invalidate-fallback test with a bespoke `CacheBackend`.
+- **Test-quality cleanup on coverage PR** (BK-151): cross-platform-safe tests,
+  real assertions on previously mock-only checks, `spec=` on every `MagicMock()`.
 
 ## [0.23.0] - 2026-04-12
 
