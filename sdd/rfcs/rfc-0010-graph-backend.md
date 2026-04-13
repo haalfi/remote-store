@@ -76,8 +76,8 @@ API, not the user-visible product.
 
 ### SDK decision
 
-Evaluated honestly against the narrow surface we need (~12 endpoints,
-async-native, custom polling and upload-session logic):
+Evaluated honestly against the narrow surface we need (a small set of
+endpoints, async-native, custom polling and upload-session logic):
 
 | Option | Verdict |
 |---|---|
@@ -385,8 +385,8 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
 
 - **Backends.** New `graph` backend. `FEATURES.md` row added in the
   implementation phase.
-- **Extras.** New `graph` extra in `pyproject.toml` pulling `httpx`
-  and `msal`.
+- **Extras.** New `graph` extra in `pyproject.toml`. See ADR-0021 for
+  the locked dependency set.
 - **Spec 005 (errors).** Amended in this PR to add ERR-013
   `ResourceLocked`.
 - **Spec 025 (retry).** Amended in this PR to add RET-015 Graph retry
