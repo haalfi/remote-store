@@ -221,7 +221,7 @@ matching. `backend` is set to `"graph"` on every mapped error.
 | 403 | `accessDenied` | `PermissionDenied` | -- | |
 | 404 | `itemNotFound` (item/path scope) | `NotFound` | -- | |
 | 404 | `resourceNotFound` / drive scope | `BackendUnavailable` | -- | Drive misconfigured or deleted (GR-031). |
-| 404 | Hidden-resource `accessDenied` | `PermissionDenied` | -- | Graph hides some denials as 404 (GR-031). |
+| 404 | Any other code at item scope | `NotFound` | -- | Backend does not discriminate hidden-`accessDenied`-as-404 (GR-031). |
 | 409 | `nameAlreadyExists` | `AlreadyExists` | -- | Respect `conflictBehavior` for writes. |
 | 409 | `invalidRange` | `RemoteStoreError` | -- | Upload-session `Content-Range` mismatch; not retried. |
 | 416 | `invalidRange` | `RemoteStoreError` | -- | Range read beyond EOF. |

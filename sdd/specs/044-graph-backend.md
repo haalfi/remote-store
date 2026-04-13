@@ -224,11 +224,12 @@ full `GraphBackend` first.
 
 ### GR-012: read()
 
-**Invariant:** `read(path)` returns a read stream per BE-006 and spec
-006 (streaming-io) — the project's stream abstraction, not a raw
-iterator. The async backend's implementation pulls chunks from the
-download URL via `httpx.AsyncClient.stream`; the public return type is
-the stream abstraction required by the backend contract.
+**Invariant:** `read(path)` returns `BinaryIO` per BE-006.
+Internally, the async backend wraps `httpx.AsyncClient.stream`
+(chunked byte iterator over `@microsoft.graph.downloadUrl`) in a
+`BinaryIO` adapter per the sync-wrapper pattern in ADR-0012. The
+public return type is `BinaryIO`; no exotic return type is
+permitted.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if
 the path names a directory (per BE-021).
 
@@ -264,7 +265,12 @@ pre-signed download URL has been observed to ignore or reject
 backends in particular). When the server returns the full entity
 (`200 OK` to a `Range` request) or rejects the range with `416`
 outside the valid extent, the backend falls back to the spool
-strategy rather than pretending to stream.
+strategy rather than pretending to stream. When the fallback
+fires, the backend sets
+`FileInfo.extra["graph.read.range_fallback"] = True` on any
+`FileInfo` instance subsequently returned for the same item in
+the operation context, so unit tests can assert the branch was
+exercised without reaching into private helpers.
 **Rationale:** The `/content` endpoint returns `302` redirecting to
 the download URL, and only the download URL honours `Range`
 reliably. The download URL is pre-signed; no `Authorization` header
@@ -323,6 +329,19 @@ size <= 4 MiB uses `PUT /drives/{drive_id}/root:{encoded_path}:/content`.
 - The write is atomic at the service level.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
 `InvalidPath` if the path names a folder.
+**BE-008 precondition discrimination:** Graph is not a flat
+namespace — folders are first-class `driveItem`s with a `folder`
+facet. BE-008's precondition order (path validity → overwrite
+conflict → I/O) applies in full; Graph's `409 nameAlreadyExists`
+alone is not sufficient to choose between `AlreadyExists` and
+`InvalidPath`. The backend inspects the 409 response body: when
+`error.details` (or the returned `driveItem` on
+`@microsoft.graph.conflictBehavior=fail`) carries the `folder`
+facet (or an `itemType`/`item.folder` discriminator naming a
+folder), the existing item is a folder and the backend raises
+`InvalidPath`. Otherwise the existing item is a file and the
+backend raises `AlreadyExists`. This rule applies equally to
+GR-019, GR-025 (copy), and GR-027 (move) destinations.
 **Note on the 4 MiB threshold:** Graph documents the
 `PUT .../content` endpoint as suitable for files up to ~4 MiB and
 recommends upload sessions beyond that. In practice the endpoint
@@ -359,6 +378,13 @@ used. Consequently:
   **The documentation-phase guide for this backend must note this
   placement** so callers running from read-only or small-capacity
   working directories can redirect the spool explicitly.
+  **Test oracle:** when an on-disk spill occurs, the backend sets
+  `FileInfo.extra["graph.upload.spool_dir"]` on the `FileInfo`
+  returned by the resulting `write()` call (or the next
+  `get_file_info()` for the same path) to the absolute path of the
+  spool directory used. Callers and tests can assert against this
+  field; in-memory uploads (`SpooledTemporaryFile` never spills)
+  leave the field unset.
 **Postconditions:**
 - The upload is atomic on commit: the item becomes visible only
   after the final chunk succeeds.
@@ -504,10 +530,15 @@ GR-027) using the shared `_async_monitor` module (ADR-0023).
   cancellation for sync). The documentation-phase guide for this
   backend must call this out.
 - On `copy_timeout` expiry the poller raises
-  `BackendUnavailable(context={"monitor_url": ..., "poll_count": ...,
-  "last_status": ...})`. The server-side operation is **not**
-  cancelled (Graph monitor URLs have no public cancel endpoint); the
-  caller is expected to check the final state out-of-band if needed.
+  `BackendUnavailable(context={"monitor_url": str, "poll_count": int,
+  "last_status": str})`. `last_status` is one of the literal strings
+  `"pending"` (terminal poll returned a still-running status),
+  `"5xx"` (last response was a transient server error treated as
+  pending per below), or `"parse-error"` (last response could not
+  be classified by the `status_parser`). Tests assert against this
+  closed value set. The server-side operation is **not** cancelled
+  (Graph monitor URLs have no public cancel endpoint); the caller
+  is expected to check the final state out-of-band if needed.
 - `Retry-After` on poll responses overrides the computed interval
   when larger.
 - `5xx` responses during polling are treated as `pending`, not
@@ -614,12 +645,17 @@ and by the resource scope of the failing URL:
   `BackendUnavailable` — the configured drive is deleted or
   misconfigured, which is a backend identity failure, not a per-item
   condition.
-- `404` that Graph uses to hide an `accessDenied` condition on certain
-  restricted resources (recognisable by the absence of an
-  `itemNotFound` code at a resource the caller cannot enumerate) maps
-  to `PermissionDenied`. Note: Graph sometimes returns `404` where
-  `403` would be semantically correct; callers relying on the
-  distinction should consult operation context.
+- The backend does **not** attempt to discriminate "404 masking
+  403" (Graph occasionally returns `404 itemNotFound` where `403
+  accessDenied` would be semantically correct on restricted
+  resources). All `404 itemNotFound` at item scope map to
+  `NotFound`. Rationale: Graph offers no reliable, caller-agnostic
+  signal to tell a real not-found from a hidden permission denial,
+  and guessing would require the backend to track what the caller
+  "should" be able to enumerate — which it cannot. Callers that
+  need to distinguish run a drive-root probe (`exists("/")`) to
+  confirm the drive is reachable, then treat `NotFound` as
+  authoritative for the item.
 
 ### GR-032: 409 nameAlreadyExists
 
@@ -654,7 +690,12 @@ no native retry); see RET-015.
   remains valid — Graph does not invalidate it on `423` — but the
   backend does not auto-retry or auto-resume. Caller retry is the
   caller's decision; if it chooses to retry, the session URL and
-  `nextExpectedRanges` discipline (GR-023) still apply.
+  `nextExpectedRanges` discipline (GR-023) still apply. The
+  unfinished session URL is surfaced via
+  `exc.context["session_url"]` so callers (and tests) can resume
+  without re-deriving it; `exc.context["next_expected_ranges"]`
+  carries the last-known range list from the most recent successful
+  chunk response.
 
 ### GR-054: 507 insufficientStorage / quotaLimitReached
 
