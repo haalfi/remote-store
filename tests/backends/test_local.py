@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import tempfile
 from pathlib import Path
 
@@ -192,3 +193,78 @@ class TestLocalWriteOnDirectory:
             local_backend.open_atomic("dir", overwrite=True) as f,
         ):
             f.write(b"overwrite")
+
+
+class TestLocalBackendToKeyRoot:
+    """to_key() returns empty string for the root path (line 83)."""
+
+    def test_to_key_root_returns_empty_string(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            # Use the backend's own root representation so the comparison is
+            # robust to Windows short-path (8.3) normalisation of `tmp`.
+            assert backend.to_key(backend.native_path("")) == ""
+
+    def test_to_key_root_normalizes_trailing_slash(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            # native_path("") == root without trailing slash
+            assert backend.to_key(backend.native_path("")) == ""
+
+
+class TestLocalBackendWriteAtomicStream:
+    """write_atomic() with stream content (line 184)."""
+
+    def test_write_atomic_stream_content(self) -> None:
+        import io as _io
+
+        with tempfile.TemporaryDirectory() as tmp:
+            backend = LocalBackend(root=tmp)
+            data = b"streaming content"
+            stream = _io.BytesIO(data)
+            backend.write_atomic("out.bin", stream)
+            assert backend.read_bytes("out.bin") == data
+
+
+class TestLocalBackendGlobSymlinkEscape:
+    """glob() skips files that resolve outside root via symlinks (lines 266-267)."""
+
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="symlink creation requires SeCreateSymbolicLinkPrivilege on Windows",
+    )
+    def test_glob_skips_symlink_escaping_root(self) -> None:
+        with tempfile.TemporaryDirectory() as outside, tempfile.TemporaryDirectory() as root:
+            backend = LocalBackend(root=root)
+            # Create a real file outside root
+            outside_file = Path(outside) / "secret.txt"
+            outside_file.write_bytes(b"secret")
+            # Create a symlink inside root pointing to the outside file
+            symlink = Path(root) / "escape.txt"
+            try:
+                symlink.symlink_to(str(outside_file))
+            except OSError:
+                pytest.skip("symlink creation not permitted on this platform")
+            # glob should return no files (symlink target is outside root)
+            results = list(backend.glob("*.txt"))
+            assert all(r.name != "secret.txt" for r in results)
+
+
+class TestLocalBackendOpenAtomicPermission:
+    """open_atomic() maps PermissionError from mkstemp to PermissionDenied (lines 206-207)."""
+
+    def test_open_atomic_permission_denied_during_mkstemp(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from remote_store._errors import PermissionDenied
+        from remote_store.backends import _local as local_mod
+
+        def _raise_permission(*_args: object, **_kwargs: object) -> tuple[int, str]:
+            raise PermissionError("simulated permission denied")
+
+        with tempfile.TemporaryDirectory() as root:
+            backend = LocalBackend(root=root)
+            monkeypatch.setattr(local_mod.tempfile, "mkstemp", _raise_permission)
+            with (
+                pytest.raises(PermissionDenied, match="Permission denied"),
+                backend.open_atomic("file.txt"),
+            ):
+                pass

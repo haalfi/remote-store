@@ -265,6 +265,12 @@ class TestMemoryListingCorrectness:
         files = list(mb.list_files("nonexistent"))
         assert files == []
 
+    @pytest.mark.spec("BK-006")
+    def test_open_atomic_empty_path_raises_invalid_path(self, mb: MemoryBackend) -> None:
+        """open_atomic('') raises InvalidPath — empty path is invalid for file ops."""
+        with pytest.raises(InvalidPath, match="empty"), mb.open_atomic(""):
+            pass
+
     @pytest.mark.spec("BK-123")
     def test_concurrent_write_and_listing_no_deadlock(self, mb: MemoryBackend) -> None:
         """Concurrent writes + listings must not deadlock."""

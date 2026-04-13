@@ -15,6 +15,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   pushes do not re-trigger workflows, so a `push: gh-pages` trigger would
   never fire from mike.)
 
+### Internal
+
+- **Test-quality cleanup on coverage PR** (BK-151): cross-platform-safe tests,
+  real assertions on previously mock-only checks, `spec=` on every `MagicMock()`.
+
 ## [0.23.0] - 2026-04-12
 
 ### Added

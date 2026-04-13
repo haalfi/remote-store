@@ -598,6 +598,39 @@ def test_child_returns_observed_store() -> None:
     assert isinstance(child, ObservedStore)
 
 
+# ---------------------------------------------------------------------------
+# ObservedStore __eq__, __hash__, native_path, resolve
+# ---------------------------------------------------------------------------
+
+
+def test_observed_store_eq_different_type_returns_not_implemented() -> None:
+    observed = observe(_make_store())
+    assert observed.__eq__("not-a-store") is NotImplemented
+
+
+def test_observed_store_hash_is_stable() -> None:
+    observed = observe(_make_store())
+    assert hash(observed) == hash(observed)
+
+
+def test_observed_native_path_fires_event() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_any=events.append)
+    result = observed.native_path("a.txt")
+    assert isinstance(result, str)
+    assert any(e.operation == "native_path" for e in events)
+
+
+def test_observed_resolve_fires_event() -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_any=events.append)
+    plan = observed.resolve("a.txt")
+    assert plan is not None
+    assert any(e.operation == "resolve" for e in events)
+
+
 def test_child_fires_hooks() -> None:
     store = _make_store()
     store.write("sub/file.txt", b"data")

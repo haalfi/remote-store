@@ -151,3 +151,33 @@ class TestStrRepr:
     def test_capability_repr_includes_capability(self) -> None:
         e = CapabilityNotSupported("nope", capability="atomic_write")
         assert "atomic_write" in repr(e)
+
+    @pytest.mark.spec("ERR-009")
+    def test_capability_str_no_message_shows_only_capability(self) -> None:
+        """CapabilityNotSupported.__str__ with empty message yields capability= only."""
+        e = CapabilityNotSupported("", capability="glob")
+        assert str(e) == "capability='glob'"
+
+
+class TestClassifyByMessage:
+    """ERR-010: _classify_by_message heuristic fallback."""
+
+    @pytest.mark.spec("ERR-010")
+    @pytest.mark.parametrize(
+        ("msg", "expected_type", "match"),
+        [
+            pytest.param("404 resource not found", NotFound, "Not found", id="not-found"),
+            pytest.param("nosuchkey in s3", NotFound, "Not found", id="nosuchkey"),
+            pytest.param("403 accessdenied", PermissionDenied, "Permission denied", id="access-denied"),
+            pytest.param("connection timeout endpoint", BackendUnavailable, "timeout", id="timeout"),
+            pytest.param("dns name or service not known", BackendUnavailable, "name or service", id="dns"),
+            pytest.param("some generic storage failure", RemoteStoreError, "generic", id="fallback"),
+        ],
+    )
+    def test_classify_by_message(self, msg: str, expected_type: type[RemoteStoreError], match: str) -> None:
+        from remote_store._errors import _classify_by_message
+
+        result = _classify_by_message(RuntimeError(msg), "a/b.txt", "s3")
+        assert isinstance(result, expected_type)
+        assert result.path == "a/b.txt"
+        assert result.backend == "s3"

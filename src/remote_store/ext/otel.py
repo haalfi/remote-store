@@ -32,7 +32,7 @@ from typing import TYPE_CHECKING, Any
 try:
     from opentelemetry import metrics, trace
     from opentelemetry.trace import SpanKind, StatusCode
-except ModuleNotFoundError as _exc:
+except ModuleNotFoundError as _exc:  # pragma: no cover
     raise ModuleNotFoundError(
         "OpenTelemetry API is required for the otel extension. Install it with: pip install 'remote-store[otel]'"
     ) from _exc

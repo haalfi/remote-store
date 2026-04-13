@@ -129,7 +129,7 @@ class _ErrorMappingStream(io.RawIOBase):
             return line
         except StopIteration:
             raise
-        except OSError as exc:  # defensive: unreachable if self.readline() maps all OSErrors
+        except OSError as exc:  # defensive: unreachable if self.readline() maps all OSErrors  # pragma: no cover
             raise self._mapper(exc, self._path) from exc
 
     # endregion

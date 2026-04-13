@@ -400,6 +400,113 @@ class TestHttpConstructor:
         b = ReadOnlyHttpBackend(base_url="http://example.com/data", http_client="urllib")
         assert b.native_path("") == "http://example.com/data/"
 
+
+# ---------------------------------------------------------------------------
+# _Urllib3StreamAdapter unit tests (backends/_http_requests.py lines 31, 34-37, 42-43)
+# ---------------------------------------------------------------------------
+
+
+class TestUrllib3StreamAdapter:
+    """Stream adapter converts urllib3 errors to OSError."""
+
+    def test_readable_returns_true(self) -> None:
+        from unittest.mock import create_autospec
+
+        import urllib3
+
+        from remote_store.backends._http_requests import _Urllib3StreamAdapter
+
+        raw = create_autospec(urllib3.HTTPResponse, spec_set=True)
+        adapter = _Urllib3StreamAdapter(raw)
+        assert adapter.readable() is True
+
+    def test_readinto_converts_urllib3_error(self) -> None:
+        from unittest.mock import create_autospec
+
+        import urllib3
+
+        from remote_store.backends._http_requests import _Urllib3StreamAdapter
+
+        raw = create_autospec(urllib3.HTTPResponse, spec_set=True)
+        raw.readinto.side_effect = urllib3.exceptions.ProtocolError("broken pipe")
+        adapter = _Urllib3StreamAdapter(raw)
+        with pytest.raises(OSError, match="broken pipe"):
+            adapter.readinto(bytearray(10))
+
+    def test_read_converts_urllib3_error(self) -> None:
+        from unittest.mock import create_autospec
+
+        import urllib3
+
+        from remote_store.backends._http_requests import _Urllib3StreamAdapter
+
+        raw = create_autospec(urllib3.HTTPResponse, spec_set=True)
+        # IncompleteRead requires integer partial (not bytes) for str() to work
+        raw.read.side_effect = urllib3.exceptions.IncompleteRead(5, 10)
+        adapter = _Urllib3StreamAdapter(raw)
+        with pytest.raises(OSError, match="IncompleteRead"):
+            adapter.read(10)
+
+
+# ---------------------------------------------------------------------------
+# _HttpxStreamAdapter unit tests (backends/_http_httpx.py lines 35, 43-44, 50, 63-64)
+# ---------------------------------------------------------------------------
+
+
+class TestHttpxStreamAdapter:
+    """Stream adapter converts httpx stream errors to OSError."""
+
+    def test_readable_returns_true(self) -> None:
+        pytest.importorskip("httpx")
+        from unittest.mock import create_autospec
+
+        import httpx
+
+        from remote_store.backends._http_httpx import _HttpxStreamAdapter
+
+        resp = create_autospec(httpx.Response, spec_set=False)
+        resp.iter_bytes = lambda **_kwargs: iter([])
+        adapter = _HttpxStreamAdapter(resp)
+        assert adapter.readable() is True
+
+    def test_next_chunk_converts_stream_error(self) -> None:
+        pytest.importorskip("httpx")
+        from unittest.mock import create_autospec
+
+        import httpx
+
+        from remote_store.backends._http_httpx import _HttpxStreamAdapter
+
+        resp = create_autospec(httpx.Response, spec_set=False)
+
+        def _raise_on_next():
+            raise httpx.StreamError("stream closed")
+            yield  # make it a generator
+
+        resp.iter_bytes = lambda **_kwargs: _raise_on_next()
+        adapter = _HttpxStreamAdapter(resp)
+        with pytest.raises(OSError, match="stream closed"):
+            adapter.readinto(bytearray(10))
+
+    def test_read_all_converts_stream_error(self) -> None:
+        pytest.importorskip("httpx")
+        from unittest.mock import create_autospec
+
+        import httpx
+
+        from remote_store.backends._http_httpx import _HttpxStreamAdapter
+
+        resp = create_autospec(httpx.Response, spec_set=False)
+
+        def _bad_iter():
+            yield b"first"
+            raise httpx.StreamError("mid-stream error")
+
+        resp.iter_bytes = lambda **_kwargs: _bad_iter()
+        adapter = _HttpxStreamAdapter(resp)
+        with pytest.raises(OSError, match="mid-stream"):
+            adapter.read(-1)
+
     def test_trailing_slash_preserved(self) -> None:
         """base_url with trailing slash is preserved."""
         b = ReadOnlyHttpBackend(base_url="http://example.com/data/", http_client="urllib")

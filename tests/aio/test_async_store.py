@@ -723,3 +723,84 @@ class TestAsyncStorePing:
     async def test_ping(self, async_store: AsyncStore) -> None:
         result = await async_store.ping()
         assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Depth filter in list_files (_async_store.py line 355)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncStoreListFilesDepthFilter:
+    """ASYNC-list-depth: list_files depth filter trims results beyond max_depth."""
+
+    async def test_depth_filter_trims_deep_files(self) -> None:
+        backend = AsyncMemoryBackend()
+        store = AsyncStore(backend)
+        await store.write("a/b/shallow.txt", b"x")
+        await store.write("a/b/c/deep.txt", b"x")
+        files = [f async for f in store.list_files("a", max_depth=1)]
+        names = {f.name for f in files}
+        assert "shallow.txt" in names
+        assert "deep.txt" not in names
+
+
+# ---------------------------------------------------------------------------
+# AsyncStore glob (_async_store.py lines 451-452, 456-457)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncStoreGlobInner:
+    """glob() full path: lines 451-452 (pattern construction) and 456-457 (inner generator)."""
+
+    async def test_glob_matches_files(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        from remote_store.aio._sync_adapter import SyncBackendAdapter
+        from remote_store.backends._local import LocalBackend
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir()
+            (data_dir / "a.csv").write_bytes(b"1")
+            (data_dir / "b.parquet").write_bytes(b"2")
+            (data_dir / "c.csv").write_bytes(b"3")
+            backend = SyncBackendAdapter(LocalBackend(root=tmp))
+            store = AsyncStore(backend)
+            results = [f async for f in store.glob("data/*.csv")]
+            names = {r.name for r in results}
+            assert names == {"a.csv", "c.csv"}
+
+    async def test_glob_rooted_store(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        from remote_store.aio._sync_adapter import SyncBackendAdapter
+        from remote_store.backends._local import LocalBackend
+
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "a.csv").write_bytes(b"1")
+            (Path(tmp) / "b.parquet").write_bytes(b"2")
+            backend = SyncBackendAdapter(LocalBackend(root=tmp))
+            store = AsyncStore(backend)
+            results = [f async for f in store.glob("*.csv")]
+            assert len(results) == 1
+            assert results[0].name == "a.csv"
+
+
+# ---------------------------------------------------------------------------
+# _strip_root edge case (_async_store.py line 844)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncStoreStripRoot:
+    """_strip_root: path == root returns empty string."""
+
+    async def test_strip_root_exact_match_returns_empty(self) -> None:
+        """When backend path equals store root, _strip_root returns ''."""
+        backend = AsyncMemoryBackend()
+        store = AsyncStore(backend, root_path="prefix")
+        await store.write("file.txt", b"data")
+        # list_files calls _strip_root internally; root-exact entry → ""
+        files = [f async for f in store.list_files("")]
+        assert any(f.name == "file.txt" for f in files)

@@ -237,6 +237,80 @@ class TestStreamClosure:
 
 
 # ===========================================================================
+# SEEK-012: read_seekable cleanup on error (_backend.py lines 159-161, 168-170)
+# ===========================================================================
+
+
+class TestReadSeekableCleanup:
+    """SEEK-012: read_seekable closes stream/spool on error during setup."""
+
+    @pytest.mark.spec("SEEK-012")
+    def test_seekable_check_raises_closes_stream(self) -> None:
+        """If stream.seekable() raises, the stream is closed before re-raise."""
+        from remote_store._backend import Backend
+
+        backend = MemoryBackend()
+        backend.write("test.txt", b"data")
+        opened: list[io.RawIOBase] = []
+
+        class _BrokenSeekable(io.RawIOBase):
+            def readable(self) -> bool:
+                return True
+
+            def seekable(self) -> bool:
+                raise RuntimeError("seekable exploded")
+
+            def readinto(self, b: bytearray) -> int:
+                return 0
+
+        def patched_read(path: str) -> io.BinaryIO:
+            s = _BrokenSeekable()
+            opened.append(s)
+            return s  # type: ignore[return-value]
+
+        backend.read = patched_read  # type: ignore[assignment]
+
+        with pytest.raises(RuntimeError, match="seekable exploded"):
+            Backend.read_seekable(backend, "test.txt")
+
+        assert len(opened) == 1
+        assert opened[0].closed
+
+    @pytest.mark.spec("SEEK-012")
+    def test_spool_copy_raises_closes_spool_and_stream(self) -> None:
+        """If copyfileobj into spool raises, both spool and stream are closed."""
+
+        from remote_store._backend import Backend
+
+        backend = MemoryBackend()
+        backend.write("test.txt", b"data")
+        opened: list[io.RawIOBase] = []
+
+        class _ExplodingNonSeekable(io.RawIOBase):
+            def readable(self) -> bool:
+                return True
+
+            def seekable(self) -> bool:
+                return False
+
+            def readinto(self, b: bytearray) -> int:  # type: ignore[override]
+                raise RuntimeError("read exploded mid-copy")
+
+        def patched_read(path: str) -> io.BinaryIO:
+            s = _ExplodingNonSeekable()
+            opened.append(s)
+            return s  # type: ignore[return-value]
+
+        backend.read = patched_read  # type: ignore[assignment]
+
+        with pytest.raises(RuntimeError, match="read exploded"):
+            Backend.read_seekable(backend, "test.txt")
+
+        assert len(opened) == 1
+        assert opened[0].closed
+
+
+# ===========================================================================
 # SEEK-006: Azure Range Reader Override
 # ===========================================================================
 
