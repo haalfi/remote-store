@@ -17,7 +17,9 @@ ADRs: [0021](../adrs/0021-graph-sdk-choice.md) (SDK),
 [0023](../adrs/0023-async-monitor-polling.md) (monitor poller),
 [0024](../adrs/0024-resource-locked-error.md) (`ResourceLocked`).
 
-**Dependencies:** `httpx`, `msal`
+**Dependencies:** `httpx`, `msal`, `platformdirs` (the last is required
+only by the built-in `GraphAuth` token cache; callers that supply their
+own token provider do not load it — see ADR-0022).
 **Optional extra:** `pip install "remote-store[graph]"`
 **Backend name:** `"graph"`
 
@@ -359,15 +361,22 @@ and uploads chunks to the returned session URL.
 `Content-Range: bytes {start}-{end}/{total}` header with a known
 total. `Content-Range: bytes X-Y/*` is rejected by Graph and is not
 used. Consequently:
-- For known-size inputs (`bytes`, objects exposing `size` /
-  `content_length`, or `FileInfo.size` for copy paths), the session
-  carries the true total.
+- For known-size inputs the session carries the true total. The
+  backend recognises the size from any of: a `bytes`/`bytearray`
+  payload (`len(content)`); an open file with a real `fileno()` plus
+  `os.fstat().st_size`; a `BinaryIO` whose current `tell()` plus
+  remaining bytes is computable via `seek(0, SEEK_END)` followed by
+  restoring the original position (only when `content.seekable()` is
+  true); or a copy-path source whose `FileInfo.size` is already
+  known.
 - For streams of unknown size that exceed the small-upload threshold,
   the backend spools the payload to a `SpooledTemporaryFile` (matching
   the pattern used by the SharePoint-Azure-Write / SAW path) to
   determine the total length before opening the session. Callers that
-  want to avoid the spool must supply an explicit `content_length` (or
-  `size`) at the write call site.
+  want to avoid the spool must hand the backend a content object that
+  falls into one of the known-size categories above (typically a
+  seekable `BinaryIO` or an in-memory `bytes` buffer); there is no
+  separate `content_length` keyword on `Backend.write()` (BE-008).
 - **Spool-file location:** When an on-disk spill occurs, the temporary
   file is written to the current working directory rather than the
   system temp dir. This follows the project-wide convention for
@@ -575,12 +584,15 @@ set (GR-003).
 ### GR-044: Self-Move and Self-Copy
 
 **Invariant:** `move(src, dst)` and `copy(src, dst)` with
-`src == dst` are no-ops (consistent with BE-018 and BE-019).
-**Oracle:** "No-op" means **zero HTTP calls** — the backend
-short-circuits on a source/destination identity check before
-contacting Graph. Source existence is not verified on the self-copy
-path. Callers that want an existence check for the self-copy case
-call `exists(src)` explicitly.
+`src == dst` complete without mutating the item, consistent with
+BE-018 and BE-019.
+**Oracle:** The backend honours BE-019's `NotFound` precondition for
+the self-copy/self-move case the same as for any other call: it
+issues a single `GET` (item-by-path metadata fetch) to verify that
+`src` exists and raises `NotFound` if it does not. Once existence is
+confirmed, no further HTTP traffic is issued — no `POST /copy`, no
+`PATCH`, no monitor poll. The behaviour is therefore "one metadata
+GET, then short-circuit", not "zero HTTP calls".
 
 ### GR-056: Cross-Drive Operations Are Structurally Impossible
 
@@ -717,15 +729,21 @@ caller via this mapping.
 ### GR-055: 416 invalidRange on Range Read
 
 **Invariant:** `416 invalidRange` returned on a range read via the
-download URL is handled per spec 036 (seekable-read) SEK-* rules,
-not coined as a fresh `RemoteStoreError`:
+download URL is not coined as a fresh `RemoteStoreError`. Spec 036
+(seekable-read, `SEEK-*`) governs the seekable-stream surface but
+does not specify HTTP range-error mapping; this spec ID owns the
+mapping for the Graph backend:
 - A range request whose start is at or past EOF yields an empty
-  byte stream (per SEK semantics for past-EOF reads).
-- A malformed `Range` header (backend bug) maps per spec 036 to
-  `InvalidPath` or `RemoteStoreError` as that spec dictates.
-**Rationale:** Keeps range-read semantics in one place; the Graph
-backend participates in the SEK contract rather than inventing a
-parallel error shape.
+  byte stream (length-zero `BinaryIO`, no exception). This matches
+  what a `seek()` past EOF on a local file followed by `read()`
+  produces and lets `Store.read_seekable()` wrappers (SEEK-002)
+  behave uniformly across backends.
+- A malformed `Range` header (backend bug, e.g. inverted bounds)
+  is a programming error and surfaces as `RemoteStoreError` with
+  the HTTP status and Graph error code in the message.
+**Rationale:** Keeps range-read semantics colocated with the
+backend that emits them, while preserving the seekable-read
+contract that spec 036 owns at the Store API layer.
 
 ### GR-046: Failure Paths per Operation
 
@@ -733,8 +751,9 @@ parallel error shape.
 postcondition:
 
 - `read` on a folder → `InvalidPath`.
-- Range-read failure paths follow spec 036 (seekable-read) SEK-*
-  rules; see GR-055 for the `416 invalidRange` mapping.
+- Range-read failure paths follow GR-055 (the `416 invalidRange`
+  mapping owned by this spec); the seekable-stream surface itself
+  is governed by spec 036 (`SEEK-*`).
 - `write` with malformed `Content-Range` (upload session) →
   `RemoteStoreError` mapped from `409 invalidRange`.
 - `list_files` / `list_folders` on a file path → yields nothing

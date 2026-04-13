@@ -164,11 +164,17 @@ implementation:
   adapter that runs operations on a private event loop. This is the
   mirror image of `SyncBackendAdapter` (which wraps sync into async).
 
-The implementation phase will either reuse the existing adapter
-machinery for the opposite direction or add a `AsyncBackendSyncAdapter`
-companion. The spec does not prescribe which — it is an internal
-detail — but the wrapper must preserve the flat capability set and
-all error mappings.
+ADR-0012 specifies only the sync→async direction (`SyncBackendAdapter`).
+The async→sync direction has non-trivial design surface — private
+event-loop ownership, cancellation propagation, behaviour when the
+caller is already inside a running loop, `nest-asyncio` interaction —
+and therefore requires its own ADR rather than being decided implicitly
+during the Graph implementation pass. Tracked as **ID-128** in
+`sdd/BACKLOG.md`; that ADR must land before (or together with) the
+Graph implementation PR. Whatever shape it takes (reuse of existing
+adapter machinery in the opposite direction, or a new
+`AsyncBackendSyncAdapter` companion), the wrapper must preserve the
+flat capability set and all error mappings.
 
 ### Async monitor-URL polling
 
