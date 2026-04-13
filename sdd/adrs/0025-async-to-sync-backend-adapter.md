@@ -181,8 +181,13 @@ the async side as `AsyncWritableContent = bytes | AsyncIterator[bytes]`
   in-flight tasks to drain before stopping the loop; ad-hoc
   per-call cancellation surfaces `CancelledError` to the sync
   caller without a teardown guarantee.
-- `KeyboardInterrupt` in the sync caller is translated into a cancel
-  on the in-flight future before the exception is re-raised.
+- `KeyboardInterrupt` is **not** specially handled. It propagates
+  out of the blocking `Future.result()` like any other exception;
+  the in-flight async task is left running and is cancelled when
+  the adapter's `close()` runs (or when the daemon thread is
+  reaped at process exit). Adding KI-to-cancel translation would
+  give this one backend behaviour that no sync backend has, which
+  costs more in contract asymmetry than the convenience earns.
 
 ### Behaviour when the caller is in a running loop
 
@@ -213,12 +218,14 @@ the async side as `AsyncWritableContent = bytes | AsyncIterator[bytes]`
 
 ### Lifecycle
 
-- `close()` submits `self._async_backend.aclose()` to the loop,
-  waits for in-flight tasks to drain, calls
-  `loop.call_soon_threadsafe(loop.stop)`, and joins the thread with
-  a bounded timeout. If the timeout expires, the adapter logs a
-  warning and returns; the daemon thread is torn down with the
-  process.
+- `close(timeout: float | None = 30.0)` submits
+  `self._async_backend.aclose()` to the loop, waits for in-flight
+  tasks to drain, calls `loop.call_soon_threadsafe(loop.stop)`, and
+  joins the thread with the supplied bound. The default of 30 s
+  matches the existing per-backend network-call ceilings; passing
+  `None` waits indefinitely. If the timeout expires, the adapter
+  logs a warning at `WARNING` level naming the unfinished tasks and
+  returns; the daemon thread is torn down with the process.
 - Context-manager protocol (`__enter__` / `__exit__`) delegates to
   `close()` on exit.
 - The adapter is a one-shot resource: once closed, further calls
@@ -292,10 +299,19 @@ adapter; callers that need it directly should construct an
 
 ### Module placement
 
-`src/remote_store/aio/_async_to_sync_adapter.py`. Parallel to
-`_sync_adapter.py` so the two bridges sit side by side. Public
-re-export from `remote_store.aio` matches the `SyncBackendAdapter`
-pattern.
+`src/remote_store/_async_to_sync_adapter.py` — in the **core**
+module, not under `aio/`. Symmetric with `SyncBackendAdapter`
+(which lives in `aio/` because it implements `AsyncBackend`):
+this adapter implements the sync `Backend` ABC, so it belongs
+with the sync core. Putting it under `aio/` would force every
+sync `Store` user that wraps an async backend to import the
+`aio/` runtime modules at construction time, inverting the layering
+invariant that sync code stays independent of `aio/`.
+
+`AsyncBackend` is imported lazily inside the adapter's `__init__`
+to avoid a top-level core → aio import. Public re-export from
+`remote_store` follows the `SyncBackendAdapter` re-export pattern
+in shape (alongside `Backend`, `Store`).
 
 ### Store-level wiring
 
@@ -346,7 +362,17 @@ agnostic.
   only.
 - **Prerequisite for ID-127.** The Graph implementation PR cannot
   land without this adapter; the dependency is recorded in
-  `sdd/BACKLOG.md` (`ID-127 Depends on: ID-141`).
+  `sdd/BACKLOG.md` (`ID-127 Depends on: ID-141, ID-142`).
+- **Phase 3 (ID-013b) is orthogonal, not superseding.** Async
+  extensions (`AsyncObservedStore`, `AsyncCachedStore`, …) solve
+  the inverse problem: making extensions usable from async code.
+  This adapter stays valuable indefinitely because sync `Store`
+  callers always need a way to reach an async-native backend.
+- **Async-first extension surface enabled.** A future extension
+  authored async-native around `AsyncStore` (e.g. an async-only
+  cloud-search wrapper) becomes reachable from sync `Store` users
+  for free via this adapter — no second sync implementation
+  required.
 
 ### Risks
 
@@ -369,19 +395,81 @@ agnostic.
   cancellation, `close()`'s bounded join leaves the daemon thread
   to be reaped at process exit; the warning surfaces this but does
   not force progress.
+- **Observability fidelity loss across read-streams.** Extensions
+  that wrap `Store` via the proxy pattern (ADR-0010) — notably
+  `ext.observe` — fire one event per *operation*, which for `read()`
+  is one event at stream construction. Per-chunk pumping across the
+  bridge is not visible; the duration metric reflects stream-open
+  cost only. Acceptable for the Backend-ABC contract; users wanting
+  per-chunk observability should consume `AsyncStore` directly.
+- **`ext.cache` default-unbounded `read_bytes`.** `CachedStore` with
+  unset `max_content_size` materialises whatever the wrapped backend
+  yields. Over an async-native backend that exists precisely to
+  *avoid* materialisation, this is more dangerous than over a sync
+  REST backend. Users wrapping an async backend should set
+  `max_content_size` explicitly; the cache extension should learn to
+  warn when wrapped over a bridged backend (tracked separately).
+- **Bridged read streams are forward-only.** The `BinaryIO` returned
+  by `read()` exposes `read(n)` and `close()` only. Extensions that
+  reach for `seek()`, `tell()`, `seekable()`, `readable()`, or
+  `fileno()` on the stream object will receive `False` /
+  `AttributeError` as appropriate — `SEEKABLE_READ` is masked off so
+  no extension that respects the capability gate will reach for
+  them. Random-access callers route through `read_seekable` and pay
+  the spool fallback (above).
 
 ## Followups (deferred from this ADR)
 
 - **Normative spec block (`ASYNC-NNN`).** This ADR records the
-  decision in prose; the testable invariants (single-chunk
-  in-flight, fail-fast on running loop, capability translation,
-  `open_atomic` spool-and-flush, error-preservation, lifecycle
-  drain semantics, etc.) need numbered IDs so the implementation
-  test suite can use `@pytest.mark.spec("ASYNC-NNN")` per
-  `sdd/000-process.md` Rule 2 — mirroring `ASYNC-030 … ASYNC-048`
-  for the inverse `SyncBackendAdapter`. Spec amendment is **not
-  blocking** for this ADR draft but **is** blocking for the ID-127
-  implementation PR. Tracked as **ID-142** in `sdd/BACKLOG.md`.
+  decision in prose; numbered IDs are deferred to spec amendment
+  (ID-142) so the implementation test suite can use
+  `@pytest.mark.spec("ASYNC-NNN")` per `sdd/000-process.md` Rule 2,
+  mirroring `ASYNC-030 … ASYNC-048` for `SyncBackendAdapter`. The
+  spec amendment is **not blocking** for this ADR draft but **is
+  blocking** for the ID-127 implementation PR. Required invariants
+  the spec block must pin (each gets a contiguous `ASYNC-NNN`):
+    1. Single-chunk in-flight pump invariant.
+    2. `read()` `BinaryIO` flavour and `read(n)` short-read semantics
+       (raw vs buffered choice, `memoryview`-tail buffer behaviour).
+    3. Fail-fast on running loop — exception type and message stem
+       (so `pytest.raises(..., match=…)` is stable).
+    4. Closed-adapter reuse — exception type and message stem.
+    5. Capability translation table (`SEEKABLE_READ` masked,
+       `LAZY_READ` preserved, rest forwarded).
+    6. `open_atomic` spool-and-flush semantics (capability gate
+       observable on flush).
+    7. `unwrap` `CapabilityNotSupported` default and the
+       sync-safe-handle exemption rule.
+    8. Error-preservation contract — verbatim re-raise via
+       `Future.set_exception` → `Future.result()`, traceback chain
+       preservation, ERR-001 attribute survival.
+    9. Lifecycle: `close(timeout)` semantics, drain order
+       (`aclose` → `loop.stop` → join), warning emission on timeout.
+   10. Concurrent-callers no-deadlock invariant (N=32 mixed
+       read/write/list calls all complete; no caller observes
+       another caller's result).
+   11. Async iterator failure modes — mid-stream `__anext__` raise,
+       hung iterator + `close()` bound, `aclose()` raise during
+       shutdown.
+   12. Write-side `BinaryIO` failure mid-write — exception surfaces
+       verbatim from `write()` / `write_atomic()`; partial-write
+       rollback follows wrapped backend's atomicity guarantee.
+   13. `__aenter__` / `__aexit__` interaction with adapter init
+       (sync `__enter__` does not touch the async context manager;
+       `__exit__` delegates to `close()`).
+   14. `check_health()` failure-path: connectivity errors from the
+       wrapped backend reach the sync caller verbatim.
+
+  Test-infrastructure deliverables that ride with the spec block:
+    - **Mirror parity test pattern** — structural mirror of
+      `tests/aio/test_sync_adapter.py` (one `Test…` class per
+      domain), plus the additional classes unique to this direction:
+      `…RunningLoopFailFast`, `…Cancellation`, `…Concurrency`,
+      `…CloseSemantics`.
+    - **Test doubles** — `_HangingAsyncBackend`, `_RaisingAsyncBackend`
+      under `tests/aio/_doubles.py` (or equivalent) so the failure
+      paths above are reachable without mocking third-party
+      internals (`sdd/TESTING.md` Rule 6).
 
 ## References
 
