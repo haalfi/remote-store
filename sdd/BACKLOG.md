@@ -136,6 +136,25 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
+- [ ] **ID-142 — `ASYNC-NNN` spec block for `AsyncBackendSyncAdapter`**
+  ADR-0025 records the design in prose. The implementation PR (driven
+  by ID-127) needs numbered spec IDs so its tests can use
+  `@pytest.mark.spec("ASYNC-NNN")` per `sdd/000-process.md` Rule 2,
+  mirroring `ASYNC-030 … ASYNC-048` for `SyncBackendAdapter`. Add a
+  contiguous block (e.g. `ASYNC-060`+) covering: single-chunk
+  in-flight invariant, fail-fast on running loop, capability
+  translation (`SEEKABLE_READ` masked, `LAZY_READ` preserved, rest
+  forwarded), `open_atomic` spool-and-flush, `unwrap`
+  `CapabilityNotSupported` default, error-preservation, lifecycle
+  drain semantics, concurrent-callers no-deadlock invariant.
+  Lands as a spec amendment (likely to `sdd/specs/003-backend-adapter-contract.md`
+  or a new spec) before — or together with — the ID-127
+  implementation PR.
+  - Refs: [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md)
+    § Followups, [ADR-0012](adrs/0012-async-store-backend-api.md).
+  - Depends on: ID-141 (ADR draft).
+  - Blocks: ID-127 implementation PR.
+
 - [~] **ID-141 — Async-to-sync backend adapter ADR**
   ADR-0012 covers the sync→async direction (`SyncBackendAdapter`) but
   not the inverse. The Graph backend (ID-127) is async-native and the
@@ -149,8 +168,7 @@ Items graduate through the SDD pipeline:
   - Draft: [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md).
   - Refs: [RFC-0010 § Async posture](rfcs/rfc-0010-graph-backend.md),
     [ADR-0012](adrs/0012-async-store-backend-api.md).
-  - Renumbered from ID-128 (collision with completed `ATOMIC_MOVE`
-    item in `BACKLOG-DONE.md`).
+  - Followup: ID-142 (`ASYNC-NNN` spec block).
 
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint
@@ -165,7 +183,9 @@ Items graduate through the SDD pipeline:
     (GR-001..GR-057; RET-015 in [spec 025](specs/025-retry-policy.md);
     ERR-013 in [spec 005](specs/005-error-model.md)).
   - Reference: Azure backend (`_azure.py`) — closest architectural parallel.
-  - Depends on: ID-141 (async→sync adapter ADR).
+  - Depends on: ID-141 (async→sync adapter ADR), ID-142 (`ASYNC-NNN`
+    spec block for the adapter — gives the test suite spec IDs to
+    trace).
   - Next: implementation per spec 044.
 
 - [ ] **ID-121 — CompositeStore (research complete)**

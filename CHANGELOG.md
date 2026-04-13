@@ -17,11 +17,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
-- **Async-to-sync backend adapter — ADR draft** (ID-141):
+- **Async-to-sync backend adapter — ADR draft** (ID-141, ID-142):
   `sdd/adrs/0025-async-to-sync-backend-adapter.md` drafted; RFC-0010
-  § Async posture updated to point at the decided design.
-  Prerequisite for the ID-127 Graph implementation PR.
-  No runtime changes.
+  § Async posture updated to point at the decided design. Specifies
+  per-capability translation (`SEEKABLE_READ` masked, `LAZY_READ`
+  preserved), `open_atomic` synthesised over `write_atomic`,
+  `BinaryIO`-to-async-iterator write bridging, and `unwrap`
+  default of `CapabilityNotSupported`. Prerequisite for the ID-127
+  Graph implementation PR; ID-142 tracks the deferred `ASYNC-NNN`
+  spec block. No runtime changes.
 - **Microsoft Graph backend — SDD artifacts** (ID-127): accepted
   `sdd/rfcs/rfc-0010-graph-backend.md`, ADRs `sdd/adrs/0021-graph-sdk-choice.md`
   (SDK choice), `sdd/adrs/0022-graph-auth-model.md` (auth model),

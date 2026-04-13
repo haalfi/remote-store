@@ -132,18 +132,36 @@ hybrid model needs.
 
 ### Write-side content
 
-- `write(path, content, …)` accepts the sync `WritableContent` types
-  (`bytes`, file-like, iterator of `bytes`). Iterator-of-bytes
-  arguments are adapted into an `AsyncIterator[bytes]` that pulls the
-  next sync chunk on a worker thread via `asyncio.to_thread` inside
-  the submitted coroutine, so the event loop never blocks on the
-  caller's iterator.
-- `write_atomic(path, content, …)` follows the identical pattern:
-  same `AsyncIterator[bytes]` adaptation for iterator inputs, same
-  submit-and-block flow. The `ATOMIC_WRITE` capability gate is
-  enforced by the wrapped async backend, not the adapter — the
-  adapter forwards the call unchanged and lets the backend raise
-  `CapabilityNotSupported` if the gate is closed.
+The sync `Backend.write()` / `write_atomic()` accept the sync
+`WritableContent = BinaryIO | bytes` (`src/remote_store/_types.py`).
+There is no sync iterator-of-bytes input — that shape exists only on
+the async side as `AsyncWritableContent = bytes | AsyncIterator[bytes]`
+(`src/remote_store/aio/_types.py`). The bridge therefore goes
+**sync `BinaryIO` → `AsyncIterator[bytes]`**, not the other way:
+
+- `bytes` content is forwarded as-is to the async coroutine.
+- `BinaryIO` content is wrapped in an internal `AsyncIterator[bytes]`
+  that calls `asyncio.to_thread(stream.read, chunk_size)` per chunk
+  inside the submitted coroutine, so the event loop never blocks on
+  the caller's blocking file object. The single-chunk in-flight
+  invariant from § Streaming applies symmetrically: at most one
+  pending `to_thread` per write, no parallel pre-read.
+- `write_atomic(path, content, …)` follows the identical pattern.
+  The `ATOMIC_WRITE` capability gate is enforced by the wrapped
+  async backend, not the adapter — the adapter forwards the call
+  unchanged and lets the backend raise `CapabilityNotSupported` if
+  the gate is closed.
+- `open_atomic(path, …)` — abstract on sync `Backend`, with **no
+  async analogue** on `AsyncBackend`. The adapter synthesises it as
+  a context manager that yields a `SpooledTemporaryFile`; on clean
+  `__exit__` the spool is rewound and submitted to the wrapped
+  backend's `write_atomic` (a single `bytes`/`BinaryIO` write); on
+  exception the spool is dropped and `path` is untouched. The
+  capability gate is the same as `write_atomic` — backends without
+  `ATOMIC_WRITE` raise `CapabilityNotSupported` when the spool
+  flushes. (Synthesising over `write_atomic` rather than extending
+  `AsyncBackend` keeps the async ABC unchanged; ID-127 does not need
+  an `open_atomic`-shaped Graph operation.)
 
 ### Cancellation
 
@@ -219,15 +237,58 @@ hybrid model needs.
 - `TimeoutError` from the async layer stays `TimeoutError`;
   `ResourceLocked` (ADR-0024) stays `ResourceLocked`; and so on.
 
-### Capabilities and resolution
+### `read_seekable` (sync-only convenience)
 
-- `capabilities` delegates to the wrapped async backend without
-  modification — the flat capability set is preserved across the
-  bridge.
-- `resolve()` delegates directly (no I/O, no loop).
-- `unwrap()` returns whatever the async backend returns; callers
-  that ask for a sync native handle from an async-native backend
-  get whatever the backend exposes (typically the async client).
+`read_seekable` is concrete on the sync `Backend` (with a
+`SpooledTemporaryFile` fallback over `read()`); it has **no async
+analogue** on `AsyncBackend`. The adapter does *not* override it:
+the inherited default sees a chunk-pull stream, calls `.seekable()`
+(which returns `False`), and spools to disk-or-memory exactly as it
+already does for the synchronous backends that emit non-seekable
+streams. No new code path is needed; this section exists so the
+implementer does not mistakenly wire a no-op.
+
+A future native fast-path (e.g. issuing per-`read()` HTTP `Range`
+requests directly through the async backend, mirroring
+`AzureBackend`) is out of scope for this ADR. If added, it would
+need an explicit async `read_seekable`-shaped operation on
+`AsyncBackend` and is tracked as a Graph follow-up.
+
+### Capability translation
+
+The adapter does **not** blindly forward the wrapped backend's
+`CapabilitySet`. The bridge changes the observable shape of two
+capabilities and must mask one off:
+
+- **`SEEKABLE_READ` — masked off.** SIO-008 promises that
+  `Backend.read()` returns a natively seekable stream. The chunk-pull
+  pump returned by this adapter is forward-only; no `seek()`
+  accelerator can be honoured without buffering. The adapter strips
+  `SEEKABLE_READ` from the forwarded set even when the wrapped
+  async backend declares it. Callers that need random access go
+  through `read_seekable` and pay the spool cost (above), which is
+  the same fallback every non-seekable sync backend already uses.
+- **`LAZY_READ` — preserved.** SIO-009 requires `read()` to fetch
+  data lazily on demand. The single-chunk in-flight invariant +
+  `__anext__`-per-`read(n)` cadence preserves laziness end-to-end:
+  the bridge never pre-reads beyond what the sync caller has asked
+  for. Forwarded unchanged.
+- **`ATOMIC_WRITE`, `ATOMIC_MOVE`, `GLOB`, `LIST_FOLDERS`,
+  `DELETE_FOLDER`, and the remaining flags** — preserved unchanged.
+  The async coroutine performs the operation; the bridge only
+  marshals the call.
+
+`resolve()` delegates directly (no I/O, no loop).
+
+`unwrap()` is **not** a generic passthrough: an `httpx.AsyncClient`
+returned from a sync `unwrap()` is bound to the private loop in the
+daemon thread, and using it from the caller's thread will fail or
+corrupt loop state. The adapter raises `CapabilityNotSupported`
+unless the wrapped backend exposes a sync-safe handle (mirroring
+`SyncBackendAdapter.unwrap`'s behaviour for unsupported types). The
+async handle remains reachable to coroutines submitted via the same
+adapter; callers that need it directly should construct an
+`AsyncStore` instead.
 
 ### Module placement
 
@@ -274,8 +335,13 @@ agnostic.
   without balloon allocations.
 - **Error model unchanged.** Exception types survive the bridge
   verbatim. Spec 005 needs no amendment.
-- **No new capability.** `CapabilitySet` is unchanged; the adapter
-  forwards the wrapped backend's declaration as-is.
+- **No new capability flag.** `CapabilitySet` itself is unchanged.
+  The adapter performs translation, not enumeration: it masks
+  `SEEKABLE_READ` (chunk-pull stream is not natively seekable) and
+  forwards the rest unchanged. See § Capability translation.
+- **`open_atomic` synthesised over `write_atomic`.** The async ABC
+  is not extended; the spool-and-flush pattern keeps the Graph
+  implementation surface narrow.
 - **No new runtime dependency.** Stdlib `asyncio` and `threading`
   only.
 - **Prerequisite for ID-127.** The Graph implementation PR cannot
@@ -304,6 +370,19 @@ agnostic.
   to be reaped at process exit; the warning surfaces this but does
   not force progress.
 
+## Followups (deferred from this ADR)
+
+- **Normative spec block (`ASYNC-NNN`).** This ADR records the
+  decision in prose; the testable invariants (single-chunk
+  in-flight, fail-fast on running loop, capability translation,
+  `open_atomic` spool-and-flush, error-preservation, lifecycle
+  drain semantics, etc.) need numbered IDs so the implementation
+  test suite can use `@pytest.mark.spec("ASYNC-NNN")` per
+  `sdd/000-process.md` Rule 2 — mirroring `ASYNC-030 … ASYNC-048`
+  for the inverse `SyncBackendAdapter`. Spec amendment is **not
+  blocking** for this ADR draft but **is** blocking for the ID-127
+  implementation PR. Tracked as **ID-142** in `sdd/BACKLOG.md`.
+
 ## References
 
 - ADR-0012: Async Store / Backend API — Hybrid Model (§ Async
@@ -313,6 +392,15 @@ agnostic.
 - RFC-0010: Microsoft Graph Backend (§ Async posture)
 - `sdd/specs/003-backend-adapter-contract.md`
 - `sdd/specs/005-error-model.md` (ERR-001 path/backend attributes)
+- `sdd/specs/006-streaming-io.md` (SIO-008 `SEEKABLE_READ`,
+  SIO-009 `LAZY_READ`)
+- `src/remote_store/_backend.py` (sync `Backend` ABC — the contract
+  the adapter implements; `open_atomic`, `read_seekable`,
+  `WritableContent`)
+- `src/remote_store/_types.py` (sync `WritableContent = BinaryIO | bytes`)
+- `src/remote_store/aio/_async_backend.py` (`AsyncBackend` ABC —
+  the wrapped contract; note no `open_atomic` / `read_seekable`)
+- `src/remote_store/aio/_types.py` (`AsyncWritableContent`)
 - `src/remote_store/aio/_sync_adapter.py` (mirror implementation)
 - Python stdlib: `asyncio.run_coroutine_threadsafe`,
   `asyncio.Task.cancel`
