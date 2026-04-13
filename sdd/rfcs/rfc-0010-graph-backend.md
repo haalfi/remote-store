@@ -68,7 +68,7 @@ gap is the point of this RFC.
 **Dependencies:** `httpx`, `msal`, `platformdirs` (used by the
 built-in `GraphAuth` token cache; see ADR-0022)
 **Spec:** `sdd/specs/044-graph-backend.md` (GR-001 through GR-057,
-non-contiguous; topic-grouped)
+contiguous; topic-grouped by section order)
 
 The backend name is `"graph"` rather than `"onedrive"` or `"sharepoint"`
 because a single instance can target any of those services depending on
@@ -432,7 +432,7 @@ None blocking. Secondary items deferred to post-v1:
 - Managed-identity / workload-identity auth (supported via
   token-provider protocol today; first-class packaging deferred).
 - Surfacing `file.hashes` into `ext.integrity` (plumbed through
-  `FileInfo.extra` in v1 per GR-016; wired up when the extension
+  `FileInfo.extra` in v1 per GR-049; wired up when the extension
   gains a Graph fast-path).
 
 ## References

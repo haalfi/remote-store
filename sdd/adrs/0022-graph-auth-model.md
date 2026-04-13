@@ -106,6 +106,7 @@ AF-008 rules.
 
 - RFC-0010: Microsoft Graph Backend (auth section)
 - `sdd/specs/044-graph-backend.md` (GR-006 through GR-008)
+- ADR-0012: Async Store / Backend API
 - MSAL Python token cache:
   https://learn.microsoft.com/entra/msal/python/msal.token_cache
 - AF-008: credential masking

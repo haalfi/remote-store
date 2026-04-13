@@ -72,7 +72,13 @@ GraphBackend(
   atomicity is not guaranteed.
 - `SEEKABLE_READ` is withheld because the Graph content stream is
   forward-only. `Store.read_seekable()` uses the default spool
-  fallback (ADR-0017).
+  fallback (ADR-0017). A native `Backend.read_seekable()` override
+  built on `Range` reads over `@microsoft.graph.downloadUrl` was
+  considered and declined: SharePoint-backed drives have been
+  observed to return the full body (or a non-`416` `4xx`) in
+  response to `Range`, so declaring `SEEKABLE_READ` would
+  advertise a guarantee the backend cannot honour (see GR-015,
+  GR-017).
 - `GLOB` is withheld; callers use `ext.glob` over `list_files`.
 
 Async monitor polling for `copy` and may-be-async `move` is a
@@ -350,6 +356,9 @@ used. Consequently:
   particularly Windows, where the system temp volume may lack space
   for multi-GiB uploads). The policy is owned by this spec, not
   `tempfile` defaults; the implementation passes an explicit `dir=`.
+  **The documentation-phase guide for this backend must note this
+  placement** so callers running from read-only or small-capacity
+  working directories can redirect the spool explicitly.
 **Postconditions:**
 - The upload is atomic on commit: the item becomes visible only
   after the final chunk succeeds.
@@ -849,6 +858,9 @@ not reproduce. These IDs require a real tenant (credentials gated by
   values under sustained load.
 - **GR-026** — end-to-end async copy monitor polling against a
   genuine `202`-returning `POST copy` and real monitor URL.
+- **GR-054** — real `507 insufficientStorage` / `quotaLimitReached`
+  can only be elicited against a drive that is actually at quota;
+  `respx` can assert the mapping but cannot reproduce the condition.
 - **Round-trip 10 MiB upload-session + range-read test** (RFC test
   plan). Validates byte-equality across the large-file path.
 

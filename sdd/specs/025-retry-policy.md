@@ -180,6 +180,14 @@ expiry raises a terminal error and is not retried.
 - When `retry is None`, uses `RetryPolicy()` defaults (3 attempts,
   1-60 s exponential backoff, 1 s jitter).
 - When `retry` is provided, replaces defaults entirely.
+**Long-operation timeout scope:** `RetryPolicy.timeout` bounds the
+retry loop, not a single backend operation that legitimately takes
+minutes. Graph's `copy`/`move` monitor-URL poller (GR-026) is
+bounded by a separate `copy_timeout` parameter, not by
+`RetryPolicy.timeout`. This split is the canonical pattern for any
+future backend that introduces a long-running async operation: keep
+retry-loop budgets seconds-scale and give the operation its own
+wall-clock parameter.
 
 ---
 

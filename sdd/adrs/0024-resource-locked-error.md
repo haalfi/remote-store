@@ -48,7 +48,8 @@ canonical errors. It inherits directly from `RemoteStoreError`
   is reserved for future backends that can surface who holds the
   lock — Graph does not expose this today, so it remains `None`.
 - **Retry guidance.** Not safely retried by the standard retry
-  policy (RET-0xx). Callers may retry at their own cadence.
+  policy (RET-015 classifies `ResourceLocked` as terminal). Callers
+  may retry at their own cadence.
   Documented alongside the error.
 
 ### Mapped conditions
