@@ -965,7 +965,8 @@ class TestPyArrowBinaryIOMethods:
 class TestS3PyArrowRetryNonDefaultParams:
     """Non-default RetryPolicy triggers debug log and passes max_attempts only (lines 380, 410-426)."""
 
-    def test_pa_fs_non_default_retry_triggers_debug_log(self) -> None:
+    def test_pa_fs_non_default_retry_triggers_debug_log(self, caplog: pytest.LogCaptureFixture) -> None:
+        import logging
         from unittest.mock import MagicMock, patch
 
         from remote_store._config import RetryPolicy
@@ -977,13 +978,16 @@ class TestS3PyArrowRetryNonDefaultParams:
         )
         mock_fs = MagicMock()
         with (
+            caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_pyarrow"),
             patch("pyarrow.fs.S3FileSystem", return_value=mock_fs),
             patch("pyarrow.fs.AwsStandardS3RetryStrategy") as mock_retry_cls,
         ):
             _ = backend._pa_fs
-            mock_retry_cls.assert_called_once_with(max_attempts=5)
+            assert mock_retry_cls.call_args.kwargs == {"max_attempts": 5}
+        assert any("only max_attempts is used" in rec.message for rec in caplog.records)
 
-    def test_s3fs_non_default_retry_triggers_debug_log(self) -> None:
+    def test_s3fs_non_default_retry_triggers_debug_log(self, caplog: pytest.LogCaptureFixture) -> None:
+        import logging
         from unittest.mock import MagicMock, patch
 
         from remote_store._config import RetryPolicy
@@ -995,18 +999,20 @@ class TestS3PyArrowRetryNonDefaultParams:
         )
         mock_fs = MagicMock()
         with (
+            caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_pyarrow"),
             patch("s3fs.S3FileSystem", return_value=mock_fs),
             patch("botocore.config.Config") as mock_config_cls,
         ):
             mock_config_cls.return_value.merge.return_value = mock_config_cls.return_value
             _ = backend._s3fs
-            mock_config_cls.assert_called_once_with(
-                retries={"max_attempts": 3, "mode": "standard"},
-            )
+            assert mock_config_cls.call_args.kwargs == {
+                "retries": {"max_attempts": 3, "mode": "standard"},
+            }
+        assert any("only max_attempts is used" in rec.message for rec in caplog.records)
 
     def test_s3fs_retry_with_existing_config_merges(self) -> None:
         """When client_options already has a config, it is merged with retry config."""
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import patch
 
         import botocore.config
 
@@ -1017,12 +1023,17 @@ class TestS3PyArrowRetryNonDefaultParams:
         backend = S3PyArrowBackend(
             bucket="test-bucket",
             client_options={"client_kwargs": {"config": existing_config}},
-            retry=RetryPolicy(max_attempts=2, backoff_base=2.0),
+            retry=RetryPolicy(max_attempts=2),
         )
-        mock_fs = MagicMock()
-        with patch("s3fs.S3FileSystem", return_value=mock_fs):
+        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
             _ = backend._s3fs
-            assert backend._s3fs_instance is mock_fs
+        # Verify s3fs was called and inspect the merged config passed through client_kwargs
+        assert mock_s3fs_cls.call_count == 1
+        merged_config = mock_s3fs_cls.call_args.kwargs["client_kwargs"]["config"]
+        assert isinstance(merged_config, botocore.config.Config)
+        # Merged config preserves the original max_pool_connections and adds retries
+        assert merged_config.max_pool_connections == 20
+        assert merged_config.retries == {"max_attempts": 2, "mode": "standard"}
 
 
 # endregion

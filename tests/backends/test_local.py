@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -227,6 +227,10 @@ class TestLocalBackendWriteAtomicStream:
 class TestLocalBackendGlobSymlinkEscape:
     """glob() skips files that resolve outside root via symlinks (lines 266-267)."""
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="symlink creation requires SeCreateSymbolicLinkPrivilege on Windows",
+    )
     def test_glob_skips_symlink_escaping_root(self) -> None:
         with tempfile.TemporaryDirectory() as outside, tempfile.TemporaryDirectory() as root:
             backend = LocalBackend(root=root)
@@ -235,33 +239,30 @@ class TestLocalBackendGlobSymlinkEscape:
             outside_file.write_bytes(b"secret")
             # Create a symlink inside root pointing to the outside file
             symlink = Path(root) / "escape.txt"
-            symlink.symlink_to(str(outside_file))
+            try:
+                symlink.symlink_to(str(outside_file))
+            except OSError:
+                pytest.skip("symlink creation not permitted on this platform")
             # glob should return no files (symlink target is outside root)
             results = list(backend.glob("*.txt"))
             assert all(r.name != "secret.txt" for r in results)
 
 
 class TestLocalBackendOpenAtomicPermission:
-    """open_atomic() PermissionError during mkstemp (lines 206-207)."""
+    """open_atomic() maps PermissionError from mkstemp to PermissionDenied (lines 206-207)."""
 
-    @pytest.mark.skipif(
-        os.getuid() == 0,
-        reason="root bypasses permission checks",
-    )
-    def test_open_atomic_permission_denied_on_mkdir(self) -> None:
-
+    def test_open_atomic_permission_denied_during_mkstemp(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from remote_store._errors import PermissionDenied
+        from remote_store.backends import _local as local_mod
+
+        def _raise_permission(*_args: object, **_kwargs: object) -> tuple[int, str]:
+            raise PermissionError("simulated permission denied")
 
         with tempfile.TemporaryDirectory() as root:
             backend = LocalBackend(root=root)
-            locked = Path(root) / "locked"
-            locked.mkdir()
-            locked.chmod(0o555)  # no write permission
-            try:
-                with (
-                    pytest.raises(PermissionDenied, match="Permission denied"),
-                    backend.open_atomic("locked/file.txt"),
-                ):
-                    pass
-            finally:
-                locked.chmod(0o755)
+            monkeypatch.setattr(local_mod.tempfile, "mkstemp", _raise_permission)
+            with (
+                pytest.raises(PermissionDenied, match="Permission denied"),
+                backend.open_atomic("file.txt"),
+            ):
+                pass

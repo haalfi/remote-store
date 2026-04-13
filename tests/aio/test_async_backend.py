@@ -108,14 +108,18 @@ class TestAsyncBackendIterChildrenDefault:
     """ASYNC-029: AsyncBackend.iter_children default chains list_files + list_folders (lines 326-329)."""
 
     @pytest.mark.spec("ASYNC-029")
-    async def test_iter_children_base_class_chains_list_files_and_folders(self) -> None:
-        # Call the BASE class iter_children (which delegates to list_files + list_folders)
-        # by invoking it unbound on an AsyncMemoryBackend instance.
-        backend = AsyncMemoryBackend()
+    async def test_iter_children_default_used_by_subclass_that_does_not_override(self) -> None:
+        # A concrete subclass that does NOT override iter_children must inherit
+        # the base-class default which chains list_files + list_folders.
+        class _InheritingBackend(AsyncMemoryBackend):
+            pass
+
+        _InheritingBackend.iter_children = AsyncBackend.iter_children  # type: ignore[assignment]
+        backend = _InheritingBackend()
         await backend.write("file.txt", b"data")
         await backend.write("sub/child.txt", b"data")
 
-        results = [entry async for entry in AsyncBackend.iter_children(backend, "")]
+        results = [entry async for entry in backend.iter_children("")]
         names = {e.name for e in results}
         assert "file.txt" in names
         assert "sub" in names

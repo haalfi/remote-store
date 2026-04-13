@@ -537,17 +537,44 @@ class TestCachedStoreDunder:
 
     def test_invalidate_listings_fallback_no_clear_prefixes(self, store: Store) -> None:
         """_invalidate_listings falls back to clear_prefix loop when clear_prefixes absent."""
-        cs = cache(store, ttl=60.0)
-        # Temporarily remove the batch clear_prefixes method to exercise the loop
-        batch_fn = cs._cache.__class__.__dict__.get("clear_prefixes")  # noqa: SLF001
-        try:
-            if batch_fn is not None:
-                del cs._cache.__class__.clear_prefixes  # type: ignore[attr-defined]  # noqa: SLF001
-            # Should not raise; exercises the per-prefix loop
-            cs.invalidate("a.txt")
-        finally:
-            if batch_fn is not None:
-                cs._cache.__class__.clear_prefixes = batch_fn  # type: ignore[attr-defined]  # noqa: SLF001
+
+        class _LegacyCache:
+            """CacheBackend without batch ``clear_prefixes`` -- forces the fallback loop."""
+
+            def __init__(self) -> None:
+                self._data: dict[tuple[str, ...], Any] = {}
+                self.cleared_prefixes: list[str] = []
+
+            def get(self, key: tuple[str, ...]) -> Any:
+                if key not in self._data:
+                    raise KeyError(key)
+                return self._data[key]
+
+            def set(self, key: tuple[str, ...], value: Any, ttl: float) -> None:  # noqa: ARG002
+                self._data[key] = value
+
+            def delete(self, key: tuple[str, ...]) -> None:
+                self._data.pop(key, None)
+
+            def clear(self) -> None:
+                self._data.clear()
+
+            def clear_prefix(self, prefix: str) -> None:
+                self.cleared_prefixes.append(prefix)
+                self._data = {k: v for k, v in self._data.items() if k[0] != prefix}
+
+            def size(self) -> int:
+                return len(self._data)
+
+        legacy = _LegacyCache()
+        cs = cache(store, ttl=60.0, cache_backend=legacy)
+        # Seed a listing cache entry that the fallback must remove
+        list(cs.list_files(""))
+        assert legacy._data, "list_files did not populate the cache"
+        cs.invalidate("a.txt")
+        # Fallback loop must have visited each known listing prefix
+        assert legacy.cleared_prefixes, "clear_prefix was never invoked"
+        assert "list_files" in legacy.cleared_prefixes
 
     @pytest.mark.spec("BUG-138")
     @pytest.mark.spec("CACHE-016")
