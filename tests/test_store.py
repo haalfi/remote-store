@@ -552,6 +552,20 @@ class TestStoreWriteText:
         with pytest.raises(InvalidPath):
             store.write_text(path, "text")
 
+
+class TestListFilesDepthFilter:
+    """STORE-depth-filter: list_files depth filter trims results beyond max_depth."""
+
+    @pytest.mark.spec("STORE-012")
+    def test_depth_filter_trims_files_beyond_max_depth(self, store: Store) -> None:
+        """list_files with max_depth skips files at depth > max_depth."""
+        store.write("a/b/shallow.txt", b"x")
+        store.write("a/b/c/deep.txt", b"x")
+        files = list(store.list_files("a", max_depth=1))
+        names = {f.name for f in files}
+        assert "shallow.txt" in names
+        assert "deep.txt" not in names
+
     @pytest.mark.spec("WTXT-001")
     def test_write_text_roundtrip(self, store: Store) -> None:
         store.write_text("rt.txt", "caf\u00e9", encoding="utf-8")

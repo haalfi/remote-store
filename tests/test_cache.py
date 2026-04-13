@@ -512,6 +512,70 @@ class TestBug138:
 
         assert cs.read_bytes("sub/file.txt") == b"version2"  # must be fresh
 
+
+# ---------------------------------------------------------------------------
+# CachedStore __eq__, __hash__, __repr__, _invalidate_listings fallback
+# ---------------------------------------------------------------------------
+
+
+class TestCachedStoreDunder:
+    """CachedStore identity and representation methods."""
+
+    def test_eq_different_type_returns_not_implemented(self, cached: CachedStore) -> None:
+        assert cached.__eq__("not-a-store") is NotImplemented
+
+    def test_hash_is_stable(self, cached: CachedStore) -> None:
+        assert hash(cached) == hash(cached)
+
+    def test_repr_includes_max_content_size(self, store: Store) -> None:
+        cs = cache(store, ttl=30.0, max_content_size=1024)
+        assert "1024" in repr(cs)
+
+    def test_repr_includes_max_listing_size(self, store: Store) -> None:
+        cs = cache(store, ttl=30.0, max_listing_size=512)
+        assert "512" in repr(cs)
+
+    def test_invalidate_listings_fallback_no_clear_prefixes(self, store: Store) -> None:
+        """_invalidate_listings falls back to clear_prefix loop when clear_prefixes absent."""
+
+        class _LegacyCache:
+            """CacheBackend without batch ``clear_prefixes`` -- forces the fallback loop."""
+
+            def __init__(self) -> None:
+                self._data: dict[tuple[str, ...], Any] = {}
+                self.cleared_prefixes: list[str] = []
+
+            def get(self, key: tuple[str, ...]) -> Any:
+                if key not in self._data:
+                    raise KeyError(key)
+                return self._data[key]
+
+            def set(self, key: tuple[str, ...], value: Any, ttl: float) -> None:  # noqa: ARG002
+                self._data[key] = value
+
+            def delete(self, key: tuple[str, ...]) -> None:
+                self._data.pop(key, None)
+
+            def clear(self) -> None:
+                self._data.clear()
+
+            def clear_prefix(self, prefix: str) -> None:
+                self.cleared_prefixes.append(prefix)
+                self._data = {k: v for k, v in self._data.items() if k[0] != prefix}
+
+            def size(self) -> int:
+                return len(self._data)
+
+        legacy = _LegacyCache()
+        cs = cache(store, ttl=60.0, cache_backend=legacy)
+        # Seed a listing cache entry that the fallback must remove
+        list(cs.list_files(""))
+        assert legacy._data, "list_files did not populate the cache"
+        cs.invalidate("a.txt")
+        # Fallback loop must have visited each known listing prefix
+        assert legacy.cleared_prefixes, "clear_prefix was never invoked"
+        assert "list_files" in legacy.cleared_prefixes
+
     @pytest.mark.spec("BUG-138")
     @pytest.mark.spec("CACHE-016")
     def test_child_write_invalidates_parent_exists(self) -> None:

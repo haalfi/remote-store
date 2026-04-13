@@ -179,6 +179,31 @@ class TestRegistryCloseOnError:
             assert len(reg._backends) == 0
 
 
+class TestRegistryDunder:
+    """Registry.__hash__ and __eq__."""
+
+    def test_hash_is_identity_based(self) -> None:
+        """Each Registry instance has a distinct hash (id-based)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = _make_config(tmp)
+            r1 = Registry(cfg)
+            r2 = Registry(cfg)
+            assert hash(r1) != hash(r2)
+            assert hash(r1) == hash(r1)
+
+    def test_eq_same_config(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = _make_config(tmp)
+            r1 = Registry(cfg)
+            r2 = Registry(cfg)
+            assert r1 == r2
+
+    def test_eq_different_type_returns_not_implemented(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            r = Registry(_make_config(tmp))
+            assert r.__eq__("not-a-registry") is NotImplemented
+
+
 class TestRegistryBackendFactory:
     """REG-008: Backend factory registry."""
 

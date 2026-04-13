@@ -907,3 +907,139 @@ class TestS3PyArrowResolve:
 
 
 # endregion
+
+
+# region: _PyArrowBinaryIO unit tests (lines 54, 57, 98-99, 102)
+
+
+class TestPyArrowBinaryIOMethods:
+    """Unit tests for _PyArrowBinaryIO adapter -- no live S3 needed."""
+
+    def _make_raw(self, *, seekable: bool = True, tell_pos: int = 0) -> tuple[object, object]:
+        from unittest.mock import MagicMock
+
+        import pyarrow as pa
+
+        from remote_store.backends._s3_pyarrow import _PyArrowBinaryIO
+
+        mock_pa = MagicMock(spec=pa.NativeFile)
+        mock_pa.seekable.return_value = seekable
+        mock_pa.tell.return_value = tell_pos
+        return _PyArrowBinaryIO(mock_pa), mock_pa
+
+    def test_readable_returns_true(self) -> None:
+        raw, _ = self._make_raw()
+        assert raw.readable() is True
+
+    def test_seekable_delegates_to_pa_true(self) -> None:
+        raw, mock_pa = self._make_raw(seekable=True)
+        assert raw.seekable() is True
+        mock_pa.seekable.assert_called_once()
+
+    def test_seekable_delegates_to_pa_false(self) -> None:
+        raw, mock_pa = self._make_raw(seekable=False)
+        assert raw.seekable() is False
+
+    def test_seek_delegates_and_returns_position(self) -> None:
+        raw, mock_pa = self._make_raw(tell_pos=7)
+        result = raw.seek(7)
+        mock_pa.seek.assert_called_once_with(7, 0)
+        assert result == 7
+
+    def test_seek_with_whence_cur(self) -> None:
+        raw, mock_pa = self._make_raw(tell_pos=5)
+        result = raw.seek(2, 1)
+        mock_pa.seek.assert_called_once_with(2, 1)
+        assert result == 5
+
+    def test_tell_delegates_to_pa(self) -> None:
+        raw, mock_pa = self._make_raw(tell_pos=42)
+        assert raw.tell() == 42
+        mock_pa.tell.assert_called()
+
+
+# endregion
+
+
+# region: Retry debug log paths (lines 380, 410-426)
+
+
+class TestS3PyArrowRetryNonDefaultParams:
+    """Non-default RetryPolicy triggers debug log and passes max_attempts only (lines 380, 410-426)."""
+
+    def test_pa_fs_non_default_retry_triggers_debug_log(self, caplog: pytest.LogCaptureFixture) -> None:
+        import logging
+        from unittest.mock import MagicMock, patch
+
+        from remote_store._config import RetryPolicy
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(
+            bucket="test-bucket",
+            retry=RetryPolicy(max_attempts=5, backoff_base=2.0),  # non-default backoff_base
+        )
+        import pyarrow.fs as pa_fs
+
+        mock_fs = MagicMock(spec=pa_fs.S3FileSystem)
+        with (
+            caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_pyarrow"),
+            patch("pyarrow.fs.S3FileSystem", return_value=mock_fs),
+            patch("pyarrow.fs.AwsStandardS3RetryStrategy") as mock_retry_cls,
+        ):
+            _ = backend._pa_fs
+            assert mock_retry_cls.call_args.kwargs == {"max_attempts": 5}
+        assert any("only max_attempts is used" in rec.message for rec in caplog.records)
+
+    def test_s3fs_non_default_retry_triggers_debug_log(self, caplog: pytest.LogCaptureFixture) -> None:
+        import logging
+        from unittest.mock import MagicMock, patch
+
+        from remote_store._config import RetryPolicy
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(
+            bucket="test-bucket",
+            retry=RetryPolicy(max_attempts=3, backoff_base=2.0),  # non-default
+        )
+        import s3fs as _s3fs
+
+        mock_fs = MagicMock(spec=_s3fs.S3FileSystem)
+        with (
+            caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_pyarrow"),
+            patch("s3fs.S3FileSystem", return_value=mock_fs),
+            patch("botocore.config.Config") as mock_config_cls,
+        ):
+            mock_config_cls.return_value.merge.return_value = mock_config_cls.return_value
+            _ = backend._s3fs
+            assert mock_config_cls.call_args.kwargs == {
+                "retries": {"max_attempts": 3, "mode": "standard"},
+            }
+        assert any("only max_attempts is used" in rec.message for rec in caplog.records)
+
+    def test_s3fs_retry_with_existing_config_merges(self) -> None:
+        """When client_options already has a config, it is merged with retry config."""
+        from unittest.mock import patch
+
+        import botocore.config
+
+        from remote_store._config import RetryPolicy
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        existing_config = botocore.config.Config(max_pool_connections=20)
+        backend = S3PyArrowBackend(
+            bucket="test-bucket",
+            client_options={"client_kwargs": {"config": existing_config}},
+            retry=RetryPolicy(max_attempts=2),
+        )
+        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
+            _ = backend._s3fs
+        # Verify s3fs was called and inspect the merged config passed through client_kwargs
+        assert mock_s3fs_cls.call_count == 1
+        merged_config = mock_s3fs_cls.call_args.kwargs["client_kwargs"]["config"]
+        assert isinstance(merged_config, botocore.config.Config)
+        # Merged config preserves the original max_pool_connections and adds retries
+        assert merged_config.max_pool_connections == 20
+        assert merged_config.retries == {"max_attempts": 2, "mode": "standard"}
+
+
+# endregion
