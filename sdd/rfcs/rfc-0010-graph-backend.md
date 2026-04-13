@@ -168,9 +168,10 @@ The async→sync direction has non-trivial design surface — private
 event-loop ownership, cancellation propagation, behaviour when the
 caller is already inside a running loop, `nest-asyncio` interaction —
 and therefore requires its own ADR rather than being decided implicitly
-during the Graph implementation pass. Tracked as **ID-128** in
-`sdd/BACKLOG.md`; that ADR must land before (or together with) the
-Graph implementation PR. Whatever shape it takes (reuse of existing
+during the Graph implementation pass. Tracked as **ID-141** in
+`sdd/BACKLOG.md` (drafted in ADR-0025; renumbered from ID-128 which
+collided with a completed item); that ADR must land before (or
+together with) the Graph implementation PR. Whatever shape it takes (reuse of existing
 adapter machinery in the opposite direction, or a new
 `AsyncBackendSyncAdapter` companion), the wrapper must preserve the
 flat capability set and all error mappings.
