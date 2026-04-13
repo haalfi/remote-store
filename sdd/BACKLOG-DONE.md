@@ -5,6 +5,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-151 — PR #426 test-quality cleanup**
+  Addressed review feedback on the ID-013b coverage PR: removed `os.getuid()`
+  at module import (Windows collection crash); monkeypatched `tempfile.mkstemp`
+  to exercise the `PermissionDenied` mapping cross-platform; added `spec=` to
+  every `MagicMock()` so `scripts/check_mock_spec.py` stays green; added real
+  assertions and `caplog` checks to S3-PyArrow retry debug-log tests; made
+  `test_s3fs_retry_with_existing_config_merges` verify the merged
+  `botocore.config.Config`; replaced class-dict mutation in the cache invalidate
+  fallback with a bespoke `CacheBackend` lacking `clear_prefixes`; switched the
+  `AsyncBackend.iter_children` default test to a concrete subclass that inherits
+  it. PR #426.
+
 - [x] **BUG-164 — `docs.yml` `pages` job blocked by environment protection rules on release tags**
   `docs.yml` ran in tag ref context (`refs/tags/vX.Y.Z`) on `release: published` events;
   the `github-pages` environment protection rules only allow branch refs. Extracted the

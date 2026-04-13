@@ -15,6 +15,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   pushes do not re-trigger workflows, so a `push: gh-pages` trigger would
   never fire from mike.)
 
+### Internal
+
+- **Test-quality cleanup on coverage PR** (BK-151): dropped `os.getuid()` at
+  module import (Windows collection crash), monkeypatched `tempfile.mkstemp`
+  to exercise `PermissionDenied` cross-platform, added `spec=` to every
+  `MagicMock()` for `scripts/check_mock_spec.py`, added `caplog` assertions to
+  S3-PyArrow retry debug-log tests, and replaced a class-dict mutation in the
+  cache invalidate-fallback test with a bespoke `CacheBackend`.
+
 ## [0.23.0] - 2026-04-12
 
 ### Added
