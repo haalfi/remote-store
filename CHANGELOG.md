@@ -9,14 +9,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Design
 
 - **Microsoft Graph backend — SDD artifacts** (ID-127): accepted
-  [RFC-0010](sdd/rfcs/rfc-0010-graph-backend.md),
-  ADRs [0021](sdd/adrs/0021-graph-sdk-choice.md) (SDK choice),
-  [0022](sdd/adrs/0022-graph-auth-model.md) (auth model),
-  [0023](sdd/adrs/0023-async-monitor-polling.md) (async monitor polling), and
-  [0024](sdd/adrs/0024-resource-locked-error.md) (`ResourceLocked` error), plus
-  [spec 044](sdd/specs/044-graph-backend.md) (GR-001..GR-056). Amends
-  [spec 005](sdd/specs/005-error-model.md) with ERR-013 (`ResourceLocked`) and
-  [spec 025](sdd/specs/025-retry-policy.md) with RET-015 (Graph retry mapping).
+  `sdd/rfcs/rfc-0010-graph-backend.md`, ADRs `sdd/adrs/0021-graph-sdk-choice.md`
+  (SDK choice), `sdd/adrs/0022-graph-auth-model.md` (auth model),
+  `sdd/adrs/0023-async-monitor-polling.md` (async monitor polling), and
+  `sdd/adrs/0024-resource-locked-error.md` (`ResourceLocked` error), plus
+  `sdd/specs/044-graph-backend.md` (GR-001..GR-056). Amends
+  `sdd/specs/005-error-model.md` with ERR-013 (`ResourceLocked`) and
+  `sdd/specs/025-retry-policy.md` with RET-015 (Graph retry mapping).
   No runtime changes.
 
 ### Fixed
