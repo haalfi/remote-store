@@ -542,8 +542,9 @@ class _AsyncIteratorBridge:
         if self._done:
             raise StopIteration
         self._adapter._guard()
-        fut: concurrent.futures.Future[Any] = asyncio.run_coroutine_threadsafe(  # type: ignore[arg-type]
-            self._iter.__anext__(), self._adapter._loop
+        fut: concurrent.futures.Future[Any] = asyncio.run_coroutine_threadsafe(
+            self._iter.__anext__(),  # type: ignore[arg-type]
+            self._adapter._loop,
         )
         try:
             return fut.result()
