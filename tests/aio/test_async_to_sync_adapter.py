@@ -712,6 +712,8 @@ class TestClosedAdapterReuse:
         adapter, _ = _make_adapter()
         adapter.close()
         adapter.close()  # must not raise
+        with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
+            adapter.exists("x")
 
 
 # ---------------------------------------------------------------------------
@@ -763,6 +765,7 @@ class TestSyncContextManager:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.filterwarnings("ignore:coroutine.*was never awaited:RuntimeWarning")
 class TestCloseSemantics:
     """ASYNC-088: drain order, idempotency, aclose propagation, timeout warning."""
 
@@ -777,7 +780,9 @@ class TestCloseSemantics:
     def test_close_is_idempotent(self) -> None:
         adapter, _ = _make_adapter()
         adapter.close()
-        adapter.close()
+        adapter.close()  # must not raise
+        with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
+            adapter.exists("x")
 
     @pytest.mark.spec("ASYNC-088")
     def test_aclose_error_swallowed_not_propagated(self) -> None:
