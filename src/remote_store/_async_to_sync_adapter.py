@@ -62,7 +62,7 @@ class _SyncSafeHandleProvider(Protocol):
 
     def sync_safe_unwrap(self, type_hint: type[Any]) -> Any:
         """Return a sync-safe native handle for *type_hint*."""
-        ...
+        raise NotImplementedError
 
 
 # ---------------------------------------------------------------------------
