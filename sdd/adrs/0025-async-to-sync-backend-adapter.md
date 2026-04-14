@@ -104,17 +104,25 @@ hybrid model needs.
   follow the standard submit-and-block pattern. `check_health()`
   is explicitly **not** a no-op: connectivity errors from the
   wrapped async backend must reach the sync caller verbatim.
+- `Future.result()` blocks without a per-call timeout. Timeout
+  responsibility belongs to the wrapped `AsyncBackend`: backends
+  should impose their own timeouts internally (e.g.
+  `asyncio.wait_for`) or rely on SDK session-level timeouts.
+  The adapter's `close(timeout=…)` provides a global shutdown
+  bound; there is no per-operation equivalent.
 
 ### Streaming iterators and open streams
 
 - `read(path)` returns a sync file-like stream whose `read(n)` pumps
   chunks out of the backend's `AsyncIterator[bytes]`. The stream
-  holds an internal byte buffer (`memoryview` slice) carrying the
-  unread tail of the most recently fetched chunk: `read(n)` first
-  drains that buffer, and only submits a new `__anext__` coroutine
-  when the buffer is empty and more bytes are still required.
-  This satisfies the `BinaryIO` contract that `read(n)` returns at
-  most *n* bytes even when the backend yields larger chunks.
+  holds an internal byte buffer carrying the unread tail of the most
+  recently fetched chunk: `read(n)` first drains that buffer, and
+  only submits a new `__anext__` coroutine when the buffer is empty
+  and more bytes are still required.  This satisfies the `BinaryIO`
+  contract that `read(n)` returns at most *n* bytes even when the
+  backend yields larger chunks.  The stream exposes `read(n)`,
+  `close()`, `seekable()` (returns `False`), and `readable()`
+  (returns `True`); `seek`, `tell`, and `fileno` are not provided.
   `close()` submits the async iterator's `aclose()` to the loop.
 - `list_files`, `list_folders`, `glob`, `iter_children` return sync
   iterators backed by the same chunk-pull pattern. Materialising the
@@ -412,13 +420,12 @@ agnostic.
   `max_content_size` explicitly; the cache extension should learn to
   warn when wrapped over a bridged backend (tracked separately).
 - **Bridged read streams are forward-only.** The `BinaryIO` returned
-  by `read()` exposes `read(n)` and `close()` only. Extensions that
-  reach for `seek()`, `tell()`, `seekable()`, `readable()`, or
-  `fileno()` on the stream object will receive `False` /
-  `AttributeError` as appropriate — `SEEKABLE_READ` is masked off so
-  no extension that respects the capability gate will reach for
-  them. Random-access callers route through `read_seekable` and pay
-  the spool fallback (above).
+  by `read()` is not natively seekable: `seekable()` returns `False`
+  and `seek()`, `tell()`, and `fileno()` are not provided.
+  `readable()` returns `True`. `SEEKABLE_READ` is masked off so no
+  extension that respects the capability gate will attempt random
+  access. Random-access callers route through `read_seekable` and
+  pay the spool fallback (above).
 
 ## Followups
 

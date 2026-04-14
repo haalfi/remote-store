@@ -139,7 +139,15 @@ class AsyncBackendSyncAdapter(Backend):
     # -- Submit/block helper ------------------------------------------------
 
     def _submit(self, coro: Any) -> Any:
-        """Submit *coro* to the private loop and block on the result."""
+        """Submit *coro* to the private loop and block on the result.
+
+        Blocks indefinitely until the coroutine completes or raises.
+        There is no per-call timeout: timeout responsibility belongs to
+        the wrapped ``AsyncBackend`` (e.g. ``asyncio.wait_for`` inside
+        the coroutine, or SDK session-level timeouts).  The adapter's
+        ``close(timeout=…)`` provides a global shutdown bound; there is
+        no per-operation equivalent.
+        """
         self._guard()
         try:
             future = asyncio.run_coroutine_threadsafe(coro, self._loop)
