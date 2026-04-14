@@ -280,10 +280,12 @@ capabilities and must mask one off:
   `__anext__`-per-`read(n)` cadence preserves laziness end-to-end:
   the bridge never pre-reads beyond what the sync caller has asked
   for. Forwarded unchanged.
-- **`ATOMIC_WRITE`, `ATOMIC_MOVE`, `GLOB`, `LIST_FOLDERS`,
-  `DELETE_FOLDER`, and the remaining flags** — preserved unchanged.
-  The async coroutine performs the operation; the bridge only
-  marshals the call.
+- **`ATOMIC_WRITE`, `ATOMIC_MOVE`, `GLOB`, and the remaining flags**
+  — preserved unchanged. The async coroutine performs the operation;
+  the bridge only marshals the call. Folder listing and folder
+  deletion have no dedicated capability flag; they remain gated by
+  `LIST` / `DELETE` on the wrapped backend per the sync `Backend`
+  contract (see spec 029 § ASYNC-084).
 
 `resolve()` delegates directly (no I/O, no loop).
 
@@ -418,58 +420,26 @@ agnostic.
   them. Random-access callers route through `read_seekable` and pay
   the spool fallback (above).
 
-## Followups (deferred from this ADR)
+## Followups
 
-- **Normative spec block (`ASYNC-NNN`).** This ADR records the
-  decision in prose; numbered IDs are deferred to spec amendment
-  (ID-142) so the implementation test suite can use
-  `@pytest.mark.spec("ASYNC-NNN")` per `sdd/000-process.md` Rule 2,
-  mirroring `ASYNC-030 … ASYNC-048` for `SyncBackendAdapter`. The
-  spec amendment is **not blocking** for this ADR draft but **is
-  blocking** for the ID-127 implementation PR. Required invariants
-  the spec block must pin (each gets a contiguous `ASYNC-NNN`):
-    1. Single-chunk in-flight pump invariant.
-    2. `read()` `BinaryIO` flavour and `read(n)` short-read semantics
-       (raw vs buffered choice, `memoryview`-tail buffer behaviour).
-    3. Fail-fast on running loop — exception type and message stem
-       (so `pytest.raises(..., match=…)` is stable).
-    4. Closed-adapter reuse — exception type and message stem.
-    5. Capability translation table (`SEEKABLE_READ` masked,
-       `LAZY_READ` preserved, rest forwarded).
-    6. `open_atomic` spool-and-flush semantics (capability gate
-       observable on flush).
-    7. `unwrap` `CapabilityNotSupported` default and the
-       sync-safe-handle exemption rule.
-    8. Error-preservation contract — verbatim re-raise via
-       `Future.set_exception` → `Future.result()`, traceback chain
-       preservation, ERR-001 attribute survival.
-    9. Lifecycle: `close(timeout)` semantics, drain order
-       (`aclose` → `loop.stop` → join), warning emission on timeout.
-   10. Concurrent-callers no-deadlock invariant (N=32 mixed
-       read/write/list calls all complete; no caller observes
-       another caller's result).
-   11. Async iterator failure modes — mid-stream `__anext__` raise,
-       hung iterator + `close()` bound, `aclose()` raise during
-       shutdown.
-   12. Write-side `BinaryIO` failure mid-write — exception surfaces
-       verbatim from `write()` / `write_atomic()`; partial-write
-       rollback follows wrapped backend's atomicity guarantee.
-   13. `__aenter__` / `__aexit__` interaction with adapter init
-       (sync `__enter__` does not touch the async context manager;
-       `__exit__` delegates to `close()`).
-   14. `check_health()` failure-path: connectivity errors from the
-       wrapped backend reach the sync caller verbatim.
-
-  Test-infrastructure deliverables that ride with the spec block:
-    - **Mirror parity test pattern** — structural mirror of
-      `tests/aio/test_sync_adapter.py` (one `Test…` class per
-      domain), plus the additional classes unique to this direction:
-      `…RunningLoopFailFast`, `…Cancellation`, `…Concurrency`,
-      `…CloseSemantics`.
-    - **Test doubles** — `_HangingAsyncBackend`, `_RaisingAsyncBackend`
-      under `tests/aio/_doubles.py` (or equivalent) so the failure
-      paths above are reachable without mocking third-party
-      internals (`sdd/TESTING.md` Rule 6).
+- **Normative spec block (`ASYNC-NNN`) — landed.** ID-142 amended
+  `sdd/specs/029-async-store-backend-api.md` § AsyncBackendSyncAdapter
+  with the invariants this ADR records in prose, so the implementation
+  test suite can trace each case via `@pytest.mark.spec("ASYNC-NNN")`
+  per `sdd/000-process.md` Rule 2, mirroring `ASYNC-030 … ASYNC-048`
+  for `SyncBackendAdapter`. The spec block is the authoritative home
+  for exact message stems, drain order, capability translation, and
+  concurrency bounds; this ADR describes the design intent. The spec
+  is a prerequisite for the ID-127 implementation PR.
+- **Test doubles — landed.** `_HangingAsyncBackend` and
+  `_RaisingAsyncBackend` under `tests/aio/_doubles.py` make the
+  failure paths above reachable without mocking third-party internals
+  (`sdd/TESTING.md` Rule 6).
+- **Mirror parity test pattern — deferred to ID-127 implementation.**
+  Structural mirror of `tests/aio/test_sync_adapter.py` (one `Test…`
+  class per domain), plus the additional classes unique to this
+  direction: `…RunningLoopFailFast`, `…Cancellation`, `…Concurrency`,
+  `…CloseSemantics`.
 
 ## References
 
