@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/logo.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
     
     
       
@@ -5471,10 +5471,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#followups-deferred-from-this-adr" class="md-nav__link">
+  <a href="#followups" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Followups (deferred from this ADR)
+        Followups
       
     </span>
   </a>
@@ -8568,10 +8568,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#followups-deferred-from-this-adr" class="md-nav__link">
+  <a href="#followups" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Followups (deferred from this ADR)
+        Followups
       
     </span>
   </a>
@@ -8869,10 +8869,12 @@ capabilities and must mask one off:</p>
   <code>__anext__</code>-per-<code>read(n)</code> cadence preserves laziness end-to-end:
   the bridge never pre-reads beyond what the sync caller has asked
   for. Forwarded unchanged.</li>
-<li><strong><code>ATOMIC_WRITE</code>, <code>ATOMIC_MOVE</code>, <code>GLOB</code>, <code>LIST_FOLDERS</code>,
-  <code>DELETE_FOLDER</code>, and the remaining flags</strong> — preserved unchanged.
-  The async coroutine performs the operation; the bridge only
-  marshals the call.</li>
+<li><strong><code>ATOMIC_WRITE</code>, <code>ATOMIC_MOVE</code>, <code>GLOB</code>, and the remaining flags</strong>
+  — preserved unchanged. The async coroutine performs the operation;
+  the bridge only marshals the call. Folder listing and folder
+  deletion have no dedicated capability flag; they remain gated by
+  <code>LIST</code> / <code>DELETE</code> on the wrapped backend per the sync <code>Backend</code>
+  contract (see spec 029 § ASYNC-084).</li>
 </ul>
 <p><code>resolve()</code> delegates directly (no I/O, no loop).</p>
 <p><code>unwrap()</code> is <strong>not</strong> a generic passthrough: an <code>httpx.AsyncClient</code>
@@ -9000,60 +9002,27 @@ agnostic.</p>
   them. Random-access callers route through <code>read_seekable</code> and pay
   the spool fallback (above).</li>
 </ul>
-<h2 id="followups-deferred-from-this-adr">Followups (deferred from this ADR)<a class="headerlink" href="#followups-deferred-from-this-adr" title="Permanent link">&para;</a></h2>
+<h2 id="followups">Followups<a class="headerlink" href="#followups" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Normative spec block (<code>ASYNC-NNN</code>).</strong> This ADR records the
-  decision in prose; numbered IDs are deferred to spec amendment
-  (ID-142) so the implementation test suite can use
-  <code>@pytest.mark.spec("ASYNC-NNN")</code> per <code>sdd/000-process.md</code> Rule 2,
-  mirroring <code>ASYNC-030 … ASYNC-048</code> for <code>SyncBackendAdapter</code>. The
-  spec amendment is <strong>not blocking</strong> for this ADR draft but <strong>is
-  blocking</strong> for the ID-127 implementation PR. Required invariants
-  the spec block must pin (each gets a contiguous <code>ASYNC-NNN</code>):<ol>
-<li>Single-chunk in-flight pump invariant.</li>
-<li><code>read()</code> <code>BinaryIO</code> flavour and <code>read(n)</code> short-read semantics
-   (raw vs buffered choice, <code>memoryview</code>-tail buffer behaviour).</li>
-<li>Fail-fast on running loop — exception type and message stem
-   (so <code>pytest.raises(..., match=…)</code> is stable).</li>
-<li>Closed-adapter reuse — exception type and message stem.</li>
-<li>Capability translation table (<code>SEEKABLE_READ</code> masked,
-   <code>LAZY_READ</code> preserved, rest forwarded).</li>
-<li><code>open_atomic</code> spool-and-flush semantics (capability gate
-   observable on flush).</li>
-<li><code>unwrap</code> <code>CapabilityNotSupported</code> default and the
-   sync-safe-handle exemption rule.</li>
-<li>Error-preservation contract — verbatim re-raise via
-   <code>Future.set_exception</code> → <code>Future.result()</code>, traceback chain
-   preservation, ERR-001 attribute survival.</li>
-<li>Lifecycle: <code>close(timeout)</code> semantics, drain order
-   (<code>aclose</code> → <code>loop.stop</code> → join), warning emission on timeout.</li>
-</ol>
-</li>
-<li>Concurrent-callers no-deadlock invariant (N=32 mixed
-       read/write/list calls all complete; no caller observes
-       another caller's result).</li>
-<li>Async iterator failure modes — mid-stream <code>__anext__</code> raise,
-       hung iterator + <code>close()</code> bound, <code>aclose()</code> raise during
-       shutdown.</li>
-<li>Write-side <code>BinaryIO</code> failure mid-write — exception surfaces
-       verbatim from <code>write()</code> / <code>write_atomic()</code>; partial-write
-       rollback follows wrapped backend's atomicity guarantee.</li>
-<li><code>__aenter__</code> / <code>__aexit__</code> interaction with adapter init
-       (sync <code>__enter__</code> does not touch the async context manager;
-       <code>__exit__</code> delegates to <code>close()</code>).</li>
-<li><code>check_health()</code> failure-path: connectivity errors from the
-       wrapped backend reach the sync caller verbatim.</li>
+<li><strong>Normative spec block (<code>ASYNC-NNN</code>) — landed.</strong> ID-142 amended
+  <code>sdd/specs/029-async-store-backend-api.md</code> § AsyncBackendSyncAdapter
+  with the invariants this ADR records in prose, so the implementation
+  test suite can trace each case via <code>@pytest.mark.spec("ASYNC-NNN")</code>
+  per <code>sdd/000-process.md</code> Rule 2, mirroring <code>ASYNC-030 … ASYNC-048</code>
+  for <code>SyncBackendAdapter</code>. The spec block is the authoritative home
+  for exact message stems, drain order, capability translation, and
+  concurrency bounds; this ADR describes the design intent. The spec
+  is a prerequisite for the ID-127 implementation PR.</li>
+<li><strong>Test doubles — landed.</strong> <code>_HangingAsyncBackend</code> and
+  <code>_RaisingAsyncBackend</code> under <code>tests/aio/_doubles.py</code> make the
+  failure paths above reachable without mocking third-party internals
+  (<code>sdd/TESTING.md</code> Rule 6).</li>
+<li><strong>Mirror parity test pattern — deferred to ID-127 implementation.</strong>
+  Structural mirror of <code>tests/aio/test_sync_adapter.py</code> (one <code>Test…</code>
+  class per domain), plus the additional classes unique to this
+  direction: <code>…RunningLoopFailFast</code>, <code>…Cancellation</code>, <code>…Concurrency</code>,
+  <code>…CloseSemantics</code>.</li>
 </ul>
-<p>Test-infrastructure deliverables that ride with the spec block:
-    - <strong>Mirror parity test pattern</strong> — structural mirror of
-      <code>tests/aio/test_sync_adapter.py</code> (one <code>Test…</code> class per
-      domain), plus the additional classes unique to this direction:
-      <code>…RunningLoopFailFast</code>, <code>…Cancellation</code>, <code>…Concurrency</code>,
-      <code>…CloseSemantics</code>.
-    - <strong>Test doubles</strong> — <code>_HangingAsyncBackend</code>, <code>_RaisingAsyncBackend</code>
-      under <code>tests/aio/_doubles.py</code> (or equivalent) so the failure
-      paths above are reachable without mocking third-party
-      internals (<code>sdd/TESTING.md</code> Rule 6).</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>ADR-0012: Async Store / Backend API — Hybrid Model (§ Async
