@@ -25,7 +25,7 @@ from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import CapabilityNotSupported
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, AsyncIterator, Coroutine, Iterator
+    from collections.abc import AsyncGenerator, AsyncIterator, Iterator
     from contextlib import AbstractContextManager
     from types import TracebackType
 
@@ -60,7 +60,9 @@ class _SyncSafeHandleProvider(Protocol):
     provide a synchronous handle (spec 029 § ASYNC-086).
     """
 
-    def sync_safe_unwrap(self, type_hint: type[Any]) -> Any: ...
+    def sync_safe_unwrap(self, type_hint: type[Any]) -> Any:
+        """Return a sync-safe native handle for *type_hint*."""
+        ...
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +141,13 @@ class AsyncBackendSyncAdapter(Backend):
     def _submit(self, coro: Any) -> Any:
         """Submit *coro* to the private loop and block on the result."""
         self._guard()
-        future = asyncio.run_coroutine_threadsafe(coro, self._loop)
+        try:
+            future = asyncio.run_coroutine_threadsafe(coro, self._loop)
+        except RuntimeError:
+            # Loop was stopped between _guard() and here (close() raced us).
+            # Re-raise with the canonical stem so ASYNC-083 callers see a
+            # stable message rather than asyncio's internal phrasing.
+            raise RuntimeError(_CLOSED_MSG) from None
         return future.result()
 
     # -- Properties ---------------------------------------------------------
@@ -336,7 +344,7 @@ class AsyncBackendSyncAdapter(Backend):
                 aclose_fut.result(timeout=_remaining())
             except concurrent.futures.TimeoutError:
                 pass  # reported below via drain outcome
-            except BaseException:  # noqa: BLE001
+            except Exception:  # noqa: BLE001
                 log.warning(
                     "AsyncBackendSyncAdapter: wrapped aclose() raised during shutdown",
                     exc_info=True,
@@ -355,7 +363,7 @@ class AsyncBackendSyncAdapter(Backend):
                 drain_fut.result(timeout=_remaining())
             except concurrent.futures.TimeoutError:
                 drain_timed_out = True
-            except BaseException:  # noqa: BLE001
+            except Exception:  # noqa: BLE001
                 log.warning(
                     "AsyncBackendSyncAdapter: task drain raised during shutdown",
                     exc_info=True,
@@ -369,7 +377,10 @@ class AsyncBackendSyncAdapter(Backend):
         self._thread.join(timeout=_remaining())
 
         if drain_timed_out or self._thread.is_alive():
-            unfinished = _snapshot_tasks(self._loop)
+            # asyncio.all_tasks() is not thread-safe to call from a foreign
+            # thread while the loop thread is still alive (timeout path).
+            # Skip the snapshot in that case; we log a zero-task warning.
+            unfinished = _snapshot_tasks(self._loop) if not self._thread.is_alive() else []
             log.warning(
                 "%s after %s seconds; %d unfinished task(s): %r",
                 _CLOSE_TIMEOUT_MSG,
@@ -480,7 +491,7 @@ class _ChunkPullReader:
             fut = asyncio.run_coroutine_threadsafe(self._iter.aclose(), self._adapter._loop)
             try:
                 fut.result()
-            except BaseException:  # noqa: BLE001
+            except Exception:  # noqa: BLE001
                 log.debug("AsyncBackendSyncAdapter: stream aclose raised", exc_info=True)
         except RuntimeError:
             # Loop already stopped (adapter closed concurrently) -- best effort.
@@ -531,8 +542,9 @@ class _AsyncIteratorBridge:
         if self._done:
             raise StopIteration
         self._adapter._guard()
-        coro = cast("Coroutine[Any, Any, Any]", self._iter.__anext__())
-        fut: concurrent.futures.Future[Any] = asyncio.run_coroutine_threadsafe(coro, self._adapter._loop)
+        fut: concurrent.futures.Future[Any] = asyncio.run_coroutine_threadsafe(
+            self._iter.__anext__(), self._adapter._loop
+        )
         try:
             return fut.result()
         except StopAsyncIteration:

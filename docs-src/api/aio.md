@@ -28,6 +28,14 @@ counterpart.
 
 ---
 
+## AsyncBackendSyncAdapter
+
+::: remote_store.AsyncBackendSyncAdapter
+    options:
+      members: false
+
+---
+
 ## AsyncMemoryBackend
 
 ::: remote_store.aio.AsyncMemoryBackend

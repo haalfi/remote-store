@@ -32,6 +32,7 @@ Complete reference for all public exports of `remote-store`.
 | [AsyncStore](aio.md#asyncstore) | Async counterpart to `Store` with coroutine methods for all operations |
 | [AsyncBackend](aio.md#asyncbackend) | Abstract base class for native async backends |
 | [SyncBackendAdapter](aio.md#syncbackendadapter) | Wraps any synchronous backend for async use via thread-pool executor |
+| [AsyncBackendSyncAdapter](aio.md#asyncbackendsyncadapter) | Wraps any `AsyncBackend` as a synchronous `Backend` via a private event loop |
 | [AsyncMemoryBackend](aio.md#asyncmemorybackend) | In-memory async backend for testing |
 | [AsyncWritableContent](aio.md#asyncwritablecontent) | Type alias: ``bytes`` or ``AsyncIterator[bytes]`` |
 

@@ -620,6 +620,21 @@ class TestOpenAtomic:
             _write_and_exit()
         adapter.close()
 
+    @pytest.mark.spec("ASYNC-085")
+    def test_open_atomic_raises_capability_not_supported(self) -> None:
+        """ASYNC-085: CapabilityNotSupported from write_atomic surfaces on __exit__."""
+        err = CapabilityNotSupported(capability=Capability.ATOMIC_WRITE, backend="raising-async")
+        double = _RaisingAsyncBackend(error=err)
+        adapter = AsyncBackendSyncAdapter(double)
+
+        def _write_and_exit() -> None:
+            with adapter.open_atomic("out.txt") as spool:
+                spool.write(b"data")
+
+        with pytest.raises(CapabilityNotSupported):
+            _write_and_exit()
+        adapter.close()
+
 
 # ---------------------------------------------------------------------------
 # Fail-fast on running event loop (ASYNC-082)
@@ -826,28 +841,42 @@ class TestConcurrency:
 
     @pytest.mark.spec("ASYNC-089")
     def test_concurrent_calls_no_deadlock(self) -> None:
+        """Mixed read/write/list/delete with per-thread payload tagging.
+
+        Each thread owns a unique path and writes a unique payload on
+        every iteration; the read-back must match exactly (no cross-thread
+        result crossover).  delete + write + list + exists exercises the
+        mixed-ops requirement of ASYNC-089.
+        """
         N_THREADS = 32
         M_ITERS = 16
 
         adapter, _ = _make_memory_adapter()
-        adapter.write("shared.txt", b"concurrent-data")
 
         errors: list[BaseException] = []
         errors_lock = threading.Lock()
         barrier = threading.Barrier(N_THREADS)
 
-        def _worker() -> None:
+        def _worker(tid: int) -> None:
+            path = f"thread-{tid}.txt"
             barrier.wait()
-            for _ in range(M_ITERS):
+            for i in range(M_ITERS):
                 try:
-                    adapter.exists("shared.txt")
-                    adapter.read_bytes("shared.txt")
+                    payload = f"tid={tid} iter={i}".encode()
+                    adapter.write(path, payload, overwrite=True)
+                    got = adapter.read_bytes(path)
+                    if got != payload:
+                        with errors_lock:
+                            errors.append(AssertionError(f"crossover: tid={tid} got {got!r}"))
                     list(adapter.list_files(""))
+                    adapter.exists(path)
+                    adapter.delete(path)
+                    adapter.write(path, payload, overwrite=False)
                 except Exception as exc:  # noqa: BLE001
                     with errors_lock:
                         errors.append(exc)
 
-        threads = [threading.Thread(target=_worker) for _ in range(N_THREADS)]
+        threads = [threading.Thread(target=_worker, args=(i,)) for i in range(N_THREADS)]
         for t in threads:
             t.start()
         for t in threads:
