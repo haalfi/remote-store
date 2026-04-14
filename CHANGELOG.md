@@ -20,7 +20,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - **`AsyncBackendSyncAdapter` — `ASYNC-NNN` spec block + test doubles**
   (ID-142): amended `sdd/specs/029-async-store-backend-api.md` with
   ASYNC-080 … ASYNC-093 pinning the 14 invariants enumerated in
-  [ADR-0025 § Followups](sdd/adrs/0025-async-to-sync-backend-adapter.md)
+  `sdd/adrs/0025-async-to-sync-backend-adapter.md` § Followups
   (single-chunk in-flight pump, `read()` short-read semantics,
   fail-fast on running loop, closed-adapter reuse, capability
   translation, `open_atomic` spool-and-flush, `unwrap` default,
