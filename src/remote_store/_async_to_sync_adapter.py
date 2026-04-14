@@ -1,0 +1,629 @@
+"""AsyncBackendSyncAdapter -- bridges async backends into the sync world.
+
+Implements the sync :class:`Backend` ABC by delegating to an
+:class:`AsyncBackend` running on a private event loop in a dedicated
+background thread.  Mirror of
+:class:`remote_store.aio.SyncBackendAdapter` (ADR-0012); decision record
+for this direction is ADR-0025, invariants pinned in spec 029
+§ AsyncBackendSyncAdapter (ASYNC-080..093).
+"""
+
+from __future__ import annotations
+
+import asyncio
+import concurrent.futures
+import contextlib
+import logging
+import tempfile
+import threading
+import time
+from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, cast, runtime_checkable
+
+from remote_store._backend import Backend
+from remote_store._capabilities import Capability, CapabilitySet
+from remote_store._errors import CapabilityNotSupported
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, AsyncIterator, Coroutine, Iterator
+    from contextlib import AbstractContextManager
+    from types import TracebackType
+
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._resolution import ResolutionPlan
+    from remote_store._types import WritableContent
+    from remote_store.aio._async_backend import AsyncBackend
+    from remote_store.aio._types import AsyncWritableContent
+
+T = TypeVar("T")
+
+log = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Stable message stems (spec 029 § AsyncBackendSyncAdapter)
+# ---------------------------------------------------------------------------
+
+_RUNNING_LOOP_MSG = "AsyncBackendSyncAdapter cannot be called from a running event loop; use AsyncStore instead."
+_CLOSED_MSG = "AsyncBackendSyncAdapter is closed"
+_CLOSE_TIMEOUT_MSG = "AsyncBackendSyncAdapter close timed out"
+
+# Buffer size used when streaming a sync ``BinaryIO`` into the async backend.
+_WRITE_CHUNK_SIZE = 64 * 1024
+
+
+@runtime_checkable
+class _SyncSafeHandleProvider(Protocol):
+    """Opt-in protocol a wrapped async backend may implement to expose a
+    sync-safe native handle through :meth:`AsyncBackendSyncAdapter.unwrap`.
+
+    Mirrors ``SyncBackendAdapter.unwrap``'s exemption for wrappers that
+    provide a synchronous handle (spec 029 § ASYNC-086).
+    """
+
+    def sync_safe_unwrap(self, type_hint: type[Any]) -> Any: ...
+
+
+# ---------------------------------------------------------------------------
+# AsyncBackendSyncAdapter
+# ---------------------------------------------------------------------------
+
+
+class AsyncBackendSyncAdapter(Backend):
+    """Wraps an :class:`AsyncBackend` as a synchronous :class:`Backend`.
+
+    One private ``asyncio`` event loop per adapter instance, running on
+    a dedicated daemon thread for the adapter's lifetime.  Sync methods
+    submit coroutines via :func:`asyncio.run_coroutine_threadsafe` and
+    block on the returned :class:`concurrent.futures.Future`.
+
+    Construction does not enter the wrapped backend's async context
+    manager -- callers that need ``__aenter__`` semantics should use
+    :class:`remote_store.aio.AsyncStore` directly.
+
+    Args:
+        async_backend: The async backend instance to wrap.
+
+    See :doc:`/sdd/adrs/0025-async-to-sync-backend-adapter` and spec 029
+    § AsyncBackendSyncAdapter for the full behaviour contract.
+    """
+
+    def __init__(self, async_backend: AsyncBackend) -> None:
+        # Lazy import keeps the core module free of an unconditional
+        # ``aio/`` dependency (ADR-0025 § Module placement).
+        from remote_store.aio._async_backend import AsyncBackend as _AsyncBackend
+
+        if not isinstance(async_backend, _AsyncBackend):
+            raise TypeError(
+                f"AsyncBackendSyncAdapter expects an AsyncBackend instance, got {type(async_backend).__name__}"
+            )
+
+        self._async_backend = async_backend
+        self._closed = False
+        self._close_lock = threading.Lock()
+
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(
+            target=self._run_loop,
+            name=f"AsyncBackendSyncAdapter-{id(self):x}",
+            daemon=True,
+        )
+        self._thread.start()
+
+    # -- Private loop thread ------------------------------------------------
+
+    def _run_loop(self) -> None:
+        asyncio.set_event_loop(self._loop)
+        try:
+            self._loop.run_forever()
+        finally:
+            with contextlib.suppress(Exception):  # pragma: no cover -- best-effort teardown
+                self._loop.close()
+
+    # -- Guards (ASYNC-082, ASYNC-083) --------------------------------------
+
+    def _guard(self) -> None:
+        """Check every blocking call for closed state and running-loop."""
+        if self._closed:
+            raise RuntimeError(_CLOSED_MSG)
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        raise RuntimeError(_RUNNING_LOOP_MSG)
+
+    # -- Submit/block helper ------------------------------------------------
+
+    def _submit(self, coro: Any) -> Any:
+        """Submit *coro* to the private loop and block on the result."""
+        self._guard()
+        future = asyncio.run_coroutine_threadsafe(coro, self._loop)
+        return future.result()
+
+    # -- Properties ---------------------------------------------------------
+
+    @property
+    def name(self) -> str:
+        """Backend identifier, forwarded from the wrapped async backend."""
+        return self._async_backend.name
+
+    @property
+    def capabilities(self) -> CapabilitySet:
+        """Capabilities with ASYNC-084 translation applied.
+
+        ``SEEKABLE_READ`` is masked off unconditionally -- the chunk-pull
+        stream this adapter returns is forward-only.  All other flags
+        are preserved verbatim from the wrapped backend.
+        """
+        inner = self._async_backend.capabilities
+        translated: set[Capability] = {cap for cap in inner if cap is not Capability.SEEKABLE_READ}
+        return CapabilitySet(translated)
+
+    # -- Non-I/O passthrough (no loop, no thread) ---------------------------
+
+    def to_key(self, native_path: str) -> str:
+        return self._async_backend.to_key(native_path)
+
+    def native_path(self, path: str) -> str:
+        return self._async_backend.native_path(path)
+
+    def resolve(self, path: str) -> ResolutionPlan:
+        return self._async_backend.resolve(path)
+
+    def unwrap(self, type_hint: type[T]) -> T:
+        """Return a sync-safe native handle if the wrapped backend provides one.
+
+        Default raises :class:`CapabilityNotSupported` -- an async SDK
+        handle returned from the wrapped backend is bound to the adapter's
+        private loop and is unsafe to use from the caller's thread.
+        Wrapped backends that can expose a sync-safe handle should
+        implement :class:`_SyncSafeHandleProvider`.
+        """
+        if isinstance(self._async_backend, _SyncSafeHandleProvider):
+            return self._async_backend.sync_safe_unwrap(type_hint)  # type: ignore[no-any-return]
+        raise CapabilityNotSupported(
+            f"Backend '{self.name}' is an async-native backend bridged through "
+            f"AsyncBackendSyncAdapter; native handles of type "
+            f"{type_hint.__name__} are bound to the adapter's private event "
+            f"loop and cannot be used safely from sync code. "
+            f"Construct an AsyncStore to access the native async handle.",
+            capability="unwrap",
+            backend=self.name,
+        )
+
+    # -- I/O scalars (ASYNC-087) --------------------------------------------
+
+    def exists(self, path: str) -> bool:
+        return bool(self._submit(self._async_backend.exists(path)))
+
+    def is_file(self, path: str) -> bool:
+        return bool(self._submit(self._async_backend.is_file(path)))
+
+    def is_folder(self, path: str) -> bool:
+        return bool(self._submit(self._async_backend.is_folder(path)))
+
+    def read_bytes(self, path: str) -> bytes:
+        result = self._submit(self._async_backend.read_bytes(path))
+        return bytes(result)
+
+    def get_file_info(self, path: str) -> FileInfo:
+        return self._submit(self._async_backend.get_file_info(path))  # type: ignore[no-any-return]
+
+    def get_folder_info(self, path: str) -> FolderInfo:
+        return self._submit(self._async_backend.get_folder_info(path))  # type: ignore[no-any-return]
+
+    def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        self._submit(self._async_backend.move(src, dst, overwrite=overwrite))
+
+    def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        self._submit(self._async_backend.copy(src, dst, overwrite=overwrite))
+
+    def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        self._submit(self._async_backend.delete(path, missing_ok=missing_ok))
+
+    def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        self._submit(self._async_backend.delete_folder(path, recursive=recursive, missing_ok=missing_ok))
+
+    def check_health(self) -> None:
+        """Submit ``aclose``'s sibling probe; propagate errors verbatim.
+
+        ASYNC-093: not a no-op -- connectivity errors raised by the
+        wrapped async backend reach the sync caller unchanged.
+        """
+        self._submit(self._async_backend.check_health())
+
+    # -- Streaming read (ASYNC-080, ASYNC-081) ------------------------------
+
+    def read(self, path: str) -> BinaryIO:
+        """Return a forward-only chunk-pull stream over the async iterator.
+
+        Single-chunk in-flight invariant: at most one outstanding
+        ``__anext__`` per stream.  See spec 029 § ASYNC-080, ASYNC-081.
+        """
+        self._guard()
+        async_gen = cast("AsyncGenerator[bytes, None]", self._async_backend.read(path))
+        return _ChunkPullReader(self, async_gen)  # type: ignore[return-value]
+
+    # -- Listing iterators (ASYNC-080) --------------------------------------
+
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
+        self._guard()
+        async_iter = self._async_backend.list_files(
+            path,
+            recursive=recursive,
+            max_depth=max_depth,
+        ).__aiter__()
+        return _AsyncIteratorBridge(self, async_iter)
+
+    def list_folders(self, path: str) -> Iterator[FolderEntry]:
+        self._guard()
+        async_iter = self._async_backend.list_folders(path).__aiter__()
+        return _AsyncIteratorBridge(self, async_iter)
+
+    def glob(self, pattern: str) -> Iterator[FileInfo]:
+        self._guard()
+        async_iter = self._async_backend.glob(pattern).__aiter__()
+        return _AsyncIteratorBridge(self, async_iter)
+
+    def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
+        self._guard()
+        async_iter = self._async_backend.iter_children(path).__aiter__()
+        return _AsyncIteratorBridge(self, async_iter)
+
+    # -- Writes (ASYNC-091) -------------------------------------------------
+
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        self._submit(self._async_backend.write(path, self._to_async_content(content), overwrite=overwrite))
+
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        self._submit(self._async_backend.write_atomic(path, self._to_async_content(content), overwrite=overwrite))
+
+    @staticmethod
+    def _to_async_content(content: WritableContent) -> AsyncWritableContent:
+        """Bridge sync ``BinaryIO | bytes`` into the async content shape."""
+        if isinstance(content, (bytes, bytearray, memoryview)):
+            return bytes(content)
+        return _binaryio_to_async_iter(content)
+
+    # -- open_atomic synthesis (ASYNC-085) ----------------------------------
+
+    def open_atomic(self, path: str, *, overwrite: bool = False) -> AbstractContextManager[BinaryIO]:
+        self._guard()
+        return _SpoolAndFlush(self, path, overwrite=overwrite)
+
+    # -- Lifecycle (ASYNC-088, ASYNC-092) -----------------------------------
+
+    def close(self, timeout: float | None = 30.0) -> None:
+        """Drain in-flight work, stop the loop, and join the daemon thread.
+
+        Order: submit ``aclose`` → wait for in-flight tasks → stop loop
+        → join thread.  If *timeout* expires, a single ``WARNING``
+        record is logged with message stem
+        ``"AsyncBackendSyncAdapter close timed out"`` and the daemon
+        thread is left for process-exit reaping.
+        """
+        with self._close_lock:
+            if self._closed:
+                return
+            self._closed = True
+
+        deadline: float | None = None if timeout is None else time.monotonic() + timeout
+
+        def _remaining() -> float | None:
+            return None if deadline is None else max(0.0, deadline - time.monotonic())
+
+        # 1. Submit aclose -- swallow any raise (ASYNC-090 bullet 3).
+        aclose_fut: concurrent.futures.Future[Any] | None
+        try:
+            aclose_fut = asyncio.run_coroutine_threadsafe(
+                self._async_backend.aclose(),
+                self._loop,
+            )
+        except RuntimeError:
+            # Loop already stopped (shouldn't happen with a fresh adapter).
+            aclose_fut = None
+
+        if aclose_fut is not None:
+            try:
+                aclose_fut.result(timeout=_remaining())
+            except concurrent.futures.TimeoutError:
+                pass  # reported below via drain outcome
+            except BaseException:  # noqa: BLE001
+                log.warning(
+                    "AsyncBackendSyncAdapter: wrapped aclose() raised during shutdown",
+                    exc_info=True,
+                )
+
+        # 2. Drain any remaining in-flight tasks on the loop.
+        drain_fut: concurrent.futures.Future[None] | None
+        try:
+            drain_fut = asyncio.run_coroutine_threadsafe(_drain_tasks(), self._loop)
+        except RuntimeError:
+            drain_fut = None
+
+        drain_timed_out = False
+        if drain_fut is not None:
+            try:
+                drain_fut.result(timeout=_remaining())
+            except concurrent.futures.TimeoutError:
+                drain_timed_out = True
+            except BaseException:  # noqa: BLE001
+                log.warning(
+                    "AsyncBackendSyncAdapter: task drain raised during shutdown",
+                    exc_info=True,
+                )
+
+        # 3. Stop the loop.
+        with contextlib.suppress(RuntimeError):
+            self._loop.call_soon_threadsafe(self._loop.stop)
+
+        # 4. Join the thread.
+        self._thread.join(timeout=_remaining())
+
+        if drain_timed_out or self._thread.is_alive():
+            unfinished = _snapshot_tasks(self._loop)
+            log.warning(
+                "%s after %s seconds; %d unfinished task(s): %r",
+                _CLOSE_TIMEOUT_MSG,
+                timeout,
+                len(unfinished),
+                unfinished,
+            )
+
+    def __enter__(self) -> AsyncBackendSyncAdapter:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.close()
+
+
+# ---------------------------------------------------------------------------
+# Chunk-pull read stream (ASYNC-080, ASYNC-081)
+# ---------------------------------------------------------------------------
+
+
+class _ChunkPullReader:
+    """Forward-only sync stream pumping chunks out of an async iterator.
+
+    Implements the minimal BinaryIO-compatible surface: ``read(n)``,
+    ``close()``, ``seekable()`` (returns ``False``), ``readable()``
+    (returns ``True``), and sync context-manager protocol.  ``seek``,
+    ``tell``, and ``fileno`` are deliberately *not* provided -- spec
+    029 § ASYNC-081, ADR-0025 § Bridged read streams.
+    """
+
+    __slots__ = ("_adapter", "_iter", "_buf", "_eof", "_closed")
+
+    def __init__(self, adapter: AsyncBackendSyncAdapter, async_iter: AsyncGenerator[bytes, None]) -> None:
+        self._adapter = adapter
+        self._iter = async_iter
+        self._buf = b""
+        self._eof = False
+        self._closed = False
+
+    def read(self, size: int = -1) -> bytes:
+        if self._closed:
+            return b""
+        if size == 0:
+            return b""
+        if size is None or size < 0:
+            chunks: list[bytes] = []
+            if self._buf:
+                chunks.append(self._buf)
+                self._buf = b""
+            while not self._eof:
+                chunk = self._pull_chunk()
+                if chunk is None:
+                    break
+                chunks.append(chunk)
+            return b"".join(chunks)
+
+        out = bytearray()
+        while len(out) < size:
+            if self._buf:
+                take = min(size - len(out), len(self._buf))
+                out.extend(self._buf[:take])
+                self._buf = self._buf[take:]
+                continue
+            if self._eof:
+                break
+            chunk = self._pull_chunk()
+            if chunk is None:
+                break
+            self._buf = chunk
+        return bytes(out)
+
+    def _pull_chunk(self) -> bytes | None:
+        """Submit one ``__anext__`` to the adapter's loop and block.
+
+        Returns the next chunk, or ``None`` at EOF.  Any exception from
+        the async iterator propagates verbatim (ASYNC-087).
+        """
+        if self._eof:
+            return None
+        self._adapter._guard()
+        fut: concurrent.futures.Future[bytes] = asyncio.run_coroutine_threadsafe(
+            self._iter.__anext__(), self._adapter._loop
+        )
+        try:
+            chunk = fut.result()
+        except StopAsyncIteration:
+            self._eof = True
+            return None
+        except BaseException:
+            # Closed-on-error state: subsequent reads return b"".
+            self._eof = True
+            self._closed = True
+            raise
+        return chunk
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        if self._adapter._closed:
+            return
+        try:
+            fut = asyncio.run_coroutine_threadsafe(self._iter.aclose(), self._adapter._loop)
+            try:
+                fut.result()
+            except BaseException:  # noqa: BLE001
+                log.debug("AsyncBackendSyncAdapter: stream aclose raised", exc_info=True)
+        except RuntimeError:
+            # Loop already stopped (adapter closed concurrently) -- best effort.
+            pass
+
+    def seekable(self) -> bool:
+        return False
+
+    def readable(self) -> bool:
+        return True
+
+    def __enter__(self) -> _ChunkPullReader:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.close()
+
+
+# ---------------------------------------------------------------------------
+# Async-iterator → sync-iterator bridge (ASYNC-080)
+# ---------------------------------------------------------------------------
+
+
+class _AsyncIteratorBridge:
+    """Sync :class:`Iterator` pulling one item per ``__anext__`` call.
+
+    Used for ``list_files``, ``list_folders``, ``glob``, and
+    ``iter_children`` (spec 029 § ASYNC-080).  Preserves streaming --
+    the full listing is never materialised in memory.
+    """
+
+    __slots__ = ("_adapter", "_iter", "_done")
+
+    def __init__(self, adapter: AsyncBackendSyncAdapter, async_iter: AsyncIterator[Any]) -> None:
+        self._adapter = adapter
+        self._iter = async_iter
+        self._done = False
+
+    def __iter__(self) -> _AsyncIteratorBridge:
+        return self
+
+    def __next__(self) -> Any:
+        if self._done:
+            raise StopIteration
+        self._adapter._guard()
+        coro = cast("Coroutine[Any, Any, Any]", self._iter.__anext__())
+        fut: concurrent.futures.Future[Any] = asyncio.run_coroutine_threadsafe(coro, self._adapter._loop)
+        try:
+            return fut.result()
+        except StopAsyncIteration:
+            self._done = True
+            raise StopIteration from None
+        except BaseException:
+            self._done = True
+            raise
+
+
+# ---------------------------------------------------------------------------
+# Sync ``BinaryIO`` → ``AsyncIterator[bytes]`` bridge (write path)
+# ---------------------------------------------------------------------------
+
+
+async def _binaryio_to_async_iter(stream: BinaryIO) -> AsyncIterator[bytes]:
+    """Pump chunks out of a blocking ``BinaryIO`` via ``asyncio.to_thread``.
+
+    Single-chunk in-flight: at most one pending ``to_thread`` at a time,
+    no parallel pre-read.  The caller's blocking file object never
+    stalls the adapter's private event loop.
+    """
+    while True:
+        chunk = await asyncio.to_thread(stream.read, _WRITE_CHUNK_SIZE)
+        if not chunk:
+            break
+        yield chunk
+
+
+# ---------------------------------------------------------------------------
+# ``open_atomic`` context manager (ASYNC-085)
+# ---------------------------------------------------------------------------
+
+
+class _SpoolAndFlush:
+    """``open_atomic`` synthesis over :class:`tempfile.SpooledTemporaryFile`.
+
+    Clean exit rewinds the spool and submits it to the wrapped backend's
+    ``write_atomic``.  On exception, the spool is dropped and the
+    destination path is untouched -- the capability gate fires on
+    flush, not on entry (spec 029 § ASYNC-085).
+    """
+
+    __slots__ = ("_adapter", "_path", "_overwrite", "_spool")
+
+    def __init__(self, adapter: AsyncBackendSyncAdapter, path: str, *, overwrite: bool) -> None:
+        self._adapter = adapter
+        self._path = path
+        self._overwrite = overwrite
+        self._spool: tempfile.SpooledTemporaryFile[bytes] | None = None
+
+    def __enter__(self) -> BinaryIO:
+        self._spool = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
+        return self._spool  # type: ignore[return-value]
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        spool = self._spool
+        self._spool = None
+        if spool is None:
+            return
+        try:
+            if exc_type is not None:
+                return
+            spool.seek(0)
+            self._adapter.write_atomic(self._path, spool, overwrite=self._overwrite)  # type: ignore[arg-type]
+        finally:
+            with contextlib.suppress(Exception):
+                spool.close()
+
+
+# ---------------------------------------------------------------------------
+# Loop helpers
+# ---------------------------------------------------------------------------
+
+
+async def _drain_tasks() -> None:
+    """Wait for every task on the current loop except the caller itself."""
+    current = asyncio.current_task()
+    tasks = [t for t in asyncio.all_tasks() if t is not current and not t.done()]
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
+def _snapshot_tasks(loop: asyncio.AbstractEventLoop) -> list[str]:
+    """Return ``repr()`` strings for any tasks still outstanding on *loop*."""
+    try:
+        tasks = asyncio.all_tasks(loop)
+    except RuntimeError:
+        return []
+    return [repr(t) for t in tasks if not t.done()]
+
+
+__all__ = ["AsyncBackendSyncAdapter"]

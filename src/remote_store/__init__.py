@@ -2,6 +2,7 @@
 
 import logging
 
+from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import (
@@ -55,6 +56,7 @@ __all__ = [
     "ProxyStore",
     "Registry",
     "Backend",
+    "AsyncBackendSyncAdapter",
     "register_backend",
     # Path & Models
     "RemotePath",
