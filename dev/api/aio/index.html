@@ -3962,6 +3962,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#asyncbackendsyncadapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncBackendSyncAdapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.AsyncBackendSyncAdapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncBackendSyncAdapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#asyncmemorybackend" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8895,6 +8917,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#asyncbackendsyncadapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncBackendSyncAdapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.AsyncBackendSyncAdapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncBackendSyncAdapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#asyncmemorybackend" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10669,6 +10713,80 @@ to populate <code>details</code> with backend-specific context.</p>
           </div>
         </li>
     </ul>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><hr />
+<h2 id="asyncbackendsyncadapter">AsyncBackendSyncAdapter<a class="headerlink" href="#asyncbackendsyncadapter" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="remote_store.AsyncBackendSyncAdapter" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">AsyncBackendSyncAdapter</span>
+
+
+<a href="#remote_store.AsyncBackendSyncAdapter" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AsyncBackendSyncAdapter</span><span class="p">(</span><span class="n">async_backend</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            AsyncBackend (remote_store.aio._async_backend.AsyncBackend)" href="#remote_store.aio.AsyncBackend">AsyncBackend</a></span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            Backend (remote_store._backend.Backend)" href="../backend/#remote_store.Backend">Backend</a></code></p>
+
+
+
+        <p>Wraps an :class:<code>AsyncBackend</code> as a synchronous :class:<code>Backend</code>.</p>
+<p>One private <code>asyncio</code> event loop per adapter instance, running on
+a dedicated daemon thread for the adapter's lifetime.  Sync methods
+submit coroutines via :func:<code>asyncio.run_coroutine_threadsafe</code> and
+block on the returned :class:<code>concurrent.futures.Future</code>.</p>
+<p>Construction does not enter the wrapped backend's async context
+manager -- callers that need <code>__aenter__</code> semantics should use
+:class:<code>remote_store.aio.AsyncStore</code> directly.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>async_backend</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            AsyncBackend (remote_store.aio._async_backend.AsyncBackend)" href="#remote_store.aio.AsyncBackend">AsyncBackend</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The async backend instance to wrap.</p>
+          </div>
+        </li>
+    </ul>
+        <p>See <a href="https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md">ADR-0025</a>
+and <a href="https://github.com/haalfi/remote-store/blob/master/sdd/specs/029-async-store-backend-api.md">spec 029</a>
+§ AsyncBackendSyncAdapter for the full behaviour contract.</p>
 
 
 

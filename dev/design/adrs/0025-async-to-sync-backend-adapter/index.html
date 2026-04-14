@@ -8608,7 +8608,7 @@
 
 <h1 id="adr-0025-async-to-sync-backend-adapter-asyncbackendsyncadapter">ADR-0025: Async-to-Sync Backend Adapter (<code>AsyncBackendSyncAdapter</code>)<a class="headerlink" href="#adr-0025-async-to-sync-backend-adapter-asyncbackendsyncadapter" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft</p>
+<p>Accepted</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>ADR-0012 set up the hybrid async/sync model: <code>AsyncBackend</code> is the async
 ABC, <code>Backend</code> is the sync ABC, and <code>SyncBackendAdapter</code> bridges a sync
@@ -8698,17 +8698,25 @@ hybrid model needs.</p>
   follow the standard submit-and-block pattern. <code>check_health()</code>
   is explicitly <strong>not</strong> a no-op: connectivity errors from the
   wrapped async backend must reach the sync caller verbatim.</li>
+<li><code>Future.result()</code> blocks without a per-call timeout. Timeout
+  responsibility belongs to the wrapped <code>AsyncBackend</code>: backends
+  should impose their own timeouts internally (e.g.
+  <code>asyncio.wait_for</code>) or rely on SDK session-level timeouts.
+  The adapter's <code>close(timeout=…)</code> provides a global shutdown
+  bound; there is no per-operation equivalent.</li>
 </ul>
 <h3 id="streaming-iterators-and-open-streams">Streaming iterators and open streams<a class="headerlink" href="#streaming-iterators-and-open-streams" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>read(path)</code> returns a sync file-like stream whose <code>read(n)</code> pumps
   chunks out of the backend's <code>AsyncIterator[bytes]</code>. The stream
-  holds an internal byte buffer (<code>memoryview</code> slice) carrying the
-  unread tail of the most recently fetched chunk: <code>read(n)</code> first
-  drains that buffer, and only submits a new <code>__anext__</code> coroutine
-  when the buffer is empty and more bytes are still required.
-  This satisfies the <code>BinaryIO</code> contract that <code>read(n)</code> returns at
-  most <em>n</em> bytes even when the backend yields larger chunks.
+  holds an internal byte buffer carrying the unread tail of the most
+  recently fetched chunk: <code>read(n)</code> first drains that buffer, and
+  only submits a new <code>__anext__</code> coroutine when the buffer is empty
+  and more bytes are still required.  This satisfies the <code>BinaryIO</code>
+  contract that <code>read(n)</code> returns at most <em>n</em> bytes even when the
+  backend yields larger chunks.  The stream exposes <code>read(n)</code>,
+  <code>close()</code>, <code>seekable()</code> (returns <code>False</code>), and <code>readable()</code>
+  (returns <code>True</code>); <code>seek</code>, <code>tell</code>, and <code>fileno</code> are not provided.
   <code>close()</code> submits the async iterator's <code>aclose()</code> to the loop.</li>
 <li><code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>iter_children</code> return sync
   iterators backed by the same chunk-pull pattern. Materialising the
@@ -8994,13 +9002,12 @@ agnostic.</p>
   <code>max_content_size</code> explicitly; the cache extension should learn to
   warn when wrapped over a bridged backend (tracked separately).</li>
 <li><strong>Bridged read streams are forward-only.</strong> The <code>BinaryIO</code> returned
-  by <code>read()</code> exposes <code>read(n)</code> and <code>close()</code> only. Extensions that
-  reach for <code>seek()</code>, <code>tell()</code>, <code>seekable()</code>, <code>readable()</code>, or
-  <code>fileno()</code> on the stream object will receive <code>False</code> /
-  <code>AttributeError</code> as appropriate — <code>SEEKABLE_READ</code> is masked off so
-  no extension that respects the capability gate will reach for
-  them. Random-access callers route through <code>read_seekable</code> and pay
-  the spool fallback (above).</li>
+  by <code>read()</code> is not natively seekable: <code>seekable()</code> returns <code>False</code>
+  and <code>seek()</code>, <code>tell()</code>, and <code>fileno()</code> are not provided.
+  <code>readable()</code> returns <code>True</code>. <code>SEEKABLE_READ</code> is masked off so no
+  extension that respects the capability gate will attempt random
+  access. Random-access callers route through <code>read_seekable</code> and
+  pay the spool fallback (above).</li>
 </ul>
 <h2 id="followups">Followups<a class="headerlink" href="#followups" title="Permanent link">&para;</a></h2>
 <ul>

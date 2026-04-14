@@ -10599,13 +10599,13 @@ designed to avoid.
 <h3 id="async-081-read-binaryio-flavour-and-short-read-semantics">ASYNC-081: <code>read()</code> <code>BinaryIO</code> Flavour and Short-read Semantics<a class="headerlink" href="#async-081-read-binaryio-flavour-and-short-read-semantics" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>Backend.read(path)</code> on the adapter returns a forward-only
 <code>BinaryIO</code>-typed object whose <code>read(n)</code> returns <strong>at most</strong> <em>n</em> bytes, drawing
-first from an internal <code>memoryview</code>-backed tail buffer carrying the unread
-remainder of the most recently fetched chunk, and submitting a new
-<code>__anext__</code> coroutine to the private loop only when that buffer is empty and
-more bytes are still required.  <code>read(-1)</code> / <code>read()</code> drains to EOF.  The
-stream exposes <code>read</code> and <code>close</code> only; <code>seek</code>, <code>tell</code>, <code>seekable</code>,
-<code>readable</code>, and <code>fileno</code> are not provided (see ASYNC-084 capability
-masking).  <code>close()</code> submits the async iterator's <code>aclose()</code> to the loop.
+first from an internal tail buffer carrying the unread remainder of the most
+recently fetched chunk, and submitting a new <code>__anext__</code> coroutine to the
+private loop only when that buffer is empty and more bytes are still required.
+<code>read(-1)</code> / <code>read()</code> drains to EOF.  The stream exposes <code>read</code>, <code>close</code>,
+<code>seekable()</code> (returns <code>False</code>), and <code>readable()</code> (returns <code>True</code>); <code>seek</code>,
+<code>tell</code>, and <code>fileno</code> are not provided.  <code>close()</code> submits the async
+iterator's <code>aclose()</code> to the loop.
 <strong>See also:</strong> <a href="../006-streaming-io/">006-streaming-io.md</a> (SIO-001, SIO-009),
 ASYNC-080.</p>
 <h3 id="async-082-fail-fast-on-running-event-loop">ASYNC-082: Fail-fast on Running Event Loop<a class="headerlink" href="#async-082-fail-fast-on-running-event-loop" title="Permanent link">&para;</a></h3>
