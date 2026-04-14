@@ -47,6 +47,7 @@ Claude-specific shell constraints:
 
 - **No `&&`, `||`, or `;`.** Split into separate Bash tool calls for auto-approval.
 - **No heredoc in git commits.** `git commit -m "$(cat <<'EOF'...)"` breaks the `Bash(git:*)` auto-approve pattern. Use multiple `-m` flags instead.
+- **No `/tmp/`.** Use `./tmp/` instead (gitignored). `/tmp/` is a system directory and triggers a separate permission prompt.
 
 ## Branching
 

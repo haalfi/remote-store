@@ -1,3 +1,6 @@
+# Temporary scratch files (Claude + manual)
+tmp/
+
 # IDEs & tools
 .venv/
 .vscode/
