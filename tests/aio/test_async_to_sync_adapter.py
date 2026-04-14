@@ -841,7 +841,9 @@ class TestCloseSemantics:
         with caplog.at_level(logging.WARNING, logger="remote_store._async_to_sync_adapter"):
             adapter.close(timeout=0.05)
 
-        assert "close timed out" in caplog.text
+        matched = [r for r in caplog.records if "close timed out" in r.message]
+        assert matched, "expected a close-timeout log record"
+        assert all(r.levelno == logging.WARNING for r in matched)
 
 
 # ---------------------------------------------------------------------------

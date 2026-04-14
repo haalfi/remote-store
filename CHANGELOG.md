@@ -15,18 +15,21 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   pushes do not re-trigger workflows, so a `push: gh-pages` trigger would
   never fire from mike.)
 
-### Internal
+### Added
 
-- **`AsyncBackendSyncAdapter` implementation** (ID-143):
-  new `AsyncBackendSyncAdapter(Backend)` that wraps any `AsyncBackend` as a
-  synchronous `Backend` via a private event loop on a dedicated daemon thread.
-  Covers the full behaviour contract in
+- **`AsyncBackendSyncAdapter`** (ID-143): new public class that wraps any
+  `AsyncBackend` as a synchronous `Backend` via a private event loop on a
+  dedicated daemon thread. Complements `SyncBackendAdapter` (the sync →
+  async direction). Covers the full behaviour contract in
   `sdd/adrs/0025-async-to-sync-backend-adapter.md` (ADR-0025) and
   `sdd/specs/029-async-store-backend-api.md` § AsyncBackendSyncAdapter
   (ASYNC-080…093): streaming read/list pumps, write bridging, `open_atomic`
   synthesis, capability translation, fail-fast guard, and bounded shutdown.
   Unit test suite in `tests/aio/` with every test traced to its spec ID.
   Unblocks ID-127 (Graph backend).
+
+### Internal
+
 - **`AsyncBackendSyncAdapter` spec block + test doubles** (ID-142):
   pinned the invariants ADR-0025 records in prose as a normative
   `ASYNC-NNN` block in spec 029, and added async-backend test doubles

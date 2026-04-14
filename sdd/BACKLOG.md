@@ -149,6 +149,8 @@ Items graduate through the SDD pipeline:
     masks `SEEKABLE_READ`, so the sync-Azure thresholds do not carry
     over verbatim).
   - Depends on: ID-143 (done).
+  - Related: ID-127 (Graph backend) — the first consumer of the adapter;
+    both items share the same async-to-sync bridge surface.
 
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint

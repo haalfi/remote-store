@@ -50,6 +50,10 @@ _CLOSE_TIMEOUT_MSG = "AsyncBackendSyncAdapter close timed out"
 # Buffer size used when streaming a sync ``BinaryIO`` into the async backend.
 _WRITE_CHUNK_SIZE = 64 * 1024
 
+# Upper bound for in-memory spooling in ``open_atomic``; beyond this the
+# spool rolls over to an on-disk temp file before flushing to write_atomic.
+_OPEN_ATOMIC_SPOOL_MAX = 8 * 1024 * 1024
+
 
 @runtime_checkable
 class _SyncSafeHandleProvider(Protocol):
@@ -85,7 +89,8 @@ class AsyncBackendSyncAdapter(Backend):
     Args:
         async_backend: The async backend instance to wrap.
 
-    See :doc:`/sdd/adrs/0025-async-to-sync-backend-adapter` and spec 029
+    See [ADR-0025](https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md)
+    and [spec 029](https://github.com/haalfi/remote-store/blob/master/sdd/specs/029-async-store-backend-api.md)
     § AsyncBackendSyncAdapter for the full behaviour contract.
     """
 
@@ -615,7 +620,7 @@ class _SpoolAndFlush:
         self._spool: tempfile.SpooledTemporaryFile[bytes] | None = None
 
     def __enter__(self) -> BinaryIO:
-        self._spool = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
+        self._spool = tempfile.SpooledTemporaryFile(max_size=_OPEN_ATOMIC_SPOOL_MAX)
         return self._spool  # type: ignore[return-value]
 
     def __exit__(

@@ -14,7 +14,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (ASYNC-080…093). Unit test suite in `tests/aio/`, every test traced to its
   spec ID via `@pytest.mark.spec`; uses the doubles from `tests/aio/_doubles.py`.
   Real-backend coverage (Azurite + e2e) deferred to ID-143b.
-  Unblocks ID-127 (Graph backend). PR #TBD.
+  Unblocks ID-127 (Graph backend). PR #439.
 
 - [x] **ID-142 — `AsyncBackendSyncAdapter` spec block + test doubles**
   Pinned the invariants
