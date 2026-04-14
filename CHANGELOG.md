@@ -17,6 +17,17 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **`AsyncBackendSyncAdapter` implementation** (ID-143):
+  new `AsyncBackendSyncAdapter(Backend)` at
+  `src/remote_store/_async_to_sync_adapter.py` — wraps any `AsyncBackend`
+  as a synchronous `Backend` via a private event loop on a dedicated daemon
+  thread. Implements all ASYNC-080…093 invariants: single-chunk in-flight
+  pump (`_ChunkPullReader`), async-iterator bridge (`_AsyncIteratorBridge`),
+  `open_atomic` spool-and-flush synthesis (`_SpoolAndFlush`), sync-BinaryIO
+  write bridge, capability translation (`SEEKABLE_READ` masked), fail-fast
+  guard, `close(timeout)` drain order, and verbatim error propagation.
+  Unit test suite at `tests/aio/test_async_to_sync_adapter.py` (94 tests,
+  all `@pytest.mark.spec`-traced). Unblocks ID-127 (Graph backend).
 - **`AsyncBackendSyncAdapter` spec block + test doubles** (ID-142):
   pinned the invariants ADR-0025 records in prose as a normative
   `ASYNC-NNN` block in spec 029, and added async-backend test doubles

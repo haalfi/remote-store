@@ -5,6 +5,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-143 — `AsyncBackendSyncAdapter` implementation + unit test suite**
+  Implemented `AsyncBackendSyncAdapter(Backend)` at
+  `src/remote_store/_async_to_sync_adapter.py`: private event loop on a
+  dedicated daemon thread, `asyncio.run_coroutine_threadsafe` submission,
+  `_ChunkPullReader` (ASYNC-080/081), `_AsyncIteratorBridge` (ASYNC-080),
+  `_SpoolAndFlush` open_atomic synthesis (ASYNC-085),
+  `_binaryio_to_async_iter` write bridge (ASYNC-091), fail-fast guard
+  (ASYNC-082/083), capability translation (ASYNC-084), `unwrap()` with
+  `_SyncSafeHandleProvider` exemption (ASYNC-086), `close(timeout)` drain
+  order (ASYNC-088/092), verbatim error propagation (ASYNC-087),
+  `check_health()` (ASYNC-093).
+  Unit test suite at `tests/aio/test_async_to_sync_adapter.py`: 94 tests
+  across 17 classes, every test traced to its `ASYNC-NNN` ID via
+  `@pytest.mark.spec`; uses `_HangingAsyncBackend` and
+  `_RaisingAsyncBackend` from `tests/aio/_doubles.py`.
+  Real-backend coverage (Azurite + e2e) deferred to ID-143b.
+  Unblocks ID-127 (Graph backend). PR #TBD.
+
 - [x] **ID-142 — `AsyncBackendSyncAdapter` spec block + test doubles**
   Pinned the invariants
   [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md) records in
