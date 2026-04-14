@@ -5,13 +5,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-- [x] **ID-142 — `ASYNC-NNN` spec block + test doubles for `AsyncBackendSyncAdapter`**
-  Allocated `ASYNC-080` … `ASYNC-093` in
-  [spec 029](specs/029-async-store-backend-api.md) to pin the
-  invariants deferred from
-  [ADR-0025 § Followups](adrs/0025-async-to-sync-backend-adapter.md),
-  and added `_HangingAsyncBackend` / `_RaisingAsyncBackend` in
-  `tests/aio/_doubles.py`. Unblocks the ID-127 implementation PR.
+- [x] **ID-142 — `AsyncBackendSyncAdapter` spec block + test doubles**
+  Pinned the invariants
+  [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md) records in
+  prose as a normative `ASYNC-NNN` block in
+  [spec 029](specs/029-async-store-backend-api.md) § AsyncBackendSyncAdapter,
+  and added async-backend test doubles under `tests/aio/` for adapter
+  failure-path coverage. Unblocks the ID-127 implementation PR.
 
 - [x] **ID-141 — Async-to-sync backend adapter ADR**
   Drafted [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md):

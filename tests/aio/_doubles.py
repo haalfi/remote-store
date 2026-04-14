@@ -1,22 +1,22 @@
 """Async backend test doubles for ``AsyncBackendSyncAdapter`` coverage.
 
-These doubles are deliberately narrow: they exist so the failure paths in
-spec block ASYNC-080 … ASYNC-093 — especially timeouts, cancellation, and
-verbatim error propagation — are reachable without patching third-party
-internals (``sdd/TESTING.md`` Rule 6).
+These doubles exist so the adapter's failure paths — timeouts,
+cancellation, verbatim error propagation, mid-stream iterator failure —
+are reachable without patching third-party internals
+(``sdd/TESTING.md`` Rule 6). The authoritative invariants they help
+exercise live in spec 029 § AsyncBackendSyncAdapter.
 
-- :class:`_HangingAsyncBackend` never returns from any I/O method. Every
-  coroutine awaits an :class:`asyncio.Event` that never gets set, so the
-  adapter's drain / close / cancellation paths can be exercised
+- :class:`_HangingAsyncBackend` never returns from any I/O method.
+  Every coroutine awaits an :class:`asyncio.Event` that never gets set,
+  so the adapter's drain / close / cancellation paths can be exercised
   deterministically.
-- :class:`_RaisingAsyncBackend` raises a preconfigured exception from every
-  I/O method (and optionally from ``aclose``). Useful for driving
+- :class:`_RaisingAsyncBackend` raises a preconfigured exception from
+  every I/O method (and optionally from ``aclose``), for driving
   verbatim error propagation and mid-stream failure tests.
 
-Both classes are concrete :class:`AsyncBackend` subclasses so they can be
-passed to :class:`AsyncBackendSyncAdapter` unchanged once it lands
-(see ADR-0025). They are intended for unit-test use only and deliberately
-declare no capabilities beyond what the individual tests need.
+Both classes are concrete :class:`AsyncBackend` subclasses so they can
+be passed to :class:`AsyncBackendSyncAdapter` unchanged once it lands
+(see ADR-0025). Intended for unit-test use only.
 """
 
 from __future__ import annotations
@@ -34,9 +34,12 @@ if TYPE_CHECKING:
     from remote_store._models import FileInfo, FolderEntry, FolderInfo
     from remote_store.aio._types import AsyncWritableContent
 
-# Default capability set for the doubles: everything needed to exercise the
-# adapter's translation table (ASYNC-084). Individual tests may pass a
-# narrower set via the constructor.
+# Default capability set for the doubles: every real ``Capability``
+# enum member, so the adapter's translation table (spec 029
+# § ASYNC-084) can be exercised in full. ``SEEKABLE_READ`` is
+# deliberately included even though the adapter masks it off — that
+# masking is precisely what ASYNC-084 tests assert. Individual tests
+# may pass a narrower set via the constructor.
 _ALL_ADAPTER_CAPABILITIES = CapabilitySet(
     {
         Capability.READ,
@@ -56,29 +59,38 @@ _ALL_ADAPTER_CAPABILITIES = CapabilitySet(
 
 
 class _HangingAsyncBackend(AsyncBackend):
-    """AsyncBackend whose every I/O coroutine blocks forever.
+    """AsyncBackend whose I/O methods block indefinitely on first await.
 
-    Used to exercise:
+    Primary use cases are the adapter's bounded-join / hung-iterator /
+    cancellation paths in spec 029 § AsyncBackendSyncAdapter — tests
+    that need to observe the adapter's behaviour while the wrapped
+    backend never makes progress.
 
-    - ASYNC-088: ``close(timeout=...)`` bounded-join warning path.
-    - ASYNC-090: hung-iterator shutdown path.
-    - Cancellation surfacing via ``Future.cancel()`` /
-      ``asyncio.Task.cancel()``.
+    Note on async generators: :meth:`read`, :meth:`list_files`, and
+    :meth:`list_folders` are declared ``async def ... -> AsyncIterator``
+    with a reachable ``yield`` inside a guarded branch, so calling them
+    returns an async generator synchronously; the hang fires on the
+    first ``__anext__``, not at call site.
 
-    The hang is implemented with an ``asyncio.Event`` that is never set.
-    Tests that need the hang to release deliberately may call
-    :meth:`release` to unblock every suspended coroutine.
+    The hang is implemented with an :class:`asyncio.Event` that is
+    never set. Tests that need the hang to release deliberately call
+    :meth:`release`.
 
-    ``asyncio.Event`` is not thread-safe, and the event gets lazily
-    bound to the loop that first awaits it — which for
+    ``asyncio.Event`` is not thread-safe, and the event lazily binds to
+    the loop that first awaits it — which for
     ``AsyncBackendSyncAdapter`` coverage is the adapter's private loop
-    on its dedicated background thread.  To allow cross-thread release,
-    tests call :meth:`bind_loop` with the adapter's private loop before
-    calling :meth:`release`; :meth:`release` then uses
+    on its background thread. To allow cross-thread release, tests call
+    :meth:`bind_loop` with the adapter's private loop before calling
+    :meth:`release`; :meth:`release` then uses
     ``loop.call_soon_threadsafe`` to set the event on the owning loop.
     When no loop has been bound (single-threaded tests running the
-    double directly), :meth:`release` falls back to a direct
-    ``event.set()``.
+    double directly), :meth:`release` falls back to ``event.set()``.
+
+    Precondition for :meth:`release`: at least one coroutine must have
+    begun awaiting the event (e.g. the hang-method has been scheduled
+    onto the bound loop and reached ``self._get_event().wait()``).
+    Calling :meth:`release` before any coroutine awaits is a no-op and
+    will not wake a subsequently scheduled coroutine.
     """
 
     def __init__(
@@ -208,29 +220,25 @@ class _HangingAsyncBackend(AsyncBackend):
 
 
 class _RaisingAsyncBackend(AsyncBackend):
-    """AsyncBackend whose every I/O coroutine raises a preconfigured error.
+    """AsyncBackend that raises a preconfigured error from every I/O method.
 
-    Used to exercise:
-
-    - ASYNC-087: verbatim error propagation (type, attributes, traceback).
-    - ASYNC-090: mid-stream ``__anext__`` raise.
-    - ASYNC-091: ``BinaryIO`` mid-write surfacing.
-    - ASYNC-093: ``check_health()`` connectivity-error passthrough.
+    Primary use cases are the adapter's verbatim-error-propagation and
+    mid-stream-failure paths in spec 029 § AsyncBackendSyncAdapter —
+    tests that need to drive a specific exception through the adapter's
+    ``Future``-based bridge.
 
     The default error is :class:`NotFound` (a realistic mapped error);
     tests that need a different type pass ``error=`` at construction.
     If ``aclose_error`` is provided, ``aclose()`` raises it (for
-    ASYNC-088 / ASYNC-090 shutdown-drain coverage); otherwise ``aclose()``
-    is a no-op.
+    shutdown-drain coverage); otherwise ``aclose()`` is a no-op.
 
     ``read_chunks_before_raise`` controls only the byte-stream iterator
     returned from :meth:`read`: with a positive value, :meth:`read`
-    yields N dummy chunks before raising, which is how ASYNC-090
-    mid-stream failures are driven.  The listing iterators
-    (``list_files`` / ``list_folders``) always raise on first pull —
-    they cannot yield ``FileInfo`` / ``FolderEntry`` without extra
-    plumbing and mid-stream behaviour there is not needed for the
-    ASYNC-090 cases enumerated in ADR-0025 § Followups.
+    yields N dummy chunks before raising, which drives mid-stream
+    byte-stream failure tests. The listing iterators (``list_files`` /
+    ``list_folders``) always raise on first pull — they cannot yield
+    ``FileInfo`` / ``FolderEntry`` without extra plumbing, and
+    mid-stream listing failure tests should subclass this double.
     """
 
     def __init__(
@@ -302,12 +310,9 @@ class _RaisingAsyncBackend(AsyncBackend):
         recursive: bool = False,
         max_depth: int | None = None,
     ) -> AsyncIterator[FileInfo]:
-        # list_files raises on first pull unconditionally: we cannot
-        # yield FileInfo here without plumbing, and the ASYNC-090
-        # mid-stream cases enumerated in ADR-0025 § Followups all
-        # target the byte-stream ``read()`` iterator, not the listing
-        # iterators. Tests that need a mid-stream listing failure
-        # should subclass this double.
+        # Raises on first pull unconditionally: we cannot yield
+        # FileInfo here without plumbing. Tests that need a
+        # mid-stream listing failure should subclass this double.
         self._raise()
         if False:  # pragma: no cover
             yield

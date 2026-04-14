@@ -419,7 +419,7 @@ The inverse of `SyncBackendAdapter`: implements the sync `Backend` ABC by
 delegating to a wrapped `AsyncBackend` running on a private event loop in a
 dedicated background thread.  Lands in `src/remote_store/_async_to_sync_adapter.py`.
 See [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md) for the decision
-record. The 14 invariants below pin the behaviours the ADR records in prose so
+record. The invariants below pin the behaviours the ADR records in prose so
 that the implementation test suite can trace every case to a stable spec ID
 per `sdd/000-process.md` Rule 2.
 
@@ -476,22 +476,30 @@ restart the loop; it is a one-shot resource.
 
 ### ASYNC-084: Capability Translation Table
 
-**Invariant:** The adapter exposes `capabilities` derived from the wrapped
-`AsyncBackend` with the following translation:
+**Invariant (translation).** The adapter exposes `capabilities` derived
+from the wrapped `AsyncBackend` with the following translation:
 
 - **`SEEKABLE_READ`** — **masked off** unconditionally. The chunk-pull
   stream (ASYNC-081) is forward-only; no native `seek()` exists.
 - **`LAZY_READ`** — **preserved** verbatim. The single-chunk in-flight
   invariant (ASYNC-080) keeps laziness end-to-end.
 - **`ATOMIC_WRITE`, `ATOMIC_MOVE`, `GLOB`, and all remaining flags
-  declared by the wrapped backend** — **preserved** verbatim. Folder
-  listing and folder deletion are gated by `LIST` and `DELETE`
-  respectively (there is no dedicated `LIST_FOLDERS` / `DELETE_FOLDER`
-  capability flag); those operations remain available on the adapter
-  exactly when the wrapped backend declares the corresponding read /
-  write capability.
+  declared by the wrapped backend** — **preserved** verbatim.
 
 No new capability flag is introduced.
+
+**Invariant (gating).** Operations without a dedicated capability flag
+remain available on the adapter exactly when the wrapped backend
+declares the corresponding read / write capability:
+
+- `list_folders` is gated by `LIST`; `delete_folder` by `DELETE`.
+- `read_seekable` remains callable on the adapter even with
+  `SEEKABLE_READ` masked off — SIO-008 requires every sync backend to
+  support `Store.read_seekable()` regardless of the capability flag,
+  and the adapter inherits the same spool fallback every non-seekable
+  sync backend uses. The adapter contributes no seek accelerator of
+  its own.
+
 **See also:** [006-streaming-io.md](006-streaming-io.md) (SIO-008, SIO-009),
 [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md) § Capability
 translation.
@@ -551,9 +559,12 @@ following drain order:
 3. Call `loop.call_soon_threadsafe(loop.stop)`.
 4. Join the daemon thread with the supplied bound.
 
-If the timeout expires before the thread joins, the adapter logs a warning
-at `WARNING` level identifying the unfinished tasks and returns; the daemon
-thread is reaped by process exit.  Passing `timeout=None` waits indefinitely.
+If the timeout expires before the thread joins, the adapter logs one
+record at `WARNING` level with message stem
+`"AsyncBackendSyncAdapter close timed out"` (stable for
+`caplog.messages` substring assertions), including the count and
+`repr()` of the unfinished tasks; it then returns. The daemon thread
+is reaped by process exit.  Passing `timeout=None` waits indefinitely.
 `__exit__` delegates to `close()`.
 **See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
 § Lifecycle.
@@ -561,11 +572,13 @@ thread is reaped by process exit.  Passing `timeout=None` waits indefinitely.
 ### ASYNC-089: Concurrent-callers No-deadlock Invariant
 
 **Invariant:** The adapter is safe for concurrent calls from multiple sync
-threads. *N* threads issuing mixed `read` / `write` / `list` / `delete` /
-`copy` / `move` calls on the same adapter instance all complete without
-deadlock, and no caller observes another caller's result value or exception.
-Ordering between concurrent callers is **not** guaranteed; callers that
-need deterministic ordering coordinate externally.
+threads. At least *N = 32* threads issuing mixed `read` / `write` / `list` /
+`delete` / `copy` / `move` calls (*M ≥ 16* iterations per thread, each with a
+caller-unique payload tag) on the same adapter instance all complete without
+deadlock, and every call's `Future` resolves to the value/exception of the
+coroutine submitted from that caller — no cross-thread result or exception
+crossover is observable. Ordering between concurrent callers is **not**
+guaranteed; callers that need deterministic ordering coordinate externally.
 **See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
 § Ownership model.
 

@@ -17,11 +17,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
-- **`AsyncBackendSyncAdapter` — `ASYNC-NNN` spec block + test doubles**
-  (ID-142): allocated `ASYNC-080` … `ASYNC-093` in
-  `sdd/specs/029-async-store-backend-api.md` to pin the invariants
-  deferred from ADR-0025 § Followups, and added `_HangingAsyncBackend`
-  / `_RaisingAsyncBackend` under `tests/aio/_doubles.py`. Unblocks the
+- **`AsyncBackendSyncAdapter` spec block + test doubles** (ID-142):
+  pinned the invariants ADR-0025 records in prose as a normative
+  `ASYNC-NNN` block in spec 029, and added async-backend test doubles
+  under `tests/aio/` for adapter failure-path coverage. Unblocks the
   ID-127 Graph implementation PR.
 - **Async-to-sync backend adapter — ADR draft** (ID-141): drafted
   `sdd/adrs/0025-async-to-sync-backend-adapter.md`; updated RFC-0010
