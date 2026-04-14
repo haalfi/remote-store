@@ -483,8 +483,13 @@ restart the loop; it is a one-shot resource.
   stream (ASYNC-081) is forward-only; no native `seek()` exists.
 - **`LAZY_READ`** — **preserved** verbatim. The single-chunk in-flight
   invariant (ASYNC-080) keeps laziness end-to-end.
-- **`ATOMIC_WRITE`, `ATOMIC_MOVE`, `GLOB`, `LIST_FOLDERS`,
-  `DELETE_FOLDER`, and all remaining flags** — **preserved** verbatim.
+- **`ATOMIC_WRITE`, `ATOMIC_MOVE`, `GLOB`, and all remaining flags
+  declared by the wrapped backend** — **preserved** verbatim. Folder
+  listing and folder deletion are gated by `LIST` and `DELETE`
+  respectively (there is no dedicated `LIST_FOLDERS` / `DELETE_FOLDER`
+  capability flag); those operations remain available on the adapter
+  exactly when the wrapped backend declares the corresponding read /
+  write capability.
 
 No new capability flag is introduced.
 **See also:** [006-streaming-io.md](006-streaming-io.md) (SIO-008, SIO-009),
