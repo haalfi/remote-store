@@ -21,8 +21,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   new `AsyncBackendSyncAdapter(Backend)` that wraps any `AsyncBackend` as a
   synchronous `Backend` via a private event loop on a dedicated daemon thread.
   Covers the full behaviour contract in
-  [ADR-0025](sdd/adrs/0025-async-to-sync-backend-adapter.md) and
-  [spec 029](sdd/specs/029-async-store-backend-api.md) § AsyncBackendSyncAdapter
+  `sdd/adrs/0025-async-to-sync-backend-adapter.md` (ADR-0025) and
+  `sdd/specs/029-async-store-backend-api.md` § AsyncBackendSyncAdapter
   (ASYNC-080…093): streaming read/list pumps, write bridging, `open_atomic`
   synthesis, capability translation, fail-fast guard, and bounded shutdown.
   Unit test suite in `tests/aio/` with every test traced to its spec ID.
