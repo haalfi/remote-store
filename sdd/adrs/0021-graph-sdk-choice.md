@@ -30,8 +30,8 @@ handling — is not carried by any of these SDKs; we have to write it
 regardless.
 
 `httpx` is already a runtime option in the project for the HTTP backend
-extra. `msal` is Microsoft's supported auth library, small (~350 KB
-wheel), stable, and used by `azure-identity` internally.
+extra. `msal` is Microsoft's supported auth library, lightweight,
+stable, and used by `azure-identity` internally.
 
 ## Decision
 

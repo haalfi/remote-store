@@ -21,8 +21,8 @@ Microsoft positions Graph as the unified file API across OneDrive,
 SharePoint, and Teams. A Graph-first backend gives us one auth model,
 one permission model, one path/item-id scheme, and one module to
 maintain instead of three. Legacy SharePoint REST is a fallback only if
-a specific Store operation is genuinely unavailable on Graph — and the
-ten Store operations we target are all on Graph.
+a specific Store operation is genuinely unavailable on Graph — and all
+Store operations we target are available on Graph.
 
 Users on Microsoft 365 tenants currently have no supported way to plug
 `remote-store` into their existing OneDrive or SharePoint document
@@ -65,8 +65,7 @@ gap is the point of this RFC.
 **Module:** `remote_store.backends._graph`
 **Name:** `"graph"`
 **Optional extra:** `pip install "remote-store[graph]"`
-**Dependencies:** `httpx`, `msal`, `platformdirs` (used by the
-built-in `GraphAuth` token cache; see ADR-0022)
+**Dependencies:** see ADR-0021 for the locked dependency set.
 **Spec:** `sdd/specs/044-graph-backend.md` (GR-001 through GR-057,
 contiguous; topic-grouped by section order)
 
@@ -77,8 +76,8 @@ API, not the user-visible product.
 
 ### SDK decision
 
-Evaluated honestly against the narrow surface we need (~12 endpoints,
-async-native, custom polling and upload-session logic):
+Evaluated honestly against the narrow surface we need (a small set of
+endpoints, async-native, custom polling and upload-session logic):
 
 | Option | Verdict |
 |---|---|
@@ -165,16 +164,14 @@ implementation:
   mirror image of `SyncBackendAdapter` (which wraps sync into async).
 
 ADR-0012 specifies only the sync→async direction (`SyncBackendAdapter`).
-The async→sync direction has non-trivial design surface — private
-event-loop ownership, cancellation propagation, behaviour when the
-caller is already inside a running loop, `nest-asyncio` interaction —
-and therefore requires its own ADR rather than being decided implicitly
-during the Graph implementation pass. Tracked as **ID-128** in
-`sdd/BACKLOG.md`; that ADR must land before (or together with) the
-Graph implementation PR. Whatever shape it takes (reuse of existing
-adapter machinery in the opposite direction, or a new
-`AsyncBackendSyncAdapter` companion), the wrapper must preserve the
-flat capability set and all error mappings.
+The async→sync direction is decided in **ADR-0025**: a new
+`AsyncBackendSyncAdapter` owns a private event loop on a dedicated
+thread, submits coroutines via `asyncio.run_coroutine_threadsafe`,
+fails fast when invoked from a running loop, and does not depend on
+`nest_asyncio`. It must preserve the flat capability set and all
+error mappings unchanged. Tracked as **ID-141** in `sdd/BACKLOG.md`;
+that ADR must land before (or together with) the Graph implementation
+PR.
 
 ### Async monitor-URL polling
 
@@ -190,52 +187,18 @@ specified in ADR-0023 and referenced by the spec (GR-026).
 
 ### Capability matrix
 
-Honest, not 12/12. `--` (dash) indicates a capability not declared.
-
-| Capability | Declared | Rationale |
-|---|---|---|
-| `READ` | Yes | `GET /content` via `@microsoft.graph.downloadUrl`. |
-| `WRITE` | Yes | `PUT /content` or upload session. |
-| `DELETE` | Yes | `DELETE /items/{id}` (resolved from path). |
-| `LIST` | Yes | `/children` endpoint with `@odata.nextLink` pagination. |
-| `MOVE` | Yes | `PATCH` with new `parentReference`; may-be-async. |
-| `COPY` | Yes | `POST copy`; async with monitor URL. |
-| `METADATA` | Yes | `GET /items/{path}` with `$select`. |
-| `GLOB` | -- | No native glob. `ext.glob` (prefix + fnmatch over `list_files`) serves the need. |
-| `ATOMIC_WRITE` | Yes | Small PUT is atomic service-side; upload-session is atomic on commit. |
-| `ATOMIC_MOVE` | -- | Graph move may be async; atomicity is not guaranteed. |
-| `LAZY_READ` | Yes | Range reads via the download URL avoid loading the full file. |
-| `SEEKABLE_READ` | -- | Graph streams are forward-only. `Store.read_seekable()` falls back to the default spool per ADR-0017. |
-
-The spec pins the declaration in GR-003 and the rationale in
-GR-012 through GR-027.
+Honest capability declarations are central to this backend's design — several capabilities are
+explicitly withheld with rationale (for example, `SEEKABLE_READ` is withheld because Graph
+streams are forward-only; `ATOMIC_MOVE` because Graph move may be asynchronous). See GR-003
+in `sdd/specs/044-graph-backend.md` for the complete declaration and per-capability rationale.
 
 ### Error mapping
 
 Graph returns structured error bodies with a `code` field under
 `error`. The mapping uses HTTP status plus `code`, not string
-matching. `backend` is set to `"graph"` on every mapped error.
-
-| HTTP | Graph code | remote_store error | Retryable? | Notes |
-|---|---|---|---|---|
-| 400 | `invalidRequest` | `RemoteStoreError` | -- | Bad request; typically a caller bug. |
-| 401 | `InvalidAuthenticationToken` | (re-acquire + retry once) | Internal | One-shot token refresh; on second failure raise `PermissionDenied`. |
-| 401 | `unauthenticated` | `PermissionDenied` | -- | Not recoverable by re-auth alone. |
-| 401 | `tokenNotFound` | `PermissionDenied` | -- | Terminal; no refresh attempt (GR-029). |
-| 401 | `invalidRequest` (401 scope) | `PermissionDenied` | -- | Terminal; no refresh attempt (GR-029). |
-| 401 | any other `code` | `PermissionDenied` | -- | Only `InvalidAuthenticationToken` triggers the one-shot refresh (GR-029). |
-| 403 | `accessDenied` | `PermissionDenied` | -- | |
-| 404 | `itemNotFound` (item/path scope) | `NotFound` | -- | |
-| 404 | `resourceNotFound` / drive scope | `BackendUnavailable` | -- | Drive misconfigured or deleted (GR-031). |
-| 404 | Any other code at item scope | `NotFound` | -- | Backend does not discriminate hidden-`accessDenied`-as-404 (GR-031). |
-| 409 | `nameAlreadyExists` | `AlreadyExists` | -- | Respect `conflictBehavior` for writes. |
-| 409 | `invalidRange` | `RemoteStoreError` | -- | Upload-session `Content-Range` mismatch; not retried. |
-| 416 | `invalidRange` | `RemoteStoreError` | -- | Range read beyond EOF. |
-| 423 | `resourceLocked` | `ResourceLocked` | -- | ADR-0024. Not retried by default policy. |
-| 429 | `activityLimitReached` | `BackendUnavailable` | Yes | `Retry-After` surfaced to the retry extension. |
-| 500, 502, 503, 504 | (varies) | `BackendUnavailable` | Yes | Retry per policy. |
-| 507 | `insufficientStorage` / `quotaLimitReached` | `BackendUnavailable` | -- | Quota exhausted; context carries `quota.*` fields. Not retryable (GR-054). |
-| Network / timeout | (httpx exceptions) | `BackendUnavailable` | Yes | |
+matching — no fragile string parsing. `backend` is set to `"graph"`
+on every mapped error. See GR-028 through GR-045 in
+`sdd/specs/044-graph-backend.md` for the complete mapping table.
 
 ### Throttling
 
@@ -420,8 +383,8 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
 
 - **Backends.** New `graph` backend. `FEATURES.md` row added in the
   implementation phase.
-- **Extras.** New `graph` extra in `pyproject.toml` pulling `httpx`
-  and `msal`.
+- **Extras.** New `graph` extra in `pyproject.toml`. See ADR-0021 for
+  the locked dependency set.
 - **Spec 005 (errors).** Amended in this PR to add ERR-013
   `ResourceLocked`.
 - **Spec 025 (retry).** Amended in this PR to add RET-015 Graph retry

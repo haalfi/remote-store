@@ -17,6 +17,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **`AsyncBackendSyncAdapter` spec block + test doubles** (ID-142):
+  pinned the invariants ADR-0025 records in prose as a normative
+  `ASYNC-NNN` block in spec 029, and added async-backend test doubles
+  under `tests/aio/` for adapter failure-path coverage. Unblocks the
+  ID-127 Graph implementation PR.
+- **Async-to-sync backend adapter — ADR draft** (ID-141): drafted
+  `sdd/adrs/0025-async-to-sync-backend-adapter.md`; updated RFC-0010
+  § Async posture. Prerequisite for the ID-127 Graph implementation
+  PR; ID-142 (landed above) pins the `ASYNC-NNN` spec block.
 - **Microsoft Graph backend — SDD artifacts** (ID-127): accepted
   `sdd/rfcs/rfc-0010-graph-backend.md`, ADRs `sdd/adrs/0021-graph-sdk-choice.md`
   (SDK choice), `sdd/adrs/0022-graph-auth-model.md` (auth model),

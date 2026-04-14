@@ -7,7 +7,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ## Overview
 
-`AsyncBackend` and `AsyncStore` are the async equivalents of `Backend` ([003](003-backend-adapter-contract.md)) and `Store` ([001](001-store-api.md)). `SyncBackendAdapter` bridges sync backends into the async world via `asyncio.to_thread()`. Phase 2 adds `AsyncAzureBackend` — the first native async backend. See [ADR-0012](../adrs/0012-async-store-backend-api.md) for design rationale.
+`AsyncBackend` and `AsyncStore` are the async equivalents of `Backend` ([003](003-backend-adapter-contract.md)) and `Store` ([001](001-store-api.md)). `SyncBackendAdapter` bridges sync backends into the async world via `asyncio.to_thread()`. `AsyncBackendSyncAdapter` is the inverse bridge — it exposes an `AsyncBackend` as a sync `Backend` via a private event loop on a dedicated background thread (see [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)). Phase 2 adds `AsyncAzureBackend` — the first native async backend. See [ADR-0012](../adrs/0012-async-store-backend-api.md) for design rationale.
 
 ---
 
@@ -410,3 +410,232 @@ Native async Azure backend using `azure.storage.blob.aio` and `azure.storage.fil
 
 **Invariant:** All Azure SDK exceptions are mapped to `remote_store` error types via `classify_azure_error()` from `_azure_common`. Same mapping as the sync `AzureBackend`.
 **See also:** [012-azure-backend.md](012-azure-backend.md) (AZ-013 through AZ-016), [005-error-model.md](005-error-model.md).
+
+---
+
+## AsyncBackendSyncAdapter
+
+The inverse of `SyncBackendAdapter`: implements the sync `Backend` ABC by
+delegating to a wrapped `AsyncBackend` running on a private event loop in a
+dedicated background thread.  Lands in `src/remote_store/_async_to_sync_adapter.py`.
+See [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md) for the decision
+record. The invariants below pin the behaviours the ADR records in prose so
+that the implementation test suite can trace every case to a stable spec ID
+per `sdd/000-process.md` Rule 2.
+
+### ASYNC-080: Single-chunk In-flight Pump
+
+**Invariant:** The adapter has **at most one** outstanding `__anext__` (or
+equivalent pull) per read stream and per listing iterator. No look-ahead, no
+read-ahead pool, no parallel prefetch. The only sanctioned per-stream buffer
+is the unread tail of the most recently fetched chunk held by the sync
+`read()` stream (see ASYNC-081).
+**Rationale:** Native-async backends exist precisely to stream. Materialising
+ahead of the sync caller would reintroduce the memory blow-up the bridge is
+designed to avoid.
+**See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
+§ Streaming iterators and open streams.
+
+### ASYNC-081: `read()` `BinaryIO` Flavour and Short-read Semantics
+
+**Invariant:** `Backend.read(path)` on the adapter returns a forward-only
+`BinaryIO`-typed object whose `read(n)` returns **at most** *n* bytes, drawing
+first from an internal `memoryview`-backed tail buffer carrying the unread
+remainder of the most recently fetched chunk, and submitting a new
+`__anext__` coroutine to the private loop only when that buffer is empty and
+more bytes are still required.  `read(-1)` / `read()` drains to EOF.  The
+stream exposes `read` and `close` only; `seek`, `tell`, `seekable`,
+`readable`, and `fileno` are not provided (see ASYNC-084 capability
+masking).  `close()` submits the async iterator's `aclose()` to the loop.
+**See also:** [006-streaming-io.md](006-streaming-io.md) (SIO-001, SIO-009),
+ASYNC-080.
+
+### ASYNC-082: Fail-fast on Running Event Loop
+
+**Invariant:** Every blocking sync method checks `asyncio.get_running_loop()`
+at entry. If a running loop is detected on the calling thread, the method
+raises `RuntimeError` with a message stem
+`"AsyncBackendSyncAdapter cannot be called from a running event loop"`
+(suitable for `pytest.raises(RuntimeError, match=...)`).  The message
+directs the caller to use `AsyncStore` instead. Detection is per-call,
+not per-construction.
+**Rationale:** The sync `Store` API is not coroutine-safe by design
+(ADR-0012 § Async posture).  Fail-fast beats deadlock.
+**See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
+§ Behaviour when the caller is in a running loop.
+
+### ASYNC-083: Closed-adapter Reuse
+
+**Invariant:** After `close()` has been called, any subsequent sync method
+call on the same adapter raises `RuntimeError` with message stem
+`"AsyncBackendSyncAdapter is closed"` (stable for
+`pytest.raises(RuntimeError, match=...)`). The adapter does **not** silently
+restart the loop; it is a one-shot resource.
+**See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
+§ Lifecycle.
+
+### ASYNC-084: Capability Translation Table
+
+**Invariant (translation).** The adapter exposes `capabilities` derived
+from the wrapped `AsyncBackend` with the following translation:
+
+- **`SEEKABLE_READ`** — **masked off** unconditionally. The chunk-pull
+  stream (ASYNC-081) is forward-only; no native `seek()` exists.
+- **`LAZY_READ`** — **preserved** verbatim. The single-chunk in-flight
+  invariant (ASYNC-080) keeps laziness end-to-end.
+- **`ATOMIC_WRITE`, `ATOMIC_MOVE`, `GLOB`, and all remaining flags
+  declared by the wrapped backend** — **preserved** verbatim.
+
+No new capability flag is introduced.
+
+**Invariant (gating).** Operations without a dedicated capability flag
+remain available on the adapter exactly when the wrapped backend
+declares the corresponding read / write capability:
+
+- `list_folders` is gated by `LIST`; `delete_folder` by `DELETE`.
+- `read_seekable` remains callable on the adapter even with
+  `SEEKABLE_READ` masked off — SIO-008 requires every sync backend to
+  support `Store.read_seekable()` regardless of the capability flag,
+  and the adapter inherits the same spool fallback every non-seekable
+  sync backend uses. The adapter contributes no seek accelerator of
+  its own.
+
+**See also:** [006-streaming-io.md](006-streaming-io.md) (SIO-008, SIO-009),
+[ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md) § Capability
+translation.
+
+### ASYNC-085: `open_atomic` Spool-and-flush Synthesis
+
+**Invariant:** `open_atomic(path, *, overwrite=False)` is synthesised by the
+adapter as a context manager that yields a `tempfile.SpooledTemporaryFile`.
+On clean `__exit__`, the spool is rewound and submitted to the wrapped
+async backend's `write_atomic(path, <spool>, overwrite=overwrite)` (a single
+`bytes`/`BinaryIO` write); on exception propagating through `__exit__`, the
+spool is dropped and `path` is left untouched.
+**Capability gate:** observed **on flush**, not on entry. Backends without
+`ATOMIC_WRITE` raise `CapabilityNotSupported` when the spool is submitted
+to `write_atomic`; the adapter forwards that error unchanged.
+**See also:** [007-atomic-writes.md](007-atomic-writes.md),
+[ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md) § Write-side
+content.
+
+### ASYNC-086: `unwrap()` Default and Sync-safe-handle Exemption
+
+**Invariant:** `unwrap(type_hint)` raises `CapabilityNotSupported` by default,
+because an async SDK handle (e.g. `httpx.AsyncClient`) returned from the
+wrapped backend is bound to the adapter's private loop and is unsafe to use
+from the caller's thread. A wrapped backend may expose a sync-safe handle
+through an explicit protocol (mirroring `SyncBackendAdapter.unwrap`'s
+exemption for wrappers that provide one); for such handles, the adapter
+forwards the call and returns the sync-safe object unchanged.
+**See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
+§ Capability translation, [BE-022](003-backend-adapter-contract.md).
+
+### ASYNC-087: Verbatim Error Propagation
+
+**Invariant:** Exceptions raised by the wrapped async coroutine are re-raised
+**verbatim** in the sync caller via
+`concurrent.futures.Future.set_exception` → `Future.result()`.  The adapter
+does not wrap, translate, or re-label exceptions.  Specifically:
+
+- Error **type** is preserved (`NotFound` stays `NotFound`,
+  `TimeoutError` stays `TimeoutError`, `ResourceLocked` stays
+  `ResourceLocked`, `CapabilityNotSupported` stays
+  `CapabilityNotSupported`, etc.).
+- ERR-001 attributes (`path`, `backend`) survive unchanged.
+- Traceback chain preservation follows standard
+  `concurrent.futures` behaviour.
+
+**See also:** [005-error-model.md](005-error-model.md) (ERR-001),
+ADR-0012 § error-mapping rules.
+
+### ASYNC-088: Lifecycle — `close(timeout)`
+
+**Invariant:** `close(timeout: float | None = 30.0)` performs the
+following drain order:
+
+1. Submit `self._async_backend.aclose()` to the loop.
+2. Wait for in-flight tasks (including the `aclose()` submission) to drain.
+3. Call `loop.call_soon_threadsafe(loop.stop)`.
+4. Join the daemon thread with the supplied bound.
+
+If the timeout expires before the thread joins, the adapter logs one
+record at `WARNING` level with message stem
+`"AsyncBackendSyncAdapter close timed out"` (stable for
+`caplog.messages` substring assertions), including the count and
+`repr()` of the unfinished tasks; it then returns. The daemon thread
+is reaped by process exit.  Passing `timeout=None` waits indefinitely.
+`__exit__` delegates to `close()`.
+**See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
+§ Lifecycle.
+
+### ASYNC-089: Concurrent-callers No-deadlock Invariant
+
+**Invariant:** The adapter is safe for concurrent calls from multiple sync
+threads. At least *N = 32* threads issuing mixed `read` / `write` / `list` /
+`delete` / `copy` / `move` calls (*M ≥ 16* iterations per thread, each with a
+caller-unique payload tag) on the same adapter instance all complete without
+deadlock, and every call's `Future` resolves to the value/exception of the
+coroutine submitted from that caller — no cross-thread result or exception
+crossover is observable. Ordering between concurrent callers is **not**
+guaranteed; callers that need deterministic ordering coordinate externally.
+**See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
+§ Ownership model.
+
+### ASYNC-090: Async Iterator Failure Modes
+
+**Invariant:** Failures originating on the async side during iterator
+consumption propagate as follows:
+
+- **Mid-stream `__anext__` raise** — the exception is re-raised verbatim
+  from the current sync `read(n)` / `next()` / `list.__next__()` call
+  (ASYNC-087).  The iterator / stream transitions to a closed-on-error
+  state; subsequent `read(n)` returns `b""` / subsequent `next()` raises
+  `StopIteration`.
+- **Hung iterator at `close()`** — a `close()` with the configured
+  `timeout` bound observes the hang, logs a warning per ASYNC-088, and
+  returns rather than blocking indefinitely.
+- **`aclose()` raise during shutdown** — logged at `WARNING` and
+  swallowed; `close()` continues the drain sequence and joins the
+  thread.  Exceptions during shutdown never mask the primary reason
+  the caller invoked `close()`.
+
+**See also:** ASYNC-080, ASYNC-087, ASYNC-088.
+
+### ASYNC-091: Write-side `BinaryIO` Failure Mid-write
+
+**Invariant:** When `write()` / `write_atomic()` is driven from a sync
+`BinaryIO` whose `read()` raises mid-write, the exception surfaces
+**verbatim** from the blocking sync call (ASYNC-087).  Partial-write
+rollback follows the wrapped async backend's atomicity guarantee — the
+adapter performs no rollback of its own.  For `write_atomic()` on a
+backend with `ATOMIC_WRITE`, the destination `path` is untouched on
+failure; for `write()`, whatever bytes reached the backend before the
+exception are visible per that backend's non-atomic write semantics.
+**See also:** [007-atomic-writes.md](007-atomic-writes.md),
+[ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md) § Write-side
+content.
+
+### ASYNC-092: Sync Context-manager Protocol
+
+**Invariant:** The adapter implements the sync context-manager protocol.
+`__enter__` returns `self` and does **not** touch the wrapped async
+backend's `__aenter__` / `__aexit__` — the async context manager is not
+entered implicitly from sync code.  `__exit__` delegates to `close()`
+with its default timeout, propagating any exception from the `with`
+body unchanged.
+**See also:** [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
+§ Lifecycle.
+
+### ASYNC-093: `check_health()` Propagates Connectivity Errors
+
+**Invariant:** `check_health()` on the adapter submits
+`await self._async_backend.check_health()` to the private loop and
+blocks on the result. Connectivity errors raised by the wrapped
+backend — `PermissionDenied`, `NotFound`, `BackendUnavailable`,
+`TimeoutError` — reach the sync caller **verbatim** (ASYNC-087).
+`check_health()` is **not** a no-op: the adapter performs no
+connectivity probe of its own, but it also does not swallow the
+backend's probe errors.
+**See also:** [026-health-check.md](026-health-check.md), ASYNC-057,
+ASYNC-087.

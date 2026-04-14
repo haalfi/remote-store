@@ -54,16 +54,14 @@ helper.
 
 MSAL's `SerializableTokenCache` is serialized to a file in the user's
 config directory, resolved via `platformdirs.user_config_dir("remote-store")`.
-The default filename is `graph_token_cache.json`. Users can override
-the path or disable persistent caching by passing a
+Users can override the path or disable persistent caching by passing a
 `SerializableTokenCache` directly or by supplying their own callable.
 
 `platformdirs` is a runtime dependency of the built-in `GraphAuth`
-implementation and is included in the `graph` install extra alongside
-`httpx` and `msal`. Callers that supply their own provider and never
-instantiate `GraphAuth` do not load `platformdirs` at import time
-(standard lazy-import pattern for `ext/*`, applied here to the
-`backends/_graph_auth` module).
+implementation (see ADR-0021 for the full `graph` extra dependency set).
+Callers that supply their own provider and never instantiate `GraphAuth`
+do not load `platformdirs` at import time (standard lazy-import pattern
+for `ext/*`, applied here to the `backends/_graph_auth` module).
 
 ### What the backend does with the provider
 

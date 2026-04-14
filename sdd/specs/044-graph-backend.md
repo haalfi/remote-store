@@ -17,9 +17,7 @@ ADRs: [0021](../adrs/0021-graph-sdk-choice.md) (SDK),
 [0023](../adrs/0023-async-monitor-polling.md) (monitor poller),
 [0024](../adrs/0024-resource-locked-error.md) (`ResourceLocked`).
 
-**Dependencies:** `httpx`, `msal`, `platformdirs` (the last is required
-only by the built-in `GraphAuth` token cache; callers that supply their
-own token provider do not load it — see ADR-0022).
+**Dependencies:** see [ADR-0021](../adrs/0021-graph-sdk-choice.md) for the locked dependency set.
 **Optional extra:** `pip install "remote-store[graph]"`
 **Backend name:** `"graph"`
 
