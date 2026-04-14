@@ -124,6 +124,10 @@ Items graduate through the SDD pipeline:
   using `AsyncAzureBackend` to verify the block-size defaults work for
   async uploads too. Requires an async `transfer()` equivalent or direct
   `store.write()` loop.
+  ID-143 will cover the bridged-async case via `AsyncBackendSyncAdapter`
+  (sync `transfer()` driving `AsyncAzureBackend` through the bridge);
+  the native `AsyncStore.transfer()` variant remains the residual scope
+  of this item.
 
 ### API Surface Enhancements
 
@@ -135,6 +139,31 @@ Items graduate through the SDD pipeline:
   - Depends on: ID-121 (CompositeStore)
 
 ### New Backends
+
+- [ ] **ID-143 — `AsyncBackendSyncAdapter` implementation**
+  Implement the adapter specified by
+  [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md) and pinned by
+  ASYNC-080…093 in [spec 029](specs/029-async-store-backend-api.md).
+  Lands at `src/remote_store/_async_to_sync_adapter.py` (core, not
+  `aio/`, per ADR-0025 § Module placement).
+  - Tests: unit tests against `tests/aio/_doubles.py`, each `Test…`
+    method traced to its `ASYNC-NNN` ID via `@pytest.mark.spec` per
+    `sdd/000-process.md` Rule 2; structural mirror of
+    `tests/aio/test_sync_adapter.py` plus the direction-specific
+    classes called out in ADR-0025 § Followups
+    (`…RunningLoopFailFast`, `…Cancellation`, `…Concurrency`,
+    `…CloseSemantics`).
+  - Real-backend coverage: integration test against Azurite +
+    `AsyncAzureBackend`, and a bridged-Azure variant added to
+    `tests/e2e/test_streaming_integrity.py` (recalibrated thresholds —
+    bridged streams cross a thread boundary per chunk and ASYNC-084
+    masks `SEEKABLE_READ`, so the sync-Azure thresholds do not carry
+    over verbatim).
+  - Depends on: ID-141 (ADR), ID-142 (spec + doubles) — both landed.
+  - Unblocks: ID-127 (Graph backend); partially closes ID-138 (the
+    sync-driver-over-async-backend half).
+  - Out of scope / follow-up: native async `AsyncStore.transfer()`
+    pipeline — split from ID-138 when this lands.
 
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint
@@ -149,10 +178,9 @@ Items graduate through the SDD pipeline:
     (GR-001..GR-057; RET-015 in [spec 025](specs/025-retry-policy.md);
     ERR-013 in [spec 005](specs/005-error-model.md)).
   - Reference: Azure backend (`_azure.py`) — closest architectural parallel.
-  - Depends on: ID-141 (async→sync adapter ADR). ID-142
-    (`ASYNC-NNN` spec block + test doubles) has landed — see
-    [spec 029](specs/029-async-store-backend-api.md) § AsyncBackendSyncAdapter
-    and `tests/aio/_doubles.py`.
+  - Depends on: ID-143 (`AsyncBackendSyncAdapter` implementation).
+    Spec foundation: ID-141 (ADR-0025) and ID-142 (spec 029
+    § AsyncBackendSyncAdapter + `tests/aio/_doubles.py`) — both landed.
   - Next: implementation per spec 044.
 
 - [ ] **ID-121 — CompositeStore (research complete)**
