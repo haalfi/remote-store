@@ -377,10 +377,10 @@ class AsyncBackendSyncAdapter(Backend):
         self._thread.join(timeout=_remaining())
 
         if drain_timed_out or self._thread.is_alive():
-            # asyncio.all_tasks() is not thread-safe to call from a foreign
-            # thread while the loop thread is still alive (timeout path).
-            # Skip the snapshot in that case; we log a zero-task warning.
-            unfinished = _snapshot_tasks(self._loop) if not self._thread.is_alive() else []
+            # _snapshot_tasks iterates asyncio.all_tasks() under a try/except
+            # RuntimeError that covers "Set changed size during iteration" if
+            # the loop thread is still running -- best-effort is acceptable.
+            unfinished = _snapshot_tasks(self._loop)
             log.warning(
                 "%s after %s seconds; %d unfinished task(s): %r",
                 _CLOSE_TIMEOUT_MSG,
@@ -466,9 +466,15 @@ class _ChunkPullReader:
         if self._eof:
             return None
         self._adapter._guard()
-        fut: concurrent.futures.Future[bytes] = asyncio.run_coroutine_threadsafe(
-            self._iter.__anext__(), self._adapter._loop
-        )
+        try:
+            fut: concurrent.futures.Future[bytes] = asyncio.run_coroutine_threadsafe(
+                self._iter.__anext__(), self._adapter._loop
+            )
+        except RuntimeError:
+            # Loop stopped between _guard() and here (close() raced us).
+            self._eof = True
+            self._closed = True
+            raise RuntimeError(_CLOSED_MSG) from None
         try:
             chunk = fut.result()
         except StopAsyncIteration:
@@ -485,8 +491,6 @@ class _ChunkPullReader:
         if self._closed:
             return
         self._closed = True
-        if self._adapter._closed:
-            return
         try:
             fut = asyncio.run_coroutine_threadsafe(self._iter.aclose(), self._adapter._loop)
             try:
@@ -542,10 +546,15 @@ class _AsyncIteratorBridge:
         if self._done:
             raise StopIteration
         self._adapter._guard()
-        fut: concurrent.futures.Future[Any] = asyncio.run_coroutine_threadsafe(
-            self._iter.__anext__(),  # type: ignore[arg-type]
-            self._adapter._loop,
-        )
+        try:
+            fut: concurrent.futures.Future[Any] = asyncio.run_coroutine_threadsafe(
+                self._iter.__anext__(),  # type: ignore[arg-type]
+                self._adapter._loop,
+            )
+        except RuntimeError:
+            # Loop stopped between _guard() and here (close() raced us).
+            self._done = True
+            raise RuntimeError(_CLOSED_MSG) from None
         try:
             return fut.result()
         except StopAsyncIteration:

@@ -432,6 +432,9 @@ class TestMidStreamReadFailure:
         with pytest.raises(NotFound) as exc_info:
             stream.read(1)
         assert exc_info.value is err
+        # Post-error state: stream is closed, subsequent reads return b"".
+        assert stream.read(1) == b""
+        assert stream.read(-1) == b""
         adapter.close()
 
     @pytest.mark.spec("ASYNC-090")
@@ -766,10 +769,12 @@ class TestSyncContextManager:
     def test_aenter_of_wrapped_backend_not_called(self) -> None:
         # _HangingAsyncBackend would block any awaited call; __enter__ must be
         # instant -- no aenter/aexit on the wrapped backend is invoked.
-        # Use explicit enter/close with a short timeout so _HangingAsyncBackend's
-        # aclose() doesn't block for the default 30 s.
-        adapter = AsyncBackendSyncAdapter(_HangingAsyncBackend())
+        # aclose_called is False after __enter__() because no async method ran.
+        double = _HangingAsyncBackend()
+        adapter = AsyncBackendSyncAdapter(double)
         adapter.__enter__()
+        assert double.aclose_called is False, "__enter__ must not call aclose (or any async method)"
+        # Use explicit close with short timeout so the hanging aclose doesn't block.
         adapter.close(timeout=0.05)
         with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
             adapter.exists("x")
@@ -796,6 +801,15 @@ class TestCloseSemantics:
         adapter, _ = _make_adapter()
         adapter.close()
         adapter.close()  # must not raise
+        with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
+            adapter.exists("x")
+
+    @pytest.mark.spec("ASYNC-088")
+    def test_close_timeout_none_completes_on_fast_backend(self) -> None:
+        """timeout=None waits indefinitely; verify it completes and marks adapter closed."""
+        adapter, double = _make_adapter()
+        adapter.close(timeout=None)  # must not hang on a fast backend
+        assert double.aclose_called is True
         with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
             adapter.exists("x")
 
