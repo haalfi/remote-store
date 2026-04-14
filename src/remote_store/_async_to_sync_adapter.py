@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import contextlib
+import functools
 import logging
 import tempfile
 import threading
@@ -122,6 +123,9 @@ class AsyncBackendSyncAdapter(Backend):
 
     def _guard(self) -> None:
         """Check every blocking call for closed state and running-loop."""
+        # _closed is read without the lock: it is written exactly once (False→True)
+        # under _close_lock, so a racing reader either sees False (safe to proceed)
+        # or True (fast-fail).  No torn write is possible on a bool.
         if self._closed:
             raise RuntimeError(_CLOSED_MSG)
         try:
@@ -145,7 +149,7 @@ class AsyncBackendSyncAdapter(Backend):
         """Backend identifier, forwarded from the wrapped async backend."""
         return self._async_backend.name
 
-    @property
+    @functools.cached_property
     def capabilities(self) -> CapabilitySet:
         """Capabilities with ASYNC-084 translation applied.
 
@@ -223,7 +227,7 @@ class AsyncBackendSyncAdapter(Backend):
         self._submit(self._async_backend.delete_folder(path, recursive=recursive, missing_ok=missing_ok))
 
     def check_health(self) -> None:
-        """Submit ``aclose``'s sibling probe; propagate errors verbatim.
+        """Submit a connectivity probe to the wrapped async backend; propagate errors verbatim.
 
         ASYNC-093: not a no-op -- connectivity errors raised by the
         wrapped async backend reach the sync caller unchanged.

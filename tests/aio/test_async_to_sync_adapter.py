@@ -749,9 +749,11 @@ class TestSyncContextManager:
     def test_aenter_of_wrapped_backend_not_called(self) -> None:
         # _HangingAsyncBackend would block any awaited call; __enter__ must be
         # instant -- no aenter/aexit on the wrapped backend is invoked.
+        # Use explicit enter/close with a short timeout so _HangingAsyncBackend's
+        # aclose() doesn't block for the default 30 s.
         adapter = AsyncBackendSyncAdapter(_HangingAsyncBackend())
-        with adapter:
-            pass
+        adapter.__enter__()
+        adapter.close(timeout=0.05)
         with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
             adapter.exists("x")
 
@@ -826,6 +828,7 @@ class TestConcurrency:
         adapter.write("shared.txt", b"concurrent-data")
 
         errors: list[BaseException] = []
+        errors_lock = threading.Lock()
         barrier = threading.Barrier(N_THREADS)
 
         def _worker() -> None:
@@ -836,7 +839,8 @@ class TestConcurrency:
                     adapter.read_bytes("shared.txt")
                     list(adapter.list_files(""))
                 except Exception as exc:  # noqa: BLE001
-                    errors.append(exc)
+                    with errors_lock:
+                        errors.append(exc)
 
         threads = [threading.Thread(target=_worker) for _ in range(N_THREADS)]
         for t in threads:
