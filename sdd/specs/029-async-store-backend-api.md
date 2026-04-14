@@ -440,13 +440,13 @@ designed to avoid.
 
 **Invariant:** `Backend.read(path)` on the adapter returns a forward-only
 `BinaryIO`-typed object whose `read(n)` returns **at most** *n* bytes, drawing
-first from an internal `memoryview`-backed tail buffer carrying the unread
-remainder of the most recently fetched chunk, and submitting a new
-`__anext__` coroutine to the private loop only when that buffer is empty and
-more bytes are still required.  `read(-1)` / `read()` drains to EOF.  The
-stream exposes `read` and `close` only; `seek`, `tell`, `seekable`,
-`readable`, and `fileno` are not provided (see ASYNC-084 capability
-masking).  `close()` submits the async iterator's `aclose()` to the loop.
+first from an internal tail buffer carrying the unread remainder of the most
+recently fetched chunk, and submitting a new `__anext__` coroutine to the
+private loop only when that buffer is empty and more bytes are still required.
+`read(-1)` / `read()` drains to EOF.  The stream exposes `read`, `close`,
+`seekable()` (returns `False`), and `readable()` (returns `True`); `seek`,
+`tell`, and `fileno` are not provided.  `close()` submits the async
+iterator's `aclose()` to the loop.
 **See also:** [006-streaming-io.md](006-streaming-io.md) (SIO-001, SIO-009),
 ASYNC-080.
 

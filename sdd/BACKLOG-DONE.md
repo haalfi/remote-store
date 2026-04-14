@@ -5,6 +5,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-143 — `AsyncBackendSyncAdapter` implementation + unit test suite**
+  Implemented `AsyncBackendSyncAdapter(Backend)` — wraps any `AsyncBackend`
+  as a synchronous `Backend` via a private event loop on a dedicated daemon
+  thread. Covers the full behaviour contract in
+  [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md) and
+  [spec 029](specs/029-async-store-backend-api.md) § AsyncBackendSyncAdapter
+  (ASYNC-080…093). Unit test suite in `tests/aio/`, every test traced to its
+  spec ID via `@pytest.mark.spec`; uses the doubles from `tests/aio/_doubles.py`.
+  Real-backend coverage (Azurite + e2e) deferred to ID-143b.
+  Unblocks ID-127 (Graph backend). PR #439.
+
 - [x] **ID-142 — `AsyncBackendSyncAdapter` spec block + test doubles**
   Pinned the invariants
   [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md) records in

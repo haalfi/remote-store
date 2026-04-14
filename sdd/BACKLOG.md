@@ -140,30 +140,45 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
-- [ ] **ID-143 — `AsyncBackendSyncAdapter` implementation**
-  Implement the adapter specified by
-  [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md) and pinned by
-  ASYNC-080…093 in [spec 029](specs/029-async-store-backend-api.md).
-  Lands at `src/remote_store/_async_to_sync_adapter.py` (core, not
-  `aio/`, per ADR-0025 § Module placement).
-  - Tests: unit tests against `tests/aio/_doubles.py`, each `Test…`
-    method traced to its `ASYNC-NNN` ID via `@pytest.mark.spec` per
-    `sdd/000-process.md` Rule 2; structural mirror of
-    `tests/aio/test_sync_adapter.py` plus the direction-specific
-    classes called out in ADR-0025 § Followups
-    (`…RunningLoopFailFast`, `…Cancellation`, `…Concurrency`,
-    `…CloseSemantics`).
-  - Real-backend coverage: integration test against Azurite +
-    `AsyncAzureBackend`, and a bridged-Azure variant added to
+- [ ] **ID-143c — `AsyncBackendSyncAdapter` review follow-ups**
+  Deferred items from the PR #439 orchestrate review. All non-blocking for
+  the initial merge; revisit before ID-127 lands if still relevant.
+  - **Leak on early iterator termination**: `_AsyncIteratorBridge` never
+    submits `aclose()` if a sync caller drops the reference before
+    exhaustion (unlike `_ChunkPullReader.close()`). Add a best-effort
+    `__del__` or give `Store.list_*` context-manager semantics.
+  - **Close-race drain loop**: after `_closed = True` flips, a caller that
+    passed `_guard()` can still submit a coroutine before `_drain_tasks()`
+    snapshots. Loop `_drain_tasks` while `asyncio.all_tasks()` keeps
+    producing new work, bounded by the close deadline.
+  - **Test gaps**: concurrent close vs in-flight submit;
+    abandoned-stream GC path; `write_atomic` mid-`BinaryIO` error path;
+    explicit capability-gate test (`CapabilityNotSupported` surfacing on
+    `open_atomic` exit); payload-tagged mixed-ops concurrency test
+    (ASYNC-089 currently exercises only the read-only subset).
+  - **`_ChunkPullReader`**: switch to `io.RawIOBase` subclass to shed
+    `# type: ignore` and inherit standard `BinaryIO` semantics.
+  - **Docstring completeness** on public methods (`close`, `read`,
+    `unwrap`, `check_health`) per DESIGN.md § 4.
+  - **Test-quality sweep**: verify `tests/aio/_doubles.py` uses `spec=` or
+    subclasses `AsyncBackend` (TESTING.md Rule 4); parametrize
+    `TestRunningLoopFailFast` / `TestPropertyPassthrough` / `TestScalarIODelegation`.
+  - **Async/Sync bridges guide**: `docs-src/guides/async-sync-bridges.md`
+    with a decision table for `SyncBackendAdapter` vs
+    `AsyncBackendSyncAdapter`.
+  - Depends on: ID-143 (done).
+
+- [ ] **ID-143b — `AsyncBackendSyncAdapter` real-backend coverage**
+  Integration tests and e2e variant for the adapter landed in ID-143.
+  - Integration test against Azurite + `AsyncAzureBackend`.
+  - Bridged-Azure variant added to
     `tests/e2e/test_streaming_integrity.py` (recalibrated thresholds —
     bridged streams cross a thread boundary per chunk and ASYNC-084
     masks `SEEKABLE_READ`, so the sync-Azure thresholds do not carry
     over verbatim).
-  - Depends on: ID-141 (ADR), ID-142 (spec + doubles) — both landed.
-  - Unblocks: ID-127 (Graph backend); partially closes ID-138 (the
-    sync-driver-over-async-backend half).
-  - Out of scope / follow-up: native async `AsyncStore.transfer()`
-    pipeline — split from ID-138 when this lands.
+  - Depends on: ID-143 (done).
+  - Related: ID-127 (Graph backend) — the first consumer of the adapter;
+    both items share the same async-to-sync bridge surface.
 
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint
