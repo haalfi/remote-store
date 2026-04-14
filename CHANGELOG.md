@@ -17,10 +17,25 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **`AsyncBackendSyncAdapter` — `ASYNC-NNN` spec block + test doubles**
+  (ID-142): amended `sdd/specs/029-async-store-backend-api.md` with
+  ASYNC-080 … ASYNC-093 pinning the 14 invariants enumerated in
+  [ADR-0025 § Followups](sdd/adrs/0025-async-to-sync-backend-adapter.md)
+  (single-chunk in-flight pump, `read()` short-read semantics,
+  fail-fast on running loop, closed-adapter reuse, capability
+  translation, `open_atomic` spool-and-flush, `unwrap` default,
+  verbatim error propagation, `close(timeout)` drain order,
+  concurrent-callers no-deadlock, async-iterator failure modes,
+  write-side `BinaryIO` mid-write, sync context manager,
+  `check_health` passthrough). Added
+  `tests/aio/_doubles.py` with `_HangingAsyncBackend` and
+  `_RaisingAsyncBackend` so the failure paths are reachable without
+  third-party patching (`sdd/TESTING.md` Rule 6). Unblocks the ID-127
+  Graph implementation PR.
 - **Async-to-sync backend adapter — ADR draft** (ID-141): drafted
   `sdd/adrs/0025-async-to-sync-backend-adapter.md`; updated RFC-0010
   § Async posture. Prerequisite for the ID-127 Graph implementation
-  PR; ID-142 tracks the deferred `ASYNC-NNN` spec block.
+  PR; ID-142 (landed above) pins the `ASYNC-NNN` spec block.
 - **Microsoft Graph backend — SDD artifacts** (ID-127): accepted
   `sdd/rfcs/rfc-0010-graph-backend.md`, ADRs `sdd/adrs/0021-graph-sdk-choice.md`
   (SDK choice), `sdd/adrs/0022-graph-auth-model.md` (auth model),

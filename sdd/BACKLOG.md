@@ -136,14 +136,6 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
-- [ ] **ID-142 — `ASYNC-NNN` spec block + test doubles for `AsyncBackendSyncAdapter`**
-  Allocate the 14 numbered invariants enumerated in
-  [ADR-0025 § Followups](adrs/0025-async-to-sync-backend-adapter.md)
-  and add `_HangingAsyncBackend` / `_RaisingAsyncBackend` test
-  doubles. Lands before — or with — the ID-127 implementation PR.
-  - Depends on: ID-141.
-  - Blocks: ID-127 implementation PR.
-
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint
   document libraries via the Microsoft Graph REST API. Single `drive_id`
@@ -157,9 +149,10 @@ Items graduate through the SDD pipeline:
     (GR-001..GR-057; RET-015 in [spec 025](specs/025-retry-policy.md);
     ERR-013 in [spec 005](specs/005-error-model.md)).
   - Reference: Azure backend (`_azure.py`) — closest architectural parallel.
-  - Depends on: ID-141 (async→sync adapter ADR), ID-142 (`ASYNC-NNN`
-    spec block for the adapter — gives the test suite spec IDs to
-    trace).
+  - Depends on: ID-141 (async→sync adapter ADR). ID-142
+    (`ASYNC-NNN` spec block + test doubles) has landed — see
+    [spec 029](specs/029-async-store-backend-api.md) § AsyncBackendSyncAdapter
+    and `tests/aio/_doubles.py`.
   - Next: implementation per spec 044.
 
 - [ ] **ID-121 — CompositeStore (research complete)**

@@ -5,6 +5,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-142 — `ASYNC-NNN` spec block + test doubles for `AsyncBackendSyncAdapter`**
+  Amended [spec 029](specs/029-async-store-backend-api.md) with
+  ASYNC-080 … ASYNC-093 (14 contiguous invariants derived from
+  [ADR-0025 § Followups](adrs/0025-async-to-sync-backend-adapter.md)):
+  single-chunk in-flight pump, `read()` `BinaryIO` short-read
+  semantics, fail-fast on running loop, closed-adapter reuse,
+  capability translation table (`SEEKABLE_READ` masked, `LAZY_READ`
+  preserved), `open_atomic` spool-and-flush synthesis,
+  `unwrap()` default and sync-safe-handle exemption, verbatim error
+  propagation, `close(timeout)` drain order, concurrent-callers
+  no-deadlock, async-iterator failure modes, write-side `BinaryIO`
+  mid-write surfacing, sync context-manager protocol,
+  `check_health()` connectivity-error passthrough. Added
+  `tests/aio/_doubles.py` with `_HangingAsyncBackend` and
+  `_RaisingAsyncBackend` so the failure paths above are reachable
+  without patching third-party internals (TESTING.md Rule 6).
+  Unblocks the ID-127 implementation PR.
+
 - [x] **ID-141 — Async-to-sync backend adapter ADR**
   Drafted [ADR-0025](adrs/0025-async-to-sync-backend-adapter.md):
   `AsyncBackendSyncAdapter` owns a private event loop on a dedicated
