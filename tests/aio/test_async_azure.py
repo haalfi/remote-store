@@ -395,7 +395,15 @@ class TestAsyncAzureReadWrite:
         """
         backend, cc, bc = _setup_non_hns_backend()
         bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
-        bc.upload_blob = AsyncMock()
+
+        captured: list[bytes] = []
+
+        async def _fake_upload(data, **_kwargs):  # noqa: ANN001, ANN202
+            # Emulate the SDK: consume the async iterator to EOF.
+            async for chunk in data:
+                captured.append(chunk)
+
+        bc.upload_blob = AsyncMock(side_effect=_fake_upload)
 
         async def gen():  # noqa: ANN202
             yield b"hello "
@@ -404,9 +412,10 @@ class TestAsyncAzureReadWrite:
         agen = gen()
         await backend.write("file.txt", agen)
         assert bc.upload_blob.call_count == 1
-        # Passed through verbatim — the backend must not collapse the stream
-        # into a bytes buffer before calling upload_blob.
+        # Pass-through: the exact async generator reached the SDK, and iterating
+        # it yielded the full, ordered payload — no materialization in between.
         assert bc.upload_blob.call_args[0][0] is agen
+        assert captured == [b"hello ", b"world"]
 
     @pytest.mark.spec("ASYNC-008")
     async def test_write_already_exists(self) -> None:
@@ -1162,6 +1171,41 @@ class TestAsyncAzureHNSPaths:
         assert tmp_fc.upload_data.call_count == 1
         assert tmp_fc.rename_file.call_count == 1
 
+    @pytest.mark.spec("ASYNC-010", "ASYNC-021")
+    async def test_write_atomic_hns_streams_async_chunks(self) -> None:
+        """HNS write_atomic forwards the async iterator to upload_data without
+        materializing (BUG-165).
+
+        DataLakeFileClient.upload_data accepts AsyncIterable[bytes]; the
+        backend must not collapse the stream into a bytes buffer first.
+        """
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+
+        captured: list[bytes] = []
+
+        async def _fake_upload(data, **_kwargs):  # noqa: ANN001, ANN202
+            async for chunk in data:
+                captured.append(chunk)
+
+        tmp_fc.upload_data = AsyncMock(side_effect=_fake_upload)
+
+        async def chunk_gen():  # noqa: ANN202
+            yield b"hello "
+            yield b"world"
+
+        agen = chunk_gen()
+        await backend.write_atomic("dir/file.txt", agen)
+        tmp_fc.upload_data.assert_awaited_once()
+        assert tmp_fc.upload_data.call_args[0][0] is agen
+        assert captured == [b"hello ", b"world"]
+        assert tmp_fc.rename_file.call_count == 1
+
     @pytest.mark.spec("ASYNC-010")
     async def test_write_atomic_hns_cleans_up_on_failure(self) -> None:
         """HNS write_atomic deletes temp file when rename fails."""
@@ -1620,7 +1664,14 @@ class TestAsyncAzureWriteAtomicIterator:
         """write_atomic forwards the async iterator to upload_blob without
         materializing (non-HNS path). See BUG-165."""
         backend, cc, bc = _setup_non_hns_backend()
-        bc.upload_blob = AsyncMock()
+
+        captured: list[bytes] = []
+
+        async def _fake_upload(data, **_kwargs):  # noqa: ANN001, ANN202
+            async for chunk in data:
+                captured.append(chunk)
+
+        bc.upload_blob = AsyncMock(side_effect=_fake_upload)
 
         async def chunk_gen():
             yield b"hello "
@@ -1630,6 +1681,7 @@ class TestAsyncAzureWriteAtomicIterator:
         await backend.write_atomic("file.txt", agen, overwrite=True)
         bc.upload_blob.assert_awaited_once()
         assert bc.upload_blob.call_args[0][0] is agen
+        assert captured == [b"hello ", b"world"]
 
 
 # =============================================================================

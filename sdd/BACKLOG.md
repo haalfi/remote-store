@@ -140,8 +140,6 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
-
-
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint
   document libraries via the Microsoft Graph REST API. Single `drive_id`
