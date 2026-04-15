@@ -46,8 +46,8 @@ with AsyncBackendSyncAdapter(async_backend) as adapter:
     content = store.read_bytes("report.csv")
 ```
 
-Use this when you have an async-native backend (e.g. `AsyncAzureBackend`,
-the upcoming Graph backend) but your calling code is synchronous.
+Use this when you have an async-native backend (e.g. `AsyncAzureBackend`)
+but your calling code is synchronous.
 
 **Constraints to keep in mind:**
 

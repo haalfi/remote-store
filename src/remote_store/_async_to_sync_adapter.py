@@ -399,10 +399,15 @@ class AsyncBackendSyncAdapter(Backend):
         the private loop → join the daemon thread.
 
         The drain step repeats :func:`_drain_tasks` until the private loop is
-        quiet, covering the window where a caller that passed :meth:`_guard`
-        *before* the closed flag was set can still submit a coroutine.  Each
-        pass snapshots outstanding tasks and waits for them; new tasks that
-        arrive between snapshot and completion trigger another pass.
+        quiet, **narrowing** (not eliminating) the window where a caller that
+        passed :meth:`_guard` *before* the closed flag was set can still submit
+        a coroutine.  Each pass snapshots outstanding tasks and waits for them;
+        new tasks that arrive between snapshot and completion trigger another
+        pass.  A residual TOCTOU gap remains: a thread that passes
+        :meth:`_guard` after the final empty-snapshot check but before the loop
+        is stopped will have its coroutine silently discarded when the loop
+        stops — eliminating this gap would require serialising all submits
+        against a shutdown lock.
 
         If *timeout* expires before the loop is drained, a single ``WARNING``
         record is emitted (message stem
@@ -535,19 +540,27 @@ class _ChunkPullReader(io.RawIOBase):
     # region: read surface
 
     def readinto(self, b: bytearray | memoryview) -> int | None:  # type: ignore[override]
-        """Fill *b* with up to ``len(b)`` bytes; return the number written."""
+        """Fill *b* with up to ``len(b)`` bytes; return the number written.
+
+        At most one async chunk is pulled per call (or the already-buffered
+        remainder is consumed), matching ``io.RawIOBase``'s documented
+        "at most one underlying system call" contract.  Callers that need a
+        full buffer should wrap this stream in ``io.BufferedReader``.
+        """
         if self.closed:
             return 0
         size = len(b)
         if size == 0:
             return 0
-        # Delegate to our read() override -- no circular dependency because
-        # io.RawIOBase.read() would call readinto(), but *our* read() calls
-        # _pull_chunk() directly.
-        data = self.read(size)
-        n = len(data)
-        b[:n] = data
-        return n
+        # Serve from the pre-read buffer before issuing a new async pull.
+        if not self._buf and not self._eof:
+            chunk = self._pull_chunk()
+            if chunk is not None:
+                self._buf = chunk
+        take = min(size, len(self._buf))
+        b[:take] = self._buf[:take]
+        self._buf = self._buf[take:]
+        return take
 
     def read(self, size: int = -1) -> bytes:
         """Read and return up to *size* bytes, or all remaining if *size* == -1."""
@@ -665,6 +678,16 @@ class _AsyncIteratorBridge:
     A best-effort ``__del__`` submits ``aclose()`` fire-and-forget when the
     iterator is GC'd before exhaustion, so backend resources are not silently
     leaked when callers break out of a ``for`` loop early.
+
+    Note:
+        The ``__del__`` clean-up is only effective when the wrapped
+        ``_iter`` is an *async generator* (i.e. exposes ``aclose()``).
+        Plain ``AsyncIterator`` objects built from a class with only
+        ``__aiter__``/``__anext__`` have no ``aclose``; the
+        :func:`contextlib.suppress` in ``__del__`` swallows the resulting
+        ``AttributeError`` silently.  All async backends in this package
+        use async generators for listing, so the guarantee holds in
+        practice.
     """
 
     __slots__ = ("_adapter", "_iter", "_done")
