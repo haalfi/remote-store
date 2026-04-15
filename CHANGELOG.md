@@ -47,16 +47,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Internal
 
 - **`scripts/gen_pages.py` refactor**: split the 840-line mkdocs-gen-files hook
-  into `scripts/docs/{scan,render,nav,link}.py` plus a 70-line orchestrator.
-  Introduces `SddKind` dataclass driving a single iteration over adrs / specs /
-  rfcs / audits / research (was five near-duplicate code paths). Replaces the
-  hand-maintained `_EXAMPLE_DESCRIPTIONS` and `_EXAMPLE_SEE_ALSO` dicts with
-  self-describing example docstrings (`Title — description` first line plus an
-  optional YAML `see_also` tail). Replaces hardcoded link-rewrite tables with
-  a `LinkResolver` that walks markdown links against an auto-built source →
-  docs-dest map, with GitHub-blob fallback for repo files outside the docs
-  tree. Docs-tree destinations renamed to match source stems
-  (`design-spec.md` → `design.md`, `testing-standards.md` → `testing.md`).
+  into `scripts/docs/{scan,render,nav,link}.py` plus a 70-line orchestrator;
+  example metadata and link rewrites are now data-driven via `SddKind`,
+  self-describing example docstrings, and `LinkResolver`.
 
 - **`AsyncBackendSyncAdapter` real-backend coverage** (ID-143b): Azurite-backed
   integration suite for the full sync `Backend` contract through the adapter,

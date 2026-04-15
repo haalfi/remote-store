@@ -228,8 +228,9 @@ def render_example_index(
 # ---------------------------------------------------------------------------
 
 
-def render_medallion_page(repo_root: Path, writer: Writer) -> None:
-    readme = (repo_root / "examples" / "medallion_dagster" / "README.md").read_text(encoding="utf-8")
+def render_medallion_page(repo_root: Path, writer: Writer, resolver: LinkResolver) -> None:
+    source = repo_root / "examples" / "medallion_dagster" / "README.md"
+    readme = source.read_text(encoding="utf-8")
     body_lines: list[str] = []
     skipped_first = False
     in_code = False
@@ -242,7 +243,7 @@ def render_medallion_page(repo_root: Path, writer: Writer) -> None:
         if not in_code and line.startswith("#"):
             line = "#" + line
         body_lines.append(line)
-    body = "\n".join(body_lines)
+    body = resolver.rewrite("\n".join(body_lines), source, "examples/medallion-dagster.md")
 
     page = f"""\
 # Medallion + Dagster Showcase

@@ -61,7 +61,7 @@ render.render_rfc_template(ROOT, _writer, resolver)
 render.render_link_rewritten(_writer, link_entries, resolver)
 render.copy_assets(ROOT / "assets", _binary_writer)
 render.render_example_pages(_writer, examples)
-render.render_medallion_page(ROOT, _writer)
+render.render_medallion_page(ROOT, _writer, resolver)
 render.render_example_index(_writer, examples, categories)
 
 # --- 3. Nav -----------------------------------------------------------------

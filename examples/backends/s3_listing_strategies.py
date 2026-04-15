@@ -1,4 +1,4 @@
-"""S3 Listing Strategies — S3 listing strategies and performance best practices.
+"""S3 Listing Strategies -- Shallow vs. recursive listing: cost tradeoffs, iterator patterns, and MinIO endpoint usage.
 
 Demonstrates:
 - Shallow listing (direct children only) -- O(n_children) cost
