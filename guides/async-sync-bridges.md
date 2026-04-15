@@ -16,14 +16,7 @@ choose the one that matches the direction you need.
 ## `SyncBackendAdapter` — sync → async
 
 ```python
-from remote_store.aio import SyncBackendAdapter, AsyncStore
-from remote_store.backends import LocalBackend
-
-backend = LocalBackend("/data")
-async_backend = SyncBackendAdapter(backend)
-
-async with AsyncStore(async_backend) as store:
-    content = await store.read_bytes("report.csv")
+--8<-- "examples/snippets/async_sync_bridges.py:sync-to-async"
 ```
 
 Use this when you have an existing sync backend and want to drive it from
@@ -32,14 +25,7 @@ async code without rewriting it.
 ## `AsyncBackendSyncAdapter` — async → sync
 
 ```python
-from remote_store import AsyncBackendSyncAdapter, Store
-from remote_store.aio import AsyncAzureBackend
-
-async_backend = AsyncAzureBackend(account="myaccount", container="data")
-
-with AsyncBackendSyncAdapter(async_backend) as adapter:
-    store = Store(adapter)
-    content = store.read_bytes("report.csv")
+--8<-- "examples/snippets/async_sync_bridges.py:async-to-sync"
 ```
 
 Use this when you have an async-native backend (e.g. `AsyncAzureBackend`)
