@@ -549,7 +549,7 @@ class _ChunkPullReader(io.RawIOBase):
         b[:n] = data
         return n
 
-    def read(self, size: int = -1) -> bytes:  # type: ignore[override]
+    def read(self, size: int = -1) -> bytes:
         """Read and return up to *size* bytes, or all remaining if *size* == -1."""
         if self.closed:
             return b""
@@ -713,7 +713,7 @@ class _AsyncIteratorBridge:
             return
         with contextlib.suppress(Exception):
             asyncio.run_coroutine_threadsafe(
-                self._iter.aclose(),  # type: ignore[union-attr]
+                self._iter.aclose(),  # type: ignore[attr-defined]
                 loop,
             )
 
