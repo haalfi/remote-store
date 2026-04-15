@@ -59,7 +59,7 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 2. **Attach each inline comment** with `add_comment_to_pending_review`, one call per finding. Required params: `path`, `body`, `subjectType: "LINE"` (or `"FILE"` for file-level). Optional: `line`, `side`, `startLine`, `startSide` for multi-line. Do not batch into a single review creation.
 3. **Submit the review.** `pull_request_review_write` with `method: "submit_pending"`, `event: "COMMENT"`, and the summary body.
 
-After submit, **verify** by calling `pull_request_read` with `method: "get_review_comments"`. If `totalCount` is 0 but you posted findings, the submit dropped them — re-do the pending flow.
+**Verify (only when you posted inline findings).** If step 2 attached zero comments, skip verification — `totalCount: 0` is the correct outcome. Otherwise call `pull_request_read` with `method: "get_review_comments"`: if `totalCount` is 0, the submit dropped them — re-run the pending flow **once**. If the second attempt also returns 0, stop and report the failure in the Step 5 summary (do not loop further).
 
 **Never** use APPROVE or REQUEST_CHANGES (owner token can't APPROVE).
 
