@@ -342,8 +342,11 @@ class TestAdapterHealthCheckAzurite:
 
     @pytest.mark.spec("ASYNC-093")
     def test_check_health_succeeds(self, azurite_adapter_store: Store) -> None:
-        """check_health() must not raise; store must remain operational afterwards."""
-        azurite_adapter_store.check_health()
+        """check_health() must not raise; store must remain operational afterwards.
+
+        Invoked via Store.ping() which calls self._backend.check_health().
+        """
+        azurite_adapter_store.ping()
         # Verify the store is still operational: a nonexistent path returns False.
         assert azurite_adapter_store.exists(f"post-health-{uuid.uuid4().hex[:6]}.txt") is False
 

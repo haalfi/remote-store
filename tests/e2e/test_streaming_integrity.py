@@ -514,10 +514,10 @@ def _emit_report(results: list[HopResult]) -> list[str]:
         lazy_tag = "lazy" if r.both_lazy else "non-lazy"
         issues: list[str] = []
         # Non-lazy destinations call source.read() without a size limit,
-        # reading the full stream at once.  This inflates both chunk count
-        # (1 chunk = full file) and pipe measurements (tracemalloc
-        # attributes the bytes allocation to _ErrorMappingStream.read).
-        if not r.dst_lazy:
+        # reading the full stream at once.  Non-lazy sources return a full
+        # BytesIO held by _stream.py, attributing the whole file to pipe
+        # filters.  Either case inflates chunk count and pipe measurements.
+        if not r.dst_lazy or not r.src_lazy:
             pass  # exempt from chunks_ok and pipe_ok; total_ok still applies
         else:
             if not r.chunks_ok:
@@ -630,9 +630,15 @@ class TestStreamingIntegrity:
             dst_name, dst_store = chain[i + 1]
 
             # Bridged-Azure hops carry per-chunk thread-crossing overhead
-            # (ASYNC-080); use a wider threshold than pure-lazy hops.
+            # (ASYNC-080); use a wider threshold, but only when both sides are
+            # lazy.  When either side is non-lazy (e.g. sql-blob source),
+            # NON_LAZY_THRESHOLD_FACTOR (2.2) already has enough headroom.
             is_bridged_hop = "azure-bridged" in (src_name, dst_name)
-            threshold_override = int(file_size * BRIDGED_AZURE_THRESHOLD_FACTOR) if is_bridged_hop else None
+            _src_lazy = src_store.supports(Capability.LAZY_READ)
+            _dst_lazy = dst_store.supports(Capability.LAZY_READ)
+            threshold_override = (
+                int(file_size * BRIDGED_AZURE_THRESHOLD_FACTOR) if is_bridged_hop and _src_lazy and _dst_lazy else None
+            )
 
             # Transfer with all measurements.
             result = _measure_transfer(
