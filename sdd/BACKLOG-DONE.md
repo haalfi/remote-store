@@ -5,6 +5,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-144 — Codify content rule 6: doc code blocks sourced from `examples/snippets/`**
+  Added rule 6 to `sdd/CONTENT-RULES.md` making the existing `examples/snippets/`
+  practice (ID-057, ID-106) a review-enforced rule. Doc code blocks come from
+  `examples/snippets/` via `pymdownx.snippets` `--8<--` regions, so CI catches
+  API drift. Hand-written fences allowed only when a snippet cannot execute in
+  CI (e.g. needs real credentials); reason noted inline.
+
 - [x] **ID-143c — `AsyncBackendSyncAdapter` review follow-ups**
   `_ChunkPullReader` promoted to `io.RawIOBase` subclass; `_AsyncIteratorBridge`
   gains best-effort `__del__` for GC-path `aclose()`; `close()` drain loop

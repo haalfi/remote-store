@@ -28,6 +28,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Unit test suite in `tests/aio/` with every test traced to its spec ID.
   Unblocks ID-127 (Graph backend).
 
+### Documentation
+
+- **Content rule 6 — code examples are sourced, not written** (ID-144):
+  codifies the existing `examples/snippets/` practice (ID-057, ID-106) in
+  `sdd/CONTENT-RULES.md` so future doc PRs pull tested snippets rather than
+  hand-writing fences.
+
 ### Internal
 
 - **`AsyncBackendSyncAdapter` review follow-ups** (ID-143c): `_ChunkPullReader`

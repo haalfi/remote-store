@@ -34,6 +34,12 @@ Derived from `sdd/research/research-doc-content-longevity.md`.
    Docs describe the pattern and link to the reference; they do not reproduce the
    values.
 
+6. **Code examples are sourced, not written** [review-enforced]
+   — Doc code blocks come from `examples/snippets/` via `pymdownx.snippets`
+   `--8<--` regions, so CI catches API drift. Hand-written fences are allowed
+   only when the snippet cannot execute in CI (e.g. needs real credentials);
+   note the reason inline.
+
 ## Guides
 
 ### Examples (bad → good)
