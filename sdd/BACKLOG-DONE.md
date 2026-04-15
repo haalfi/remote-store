@@ -5,6 +5,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-165 — `AsyncAzureBackend.write` violates streaming promise**
+  `AsyncAzureBackend.write` / `write_atomic` materialized any
+  `AsyncIterable[bytes]` payload into a single ``bytes`` buffer before
+  calling ``upload_blob`` / ``upload_data``, breaking the streaming contract
+  (SIO-003, ASYNC-021) and holding the full file in memory — caught by the
+  e2e streaming-integrity chain on the `sftp -> azure-bridged` hop (pipe
+  memory == file size). Azure SDK accepts ``AsyncIterable[bytes]`` directly
+  and streams in bounded memory; the materialization block is removed and
+  the unit test now asserts pass-through. Found while landing ID-143b.
+
 - [x] **ID-143b — `AsyncBackendSyncAdapter` real-backend coverage**
   Integration test suite (`tests/aio/test_async_to_sync_adapter_integration.py`)
   exercises the full sync `Backend` API contract through the adapter backed by

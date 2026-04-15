@@ -384,9 +384,15 @@ class TestAsyncAzureReadWrite:
         call_args = bc.upload_blob.call_args
         assert call_args[0][0] == b"data"
 
-    @pytest.mark.spec("ASYNC-008")
-    async def test_write_async_iterator(self) -> None:
-        """Async iterator content is materialized before upload."""
+    @pytest.mark.spec("ASYNC-008", "ASYNC-021")
+    async def test_write_async_iterator_streams(self) -> None:
+        """Async iterator content is passed through to upload_blob without
+        being materialized first (BUG-165).
+
+        The Azure SDK's ``upload_blob`` accepts ``AsyncIterable[bytes]`` and
+        streams it in bounded memory; materializing in the backend would
+        break the streaming promise (SIO-003 / ASYNC-021) for large payloads.
+        """
         backend, cc, bc = _setup_non_hns_backend()
         bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
         bc.upload_blob = AsyncMock()
@@ -395,8 +401,12 @@ class TestAsyncAzureReadWrite:
             yield b"hello "
             yield b"world"
 
-        await backend.write("file.txt", gen())
+        agen = gen()
+        await backend.write("file.txt", agen)
         assert bc.upload_blob.call_count == 1
+        # Passed through verbatim — the backend must not collapse the stream
+        # into a bytes buffer before calling upload_blob.
+        assert bc.upload_blob.call_args[0][0] is agen
 
     @pytest.mark.spec("ASYNC-008")
     async def test_write_already_exists(self) -> None:
@@ -1603,11 +1613,12 @@ class TestAsyncAzureReadErrors:
 
 
 class TestAsyncAzureWriteAtomicIterator:
-    """write_atomic materializes async iterator content."""
+    """write_atomic passes async iterator content through (BUG-165)."""
 
-    @pytest.mark.spec("ASYNC-007")
-    async def test_write_atomic_materializes_async_chunks(self) -> None:
-        """write_atomic collects async chunks before uploading (non-HNS path)."""
+    @pytest.mark.spec("ASYNC-007", "ASYNC-021")
+    async def test_write_atomic_streams_async_chunks(self) -> None:
+        """write_atomic forwards the async iterator to upload_blob without
+        materializing (non-HNS path). See BUG-165."""
         backend, cc, bc = _setup_non_hns_backend()
         bc.upload_blob = AsyncMock()
 
@@ -1615,10 +1626,10 @@ class TestAsyncAzureWriteAtomicIterator:
             yield b"hello "
             yield b"world"
 
-        await backend.write_atomic("file.txt", chunk_gen(), overwrite=True)
+        agen = chunk_gen()
+        await backend.write_atomic("file.txt", agen, overwrite=True)
         bc.upload_blob.assert_awaited_once()
-        uploaded = bc.upload_blob.call_args[0][0]
-        assert uploaded == b"hello world"
+        assert bc.upload_blob.call_args[0][0] is agen
 
 
 # =============================================================================
