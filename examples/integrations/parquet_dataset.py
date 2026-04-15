@@ -1,4 +1,4 @@
-"""Parquet Dataset Store -- managed Parquet datasets with manifests and completion markers.
+"""Parquet Dataset Store — Managed Parquet datasets with manifests, completion markers, and multi-part writes.
 
 Requires: pip install "remote-store[arrow]"
 
@@ -8,6 +8,15 @@ Demonstrates:
 - Multi-part writes with max_rows_per_file
 - Inspecting dataset manifests
 - Overwrite semantics
+
+---
+see_also:
+  - label: Parquet Datasets
+    url: ../parquet-datasets.md
+    note: managed Parquet dataset guide
+  - label: ext.parquet API
+    url: ../api/extensions/parquet.md
+    note: API reference
 """
 
 from __future__ import annotations

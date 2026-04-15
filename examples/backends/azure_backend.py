@@ -1,4 +1,4 @@
-"""Azure backend — connect to Azure Blob Storage or ADLS Gen2.
+"""Azure backend — Connect to Azure Blob Storage or Azure Data Lake Storage Gen2.
 
 Demonstrates:
 - Configuring an Azure backend via RegistryConfig
@@ -16,6 +16,12 @@ Environment variables:
     RS_AZURE_CONN       Connection string (simplest auth method)
     RS_AZURE_ACCOUNT    Storage account name
     RS_AZURE_KEY        Storage account key
+
+---
+see_also:
+  - label: Azure Backend
+    url: ../backends/azure.md
+    note: backend guide
 """
 
 from __future__ import annotations

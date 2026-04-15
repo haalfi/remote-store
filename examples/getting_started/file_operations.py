@@ -1,7 +1,13 @@
-"""File operations — core Store operations demonstrated.
+"""File operations — Full Store API: read, write, delete, move, copy, list, metadata, type checks, capabilities, to_key.
 
 Covers read/write, delete, move, copy, listing, metadata, and capability
 checks — using the local backend.
+
+---
+see_also:
+  - label: Getting Started
+    url: ../getting-started.md
+    note: step-by-step guide
 """
 
 from __future__ import annotations

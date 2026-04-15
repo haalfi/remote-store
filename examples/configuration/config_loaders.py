@@ -1,8 +1,14 @@
-"""Config loaders — loading RegistryConfig from files, models, and environment variables.
+"""Config loaders — Load registry configuration from TOML, YAML, and Pydantic models, with env-var interpolation.
 
 Demonstrates loading RegistryConfig from TOML files, YAML files, and Pydantic
 models, plus env-var interpolation. All loaders delegate to from_dict() for
 Secret wrapping and validation.
+
+---
+see_also:
+  - label: Extensions
+    url: ../extensions.md
+    note: extension modules overview
 """
 
 from __future__ import annotations

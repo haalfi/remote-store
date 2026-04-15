@@ -1,10 +1,16 @@
-"""Dagster IO Manager -- use any Store as a Dagster IOManager.
+"""Dagster IO Manager — Use any Store as a Dagster IOManager with pluggable serialization.
 
 Demonstrates:
 - dagster_io_manager(): wrapping a Store for Dagster
 - Pickle roundtrip: write and read back a Python object
 - Partitioned assets: path includes partition key
 - JSON serializer: alternative serializer choice
+
+---
+see_also:
+  - label: Dagster
+    url: ../dagster.md
+    note: Dagster integration guide
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""S3 listing strategies and performance best practices.
+"""S3 Listing Strategies -- Shallow vs. recursive listing: cost tradeoffs, iterator patterns, and MinIO endpoint usage.
 
 Demonstrates:
 - Shallow listing (direct children only) -- O(n_children) cost
@@ -16,6 +16,12 @@ Environment variables:
     RS_S3_KEY       AWS access key ID
     RS_S3_SECRET    AWS secret access key
     RS_S3_ENDPOINT  Custom endpoint URL (e.g. http://localhost:9000 for MinIO)
+
+---
+see_also:
+  - label: S3 Backend
+    url: ../backends/s3.md
+    note: listing strategies and performance
 """
 
 from __future__ import annotations

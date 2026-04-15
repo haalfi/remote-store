@@ -1,4 +1,4 @@
-"""Observe hooks -- callback-based instrumentation for Store operations.
+"""Observe hooks — Callback-based instrumentation for Store operations — logging, metrics, auditing, and error tracking.
 
 Demonstrates:
 - observe(): wrapping a Store with callbacks
@@ -6,6 +6,12 @@ Demonstrates:
 - StoreEvent: inspecting operation details
 - around: context-manager hook for before/after instrumentation
 - BufferedObserver: batched async event delivery
+
+---
+see_also:
+  - label: Observe
+    url: ../observe.md
+    note: instrumentation guide
 """
 
 from __future__ import annotations

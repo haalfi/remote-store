@@ -1,8 +1,14 @@
-"""Quickstart — minimal usage of remote-store.
+"""Quickstart — Minimal config, write, and read.
 
 Demonstrates two ways to get started:
 1. Direct construction — three lines, no config
 2. Registry with declarative config — for multi-backend applications
+
+---
+see_also:
+  - label: Getting Started
+    url: ../getting-started.md
+    note: step-by-step guide
 """
 
 from __future__ import annotations

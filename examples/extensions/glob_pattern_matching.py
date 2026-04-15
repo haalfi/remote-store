@@ -1,4 +1,4 @@
-"""Glob pattern matching -- three-tier file filtering.
+"""Glob pattern matching — Three-tier file filtering with `list_files(pattern=)`, `Store.glob()`, and `glob_files()`.
 
 Demonstrates:
 - Tier 1: list_files(pattern=...) -- fnmatch name filtering
@@ -6,6 +6,12 @@ Demonstrates:
 - Tier 2: Store.glob() -- native backend glob (capability-gated)
 - Pattern syntax: *, **, ?, [abc], [!abc]
 - Works with Store.child() scoping
+
+---
+see_also:
+  - label: Glob Pattern Matching
+    url: ../glob-pattern-matching.md
+    note: pattern matching guide
 """
 
 from __future__ import annotations

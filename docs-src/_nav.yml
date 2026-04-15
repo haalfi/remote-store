@@ -33,4 +33,7 @@
     - Concurrency: concurrency.md
     - Security Model: security-model.md
     - Design: design/
-- Further Reading: further-reading.md
+- Further Reading:
+    - Overview: further-reading.md
+    - Development Story: development-story.md
+    - Contributing: contributing.md

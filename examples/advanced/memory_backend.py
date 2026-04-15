@@ -1,10 +1,16 @@
-"""Memory backend — zero-setup testing and exploration.
+"""Memory backend — In-process memory backend for testing and caching — no filesystem access needed.
 
 Demonstrates:
 - Creating a MemoryBackend directly (no filesystem, no config)
 - Using MemoryBackend through Store for scoped access
 - Using MemoryBackend through Registry with config
 - All standard Store operations work identically to other backends
+
+---
+see_also:
+  - label: Memory Backend
+    url: ../backends/memory.md
+    note: backend guide
 """
 
 from __future__ import annotations

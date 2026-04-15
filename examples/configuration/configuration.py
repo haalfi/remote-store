@@ -1,8 +1,14 @@
-"""Configuration — config-as-code, from_dict(), Secret wrapping, and backend configs.
+"""Configuration — Config-as-code, `from_dict()`, multiple stores, S3/SFTP backend configs.
 
 Demonstrates different ways to create and use RegistryConfig, including
 credential hygiene with Secret, from_dict() auto-wrapping, and
 configuration examples across multiple backends.
+
+---
+see_also:
+  - label: Choosing a Backend
+    url: ../choosing-a-backend.md
+    note: backend selection guide
 """
 
 from __future__ import annotations

@@ -5,6 +5,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-145 — `scripts/gen_pages.py` refactor**
+  Split the 840-line mkdocs-gen-files hook into
+  `scripts/docs/{scan,render,nav,link}.py` plus a 70-line orchestrator;
+  example metadata and link rewrites are now data-driven via `SddKind`,
+  self-describing example docstrings, and `LinkResolver`. PR #444.
+
 - [x] **BUG-165 — `AsyncAzureBackend.write` violates streaming promise**
   `AsyncAzureBackend.write` / `write_atomic` materialized any
   `AsyncIterable[bytes]` payload into a single ``bytes`` buffer before

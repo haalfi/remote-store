@@ -1,7 +1,13 @@
-"""Atomic writes — write_atomic, overwrite semantics, and error handling.
+"""Atomic writes — Atomic writes and overwrite semantics.
 
 Demonstrates atomic write operations that use temp-file-and-rename
 to prevent partial writes from being visible to readers.
+
+---
+see_also:
+  - label: Concurrency
+    url: ../concurrency.md
+    note: atomicity and overwrite semantics
 """
 
 from __future__ import annotations
