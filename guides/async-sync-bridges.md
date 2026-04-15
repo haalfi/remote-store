@@ -11,10 +11,7 @@ choose the one that matches the direction you need.
 | **Direction** | Sync backend → usable from async code | Async backend → usable from sync code |
 | **You have…** | A `Backend` (sync) | An `AsyncBackend` (async-native) |
 | **You need to call it from…** | `async` functions / `AsyncStore` | Ordinary sync functions / `Store` |
-| **Thread model** | Offloads blocking I/O to a thread pool via `asyncio.to_thread` | Runs a private event loop on a daemon thread |
-| **`SEEKABLE_READ`** | Preserved (backend decides) | Masked off — chunk-pull streams are forward-only |
-| **`unwrap()`** | Returns the wrapped sync backend's native handle | Raises `CapabilityNotSupported` unless the backend implements `_SyncSafeHandleProvider` |
-| **Typical consumer** | `AsyncStore` wrapping a local or SFTP backend | Sync code (or a `Store`) driving `AsyncAzureBackend` or the Graph backend |
+| **Typical consumer** | `AsyncStore` wrapping a local or SFTP backend | Sync code (or a `Store`) driving `AsyncAzureBackend` |
 
 ## `SyncBackendAdapter` — sync → async
 
@@ -35,8 +32,7 @@ async code without rewriting it.
 ## `AsyncBackendSyncAdapter` — async → sync
 
 ```python
-from remote_store import Store
-from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
+from remote_store import AsyncBackendSyncAdapter, Store
 from remote_store.aio import AsyncAzureBackend
 
 async_backend = AsyncAzureBackend(account="myaccount", container="data")
@@ -58,6 +54,7 @@ but your calling code is synchronous.
 
 ## See also
 
+- [API reference](api/aio.md) — `AsyncBackendSyncAdapter`, `SyncBackendAdapter`, `AsyncStore`
 - [Async guide](async.md) — `AsyncStore`, native async backends, and the
   `SyncBackendAdapter` direction
 - [ADR-0025](https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md)
