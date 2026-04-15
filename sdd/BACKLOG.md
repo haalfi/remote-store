@@ -119,13 +119,6 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
-- [ ] **ID-144 — Audit docs for hand-written code fences**
-  Codified as `sdd/CONTENT-RULES.md` rule 6: doc code blocks should pull from
-  `examples/snippets/` via pymdownx `--8<--` includes. Inventory existing
-  fences across `README.md`, `guides/`, and `docs-src/`, then either migrate
-  each to a tested snippet or note the CI-execution exception inline (e.g. the
-  homepage S3 block per ID-057).
-
 - [ ] **ID-138 — Async streaming integrity e2e test**
   The e2e streaming test only covers sync backends. Add an async variant
   using `AsyncAzureBackend` to verify the block-size defaults work for
