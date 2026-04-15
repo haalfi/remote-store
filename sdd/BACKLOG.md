@@ -140,33 +140,6 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
-- [ ] **ID-143c — `AsyncBackendSyncAdapter` review follow-ups**
-  Deferred items from the PR #439 orchestrate review. All non-blocking for
-  the initial merge; revisit before ID-127 lands if still relevant.
-  - **Leak on early iterator termination**: `_AsyncIteratorBridge` never
-    submits `aclose()` if a sync caller drops the reference before
-    exhaustion (unlike `_ChunkPullReader.close()`). Add a best-effort
-    `__del__` or give `Store.list_*` context-manager semantics.
-  - **Close-race drain loop**: after `_closed = True` flips, a caller that
-    passed `_guard()` can still submit a coroutine before `_drain_tasks()`
-    snapshots. Loop `_drain_tasks` while `asyncio.all_tasks()` keeps
-    producing new work, bounded by the close deadline.
-  - **Test gaps**: concurrent close vs in-flight submit;
-    abandoned-stream GC path; `write_atomic` mid-`BinaryIO` error path;
-    explicit capability-gate test (`CapabilityNotSupported` surfacing on
-    `open_atomic` exit); payload-tagged mixed-ops concurrency test
-    (ASYNC-089 currently exercises only the read-only subset).
-  - **`_ChunkPullReader`**: switch to `io.RawIOBase` subclass to shed
-    `# type: ignore` and inherit standard `BinaryIO` semantics.
-  - **Docstring completeness** on public methods (`close`, `read`,
-    `unwrap`, `check_health`) per DESIGN.md § 4.
-  - **Test-quality sweep**: verify `tests/aio/_doubles.py` uses `spec=` or
-    subclasses `AsyncBackend` (TESTING.md Rule 4); parametrize
-    `TestRunningLoopFailFast` / `TestPropertyPassthrough` / `TestScalarIODelegation`.
-  - **Async/Sync bridges guide**: `docs-src/guides/async-sync-bridges.md`
-    with a decision table for `SyncBackendAdapter` vs
-    `AsyncBackendSyncAdapter`.
-  - Depends on: ID-143 (done).
 
 - [ ] **ID-143b — `AsyncBackendSyncAdapter` real-backend coverage**
   Integration tests and e2e variant for the adapter landed in ID-143.

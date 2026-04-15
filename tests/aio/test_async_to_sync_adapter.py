@@ -7,6 +7,7 @@ invariants ASYNC-080..093.
 from __future__ import annotations
 
 import asyncio
+import gc
 import io
 import logging
 import threading
@@ -133,19 +134,21 @@ class TestCapabilityTranslation:
 class TestPropertyPassthrough:
     """name, to_key, native_path, resolve forwarded without entering the loop."""
 
+    @pytest.mark.parametrize(
+        ("method", "arg", "expected"),
+        [
+            ("to_key", "some/path", "some/path"),
+            ("native_path", "some/path", "some/path"),
+        ],
+    )
+    def test_path_methods_forwarded(self, method: str, arg: str, expected: str) -> None:
+        adapter, _ = _make_adapter()
+        assert getattr(adapter, method)(arg) == expected
+        adapter.close()
+
     def test_name_forwarded(self) -> None:
         adapter, _ = _make_adapter(name="my-async")
         assert adapter.name == "my-async"
-        adapter.close()
-
-    def test_to_key_forwarded(self) -> None:
-        adapter, _ = _make_adapter()
-        assert adapter.to_key("some/path") == "some/path"
-        adapter.close()
-
-    def test_native_path_forwarded(self) -> None:
-        adapter, _ = _make_adapter()
-        assert adapter.native_path("some/path") == "some/path"
         adapter.close()
 
     def test_resolve_forwarded(self) -> None:
@@ -196,26 +199,20 @@ class TestScalarIODelegation:
         self.adapter.close()
 
     @pytest.mark.spec("ASYNC-087")
-    def test_exists_true(self) -> None:
-        assert self.adapter.exists("a.txt") is True
-
-    @pytest.mark.spec("ASYNC-087")
-    def test_exists_false(self) -> None:
-        assert self.adapter.exists("nope.txt") is False
-
-    @pytest.mark.spec("ASYNC-087")
-    def test_is_file(self) -> None:
-        assert self.adapter.is_file("a.txt") is True
-        assert self.adapter.is_file("sub") is False
-
-    @pytest.mark.spec("ASYNC-087")
-    def test_is_folder(self) -> None:
-        assert self.adapter.is_folder("sub") is True
-        assert self.adapter.is_folder("a.txt") is False
-
-    @pytest.mark.spec("ASYNC-087")
-    def test_read_bytes(self) -> None:
-        assert self.adapter.read_bytes("a.txt") == b"alpha"
+    @pytest.mark.parametrize(
+        ("method", "path", "expected"),
+        [
+            ("exists", "a.txt", True),
+            ("exists", "nope.txt", False),
+            ("is_file", "a.txt", True),
+            ("is_file", "sub", False),
+            ("is_folder", "sub", True),
+            ("is_folder", "a.txt", False),
+            ("read_bytes", "a.txt", b"alpha"),
+        ],
+    )
+    def test_scalar_query(self, method: str, path: str, expected: Any) -> None:
+        assert getattr(self.adapter, method)(path) == expected
 
     @pytest.mark.spec("ASYNC-087")
     def test_get_file_info(self) -> None:
@@ -400,9 +397,11 @@ class TestStreamingRead:
             assert stream.readable() is True
 
     @pytest.mark.spec("ASYNC-081")
-    def test_fileno_not_provided(self) -> None:
-        with self.adapter.read("f.txt") as stream:
-            assert not hasattr(stream, "fileno")
+    def test_fileno_raises_unsupported(self) -> None:
+        # _ChunkPullReader subclasses io.RawIOBase, so fileno() exists but
+        # raises io.UnsupportedOperation -- no file descriptor is backed.
+        with self.adapter.read("f.txt") as stream, pytest.raises(io.UnsupportedOperation):
+            stream.fileno()  # type: ignore[union-attr]
 
     @pytest.mark.spec("ASYNC-081")
     def test_read_after_close_returns_empty(self) -> None:
@@ -649,33 +648,26 @@ class TestRunningLoopFailFast:
     """ASYNC-082: adapter methods raise RuntimeError when called from a running loop."""
 
     @pytest.mark.spec("ASYNC-082")
-    def test_exists_raises_from_running_loop(self) -> None:
+    @pytest.mark.parametrize(
+        ("method", "kwargs"),
+        [
+            ("exists", {"path": "x"}),
+            ("is_file", {"path": "x"}),
+            ("is_folder", {"path": "x"}),
+            ("read_bytes", {"path": "x"}),
+            ("read", {"path": "x"}),
+            ("list_files", {"path": ""}),
+            ("list_folders", {"path": ""}),
+            ("write", {"path": "x", "content": b"d"}),
+            ("write_atomic", {"path": "x", "content": b"d"}),
+            ("check_health", {}),
+        ],
+    )
+    def test_raises_from_running_loop(self, method: str, kwargs: dict) -> None:
         adapter, _ = _make_adapter()
 
         async def _probe() -> None:
-            adapter.exists("x")
-
-        with pytest.raises(RuntimeError, match="cannot be called from a running event loop"):
-            asyncio.run(_probe())
-        adapter.close()
-
-    @pytest.mark.spec("ASYNC-082")
-    def test_read_raises_from_running_loop(self) -> None:
-        adapter, _ = _make_adapter()
-
-        async def _probe() -> None:
-            adapter.read("x")
-
-        with pytest.raises(RuntimeError, match="cannot be called from a running event loop"):
-            asyncio.run(_probe())
-        adapter.close()
-
-    @pytest.mark.spec("ASYNC-082")
-    def test_list_files_raises_from_running_loop(self) -> None:
-        adapter, _ = _make_adapter()
-
-        async def _probe() -> None:
-            adapter.list_files("")
+            getattr(adapter, method)(**kwargs)
 
         with pytest.raises(RuntimeError, match="cannot be called from a running event loop"):
             asyncio.run(_probe())
@@ -903,3 +895,120 @@ class TestConcurrency:
         alive = [t for t in threads if t.is_alive()]
         assert not alive, f"{len(alive)} threads still alive -- deadlock suspected"
         assert not errors, f"Errors during concurrent calls: {errors[:3]}"
+
+
+# ---------------------------------------------------------------------------
+# Concurrent close vs in-flight submit
+# ---------------------------------------------------------------------------
+
+
+class TestConcurrentClose:
+    """Adapter closed while an operation is in-flight does not deadlock or hang."""
+
+    def test_close_while_inflight_submit(self) -> None:
+        """Thread A submits a slow op; thread B closes concurrently.
+
+        Neither thread must deadlock.  The in-flight call either completes
+        or raises RuntimeError (closed); both outcomes are valid.
+        """
+        double = _HangingAsyncBackend()
+        adapter = AsyncBackendSyncAdapter(double)
+        double.bind_loop(adapter._loop)
+
+        outcome: list[BaseException | None] = []
+        outcome_lock = threading.Lock()
+
+        def _worker() -> None:
+            try:
+                adapter.exists("x")
+                with outcome_lock:
+                    outcome.append(None)
+            except RuntimeError:
+                with outcome_lock:
+                    outcome.append(None)  # expected: closed or running-loop
+            except Exception as exc:  # noqa: BLE001
+                with outcome_lock:
+                    outcome.append(exc)
+
+        worker = threading.Thread(target=_worker)
+        worker.start()
+        # Give the worker a moment to reach the submit point, then close.
+        import time as _time
+
+        _time.sleep(0.02)
+        double.release()
+        adapter.close(timeout=5.0)
+        worker.join(timeout=10)
+
+        assert not worker.is_alive(), "worker thread hung -- possible deadlock"
+        assert not [e for e in outcome if e is not None], f"unexpected error: {outcome}"
+
+
+# ---------------------------------------------------------------------------
+# Abandoned-iterator GC path
+# ---------------------------------------------------------------------------
+
+
+class TestAbandonedIteratorGC:
+    """_AsyncIteratorBridge.__del__ submits aclose() when GC'd before exhaustion."""
+
+    def test_del_submits_aclose_on_gc(self) -> None:
+        """Dropping a listing iterator triggers a best-effort aclose()."""
+        aclose_called = threading.Event()
+
+        class _TrackingBackend(_RaisingAsyncBackend):
+            """Yields one item then suspends; tracks aclose() via a threading.Event."""
+
+            async def list_files(self, path: str, *, recursive: bool = False, max_depth: int | None = None):  # type: ignore[override]
+                from datetime import datetime, timezone
+
+                from remote_store._models import FileInfo
+
+                try:
+                    yield FileInfo(
+                        name="x.txt",
+                        path="x.txt",
+                        size=1,
+                        modified_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+                    )
+                    # Suspend indefinitely -- caller will drop the bridge.
+                    import asyncio as _asyncio
+
+                    await _asyncio.Event().wait()
+                finally:
+                    aclose_called.set()
+
+        backend = _TrackingBackend()
+        adapter = AsyncBackendSyncAdapter(backend)
+
+        bridge = adapter.list_files("")
+        # Pull one item -- the generator is now suspended at the second yield.
+        next(bridge)
+        # Abandon the bridge (simulate early loop break).
+        del bridge
+        gc.collect()
+
+        # __del__ fire-and-forgets aclose(); give the loop a moment to run it.
+        aclose_called.wait(timeout=2.0)
+        adapter.close(timeout=1.0)
+        assert aclose_called.is_set(), "__del__ did not trigger aclose() on abandoned iterator"
+
+
+# ---------------------------------------------------------------------------
+# write_atomic mid-BinaryIO error path
+# ---------------------------------------------------------------------------
+
+
+class TestWriteAtomicMidBinaryIO:
+    """write_atomic with a BinaryIO that raises mid-read surfaces the error."""
+
+    @pytest.mark.spec("ASYNC-091")
+    def test_write_atomic_binaryio_read_error_propagates(self) -> None:
+        class _FailingStream:
+            def read(self, n: int = -1) -> bytes:
+                raise OSError("disk full")
+
+        adapter, _ = _make_memory_adapter()
+        with pytest.raises(OSError, match="disk full"):
+            adapter.write_atomic("f.txt", _FailingStream())  # type: ignore[arg-type]
+        adapter.close()

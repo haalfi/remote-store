@@ -5,6 +5,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-143c — `AsyncBackendSyncAdapter` review follow-ups**
+  `_ChunkPullReader` promoted to `io.RawIOBase` subclass; `_AsyncIteratorBridge`
+  gains best-effort `__del__` for GC-path `aclose()`; `close()` drain loop
+  repeats until the private loop is quiet (closes close-race window); docstrings
+  on `close`, `read`, `unwrap`, `check_health` completed; test suite extended
+  (concurrent-close, abandoned-stream GC, `write_atomic` mid-BinaryIO);
+  `TestRunningLoopFailFast` / `TestPropertyPassthrough` / `TestScalarIODelegation`
+  parametrized; new guide `guides/async-sync-bridges.md`.
+  Depends on: ID-143 (done).
+
 - [x] **ID-143 — `AsyncBackendSyncAdapter` implementation + unit test suite**
   Implemented `AsyncBackendSyncAdapter(Backend)` — wraps any `AsyncBackend`
   as a synchronous `Backend` via a private event loop on a dedicated daemon

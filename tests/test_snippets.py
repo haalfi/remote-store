@@ -46,3 +46,14 @@ class TestDagsterGuideSnippets:
 
         result = demo()
         assert result is None
+
+
+class TestAsyncSyncBridgesSnippets:
+    """Snippets used in the Async/Sync Bridges guide."""
+
+    @pytest.mark.spec("ID-143c")
+    def test_async_sync_bridges_demo(self) -> None:
+        from examples.snippets.async_sync_bridges import demo
+
+        result = demo()
+        assert result is None

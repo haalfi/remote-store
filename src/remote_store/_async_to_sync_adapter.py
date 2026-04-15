@@ -14,6 +14,7 @@ import asyncio
 import concurrent.futures
 import contextlib
 import functools
+import io
 import logging
 import tempfile
 import threading
@@ -196,11 +197,36 @@ class AsyncBackendSyncAdapter(Backend):
     def unwrap(self, type_hint: type[T]) -> T:
         """Return a sync-safe native handle if the wrapped backend provides one.
 
-        Default raises :class:`CapabilityNotSupported` -- an async SDK
-        handle returned from the wrapped backend is bound to the adapter's
-        private loop and is unsafe to use from the caller's thread.
-        Wrapped backends that can expose a sync-safe handle should
-        implement :class:`_SyncSafeHandleProvider`.
+        By default raises :class:`~remote_store._errors.CapabilityNotSupported`
+        because async-SDK handles are bound to the adapter's private event loop
+        and cannot be used safely from the caller's thread.
+
+        Wrapped backends that can expose a sync-safe handle should implement
+        :class:`_SyncSafeHandleProvider` and return it from
+        :meth:`~_SyncSafeHandleProvider.sync_safe_unwrap`
+        (spec 029 § ASYNC-086).
+
+        Args:
+            type_hint: The type of handle to retrieve; passed through to
+                :meth:`~_SyncSafeHandleProvider.sync_safe_unwrap` for backends
+                that support the exemption.
+
+        Returns:
+            A sync-safe handle of the type requested via *type_hint*.
+
+        Raises:
+            CapabilityNotSupported: If the wrapped backend does not implement
+                :class:`_SyncSafeHandleProvider`.
+
+        Example:
+            ```python
+            class _SafeBackend(AsyncBackend, _SyncSafeHandleProvider):
+                def sync_safe_unwrap(self, type_hint):
+                    return self._sync_client
+
+            adapter = AsyncBackendSyncAdapter(_SafeBackend())
+            client = adapter.unwrap(SyncClient)
+            ```
         """
         if isinstance(self._async_backend, _SyncSafeHandleProvider):
             return self._async_backend.sync_safe_unwrap(type_hint)  # type: ignore[no-any-return]
@@ -248,20 +274,63 @@ class AsyncBackendSyncAdapter(Backend):
         self._submit(self._async_backend.delete_folder(path, recursive=recursive, missing_ok=missing_ok))
 
     def check_health(self) -> None:
-        """Submit a connectivity probe to the wrapped async backend; propagate errors verbatim.
+        """Submit a connectivity probe to the wrapped async backend.
 
-        ASYNC-093: not a no-op -- connectivity errors raised by the
-        wrapped async backend reach the sync caller unchanged.
+        Not a no-op: the probe is forwarded to the wrapped
+        :class:`~remote_store.aio.AsyncBackend`, and any connectivity error
+        it raises reaches the sync caller unchanged (spec 029 § ASYNC-093).
+
+        Returns:
+            ``None`` on success.
+
+        Raises:
+            BackendUnavailable: Or another backend-specific error if the
+                wrapped backend's health check fails.
+            RuntimeError: If the adapter is closed or called from a running
+                event loop.
+
+        Example:
+            ```python
+            try:
+                adapter.check_health()
+            except BackendUnavailable:
+                ...  # handle connectivity failure
+            ```
         """
         self._submit(self._async_backend.check_health())
 
     # -- Streaming read (ASYNC-080, ASYNC-081) ------------------------------
 
     def read(self, path: str) -> BinaryIO:
-        """Return a forward-only chunk-pull stream over the async iterator.
+        """Open *path* for reading and return a forward-only chunk-pull stream.
 
-        Single-chunk in-flight invariant: at most one outstanding
-        ``__anext__`` per stream.  See spec 029 § ASYNC-080, ASYNC-081.
+        The returned stream pulls one async chunk per ``read()`` call; the
+        file is never fully materialised in memory.  At most one
+        ``__anext__`` is in-flight at a time (spec 029 § ASYNC-081).
+
+        The stream is forward-only: ``seekable()`` returns ``False`` and no
+        ``seek`` / ``tell`` / ``fileno`` methods are exposed.  Closing via
+        the context manager or ``close()`` submits ``aclose()`` on the
+        underlying async iterator so backend resources are released promptly.
+
+        Args:
+            path: Backend-relative key of the file to read.
+
+        Returns:
+            A forward-only :class:`io.RawIOBase` stream over the file
+            contents.
+
+        Raises:
+            RuntimeError: If the adapter is closed or called from a running
+                event loop.
+            NotFound: If *path* does not exist (propagated verbatim from the
+                wrapped backend).
+
+        Example:
+            ```python
+            with adapter.read("data/report.csv") as stream:
+                header = stream.read(512)
+            ```
         """
         self._guard()
         async_gen = cast("AsyncGenerator[bytes, None]", self._async_backend.read(path))
@@ -325,11 +394,31 @@ class AsyncBackendSyncAdapter(Backend):
     def close(self, timeout: float | None = 30.0) -> None:
         """Drain in-flight work, stop the loop, and join the daemon thread.
 
-        Order: submit ``aclose`` → wait for in-flight tasks → stop loop
-        → join thread.  If *timeout* expires, a single ``WARNING``
-        record is logged with message stem
-        ``"AsyncBackendSyncAdapter close timed out"`` and the daemon
-        thread is left for process-exit reaping.
+        Drain order: submit ``aclose`` on the wrapped backend → loop-drain
+        in-flight tasks (repeating while new tasks appear, see below) → stop
+        the private loop → join the daemon thread.
+
+        The drain step repeats :func:`_drain_tasks` until the private loop is
+        quiet, **narrowing** (not eliminating) the window where a caller that
+        passed :meth:`_guard` *before* the closed flag was set can still submit
+        a coroutine.  Each pass snapshots outstanding tasks and waits for them;
+        new tasks that arrive between snapshot and completion trigger another
+        pass.  A residual TOCTOU gap remains: a thread that passes
+        :meth:`_guard` after the final empty-snapshot check but before the loop
+        is stopped will have its coroutine silently discarded when the loop
+        stops — eliminating this gap would require serialising all submits
+        against a shutdown lock.
+
+        If *timeout* expires before the loop is drained, a single ``WARNING``
+        record is emitted (message stem
+        ``"AsyncBackendSyncAdapter close timed out"``) and the daemon thread
+        is left for process-exit reaping.  Idempotent: subsequent calls are
+        no-ops.
+
+        Args:
+            timeout: Maximum seconds to wait for in-flight work to finish and
+                the background thread to join.  ``None`` means wait
+                indefinitely.  Defaults to ``30.0``.
         """
         with self._close_lock:
             if self._closed:
@@ -363,24 +452,34 @@ class AsyncBackendSyncAdapter(Backend):
                     exc_info=True,
                 )
 
-        # 2. Drain any remaining in-flight tasks on the loop.
-        drain_fut: concurrent.futures.Future[None] | None
-        try:
-            drain_fut = asyncio.run_coroutine_threadsafe(_drain_tasks(), self._loop)
-        except RuntimeError:
-            drain_fut = None
-
+        # 2. Loop-drain: after _closed flips, a coroutine that passed _guard()
+        # before the flip can still be submitted.  Re-run _drain_tasks until
+        # the loop goes quiet or the deadline expires.
         drain_timed_out = False
-        if drain_fut is not None:
+        while True:
+            rem = _remaining()
+            if rem is not None and rem <= 0:
+                drain_timed_out = True
+                break
+            # If the loop already has no pending tasks, we're done.
+            if not _snapshot_tasks(self._loop):
+                break
+            drain_fut: concurrent.futures.Future[None] | None
+            try:
+                drain_fut = asyncio.run_coroutine_threadsafe(_drain_tasks(), self._loop)
+            except RuntimeError:
+                break
             try:
                 drain_fut.result(timeout=_remaining())
             except concurrent.futures.TimeoutError:
                 drain_timed_out = True
+                break
             except Exception:  # noqa: BLE001
                 log.warning(
                     "AsyncBackendSyncAdapter: task drain raised during shutdown",
                     exc_info=True,
                 )
+                break
 
         # 3. Stop the loop.
         with contextlib.suppress(RuntimeError):
@@ -419,27 +518,53 @@ class AsyncBackendSyncAdapter(Backend):
 # ---------------------------------------------------------------------------
 
 
-class _ChunkPullReader:
-    """Forward-only sync stream pumping chunks out of an async iterator.
+class _ChunkPullReader(io.RawIOBase):
+    """Forward-only sync stream pumping chunks out of an async generator.
 
-    Implements the minimal BinaryIO-compatible surface: ``read(n)``,
-    ``close()``, ``seekable()`` (returns ``False``), ``readable()``
-    (returns ``True``), and sync context-manager protocol.  ``seek``,
-    ``tell``, and ``fileno`` are deliberately *not* provided -- spec
-    029 § ASYNC-081, ADR-0025 § Bridged read streams.
+    Subclasses :class:`io.RawIOBase` to inherit standard ``BinaryIO``
+    semantics: ``closed`` property managed by :class:`io.IOBase`, ``flush()``,
+    ``readline()``, and the context-manager protocol.
+
+    Only forward reads are supported: ``seekable()`` returns ``False`` and no
+    ``seek`` / ``tell`` / ``fileno`` are exposed (spec 029 § ASYNC-081,
+    ADR-0025 § Bridged read streams).
     """
 
-    __slots__ = ("_adapter", "_iter", "_buf", "_eof", "_closed")
-
     def __init__(self, adapter: AsyncBackendSyncAdapter, async_iter: AsyncGenerator[bytes, None]) -> None:
+        super().__init__()
         self._adapter = adapter
         self._iter = async_iter
         self._buf = b""
         self._eof = False
-        self._closed = False
+
+    # region: read surface
+
+    def readinto(self, b: bytearray | memoryview) -> int | None:  # type: ignore[override]
+        """Fill *b* with up to ``len(b)`` bytes; return the number written.
+
+        At most one async chunk is pulled per call (or the already-buffered
+        remainder is consumed), matching ``io.RawIOBase``'s documented
+        "at most one underlying system call" contract.  Callers that need a
+        full buffer should wrap this stream in ``io.BufferedReader``.
+        """
+        if self.closed:
+            return 0
+        size = len(b)
+        if size == 0:
+            return 0
+        # Serve from the pre-read buffer before issuing a new async pull.
+        if not self._buf and not self._eof:
+            chunk = self._pull_chunk()
+            if chunk is not None:
+                self._buf = chunk
+        take = min(size, len(self._buf))
+        b[:take] = self._buf[:take]
+        self._buf = self._buf[take:]
+        return take
 
     def read(self, size: int = -1) -> bytes:
-        if self._closed:
+        """Read and return up to *size* bytes, or all remaining if *size* == -1."""
+        if self.closed:
             return b""
         if size == 0:
             return b""
@@ -486,7 +611,7 @@ class _ChunkPullReader:
         except RuntimeError:
             # Loop stopped between _guard() and here (close() raced us).
             self._eof = True
-            self._closed = True
+            self.close()
             raise RuntimeError(_CLOSED_MSG) from None
         try:
             chunk = fut.result()
@@ -494,16 +619,38 @@ class _ChunkPullReader:
             self._eof = True
             return None
         except BaseException:
-            # Closed-on-error state: subsequent reads return b"".
+            # Closed-on-error state: aclose the iterator, then mark done.
             self._eof = True
-            self._closed = True
+            with contextlib.suppress(Exception):
+                self.close()
             raise
         return chunk
 
+    # endregion
+
+    def readable(self) -> bool:
+        return True
+
     def close(self) -> None:
-        if self._closed:
+        """Close the stream and release the underlying async iterator.
+
+        Submits ``aclose()`` on the async generator so that backend
+        ``finally`` blocks run even when the caller abandons the stream
+        early.  Idempotent.  Best-effort: if the adapter's private loop has
+        already stopped, the ``aclose()`` submission is silently skipped.
+
+        Returns:
+            ``None``
+
+        Example:
+            ```python
+            stream = adapter.read("data.bin")
+            stream.read(16)
+            stream.close()  # releases backend resources
+            ```
+        """
+        if self.closed:
             return
-        self._closed = True
         try:
             fut = asyncio.run_coroutine_threadsafe(self._iter.aclose(), self._adapter._loop)
             try:
@@ -513,23 +660,7 @@ class _ChunkPullReader:
         except RuntimeError:
             # Loop already stopped (adapter closed concurrently) -- best effort.
             pass
-
-    def seekable(self) -> bool:
-        return False
-
-    def readable(self) -> bool:
-        return True
-
-    def __enter__(self) -> _ChunkPullReader:
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        self.close()
+        super().close()  # sets self.closed = True via io.IOBase
 
 
 # ---------------------------------------------------------------------------
@@ -543,6 +674,20 @@ class _AsyncIteratorBridge:
     Used for ``list_files``, ``list_folders``, ``glob``, and
     ``iter_children`` (spec 029 § ASYNC-080).  Preserves streaming --
     the full listing is never materialised in memory.
+
+    A best-effort ``__del__`` submits ``aclose()`` fire-and-forget when the
+    iterator is GC'd before exhaustion, so backend resources are not silently
+    leaked when callers break out of a ``for`` loop early.
+
+    Note:
+        The ``__del__`` clean-up is only effective when the wrapped
+        ``_iter`` is an *async generator* (i.e. exposes ``aclose()``).
+        Plain ``AsyncIterator`` objects built from a class with only
+        ``__aiter__``/``__anext__`` have no ``aclose``; the
+        :func:`contextlib.suppress` in ``__del__`` swallows the resulting
+        ``AttributeError`` silently.  All async backends in this package
+        use async generators for listing, so the guarantee holds in
+        practice.
     """
 
     __slots__ = ("_adapter", "_iter", "_done")
@@ -576,6 +721,24 @@ class _AsyncIteratorBridge:
         except BaseException:
             self._done = True
             raise
+
+    def __del__(self) -> None:
+        """Best-effort ``aclose()`` when GC'd before exhaustion.
+
+        Fire-and-forget: the future is not awaited so the GC thread is never
+        blocked.  Uses ``getattr`` guards to stay safe if ``__init__`` did
+        not complete or the adapter itself is being collected concurrently.
+        """
+        if getattr(self, "_done", True):
+            return
+        loop = getattr(getattr(self, "_adapter", None), "_loop", None)
+        if loop is None or not loop.is_running():
+            return
+        with contextlib.suppress(Exception):
+            asyncio.run_coroutine_threadsafe(
+                self._iter.aclose(),  # type: ignore[attr-defined]
+                loop,
+            )
 
 
 # ---------------------------------------------------------------------------

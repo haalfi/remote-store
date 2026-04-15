@@ -30,6 +30,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **`AsyncBackendSyncAdapter` review follow-ups** (ID-143c): `_ChunkPullReader`
+  promoted to `io.RawIOBase`; best-effort `__del__` on `_AsyncIteratorBridge`
+  for GC-path cleanup; looping drain in `close()`; completed docstrings;
+  extended test suite; new `guides/async-sync-bridges.md` decision guide.
+
 - **`AsyncBackendSyncAdapter` spec block + test doubles** (ID-142):
   pinned the invariants ADR-0025 records in prose as a normative
   `ASYNC-NNN` block in spec 029, and added async-backend test doubles
