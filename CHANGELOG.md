@@ -30,6 +30,23 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **`AsyncBackendSyncAdapter` review follow-ups** (ID-143c):
+  `_ChunkPullReader` promoted to a proper `io.RawIOBase` subclass (inherits
+  standard `BinaryIO` semantics, drops manual context-manager boilerplate).
+  `_AsyncIteratorBridge` gains a best-effort `__del__` that submits
+  `aclose()` fire-and-forget when a listing iterator is GC'd before
+  exhaustion, preventing silent resource leaks on early loop breaks.
+  `close()` drain loop now repeats `_drain_tasks` until the private event
+  loop is quiet, closing the window where a coroutine that passed `_guard()`
+  before the closed flag was set could otherwise be left unfinished.
+  Docstrings on `close`, `read`, `unwrap`, and `check_health` completed to
+  full Google style (Args/Returns/Raises/Example).  Test suite extended:
+  concurrent-close vs in-flight submit, abandoned-stream GC path,
+  `write_atomic` mid-`BinaryIO` error path; `TestRunningLoopFailFast`,
+  `TestPropertyPassthrough`, and `TestScalarIODelegation` parametrized.
+  New guide `guides/async-sync-bridges.md` with decision table for
+  `SyncBackendAdapter` vs `AsyncBackendSyncAdapter`.
+
 - **`AsyncBackendSyncAdapter` spec block + test doubles** (ID-142):
   pinned the invariants ADR-0025 records in prose as a normative
   `ASYNC-NNN` block in spec 029, and added async-backend test doubles
