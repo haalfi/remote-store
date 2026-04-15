@@ -53,9 +53,15 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 
 ## Step 4: Post review (read-only, no-feedback workflow)
 
-Use `pull_request_review_write`:
-- `event: "COMMENT"` — never APPROVE or REQUEST_CHANGES
-- `comments:` array with `path`, `line`, `body`
+**Use the pending-review flow — three steps, in order.** The `github-pat` (and `MCP_DOCKER`) server silently drops inline comments if you pass them as a `comments:` array on a single `submit`/`create` call. Always:
+
+1. **Create a pending review.** `pull_request_review_write` with `method: "create"` and **no `event` parameter** — omitting `event` is what makes the review pending (the `event` enum is only `APPROVE` / `REQUEST_CHANGES` / `COMMENT`; passing any value here submits immediately). No review ID bookkeeping is needed — subsequent calls attach to the requester's latest pending review automatically.
+2. **Attach each inline comment** with `add_comment_to_pending_review`, one call per finding. Required params: `path`, `body`, `subjectType: "LINE"` (or `"FILE"` for file-level). Optional: `line`, `side`, `startLine`, `startSide` for multi-line. Do not batch into a single review creation.
+3. **Submit the review.** `pull_request_review_write` with `method: "submit_pending"`, `event: "COMMENT"`, and the summary body.
+
+**Verify (only when you posted inline findings).** If you had no inline findings to post (step 2 had nothing to attach), skip verification — `totalCount: 0` is the correct outcome. Otherwise call `pull_request_read` with `method: "get_review_comments"`: if `totalCount` is 0, the submit dropped them. Retry **once**: restart from step 1 (new `create` pending review, re-attach every comment, re-`submit_pending`) — after `submit_pending` there is no pending review to attach to, so calling `add_comment_to_pending_review` without a fresh `create` will fail. If the retry also returns 0, stop and report the failure in the Step 5 summary (do not loop further).
+
+**Never** use APPROVE or REQUEST_CHANGES (owner token can't APPROVE).
 
 **Comment rules:**
 - `line` must be a `+` line in the diff. If finding is on an unchanged line, attach to nearest `+` line and reference actual location in body.
