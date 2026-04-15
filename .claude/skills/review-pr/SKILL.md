@@ -55,8 +55,8 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 
 **Use the pending-review flow — three steps, in order.** The `github-pat` (and `MCP_DOCKER`) server silently drops inline comments if you pass them as a `comments:` array on a single `submit`/`create` call. Always:
 
-1. **Create a pending review.** `pull_request_review_write` with `method: "create"`, `event: "PENDING"`. Keep the returned review ID.
-2. **Attach each inline comment** with `add_comment_to_pending_review`, one call per finding (`path`, `line`, optional `side`, `body`). Do not batch into a single review creation.
+1. **Create a pending review.** `pull_request_review_write` with `method: "create"` and **no `event` parameter** — omitting `event` is what makes the review pending (the `event` enum is only `APPROVE` / `REQUEST_CHANGES` / `COMMENT`; passing any value here submits immediately). No review ID bookkeeping is needed — subsequent calls attach to the requester's latest pending review automatically.
+2. **Attach each inline comment** with `add_comment_to_pending_review`, one call per finding. Required params: `path`, `body`, `subjectType: "LINE"` (or `"FILE"` for file-level). Optional: `line`, `side`, `startLine`, `startSide` for multi-line. Do not batch into a single review creation.
 3. **Submit the review.** `pull_request_review_write` with `method: "submit_pending"`, `event: "COMMENT"`, and the summary body.
 
 After submit, **verify** by calling `pull_request_read` with `method: "get_review_comments"`. If `totalCount` is 0 but you posted findings, the submit dropped them — re-do the pending flow.
