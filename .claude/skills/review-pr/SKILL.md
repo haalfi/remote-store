@@ -53,9 +53,15 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 
 ## Step 4: Post review (read-only, no-feedback workflow)
 
-Use `pull_request_review_write`:
-- `event: "COMMENT"` — never APPROVE or REQUEST_CHANGES
-- `comments:` array with `path`, `line`, `body`
+**Use the pending-review flow — three steps, in order.** The `github-pat` (and `MCP_DOCKER`) server silently drops inline comments if you pass them as a `comments:` array on a single `submit`/`create` call. Always:
+
+1. **Create a pending review.** `pull_request_review_write` with `method: "create"`, `event: "PENDING"`. Keep the returned review ID.
+2. **Attach each inline comment** with `add_comment_to_pending_review`, one call per finding (`path`, `line`, optional `side`, `body`). Do not batch into a single review creation.
+3. **Submit the review.** `pull_request_review_write` with `method: "submit_pending"`, `event: "COMMENT"`, and the summary body.
+
+After submit, **verify** by calling `pull_request_read` with `method: "get_review_comments"`. If `totalCount` is 0 but you posted findings, the submit dropped them — re-do the pending flow.
+
+**Never** use APPROVE or REQUEST_CHANGES (owner token can't APPROVE).
 
 **Comment rules:**
 - `line` must be a `+` line in the diff. If finding is on an unchanged line, attach to nearest `+` line and reference actual location in body.
