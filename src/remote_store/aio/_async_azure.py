@@ -406,13 +406,6 @@ class AsyncAzureBackend(AsyncBackend):
         """
         from azure.core.exceptions import ResourceNotFoundError
 
-        # Materialize async iterator content before uploading.
-        if not isinstance(content, bytes):
-            chunks: list[bytes] = []
-            async for chunk in content:
-                chunks.append(chunk)
-            content = b"".join(chunks)
-
         async with self._errors(path):
             bc = self._blob_client(path)
             if not overwrite:
@@ -423,6 +416,9 @@ class AsyncAzureBackend(AsyncBackend):
                     raise
                 except ResourceNotFoundError:
                     pass  # Blob doesn't exist, proceed
+            # BUG-165: pass async iter straight to upload_blob — the SDK streams
+            # AsyncIterable[bytes] in bounded memory; materializing would break
+            # the streaming promise (SIO-003/ASYNC-021) for large payloads.
             await bc.upload_blob(content, overwrite=True, max_concurrency=self._max_concurrency)
 
     async def write_atomic(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
@@ -446,13 +442,6 @@ class AsyncAzureBackend(AsyncBackend):
 
         # HNS: write to temp file via DFS, then atomic rename
         from azure.core.exceptions import ResourceNotFoundError
-
-        # Materialize async iterator content before uploading.
-        if not isinstance(content, bytes):
-            chunks: list[bytes] = []
-            async for chunk in content:
-                chunks.append(chunk)
-            content = b"".join(chunks)
 
         async with self._errors(path):  # pragma: no cover -- HNS only
             bc = self._blob_client(path)

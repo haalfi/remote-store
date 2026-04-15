@@ -8,6 +8,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`AsyncAzureBackend.write` streaming** (BUG-165): `write` and
+  `write_atomic` materialized any `AsyncIterable[bytes]` payload into a
+  single `bytes` buffer before calling `upload_blob` / `upload_data`,
+  holding the entire file in memory and breaking the streaming contract
+  (SIO-003, ASYNC-021). The async iterator is now passed through — the
+  Azure SDK accepts `AsyncIterable[bytes]` directly and streams it in
+  bounded memory. Caught by the e2e streaming-integrity chain on the
+  `sftp -> azure-bridged` hop.
+
 - **Docs pages deployment on release tags** (BUG-164): `pages` job moved to a
   dedicated `gh-pages-deploy.yml` workflow triggered by `workflow_run` on `Docs`
   completion. Eliminates the `github-pages` environment protection rule failure
@@ -36,6 +45,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   hand-writing fences.
 
 ### Internal
+
+- **`AsyncBackendSyncAdapter` real-backend coverage** (ID-143b): Azurite-backed
+  integration suite for the full sync `Backend` contract through the adapter,
+  plus a bridged-Azure variant in the e2e streaming chain with a wider per-hop
+  threshold for thread-crossing overhead.
 
 - **`AsyncBackendSyncAdapter` review follow-ups** (ID-143c): `_ChunkPullReader`
   promoted to `io.RawIOBase`; best-effort `__del__` on `_AsyncIteratorBridge`

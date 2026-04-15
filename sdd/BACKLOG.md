@@ -140,19 +140,6 @@ Items graduate through the SDD pipeline:
 
 ### New Backends
 
-
-- [ ] **ID-143b — `AsyncBackendSyncAdapter` real-backend coverage**
-  Integration tests and e2e variant for the adapter landed in ID-143.
-  - Integration test against Azurite + `AsyncAzureBackend`.
-  - Bridged-Azure variant added to
-    `tests/e2e/test_streaming_integrity.py` (recalibrated thresholds —
-    bridged streams cross a thread boundary per chunk and ASYNC-084
-    masks `SEEKABLE_READ`, so the sync-Azure thresholds do not carry
-    over verbatim).
-  - Depends on: ID-143 (done).
-  - Related: ID-127 (Graph backend) — the first consumer of the adapter;
-    both items share the same async-to-sync bridge surface.
-
 - [ ] **ID-127 — OneDrive / SharePoint backend (Microsoft Graph)**
   Unified backend covering OneDrive (personal & business) and SharePoint
   document libraries via the Microsoft Graph REST API. Single `drive_id`

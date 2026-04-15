@@ -5,6 +5,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-165 — `AsyncAzureBackend.write` violates streaming promise**
+  `AsyncAzureBackend.write` / `write_atomic` materialized any
+  `AsyncIterable[bytes]` payload into a single ``bytes`` buffer before
+  calling ``upload_blob`` / ``upload_data``, breaking the streaming contract
+  (SIO-003, ASYNC-021) and holding the full file in memory — caught by the
+  e2e streaming-integrity chain on the `sftp -> azure-bridged` hop (pipe
+  memory == file size). Azure SDK accepts ``AsyncIterable[bytes]`` directly
+  and streams in bounded memory; the materialization block is removed and
+  the unit test now asserts pass-through. Found while landing ID-143b.
+
+- [x] **ID-143b — `AsyncBackendSyncAdapter` real-backend coverage**
+  Integration test suite (`tests/aio/test_async_to_sync_adapter_integration.py`)
+  exercises the full sync `Backend` API contract through the adapter backed by
+  a live `AsyncAzureBackend` against Azurite — lifecycle (ASYNC-088, ASYNC-092),
+  capabilities (ASYNC-084), core I/O and streaming (ASYNC-080, ASYNC-081, ASYNC-087),
+  atomic write (ASYNC-085), listing (ASYNC-032), error mapping (ASYNC-087), health
+  check (ASYNC-093), and closed-adapter reuse (ASYNC-083). Bridged-Azure variant
+  added to `tests/e2e/test_streaming_integrity.py` with a dedicated
+  `BRIDGED_AZURE_THRESHOLD_FACTOR` (0.80) to account for per-chunk thread-crossing
+  overhead (ASYNC-080); the `_measure_transfer` helper gains a
+  `total_threshold_override` parameter for per-hop threshold control.
+  Depends on: ID-143, ID-143c (done).
+
 - [x] **ID-144 — Codify content rule 6: doc code blocks sourced from `examples/snippets/`**
   Added rule 6 to `sdd/CONTENT-RULES.md` making the existing `examples/snippets/`
   practice (ID-057, ID-106) a review-enforced rule. Doc code blocks come from
