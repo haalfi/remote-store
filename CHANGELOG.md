@@ -46,20 +46,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
-- **`AsyncBackendSyncAdapter` real-backend coverage** (ID-143b): integration
-  test suite `tests/aio/test_async_to_sync_adapter_integration.py` exercises
-  the full sync `Backend` contract through the adapter backed by
-  `AsyncAzureBackend` against Azurite — lifecycle, capabilities (ASYNC-084
-  masking), streaming (ASYNC-080/081), atomic write (ASYNC-085), listing,
-  error mapping, health check, and closed-adapter reuse. Bridged-Azure variant
-  added to the e2e streaming integrity test with a dedicated
-  `BRIDGED_AZURE_THRESHOLD_FACTOR` (0.80) for the wider per-chunk thread-crossing
-  budget; `_measure_transfer` gains a `total_threshold_override` parameter.
-  `_emit_report` gate also relaxed to exempt hops with a non-lazy *source* (not
-  just a non-lazy destination) from `chunks_ok` / `pipe_ok`: a non-lazy source
-  returns a full `BytesIO` held by `_stream.py`, so `tracemalloc` attributes
-  the full payload to pipe filters regardless of downstream streaming. The
-  `total_ok` threshold still applies to these hops.
+- **`AsyncBackendSyncAdapter` real-backend coverage** (ID-143b): Azurite-backed
+  integration suite for the full sync `Backend` contract through the adapter,
+  plus a bridged-Azure variant in the e2e streaming chain with a wider per-hop
+  threshold for thread-crossing overhead.
 
 - **`AsyncBackendSyncAdapter` review follow-ups** (ID-143c): `_ChunkPullReader`
   promoted to `io.RawIOBase`; best-effort `__del__` on `_AsyncIteratorBridge`
