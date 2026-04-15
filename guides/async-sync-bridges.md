@@ -31,7 +31,7 @@ async code without rewriting it.
 Use this when you have an async-native backend (e.g. `AsyncAzureBackend`)
 but your calling code is synchronous.
 
-**Constraints to keep in mind:**
+### Constraints to keep in mind
 
 - Cannot be called from a running event loop — use `AsyncStore` instead.
 - `read()` returns a forward-only stream (`seekable()` is `False`).
