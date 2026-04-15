@@ -8330,6 +8330,13 @@ README, guides, docstrings, and inline doc comments.</p>
    Docs describe the pattern and link to the reference; they do not reproduce the
    values.</p>
 </li>
+<li>
+<p><strong>Code examples are sourced, not written</strong> [review-enforced]
+   — Doc code blocks come from <code>examples/snippets/</code> via <code>pymdownx.snippets</code>
+   <code>--8&lt;--</code> regions, so CI catches API drift. Hand-written fences are allowed
+   only when the snippet cannot execute in CI (e.g. needs real credentials);
+   note the reason inline.</p>
+</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="examples-bad-good">Examples (bad → good)<a class="headerlink" href="#examples-bad-good" title="Permanent link">&para;</a></h3>
