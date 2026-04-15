@@ -1,10 +1,16 @@
-"""HTTP backend -- read files from HTTP/HTTPS URLs.
+"""HTTP backend — Read-only access to files over HTTP/HTTPS — no credentials needed for public endpoints.
 
 Demonstrates:
 - Creating a ReadOnlyHttpBackend with base_url
 - Reading files and metadata from an HTTP endpoint
 - Capability-gated error handling for unsupported operations
 - Transport selection (urllib, requests, httpx)
+
+---
+see_also:
+  - label: HTTP Backend
+    url: ../backends/http.md
+    note: backend guide
 """
 
 from __future__ import annotations

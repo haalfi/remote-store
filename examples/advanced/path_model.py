@@ -1,4 +1,4 @@
-"""Path model -- RemotePath normalization, properties, and validation.
+"""Path model — `RemotePath` normalization, properties, validation, and the `/` operator.
 
 Demonstrates:
 - Path normalization rules (backslash, dots, slashes, trailing slashes)

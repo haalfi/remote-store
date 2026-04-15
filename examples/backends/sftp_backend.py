@@ -1,4 +1,4 @@
-"""SFTP backend — connect to any SSH/SFTP server.
+"""SFTP backend — Connect to any SSH/SFTP server with paramiko.
 
 Demonstrates:
 - Configuring an SFTP backend via RegistryConfig
@@ -16,6 +16,12 @@ Environment variables:
     RS_SFTP_PASS    SSH password
     RS_SFTP_PORT    SSH port (default: 22)
     RS_SFTP_BASE    Base path on the server (default: /)
+
+---
+see_also:
+  - label: SFTP Backend
+    url: ../backends/sftp.md
+    note: backend guide
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""OpenTelemetry tracing and metrics -- instrument any Store with OTel.
+"""OpenTelemetry tracing and metrics — Instrument any Store with OpenTelemetry spans and metrics.
 
 Requires: pip install "remote-store[otel]" opentelemetry-sdk
 
@@ -7,6 +7,12 @@ Demonstrates:
 - Using otel_observe() one-liner
 - Using otel_hooks() for custom composition
 - Viewing collected spans and metrics
+
+---
+see_also:
+  - label: Observe
+    url: ../observe.md
+    note: instrumentation guide
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Capabilities and errors -- capability querying, gating, and error hierarchy.
+"""Capabilities and errors — Capability querying, gating, and the structured error hierarchy.
 
 Demonstrates:
 - Capability enum members and what they gate
@@ -6,6 +6,12 @@ Demonstrates:
 - CapabilityNotSupported when calling unsupported operations
 - Error hierarchy: RemoteStoreError base, structured attributes
 - to_key() and native_path() round-trip
+
+---
+see_also:
+  - label: Capabilities Matrix
+    url: ../capabilities-matrix.md
+    note: per-backend capability reference
 """
 
 from __future__ import annotations

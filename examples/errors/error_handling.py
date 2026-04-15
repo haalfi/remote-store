@@ -1,7 +1,13 @@
-"""Error handling — catching NotFound, AlreadyExists, InvalidPath, etc.
+"""Error handling — Catching `NotFound`, `AlreadyExists`, and more.
 
 Demonstrates the normalized error hierarchy and how to handle errors
 programmatically using structured attributes.
+
+---
+see_also:
+  - label: Troubleshooting
+    url: ../troubleshooting.md
+    note: error diagnosis guide
 """
 
 from __future__ import annotations

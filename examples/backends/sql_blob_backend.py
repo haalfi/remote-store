@@ -1,10 +1,16 @@
-"""SQL Blob Backend — SQLite key-value store (no credentials needed).
+"""SQL Blob Backend — SQLite key-value store — zero-infrastructure persistent file storage.
 
 Demonstrates using SQLBlobBackend with SQLite as a zero-infrastructure
 persistent file store. All data lives in a single .db file.
 
 Run:
     python examples/backends/sql_blob_backend.py
+
+---
+see_also:
+  - label: SQL Blob Backend
+    url: ../backends/sql-blob.md
+    note: backend guide
 """
 
 from __future__ import annotations

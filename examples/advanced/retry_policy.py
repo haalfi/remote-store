@@ -1,7 +1,13 @@
-"""Example: Configuring retry policies per-backend.
+"""Retry Policy — Configure retry attempts, backoff, and jitter per-backend.
 
 Demonstrates RetryPolicy construction, defaults, disabled retries,
 and config-driven retry via TOML-style dicts.
+
+---
+see_also:
+  - label: Retry
+    url: ../retry.md
+    note: retry configuration guide
 """
 
 from __future__ import annotations

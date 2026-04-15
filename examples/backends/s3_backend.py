@@ -1,4 +1,4 @@
-"""S3 backend — connect to Amazon S3 or any S3-compatible service.
+"""S3 backend — Connect to Amazon S3 or any S3-compatible service (MinIO, DigitalOcean Spaces, etc.).
 
 Demonstrates:
 - Configuring an S3 backend via RegistryConfig
@@ -17,6 +17,12 @@ Environment variables:
     RS_S3_SECRET    AWS secret access key
     RS_S3_ENDPOINT  Custom endpoint URL (e.g. http://localhost:9000 for MinIO)
     RS_S3_REGION    AWS region name
+
+---
+see_also:
+  - label: S3 Backend
+    url: ../backends/s3.md
+    note: backend guide
 """
 
 from __future__ import annotations

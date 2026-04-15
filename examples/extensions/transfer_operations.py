@@ -1,4 +1,4 @@
-"""Transfer operations -- upload, download, and cross-store transfer.
+"""Transfer operations — Upload, download, and cross-store transfer with progress tracking.
 
 Demonstrates:
 - upload: stream a local file to a Store
@@ -6,6 +6,12 @@ Demonstrates:
 - transfer: stream between two Stores
 - on_progress: tracking bytes transferred
 - overwrite semantics for all three functions
+
+---
+see_also:
+  - label: Transfer Operations
+    url: ../transfer-operations.md
+    note: upload, download, and cross-store transfer guide
 """
 
 from __future__ import annotations

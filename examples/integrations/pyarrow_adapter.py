@@ -1,4 +1,4 @@
-"""PyArrow FileSystem adapter -- use any Store as a pyarrow.fs.FileSystem.
+"""PyArrow FileSystem adapter — Use any Store as a `pyarrow.fs.FileSystem` for Parquet, CSV, and dataset I/O.
 
 Requires: pip install "remote-store[arrow]"
 
@@ -6,6 +6,12 @@ Demonstrates:
 - Creating a PyArrow filesystem from a Store
 - Writing and reading Parquet files through the adapter
 - Dataset discovery
+
+---
+see_also:
+  - label: PyArrow Adapter
+    url: ../pyarrow-adapter.md
+    note: PyArrow filesystem integration guide
 """
 
 from __future__ import annotations

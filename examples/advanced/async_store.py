@@ -1,7 +1,16 @@
-"""Async Store -- async/await usage with any backend.
+"""Async Store — Async/await usage with `AsyncStore` -- streaming reads, async writes, child stores.
 
 Demonstrates the async Store API with read, write, listing, and child
 store patterns.
+
+---
+see_also:
+  - label: Async Store
+    url: ../async.md
+    note: async usage guide
+  - label: Async API
+    url: ../api/aio.md
+    note: API reference
 """
 
 from __future__ import annotations

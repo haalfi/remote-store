@@ -1,7 +1,13 @@
-"""Example: Store-level caching with ext.cache.
+"""Caching — Store-level caching with `ext.cache`: cached reads, auto-invalidation on writes, and cache statistics.
 
 Demonstrates cached reads, automatic invalidation on writes,
 cache statistics, and max_content_size.
+
+---
+see_also:
+  - label: Cache
+    url: ../cache.md
+    note: caching guide
 """
 
 from __future__ import annotations

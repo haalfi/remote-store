@@ -1,4 +1,4 @@
-"""Store.child() — runtime sub-scoping without extra backends.
+"""Store.child() — Runtime sub-scoping: create child stores that share a backend but isolate paths.
 
 Demonstrates:
 - Creating child stores with child(subpath)

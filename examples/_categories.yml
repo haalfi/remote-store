@@ -1,0 +1,81 @@
+# Example categories — data-driven index page + sidebar grouping.
+#
+# Each entry maps an examples/ subdir to its display label, blurb (shown on
+# examples/index.md), and display order.  The generator (scripts/docs/) reads
+# this file during the MkDocs build; no Python edits are needed to re-order
+# or re-label a category.
+
+- subdir: getting_started
+  label: Getting Started
+  order: 1
+  blurb: Your first steps with `remote-store` — read, write, stream, and atomic semantics.
+  examples:
+    - quickstart
+    - file_operations
+    - streaming_io
+    - atomic_writes
+
+- subdir: configuration
+  label: Configuration
+  order: 2
+  blurb: Wiring up stores from code, files, and registries.
+  examples:
+    - configuration
+    - config_loaders
+
+- subdir: errors
+  label: Errors & Capabilities
+  order: 3
+  blurb: Understanding the safety net — error hierarchy and capability gating.
+  examples:
+    - error_handling
+    - capabilities_and_errors
+
+- subdir: advanced
+  label: Advanced Store Patterns
+  order: 4
+  blurb: >-
+    Deeper Store API concepts — paths, memory backend, child stores, async, retry, and health checks.
+  examples:
+    - path_model
+    - memory_backend
+    - store_child
+    - async_store
+    - retry_policy
+    - health_check
+
+- subdir: backends
+  label: Backends
+  order: 5
+  blurb: >-
+    These require a running service (AWS, MinIO, an SFTP server, Azure, Azurite, etc.) and credentials supplied via environment variables. Each script prints a help message when the required variables are missing.
+  examples:
+    - s3_backend
+    - s3_pyarrow_backend
+    - s3_listing_strategies
+    - sftp_backend
+    - azure_backend
+    - sql_blob_backend
+    - http_backend
+
+- subdir: extensions
+  label: Extensions
+  order: 6
+  blurb: Composable Store wrappers — batch, transfer, glob, caching, and observability.
+  examples:
+    - batch_operations
+    - transfer_operations
+    - glob_pattern_matching
+    - caching
+    - observe_hooks
+    - otel_tracing
+
+- subdir: integrations
+  label: Integrations
+  order: 7
+  blurb: Third-party library bridges — PyArrow, Parquet datasets, and Dagster.
+  examples:
+    - pyarrow_adapter
+    - parquet_dataset
+    - dagster_io_manager
+    - dagster_v2_resource

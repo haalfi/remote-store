@@ -1,4 +1,4 @@
-"""Batch operations -- bulk delete, copy, and existence checks.
+"""Batch operations — Bulk delete, copy, and existence checks with error aggregation.
 
 Demonstrates:
 - batch_exists: check multiple paths at once
@@ -6,6 +6,12 @@ Demonstrates:
 - batch_delete: delete multiple files with missing_ok and stop_on_error
 - BatchResult: inspecting succeeded/failed paths
 - Error collection: continuing past individual failures
+
+---
+see_also:
+  - label: Batch Operations
+    url: ../batch-operations.md
+    note: bulk operations guide
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""S3-PyArrow backend — high-throughput S3 via PyArrow's C++ filesystem.
+"""S3-PyArrow backend — High-throughput S3 via PyArrow's C++ filesystem. Drop-in swap from the S3 backend.
 
 Drop-in alternative to the S3 backend. PyArrow handles the data path
 (reads, writes, copies) while s3fs handles the control path (listing,
@@ -19,6 +19,12 @@ Environment variables:
     RS_S3_SECRET    AWS secret access key
     RS_S3_ENDPOINT  Custom endpoint URL (e.g. http://localhost:9000 for MinIO)
     RS_S3_REGION    AWS region name
+
+---
+see_also:
+  - label: S3-PyArrow Backend
+    url: ../backends/s3-pyarrow.md
+    note: backend guide
 """
 
 from __future__ import annotations

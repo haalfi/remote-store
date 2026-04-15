@@ -1,9 +1,15 @@
-"""Dagster v2 Resource -- config-driven Store construction with RemoteStoreIOManager.
+"""Dagster v2 Resource — Config-driven Store construction with RemoteStoreIOManager.
 
 Demonstrates:
 - RemoteStoreIOManager: IO manager factory that constructs and owns a Store
 - setup_for_execution / teardown_after_execution: manual lifecycle outside orchestrator
 - Pickle roundtrip through the config-driven IO manager
+
+---
+see_also:
+  - label: Dagster
+    url: ../dagster.md
+    note: Dagster integration guide
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Streaming I/O — write from BytesIO, read as stream, chunked processing.
+"""Streaming I/O — Streaming writes and reads with `BytesIO`.
 
 Demonstrates streaming-first I/O patterns with remote-store.
 """

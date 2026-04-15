@@ -1,7 +1,13 @@
-"""Health Check -- startup gate pattern.
+"""Health Check — Startup gate pattern using `Store.ping()` to verify backend connectivity.
 
 Demonstrates ``Store.ping()`` for verifying backend connectivity
 before accepting traffic.
+
+---
+see_also:
+  - label: Health Check
+    url: ../health-check.md
+    note: health check guide
 """
 
 from __future__ import annotations
