@@ -37,6 +37,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **`AsyncBackendSyncAdapter` real-backend coverage** (ID-143b): integration
+  test suite `tests/aio/test_async_to_sync_adapter_integration.py` exercises
+  the full sync `Backend` contract through the adapter backed by
+  `AsyncAzureBackend` against Azurite — lifecycle, capabilities (ASYNC-084
+  masking), streaming (ASYNC-080/081), atomic write (ASYNC-085), listing,
+  error mapping, health check, and closed-adapter reuse. Bridged-Azure variant
+  added to the e2e streaming integrity test with a dedicated
+  `BRIDGED_AZURE_THRESHOLD_FACTOR` (0.80) for the wider per-chunk thread-crossing
+  budget; `_measure_transfer` gains a `total_threshold_override` parameter.
+
 - **`AsyncBackendSyncAdapter` review follow-ups** (ID-143c): `_ChunkPullReader`
   promoted to `io.RawIOBase`; best-effort `__del__` on `_AsyncIteratorBridge`
   for GC-path cleanup; looping drain in `close()`; completed docstrings;

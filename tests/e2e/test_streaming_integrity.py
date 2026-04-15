@@ -81,6 +81,12 @@ NON_LAZY_THRESHOLD_FACTOR = 2.2  # non-lazy backends buffer the file; peak < 220
 # 2.0× base (source + destination copy) + ~0.2× headroom for Python bytearray
 # growth over-allocation (~12.5%) and tracemalloc measurement noise.
 
+# Bridged-Azure: AsyncAzureBackend wrapped in AsyncBackendSyncAdapter.
+# ASYNC-084 preserves LAZY_READ so the adapter is classified lazy, but each
+# chunk crosses a thread boundary (ASYNC-080) which adds per-chunk overhead.
+# Threshold is wider than LAZY_THRESHOLD_FACTOR to absorb that overhead.
+BRIDGED_AZURE_THRESHOLD_FACTOR = 0.80  # bridged-lazy: peak < 80% of file_size
+
 PATH = "streaming-integrity-test.bin"
 
 # tracemalloc filters -- transfer layer vs. all remote_store code.
@@ -180,11 +186,17 @@ def _measure_transfer(
     dst_name: str,
     path: str,
     file_size: int,
+    *,
+    total_threshold_override: int | None = None,
 ) -> HopResult:
     """Transfer *path* from *src* to *dst*, collecting all measurements.
 
     Returns a ``HopResult`` with chunk behavior and two memory measurements
     (pipe layer and total remote_store), sampled per chunk during streaming.
+
+    *total_threshold_override* lets callers supply a pre-computed threshold
+    instead of the default factor-based one (used for bridged backends whose
+    per-chunk thread crossing warrants a wider budget than pure-lazy hops).
     """
     gc.collect()
     chunks: list[int] = []
@@ -214,6 +226,7 @@ def _measure_transfer(
     dst_lazy = dst.supports(Capability.LAZY_READ)
     both_lazy = src_lazy and dst_lazy
     factor = LAZY_THRESHOLD_FACTOR if both_lazy else NON_LAZY_THRESHOLD_FACTOR
+    total_threshold = total_threshold_override if total_threshold_override is not None else int(file_size * factor)
 
     return HopResult(
         hop=f"{src_name} -> {dst_name}",
@@ -224,7 +237,7 @@ def _measure_transfer(
         total_peak=total_peak,
         src_lazy=src_lazy,
         dst_lazy=dst_lazy,
-        total_threshold=int(file_size * factor),
+        total_threshold=total_threshold,
     )
 
 
@@ -367,6 +380,8 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
     if _azurite_available():
         from azure.storage.blob import BlobServiceClient
 
+        from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
+        from remote_store.aio._async_azure import AsyncAzureBackend
         from remote_store.backends._azure import AzureBackend
         from tests.e2e.conftest import AZURITE_CONN_STR
 
@@ -381,6 +396,26 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
             )
         )
         cleanups.append(_CleanupEntry("azure", {"service": service, "container": container}))
+
+        # Bridged-Azure: AsyncAzureBackend wrapped in AsyncBackendSyncAdapter.
+        # Validates the adapter end-to-end in the streaming integrity chain.
+        # ASYNC-084 masks SEEKABLE_READ but preserves LAZY_READ, so the hop is
+        # classified lazy with the wider BRIDGED_AZURE_THRESHOLD_FACTOR budget.
+        bridged_tag = uuid.uuid4().hex[:8]
+        bridged_container = f"e2e-stream-bridged-{bridged_tag}"
+        bridged_service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
+        bridged_service.create_container(bridged_container)
+        stores.append(
+            (
+                "azure-bridged",
+                Store(
+                    backend=AsyncBackendSyncAdapter(
+                        AsyncAzureBackend(container=bridged_container, connection_string=AZURITE_CONN_STR)
+                    )
+                ),
+            )
+        )
+        cleanups.append(_CleanupEntry("azure", {"service": bridged_service, "container": bridged_container}))
 
     # S3-PyArrow
     if _s3_pyarrow_available():
@@ -561,7 +596,7 @@ class TestStreamingIntegrity:
         order = " -> ".join(name for name, _ in chain)
         all_names = [name for name, _ in store_chain]
         skipped = sorted(
-            {"s3", "sftp", "azure", "s3-pyarrow", "sql-blob"} - set(all_names),
+            {"s3", "sftp", "azure", "azure-bridged", "s3-pyarrow", "sql-blob"} - set(all_names),
         )
 
         # Surface test context in CI output (JUnit XML + failure messages).
@@ -594,6 +629,11 @@ class TestStreamingIntegrity:
             src_name, src_store = chain[i]
             dst_name, dst_store = chain[i + 1]
 
+            # Bridged-Azure hops carry per-chunk thread-crossing overhead
+            # (ASYNC-080); use a wider threshold than pure-lazy hops.
+            is_bridged_hop = "azure-bridged" in (src_name, dst_name)
+            threshold_override = int(file_size * BRIDGED_AZURE_THRESHOLD_FACTOR) if is_bridged_hop else None
+
             # Transfer with all measurements.
             result = _measure_transfer(
                 src_store,
@@ -602,6 +642,7 @@ class TestStreamingIntegrity:
                 dst_name,
                 PATH,
                 file_size,
+                total_threshold_override=threshold_override,
             )
             results.append(result)
 
