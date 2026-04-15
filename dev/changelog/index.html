@@ -10955,12 +10955,24 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Docs pages deployment on release tags</strong> (BUG-164): <code>pages</code> job moved to a
+<li>
+<p><strong><code>AsyncAzureBackend.write</code> streaming</strong> (BUG-165): <code>write</code> and
+  <code>write_atomic</code> materialized any <code>AsyncIterable[bytes]</code> payload into a
+  single <code>bytes</code> buffer before calling <code>upload_blob</code> / <code>upload_data</code>,
+  holding the entire file in memory and breaking the streaming contract
+  (SIO-003, ASYNC-021). The async iterator is now passed through — the
+  Azure SDK accepts <code>AsyncIterable[bytes]</code> directly and streams it in
+  bounded memory. Caught by the e2e streaming-integrity chain on the
+  <code>sftp -&gt; azure-bridged</code> hop.</p>
+</li>
+<li>
+<p><strong>Docs pages deployment on release tags</strong> (BUG-164): <code>pages</code> job moved to a
   dedicated <code>gh-pages-deploy.yml</code> workflow triggered by <code>workflow_run</code> on <code>Docs</code>
   completion. Eliminates the <code>github-pages</code> environment protection rule failure
   when <code>docs.yml</code> ran in a tag ref context on release events. (<code>GITHUB_TOKEN</code>
   pushes do not re-trigger workflows, so a <code>push: gh-pages</code> trigger would
-  never fire from mike.)</li>
+  never fire from mike.)</p>
+</li>
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
@@ -10984,6 +10996,12 @@
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong><code>AsyncBackendSyncAdapter</code> real-backend coverage</strong> (ID-143b): Azurite-backed
+  integration suite for the full sync <code>Backend</code> contract through the adapter,
+  plus a bridged-Azure variant in the e2e streaming chain with a wider per-hop
+  threshold for thread-crossing overhead.</p>
+</li>
 <li>
 <p><strong><code>AsyncBackendSyncAdapter</code> review follow-ups</strong> (ID-143c): <code>_ChunkPullReader</code>
   promoted to <code>io.RawIOBase</code>; best-effort <code>__del__</code> on <code>_AsyncIteratorBridge</code>
