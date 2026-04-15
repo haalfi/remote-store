@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/043-resolution-plan/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/async-sync-bridges/">
       
       
-        <link rel="prev" href="../042-ext-parquet/">
+        <link rel="prev" href="../async/">
       
       
-        <link rel="next" href="../044-graph-backend/">
+        <link rel="next" href="../health-check/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/logo.png">
+      <link rel="icon" href="../assets/logo.png">
       <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
     
     
       
-        <title>043: Resolution Plan Specification - remote-store</title>
+        <title>Async/Sync Bridges - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../css/custom.css">
+      <link rel="stylesheet" href="../css/custom.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#resolution-plan-specification" class="md-skip">
+        <a href="#asyncsync-bridge-adapters" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href=".." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../assets/logo.png" alt="logo">
+  <img src="../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              043: Resolution Plan Specification
+              Async/Sync Bridges
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -249,7 +249,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../getting-started/" class="md-tabs__link">
+        <a href="../getting-started/" class="md-tabs__link">
           
   
   
@@ -265,11 +265,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../backends/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../backends/" class="md-tabs__link">
           
   
   
@@ -289,7 +291,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../api/" class="md-tabs__link">
+        <a href="../api/" class="md-tabs__link">
           
   
   
@@ -305,13 +307,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../../architecture/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
           
   
   
@@ -329,7 +329,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../further-reading/" class="md-tabs__link">
+      <a href="../further-reading/" class="md-tabs__link">
         
   
   
@@ -370,9 +370,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href=".." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../assets/logo.png" alt="logo">
+  <img src="../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -399,7 +399,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -476,7 +476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/" class="md-nav__link">
+      <a href="../getting-started/" class="md-nav__link">
         
   
   
@@ -519,7 +519,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../examples/" class="md-nav__link ">
+            <a href="../examples/" class="md-nav__link ">
               
   
   
@@ -611,7 +611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/quickstart/" class="md-nav__link">
+      <a href="../examples/quickstart/" class="md-nav__link">
         
   
   
@@ -639,7 +639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/file-operations/" class="md-nav__link">
+      <a href="../examples/file-operations/" class="md-nav__link">
         
   
   
@@ -667,7 +667,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/streaming-io/" class="md-nav__link">
+      <a href="../examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -695,7 +695,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/atomic-writes/" class="md-nav__link">
+      <a href="../examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -781,7 +781,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/configuration/" class="md-nav__link">
+      <a href="../examples/configuration/" class="md-nav__link">
         
   
   
@@ -809,7 +809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/config-loaders/" class="md-nav__link">
+      <a href="../examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -895,7 +895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/error-handling/" class="md-nav__link">
+      <a href="../examples/error-handling/" class="md-nav__link">
         
   
   
@@ -923,7 +923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -1009,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/path-model/" class="md-nav__link">
+      <a href="../examples/path-model/" class="md-nav__link">
         
   
   
@@ -1037,7 +1037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/memory-backend/" class="md-nav__link">
+      <a href="../examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -1065,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/store-child/" class="md-nav__link">
+      <a href="../examples/store-child/" class="md-nav__link">
         
   
   
@@ -1093,7 +1093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/async-store/" class="md-nav__link">
+      <a href="../examples/async-store/" class="md-nav__link">
         
   
   
@@ -1121,7 +1121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/retry-policy/" class="md-nav__link">
+      <a href="../examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1149,7 +1149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/health-check/" class="md-nav__link">
+      <a href="../examples/health-check/" class="md-nav__link">
         
   
   
@@ -1235,7 +1235,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/s3-backend/" class="md-nav__link">
+      <a href="../examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -1263,7 +1263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -1291,7 +1291,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/s3-listing-strategies/" class="md-nav__link">
+      <a href="../examples/s3-listing-strategies/" class="md-nav__link">
         
   
   
@@ -1319,7 +1319,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/sftp-backend/" class="md-nav__link">
+      <a href="../examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -1347,7 +1347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/azure-backend/" class="md-nav__link">
+      <a href="../examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1375,7 +1375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/sql-blob-backend/" class="md-nav__link">
+      <a href="../examples/sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -1403,7 +1403,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/http-backend/" class="md-nav__link">
+      <a href="../examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1489,7 +1489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/batch-operations/" class="md-nav__link">
+      <a href="../examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1517,7 +1517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/transfer-operations/" class="md-nav__link">
+      <a href="../examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1545,7 +1545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1573,7 +1573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/caching/" class="md-nav__link">
+      <a href="../examples/caching/" class="md-nav__link">
         
   
   
@@ -1601,7 +1601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/observe-hooks/" class="md-nav__link">
+      <a href="../examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1629,7 +1629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/otel-tracing/" class="md-nav__link">
+      <a href="../examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1715,7 +1715,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1743,7 +1743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/parquet-dataset/" class="md-nav__link">
+      <a href="../examples/parquet-dataset/" class="md-nav__link">
         
   
   
@@ -1771,7 +1771,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1799,7 +1799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/dagster-v2-resource/" class="md-nav__link">
+      <a href="../examples/dagster-v2-resource/" class="md-nav__link">
         
   
   
@@ -1885,7 +1885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/medallion-dagster/" class="md-nav__link">
+      <a href="../examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -1933,24 +1933,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -1968,7 +1973,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2001,7 +2006,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../backends/" class="md-nav__link ">
+            <a href="../backends/" class="md-nav__link ">
               
   
   
@@ -2043,7 +2048,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/local/" class="md-nav__link">
+      <a href="../backends/local/" class="md-nav__link">
         
   
   
@@ -2071,7 +2076,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/memory/" class="md-nav__link">
+      <a href="../backends/memory/" class="md-nav__link">
         
   
   
@@ -2099,7 +2104,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/http/" class="md-nav__link">
+      <a href="../backends/http/" class="md-nav__link">
         
   
   
@@ -2127,7 +2132,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/s3/" class="md-nav__link">
+      <a href="../backends/s3/" class="md-nav__link">
         
   
   
@@ -2155,7 +2160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2183,7 +2188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sftp/" class="md-nav__link">
+      <a href="../backends/sftp/" class="md-nav__link">
         
   
   
@@ -2211,7 +2216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/azure/" class="md-nav__link">
+      <a href="../backends/azure/" class="md-nav__link">
         
   
   
@@ -2239,7 +2244,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sql-blob/" class="md-nav__link">
+      <a href="../backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -2267,7 +2272,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sql-query/" class="md-nav__link">
+      <a href="../backends/sql-query/" class="md-nav__link">
         
   
   
@@ -2353,7 +2358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/" class="md-nav__link">
+      <a href="../extensions/" class="md-nav__link">
         
   
   
@@ -2381,7 +2386,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../pyarrow-adapter/" class="md-nav__link">
+      <a href="../pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -2409,7 +2414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../batch-operations/" class="md-nav__link">
+      <a href="../batch-operations/" class="md-nav__link">
         
   
   
@@ -2437,7 +2442,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../glob-pattern-matching/" class="md-nav__link">
+      <a href="../glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -2465,7 +2470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../transfer-operations/" class="md-nav__link">
+      <a href="../transfer-operations/" class="md-nav__link">
         
   
   
@@ -2493,7 +2498,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../observe/" class="md-nav__link">
+      <a href="../observe/" class="md-nav__link">
         
   
   
@@ -2521,7 +2526,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../cache/" class="md-nav__link">
+      <a href="../cache/" class="md-nav__link">
         
   
   
@@ -2549,7 +2554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../parquet-datasets/" class="md-nav__link">
+      <a href="../parquet-datasets/" class="md-nav__link">
         
   
   
@@ -2577,7 +2582,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../dagster/" class="md-nav__link">
+      <a href="../dagster/" class="md-nav__link">
         
   
   
@@ -2605,7 +2610,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../retry/" class="md-nav__link">
+      <a href="../retry/" class="md-nav__link">
         
   
   
@@ -2641,7 +2646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../async/" class="md-nav__link">
+      <a href="../async/" class="md-nav__link">
         
   
   
@@ -2666,10 +2671,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../async-sync-bridges/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async/Sync Bridges
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2685,6 +2717,87 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#syncbackendadapter-sync-async" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SyncBackendAdapter — sync → async
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncbackendsyncadapter-async-sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncBackendSyncAdapter — async → sync
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AsyncBackendSyncAdapter — async → sync">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constraints-to-keep-in-mind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constraints to keep in mind
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2697,7 +2810,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../health-check/" class="md-nav__link">
+      <a href="../health-check/" class="md-nav__link">
         
   
   
@@ -2725,7 +2838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../data-lake-patterns/" class="md-nav__link">
+      <a href="../data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2753,7 +2866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../troubleshooting/" class="md-nav__link">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   
@@ -2781,7 +2894,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../choosing-a-backend/" class="md-nav__link">
+      <a href="../choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2809,7 +2922,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../custom-backend-guide/" class="md-nav__link">
+      <a href="../custom-backend-guide/" class="md-nav__link">
         
   
   
@@ -2837,7 +2950,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../migration/" class="md-nav__link">
+      <a href="../migration/" class="md-nav__link">
         
   
   
@@ -2937,7 +3050,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../api/" class="md-nav__link ">
+            <a href="../api/" class="md-nav__link ">
               
   
   
@@ -2979,7 +3092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/store/" class="md-nav__link">
+      <a href="../api/store/" class="md-nav__link">
         
   
   
@@ -3007,7 +3120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/proxy/" class="md-nav__link">
+      <a href="../api/proxy/" class="md-nav__link">
         
   
   
@@ -3035,7 +3148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/registry/" class="md-nav__link">
+      <a href="../api/registry/" class="md-nav__link">
         
   
   
@@ -3063,7 +3176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/config/" class="md-nav__link">
+      <a href="../api/config/" class="md-nav__link">
         
   
   
@@ -3091,7 +3204,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/models/" class="md-nav__link">
+      <a href="../api/models/" class="md-nav__link">
         
   
   
@@ -3119,7 +3232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/capabilities/" class="md-nav__link">
+      <a href="../api/capabilities/" class="md-nav__link">
         
   
   
@@ -3147,7 +3260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/errors/" class="md-nav__link">
+      <a href="../api/errors/" class="md-nav__link">
         
   
   
@@ -3175,7 +3288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backend/" class="md-nav__link">
+      <a href="../api/backend/" class="md-nav__link">
         
   
   
@@ -3203,7 +3316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/info/" class="md-nav__link">
+      <a href="../api/info/" class="md-nav__link">
         
   
   
@@ -3231,7 +3344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/sftp-utils/" class="md-nav__link">
+      <a href="../api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -3274,7 +3387,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../api/backends/" class="md-nav__link ">
+            <a href="../api/backends/" class="md-nav__link ">
               
   
   
@@ -3316,7 +3429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/local/" class="md-nav__link">
+      <a href="../api/backends/local/" class="md-nav__link">
         
   
   
@@ -3344,7 +3457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/memory/" class="md-nav__link">
+      <a href="../api/backends/memory/" class="md-nav__link">
         
   
   
@@ -3372,7 +3485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/http/" class="md-nav__link">
+      <a href="../api/backends/http/" class="md-nav__link">
         
   
   
@@ -3400,7 +3513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/s3/" class="md-nav__link">
+      <a href="../api/backends/s3/" class="md-nav__link">
         
   
   
@@ -3428,7 +3541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -3456,7 +3569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/sftp/" class="md-nav__link">
+      <a href="../api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -3484,7 +3597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/azure/" class="md-nav__link">
+      <a href="../api/backends/azure/" class="md-nav__link">
         
   
   
@@ -3512,7 +3625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/sql-blob/" class="md-nav__link">
+      <a href="../api/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -3540,7 +3653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/backends/sql-query/" class="md-nav__link">
+      <a href="../api/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -3576,7 +3689,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/aio/" class="md-nav__link">
+      <a href="../api/aio/" class="md-nav__link">
         
   
   
@@ -3619,7 +3732,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../api/extensions/" class="md-nav__link ">
+            <a href="../api/extensions/" class="md-nav__link ">
               
   
   
@@ -3661,7 +3774,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/arrow/" class="md-nav__link">
+      <a href="../api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -3689,7 +3802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/batch/" class="md-nav__link">
+      <a href="../api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -3717,7 +3830,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/cache/" class="md-nav__link">
+      <a href="../api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -3745,7 +3858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/dagster/" class="md-nav__link">
+      <a href="../api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -3773,7 +3886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/glob/" class="md-nav__link">
+      <a href="../api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -3801,7 +3914,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/integrity/" class="md-nav__link">
+      <a href="../api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -3829,7 +3942,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/observe/" class="md-nav__link">
+      <a href="../api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -3857,7 +3970,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/otel/" class="md-nav__link">
+      <a href="../api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -3885,7 +3998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/parquet/" class="md-nav__link">
+      <a href="../api/extensions/parquet/" class="md-nav__link">
         
   
   
@@ -3913,7 +4026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/partition/" class="md-nav__link">
+      <a href="../api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -3941,7 +4054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/pydantic/" class="md-nav__link">
+      <a href="../api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -3969,7 +4082,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/streams/" class="md-nav__link">
+      <a href="../api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -3997,7 +4110,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/transfer/" class="md-nav__link">
+      <a href="../api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -4025,7 +4138,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/extensions/yaml/" class="md-nav__link">
+      <a href="../api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -4069,7 +4182,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../capabilities-matrix/" class="md-nav__link">
+      <a href="../capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -4097,7 +4210,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   
@@ -4129,29 +4242,24 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -4169,7 +4277,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4187,7 +4295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -4215,7 +4323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../performance/" class="md-nav__link">
+      <a href="../performance/" class="md-nav__link">
         
   
   
@@ -4243,7 +4351,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concurrency/" class="md-nav__link">
+      <a href="../concurrency/" class="md-nav__link">
         
   
   
@@ -4271,7 +4379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../security-model/" class="md-nav__link">
+      <a href="../security-model/" class="md-nav__link">
         
   
   
@@ -4296,8 +4404,6 @@
                 
   
   
-    
-  
   
   
     
@@ -4308,15 +4414,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../design/" class="md-nav__link ">
               
   
   
@@ -4340,7 +4446,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4358,7 +4464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../content-rules/" class="md-nav__link">
+      <a href="../design/content-rules/" class="md-nav__link">
         
   
   
@@ -4386,7 +4492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../design-spec/" class="md-nav__link">
+      <a href="../design/design-spec/" class="md-nav__link">
         
   
   
@@ -4414,7 +4520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../documentation-standards/" class="md-nav__link">
+      <a href="../design/documentation-standards/" class="md-nav__link">
         
   
   
@@ -4442,7 +4548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../process/" class="md-nav__link">
+      <a href="../design/process/" class="md-nav__link">
         
   
   
@@ -4470,7 +4576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../testing-standards/" class="md-nav__link">
+      <a href="../design/testing-standards/" class="md-nav__link">
         
   
   
@@ -4513,7 +4619,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../adrs/" class="md-nav__link ">
+            <a href="../design/adrs/" class="md-nav__link ">
               
   
   
@@ -4555,7 +4661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4583,7 +4689,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4611,7 +4717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4639,7 +4745,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../design/adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -4667,7 +4773,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../design/adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4695,7 +4801,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../design/adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -4723,7 +4829,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -4751,7 +4857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../design/adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -4779,7 +4885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -4807,7 +4913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -4835,7 +4941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -4863,7 +4969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../design/adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -4891,7 +4997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -4919,7 +5025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -4947,7 +5053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../design/adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -4975,7 +5081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5003,7 +5109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5031,7 +5137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../design/adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -5059,7 +5165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../design/adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -5087,7 +5193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../design/adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -5115,7 +5221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
+      <a href="../design/adrs/0021-graph-sdk-choice/" class="md-nav__link">
         
   
   
@@ -5143,7 +5249,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
+      <a href="../design/adrs/0022-graph-auth-model/" class="md-nav__link">
         
   
   
@@ -5171,7 +5277,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
+      <a href="../design/adrs/0023-async-monitor-polling/" class="md-nav__link">
         
   
   
@@ -5199,7 +5305,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
+      <a href="../design/adrs/0024-resource-locked-error/" class="md-nav__link">
         
   
   
@@ -5227,7 +5333,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
+      <a href="../design/adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
         
   
   
@@ -5278,7 +5384,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../audits/" class="md-nav__link ">
+            <a href="../design/audits/" class="md-nav__link ">
               
   
   
@@ -5320,7 +5426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-001-adversarial-review/" class="md-nav__link">
+      <a href="../design/audits/audit-001-adversarial-review/" class="md-nav__link">
         
   
   
@@ -5348,7 +5454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-002-design-compliance/" class="md-nav__link">
+      <a href="../design/audits/audit-002-design-compliance/" class="md-nav__link">
         
   
   
@@ -5376,7 +5482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-003-documentation/" class="md-nav__link">
+      <a href="../design/audits/audit-003-documentation/" class="md-nav__link">
         
   
   
@@ -5404,7 +5510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-004-docs-structural-consistency/" class="md-nav__link">
+      <a href="../design/audits/audit-004-docs-structural-consistency/" class="md-nav__link">
         
   
   
@@ -5432,7 +5538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-005-laziness-memory/" class="md-nav__link">
+      <a href="../design/audits/audit-005-laziness-memory/" class="md-nav__link">
         
   
   
@@ -5460,7 +5566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-006-docs-list-completeness/" class="md-nav__link">
+      <a href="../design/audits/audit-006-docs-list-completeness/" class="md-nav__link">
         
   
   
@@ -5488,7 +5594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-007-test-behavior-assertions/" class="md-nav__link">
+      <a href="../design/audits/audit-007-test-behavior-assertions/" class="md-nav__link">
         
   
   
@@ -5516,7 +5622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-008-package-bugs/" class="md-nav__link">
+      <a href="../design/audits/audit-008-package-bugs/" class="md-nav__link">
         
   
   
@@ -5567,7 +5673,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../rfcs/" class="md-nav__link ">
+            <a href="../design/rfcs/" class="md-nav__link ">
               
   
   
@@ -5609,7 +5715,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -5637,7 +5743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -5665,7 +5771,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -5693,7 +5799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -5721,7 +5827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -5749,7 +5855,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -5777,7 +5883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -5805,7 +5911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
         
   
   
@@ -5833,7 +5939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -5861,7 +5967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0010-graph-backend/" class="md-nav__link">
+      <a href="../design/rfcs/rfc-0010-graph-backend/" class="md-nav__link">
         
   
   
@@ -5912,7 +6018,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../design/research/" class="md-nav__link ">
               
   
   
@@ -5954,7 +6060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../design/research/research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -5982,7 +6088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../design/research/research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6010,7 +6116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../design/research/research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6038,7 +6144,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../design/research/research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -6066,7 +6172,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../design/research/research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6094,7 +6200,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
+      <a href="../design/research/research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
   
@@ -6122,7 +6228,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
+      <a href="../design/research/research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -6150,7 +6256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../design/research/research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -6178,7 +6284,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-doc-content-longevity/" class="md-nav__link">
+      <a href="../design/research/research-doc-content-longevity/" class="md-nav__link">
         
   
   
@@ -6206,7 +6312,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../design/research/research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -6234,7 +6340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../design/research/research-example-testing/" class="md-nav__link">
         
   
   
@@ -6262,7 +6368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../design/research/research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -6290,7 +6396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-feature-discoverability/" class="md-nav__link">
+      <a href="../design/research/research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -6318,7 +6424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../design/research/research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -6346,7 +6452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+      <a href="../design/research/research-health-check/" class="md-nav__link">
         
   
   
@@ -6374,7 +6480,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../design/research/research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -6402,7 +6508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../design/research/research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -6430,7 +6536,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-openrouter-integration/" class="md-nav__link">
+      <a href="../design/research/research-openrouter-integration/" class="md-nav__link">
         
   
   
@@ -6458,7 +6564,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../design/research/research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -6486,7 +6592,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../design/research/research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -6514,7 +6620,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../design/research/research-retry-policy/" class="md-nav__link">
         
   
   
@@ -6542,7 +6648,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
+      <a href="../design/research/research-seekable-read/" class="md-nav__link">
         
   
   
@@ -6570,7 +6676,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../design/research/research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -6598,7 +6704,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../design/research/research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -6626,7 +6732,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../design/research/research-store-config/" class="md-nav__link">
         
   
   
@@ -6654,7 +6760,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../design/research/research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -6682,7 +6788,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../design/research/research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -6710,7 +6816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../design/research/research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -6743,8 +6849,6 @@
                 
   
   
-    
-  
   
   
     
@@ -6755,15 +6859,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_10" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_10" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../design/specs/" class="md-nav__link ">
               
   
   
@@ -6787,7 +6891,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_10_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_10_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_10">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6805,7 +6909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../design/specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -6833,7 +6937,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../design/specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -6861,7 +6965,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../design/specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -6889,7 +6993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../design/specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -6917,7 +7021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
+      <a href="../design/specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -6945,7 +7049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../design/specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -6973,7 +7077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../design/specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -7001,7 +7105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
+      <a href="../design/specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -7029,7 +7133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../design/specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -7057,7 +7161,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../design/specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -7085,7 +7189,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -7113,7 +7217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-azure-backend/" class="md-nav__link">
+      <a href="../design/specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -7141,7 +7245,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../design/specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -7169,7 +7273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -7197,7 +7301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../design/specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -7225,7 +7329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../design/specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -7253,7 +7357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../design/specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -7281,7 +7385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../design/specs/018-glob/" class="md-nav__link">
         
   
   
@@ -7309,7 +7413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../design/specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -7337,7 +7441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../design/specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -7365,7 +7469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../design/specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -7393,7 +7497,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../design/specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -7421,7 +7525,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../design/specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -7449,7 +7553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
+      <a href="../design/specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -7477,7 +7581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
+      <a href="../design/specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -7505,7 +7609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
+      <a href="../design/specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -7533,7 +7637,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+      <a href="../design/specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -7561,7 +7665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
+      <a href="../design/specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -7589,7 +7693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+      <a href="../design/specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -7617,7 +7721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
+      <a href="../design/specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -7645,7 +7749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
+      <a href="../design/specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -7673,7 +7777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-http-backend/" class="md-nav__link">
+      <a href="../design/specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -7701,7 +7805,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-ext-streams/" class="md-nav__link">
+      <a href="../design/specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -7729,7 +7833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-ext-integrity/" class="md-nav__link">
+      <a href="../design/specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -7757,7 +7861,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-content-digest/" class="md-nav__link">
+      <a href="../design/specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -7785,7 +7889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-seekable-read/" class="md-nav__link">
+      <a href="../design/specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -7813,7 +7917,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-depth-limited-listing/" class="md-nav__link">
+      <a href="../design/specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -7841,7 +7945,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../design/specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -7869,7 +7973,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../design/specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -7897,7 +8001,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-sql-blob-backend/" class="md-nav__link">
+      <a href="../design/specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -7925,7 +8029,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../041-sql-query-backend/" class="md-nav__link">
+      <a href="../design/specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -7953,7 +8057,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-ext-parquet/" class="md-nav__link">
+      <a href="../design/specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -7978,37 +8082,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    043: Resolution Plan Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../design/specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -8024,297 +8101,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-problem" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Problem
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The Problem">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#res-001-resolution-opacity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-001: Resolution Opacity
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#specification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Specification
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Specification">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#res-010-resolutionplan-dataclass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-010: ResolutionPlan Dataclass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-020-backendresolve-default-implementation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-020: Backend.resolve() Default Implementation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-025-universal-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-025: Universal Contract
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-030-storeresolve-key-rebasing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-030: Store.resolve() Key Rebasing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-035-storeresolve-invariant" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-035: Store.resolve() Invariant
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-040-proxystoreresolve-delegation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-040: ProxyStore.resolve() Delegation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-050-localbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-050: LocalBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-051-s3backendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-051: S3Backend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-052-s3pyarrowbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-052: S3PyArrowBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-053-azurebackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-053: AzureBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-054-sftpbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-054: SFTPBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-055-readonlyhttpbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-055: ReadOnlyHttpBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-056-memorybackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-056: MemoryBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-057-sqlblobbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-057: SQLBlobBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-058-sqlquerybackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-058: SQLQueryBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#phase-1-scope-id-120" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 1 Scope (ID-120)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 1 Scope (ID-120)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#out-of-scope-future-phases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Out of scope (future phases)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#test-requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Test Requirements
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -8327,7 +8113,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../044-graph-backend/" class="md-nav__link">
+      <a href="../design/specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -8378,7 +8164,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../further-reading/" class="md-nav__link">
+      <a href="../further-reading/" class="md-nav__link">
         
   
   
@@ -8425,10 +8211,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#decision-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Decision table
       
     </span>
   </a>
@@ -8436,22 +8222,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-problem" class="md-nav__link">
+  <a href="#syncbackendadapter-sync-async" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The Problem
+        SyncBackendAdapter — sync → async
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="The Problem">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncbackendsyncadapter-async-sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncBackendSyncAdapter — async → sync
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AsyncBackendSyncAdapter — async → sync">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#res-001-resolution-opacity" class="md-nav__link">
+  <a href="#constraints-to-keep-in-mind" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RES-001: Resolution Opacity
+        Constraints to keep in mind
       
     </span>
   </a>
@@ -8464,231 +8261,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#specification" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Specification
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Specification">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#res-010-resolutionplan-dataclass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-010: ResolutionPlan Dataclass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-020-backendresolve-default-implementation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-020: Backend.resolve() Default Implementation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-025-universal-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-025: Universal Contract
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-030-storeresolve-key-rebasing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-030: Store.resolve() Key Rebasing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-035-storeresolve-invariant" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-035: Store.resolve() Invariant
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-040-proxystoreresolve-delegation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-040: ProxyStore.resolve() Delegation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-050-localbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-050: LocalBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-051-s3backendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-051: S3Backend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-052-s3pyarrowbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-052: S3PyArrowBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-053-azurebackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-053: AzureBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-054-sftpbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-054: SFTPBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-055-readonlyhttpbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-055: ReadOnlyHttpBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-056-memorybackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-056: MemoryBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-057-sqlblobbackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-057: SQLBlobBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#res-058-sqlquerybackendresolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        RES-058: SQLQueryBackend.resolve()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#phase-1-scope-id-120" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 1 Scope (ID-120)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 1 Scope (ID-120)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#out-of-scope-future-phases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Out of scope (future phases)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#test-requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Test Requirements
+        See also
       
     </span>
   </a>
@@ -8711,216 +8287,88 @@
                   
 
 
+  
+  
 
-<h1 id="resolution-plan-specification">Resolution Plan Specification<a class="headerlink" href="#resolution-plan-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>This spec defines <code>resolve()</code> -- a universal introspection method that makes
-key-to-location resolution explicit and inspectable across all backends.
-<code>Store.resolve(key)</code> returns a frozen <code>ResolutionPlan</code> dataclass describing
-how a key maps to its storage location, which backend handles it, and
-backend-specific context for debugging, caching, and composition.</p>
-<p><strong>Relationship to existing specs:</strong></p>
+
+<h1 id="asyncsync-bridge-adapters">Async/Sync Bridge Adapters<a class="headerlink" href="#asyncsync-bridge-adapters" title="Permanent link">&para;</a></h1>
+<p><code>remote-store</code> ships two adapter classes that bridge the gap between
+synchronous and asynchronous code.  Both are in the <code>remote_store</code> package;
+choose the one that matches the direction you need.</p>
+<h2 id="decision-table">Decision table<a class="headerlink" href="#decision-table" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th><code>SyncBackendAdapter</code></th>
+<th><code>AsyncBackendSyncAdapter</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Direction</strong></td>
+<td>Sync backend → usable from async code</td>
+<td>Async backend → usable from sync code</td>
+</tr>
+<tr>
+<td><strong>You have…</strong></td>
+<td>A <code>Backend</code> (sync)</td>
+<td>An <code>AsyncBackend</code> (async-native)</td>
+</tr>
+<tr>
+<td><strong>You need to call it from…</strong></td>
+<td><code>async</code> functions / <code>AsyncStore</code></td>
+<td>Ordinary sync functions / <code>Store</code></td>
+</tr>
+<tr>
+<td><strong>Typical consumer</strong></td>
+<td><code>AsyncStore</code> wrapping a local or SFTP backend</td>
+<td>Sync code (or a <code>Store</code>) driving <code>AsyncAzureBackend</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="syncbackendadapter-sync-async"><code>SyncBackendAdapter</code> — sync → async<a class="headerlink" href="#syncbackendadapter-sync-async" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncStore</span><span class="p">,</span> <span class="n">SyncBackendAdapter</span>  <span class="c1"># noqa: F811</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryBackend</span>  <span class="c1"># noqa: F811</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">MemoryBackend</span><span class="p">()</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">async_backend</span> <span class="o">=</span> <span class="n">SyncBackendAdapter</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">async_backend</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col,val</span><span class="se">\n</span><span class="s2">1,2&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">content</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Use this when you have an existing sync backend and want to drive it from
+async code without rewriting it.</p>
+<h2 id="asyncbackendsyncadapter-async-sync"><code>AsyncBackendSyncAdapter</code> — async → sync<a class="headerlink" href="#asyncbackendsyncadapter-async-sync" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncBackendSyncAdapter</span><span class="p">,</span> <span class="n">Store</span>  <span class="c1"># noqa: F811</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncMemoryBackend</span>  <span class="c1"># noqa: F811</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">async_backend</span> <span class="o">=</span> <span class="n">AsyncMemoryBackend</span><span class="p">()</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">with</span> <span class="n">AsyncBackendSyncAdapter</span><span class="p">(</span><span class="n">async_backend</span><span class="p">)</span> <span class="k">as</span> <span class="n">adapter</span><span class="p">:</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">adapter</span><span class="p">)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col,val</span><span class="se">\n</span><span class="s2">1,2&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">content</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Use this when you have an async-native backend (e.g. <code>AsyncAzureBackend</code>)
+but your calling code is synchronous.</p>
+<h3 id="constraints-to-keep-in-mind">Constraints to keep in mind<a class="headerlink" href="#constraints-to-keep-in-mind" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Extends <code>003-backend-adapter-contract.md</code> (new default method on Backend ABC)</li>
-<li>Extends <code>001-store-api.md</code> (new method on Store)</li>
-<li>Builds on <code>010-native-path-resolution.md</code> (<code>native_path()</code> as foundation)</li>
-<li>Relates to <code>023-ext-cache.md</code> (future cache key derivation, Phase 2+)</li>
-<li>See also: <a href="../../research/research-resolve-spec-proposal/">Research</a></li>
+<li>Cannot be called from a running event loop — use <code>AsyncStore</code> instead.</li>
+<li><code>read()</code> returns a forward-only stream (<code>seekable()</code> is <code>False</code>).</li>
+<li><code>close(timeout=…)</code> drains in-flight work before stopping the private loop;
+  always call it (or use the context manager) to avoid daemon-thread leaks.</li>
 </ul>
-<hr />
-<h2 id="the-problem">The Problem<a class="headerlink" href="#the-problem" title="Permanent link">&para;</a></h2>
-<h3 id="res-001-resolution-opacity">RES-001: Resolution Opacity<a class="headerlink" href="#res-001-resolution-opacity" title="Permanent link">&para;</a></h3>
-<p>Backends resolve keys to bytes through different strategies (filesystem paths,
-S3 objects, URLs, SQL queries, tiered fallthrough). Today this resolution is
-implicit -- callers get bytes but cannot inspect <em>how</em> or <em>where</em> those bytes
-came from. <code>native_path()</code> exposes the resolved location as a string but
-carries no metadata about the resolution strategy, backend identity, or
-backend-specific context.</p>
-<p>This creates three practical problems:</p>
-<ol>
-<li><strong>Debugging opacity</strong> -- when a read fails or returns unexpected data, there
-   is no way to ask "which backend handled this key and how?"</li>
-<li><strong>Cache key fragility</strong> -- cache key construction requires ad-hoc assembly
-   of identity fields rather than deriving from a canonical resolution result.</li>
-<li><strong>Composition blindness</strong> -- a future <code>CompositeStore</code> (ID-121) that
-   delegates across tiers has no standard way to report which tier resolved a
-   key, which tiers were tried, or why resolution succeeded/failed.</li>
-</ol>
-<hr />
-<h2 id="specification">Specification<a class="headerlink" href="#specification" title="Permanent link">&para;</a></h2>
-<h3 id="res-010-resolutionplan-dataclass">RES-010: <code>ResolutionPlan</code> Dataclass<a class="headerlink" href="#res-010-resolutionplan-dataclass" title="Permanent link">&para;</a></h3>
-<p><code>ResolutionPlan</code> is a frozen dataclass in <code>remote_store._resolution</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResolutionPlan</span><span class="p">:</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">native_path</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">details</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>  <span class="c1"># wrapped in MappingProxyType via __post_init__</span>
-</code></pre></div>
-<p><strong>Fields:</strong></p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><code>kind</code></strong> -- Resolution strategy identifier. Standard values: <code>"local"</code>,
-  <code>"s3"</code>, <code>"s3-pyarrow"</code>, <code>"azure"</code>, <code>"sftp"</code>, <code>"http"</code>, <code>"memory"</code>,
-  <code>"sql-blob"</code>, <code>"sql-query"</code>, <code>"composite"</code>. Custom backends use their own
-  strings. For simple backends, <code>kind</code> equals <code>Backend.name</code>.</li>
-<li><strong><code>backend</code></strong> -- Human-readable backend identifier (typically <code>Backend.name</code>).</li>
-<li><strong><code>key</code></strong> -- The resolved key (store-relative after <code>Store.resolve()</code>,
-  backend-relative after <code>Backend.resolve()</code>).</li>
-<li><strong><code>native_path</code></strong> -- The backend-native location string (same as
-  <code>Backend.native_path()</code> output). Included for convenience.</li>
-<li><strong><code>details</code></strong> -- Backend-specific resolution context. Immutable at runtime:
-  wrapped in <code>types.MappingProxyType</code> via <code>__post_init__</code> to prevent accidental
-  mutation. Values should be JSON-serializable primitives for
-  logging/OTel compatibility.</li>
-</ul>
-<p><strong>Invariants:</strong></p>
-<ul>
-<li><code>ResolutionPlan</code> is frozen (<code>FrozenInstanceError</code> on attribute assignment).</li>
-<li><code>ResolutionPlan</code> is <strong>NOT hashable</strong> (<code>TypeError</code> on <code>hash()</code>) because
-  <code>MappingProxyType(dict)</code> is not hashable. Cache keys must be derived from
-  specific fields (see RES-100, Phase 2).</li>
-<li><code>details</code> is immutable at runtime (<code>TypeError</code> on item assignment).</li>
-<li><code>resolve()</code> is an introspection API. It is <strong>never called implicitly</strong> by
-  other Store or Backend methods (<code>read()</code>, <code>write()</code>, etc.).</li>
-</ul>
-<h3 id="res-020-backendresolve-default-implementation">RES-020: <code>Backend.resolve()</code> Default Implementation<a class="headerlink" href="#res-020-backendresolve-default-implementation" title="Permanent link">&para;</a></h3>
-<p><code>Backend</code> gains a non-abstract <code>resolve()</code> method with a sensible default.
-Placed alongside <code>native_path()</code>, <code>to_key()</code>, and <code>unwrap()</code> in the interop
-section.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">return</span> <span class="n">ResolutionPlan</span><span class="p">(</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        <span class="n">kind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">key</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="n">native_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="n">details</span><span class="o">=</span><span class="p">{},</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="p">)</span>
-</code></pre></div>
-<ul>
-<li>Non-abstract: existing and third-party backends get a working default.</li>
-<li>No I/O: pure name-to-plan mapping.</li>
-<li>Backends override to add meaningful <code>details</code>.</li>
-</ul>
-<h3 id="res-025-universal-contract">RES-025: Universal Contract<a class="headerlink" href="#res-025-universal-contract" title="Permanent link">&para;</a></h3>
-<p>For any backend <code>b</code> and valid path <code>p</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">plan</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">assert</span> <span class="n">plan</span><span class="o">.</span><span class="n">native_path</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">native_path</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">details</span><span class="p">,</span> <span class="n">MappingProxyType</span><span class="p">)</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">assert</span> <span class="n">plan</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span>  <span class="c1"># true for default impl; overrides may differ</span>
-</code></pre></div>
-<p>The <code>native_path</code> invariant ensures <code>resolve()</code> and <code>native_path()</code> agree.</p>
-<h3 id="res-030-storeresolve-key-rebasing">RES-030: <code>Store.resolve()</code> Key Rebasing<a class="headerlink" href="#res-030-storeresolve-key-rebasing" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">full_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_full_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
-</code></pre></div>
-<ul>
-<li>Rebases the key: <code>plan.key</code> is the store-relative key, not the
-  backend-relative path.</li>
-<li>All other fields (<code>kind</code>, <code>backend</code>, <code>native_path</code>, <code>details</code>) are
-  forwarded unchanged from the backend's plan.</li>
-<li><code>resolve("")</code> is valid and resolves the store root.</li>
-</ul>
-<h3 id="res-035-storeresolve-invariant">RES-035: <code>Store.resolve()</code> Invariant<a class="headerlink" href="#res-035-storeresolve-invariant" title="Permanent link">&para;</a></h3>
-<p>For any store <code>s</code> and valid key <code>k</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">plan</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">assert</span> <span class="n">s</span><span class="o">.</span><span class="n">native_path</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">==</span> <span class="n">plan</span><span class="o">.</span><span class="n">native_path</span>
-</code></pre></div>
-<p>This is the store-level coherence contract: the plan's <code>native_path</code> always
-agrees with what the store would return for that key.</p>
-<h3 id="res-040-proxystoreresolve-delegation">RES-040: <code>ProxyStore.resolve()</code> Delegation<a class="headerlink" href="#res-040-proxystoreresolve-delegation" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</code></pre></div>
-<p><code>ProxyStore</code> delegates to the inner store. The returned plan is unchanged.
-Subclasses (<code>ObservedStore</code>, <code>CachedStore</code>) may override to add behavior
-(e.g., observation events).</p>
-<h3 id="res-050-localbackendresolve">RES-050: <code>LocalBackend.resolve()</code><a class="headerlink" href="#res-050-localbackendresolve" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">kind</span> <span class="o">=</span> <span class="s2">&quot;local&quot;</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">details</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;absolute_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
-</code></pre></div>
-<h3 id="res-051-s3backendresolve">RES-051: <code>S3Backend.resolve()</code><a class="headerlink" href="#res-051-s3backendresolve" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">kind</span> <span class="o">=</span> <span class="s2">&quot;s3&quot;</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">details</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;object_key&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;endpoint_url&quot;</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">}</span>
-</code></pre></div>
-<p><code>endpoint_url</code> is stripped of userinfo (RFC 3986) before inclusion.</p>
-<h3 id="res-052-s3pyarrowbackendresolve">RES-052: <code>S3PyArrowBackend.resolve()</code><a class="headerlink" href="#res-052-s3pyarrowbackendresolve" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">kind</span> <span class="o">=</span> <span class="s2">&quot;s3-pyarrow&quot;</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">details</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;object_key&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;endpoint_url&quot;</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">}</span>
-</code></pre></div>
-<h3 id="res-053-azurebackendresolve">RES-053: <code>AzureBackend.resolve()</code><a class="headerlink" href="#res-053-azurebackendresolve" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">kind</span> <span class="o">=</span> <span class="s2">&quot;azure&quot;</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">details</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;container&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;account_url&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
-</code></pre></div>
-<h3 id="res-054-sftpbackendresolve">RES-054: <code>SFTPBackend.resolve()</code><a class="headerlink" href="#res-054-sftpbackendresolve" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">kind</span> <span class="o">=</span> <span class="s2">&quot;sftp&quot;</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">details</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;base_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
-</code></pre></div>
-<h3 id="res-055-readonlyhttpbackendresolve">RES-055: <code>ReadOnlyHttpBackend.resolve()</code><a class="headerlink" href="#res-055-readonlyhttpbackendresolve" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">kind</span> <span class="o">=</span> <span class="s2">&quot;http&quot;</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">details</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
-</code></pre></div>
-<p><code>url</code> is the fully-resolved URL for the key. <code>method</code> is <code>"GET"</code>.</p>
-<h3 id="res-056-memorybackendresolve">RES-056: <code>MemoryBackend.resolve()</code><a class="headerlink" href="#res-056-memorybackendresolve" title="Permanent link">&para;</a></h3>
-<p>Uses the default <code>Backend.resolve()</code> implementation. No override needed.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">kind</span> <span class="o">=</span> <span class="s2">&quot;memory&quot;</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">details</span> <span class="o">=</span> <span class="p">{}</span>
-</code></pre></div>
-<h3 id="res-057-sqlblobbackendresolve">RES-057: <code>SQLBlobBackend.resolve()</code><a class="headerlink" href="#res-057-sqlblobbackendresolve" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">kind</span> <span class="o">=</span> <span class="s2">&quot;sql-blob&quot;</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">details</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;table_name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
-</code></pre></div>
-<h3 id="res-058-sqlquerybackendresolve">RES-058: <code>SQLQueryBackend.resolve()</code><a class="headerlink" href="#res-058-sqlquerybackendresolve" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">kind</span> <span class="o">=</span> <span class="s2">&quot;sql-query&quot;</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">details</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">}</span>
-</code></pre></div>
-<p><code>source</code> is <code>"explicit"</code> for mapped queries. <code>format</code> is the output format
-(e.g., <code>"parquet"</code>, <code>"csv"</code>). The raw SQL query is <strong>not</strong> included in
-<code>details</code> (see Security section).</p>
-<hr />
-<h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
-<p><code>ResolutionPlan</code> may be logged, serialized, or sent to observability systems.
-Its contents must be treated as potentially public.</p>
-<ol>
-<li><code>details</code> <strong>must never</strong> include credentials, passwords, tokens, or secret
-   keys.</li>
-<li><code>endpoint_url</code> values must be stripped of userinfo (<code>user:pass@host</code>) before
-   inclusion in <code>details</code>.</li>
-<li>SQL queries are <strong>not</strong> included in <code>details</code> to avoid leaking business
-   logic or parameterized values.</li>
-<li>Connection strings and database URLs are <strong>not</strong> included in <code>details</code>.</li>
-</ol>
-<hr />
-<h2 id="phase-1-scope-id-120">Phase 1 Scope (ID-120)<a class="headerlink" href="#phase-1-scope-id-120" title="Permanent link">&para;</a></h2>
-<p>Phase 1 covers RES-010 through RES-058:</p>
-<ol>
-<li><code>ResolutionPlan</code> dataclass in <code>remote_store._resolution</code></li>
-<li>Default <code>Backend.resolve()</code> on the ABC</li>
-<li><code>Store.resolve()</code> with key rebasing</li>
-<li><code>ProxyStore.resolve()</code> delegation</li>
-<li>Per-backend overrides for all 9 backends</li>
-<li>Export <code>ResolutionPlan</code> from <code>remote_store.__init__</code></li>
-</ol>
-<h3 id="out-of-scope-future-phases">Out of scope (future phases)<a class="headerlink" href="#out-of-scope-future-phases" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Phase 2 (RES-100):</strong> Cache key derivation from <code>ResolutionPlan</code> fields
-  in <code>ext.cache</code>.</li>
-<li><strong>Phase 3 (RES-110, ID-121):</strong> <code>CompositeStore.resolve()</code> with tier
-  reporting, <code>on_resolve</code> observation hook.</li>
-</ul>
-<hr />
-<h2 id="test-requirements">Test Requirements<a class="headerlink" href="#test-requirements" title="Permanent link">&para;</a></h2>
-<p>Per <code>sdd/TESTING.md</code> rules:</p>
-<ul>
-<li>Every spec ID gets <code>@pytest.mark.spec("RES-xxx")</code> tracing.</li>
-<li><code>MemoryBackend</code> preferred over mocks for Store/ProxyStore tests.</li>
-<li>Per-backend tests assert expected detail key names exist (not values),
-  except where semantically important (e.g., <code>details["bucket"]</code> matches
-  configured bucket).</li>
-<li>Edge cases: <code>resolve("")</code>, <code>child().resolve()</code>, special characters in keys.</li>
-<li>Failure-path: <code>hash(plan)</code> raises <code>TypeError</code>.</li>
+<li><a href="../api/aio/">API reference</a> — <code>AsyncBackendSyncAdapter</code>, <code>SyncBackendAdapter</code>, <code>AsyncStore</code></li>
+<li><a href="../async/">Async guide</a> — <code>AsyncStore</code>, native async backends, and the
+  <code>SyncBackendAdapter</code> direction</li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md">ADR-0025</a>
+  — decision record for <code>AsyncBackendSyncAdapter</code></li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/sdd/specs/029-async-store-backend-api.md">spec 029 § AsyncBackendSyncAdapter</a>
+  — full invariant list (ASYNC-080…093)</li>
 </ul>
 
 
@@ -8977,10 +8425,10 @@ Its contents must be treated as potentially public.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

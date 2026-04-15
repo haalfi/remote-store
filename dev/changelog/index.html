@@ -2669,6 +2669,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../async-sync-bridges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async/Sync Bridges
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../health-check/" class="md-nav__link">
         
   
@@ -10927,11 +10955,19 @@
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>AsyncBackendSyncAdapter</code> spec block + test doubles</strong> (ID-142):
+<li>
+<p><strong><code>AsyncBackendSyncAdapter</code> review follow-ups</strong> (ID-143c): <code>_ChunkPullReader</code>
+  promoted to <code>io.RawIOBase</code>; best-effort <code>__del__</code> on <code>_AsyncIteratorBridge</code>
+  for GC-path cleanup; looping drain in <code>close()</code>; completed docstrings;
+  extended test suite; new <code>guides/async-sync-bridges.md</code> decision guide.</p>
+</li>
+<li>
+<p><strong><code>AsyncBackendSyncAdapter</code> spec block + test doubles</strong> (ID-142):
   pinned the invariants ADR-0025 records in prose as a normative
   <code>ASYNC-NNN</code> block in spec 029, and added async-backend test doubles
   under <code>tests/aio/</code> for adapter failure-path coverage. Unblocks the
-  ID-127 Graph implementation PR.</li>
+  ID-127 Graph implementation PR.</p>
+</li>
 <li><strong>Async-to-sync backend adapter — ADR draft</strong> (ID-141): drafted
   <code>sdd/adrs/0025-async-to-sync-backend-adapter.md</code>; updated RFC-0010
   § Async posture. Prerequisite for the ID-127 Graph implementation
