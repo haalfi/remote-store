@@ -103,8 +103,9 @@ class TestAdapterLifecycleAzurite:
     def test_close_is_idempotent(self, azurite_adapter_store: Store) -> None:
         """close() on the underlying adapter must not raise on repeat calls.
 
-        We call it via store.close() once, then call backend.close() again directly.
-        The second call must be a no-op, not raise.
+        We call store.close() once, then adapter.close() again directly.
+        The second call must be a no-op.  The adapter must be in closed state
+        after both calls (behavioral check via ASYNC-083).
         """
         from azure.storage.blob import BlobServiceClient
 
@@ -122,6 +123,9 @@ class TestAdapterLifecycleAzurite:
             store = Store(backend=adapter)
             store.close()  # first close
             adapter.close()  # second close -- must not raise
+            # Behavioral check: adapter is closed and stays closed (ASYNC-083).
+            with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
+                adapter.exists("probe.txt")
         finally:
             service.delete_container(container)
             service.close()
@@ -137,22 +141,18 @@ class TestAdapterCapabilitiesAzurite:
     """ASYNC-084: SEEKABLE_READ masked; LAZY_READ and ATOMIC_WRITE preserved."""
 
     @pytest.mark.spec("ASYNC-084")
-    def test_seekable_read_masked(self, azurite_adapter_store: Store) -> None:
+    @pytest.mark.parametrize(
+        ("capability_name", "expected"),
+        [
+            ("SEEKABLE_READ", False),  # masked by adapter (async stream is forward-only)
+            ("LAZY_READ", True),  # preserved (single-chunk in-flight, ASYNC-080)
+            ("ATOMIC_WRITE", True),  # preserved verbatim from AsyncAzureBackend
+        ],
+    )
+    def test_capability_translation(self, azurite_adapter_store: Store, capability_name: str, expected: bool) -> None:
         from remote_store._capabilities import Capability
 
-        assert not azurite_adapter_store.supports(Capability.SEEKABLE_READ)
-
-    @pytest.mark.spec("ASYNC-084")
-    def test_lazy_read_preserved(self, azurite_adapter_store: Store) -> None:
-        from remote_store._capabilities import Capability
-
-        assert azurite_adapter_store.supports(Capability.LAZY_READ)
-
-    @pytest.mark.spec("ASYNC-084")
-    def test_atomic_write_preserved(self, azurite_adapter_store: Store) -> None:
-        from remote_store._capabilities import Capability
-
-        assert azurite_adapter_store.supports(Capability.ATOMIC_WRITE)
+        assert azurite_adapter_store.supports(Capability[capability_name]) is expected
 
 
 # ---------------------------------------------------------------------------
@@ -281,29 +281,25 @@ class TestAdapterListingAzurite:
     """list_files, list_folders, iter_children produce correct results."""
 
     @pytest.fixture
-    def populated_store(self, azurite_adapter_store: Store) -> Store:
-        """Write a small tree into the shared store under a unique prefix."""
+    def populated_prefix(self, azurite_adapter_store: Store) -> str:
+        """Write a small tree into the shared store; return the unique prefix."""
         prefix = f"list-{uuid.uuid4().hex[:6]}"
         azurite_adapter_store.write(f"{prefix}/a.txt", b"alpha")
         azurite_adapter_store.write(f"{prefix}/b.txt", b"bravo")
         azurite_adapter_store.write(f"{prefix}/sub/c.txt", b"charlie")
-        # Store a reference so tests know the prefix.
-        azurite_adapter_store._test_prefix = prefix  # type: ignore[attr-defined]
-        return azurite_adapter_store
+        return prefix
 
     @pytest.mark.spec("ASYNC-032")
-    def test_list_files_recursive(self, populated_store: Store) -> None:
-        prefix = populated_store._test_prefix  # type: ignore[attr-defined]
-        files = list(populated_store.list_files(prefix, recursive=True))
+    def test_list_files_recursive(self, azurite_adapter_store: Store, populated_prefix: str) -> None:
+        files = list(azurite_adapter_store.list_files(populated_prefix, recursive=True))
         names = {f.name for f in files}
         assert "a.txt" in names
         assert "b.txt" in names
         assert "c.txt" in names
 
     @pytest.mark.spec("ASYNC-032")
-    def test_list_folders(self, populated_store: Store) -> None:
-        prefix = populated_store._test_prefix  # type: ignore[attr-defined]
-        folders = list(populated_store.list_folders(prefix))
+    def test_list_folders(self, azurite_adapter_store: Store, populated_prefix: str) -> None:
+        folders = list(azurite_adapter_store.list_folders(populated_prefix))
         names = {f.name for f in folders}
         assert "sub" in names
 
@@ -321,8 +317,9 @@ class TestAdapterErrorMappingAzurite:
     def test_not_found_on_missing_path(self, azurite_adapter_store: Store) -> None:
         from remote_store._errors import NotFound
 
-        with pytest.raises(NotFound):
-            azurite_adapter_store.read_bytes(f"ghost-{uuid.uuid4().hex}.txt")
+        missing = f"ghost-{uuid.uuid4().hex}.txt"
+        with pytest.raises(NotFound, match="ghost-"):
+            azurite_adapter_store.read_bytes(missing)
 
     @pytest.mark.spec("ASYNC-087")
     def test_already_exists_without_overwrite(self, azurite_adapter_store: Store) -> None:
@@ -330,7 +327,7 @@ class TestAdapterErrorMappingAzurite:
 
         path = f"dup-{uuid.uuid4().hex[:6]}.txt"
         azurite_adapter_store.write(path, b"first")
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="dup-"):
             azurite_adapter_store.write(path, b"second")
 
 
@@ -345,7 +342,10 @@ class TestAdapterHealthCheckAzurite:
 
     @pytest.mark.spec("ASYNC-093")
     def test_check_health_succeeds(self, azurite_adapter_store: Store) -> None:
-        azurite_adapter_store.check_health()  # must not raise
+        """check_health() must not raise; store must remain operational afterwards."""
+        azurite_adapter_store.check_health()
+        # Verify the store is still operational: a nonexistent path returns False.
+        assert azurite_adapter_store.exists(f"post-health-{uuid.uuid4().hex[:6]}.txt") is False
 
 
 # ---------------------------------------------------------------------------
