@@ -26,16 +26,17 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
-- **`AsyncBackendSyncAdapter`** (ID-143): new public class that wraps any
+- **`AsyncBackendSyncAdapter`** (ID-141–143c): new public class wrapping any
   `AsyncBackend` as a synchronous `Backend` via a private event loop on a
-  dedicated daemon thread. Complements `SyncBackendAdapter` (the sync →
-  async direction). Covers the full behaviour contract in
-  `sdd/adrs/0025-async-to-sync-backend-adapter.md` (ADR-0025) and
-  `sdd/specs/029-async-store-backend-api.md` § AsyncBackendSyncAdapter
-  (ASYNC-080…093): streaming read/list pumps, write bridging, `open_atomic`
-  synthesis, capability translation, fail-fast guard, and bounded shutdown.
-  Unit test suite in `tests/aio/` with every test traced to its spec ID.
-  Unblocks ID-127 (Graph backend).
+  dedicated daemon thread. Design in ADR-0025; spec 029 § AsyncBackendSyncAdapter
+  (ASYNC-080…093) covers streaming read/list pumps, write bridging, `open_atomic`
+  synthesis, capability translation, fail-fast guard for running-loop callers,
+  bounded shutdown, and GC-path cleanup (`_ChunkPullReader` as `io.RawIOBase`;
+  best-effort `__del__` on `_AsyncIteratorBridge`). Full unit suite in
+  `tests/aio/` (every test traced to spec IDs), Azurite-backed integration suite
+  for the full sync `Backend` contract, and bridged-Azure variant in the e2e
+  streaming chain. Decision guide: `guides/async-sync-bridges.md`. Unblocks
+  ID-127 (Graph backend).
 
 ### Documentation
 
@@ -51,25 +52,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   example metadata and link rewrites are now data-driven via `SddKind`,
   self-describing example docstrings, and `LinkResolver`.
 
-- **`AsyncBackendSyncAdapter` real-backend coverage** (ID-143b): Azurite-backed
-  integration suite for the full sync `Backend` contract through the adapter,
-  plus a bridged-Azure variant in the e2e streaming chain with a wider per-hop
-  threshold for thread-crossing overhead.
-
-- **`AsyncBackendSyncAdapter` review follow-ups** (ID-143c): `_ChunkPullReader`
-  promoted to `io.RawIOBase`; best-effort `__del__` on `_AsyncIteratorBridge`
-  for GC-path cleanup; looping drain in `close()`; completed docstrings;
-  extended test suite; new `guides/async-sync-bridges.md` decision guide.
-
-- **`AsyncBackendSyncAdapter` spec block + test doubles** (ID-142):
-  pinned the invariants ADR-0025 records in prose as a normative
-  `ASYNC-NNN` block in spec 029, and added async-backend test doubles
-  under `tests/aio/` for adapter failure-path coverage. Unblocks the
-  ID-127 Graph implementation PR.
-- **Async-to-sync backend adapter — ADR draft** (ID-141): drafted
-  `sdd/adrs/0025-async-to-sync-backend-adapter.md`; updated RFC-0010
-  § Async posture. Prerequisite for the ID-127 Graph implementation
-  PR; ID-142 (landed above) pins the `ASYNC-NNN` spec block.
 - **Microsoft Graph backend — SDD artifacts** (ID-127): accepted
   `sdd/rfcs/rfc-0010-graph-backend.md`, ADRs `sdd/adrs/0021-graph-sdk-choice.md`
   (SDK choice), `sdd/adrs/0022-graph-auth-model.md` (auth model),
@@ -79,6 +61,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `sdd/specs/005-error-model.md` with ERR-013 (`ResourceLocked`) and
   `sdd/specs/025-retry-policy.md` with RET-015 (Graph retry mapping).
   No runtime changes.
+
 - **Test-quality cleanup on coverage PR** (BK-151): cross-platform-safe tests,
   real assertions on previously mock-only checks, `spec=` on every `MagicMock()`.
 
