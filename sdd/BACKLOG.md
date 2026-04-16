@@ -124,9 +124,9 @@ Items graduate through the SDD pipeline:
   using `AsyncAzureBackend` to verify the block-size defaults work for
   async uploads too. Requires an async `transfer()` equivalent or direct
   `store.write()` loop.
-  ID-143 will cover the bridged-async case via `AsyncBackendSyncAdapter`
-  (sync `transfer()` driving `AsyncAzureBackend` through the bridge);
-  the native `AsyncStore.transfer()` variant remains the residual scope
+  ID-143 covered the bridged-async case via `AsyncBackendSyncAdapter`
+  (sync `transfer()` driving `AsyncAzureBackend` through the bridge — landed).
+  The native `AsyncStore.transfer()` variant remains the residual scope
   of this item.
 
 ### API Surface Enhancements
@@ -153,9 +153,9 @@ Items graduate through the SDD pipeline:
     (GR-001..GR-057; RET-015 in [spec 025](specs/025-retry-policy.md);
     ERR-013 in [spec 005](specs/005-error-model.md)).
   - Reference: Azure backend (`_azure.py`) — closest architectural parallel.
-  - Depends on: ID-143 (`AsyncBackendSyncAdapter` implementation).
-    Spec foundation: ID-141 (ADR-0025) and ID-142 (spec 029
-    § AsyncBackendSyncAdapter + `tests/aio/_doubles.py`) — both landed.
+  - Spec foundation: ID-141 (ADR-0025), ID-142 (spec 029
+    § AsyncBackendSyncAdapter + `tests/aio/_doubles.py`), and ID-143
+    (`AsyncBackendSyncAdapter` implementation + integration suite) — all landed.
   - Next: implementation per spec 044.
 
 - [ ] **ID-121 — CompositeStore (research complete)**
