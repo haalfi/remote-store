@@ -11091,16 +11091,17 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>AsyncBackendSyncAdapter</code></strong> (ID-143): new public class that wraps any
+<li><strong><code>AsyncBackendSyncAdapter</code></strong> (ID-141–143c): new public class wrapping any
   <code>AsyncBackend</code> as a synchronous <code>Backend</code> via a private event loop on a
-  dedicated daemon thread. Complements <code>SyncBackendAdapter</code> (the sync →
-  async direction). Covers the full behaviour contract in
-  <code>sdd/adrs/0025-async-to-sync-backend-adapter.md</code> (ADR-0025) and
-  <code>sdd/specs/029-async-store-backend-api.md</code> § AsyncBackendSyncAdapter
-  (ASYNC-080…093): streaming read/list pumps, write bridging, <code>open_atomic</code>
-  synthesis, capability translation, fail-fast guard, and bounded shutdown.
-  Unit test suite in <code>tests/aio/</code> with every test traced to its spec ID.
-  Unblocks ID-127 (Graph backend).</li>
+  dedicated daemon thread. Design in ADR-0025; spec 029 § AsyncBackendSyncAdapter
+  (ASYNC-080…093) covers streaming read/list pumps, write bridging, <code>open_atomic</code>
+  synthesis, capability translation, fail-fast guard for running-loop callers,
+  bounded shutdown, and GC-path cleanup (<code>_ChunkPullReader</code> as <code>io.RawIOBase</code>;
+  best-effort <code>__del__</code> on <code>_AsyncIteratorBridge</code>). Full unit suite in
+  <code>tests/aio/</code> (every test traced to spec IDs), Azurite-backed integration suite
+  for the full sync <code>Backend</code> contract, and bridged-Azure variant in the e2e
+  streaming chain. Decision guide: <code>guides/async-sync-bridges.md</code>. Unblocks
+  ID-127 (Graph backend).</li>
 </ul>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>
@@ -11118,29 +11119,7 @@
   self-describing example docstrings, and <code>LinkResolver</code>.</p>
 </li>
 <li>
-<p><strong><code>AsyncBackendSyncAdapter</code> real-backend coverage</strong> (ID-143b): Azurite-backed
-  integration suite for the full sync <code>Backend</code> contract through the adapter,
-  plus a bridged-Azure variant in the e2e streaming chain with a wider per-hop
-  threshold for thread-crossing overhead.</p>
-</li>
-<li>
-<p><strong><code>AsyncBackendSyncAdapter</code> review follow-ups</strong> (ID-143c): <code>_ChunkPullReader</code>
-  promoted to <code>io.RawIOBase</code>; best-effort <code>__del__</code> on <code>_AsyncIteratorBridge</code>
-  for GC-path cleanup; looping drain in <code>close()</code>; completed docstrings;
-  extended test suite; new <code>guides/async-sync-bridges.md</code> decision guide.</p>
-</li>
-<li>
-<p><strong><code>AsyncBackendSyncAdapter</code> spec block + test doubles</strong> (ID-142):
-  pinned the invariants ADR-0025 records in prose as a normative
-  <code>ASYNC-NNN</code> block in spec 029, and added async-backend test doubles
-  under <code>tests/aio/</code> for adapter failure-path coverage. Unblocks the
-  ID-127 Graph implementation PR.</p>
-</li>
-<li><strong>Async-to-sync backend adapter — ADR draft</strong> (ID-141): drafted
-  <code>sdd/adrs/0025-async-to-sync-backend-adapter.md</code>; updated RFC-0010
-  § Async posture. Prerequisite for the ID-127 Graph implementation
-  PR; ID-142 (landed above) pins the <code>ASYNC-NNN</code> spec block.</li>
-<li><strong>Microsoft Graph backend — SDD artifacts</strong> (ID-127): accepted
+<p><strong>Microsoft Graph backend — SDD artifacts</strong> (ID-127): accepted
   <code>sdd/rfcs/rfc-0010-graph-backend.md</code>, ADRs <code>sdd/adrs/0021-graph-sdk-choice.md</code>
   (SDK choice), <code>sdd/adrs/0022-graph-auth-model.md</code> (auth model),
   <code>sdd/adrs/0023-async-monitor-polling.md</code> (async monitor polling), and
@@ -11148,9 +11127,12 @@
   <code>sdd/specs/044-graph-backend.md</code> (GR-001..GR-057). Amends
   <code>sdd/specs/005-error-model.md</code> with ERR-013 (<code>ResourceLocked</code>) and
   <code>sdd/specs/025-retry-policy.md</code> with RET-015 (Graph retry mapping).
-  No runtime changes.</li>
-<li><strong>Test-quality cleanup on coverage PR</strong> (BK-151): cross-platform-safe tests,
-  real assertions on previously mock-only checks, <code>spec=</code> on every <code>MagicMock()</code>.</li>
+  No runtime changes.</p>
+</li>
+<li>
+<p><strong>Test-quality cleanup on coverage PR</strong> (BK-151): cross-platform-safe tests,
+  real assertions on previously mock-only checks, <code>spec=</code> on every <code>MagicMock()</code>.</p>
+</li>
 </ul>
 <h2 id="0230-2026-04-12">[0.23.0] - 2026-04-12<a class="headerlink" href="#0230-2026-04-12" title="Permanent link">&para;</a></h2>
 <h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
