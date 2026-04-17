@@ -302,8 +302,9 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ### ASYNC-052a: write_text()
 
-**Invariant:** `async def write_text(path, text, *, encoding="utf-8", overwrite=False) -> WriteResult` encodes the string and delegates to `write()`, forwarding the returned `WriteResult` unchanged. Convenience method — no separate backend call.
-**See also:** [045-write-result.md](045-write-result.md) (WR-001) for the return-type widening from `None` to `WriteResult`.
+**Invariant:** `async def write_text(path, text, *, encoding="utf-8", overwrite=False, metadata=None) -> WriteResult` encodes the string and delegates to `write(path, encoded, overwrite=overwrite, metadata=metadata)`, forwarding the returned `WriteResult` unchanged. Convenience method — no separate backend call. `metadata` is a pass-through: the `USER_METADATA` capability gate and validation are applied inside `write()` (per WR-010 / WR-011).
+**Raises:** `CapabilityNotSupported` before any I/O when `metadata` is non-`None` and the backend does not declare `USER_METADATA` (per WR-010).
+**See also:** [045-write-result.md](045-write-result.md) (WR-001, WR-010) for the return-type widening and the `metadata=` capability gate.
 
 ### ASYNC-052b: list_folders(max_depth=)
 

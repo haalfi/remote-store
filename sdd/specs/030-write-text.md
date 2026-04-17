@@ -17,18 +17,28 @@ concern.
 
 ### WTXT-001: `Store.write_text()` Signature and Behavior
 
-**Invariant:** `Store.write_text(path, text, *, encoding="utf-8", overwrite=False)`
+**Invariant:** `Store.write_text(path, text, *, encoding="utf-8", overwrite=False, metadata=None)`
 encodes a string and writes it to a file, returning a `WriteResult`.
 
 **Signature:**
 ```python
-def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite: bool = False) -> WriteResult:
+def write_text(
+    self,
+    path: str,
+    text: str,
+    *,
+    encoding: str = "utf-8",
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult:
     ...
 ```
 
 **Implementation:** Encodes `text` via `.encode(encoding)` and delegates to
-`self.write(path, encoded, overwrite=overwrite)`, forwarding the returned
-`WriteResult` unchanged.
+`self.write(path, encoded, overwrite=overwrite, metadata=metadata)`,
+forwarding the returned `WriteResult` unchanged. `metadata` is a pass-
+through: validation and the `USER_METADATA` capability gate are applied
+inside `write()` (per WR-010 / WR-011), not duplicated here.
 
 **Postconditions:**
 - Writes `text.encode(encoding)` to the file at `path`.
@@ -36,10 +46,12 @@ def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite
 - `overwrite` parameter controls whether existing files may be replaced.
 - Raises `InvalidPath` if `path` is empty or `"."`.
 - Raises `AlreadyExists` if the file exists and `overwrite=False`.
+- Raises `CapabilityNotSupported` before any I/O when `metadata` is
+  non-`None` and the backend does not declare `USER_METADATA` (per WR-010).
 - Capability-gated on `Capability.WRITE` (inherited from `write`).
 
-**See also:** [045-write-result.md](045-write-result.md) (WR-001) for the
-return-type widening from `None` to `WriteResult`.
+**See also:** [045-write-result.md](045-write-result.md) (WR-001, WR-010)
+for the return-type widening and the `metadata=` capability gate.
 
 ### WTXT-002: No Backend ABC Change
 

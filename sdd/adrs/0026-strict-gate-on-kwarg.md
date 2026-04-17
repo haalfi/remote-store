@@ -73,10 +73,10 @@ The validation happens in the Store layer (one place), not in each backend.
 
 ### Existing instances
 
-| Capability        | Kwarg gated          | Method(s)              | Spec ref |
+| Capability        | Gate target          | Method(s)              | Spec ref |
 | ----------------- | -------------------- | ---------------------- | -------- |
-| `ATOMIC_WRITE`    | (gates whole method) | `write_atomic()`       | AW-002   |
-| `USER_METADATA`   | `metadata=`          | `write*()` variants    | WR-010   |
+| `ATOMIC_WRITE`    | whole method         | `write_atomic()`       | AW-002   |
+| `USER_METADATA`   | `metadata=` kwarg    | `write*()` variants    | WR-010   |
 
 `ATOMIC_WRITE` is listed here because it established the raise-before-I/O
 principle, even though it gates the entire method rather than a single kwarg.
