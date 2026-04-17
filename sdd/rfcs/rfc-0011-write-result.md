@@ -38,9 +38,9 @@ proposal:
    computed it. The only reason callers don't have it today is that
    we throw it away at the backend boundary.
 2. **Content hashes are not free.** Computing sha256 over the byte
-   stream costs ~2 ns/byte and adds a wrapper to every write path,
-   sync and async. Most callers don't need it. Saga consumers do —
-   but they can ask.
+   stream adds a wrapper to every write path, sync and async, plus
+   per-byte CPU cost. Most callers don't need it. Saga consumers do
+   — but they can ask.
 
 The right design treats these as two separate features with two
 separate cost models, not one tier-stack that makes every caller pay
@@ -255,8 +255,11 @@ layer (one place, not seven) **before** capability dispatch:
 
 - Keys are non-empty ASCII, no leading underscore.
 - Values are strings.
-- Total serialised size ≤ 2 KB (S3's hard limit; applied
-  uniformly for portability).
+- `sum(len(k.encode("ascii")) + len(v.encode("utf-8")) for k, v in metadata.items()) ≤ 2048`.
+  This measures the payload bytes only — not HTTP-header framing or
+  backend-specific prefixes like `x-amz-meta-`. The bound matches the
+  narrowest portable limit (S3's 2 KB user-metadata cap) while giving
+  the validator a deterministic, backend-agnostic formula.
 
 Validation failures raise `ValueError` with the offending key/value.
 
@@ -299,6 +302,9 @@ Useful when:
 - A caller wrote on a `"basic"` backend and wants whatever the
   backend can derive after the fact (mtime, etag if the backend
   has one but doesn't return it on PUT).
+- A caller on a read-only backend (no `WRITE`, has `METADATA`)
+  wants the `WriteResult` shape for a file it did not write —
+  `head()` is gated on `METADATA` only.
 
 `STORE-008` (the exhaustive Store API surface in spec 001) is
 amended to include `head` and `write_text`. `write_text` is not
@@ -408,20 +414,21 @@ echoed back if the caller passed `metadata=`.
 | ------ | ----------------------------------------------------------------------------------------------------------------- |
 | WR-001 | `Store.write()`, `Store.write_text()`, and `Store.write_atomic()` return `WriteResult` (return-type widening from `None`). |
 | WR-002 | `WriteResult.path` is store-relative, matching the rebasing applied to `FileInfo.path` returned from `get_file_info()`. |
-| WR-003 | `WriteResult.size` equals the byte length of the written content on every backend.                                |
+| WR-003 | `WriteResult.size` equals the byte length of the written content on every backend. For `bytes`/`str` input, `size` is computed from the payload directly (zero added cost). For non-seekable `BinaryIO` input on backends without `WRITE_RESULT_NATIVE`, `size` is obtained by counting bytes as they stream or via a post-write `stat()` call — costs one local `stat` on `LocalBackend`, zero extra round trips on `SFTPBackend` (paramiko returns bytes transferred). |
 | WR-004 | If the backend declares `WRITE_RESULT_NATIVE`, every successful `Store.write*()` returns `WriteResult.source == "native"`; otherwise `source == "basic"`. |
 | WR-005 | When `source == "basic"`, only `path` and `size` are guaranteed populated; all other rich fields are `None`.      |
 | WR-006 | `WriteResult.source == "sidecar"` only when constructed by `Store.head()`.                                        |
 | WR-007 | The default write path (`Store.write*()` without `ext.write`) returns `WriteResult.digest is None` on every backend that does not surface a server-verified digest. |
-| WR-008 | `Store.head(path) -> WriteResult` raises `NotFound` if the path doesn't exist; raises `CapabilityNotSupported` if the backend lacks `METADATA`. |
+| WR-008 | `Store.head(path) -> WriteResult` is gated on `Capability.METADATA` only. It is **not** gated on `WRITE` — callers may invoke it on read-only backends that declare `METADATA`. Raises `NotFound` if the path doesn't exist; raises `CapabilityNotSupported` if the backend lacks `METADATA`. |
 | WR-009 | `Capability.WRITE_RESULT_NATIVE` is a quality flag — it does not gate any method.                                 |
 | WR-010 | `Capability.USER_METADATA` gates the `metadata=` kwarg. Passing `metadata=` to a non-declaring backend raises `CapabilityNotSupported` before any I/O. |
-| WR-011 | `metadata` is `Mapping[str, str]`. Keys must be non-empty ASCII without a leading underscore; values must be strings; total serialized size must be ≤ 2 KB. Violations raise `ValueError` before any I/O. |
+| WR-011 | `metadata` is `Mapping[str, str]`. Keys must be non-empty ASCII without a leading underscore; values must be strings; `sum(len(k.encode("ascii")) + len(v.encode("utf-8")))` over all entries must be ≤ 2048. Violations raise `ValueError` before any I/O. |
 | WR-012 | When `metadata=` is passed, `WriteResult.metadata` echoes the stored canonicalised mapping.                       |
 | WR-013 | User metadata survives round-trip through `get_file_info()` on backends declaring `USER_METADATA`, accessible as `FileInfo.metadata`. |
 | WR-014 | `ext.write.write_with_hash()` returns a `WriteResult` with `digest` populated from a streaming hash; the underlying `source` value is preserved. |
-| WR-015 | `ext.write.write_with_hash()` works on every backend — the hash is always computed client-side regardless of `WRITE_RESULT_NATIVE`. |
-| WR-016 | `ext.write.open_atomic_with_hash()` exposes the `WriteResult` on the yielded writer's `.result` attribute after successful exit; access before exit raises `RuntimeError`. |
+| WR-015 | `ext.write.write_with_hash()` works on every backend declaring `WRITE` — the hash is always computed client-side regardless of `WRITE_RESULT_NATIVE`. No additional capability is required beyond what `Store.write()` already requires. |
+| WR-016 | `ext.write.open_atomic_with_hash()` requires `Capability.ATOMIC_WRITE` on the underlying store (inherited from `Store.open_atomic`, SAW-002); absence raises `CapabilityNotSupported` before any I/O. |
+| WR-017 | `ext.write.open_atomic_with_hash()` exposes the `WriteResult` on the yielded writer's `.result` attribute after successful exit; access before exit raises `RuntimeError`. |
 
 `open_atomic` retains its `Iterator[BinaryIO]` contract (SAW-001 / SAW-013) and does **not** return a `WriteResult`. This is design context, not a new requirement — see "open_atomic — unchanged" above and Alternative E.
 
@@ -441,8 +448,8 @@ Rejected. The v1 RFC required a `_HashingStream` wrapper between
 `Store.write()` and every `Backend.write()` so `WriteResult.sha256`
 was always populated. The cost analysis was wrong:
 
-- Forces every caller to pay ~2 ns/byte even when they don't need
-  the hash. Saga consumers do — most callers don't.
+- Forces every caller to pay streaming-hash CPU cost even when they
+  don't need the hash. Saga consumers do — most callers don't.
 - Pulls a hashing wrapper into the Store layer, breaking the
   "Store adds no I/O logic" rule (STORE-004).
 - Forces a parallel async hashing implementation (`_AsyncHashingStream`)
@@ -548,13 +555,19 @@ Pre-v1 semver — return-type changes are acceptable in a minor bump.
 
 ### Performance
 
-- Default write path: identical runtime cost to today's
-  `None`-returning write, modulo dataclass construction (~50 ns).
-- Tier-2-equivalent backends (Azure, S3, Memory, SQLBlob): zero new
-  bytes on the wire, zero added round trips. The SDK response was
-  produced anyway; we now wrap it.
-- `ext.write.write_with_hash`: ~2 ns/byte for sha256 (~500 MB/s),
-  paid only by callers who opt in.
+- Default write path with `bytes` / `str` input: negligible added
+  cost (one frozen-dataclass construction).
+- Default write path with streaming `BinaryIO` input on `"basic"`
+  backends: adds a post-write `size` measurement (one `os.stat` on
+  `LocalBackend`; paramiko's SFTP bytes-transferred counter on
+  `SFTPBackend`). See WR-003.
+- Backends with `WRITE_RESULT_NATIVE` (Azure, S3, Memory, SQLBlob):
+  zero new bytes on the wire, zero added round trips. The SDK
+  response was produced anyway; we now wrap it.
+- `ext.write.write_with_hash`: streaming sha256 has non-trivial CPU
+  cost; callers who don't need a hash never pay it. Absolute
+  throughput depends on hardware and input size — no figures are
+  quoted here; per-release benchmark results ship separately.
 
 ### Testing
 
@@ -606,11 +619,14 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   (no holder, no tuple). For `ext.observe` specifically: the post-
   operation `StoreEvent` emitted after `write`, `write_text`, and
   `write_atomic` carries the returned `WriteResult` under
-  `StoreEvent.metadata["write_result"]`. The pre-operation event is
-  unchanged. Subscribers can read `event.metadata["write_result"].etag`
-  (etc.) without a follow-up HEAD. `ext.cache` does not cache
-  `WriteResult` — it forwards the write and invalidates the cache
-  entry as today.
+  `StoreEvent.metadata["write_result"]`. `StoreEvent.metadata`
+  keeps its existing `dict[str, Any]` type — access to
+  `event.metadata["write_result"]` is explicitly untyped; callers
+  narrow with `isinstance(..., WriteResult)` if static checking is
+  required. A typed field on `StoreEvent` is deferred (see Open
+  Questions). The pre-operation event is unchanged. `ext.cache`
+  does not cache `WriteResult` — it forwards the write and
+  invalidates the cache entry as today.
 - **Documentation.** `docs-src/api/models.md` (WriteResult),
   `docs-src/api/capabilities.md` (two new capabilities),
   `docs-src/api/store.md` (return types + `head()`),
@@ -619,7 +635,12 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   `ext.write.write_with_hash` vs. `WriteResult.etag` for saga
   consumers.
 - **Dependencies.** `boto3` added explicitly to the `s3` extra in
-  `pyproject.toml` (was previously transitive via `s3fs`).
+  `pyproject.toml` (was previously transitive via `s3fs`). Per the
+  "A dependency" row of `sdd/CLAUDE-REFERENCE.md`, this also ripples
+  to `README.md` (install instructions — `pip install
+  'remote-store[s3]'` wording unchanged, but the extras table needs
+  `boto3` listed explicitly), and `docs-src/api/backends.md` /
+  `docs-src/guides/s3.md` prerequisites.
 - **CHANGELOG.** Added: `WriteResult`, `Store.head`,
   `WRITE_RESULT_NATIVE`, `USER_METADATA`, `FileInfo.metadata`,
   `ext.write`. Changed: `Store.write*` return types from `None` to
@@ -651,15 +672,27 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
    or add the kwarg for ergonomic verification. Lean: keep v1 minimal,
    add later if requested.
 
+4. **Typed `StoreEvent.write_result` field?** Subscribers currently
+   read `event.metadata["write_result"]` as `Any`. A dedicated
+   `write_result: WriteResult | None` field on `StoreEvent` would
+   give static guarantees, at the cost of a `StoreEvent` shape
+   change that ripples into `ext.observe` public API and every
+   subscriber. Deferred: accept the untyped access in v1; revisit
+   if subscriber type-safety becomes a pain point.
+
 ## References
 
-- Spec (new): `sdd/specs/045-write-result.md`
-- Spec 001 (Store API — STORE-008 amendment): `sdd/specs/001-store-api.md`
+- Spec (pending — to be created with the implementation PR):
+  `sdd/specs/045-write-result.md`. WR- IDs in the table above will
+  be reflected there; `@pytest.mark.spec("WR-NNN")` traceability
+  applies once the file lands.
+- Spec 001 (Store API — STORE-008 amendment for `head` and `write_text`): `sdd/specs/001-store-api.md`
+- Spec 002 (Models — MOD-003 amendment for `FileInfo.metadata`): `sdd/specs/002-models.md`
 - Spec 003 (Backend Adapter Contract — CAP-001, CAP-007 amendment, BE write return types): `sdd/specs/003-backend-adapter-contract.md`
 - Spec 029 (Async Store API — async write return types): `sdd/specs/029-async-store-backend-api.md`
 - Spec 035 (ContentDigest — used by `WriteResult.digest`): `sdd/specs/035-content-digest.md`
 - Spec 007 (atomic writes — referenced for AW-007 strict-gate precedent): `sdd/specs/007-atomic-writes.md`
-- Spec 022 (streaming atomic writes — SAW-001 / SAW-013 unchanged): `sdd/specs/022-streaming-atomic-writes.md`
+- Spec 022 (streaming atomic writes — SAW-001 / SAW-013 unchanged, SAW-002 gate inherited by `open_atomic_with_hash`): `sdd/specs/022-streaming-atomic-writes.md`
 - ADR-0008 (extension architecture — pattern for `ext.write`): `sdd/adrs/0008-extension-architecture.md`
 - ADR-0012 (async store/backend API): `sdd/adrs/0012-async-store-backend-api.md`
 - Existing hashing wrappers: `src/remote_store/ext/streams.py`
