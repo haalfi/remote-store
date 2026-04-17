@@ -144,11 +144,12 @@ Items graduate through the SDD pipeline:
   change to `Backend.tla` that breaks `Observer.tla` is caught by TLC, not by
   a human reviewer.
 
-  **Deliverable:** spike report answering: (1) do the three modules verify
-  cleanly under TLC? (2) did model checking surface any spec inconsistency
-  the Markdown review missed? (3) what does the authoring workflow feel like —
-  is it sustainable for contributors? Outcome drives whether to extend coverage,
-  keep as-is, or move to Icebox.
+  **Deliverable:** spike report answering: (1) what does the authoring workflow
+  feel like — is it sustainable for contributors? (2) do the three modules
+  verify cleanly under TLC? (3) where does partial proof land — which
+  properties can TLC check exhaustively within a bounded model, and would that
+  coverage be worth maintaining long-term? Workflow fit is the primary
+  question; proof depth is secondary but informs the long-term decision.
 
   **Tooling note:** [Specula](https://github.com/specula-org/Specula) (LLM +
   TLC pipeline, Claude Code–compatible) may help bootstrap initial module
