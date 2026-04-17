@@ -1,0 +1,42 @@
+{
+  "description": "Python library: unified file storage across backends (Local, S3, SFTP, Azure). Spec-Driven Development (SDD).",
+  "website": "https://docs.remotestore.dev",
+  "documentation": "https://docs.remotestore.dev",
+  "github": "https://github.com/haalfi/remote-store",
+  "includes": [
+    "docs-src/",
+    "examples/",
+    "remote_store/",
+    "FEATURES.md",
+    "README.md"
+  ],
+  "exclude": {
+    "folders": [
+      "benchmarks/",
+      "tests/",
+      "sdd/",
+      ".github/",
+      ".git/",
+      ".claude/",
+      "research/",
+      "node_modules/"
+    ],
+    "files": [
+      "pyproject.toml",
+      "poetry.lock",
+      "CHANGELOG.md",
+      "LICENSE"
+    ]
+  },
+  "rules": [
+    "Use Store.write() for uploads, Store.read() for downloads, Store.list() for directory listing.",
+    "All backends support the Store interface; check FEATURES.md for capability matrix (LAZY_READ, ATOMIC_WRITE, etc).",
+    "Install optional backends via pip extras: pip install remote-store[s3] or pip install remote-store[azure].",
+    "For async workloads, use AsyncStore or AsyncBackendSyncAdapter; see async guide in docs.",
+    "Configuration varies by backend (S3Backend, AzureBackend, LocalBackend, SFTPBackend, HTTPBackend).",
+    "Streaming reads/writes via context managers: with store.open('path', 'rb') as f: data = f.read().",
+    "Atomic writes via open_atomic(): guarantees file appears only when fully written.",
+    "Backend-agnostic exception model; see Store API for standard error types.",
+    "Extensions available for caching, checksums, streaming checksums, and more."
+  ]
+}
