@@ -484,7 +484,7 @@ echoed back if the caller passed `metadata=`.
 | WR-002 | `WriteResult.path` is store-relative, matching the rebasing applied to `FileInfo.path` returned from `get_file_info()`. |
 | WR-003 | `WriteResult.size` equals the byte length of the written content on every backend. For `bytes`/`str` input, `size` is computed from the payload directly (zero added cost). For non-seekable `BinaryIO` input on backends without `WRITE_RESULT_NATIVE`, `size` is obtained by counting bytes as they stream or via a post-write `stat()` call — costs one local `stat` on `LocalBackend`, zero extra round trips on `SFTPBackend` (paramiko returns bytes transferred). |
 | WR-004 | If the backend declares `WRITE_RESULT_NATIVE`, every successful `Store.write*()` returns `WriteResult.source == "native"`; otherwise `source == "basic"`. |
-| WR-005 | When `source == "basic"`, only `path` and `size` are guaranteed populated; all other rich fields are `None`.      |
+| WR-005 | When `source == "basic"`, only `path` and `size` are guaranteed populated; the rich fields `digest`, `etag`, `version_id`, `last_modified`, `content_md5` are `None`. `metadata` is governed independently by WR-012 regardless of `source`. |
 | WR-006 | `WriteResult.source == "sidecar"` only when constructed by `Store.head()`.                                        |
 | WR-007 | The default write path (`Store.write*()` without `ext.write`) returns `WriteResult.digest is None` on every backend that does not surface a server-verified digest. |
 | WR-008 | `Store.head(path) -> WriteResult` is gated on `Capability.METADATA` only. It is **not** gated on `WRITE` — callers may invoke it on read-only backends that declare `METADATA`. Raises `NotFound` if the path doesn't exist; raises `CapabilityNotSupported` if the backend lacks `METADATA`. |
@@ -715,11 +715,16 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   Questions). The pre-operation event is unchanged. Captured
   normatively in WR-019 (spec 045). `ext.cache` does not cache
   `WriteResult` — it forwards the write and invalidates the cache
-  entry as today. Spec 019 (OBS-) and spec 023 (CACHE-) receive no
-  per-spec amendments in this PR; the proxy contract is carried by
-  WR-018 / WR-019 at the Store-API level and will be reflected in
-  spec 019 / 023 only if per-extension invariants become necessary
-  during implementation.
+  entry as today. **Spec 019 (ext.observe)** is amended in this PR:
+  OBS-015 (new) captures `write_result` injection into the
+  post-operation `StoreEvent`; OBS-001 gains `"head"` and
+  `"write_text"` in its operation list; OBS-003a is updated so the
+  hook-to-operation mapping covers `write_text` (on `on_write`) and
+  `head` (on `on_list`). **Spec 023 (ext.cache)** receives no
+  per-spec amendments in this PR — the proxy forwarding contract
+  is fully captured by WR-018 at the Store-API level, and will be
+  reflected in spec 023 only if cache-specific invariants become
+  necessary during implementation.
 - **Documentation.** `docs-src/api/models.md` (WriteResult),
   `docs-src/api/capabilities.md` (two new capabilities),
   `docs-src/api/store.md` (return types + `head()`),

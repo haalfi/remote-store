@@ -19,6 +19,50 @@ return `WriteResult` instead of `None`. The underlying backend constructs the
 `WriteResult`; the Store layer rebases `WriteResult.path` to be store-relative,
 matching the rebasing applied to `FileInfo.path`.
 
+## WR-001a: WriteResult Fields
+
+**Invariant:** `WriteResult` is a frozen dataclass with the following
+fields. This is the normative field schema — every other WR- invariant
+is expressed against it.
+
+**Required:**
+
+- `path` (`RemotePath`) — normalised written path, store-relative
+  (WR-002).
+- `size` (`int`) — bytes written (WR-003).
+
+**Optional (default `None` unless noted):**
+
+- `digest` (`ContentDigest | None`) — verified content digest; only
+  populated when the caller opts into `ext.write.write_with_hash`
+  (WR-014) or a future backend surfaces a server-verified digest on
+  its write response (WR-007 clause).
+- `etag` (`str | None`) — backend change tag; not a content hash on
+  every backend (see RFC-0011 § Proposal for per-backend semantics).
+- `version_id` (`str | None`) — backend-provided immutable version
+  identifier; `None` when the backend does not version objects.
+- `last_modified` (`datetime | None`) — server timestamp from the
+  write response; `None` when the backend's write response omits it.
+- `content_md5` (`str | None`) — client-supplied MD5 stored
+  alongside the object (Azure only in v1); `None` otherwise.
+- `metadata` (`Mapping[str, str] | None`) — echo of the user
+  metadata that was stored (WR-012).
+
+**Default-valued:**
+
+- `source` (`Literal["native", "basic", "sidecar"]`, default
+  `"basic"`) — provenance of the rich fields (WR-004, WR-006).
+
+**Postconditions:**
+
+- Attribute assignment raises `FrozenInstanceError`.
+- `WriteResult` supports equality and hashing by field-wise value
+  (standard dataclass behaviour).
+
+**See also:** [035-content-digest.md](035-content-digest.md) for
+`ContentDigest`; RFC-0011 § Proposal for the canonical Python
+dataclass definition and docstring.
+
 ## WR-002: WriteResult.path Is Store-Relative
 
 **Invariant:** `WriteResult.path` is store-relative — `root_path` is stripped
@@ -50,16 +94,20 @@ does not declare the capability, `source == "basic"`.
 ## WR-005: Basic Source Guarantees
 
 **Invariant:** When `WriteResult.source == "basic"`, only `path` and `size` are
-guaranteed populated. All other rich fields (`digest`, `etag`, `version_id`,
-`last_modified`, `content_md5`, `metadata`) are `None`.
+guaranteed populated. The rich fields `digest`, `etag`, `version_id`,
+`last_modified`, and `content_md5` are `None`. The `metadata` field is
+**not** governed by `source` — it is governed independently by WR-012:
+`WriteResult.metadata` echoes the caller's mapping whenever the
+`USER_METADATA` gate was passed, and is `None` otherwise, regardless of
+whether `source` is `"native"`, `"basic"`, or `"sidecar"`.
 
-**Note (future-compat):** No v1 backend declares `USER_METADATA` without also
-declaring `WRITE_RESULT_NATIVE`, so `metadata is None` follows from the
-backend set. A future backend that declared `USER_METADATA` without
-`WRITE_RESULT_NATIVE` would resolve in favour of WR-012: `source == "basic"`
-but `metadata` echoes the caller's mapping. WR-005's "all other rich fields
-are `None`" is written against v1 backends; the `metadata` exception for a
-future mismatch is governed by WR-012.
+**Note (future-compat):** No v1 backend declares `USER_METADATA` without
+also declaring `WRITE_RESULT_NATIVE`, so in v1 a `"basic"` result also
+has `metadata is None` by construction. A future backend that declared
+`USER_METADATA` without `WRITE_RESULT_NATIVE` would produce a `"basic"`
+result whose `metadata` echoes the caller's mapping — fully consistent
+with the invariant above, because `metadata` is excluded from the
+source-gated field list.
 
 ## WR-006: Sidecar Source
 
@@ -136,9 +184,16 @@ the capability is declared. The flag advertises which fields in the returned
 ## WR-010: USER_METADATA Gates the metadata= Kwarg
 
 **Invariant:** `Capability.USER_METADATA` is a strict gate (see
-[ADR-0026](../adrs/0026-strict-gate-on-kwarg.md)). Passing `metadata=` to
-`Store.write*()` on a backend that does not declare `USER_METADATA` raises
-`CapabilityNotSupported` before any I/O.
+[ADR-0026](../adrs/0026-strict-gate-on-kwarg.md)). Passing a **non-empty**
+`metadata` mapping to `Store.write*()` on a backend that does not declare
+`USER_METADATA` raises `CapabilityNotSupported` before any I/O.
+
+**Empty-mapping carve-out.** `metadata=None` and `metadata={}` are treated
+identically by this gate: neither triggers `CapabilityNotSupported`. The
+gate fires only when `metadata` is a non-`None`, non-empty mapping — an
+empty mapping is semantically equivalent to not passing the kwarg (see
+WR-011). This keeps the gate consistent with WR-011's rule that
+`metadata={}` is a valid no-op and never a validation failure.
 
 **Backend declarations:**
 
@@ -205,6 +260,16 @@ footnote) still echoes the caller's mapping.
 `USER_METADATA` survives round-trip through `Store.get_file_info()`, accessible
 as `FileInfo.metadata: Mapping[str, str] | None`. On backends that do not
 declare `USER_METADATA`, `FileInfo.metadata` is always `None`.
+
+## ext.write invariants — forward-looking spec placement
+
+WR-014..WR-017 below specify the `ext.write` extension. They live in
+spec 045 for this RFC/spec-only PR so the `ext.write` contract lands
+next to the `WriteResult` contract it depends on. Per the one-spec-per-
+extension convention (ADR-0008 / spec 019 / spec 023 / spec 024), the
+implementation PR will move WR-014..WR-017 into a dedicated
+`046-ext-write.md` under an `EW-` prefix and leave cross-references
+here. Tracked in the BACKLOG ID-146 "Next" step.
 
 ## WR-014: ext.write.write_with_hash Returns Digest
 

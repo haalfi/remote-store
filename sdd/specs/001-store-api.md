@@ -14,7 +14,7 @@
 
 ### STORE-002: Path Validation
 
-**Invariant:** Non-empty path arguments are validated via `RemotePath`. Empty string `""` and `"."` are both accepted as root aliases by folder/query methods (`exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_folder_info`) to mean "the store root." This ensures `str(RemotePath.ROOT)` round-trips through Store methods (see PATH-015). File-targeted methods (`read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `delete`, `get_file_info`, `head`, `move`, `copy`) raise `InvalidPath` on empty path or `"."`. `delete_folder` also rejects root (`""` / `"."`) to prevent accidental root deletion. See ADR-0004.
+**Invariant:** Non-empty path arguments are validated via `RemotePath`. Empty string `""` and `"."` are both accepted as root aliases by folder/query methods (`exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_folder_info`) to mean "the store root." This ensures `str(RemotePath.ROOT)` round-trips through Store methods (see PATH-015). File-targeted methods (`read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `open_atomic`, `delete`, `get_file_info`, `head`, `move`, `copy`) raise `InvalidPath` on empty path or `"."` (the `open_atomic` case is captured normatively in SAW-007). `delete_folder` also rejects root (`""` / `"."`) to prevent accidental root deletion. See ADR-0004.
 
 ### STORE-003: Root Path Scoping
 

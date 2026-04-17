@@ -71,16 +71,26 @@ A *strict gate on kwarg* is a capability that:
 
 The validation happens in the Store layer (one place), not in each backend.
 
-### Existing instances
+### Precedent (method-level raise-before-I/O gate)
 
-| Capability        | Gate target          | Method(s)              | Spec ref |
-| ----------------- | -------------------- | ---------------------- | -------- |
-| `ATOMIC_WRITE`    | whole method         | `write_atomic()`       | AW-002   |
-| `USER_METADATA`   | `metadata=` kwarg    | `write*()` variants    | WR-010   |
+| Capability       | Gate target   | Method(s)         | Spec ref |
+| ---------------- | ------------- | ----------------- | -------- |
+| `ATOMIC_WRITE`   | whole method  | `write_atomic()`  | AW-002   |
 
-`ATOMIC_WRITE` is listed here because it established the raise-before-I/O
-principle, even though it gates the entire method rather than a single kwarg.
-`USER_METADATA` is the first true strict-gate-on-kwarg instance.
+`ATOMIC_WRITE` is not a strict-gate-on-kwarg instance — it gates the
+entire method, not an optional kwarg. It appears here because it
+established the raise-before-I/O principle that the strict-gate-on-kwarg
+pattern inherits. Future contributors should not use this row as a
+pattern template.
+
+### Strict-gate-on-kwarg instances
+
+| Capability       | Gate target        | Method(s)             | Spec ref |
+| ---------------- | ------------------ | --------------------- | -------- |
+| `USER_METADATA`  | `metadata=` kwarg  | `write*()` variants   | WR-010   |
+
+`USER_METADATA` is the first true strict-gate-on-kwarg instance. New
+instances of this pattern go in this table.
 
 ### How to apply the pattern for future capabilities
 
