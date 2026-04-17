@@ -1,0 +1,173 @@
+# WriteResult and User Metadata
+
+## Overview
+
+Widening `Store.write*()` return types from `None` to `WriteResult`, adding
+`Capability.WRITE_RESULT_NATIVE` (quality flag) and `Capability.USER_METADATA`
+(strict capability gate on the `metadata=` kwarg), adding `Store.head()`, and
+shipping the `ext.write` extension (`write_with_hash`, `open_atomic_with_hash`).
+
+See [RFC-0011](../rfcs/rfc-0011-write-result.md) for design rationale,
+alternative analysis, and the full ripple-check inventory.
+
+---
+
+## WR-001: Return Type Widening
+
+**Invariant:** `Store.write()`, `Store.write_text()`, and `Store.write_atomic()`
+return `WriteResult` instead of `None`. The underlying backend constructs the
+`WriteResult`; the Store layer rebases `WriteResult.path` to be store-relative,
+matching the rebasing applied to `FileInfo.path`.
+
+## WR-002: WriteResult.path Is Store-Relative
+
+**Invariant:** `WriteResult.path` is store-relative — `root_path` is stripped
+exactly as `FileInfo.path` is stripped by `list_files` and `get_file_info`.
+The returned path is directly usable as input to other Store methods.
+
+## WR-003: WriteResult.size Population
+
+**Invariant:** `WriteResult.size` equals the byte length of the written content
+on every backend.
+
+- For `bytes` / `str` input: `size` is computed from the payload directly
+  (zero added I/O cost).
+- For non-seekable `BinaryIO` input on backends without `WRITE_RESULT_NATIVE`:
+  `size` is obtained by counting bytes as they stream or via a post-write
+  `stat()` — one local `stat` on `LocalBackend`; the paramiko SFTP
+  bytes-transferred counter on `SFTPBackend`; zero extra round trips in
+  either case.
+- For backends with `WRITE_RESULT_NATIVE` (Azure, S3, Memory, SQLBlob):
+  `size` is available from the write response or trivially from the in-process
+  data, never requiring an extra round trip.
+
+## WR-004: source Field from WRITE_RESULT_NATIVE
+
+**Invariant:** If the backend declares `Capability.WRITE_RESULT_NATIVE`, every
+successful `Store.write*()` returns `WriteResult.source == "native"`. If it
+does not declare the capability, `source == "basic"`.
+
+## WR-005: Basic Source Guarantees
+
+**Invariant:** When `WriteResult.source == "basic"`, only `path` and `size` are
+guaranteed populated. All other rich fields (`digest`, `etag`, `version_id`,
+`last_modified`, `content_md5`, `metadata`) are `None`.
+
+## WR-006: Sidecar Source
+
+**Invariant:** `WriteResult.source == "sidecar"` only when the `WriteResult` is
+constructed by `Store.head()`. Direct write calls never produce `source ==
+"sidecar"`.
+
+## WR-007: No Default Hashing
+
+**Invariant:** The default write path (`Store.write*()` without `ext.write`)
+returns `WriteResult.digest is None` on every backend that does not surface a
+server-verified digest on its write response. No streaming hash wrapper is
+inserted on the default path.
+
+## WR-008: Store.head() Gating and Semantics
+
+**Invariant:** `Store.head(path) -> WriteResult` is gated on
+`Capability.METADATA` only. It is **not** gated on `Capability.WRITE` — callers
+may invoke it on read-only backends that declare `METADATA`.
+
+**Raises:** `NotFound` if the path does not exist. `CapabilityNotSupported` if
+the backend lacks `METADATA`.
+
+**Postconditions:** Returns `WriteResult` with `source == "sidecar"`,
+constructed from the `FileInfo` returned by `Store.get_file_info(path)`.
+
+## WR-009: WRITE_RESULT_NATIVE Is a Quality Flag
+
+**Invariant:** `Capability.WRITE_RESULT_NATIVE` is a quality flag — it does not
+gate any method. `Store.write()` works on every backend regardless of whether
+the capability is declared. The flag advertises which fields in the returned
+`WriteResult` are populated from the backend's write response.
+
+**Backend declarations:**
+
+| Backend            | Declares `WRITE_RESULT_NATIVE`? |
+| ------------------ | ------------------------------- |
+| `AzureBackend`     | yes                             |
+| `S3Backend`        | yes                             |
+| `MemoryBackend`    | yes                             |
+| `SQLBlobBackend`   | yes                             |
+| `S3PyArrowBackend` | no                              |
+| `SFTPBackend`      | no                              |
+| `LocalBackend`     | no                              |
+
+## WR-010: USER_METADATA Gates the metadata= Kwarg
+
+**Invariant:** `Capability.USER_METADATA` is a strict gate. Passing `metadata=`
+to `Store.write*()` on a backend that does not declare `USER_METADATA` raises
+`CapabilityNotSupported` before any I/O.
+
+**Backend declarations:**
+
+| Backend            | Declares `USER_METADATA`? |
+| ------------------ | ------------------------- |
+| `AzureBackend`     | yes                       |
+| `S3Backend`        | yes                       |
+| `MemoryBackend`    | yes                       |
+| `SQLBlobBackend`   | yes                       |
+| `S3PyArrowBackend` | no                        |
+| `SFTPBackend`      | no                        |
+| `LocalBackend`     | no                        |
+
+## WR-011: metadata Validation
+
+**Invariant:** `metadata` is `Mapping[str, str]`. Validation is performed at the
+Store layer (one place, not per-backend) before capability dispatch:
+
+- Keys must be non-empty ASCII strings with no leading underscore.
+- Values must be strings.
+- `sum(len(k.encode("ascii")) + len(v.encode("utf-8")) for k, v in
+  metadata.items()) ≤ 2048`. This measures payload bytes only — not HTTP-header
+  framing or backend-specific prefixes such as `x-amz-meta-`. The bound matches
+  the narrowest portable limit (S3's 2 KB user-metadata cap).
+
+Violations raise `ValueError` with the offending key or value before any I/O.
+
+## WR-012: WriteResult.metadata Echo
+
+**Invariant:** When `metadata=` is passed and the backend declares
+`USER_METADATA`, `WriteResult.metadata` echoes the stored canonicalised
+mapping. When `metadata=` is not passed, `WriteResult.metadata` is `None`.
+
+## WR-013: User Metadata Round-Trip
+
+**Invariant:** User metadata passed to `Store.write*()` on a backend declaring
+`USER_METADATA` survives round-trip through `Store.get_file_info()`, accessible
+as `FileInfo.metadata: Mapping[str, str] | None`. On backends that do not
+declare `USER_METADATA`, `FileInfo.metadata` is always `None`.
+
+## WR-014: ext.write.write_with_hash Returns Digest
+
+**Invariant:** `ext.write.write_with_hash(store, path, content, *, algorithm,
+overwrite, metadata) -> WriteResult` returns a `WriteResult` with `digest`
+populated from a client-side streaming hash over the written bytes. The
+underlying `source` value from the backend write is preserved (`"native"` or
+`"basic"`); `digest` is set independently of `source` and always represents
+the client-computed hash.
+
+## WR-015: ext.write.write_with_hash Works on Every WRITE Backend
+
+**Invariant:** `ext.write.write_with_hash()` works on every backend declaring
+`Capability.WRITE`. The hash is always computed client-side via
+`ext.streams.ChecksumWriter` regardless of `WRITE_RESULT_NATIVE`. No additional
+capability beyond `WRITE` is required.
+
+## WR-016: open_atomic_with_hash Requires ATOMIC_WRITE
+
+**Invariant:** `ext.write.open_atomic_with_hash()` requires
+`Capability.ATOMIC_WRITE` on the underlying store (inherited from
+`Store.open_atomic`, SAW-002). If the capability is absent,
+`CapabilityNotSupported` is raised before any I/O.
+
+## WR-017: open_atomic_with_hash Exposes result After Exit
+
+**Invariant:** `ext.write.open_atomic_with_hash()` is an `@contextmanager`
+that yields a `ChecksumWriter`. After successful exit of the `with` block,
+`writer.result` contains the `WriteResult` with `digest` populated. Accessing
+`writer.result` before the `with` block exits raises `RuntimeError`.

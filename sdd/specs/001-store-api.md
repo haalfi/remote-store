@@ -38,7 +38,8 @@
 
 ### STORE-008: Full API Surface
 
-**Invariant:** Store exposes: `read`, `read_bytes`, `read_text`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
+**Invariant:** Store exposes: `read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `head`, `move`, `copy`, `close`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
+**See also:** [045-write-result.md](045-write-result.md) (WR-001, WR-008) for `write*` return type widening and `head()` semantics.
 
 ### STORE-008a: Same-Path Move and Copy
 
@@ -111,8 +112,8 @@
 
 ### MOD-003: FileInfo Optional Fields
 
-**Invariant:** `FileInfo` has optional fields: `digest` (`ContentDigest | None`, default `None`), `etag` (`str | None`, default `None`), `content_type` (`str | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
-**See also:** [035-content-digest.md](035-content-digest.md) (CDG-001 through CDG-005).
+**Invariant:** `FileInfo` has optional fields: `digest` (`ContentDigest | None`, default `None`), `etag` (`str | None`, default `None`), `content_type` (`str | None`, default `None`), `metadata` (`Mapping[str, str] | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
+**See also:** [035-content-digest.md](035-content-digest.md) (CDG-001 through CDG-005); [045-write-result.md](045-write-result.md) (WR-013) for user metadata round-trip semantics.
 
 ### MOD-004: FolderInfo Required Fields
 

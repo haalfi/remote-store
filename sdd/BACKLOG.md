@@ -131,7 +131,7 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [ ] **ID-146 — Land RFC-0011: `WriteResult` + opt-in hashing**
+- [~] **ID-146 — Land RFC-0011: `WriteResult` + opt-in hashing**
   Implement [RFC-0011](rfcs/rfc-0011-write-result.md) per its spec
   table: widen `Store.write*()` return type from `None` to
   `WriteResult`, add `Capability.WRITE_RESULT_NATIVE` (quality flag)
@@ -139,9 +139,10 @@ Items graduate through the SDD pipeline:
   add `Store.head()`, add `FileInfo.metadata`, and ship `ext.write`
   (`write_with_hash`, `open_atomic_with_hash`) reusing existing
   `ext.streams.ChecksumWriter`. `open_atomic` stays unchanged.
-  - RFC + spec: [rfc-0011](rfcs/rfc-0011-write-result.md); new spec
-    file `sdd/specs/045-write-result.md` (WR-001..WR-016).
-  - Next: move RFC to Proposed, then implement.
+  - RFC + spec: [rfc-0011](rfcs/rfc-0011-write-result.md) (Proposed);
+    spec file `sdd/specs/045-write-result.md` (WR-001..WR-017) created;
+    specs 001, 003, 029 amended; ADR-0026 created.
+  - Next: implement (models, capabilities, backends, Store, ext.write).
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of

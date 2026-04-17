@@ -10,7 +10,8 @@ The `Backend` ABC defines the contract all storage backends must implement. It i
 
 ### CAP-001: Capability Enum Members
 
-**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `ATOMIC_MOVE`, `METADATA`, `GLOB`, `SEEKABLE_READ`, `LAZY_READ`.
+**Invariant:** `Capability` is an enum with members: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `ATOMIC_MOVE`, `METADATA`, `GLOB`, `SEEKABLE_READ`, `LAZY_READ`, `WRITE_RESULT_NATIVE`, `USER_METADATA`.
+**See also:** [045-write-result.md](045-write-result.md) (WR-009, WR-010) for semantics of the two new members.
 
 ### CAP-002: CapabilitySet Construction
 
@@ -52,6 +53,11 @@ for cap in cs:
 - `ATOMIC_MOVE` — `move()` is guaranteed atomic under concurrent access (i.e. any reader observes either the pre-move or the post-move state, never a partial state). Backends that implement move as copy-then-delete do **not** declare this flag. Callers **must not** assume atomicity; they **should** check `Store.supports(Capability.ATOMIC_MOVE)` before relying on atomic rename semantics.
 - `SEEKABLE_READ` — `read()` always returns a natively seekable stream (`stream.seekable()` is `True`) with zero overhead. Backends that omit this flag still support `Store.read_seekable()` via an optimized override or spool fallback, but `read()` itself may return a non-seekable stream. The flag describes a property of `read()` rather than gating any additional method.
 - `LAZY_READ` — `read()` fetches data lazily on demand from the native source rather than loading the entire file into memory before returning. Backends that pre-load all file contents before returning a stream (e.g. in-memory backends, SQL blob stores) do **not** declare this flag. Callers can use `Store.supports(Capability.LAZY_READ)` to know whether partial reads avoid loading the entire file. This flag describes a property of `read()` rather than gating any additional method.
+- `WRITE_RESULT_NATIVE` — `write*()` returns a `WriteResult` with `source == "native"` and all rich fields (`etag`, `version_id`, `last_modified`, etc.) populated from the backend's write response. Backends that omit this flag still return a `WriteResult`, but with `source == "basic"` (only `path` and `size` guaranteed). Does **not** gate any method. See [045-write-result.md](045-write-result.md) (WR-004, WR-009).
+
+**Strict-gate capabilities** (raise `CapabilityNotSupported` before I/O when the backend lacks the capability and the caller passes the guarded kwarg):
+
+- `USER_METADATA` — gates the `metadata=` kwarg on `write*()`. Passing `metadata=` to a backend without this capability raises `CapabilityNotSupported` before any I/O. See [045-write-result.md](045-write-result.md) (WR-010) and [ADR-0026](../adrs/0026-strict-gate-on-kwarg.md).
 
 ---
 
@@ -90,9 +96,10 @@ for cap in cs:
 
 ### BE-008: write()
 
-**Invariant:** `write(path, content, overwrite=False)` creates or overwrites a file.
+**Invariant:** `write(path, content, *, overwrite=False, metadata=None) -> WriteResult` creates or overwrites a file and returns a `WriteResult`.
 **Preconditions:** `content` is `bytes` or `BinaryIO`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if `metadata=` is passed and the backend lacks `USER_METADATA`.
+**See also:** [045-write-result.md](045-write-result.md) (WR-001 through WR-005, WR-010 through WR-012).
 **Precondition evaluation order:** Backends MUST evaluate preconditions in this
 order: (1) path validity — if `path` names an existing *directory*, raises
 `InvalidPath`; (2) overwrite conflict — if the file exists and `overwrite=False`,
@@ -112,10 +119,10 @@ writable) → overwrite conflict → I/O.
 
 ### BE-010: write_atomic()
 
-**Invariant:** `write_atomic(path, content, overwrite=False)` writes via a temporary file + atomic rename.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
+**Invariant:** `write_atomic(path, content, *, overwrite=False, metadata=None) -> WriteResult` writes via a temporary file + atomic rename and returns a `WriteResult`.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if `metadata=` is passed and the backend lacks `USER_METADATA`.
 **Precondition order:** Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies.
-**See also:** [007-atomic-writes.md](007-atomic-writes.md)
+**See also:** [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
 
 ### BE-011: write_atomic Capability Gate
 

@@ -52,10 +52,10 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ### ASYNC-008: write()
 
-**Invariant:** `async def write(path, content, *, overwrite=False)` creates or overwrites a file.
+**Invariant:** `async def write(path, content, *, overwrite=False, metadata=None) -> WriteResult` creates or overwrites a file and returns a `WriteResult`.
 **Preconditions:** `content` is `bytes` or `AsyncIterator[bytes]` (see ASYNC-021).
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
-**See also:** [BE-008](003-backend-adapter-contract.md).
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if `metadata=` is passed and the backend lacks `USER_METADATA`.
+**See also:** [BE-008](003-backend-adapter-contract.md); [045-write-result.md](045-write-result.md) (WR-001, WR-004, WR-010).
 
 ### ASYNC-009: write Creates Intermediate Directories
 
@@ -64,9 +64,9 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ### ASYNC-010: write_atomic()
 
-**Invariant:** `async def write_atomic(path, content, *, overwrite=False)` writes via a temporary file + atomic rename.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`.
-**See also:** [BE-010](003-backend-adapter-contract.md), [007-atomic-writes.md](007-atomic-writes.md).
+**Invariant:** `async def write_atomic(path, content, *, overwrite=False, metadata=None) -> WriteResult` writes via a temporary file + atomic rename and returns a `WriteResult`.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if `metadata=` is passed and the backend lacks `USER_METADATA`.
+**See also:** [BE-010](003-backend-adapter-contract.md), [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
 
 ### ASYNC-011: write_atomic Capability Gate
 
@@ -255,9 +255,9 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ### ASYNC-046: Full API Surface
 
-**Invariant:** `AsyncStore` exposes async equivalents of all `Store` methods: `read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `ping`, `resolve`, `aclose`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
+**Invariant:** `AsyncStore` exposes async equivalents of all `Store` methods: `read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `head`, `move`, `copy`, `ping`, `resolve`, `aclose`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
 **Deferred:** `read_seekable` and `open_atomic` are not available in the async API — see ASYNC-061, ASYNC-062.
-**See also:** [STORE-008](001-store-api.md).
+**See also:** [STORE-008](001-store-api.md); [045-write-result.md](045-write-result.md) (WR-001, WR-008) for `write*` return type widening and `head()` semantics.
 
 ### ASYNC-047: Same-Path Move and Copy
 
