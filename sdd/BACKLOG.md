@@ -180,6 +180,40 @@ Items graduate through the SDD pipeline:
     working backends to be useful; pairs well with ID-119
   - Next: design as separate spec — backend-agnostic, useful independently
 
+### Documentation
+
+- [ ] **ID-147 — `llms.txt` agent entry-point file**
+  Add a `llms.txt` at the repo root that gives LLMs and agents a compact,
+  structured map of the package: purpose, install, core concepts, public API
+  entry points (the ~8 things that matter out of the 60+ exports), common
+  workflows, anti-patterns, and links to FEATURES.md, README, and docs.
+
+  The file should *link*, not copy — FEATURES.md and the README are already
+  the authoritative sources; `llms.txt` is a retrieval-friendly index over
+  them. Follow the content rules in `sdd/CONTENT-RULES.md`.
+
+  **Scope:**
+  - `llms.txt` at repo root (plain text, ~200–300 lines max).
+  - No changes to existing docs; no duplication of content.
+  - Add `llms.txt` to `FEATURES.md` file-set table and to the README
+    "Resources" or similar section so it's discoverable.
+
+  **Suggested structure** (per [llms.txt standard](https://llmstxt.org)):
+  1. Package mission (2–4 sentences).
+  2. Install and compatibility.
+  3. Core concepts and vocabulary (`Store`, `Registry`, `Backend`,
+     `Capability`, URI format).
+  4. Public API table — entry points only, not exhaustive.
+  5. Common recipes (write/read/delete, cross-backend transfer, async, child
+     stores).
+  6. Anti-patterns (don't import backend classes directly, etc.).
+  7. Failure modes and error hierarchy.
+  8. Links to deeper docs (FEATURES.md, README, docs-src/, API reference).
+
+  **References:** Research in `sdd/research/research-machine-docs.md` (to be
+  created). See also: [llmstxt.org](https://llmstxt.org),
+  [pyopensci guide](https://www.pyopensci.org/python-package-guide/).
+
 ### Integrations
 
 - [~] **ID-018 — conda-forge publishing**
