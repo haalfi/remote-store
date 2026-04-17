@@ -119,6 +119,39 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
+- [ ] **ID-147 — Specula spike: TLA+ protocol verification for async API and proxy stack**
+  PR 448 (WriteResult) amended 5 specs in one feature, exposing that cross-spec
+  protocol consistency cannot be verified by Dafny alone — Dafny covers
+  per-operation contracts and invariants, but not multi-layer protocol
+  behaviour or concurrent interleaving.
+
+  [Specula](https://github.com/specula-org/Specula) is an LLM-accelerated
+  pipeline that generates TLA+ specs from production code, runs TLC model
+  checking, and confirms findings against real execution traces. It supports
+  Claude Code as the agent. This item captures the exploration — **no
+  implementation commitment yet**.
+
+  **Recommended first target:** async store API (ID-013b, spec 029).
+  Concurrent read/write interleaving is the canonical TLA+ use case and the
+  highest-risk area the Dafny layer does not cover. Scope: run Specula's
+  five phases (code analysis → spec generation → trace validation → model
+  checking → bug confirmation) against `src/remote_store/aio/` and spec 029.
+
+  **Follow-up targets if spike proves value:**
+  - WR-019 proxy forwarding chain (spec 045): prove WriteResult is never
+    dropped at any proxy layer, for any stack depth.
+  - OBS-015 observer event dispatch (spec 019): prove every write fires
+    exactly one StoreEvent (safety + liveness pair).
+
+  **Deliverable for this item:** spike report — did Specula run cleanly,
+  did TLC find any counterexamples, are the generated specs worth keeping
+  as a CI artefact? Outcome decides whether to promote to `BK-NNN` with a
+  concrete implementation plan or move to Icebox.
+
+  **Relation to existing formal layer:** additive, not a replacement.
+  Dafny (`sdd/formal/`) stays as the per-operation contract and oracle layer.
+  TLA+/Specula would sit above it, verifying protocol-level composition.
+
 - [ ] **ID-138 — Async streaming integrity e2e test**
   The e2e streaming test only covers sync backends. Add an async variant
   using `AsyncAzureBackend` to verify the block-size defaults work for
