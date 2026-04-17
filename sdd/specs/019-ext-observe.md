@@ -23,9 +23,9 @@ ID-004 (superseded).
 
 - `operation: str` -- operation name (e.g., `"read"`, `"write"`, `"delete"`,
   `"copy"`, `"move"`, `"iter_children"`, `"list_files"`, `"list_folders"`, `"glob"`,
-  `"get_file_info"`, `"get_folder_info"`, `"exists"`, `"is_file"`,
-  `"is_folder"`, `"read_bytes"`, `"read_text"`, `"write_atomic"`, `"delete_folder"`,
-  `"to_key"`, `"unwrap"`, `"supports"`).
+  `"get_file_info"`, `"get_folder_info"`, `"head"`, `"exists"`, `"is_file"`,
+  `"is_folder"`, `"read_bytes"`, `"read_text"`, `"write_atomic"`, `"write_text"`,
+  `"delete_folder"`, `"to_key"`, `"unwrap"`, `"supports"`).
 - `path: str` -- store-relative key (first positional path argument). Empty
   string for operations that take no path (e.g., `supports`).
 - `backend: str` -- backend name from `store._backend.name`.
@@ -113,11 +113,11 @@ The `on_<op>` hooks map to operations as follows:
 | Hook | Operations |
 |------|-----------|
 | `on_read` | `read`, `read_bytes`, `read_text` |
-| `on_write` | `write`, `write_atomic` |
+| `on_write` | `write`, `write_text`, `write_atomic` |
 | `on_delete` | `delete`, `delete_folder` |
 | `on_copy` | `copy` |
 | `on_move` | `move` |
-| `on_list` | `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `exists`, `is_file`, `is_folder` |
+| `on_list` | `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `head`, `exists`, `is_file`, `is_folder` |
 
 Operations not covered by a specific hook (`to_key`, `unwrap`, `supports`,
 `child`, `close`) still fire `on_any` and `on_error`.
@@ -328,3 +328,35 @@ def otel_observe(
 ```
 
 Equivalent to `observe(store, **otel_hooks(tracer_name=..., meter_name=..., tracer=..., meter=...))`.
+
+### OBS-015: WriteResult in Post-Operation StoreEvent
+
+**Invariant:** After a successful `write`, `write_text`, or `write_atomic`
+on the wrapped store, `ObservedStore` injects the returned `WriteResult`
+into the post-operation `StoreEvent` under `StoreEvent.metadata["write_result"]`.
+The pre-operation phase of `around` and the failure path (exception raised
+by the wrapped write) are unchanged — on failure, no `"write_result"` key
+is present.
+
+**Postconditions:**
+
+- Successful `write` / `write_text` / `write_atomic`:
+  `event.metadata["write_result"]` is the `WriteResult` returned by the
+  wrapped store (identity, not a copy).
+- `StoreEvent.metadata` keeps its existing `dict[str, Any]` type; access
+  via `event.metadata["write_result"]` is explicitly untyped. Callers
+  narrow with `isinstance(..., WriteResult)` if static checking is
+  required. A typed field on `StoreEvent` is deferred (RFC-0011 Open
+  Questions).
+- No other `on_<op>` hook injects into `event.metadata` beyond the
+  existing per-operation keys (OBS-001).
+
+**Implementation note:** The current `_observe_op` helper is a context
+manager that constructs the `StoreEvent` before the wrapped call returns.
+Injecting `write_result` requires either (a) mutating `event.metadata`
+after the wrapped call completes but before hook dispatch, or (b)
+re-constructing the event post-call. The invariant is neutral between
+these implementations; the test harness asserts only the observable
+contract (`event.metadata["write_result"] is result`).
+
+**See also:** [045-write-result.md](045-write-result.md) (WR-019).

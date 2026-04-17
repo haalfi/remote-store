@@ -14,7 +14,7 @@
 
 ### STORE-002: Path Validation
 
-**Invariant:** Non-empty path arguments are validated via `RemotePath`. Empty string `""` and `"."` are both accepted as root aliases by folder/query methods (`exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_folder_info`) to mean "the store root." This ensures `str(RemotePath.ROOT)` round-trips through Store methods (see PATH-015). File-targeted methods (`read`, `read_bytes`, `read_text`, `write`, `write_atomic`, `delete`, `get_file_info`, `move`, `copy`) raise `InvalidPath` on empty path or `"."`. `delete_folder` also rejects root (`""` / `"."`) to prevent accidental root deletion. See ADR-0004.
+**Invariant:** Non-empty path arguments are validated via `RemotePath`. Empty string `""` and `"."` are both accepted as root aliases by folder/query methods (`exists`, `is_file`, `is_folder`, `list_files`, `list_folders`, `get_folder_info`) to mean "the store root." This ensures `str(RemotePath.ROOT)` round-trips through Store methods (see PATH-015). File-targeted methods (`read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `open_atomic`, `delete`, `get_file_info`, `head`, `move`, `copy`) raise `InvalidPath` on empty path or `"."` (the `open_atomic` case is captured normatively in SAW-007). `delete_folder` also rejects root (`""` / `"."`) to prevent accidental root deletion. See ADR-0004.
 
 ### STORE-003: Root Path Scoping
 
@@ -38,7 +38,8 @@
 
 ### STORE-008: Full API Surface
 
-**Invariant:** Store exposes: `read`, `read_bytes`, `read_text`, `write`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `move`, `copy`, `close`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
+**Invariant:** Store exposes: `read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `head`, `move`, `copy`, `close`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
+**See also:** [045-write-result.md](045-write-result.md) (WR-001, WR-008) for `write*` return type widening and `head()` semantics.
 
 ### STORE-008a: Same-Path Move and Copy
 
@@ -111,8 +112,8 @@
 
 ### MOD-003: FileInfo Optional Fields
 
-**Invariant:** `FileInfo` has optional fields: `digest` (`ContentDigest | None`, default `None`), `etag` (`str | None`, default `None`), `content_type` (`str | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
-**See also:** [035-content-digest.md](035-content-digest.md) (CDG-001 through CDG-005).
+**Invariant:** `FileInfo` has optional fields: `digest` (`ContentDigest | None`, default `None`), `etag` (`str | None`, default `None`), `content_type` (`str | None`, default `None`), `metadata` (`Mapping[str, str] | None`, default `None`), `extra` (`dict[str, object]`, default empty dict).
+**See also:** [035-content-digest.md](035-content-digest.md) (CDG-001 through CDG-005); [045-write-result.md](045-write-result.md) (WR-013) for user metadata round-trip semantics.
 
 ### MOD-004: FolderInfo Required Fields
 

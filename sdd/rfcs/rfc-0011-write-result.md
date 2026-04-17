@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Proposed
 
 ## Summary
 
@@ -63,7 +63,7 @@ they returned:
 | Local                   | nothing — `os.stat` for size + mtime after write                                        | --                     | --                                   |
 | Memory                  | trivially, we own the storage                                                           | yes                    | trivially                            |
 | HTTP                    | write not supported today                                                               | --                     | --                                   |
-| SQLAlchemy BLOB         | rowcount only; we already track `size` and `updated_at`; row version doubles as `version_id` | yes (existing `extra` JSON column) | client-side only         |
+| SQLAlchemy BLOB         | rowcount only; we already track `size` and `updated_at`; row version doubles as `version_id` | yes — via a dedicated `user_metadata` JSON column (see SQLBlob storage note below) | client-side only         |
 
 **The free wins.** Azure and S3 hand us `etag` and `version_id` on
 every write today. Surfacing them costs zero round trips and zero
@@ -271,9 +271,10 @@ three.
 A separate capability that gates the `metadata=` kwarg on `write*`.
 **Strict gate** — passing `metadata=` to a backend that does not
 declare `USER_METADATA` raises `CapabilityNotSupported` before any
-I/O. Same rationale as AW-007 (atomic writes never silently
+I/O. Same rationale as AW-002 (atomic writes never silently
 degrade): silent drop is the worst correctness pattern for saga
-consumers, who treat "write returned" as "metadata durable."
+consumers, who treat "write returned" as "metadata durable." See
+also ADR-0026, which names the strict-gate-on-kwarg pattern.
 
 Backend declarations for v1:
 
@@ -282,7 +283,7 @@ Backend declarations for v1:
 | `AzureBackend`     | yes — `metadata=` kwarg                            |
 | `S3Backend`        | yes — boto3 `Metadata=`                            |
 | `MemoryBackend`    | yes                                                |
-| `SQLBlobBackend`   | yes — uses existing unused `extra` JSON column     |
+| `SQLBlobBackend`   | yes — via a dedicated `user_metadata` JSON column (see below) |
 | `S3PyArrowBackend` | no                                                 |
 | `SFTPBackend`      | no                                                 |
 | `LocalBackend`     | no                                                 |
@@ -309,6 +310,27 @@ the `Capability` enum docstring, with explicit "raises
 field (rather than stuffing into `extra`) so user metadata
 round-trips cleanly through `get_file_info()` on backends that
 declare `USER_METADATA`.
+
+#### SQLBlob storage note
+
+`SQLBlobBackend` stores user metadata in a **dedicated** `user_metadata`
+column (JSON-typed; `sa.Text` with JSON payload on SQLite, `JSONB` on
+Postgres where available), not in the existing `extra` column. Two
+reasons:
+
+1. **Type mismatch.** `FileInfo.extra` is `dict[str, object]` — a
+   catch-all for backend-internal annotations. `FileInfo.metadata` is
+   `Mapping[str, str]` (validated per WR-011). Co-locating them in one
+   column would require a sub-key discipline (`extra["_user_metadata"]`)
+   that leaks the `USER_METADATA` schema into every existing `extra`
+   consumer.
+2. **Migration surface.** A dedicated column lets existing rows keep
+   `user_metadata IS NULL` until they are re-written, and lets future
+   queries filter on user metadata without a JSON path expression over
+   `extra`.
+
+The schema change is additive (new nullable column); `_optional_columns`
+gains `"user_metadata"` alongside `"extra"`.
 
 ### `Store.head(path) -> WriteResult`
 
@@ -418,8 +440,16 @@ def open_atomic_with_hash(
     algorithm: str = "sha256",
     overwrite: bool = False,
     metadata: Mapping[str, str] | None = None,
-) -> Iterator[ChecksumWriter]:
-    """Streaming atomic write with hash; ``writer.result`` after exit."""
+) -> Iterator[HashingAtomicWriter]:
+    """Streaming atomic write with hash; ``writer.result`` after exit.
+
+    Yields a ``HashingAtomicWriter`` — a ``ChecksumWriter`` subclass
+    defined in ``ext.write`` that adds a ``.result: WriteResult | None``
+    attribute. ``writer.result`` is ``None`` during the ``with`` block;
+    on successful exit it holds the ``WriteResult`` (with ``digest``
+    populated from the streaming hash). On exception exit, ``.result``
+    remains ``None`` and the exception propagates unchanged. See WR-017.
+    """
 ```
 
 `ext.write` activates when the caller imports it. No proxy
@@ -454,19 +484,21 @@ echoed back if the caller passed `metadata=`.
 | WR-002 | `WriteResult.path` is store-relative, matching the rebasing applied to `FileInfo.path` returned from `get_file_info()`. |
 | WR-003 | `WriteResult.size` equals the byte length of the written content on every backend. For `bytes`/`str` input, `size` is computed from the payload directly (zero added cost). For non-seekable `BinaryIO` input on backends without `WRITE_RESULT_NATIVE`, `size` is obtained by counting bytes as they stream or via a post-write `stat()` call — costs one local `stat` on `LocalBackend`, zero extra round trips on `SFTPBackend` (paramiko returns bytes transferred). |
 | WR-004 | If the backend declares `WRITE_RESULT_NATIVE`, every successful `Store.write*()` returns `WriteResult.source == "native"`; otherwise `source == "basic"`. |
-| WR-005 | When `source == "basic"`, only `path` and `size` are guaranteed populated; all other rich fields are `None`.      |
+| WR-005 | When `source == "basic"`, only `path` and `size` are guaranteed populated; the rich fields `digest`, `etag`, `version_id`, `last_modified`, `content_md5` are `None`. `metadata` is governed independently by WR-012 regardless of `source`. |
 | WR-006 | `WriteResult.source == "sidecar"` only when constructed by `Store.head()`.                                        |
 | WR-007 | The default write path (`Store.write*()` without `ext.write`) returns `WriteResult.digest is None` on every backend that does not surface a server-verified digest. |
 | WR-008 | `Store.head(path) -> WriteResult` is gated on `Capability.METADATA` only. It is **not** gated on `WRITE` — callers may invoke it on read-only backends that declare `METADATA`. Raises `NotFound` if the path doesn't exist; raises `CapabilityNotSupported` if the backend lacks `METADATA`. |
 | WR-009 | `Capability.WRITE_RESULT_NATIVE` is a quality flag — it does not gate any method.                                 |
 | WR-010 | `Capability.USER_METADATA` gates the `metadata=` kwarg. Passing `metadata=` to a non-declaring backend raises `CapabilityNotSupported` before any I/O. |
 | WR-011 | `metadata` is `Mapping[str, str]`. Keys must be non-empty ASCII without a leading underscore; values must be strings; `sum(len(k.encode("ascii")) + len(v.encode("utf-8")))` over all entries must be ≤ 2048. Violations raise `ValueError` before any I/O. |
-| WR-012 | When `metadata=` is passed, `WriteResult.metadata` echoes the stored canonicalised mapping.                       |
+| WR-012 | When `metadata=` is passed, `WriteResult.metadata` echoes the caller's mapping verbatim (same keys, same values, same case — no normalisation). Backend-side normalisation is observable only through `FileInfo.metadata` on a subsequent `get_file_info()`. |
 | WR-013 | User metadata survives round-trip through `get_file_info()` on backends declaring `USER_METADATA`, accessible as `FileInfo.metadata`. |
 | WR-014 | `ext.write.write_with_hash()` returns a `WriteResult` with `digest` populated from a streaming hash; the underlying `source` value is preserved. |
 | WR-015 | `ext.write.write_with_hash()` works on every backend declaring `WRITE` — the hash is always computed client-side regardless of `WRITE_RESULT_NATIVE`. No additional capability is required beyond what `Store.write()` already requires. |
 | WR-016 | `ext.write.open_atomic_with_hash()` requires `Capability.ATOMIC_WRITE` on the underlying store (inherited from `Store.open_atomic`, SAW-002); absence raises `CapabilityNotSupported` before any I/O. |
-| WR-017 | `ext.write.open_atomic_with_hash()` exposes the `WriteResult` on the yielded writer's `.result` attribute after successful exit; access before exit raises `RuntimeError`. |
+| WR-017 | `ext.write.open_atomic_with_hash()` yields a `HashingAtomicWriter` (a `ChecksumWriter` subclass in `ext.write` adding `.result: WriteResult \| None`). `.result` is `None` during the `with` block; populated on successful exit; remains `None` on exception exit (exception propagates unchanged). |
+| WR-018 | The proxy stack (`ext.observe`, `ext.cache`, `_proxy`) widens `write*` override return types from `None` to `WriteResult` and forwards the underlying `WriteResult` unchanged. `Store.head()` is added to the same proxies and forwards to the wrapped store. |
+| WR-019 | The post-operation `StoreEvent` emitted by `ext.observe` after `write`, `write_text`, and `write_atomic` carries the returned `WriteResult` under `StoreEvent.metadata["write_result"]`. The pre-operation event is unchanged. |
 
 `open_atomic` retains its `Iterator[BinaryIO]` contract (SAW-001 / SAW-013) and does **not** return a `WriteResult`. This is design context, not a new requirement — see "open_atomic — unchanged" above and Alternative E.
 
@@ -549,7 +581,7 @@ result). Both options are cheap and explicit.
 
 ### F. Silent fallthrough for `metadata=` on non-declaring backends
 
-Rejected. Same reasoning as AW-007: silent degradation is a
+Rejected. Same reasoning as AW-002: silent degradation is a
 correctness pit for saga consumers. A raised exception forces the
 caller to either confirm capability or implement a sidecar
 explicitly.
@@ -564,6 +596,15 @@ caller cannot suppress). Available as an explicit
 follow-up; off by default in v1.
 
 ## Impact
+
+> **Scope of this PR.** This RFC PR is **spec-only**: it lands the RFC
+> and the `WR-` / `OBS-015` / `WTXT-004` / `MOD-003` spec invariants.
+> User-facing surfaces that describe release output (`FEATURES.md`,
+> `CHANGELOG.md`) and documentation pages (`docs-src/api/*`, new
+> `guides/write-integrity.md`) are **deferred to the implementation PR**
+> that lands the behaviour; this PR intentionally does not edit them.
+> They appear in the ripple-check below as forward-looking ripple targets,
+> not as PR deliverables. Tracked under ID-146 in `sdd/BACKLOG.md`.
 
 ### Public API
 
@@ -619,9 +660,17 @@ Pre-v1 semver — return-type changes are acceptable in a minor bump.
 - Negative tests (parametrised) for `metadata=` raising
   `CapabilityNotSupported` on every non-declaring backend.
 - MD validation negative tests (parametrised): leading underscore,
-  non-ASCII, oversize, empty key, non-string value, empty mapping.
+  non-ASCII, oversize, empty key, non-string value. An empty
+  `Mapping[str, str]` is accepted — it is semantically
+  indistinguishable from `metadata=None`, which WR-010 allows — and
+  so is not a negative case.
 - `ext.write.write_with_hash` round-trip test on every backend:
-  written hash matches a re-stream hash on a 10 MiB random payload.
+  written hash matches a re-stream hash on a 10 MiB payload
+  generated from a **fixed seed** (`random.Random(seed=0xB17ED1E5).randbytes(10 * 1024 * 1024)`
+  or equivalent) so the test is deterministic across runs and CI
+  shards. Marked as an **integration** test (`@pytest.mark.integration`)
+  on backends requiring a live service (Azure, S3); unit-tier on
+  `LocalBackend`, `MemoryBackend`, and `SQLBlobBackend`.
 
 ### Ripple-check
 
@@ -637,7 +686,7 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   to `_capabilities.py`. CAP-001 (capability enum) and CAP-007
   (quality-flag list) in spec 003 amended.
 - **Models.** `FileInfo.metadata` field added. MOD-003 (the
-  `FileInfo` optional fields list in spec 002) amended to include
+  `FileInfo` optional fields list in spec 001) amended to include
   `metadata`. `tests/test_models.py` defaults assertion updated.
 - **Store API.** `Store.head()` added. `STORE-008` in spec 001
   amended to include it. `Store.write*` return types widened in
@@ -654,17 +703,28 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   return `None` and must forward the underlying `WriteResult`
   unchanged. `Store.head()` is added to the same proxies and
   forwards to the wrapped store's `head()`. No structural changes
-  (no holder, no tuple). For `ext.observe` specifically: the post-
-  operation `StoreEvent` emitted after `write`, `write_text`, and
-  `write_atomic` carries the returned `WriteResult` under
+  (no holder, no tuple). Captured normatively in WR-018 (spec 045).
+  For `ext.observe` specifically: the post-operation `StoreEvent`
+  emitted after `write`, `write_text`, and `write_atomic` carries
+  the returned `WriteResult` under
   `StoreEvent.metadata["write_result"]`. `StoreEvent.metadata`
   keeps its existing `dict[str, Any]` type — access to
   `event.metadata["write_result"]` is explicitly untyped; callers
   narrow with `isinstance(..., WriteResult)` if static checking is
   required. A typed field on `StoreEvent` is deferred (see Open
-  Questions). The pre-operation event is unchanged. `ext.cache`
-  does not cache `WriteResult` — it forwards the write and
-  invalidates the cache entry as today.
+  Questions). The pre-operation event is unchanged. Captured
+  normatively in WR-019 (spec 045). `ext.cache` does not cache
+  `WriteResult` — it forwards the write and invalidates the cache
+  entry as today. **Spec 019 (ext.observe)** is amended in this PR:
+  OBS-015 (new) captures `write_result` injection into the
+  post-operation `StoreEvent`; OBS-001 gains `"head"` and
+  `"write_text"` in its operation list; OBS-003a is updated so the
+  hook-to-operation mapping covers `write_text` (on `on_write`) and
+  `head` (on `on_list`). **Spec 023 (ext.cache)** receives no
+  per-spec amendments in this PR — the proxy forwarding contract
+  is fully captured by WR-018 at the Store-API level, and will be
+  reflected in spec 023 only if cache-specific invariants become
+  necessary during implementation.
 - **Documentation.** `docs-src/api/models.md` (WriteResult),
   `docs-src/api/capabilities.md` (two new capabilities),
   `docs-src/api/store.md` (return types + `head()`),
@@ -720,21 +780,22 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
 
 ## References
 
-- Spec (pending — to be created with the implementation PR):
-  `sdd/specs/045-write-result.md`. WR- IDs in the table above will
-  be reflected there; `@pytest.mark.spec("WR-NNN")` traceability
-  applies once the file lands.
-- Spec 001 (Store API — STORE-008 amendment for `head` and `write_text`): `sdd/specs/001-store-api.md`
-- Spec 002 (Models — MOD-003 amendment for `FileInfo.metadata`): `sdd/specs/002-models.md`
+- Spec 045 (WriteResult — WR-001..WR-019): `sdd/specs/045-write-result.md`.
+  `@pytest.mark.spec("WR-NNN")` traceability applies per
+  `sdd/000-process.md` Rule 2.
+- Spec 001 (Store API — STORE-008 amendment for `head` and `write_text`; MOD-003 amendment for `FileInfo.metadata`): `sdd/specs/001-store-api.md`
 - Spec 003 (Backend Adapter Contract — CAP-001, CAP-007 amendment, BE write return types): `sdd/specs/003-backend-adapter-contract.md`
-- Spec 029 (Async Store API — async write return types): `sdd/specs/029-async-store-backend-api.md`
+- Spec 029 (Async Store API — async write return types, ASYNC-052a return-type widening): `sdd/specs/029-async-store-backend-api.md`
+- Spec 030 (write_text — WTXT-001 return-type widening): `sdd/specs/030-write-text.md`
 - Spec 035 (ContentDigest — used by `WriteResult.digest`): `sdd/specs/035-content-digest.md`
-- Spec 007 (atomic writes — referenced for AW-007 strict-gate precedent): `sdd/specs/007-atomic-writes.md`
+- Spec 007 (atomic writes — referenced for AW-002 strict-gate precedent): `sdd/specs/007-atomic-writes.md`
 - Spec 022 (streaming atomic writes — SAW-001 / SAW-013 unchanged, SAW-002 gate inherited by `open_atomic_with_hash`): `sdd/specs/022-streaming-atomic-writes.md`
 - ADR-0008 (extension architecture — pattern for `ext.write`): `sdd/adrs/0008-extension-architecture.md`
 - ADR-0012 (async store/backend API): `sdd/adrs/0012-async-store-backend-api.md`
 - Existing hashing wrappers: `src/remote_store/ext/streams.py`
-  (`ChecksumWriter`, `ChecksumReader`)
+  (`ChecksumWriter`, `ChecksumReader`). `HashingAtomicWriter`
+  (`ChecksumWriter` subclass adding `.result`) lands in
+  `src/remote_store/ext/write.py` alongside `open_atomic_with_hash`.
 - Models: `src/remote_store/_models.py` (`FileInfo`, `ContentDigest`)
 - Capability enum: `src/remote_store/_capabilities.py`
 - Azure SDK upload response: https://learn.microsoft.com/python/api/azure-storage-blob/azure.storage.blob.blobclient#azure-storage-blob-blobclient-upload-blob
