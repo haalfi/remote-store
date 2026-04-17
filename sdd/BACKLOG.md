@@ -129,6 +129,34 @@ Items graduate through the SDD pipeline:
   The native `AsyncStore.transfer()` variant remains the residual scope
   of this item.
 
+### Documentation & Discoverability
+
+- [ ] **ID-147 — Context7 indexing for remote-store**
+  Submit remote-store for inclusion in Context7's curated library index.
+  
+  **Current state:** The project is not indexed in Context7. Queries against
+  `/haalfi/remote-store`, `remote-store`, and `remotestore` all fail or timeout,
+  making the Store API surface, backend matrix, and examples undiscoverable to
+  LLMs backed by Context7.
+  
+  **What becomes discoverable:** Once indexed, Context7 will surface:
+  - FEATURES.md (backend/capability matrix)
+  - README.md and this repository
+  - docs.remotestore.dev (RTD site)
+  - examples/ module docstrings (via gen_pages.py)
+  - CHANGELOG, ADRs, RFCs, guides, API reference
+  
+  **Implementation:** Follow Context7's submission process — file a PR or issue
+  on the Context7 repository pointing to the GitHub repo URL
+  (`https://github.com/haalfi/remote-store`) and RTD site
+  (`https://docs.remotestore.dev`).
+  
+  **Notes:**
+  - This is a discoverability improvement, not a blocking issue.
+  - LLMs still reach docs via web search and RTD directly; Context7 is an
+    optional accelerator for LLM-backed discovery via curated indexing.
+  - No code changes required — pure administrative task.
+
 ### API Surface Enhancements
 
 - [~] **ID-146 — Land RFC-0011: `WriteResult` + opt-in hashing**
