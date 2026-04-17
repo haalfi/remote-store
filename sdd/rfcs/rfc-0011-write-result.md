@@ -54,12 +54,12 @@ they returned:
 
 | Backend                 | Native on write response                                                                | User metadata accepted | Server-side content hash             |
 | ----------------------- | --------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------ |
-| Azure Blob              | `etag`, `last_modified`, `version_id`, `content_md5`                                    | yes (`metadata=`)      | yes — `content_md5`, server-verified |
-| Azure DataLake (HNS)    | `etag`, `last_modified`                                                                 | yes (`metadata=`)      | MD5 via `ContentSettings`            |
-| S3 (boto3 `put_object`) | `ETag`, `VersionId`                                                                     | yes (`Metadata=`)      | opt-in only (`ChecksumAlgorithm`)    |
+| Azure Blob              | `etag`, `last_modified`, `version_id`, `content_md5` (when client supplied it)          | yes (`metadata=`)      | `content_md5` — client-supplied via `ContentSettings(content_md5=…)` or `validate_content=True`, stored (not computed) server-side |
+| Azure DataLake (HNS)    | `etag`, `last_modified`                                                                 | yes (`metadata=`)      | `content_md5` — client-supplied via `ContentSettings`, same storage semantics as Azure Blob |
+| S3 (boto3 `put_object`) | `ETag`, `VersionId`. Single-PUT `ETag` is the MD5 of the body. Multipart `ETag` is `"<md5-of-part-md5s>-<N>"` — **not** a content hash. | yes (`Metadata=`) | opt-in only (`ChecksumAlgorithm`)    |
 | S3 via `s3fs.pipe_file` | same as boto3 — but s3fs **discards** the response                                      | only via raw boto3     | discarded                            |
 | S3 via PyArrow          | nothing — PyArrow output stream eats the PUT response                                   | --                     | --                                   |
-| SFTP (paramiko)         | nothing — SFTP has no etag/version concept                                              | --                     | --                                   |
+| SFTP (paramiko)         | `SFTPAttributes` from `SFTPClient.put()` / `putfo()` — exposes `st_size`, `st_mtime`, `st_mode`. No etag/version concept in the protocol. | -- | -- |
 | Local                   | nothing — `os.stat` for size + mtime after write                                        | --                     | --                                   |
 | Memory                  | trivially, we own the storage                                                           | yes                    | trivially                            |
 | HTTP                    | write not supported today                                                               | --                     | --                                   |
@@ -68,8 +68,12 @@ they returned:
 **The free wins.** Azure and S3 hand us `etag` and `version_id` on
 every write today. Surfacing them costs zero round trips and zero
 new bytes on the wire. Memory and SQLBlob can synthesise everything
-trivially. The remaining backends (Local, SFTP, S3-PyArrow) return a
-minimal `WriteResult` with just `path` and `size`.
+trivially. SFTP and Local cannot surface `etag` / `version_id`
+(protocol-level absent) and so do not declare `WRITE_RESULT_NATIVE`,
+even though SFTP's `SFTPAttributes` and Local's post-write `stat()`
+can populate `size` and `last_modified` — a partial return is still
+`source="basic"` per the capability table. S3-PyArrow genuinely
+returns nothing (the output stream eats the PUT response).
 
 ## Goals
 
@@ -122,14 +126,25 @@ class WriteResult:
             or the backend surfaces a server-verified digest on its
             write response.
         etag: Backend-provided change tag. ``None`` when the backend
-            does not produce one.
+            does not produce one. **Not a content hash** on every
+            backend — on S3, single-PUT ETags are the MD5 of the
+            body but multipart ETags have the form
+            ``"<md5-of-part-md5s>-<N>"``. Callers doing content
+            verification should use ``digest`` from
+            ``ext.write.write_with_hash`` rather than comparing
+            ``etag`` to a client-computed hash.
         version_id: Backend-provided immutable version identifier.
             ``None`` when the backend does not version objects.
         last_modified: Server timestamp from the write response.
             ``None`` when the backend's write response omits it; call
             ``Store.head(path)`` if needed.
-        content_md5: Backend-verified MD5. ``None`` when the backend
-            does not return one on write.
+        content_md5: MD5 stored alongside the object when the client
+            supplied one at write time (Azure: via
+            ``ContentSettings(content_md5=…)`` or
+            ``validate_content=True``). ``None`` otherwise.
+            **Not** a server-computed hash — Azure does not compute
+            MD5 server-side on ``Put Blob``; it only stores what the
+            client sent.
         metadata: Echo of the user metadata that was stored. ``None``
             when ``metadata=`` was not passed or the backend does not
             declare ``USER_METADATA``.
@@ -173,14 +188,17 @@ hashing wrapper, no proxying, no extra round trip. It calls
 ```python
 # Backends with WRITE_RESULT_NATIVE -- Azure example
 def write(self, path, content, *, overwrite=False, metadata=None) -> WriteResult:
+    # Azure's upload_blob response does not include "size" — measure
+    # the body directly (bytes: len; BinaryIO: counting wrapper).
+    size = _measure(content)
     response = blob_client.upload_blob(content, overwrite=overwrite, metadata=metadata)
     return WriteResult(
         path=RemotePath(path),  # backend-native; Store rebases to store-relative
-        size=response.get("size", _measure_after(content)),
+        size=size,
         etag=response["etag"],
         version_id=response.get("version_id"),
         last_modified=response["last_modified"],
-        content_md5=response.get("content_md5"),
+        content_md5=response.get("content_md5"),  # only present if client supplied
         metadata=metadata,
         source="native",
     )
@@ -215,14 +233,34 @@ fields you can trust on the result**:
 | `MemoryBackend`    | yes                             | `"native"`         |
 | `SQLBlobBackend`   | yes                             | `"native"`         |
 | `S3PyArrowBackend` | no — PyArrow eats the response  | `"basic"`          |
-| `SFTPBackend`      | no — protocol has no etag       | `"basic"`          |
+| `SFTPBackend`      | no — no etag/version in protocol; `size` and `last_modified` are available from `SFTPAttributes` but the capability requires the full rich set | `"basic"` |
 | `LocalBackend`     | no — no write-time metadata     | `"basic"`          |
 
 S3's bytes-path switches from `s3fs.pipe_file` (which discards the
-response) to `boto3.put_object` directly to keep the response. The
-streaming path uses `boto3.upload_fileobj`. Both paths add `boto3`
-as an explicit `s3` extras dependency rather than relying on the
-existing transitive from `s3fs`.
+response) to `boto3.put_object` directly to keep the response.
+The streaming path cannot use `boto3.upload_fileobj` —
+`upload_fileobj` delegates to `boto3.s3.transfer.S3Transfer` and
+returns `None`, discarding the final `CompleteMultipartUpload`
+ETag/VersionId just as `s3fs.pipe_file` does. Two viable shapes:
+
+1. **Direct low-level multipart** when the stream exceeds a
+   configurable threshold: `create_multipart_upload` →
+   `upload_part` per chunk → `complete_multipart_upload`. We own
+   the response at the end and build the `WriteResult` from it.
+   Below the threshold, read the body into memory and use
+   `put_object`.
+2. **Narrow `WRITE_RESULT_NATIVE`** to the bytes path only; declare
+   the streaming path `"basic"` with just `path` and `size`. Saga
+   consumers needing `etag`/`version_id` after a streaming write
+   then call `Store.head(path)`.
+
+The implementation picks between (1) and (2); spec 045 nails it
+down. Both add `boto3` as an explicit `s3` extras dependency rather
+than relying on the existing transitive from `s3fs`. See also the
+`WriteResult.etag` docstring note below: the multipart `ETag` has
+format `"<md5-of-part-md5s>-<N>"`, not a content hash — saga
+consumers must use `digest` from `ext.write.write_with_hash` for
+content verification above the multipart threshold.
 
 `Capability.WRITE_RESULT_NATIVE` is added to the "Quality flags"
 section of the `Capability` enum docstring, alongside the existing
