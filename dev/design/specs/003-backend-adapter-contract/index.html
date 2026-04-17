@@ -5249,6 +5249,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0026: Strict-Gate Pattern for Optional Capability Kwargs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8514,6 +8542,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../045-write-result/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    045: WriteResult and User Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -9135,7 +9191,8 @@
 <hr />
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <h3 id="cap-001-capability-enum-members">CAP-001: Capability Enum Members<a class="headerlink" href="#cap-001-capability-enum-members" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>Capability</code> is an enum with members: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>ATOMIC_MOVE</code>, <code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>, <code>LAZY_READ</code>.</p>
+<p><strong>Invariant:</strong> <code>Capability</code> is an enum with members: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>ATOMIC_MOVE</code>, <code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>, <code>LAZY_READ</code>, <code>WRITE_RESULT_NATIVE</code>, <code>USER_METADATA</code>.
+<strong>See also:</strong> <a href="../045-write-result/">045-write-result.md</a> (WR-009, WR-010) for semantics of the two new members.</p>
 <h3 id="cap-002-capabilityset-construction">CAP-002: CapabilitySet Construction<a class="headerlink" href="#cap-002-capabilityset-construction" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>CapabilitySet</code> is constructed from a <code>set[Capability]</code>.
 <strong>Example:</strong>
@@ -9162,6 +9219,11 @@
 <li><code>ATOMIC_MOVE</code> — <code>move()</code> is guaranteed atomic under concurrent access (i.e. any reader observes either the pre-move or the post-move state, never a partial state). Backends that implement move as copy-then-delete do <strong>not</strong> declare this flag. Callers <strong>must not</strong> assume atomicity; they <strong>should</strong> check <code>Store.supports(Capability.ATOMIC_MOVE)</code> before relying on atomic rename semantics.</li>
 <li><code>SEEKABLE_READ</code> — <code>read()</code> always returns a natively seekable stream (<code>stream.seekable()</code> is <code>True</code>) with zero overhead. Backends that omit this flag still support <code>Store.read_seekable()</code> via an optimized override or spool fallback, but <code>read()</code> itself may return a non-seekable stream. The flag describes a property of <code>read()</code> rather than gating any additional method.</li>
 <li><code>LAZY_READ</code> — <code>read()</code> fetches data lazily on demand from the native source rather than loading the entire file into memory before returning. Backends that pre-load all file contents before returning a stream (e.g. in-memory backends, SQL blob stores) do <strong>not</strong> declare this flag. Callers can use <code>Store.supports(Capability.LAZY_READ)</code> to know whether partial reads avoid loading the entire file. This flag describes a property of <code>read()</code> rather than gating any additional method.</li>
+<li><code>WRITE_RESULT_NATIVE</code> — <code>write*()</code> returns a <code>WriteResult</code> with <code>source == "native"</code> and all rich fields (<code>etag</code>, <code>version_id</code>, <code>last_modified</code>, etc.) populated from the backend's write response. Backends that omit this flag still return a <code>WriteResult</code>, but with <code>source == "basic"</code> (only <code>path</code> and <code>size</code> guaranteed). Does <strong>not</strong> gate any method. See <a href="../045-write-result/">045-write-result.md</a> (WR-004, WR-009).</li>
+</ul>
+<p><strong>Strict-gate capabilities</strong> (raise <code>CapabilityNotSupported</code> before I/O when the backend lacks the capability and the caller passes the guarded kwarg):</p>
+<ul>
+<li><code>USER_METADATA</code> — gates the <code>metadata=</code> kwarg on <code>write*()</code>. Passing <code>metadata=</code> to a backend without this capability raises <code>CapabilityNotSupported</code> before any I/O. See <a href="../045-write-result/">045-write-result.md</a> (WR-010) and <a href="../../adrs/0026-strict-gate-on-kwarg/">ADR-0026</a>.</li>
 </ul>
 <hr />
 <h2 id="backend-abc">Backend ABC<a class="headerlink" href="#backend-abc" title="Permanent link">&para;</a></h2>
@@ -9183,9 +9245,10 @@
 <p><strong>Invariant:</strong> <code>read_bytes(path)</code> returns the full file content as <code>bytes</code>.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory. Same preconditions as BE-006; see BE-021.</p>
 <h3 id="be-008-write">BE-008: write()<a class="headerlink" href="#be-008-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write(path, content, overwrite=False)</code> creates or overwrites a file.
+<p><strong>Invariant:</strong> <code>write(path, content, *, overwrite=False, metadata=None) -&gt; WriteResult</code> creates or overwrites a file and returns a <code>WriteResult</code>.
 <strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>BinaryIO</code>.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out — <code>metadata=None</code> and <code>metadata={}</code> are both no-ops with respect to this gate).
+<strong>See also:</strong> <a href="../045-write-result/">045-write-result.md</a> (WR-001 through WR-005, WR-010 through WR-012).
 <strong>Precondition evaluation order:</strong> Backends MUST evaluate preconditions in this
 order: (1) path validity — if <code>path</code> names an existing <em>directory</em>, raises
 <code>InvalidPath</code>; (2) overwrite conflict — if the file exists and <code>overwrite=False</code>,
@@ -9201,10 +9264,10 @@ writable) → overwrite conflict → I/O.</p>
 <h3 id="be-009-write-creates-intermediate-directories">BE-009: write Creates Intermediate Directories<a class="headerlink" href="#be-009-write-creates-intermediate-directories" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write</code> creates any intermediate directories automatically.</p>
 <h3 id="be-010-write_atomic">BE-010: write_atomic()<a class="headerlink" href="#be-010-write_atomic" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write_atomic(path, content, overwrite=False)</code> writes via a temporary file + atomic rename.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.
+<p><strong>Invariant:</strong> <code>write_atomic(path, content, *, overwrite=False, metadata=None) -&gt; WriteResult</code> writes via a temporary file + atomic rename and returns a <code>WriteResult</code>.
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out).
 <strong>Precondition order:</strong> Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies.
-<strong>See also:</strong> <a href="../007-atomic-writes/">007-atomic-writes.md</a></p>
+<strong>See also:</strong> <a href="../007-atomic-writes/">007-atomic-writes.md</a>; <a href="../045-write-result/">045-write-result.md</a> (WR-001, WR-010).</p>
 <h3 id="be-011-write_atomic-capability-gate">BE-011: write_atomic Capability Gate<a class="headerlink" href="#be-011-write_atomic-capability-gate" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_atomic</code> raises <code>CapabilityNotSupported</code> if the backend lacks <code>ATOMIC_WRITE</code>.</p>
 <h3 id="be-012-delete">BE-012: delete()<a class="headerlink" href="#be-012-delete" title="Permanent link">&para;</a></h3>

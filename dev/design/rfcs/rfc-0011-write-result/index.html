@@ -5249,6 +5249,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0026: Strict-Gate Pattern for Optional Capability Kwargs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -6076,6 +6104,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Capability.USER_METADATA — strict gate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sqlblob-storage-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLBlob storage note
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -8493,6 +8538,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    045: WriteResult and User Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8809,6 +8882,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Capability.USER_METADATA — strict gate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sqlblob-storage-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLBlob storage note
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -9089,7 +9179,7 @@
 
 <h1 id="rfc-0011-writeresult-native-write-metadata-and-opt-in-hashing">RFC-0011: WriteResult — Native Write Metadata and Opt-In Hashing<a class="headerlink" href="#rfc-0011-writeresult-native-write-metadata-and-opt-in-hashing" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft</p>
+<p>Proposed</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Replace the <code>None</code> return from <code>Store.write*()</code> with a <code>WriteResult</code>
 dataclass carrying whatever metadata the backend already produced for
@@ -9198,7 +9288,7 @@ they returned:</p>
 <tr>
 <td>SQLAlchemy BLOB</td>
 <td>rowcount only; we already track <code>size</code> and <code>updated_at</code>; row version doubles as <code>version_id</code></td>
-<td>yes (existing <code>extra</code> JSON column)</td>
+<td>yes — via a dedicated <code>user_metadata</code> JSON column (see SQLBlob storage note below)</td>
 <td>client-side only</td>
 </tr>
 </tbody>
@@ -9429,9 +9519,10 @@ three.</p>
 <p>A separate capability that gates the <code>metadata=</code> kwarg on <code>write*</code>.
 <strong>Strict gate</strong> — passing <code>metadata=</code> to a backend that does not
 declare <code>USER_METADATA</code> raises <code>CapabilityNotSupported</code> before any
-I/O. Same rationale as AW-007 (atomic writes never silently
+I/O. Same rationale as AW-002 (atomic writes never silently
 degrade): silent drop is the worst correctness pattern for saga
-consumers, who treat "write returned" as "metadata durable."</p>
+consumers, who treat "write returned" as "metadata durable." See
+also ADR-0026, which names the strict-gate-on-kwarg pattern.</p>
 <p>Backend declarations for v1:</p>
 <table>
 <thead>
@@ -9455,7 +9546,7 @@ consumers, who treat "write returned" as "metadata durable."</p>
 </tr>
 <tr>
 <td><code>SQLBlobBackend</code></td>
-<td>yes — uses existing unused <code>extra</code> JSON column</td>
+<td>yes — via a dedicated <code>user_metadata</code> JSON column (see below)</td>
 </tr>
 <tr>
 <td><code>S3PyArrowBackend</code></td>
@@ -9494,6 +9585,25 @@ the <code>Capability</code> enum docstring, with explicit "raises
 field (rather than stuffing into <code>extra</code>) so user metadata
 round-trips cleanly through <code>get_file_info()</code> on backends that
 declare <code>USER_METADATA</code>.</p>
+<h4 id="sqlblob-storage-note">SQLBlob storage note<a class="headerlink" href="#sqlblob-storage-note" title="Permanent link">&para;</a></h4>
+<p><code>SQLBlobBackend</code> stores user metadata in a <strong>dedicated</strong> <code>user_metadata</code>
+column (JSON-typed; <code>sa.Text</code> with JSON payload on SQLite, <code>JSONB</code> on
+Postgres where available), not in the existing <code>extra</code> column. Two
+reasons:</p>
+<ol>
+<li><strong>Type mismatch.</strong> <code>FileInfo.extra</code> is <code>dict[str, object]</code> — a
+   catch-all for backend-internal annotations. <code>FileInfo.metadata</code> is
+   <code>Mapping[str, str]</code> (validated per WR-011). Co-locating them in one
+   column would require a sub-key discipline (<code>extra["_user_metadata"]</code>)
+   that leaks the <code>USER_METADATA</code> schema into every existing <code>extra</code>
+   consumer.</li>
+<li><strong>Migration surface.</strong> A dedicated column lets existing rows keep
+   <code>user_metadata IS NULL</code> until they are re-written, and lets future
+   queries filter on user metadata without a JSON path expression over
+   <code>extra</code>.</li>
+</ol>
+<p>The schema change is additive (new nullable column); <code>_optional_columns</code>
+gains <code>"user_metadata"</code> alongside <code>"extra"</code>.</p>
 <h3 id="storeheadpath-writeresult"><code>Store.head(path) -&gt; WriteResult</code><a class="headerlink" href="#storeheadpath-writeresult" title="Permanent link">&para;</a></h3>
 <p>Convenience wrapper that returns <code>WriteResult</code> for an existing file
 without re-uploading. Delegates to <code>Store.get_file_info()</code> so it
@@ -9592,8 +9702,16 @@ implementation.</p>
 <a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a>    <span class="n">algorithm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;sha256&quot;</span><span class="p">,</span>
 <a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">ChecksumWriter</span><span class="p">]:</span>
-<a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Streaming atomic write with hash; ``writer.result`` after exit.&quot;&quot;&quot;</span>
+<a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">HashingAtomicWriter</span><span class="p">]:</span>
+<a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Streaming atomic write with hash; ``writer.result`` after exit.</span>
+<a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a>
+<a id="__codelineno-3-48" name="__codelineno-3-48" href="#__codelineno-3-48"></a><span class="sd">    Yields a ``HashingAtomicWriter`` — a ``ChecksumWriter`` subclass</span>
+<a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a><span class="sd">    defined in ``ext.write`` that adds a ``.result: WriteResult | None``</span>
+<a id="__codelineno-3-50" name="__codelineno-3-50" href="#__codelineno-3-50"></a><span class="sd">    attribute. ``writer.result`` is ``None`` during the ``with`` block;</span>
+<a id="__codelineno-3-51" name="__codelineno-3-51" href="#__codelineno-3-51"></a><span class="sd">    on successful exit it holds the ``WriteResult`` (with ``digest``</span>
+<a id="__codelineno-3-52" name="__codelineno-3-52" href="#__codelineno-3-52"></a><span class="sd">    populated from the streaming hash). On exception exit, ``.result``</span>
+<a id="__codelineno-3-53" name="__codelineno-3-53" href="#__codelineno-3-53"></a><span class="sd">    remains ``None`` and the exception propagates unchanged. See WR-017.</span>
+<a id="__codelineno-3-54" name="__codelineno-3-54" href="#__codelineno-3-54"></a><span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div>
 <p><code>ext.write</code> activates when the caller imports it. No proxy
 wrapping, no dependency on the underlying capability flag. It works
@@ -9641,7 +9759,7 @@ echoed back if the caller passed <code>metadata=</code>.</p>
 </tr>
 <tr>
 <td>WR-005</td>
-<td>When <code>source == "basic"</code>, only <code>path</code> and <code>size</code> are guaranteed populated; all other rich fields are <code>None</code>.</td>
+<td>When <code>source == "basic"</code>, only <code>path</code> and <code>size</code> are guaranteed populated; the rich fields <code>digest</code>, <code>etag</code>, <code>version_id</code>, <code>last_modified</code>, <code>content_md5</code> are <code>None</code>. <code>metadata</code> is governed independently by WR-012 regardless of <code>source</code>.</td>
 </tr>
 <tr>
 <td>WR-006</td>
@@ -9669,7 +9787,7 @@ echoed back if the caller passed <code>metadata=</code>.</p>
 </tr>
 <tr>
 <td>WR-012</td>
-<td>When <code>metadata=</code> is passed, <code>WriteResult.metadata</code> echoes the stored canonicalised mapping.</td>
+<td>When <code>metadata=</code> is passed, <code>WriteResult.metadata</code> echoes the caller's mapping verbatim (same keys, same values, same case — no normalisation). Backend-side normalisation is observable only through <code>FileInfo.metadata</code> on a subsequent <code>get_file_info()</code>.</td>
 </tr>
 <tr>
 <td>WR-013</td>
@@ -9689,7 +9807,15 @@ echoed back if the caller passed <code>metadata=</code>.</p>
 </tr>
 <tr>
 <td>WR-017</td>
-<td><code>ext.write.open_atomic_with_hash()</code> exposes the <code>WriteResult</code> on the yielded writer's <code>.result</code> attribute after successful exit; access before exit raises <code>RuntimeError</code>.</td>
+<td><code>ext.write.open_atomic_with_hash()</code> yields a <code>HashingAtomicWriter</code> (a <code>ChecksumWriter</code> subclass in <code>ext.write</code> adding <code>.result: WriteResult \| None</code>). <code>.result</code> is <code>None</code> during the <code>with</code> block; populated on successful exit; remains <code>None</code> on exception exit (exception propagates unchanged).</td>
+</tr>
+<tr>
+<td>WR-018</td>
+<td>The proxy stack (<code>ext.observe</code>, <code>ext.cache</code>, <code>_proxy</code>) widens <code>write*</code> override return types from <code>None</code> to <code>WriteResult</code> and forwards the underlying <code>WriteResult</code> unchanged. <code>Store.head()</code> is added to the same proxies and forwards to the wrapped store.</td>
+</tr>
+<tr>
+<td>WR-019</td>
+<td>The post-operation <code>StoreEvent</code> emitted by <code>ext.observe</code> after <code>write</code>, <code>write_text</code>, and <code>write_atomic</code> carries the returned <code>WriteResult</code> under <code>StoreEvent.metadata["write_result"]</code>. The pre-operation event is unchanged.</td>
 </tr>
 </tbody>
 </table>
@@ -9758,7 +9884,7 @@ needing a <code>WriteResult</code> from a streaming atomic write either call
 <code>ext.write.open_atomic_with_hash</code> (no extra round trip, full
 result). Both options are cheap and explicit.</p>
 <h3 id="f-silent-fallthrough-for-metadata-on-non-declaring-backends">F. Silent fallthrough for <code>metadata=</code> on non-declaring backends<a class="headerlink" href="#f-silent-fallthrough-for-metadata-on-non-declaring-backends" title="Permanent link">&para;</a></h3>
-<p>Rejected. Same reasoning as AW-007: silent degradation is a
+<p>Rejected. Same reasoning as AW-002: silent degradation is a
 correctness pit for saga consumers. A raised exception forces the
 caller to either confirm capability or implement a sidecar
 explicitly.</p>
@@ -9770,6 +9896,16 @@ caller cannot suppress). Available as an explicit
 <code>server_verify=True</code> flag on <code>ext.write.write_with_hash</code> in a
 follow-up; off by default in v1.</p>
 <h2 id="impact">Impact<a class="headerlink" href="#impact" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Scope of this PR.</strong> This RFC PR is <strong>spec-only</strong>: it lands the RFC
+and the <code>WR-</code> / <code>OBS-015</code> / <code>WTXT-004</code> / <code>MOD-003</code> spec invariants.
+User-facing surfaces that describe release output (<code>FEATURES.md</code>,
+<code>CHANGELOG.md</code>) and documentation pages (<code>docs-src/api/*</code>, new
+<code>guides/write-integrity.md</code>) are <strong>deferred to the implementation PR</strong>
+that lands the behaviour; this PR intentionally does not edit them.
+They appear in the ripple-check below as forward-looking ripple targets,
+not as PR deliverables. Tracked under ID-146 in <code>sdd/BACKLOG.md</code>.</p>
+</blockquote>
 <h3 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>WriteResult</code> added to <code>remote_store._models</code> and re-exported from
@@ -9823,9 +9959,17 @@ follow-up; off by default in v1.</p>
 <li>Negative tests (parametrised) for <code>metadata=</code> raising
   <code>CapabilityNotSupported</code> on every non-declaring backend.</li>
 <li>MD validation negative tests (parametrised): leading underscore,
-  non-ASCII, oversize, empty key, non-string value, empty mapping.</li>
+  non-ASCII, oversize, empty key, non-string value. An empty
+  <code>Mapping[str, str]</code> is accepted — it is semantically
+  indistinguishable from <code>metadata=None</code>, which WR-010 allows — and
+  so is not a negative case.</li>
 <li><code>ext.write.write_with_hash</code> round-trip test on every backend:
-  written hash matches a re-stream hash on a 10 MiB random payload.</li>
+  written hash matches a re-stream hash on a 10 MiB payload
+  generated from a <strong>fixed seed</strong> (<code>random.Random(seed=0xB17ED1E5).randbytes(10 * 1024 * 1024)</code>
+  or equivalent) so the test is deterministic across runs and CI
+  shards. Marked as an <strong>integration</strong> test (<code>@pytest.mark.integration</code>)
+  on backends requiring a live service (Azure, S3); unit-tier on
+  <code>LocalBackend</code>, <code>MemoryBackend</code>, and <code>SQLBlobBackend</code>.</li>
 </ul>
 <h3 id="ripple-check">Ripple-check<a class="headerlink" href="#ripple-check" title="Permanent link">&para;</a></h3>
 <p>Per <code>sdd/CLAUDE-REFERENCE.md</code>, this RFC touches:</p>
@@ -9840,7 +9984,7 @@ follow-up; off by default in v1.</p>
   to <code>_capabilities.py</code>. CAP-001 (capability enum) and CAP-007
   (quality-flag list) in spec 003 amended.</li>
 <li><strong>Models.</strong> <code>FileInfo.metadata</code> field added. MOD-003 (the
-  <code>FileInfo</code> optional fields list in spec 002) amended to include
+  <code>FileInfo</code> optional fields list in spec 001) amended to include
   <code>metadata</code>. <code>tests/test_models.py</code> defaults assertion updated.</li>
 <li><strong>Store API.</strong> <code>Store.head()</code> added. <code>STORE-008</code> in spec 001
   amended to include it. <code>Store.write*</code> return types widened in
@@ -9857,17 +10001,28 @@ follow-up; off by default in v1.</p>
   return <code>None</code> and must forward the underlying <code>WriteResult</code>
   unchanged. <code>Store.head()</code> is added to the same proxies and
   forwards to the wrapped store's <code>head()</code>. No structural changes
-  (no holder, no tuple). For <code>ext.observe</code> specifically: the post-
-  operation <code>StoreEvent</code> emitted after <code>write</code>, <code>write_text</code>, and
-  <code>write_atomic</code> carries the returned <code>WriteResult</code> under
+  (no holder, no tuple). Captured normatively in WR-018 (spec 045).
+  For <code>ext.observe</code> specifically: the post-operation <code>StoreEvent</code>
+  emitted after <code>write</code>, <code>write_text</code>, and <code>write_atomic</code> carries
+  the returned <code>WriteResult</code> under
   <code>StoreEvent.metadata["write_result"]</code>. <code>StoreEvent.metadata</code>
   keeps its existing <code>dict[str, Any]</code> type — access to
   <code>event.metadata["write_result"]</code> is explicitly untyped; callers
   narrow with <code>isinstance(..., WriteResult)</code> if static checking is
   required. A typed field on <code>StoreEvent</code> is deferred (see Open
-  Questions). The pre-operation event is unchanged. <code>ext.cache</code>
-  does not cache <code>WriteResult</code> — it forwards the write and
-  invalidates the cache entry as today.</li>
+  Questions). The pre-operation event is unchanged. Captured
+  normatively in WR-019 (spec 045). <code>ext.cache</code> does not cache
+  <code>WriteResult</code> — it forwards the write and invalidates the cache
+  entry as today. <strong>Spec 019 (ext.observe)</strong> is amended in this PR:
+  OBS-015 (new) captures <code>write_result</code> injection into the
+  post-operation <code>StoreEvent</code>; OBS-001 gains <code>"head"</code> and
+  <code>"write_text"</code> in its operation list; OBS-003a is updated so the
+  hook-to-operation mapping covers <code>write_text</code> (on <code>on_write</code>) and
+  <code>head</code> (on <code>on_list</code>). <strong>Spec 023 (ext.cache)</strong> receives no
+  per-spec amendments in this PR — the proxy forwarding contract
+  is fully captured by WR-018 at the Store-API level, and will be
+  reflected in spec 023 only if cache-specific invariants become
+  necessary during implementation.</li>
 <li><strong>Documentation.</strong> <code>docs-src/api/models.md</code> (WriteResult),
   <code>docs-src/api/capabilities.md</code> (two new capabilities),
   <code>docs-src/api/store.md</code> (return types + <code>head()</code>),
@@ -9928,21 +10083,22 @@ follow-up; off by default in v1.</p>
 </ol>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Spec (pending — to be created with the implementation PR):
-  <code>sdd/specs/045-write-result.md</code>. WR- IDs in the table above will
-  be reflected there; <code>@pytest.mark.spec("WR-NNN")</code> traceability
-  applies once the file lands.</li>
-<li>Spec 001 (Store API — STORE-008 amendment for <code>head</code> and <code>write_text</code>): <code>sdd/specs/001-store-api.md</code></li>
-<li>Spec 002 (Models — MOD-003 amendment for <code>FileInfo.metadata</code>): <code>sdd/specs/002-models.md</code></li>
+<li>Spec 045 (WriteResult — WR-001..WR-019): <code>sdd/specs/045-write-result.md</code>.
+  <code>@pytest.mark.spec("WR-NNN")</code> traceability applies per
+  <code>sdd/000-process.md</code> Rule 2.</li>
+<li>Spec 001 (Store API — STORE-008 amendment for <code>head</code> and <code>write_text</code>; MOD-003 amendment for <code>FileInfo.metadata</code>): <code>sdd/specs/001-store-api.md</code></li>
 <li>Spec 003 (Backend Adapter Contract — CAP-001, CAP-007 amendment, BE write return types): <code>sdd/specs/003-backend-adapter-contract.md</code></li>
-<li>Spec 029 (Async Store API — async write return types): <code>sdd/specs/029-async-store-backend-api.md</code></li>
+<li>Spec 029 (Async Store API — async write return types, ASYNC-052a return-type widening): <code>sdd/specs/029-async-store-backend-api.md</code></li>
+<li>Spec 030 (write_text — WTXT-001 return-type widening): <code>sdd/specs/030-write-text.md</code></li>
 <li>Spec 035 (ContentDigest — used by <code>WriteResult.digest</code>): <code>sdd/specs/035-content-digest.md</code></li>
-<li>Spec 007 (atomic writes — referenced for AW-007 strict-gate precedent): <code>sdd/specs/007-atomic-writes.md</code></li>
+<li>Spec 007 (atomic writes — referenced for AW-002 strict-gate precedent): <code>sdd/specs/007-atomic-writes.md</code></li>
 <li>Spec 022 (streaming atomic writes — SAW-001 / SAW-013 unchanged, SAW-002 gate inherited by <code>open_atomic_with_hash</code>): <code>sdd/specs/022-streaming-atomic-writes.md</code></li>
 <li>ADR-0008 (extension architecture — pattern for <code>ext.write</code>): <code>sdd/adrs/0008-extension-architecture.md</code></li>
 <li>ADR-0012 (async store/backend API): <code>sdd/adrs/0012-async-store-backend-api.md</code></li>
 <li>Existing hashing wrappers: <code>src/remote_store/ext/streams.py</code>
-  (<code>ChecksumWriter</code>, <code>ChecksumReader</code>)</li>
+  (<code>ChecksumWriter</code>, <code>ChecksumReader</code>). <code>HashingAtomicWriter</code>
+  (<code>ChecksumWriter</code> subclass adding <code>.result</code>) lands in
+  <code>src/remote_store/ext/write.py</code> alongside <code>open_atomic_with_hash</code>.</li>
 <li>Models: <code>src/remote_store/_models.py</code> (<code>FileInfo</code>, <code>ContentDigest</code>)</li>
 <li>Capability enum: <code>src/remote_store/_capabilities.py</code></li>
 <li>Azure SDK upload response: https://learn.microsoft.com/python/api/azure-storage-blob/azure.storage.blob.blobclient#azure-storage-blob-blobclient-upload-blob</li>

@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/031-ext-dagster/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/045-write-result/">
       
       
-        <link rel="prev" href="../030-write-text/">
+        <link rel="prev" href="../044-graph-backend/">
       
       
-        <link rel="next" href="../032-http-backend/">
+        <link rel="next" href="../../../further-reading/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>031: ext.dagster - Dagster IO Manager Adapter Specification - remote-store</title>
+        <title>045: WriteResult and User Metadata - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#extdagster-dagster-io-manager-adapter-specification" class="md-skip">
+        <a href="#writeresult-and-user-metadata" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              031: ext.dagster - Dagster IO Manager Adapter Specification
+              045: WriteResult and User Metadata
             
           </span>
         </div>
@@ -7699,37 +7699,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    031: ext.dagster - Dagster IO Manager Adapter Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -7745,359 +7718,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#serializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Serializer Protocol
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Serializer Protocol">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-001-serializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-001: Serializer Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-002-pickleserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-002: PickleSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-003-jsonserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-003: JsonSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-004-parquetserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-004: ParquetSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-generation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Generation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Generation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-005-asset-path-derivation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-005: Asset Path Derivation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-006-multi-segment-asset-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-006: Multi-Segment Asset Key
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#io-manager-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        IO Manager Behavior
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="IO Manager Behavior">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-007-handle_output-writes-and-adds-metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-007: handle_output Writes and Adds Metadata
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-008-load_input-reads-and-deserializes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-008: load_input Reads and Deserializes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-009-custom-serializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-009: Custom Serializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-010-missing-pyarrow-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-010: Missing PyArrow Error
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#factory-function" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Factory Function
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Factory Function">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-011-dagster_io_manager-signature" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-011: dagster_io_manager Signature
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#v2-dagster-config-driven-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        v2: Dagster-Config-Driven Store
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="v2: Dagster-Config-Driven Store">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-012-dagsterstoreresource-builds-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-012: DagsterStoreResource Builds Store
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-013-dagsterstoreresource-teardown" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-013: DagsterStoreResource Teardown
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-014-unknown-backend-type" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-014: Unknown Backend Type
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-015-remotestoreiomanager-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-015: RemoteStoreIOManager Factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-016-remotestoreiomanager-roundtrip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-016: RemoteStoreIOManager Roundtrip
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-017-dagster_dataset_io_manager-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-017: dagster_dataset_io_manager Factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-018-dataset-io-manager-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-018: Dataset IO Manager Path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-019-dataset-mode-via-remotestoreiomanager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-019: Dataset Mode via RemoteStoreIOManager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#multi-partition-loading" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Partition Loading
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Multi-Partition Loading">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-020-load_input-with-multiple-partition-keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-020: load_input with Multiple Partition Keys
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -8471,10 +8091,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../045-write-result/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    045: WriteResult and User Metadata
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -8490,6 +8137,268 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-001-return-type-widening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-001: Return Type Widening
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-001a-writeresult-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-001a: WriteResult Fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-002-writeresultpath-is-store-relative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-002: WriteResult.path Is Store-Relative
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-003-writeresultsize-population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-003: WriteResult.size Population
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-004-source-field-from-write_result_native" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-004: source Field from WRITE_RESULT_NATIVE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-005-basic-source-guarantees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-005: Basic Source Guarantees
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-006-sidecar-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-006: Sidecar Source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-007-no-default-hashing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-007: No Default Hashing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-008-storehead-gating-and-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-008: Store.head() Gating and Semantics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-009-write_result_native-is-a-quality-flag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-009: WRITE_RESULT_NATIVE Is a Quality Flag
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-010-user_metadata-gates-the-metadata-kwarg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-010: USER_METADATA Gates the metadata= Kwarg
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-011-metadata-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-011: metadata Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-012-writeresultmetadata-echo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-012: WriteResult.metadata Echo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-013-user-metadata-round-trip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-013: User Metadata Round-Trip
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extwrite-invariants-forward-looking-spec-placement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ext.write invariants — forward-looking spec placement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-014-extwritewrite_with_hash-returns-digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-014: ext.write.write_with_hash Returns Digest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-015-extwritewrite_with_hash-works-on-every-write-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-015: ext.write.write_with_hash Works on Every WRITE Backend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-016-open_atomic_with_hash-requires-atomic_write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-016: open_atomic_with_hash Requires ATOMIC_WRITE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-017-open_atomic_with_hash-exposes-result-after-exit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-017: open_atomic_with_hash Exposes result After Exit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-018-proxy-stack-forwarding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-018: Proxy Stack Forwarding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-019-storeevent-carries-writeresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-019: StoreEvent Carries WriteResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -8697,324 +8606,233 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#serializer-protocol" class="md-nav__link">
+  <a href="#wr-001-return-type-widening" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Serializer Protocol
+        WR-001: Return Type Widening
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Serializer Protocol">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-001-serializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-001: Serializer Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-002-pickleserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-002: PickleSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-003-jsonserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-003: JsonSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-004-parquetserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-004: ParquetSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#path-generation" class="md-nav__link">
+  <a href="#wr-001a-writeresult-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Path Generation
+        WR-001a: WriteResult Fields
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Path Generation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-005-asset-path-derivation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-005: Asset Path Derivation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-006-multi-segment-asset-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-006: Multi-Segment Asset Key
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#io-manager-behavior" class="md-nav__link">
+  <a href="#wr-002-writeresultpath-is-store-relative" class="md-nav__link">
     <span class="md-ellipsis">
       
-        IO Manager Behavior
+        WR-002: WriteResult.path Is Store-Relative
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="IO Manager Behavior">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-007-handle_output-writes-and-adds-metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-007: handle_output Writes and Adds Metadata
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-008-load_input-reads-and-deserializes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-008: load_input Reads and Deserializes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-009-custom-serializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-009: Custom Serializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-010-missing-pyarrow-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-010: Missing PyArrow Error
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#factory-function" class="md-nav__link">
+  <a href="#wr-003-writeresultsize-population" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Factory Function
+        WR-003: WriteResult.size Population
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Factory Function">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-011-dagster_io_manager-signature" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-011: dagster_io_manager Signature
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#v2-dagster-config-driven-store" class="md-nav__link">
+  <a href="#wr-004-source-field-from-write_result_native" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v2: Dagster-Config-Driven Store
+        WR-004: source Field from WRITE_RESULT_NATIVE
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="v2: Dagster-Config-Driven Store">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-012-dagsterstoreresource-builds-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-012: DagsterStoreResource Builds Store
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-013-dagsterstoreresource-teardown" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-013: DagsterStoreResource Teardown
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-014-unknown-backend-type" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-014: Unknown Backend Type
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-015-remotestoreiomanager-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-015: RemoteStoreIOManager Factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-016-remotestoreiomanager-roundtrip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-016: RemoteStoreIOManager Roundtrip
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-017-dagster_dataset_io_manager-factory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-017: dagster_dataset_io_manager Factory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-018-dataset-io-manager-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-018: Dataset IO Manager Path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dag-019-dataset-mode-via-remotestoreiomanager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-019: Dataset Mode via RemoteStoreIOManager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#multi-partition-loading" class="md-nav__link">
+  <a href="#wr-005-basic-source-guarantees" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Multi-Partition Loading
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Multi-Partition Loading">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dag-020-load_input-with-multiple-partition-keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        DAG-020: load_input with Multiple Partition Keys
+        WR-005: Basic Source Guarantees
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#wr-006-sidecar-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-006: Sidecar Source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-007-no-default-hashing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-007: No Default Hashing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-008-storehead-gating-and-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-008: Store.head() Gating and Semantics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-009-write_result_native-is-a-quality-flag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-009: WRITE_RESULT_NATIVE Is a Quality Flag
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-010-user_metadata-gates-the-metadata-kwarg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-010: USER_METADATA Gates the metadata= Kwarg
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-011-metadata-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-011: metadata Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-012-writeresultmetadata-echo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-012: WriteResult.metadata Echo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-013-user-metadata-round-trip" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-013: User Metadata Round-Trip
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extwrite-invariants-forward-looking-spec-placement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ext.write invariants — forward-looking spec placement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-014-extwritewrite_with_hash-returns-digest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-014: ext.write.write_with_hash Returns Digest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-015-extwritewrite_with_hash-works-on-every-write-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-015: ext.write.write_with_hash Works on Every WRITE Backend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-016-open_atomic_with_hash-requires-atomic_write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-016: open_atomic_with_hash Requires ATOMIC_WRITE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-017-open_atomic_with_hash-exposes-result-after-exit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-017: open_atomic_with_hash Exposes result After Exit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-018-proxy-stack-forwarding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-018: Proxy Stack Forwarding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wr-019-storeevent-carries-writeresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WR-019: StoreEvent Carries WriteResult
+      
+    </span>
+  </a>
   
 </li>
       
@@ -9035,229 +8853,411 @@
 
 
 
-<h1 id="extdagster-dagster-io-manager-adapter-specification">ext.dagster - Dagster IO Manager Adapter Specification<a class="headerlink" href="#extdagster-dagster-io-manager-adapter-specification" title="Permanent link">&para;</a></h1>
+<h1 id="writeresult-and-user-metadata">WriteResult and User Metadata<a class="headerlink" href="#writeresult-and-user-metadata" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>ext.dagster</code> provides a thin adapter that wraps any existing <code>Store</code> as a
-Dagster <code>IOManager</code>, enabling teams already using remote-store to reuse their
-Store configuration (credentials, retry policy, caching, observability) inside
-Dagster pipelines without duplicating config into <code>dagster-aws</code> /
-<code>dagster-azure</code>.</p>
-<p><strong>Module:</strong> <code>src/remote_store/ext/dagster.py</code>
-<strong>Dependencies:</strong> <code>dagster&gt;=1.9</code> (optional extra)
-<strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (Store API),
-research (<code>sdd/research/research-dagster-extension.md</code>), ID-075.</p>
-<p><strong>Scope:</strong> v1 — <code>dagster_io_manager(store)</code> factory function (DAG-001 – DAG-011).
-v2 adds <code>DagsterStoreResource</code> and <code>RemoteStoreIOManager</code> (DAG-012 – DAG-019).</p>
+<p>Widening <code>Store.write*()</code> return types from <code>None</code> to <code>WriteResult</code>, adding
+<code>Capability.WRITE_RESULT_NATIVE</code> (quality flag) and <code>Capability.USER_METADATA</code>
+(strict capability gate on the <code>metadata=</code> kwarg), adding <code>Store.head()</code>, and
+shipping the <code>ext.write</code> extension (<code>write_with_hash</code>, <code>open_atomic_with_hash</code>).</p>
+<p>See <a href="../../rfcs/rfc-0011-write-result/">RFC-0011</a> for design rationale,
+alternative analysis, and the full ripple-check inventory.</p>
 <hr />
-<h2 id="serializer-protocol">Serializer Protocol<a class="headerlink" href="#serializer-protocol" title="Permanent link">&para;</a></h2>
-<h3 id="dag-001-serializer-protocol">DAG-001: Serializer Protocol<a class="headerlink" href="#dag-001-serializer-protocol" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>Serializer</code> is a <code>typing.Protocol</code> (runtime-checkable) with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@runtime_checkable</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">Serializer</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div>
+<h2 id="wr-001-return-type-widening">WR-001: Return Type Widening<a class="headerlink" href="#wr-001-return-type-widening" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>Store.write()</code>, <code>Store.write_text()</code>, and <code>Store.write_atomic()</code>
+return <code>WriteResult</code> instead of <code>None</code>. The underlying backend constructs the
+<code>WriteResult</code>; the Store layer rebases <code>WriteResult.path</code> to be store-relative,
+matching the rebasing applied to <code>FileInfo.path</code>.</p>
+<h2 id="wr-001a-writeresult-fields">WR-001a: WriteResult Fields<a class="headerlink" href="#wr-001a-writeresult-fields" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>WriteResult</code> is a frozen dataclass with the following
+fields. This is the normative field schema — every other WR- invariant
+is expressed against it.</p>
+<p><strong>Required:</strong></p>
 <ul>
-<li><code>extension</code>: file extension including the dot (e.g., <code>".pkl"</code>, <code>".json"</code>,
-  <code>".parquet"</code>).</li>
-<li><code>serialize(obj)</code>: converts a Python object to bytes.</li>
-<li><code>deserialize(data)</code>: converts bytes back to a Python object.</li>
+<li><code>path</code> (<code>RemotePath</code>) — normalised written path, store-relative
+  (WR-002).</li>
+<li><code>size</code> (<code>int</code>) — bytes written (WR-003).</li>
 </ul>
-<h3 id="dag-002-pickleserializer">DAG-002: PickleSerializer<a class="headerlink" href="#dag-002-pickleserializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>PickleSerializer</code> implements <code>Serializer</code> with:
-- <code>extension = ".pkl"</code>
-- <code>serialize</code>: uses <code>pickle.dumps(obj)</code>.
-- <code>deserialize</code>: uses <code>pickle.loads(data)</code>.</p>
-<p><strong>Roundtrip:</strong> for any picklable object <code>obj</code>,
-<code>PickleSerializer().deserialize(PickleSerializer().serialize(obj)) == obj</code>.</p>
-<h3 id="dag-003-jsonserializer">DAG-003: JsonSerializer<a class="headerlink" href="#dag-003-jsonserializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>JsonSerializer</code> implements <code>Serializer</code> with:
-- <code>extension = ".json"</code>
-- <code>serialize</code>: uses <code>json.dumps(obj).encode("utf-8")</code>.
-- <code>deserialize</code>: uses <code>json.loads(data)</code>.</p>
-<p><strong>Roundtrip:</strong> for any JSON-serializable object <code>obj</code>,
-<code>JsonSerializer().deserialize(JsonSerializer().serialize(obj)) == obj</code>.</p>
-<h3 id="dag-004-parquetserializer">DAG-004: ParquetSerializer<a class="headerlink" href="#dag-004-parquetserializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>ParquetSerializer</code> implements <code>Serializer</code> with:
-- <code>extension = ".parquet"</code>
-- <code>serialize</code>: converts a pandas DataFrame, polars DataFrame, or PyArrow Table
-  to Parquet bytes via <code>pyarrow</code>.
-- <code>deserialize</code>: reads Parquet bytes back to a PyArrow Table.
-  Callers needing pandas or polars convert the result themselves
-  (e.g. <code>table.to_pandas()</code> or <code>pl.from_arrow(table)</code>).</p>
-<p><strong>Guard:</strong> instantiating <code>ParquetSerializer</code> when <code>pyarrow</code> is not installed
-raises <code>ModuleNotFoundError</code> with the message:
-<code>"PyArrow is required for the parquet serializer. Install it with: pip install 'remote-store[dagster,arrow]'"</code>.</p>
-<hr />
-<h2 id="path-generation">Path Generation<a class="headerlink" href="#path-generation" title="Permanent link">&para;</a></h2>
-<h3 id="dag-005-asset-path-derivation">DAG-005: Asset Path Derivation<a class="headerlink" href="#dag-005-asset-path-derivation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> the storage path for an asset is derived from
-<code>context.asset_key.path</code> (joined with <code>/</code>) plus the partition key
-(when <code>context.has_partition_key</code> is true) plus the serializer extension:</p>
+<p><strong>Optional (default <code>None</code> unless noted):</strong></p>
+<ul>
+<li><code>digest</code> (<code>ContentDigest | None</code>) — verified content digest; only
+  populated when the caller opts into <code>ext.write.write_with_hash</code>
+  (WR-014) or a future backend surfaces a server-verified digest on
+  its write response (WR-007 clause).</li>
+<li><code>etag</code> (<code>str | None</code>) — backend change tag; not a content hash on
+  every backend (see RFC-0011 § Proposal for per-backend semantics).</li>
+<li><code>version_id</code> (<code>str | None</code>) — backend-provided immutable version
+  identifier; <code>None</code> when the backend does not version objects.</li>
+<li><code>last_modified</code> (<code>datetime | None</code>) — server timestamp from the
+  write response; <code>None</code> when the backend's write response omits it.</li>
+<li><code>content_md5</code> (<code>str | None</code>) — client-supplied MD5 stored
+  alongside the object (Azure only in v1); <code>None</code> otherwise.</li>
+<li><code>metadata</code> (<code>Mapping[str, str] | None</code>) — echo of the user
+  metadata that was stored (WR-012).</li>
+</ul>
+<p><strong>Default-valued:</strong></p>
+<ul>
+<li><code>source</code> (<code>Literal["native", "basic", "sidecar"]</code>, default
+  <code>"basic"</code>) — provenance of the rich fields (WR-004, WR-006).</li>
+</ul>
+<p><strong>Postconditions:</strong></p>
+<ul>
+<li>Attribute assignment raises <code>FrozenInstanceError</code>.</li>
+<li><code>WriteResult</code> supports equality and hashing by field-wise value
+  (standard dataclass behaviour).</li>
+</ul>
+<p><strong>See also:</strong> <a href="../035-content-digest/">035-content-digest.md</a> for
+<code>ContentDigest</code>; RFC-0011 § Proposal for the canonical Python
+dataclass definition and docstring.</p>
+<h2 id="wr-002-writeresultpath-is-store-relative">WR-002: WriteResult.path Is Store-Relative<a class="headerlink" href="#wr-002-writeresultpath-is-store-relative" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>WriteResult.path</code> is store-relative — <code>root_path</code> is stripped
+exactly as <code>FileInfo.path</code> is stripped by <code>list_files</code> and <code>get_file_info</code>.
+The returned path is directly usable as input to other Store methods.</p>
+<h2 id="wr-003-writeresultsize-population">WR-003: WriteResult.size Population<a class="headerlink" href="#wr-003-writeresultsize-population" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>WriteResult.size</code> equals the byte length of the written content
+on every backend.</p>
+<ul>
+<li>For <code>bytes</code> / <code>str</code> input: <code>size</code> is computed from the payload directly
+  (zero added I/O cost).</li>
+<li>For non-seekable <code>BinaryIO</code> input on backends without <code>WRITE_RESULT_NATIVE</code>:
+  <code>size</code> is obtained by counting bytes as they stream or via a post-write
+  <code>stat()</code> — one local <code>stat</code> on <code>LocalBackend</code>; the paramiko SFTP
+  bytes-transferred counter on <code>SFTPBackend</code>; zero extra round trips in
+  either case.</li>
+<li>For backends with <code>WRITE_RESULT_NATIVE</code> (Azure, S3, Memory, SQLBlob):
+  <code>size</code> is available from the write response or trivially from the in-process
+  data, never requiring an extra round trip.</li>
+</ul>
+<h2 id="wr-004-source-field-from-write_result_native">WR-004: source Field from WRITE_RESULT_NATIVE<a class="headerlink" href="#wr-004-source-field-from-write_result_native" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> If the backend declares <code>Capability.WRITE_RESULT_NATIVE</code>, every
+successful <code>Store.write*()</code> returns <code>WriteResult.source == "native"</code>. If it
+does not declare the capability, <code>source == "basic"</code>.</p>
+<h2 id="wr-005-basic-source-guarantees">WR-005: Basic Source Guarantees<a class="headerlink" href="#wr-005-basic-source-guarantees" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> When <code>WriteResult.source == "basic"</code>, only <code>path</code> and <code>size</code> are
+guaranteed populated. The rich fields <code>digest</code>, <code>etag</code>, <code>version_id</code>,
+<code>last_modified</code>, and <code>content_md5</code> are <code>None</code>. The <code>metadata</code> field is
+<strong>not</strong> governed by <code>source</code> — it is governed independently by WR-012:
+<code>WriteResult.metadata</code> echoes the caller's mapping whenever the
+<code>USER_METADATA</code> gate was passed, and is <code>None</code> otherwise, regardless of
+whether <code>source</code> is <code>"native"</code>, <code>"basic"</code>, or <code>"sidecar"</code>.</p>
+<p><strong>Note (future-compat):</strong> No v1 backend declares <code>USER_METADATA</code> without
+also declaring <code>WRITE_RESULT_NATIVE</code>, so in v1 a <code>"basic"</code> result also
+has <code>metadata is None</code> by construction. A future backend that declared
+<code>USER_METADATA</code> without <code>WRITE_RESULT_NATIVE</code> would produce a <code>"basic"</code>
+result whose <code>metadata</code> echoes the caller's mapping — fully consistent
+with the invariant above, because <code>metadata</code> is excluded from the
+source-gated field list.</p>
+<h2 id="wr-006-sidecar-source">WR-006: Sidecar Source<a class="headerlink" href="#wr-006-sidecar-source" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>WriteResult.source == "sidecar"</code> only when the <code>WriteResult</code> is
+constructed by <code>Store.head()</code>. Direct write calls never produce <code>source ==
+"sidecar"</code>.</p>
+<h2 id="wr-007-no-default-hashing">WR-007: No Default Hashing<a class="headerlink" href="#wr-007-no-default-hashing" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> The default write path (<code>Store.write*()</code> without <code>ext.write</code>)
+returns <code>WriteResult.digest is None</code> on every backend that does not surface a
+server-verified digest on its write response. No streaming hash wrapper is
+inserted on the default path.</p>
+<p><strong>Current backend set (v1):</strong> No v1 backend surfaces a server-verified
+digest. Azure's <code>content_md5</code> is client-supplied and stored server-side;
+S3's single-PUT <code>ETag</code> is explicitly documented as <em>not</em> a content hash;
+multipart <code>ETag</code> values have the form <code>"&lt;md5-of-part-md5s&gt;-&lt;N&gt;"</code>. So in
+v1 the invariant simplifies to "<code>digest is None</code> on every backend," but
+the invariant is written so that a future backend surfacing a
+server-verified digest (e.g., opt-in S3 <code>ChecksumSHA256</code>) does not
+require amending WR-007.</p>
+<h2 id="wr-008-storehead-gating-and-semantics">WR-008: Store.head() Gating and Semantics<a class="headerlink" href="#wr-008-storehead-gating-and-semantics" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>Store.head(path) -&gt; WriteResult</code> is gated on
+<code>Capability.METADATA</code> only. It is <strong>not</strong> gated on <code>Capability.WRITE</code> — callers
+may invoke it on read-only backends that declare <code>METADATA</code>.</p>
+<p><strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>CapabilityNotSupported</code> if
+the backend lacks <code>METADATA</code>.</p>
+<p><strong>Postconditions:</strong> Returns <code>WriteResult</code> with <code>source == "sidecar"</code>,
+constructed from the <code>FileInfo</code> returned by <code>Store.get_file_info(path)</code>.</p>
+<p><strong>FileInfo → WriteResult field mapping:</strong></p>
 <table>
 <thead>
 <tr>
-<th>Asset key</th>
-<th>Partition key</th>
-<th>Derived path</th>
+<th><code>WriteResult</code> field</th>
+<th>Source</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>["foo", "bar"]</code></td>
-<td><em>(none)</em></td>
-<td><code>foo/bar.&lt;ext&gt;</code></td>
+<td><code>path</code></td>
+<td><code>info.path</code></td>
 </tr>
 <tr>
-<td><code>["foo", "bar"]</code></td>
-<td><code>"2026-01"</code></td>
-<td><code>foo/bar/2026-01.&lt;ext&gt;</code></td>
+<td><code>size</code></td>
+<td><code>info.size</code></td>
 </tr>
 <tr>
-<td><code>["report"]</code></td>
-<td><em>(none)</em></td>
-<td><code>report.&lt;ext&gt;</code></td>
+<td><code>digest</code></td>
+<td><code>info.digest</code></td>
+</tr>
+<tr>
+<td><code>etag</code></td>
+<td><code>info.etag</code></td>
+</tr>
+<tr>
+<td><code>last_modified</code></td>
+<td><code>info.modified_at</code> (field rename)</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td><code>info.metadata</code></td>
+</tr>
+<tr>
+<td><code>version_id</code></td>
+<td><code>None</code> (no corresponding <code>FileInfo</code> field in v1)</td>
+</tr>
+<tr>
+<td><code>content_md5</code></td>
+<td><code>None</code> (client-supplied only at write time)</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td><code>"sidecar"</code> (always, for <code>head()</code>-produced results)</td>
 </tr>
 </tbody>
 </table>
-<p>The <code>Store</code>'s <code>root_path</code> acts as a namespace prefix — path generation
-does not embed it.</p>
-<h3 id="dag-006-multi-segment-asset-key">DAG-006: Multi-Segment Asset Key<a class="headerlink" href="#dag-006-multi-segment-asset-key" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> asset keys with multiple path segments produce nested paths.
-<code>AssetKey(["ns", "group", "table"])</code> → <code>ns/group/table.&lt;ext&gt;</code>.</p>
-<hr />
-<h2 id="io-manager-behavior">IO Manager Behavior<a class="headerlink" href="#io-manager-behavior" title="Permanent link">&para;</a></h2>
-<h3 id="dag-007-handle_output-writes-and-adds-metadata">DAG-007: handle_output Writes and Adds Metadata<a class="headerlink" href="#dag-007-handle_output-writes-and-adds-metadata" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>handle_output(context, obj)</code>:</p>
-<ol>
-<li>Serializes <code>obj</code> using the configured serializer.</li>
-<li>Writes the serialized bytes to the Store at the derived path via
-   <code>store.write(path, data, overwrite=True)</code>.</li>
-<li>Calls <code>context.add_output_metadata({"path": path, "size": len(data)})</code>.</li>
-</ol>
-<p>When <code>obj</code> is <code>None</code>, it is still serialized and written (Dagster convention:
-allows distinguishing "never materialized" from "materialized as None").</p>
-<h3 id="dag-008-load_input-reads-and-deserializes">DAG-008: load_input Reads and Deserializes<a class="headerlink" href="#dag-008-load_input-reads-and-deserializes" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>load_input(context)</code>:</p>
-<ol>
-<li>Derives the path from the upstream output context's asset identifier.</li>
-<li>Reads bytes from the Store via <code>store.read_bytes(path)</code>.</li>
-<li>Deserializes the bytes using the configured serializer.</li>
-<li>Returns the deserialized object.</li>
-</ol>
-<p><strong>Raises:</strong> <code>NotFound</code> (from Store) when the file does not exist.</p>
-<h3 id="dag-009-custom-serializer">DAG-009: Custom Serializer<a class="headerlink" href="#dag-009-custom-serializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> any object satisfying the <code>Serializer</code> protocol can be passed
-to <code>dagster_io_manager(store, serializer=my_serializer)</code>. The IO manager
-uses <code>my_serializer.extension</code>, <code>.serialize()</code>, and <code>.deserialize()</code>.</p>
-<h3 id="dag-010-missing-pyarrow-error">DAG-010: Missing PyArrow Error<a class="headerlink" href="#dag-010-missing-pyarrow-error" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> passing <code>serializer="parquet"</code> when <code>pyarrow</code> is not installed
-raises <code>ModuleNotFoundError</code> with a message containing
-<code>"pip install 'remote-store[dagster,arrow]'"</code>.</p>
-<hr />
-<h2 id="factory-function">Factory Function<a class="headerlink" href="#factory-function" title="Permanent link">&para;</a></h2>
-<h3 id="dag-011-dagster_io_manager-signature">DAG-011: dagster_io_manager Signature<a class="headerlink" href="#dag-011-dagster_io_manager-signature" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">dagster_io_manager</span><span class="p">(</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">serializer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Serializer</span> <span class="o">=</span> <span class="s2">&quot;pickle&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IOManager</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div>
-<p><strong>Parameters:</strong>
-- <code>store</code>: an existing <code>Store</code> instance. The caller owns its lifecycle.
-- <code>serializer</code>: <code>"pickle"</code> (default), <code>"json"</code>, <code>"parquet"</code>, or a custom
-  <code>Serializer</code> object.</p>
-<p><strong>Postconditions:</strong>
-- Returns an <code>IOManager</code> instance wrapping the Store.
-- The Store is not closed by the IO manager.</p>
-<p><strong>Raises:</strong>
-- <code>ValueError</code> when <code>serializer</code> is an unrecognized string.</p>
-<hr />
-<h2 id="v2-dagster-config-driven-store">v2: Dagster-Config-Driven Store<a class="headerlink" href="#v2-dagster-config-driven-store" title="Permanent link">&para;</a></h2>
-<h3 id="dag-012-dagsterstoreresource-builds-store">DAG-012: DagsterStoreResource Builds Store<a class="headerlink" href="#dag-012-dagsterstoreresource-builds-store" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>DagsterStoreResource</code> is a <code>ConfigurableResource</code> with fields:
-- <code>backend_type: str</code> — registered backend type identifier
-- <code>backend_options: dict[str, Any]</code> — kwargs for backend constructor (default <code>{}</code>)
-- <code>root_path: str</code> — Store root path (default <code>""</code>)</p>
-<p><code>setup_for_execution</code> constructs the backend via the factory registry and creates a <code>Store</code>. <code>get_store()</code> returns the cached Store instance.</p>
-<p><strong>Postcondition:</strong> After <code>setup_for_execution</code>, <code>get_store()</code> returns a functional Store.</p>
-<h3 id="dag-013-dagsterstoreresource-teardown">DAG-013: DagsterStoreResource Teardown<a class="headerlink" href="#dag-013-dagsterstoreresource-teardown" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>teardown_after_execution</code> calls <code>store.close()</code> on the cached Store and resets the internal reference to <code>None</code>. If called before <code>setup_for_execution</code> (no Store exists), it is a no-op — does not raise.</p>
-<h3 id="dag-014-unknown-backend-type">DAG-014: Unknown Backend Type<a class="headerlink" href="#dag-014-unknown-backend-type" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>setup_for_execution</code> with an unregistered <code>backend_type</code> raises <code>ValueError</code> with a message containing the unknown type name and the list of registered types.</p>
-<h3 id="dag-015-remotestoreiomanager-factory">DAG-015: RemoteStoreIOManager Factory<a class="headerlink" href="#dag-015-remotestoreiomanager-factory" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>RemoteStoreIOManager</code> is a <code>ConfigurableIOManagerFactory</code> with fields:
-- <code>backend_type: str</code> — registered backend type identifier
-- <code>backend_options: dict[str, Any]</code> — kwargs for backend constructor (default <code>{}</code>)
-- <code>root_path: str</code> — Store root path (default <code>""</code>)
-- <code>serializer: str</code> — serializer name (default <code>"pickle"</code>)</p>
-<p><code>setup_for_execution</code> constructs the Store (same as <code>DagsterStoreResource</code>).
-<code>teardown_after_execution</code> closes the Store.
-<code>create_io_manager</code> returns an <code>IOManager</code> instance backed by the Store.</p>
-<p><strong>Raises:</strong> <code>ValueError</code> when <code>serializer</code> is an unrecognized string (same as DAG-011).</p>
-<h3 id="dag-016-remotestoreiomanager-roundtrip">DAG-016: RemoteStoreIOManager Roundtrip<a class="headerlink" href="#dag-016-remotestoreiomanager-roundtrip" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> An object written via <code>handle_output</code> through the <code>RemoteStoreIOManager</code>-created IO manager can be read back via <code>load_input</code> with the same asset key.</p>
-<h3 id="dag-017-dagster_dataset_io_manager-factory">DAG-017: dagster_dataset_io_manager Factory<a class="headerlink" href="#dag-017-dagster_dataset_io_manager-factory" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">dagster_dataset_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IOManager</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div>
-<p>Returns an IO manager that uses <code>ParquetDatasetStore</code> for dataset-level I/O. Accepts DataFrames (pandas, polars, Arrow Table) on <code>handle_output</code> and returns Arrow Tables on <code>load_input</code>.</p>
-<p><strong>Raises:</strong> <code>ModuleNotFoundError</code> when <code>pyarrow</code> is not installed, with message containing <code>"pip install 'remote-store[dagster,arrow]'"</code>.</p>
-<h3 id="dag-018-dataset-io-manager-path">DAG-018: Dataset IO Manager Path<a class="headerlink" href="#dag-018-dataset-io-manager-path" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The dataset key is derived from <code>context.asset_key.path</code> (joined with <code>/</code>) plus the partition key when partitioned. No file extension — datasets are directories.</p>
+<p><code>FileInfo.name</code>, <code>FileInfo.content_type</code>, and <code>FileInfo.extra</code> are <strong>not</strong>
+propagated to <code>WriteResult</code> — they are file-listing concerns, not
+write-result concerns. A subsequent <code>get_file_info()</code> remains the path for
+callers needing the full <code>FileInfo</code>.</p>
+<h2 id="wr-009-write_result_native-is-a-quality-flag">WR-009: WRITE_RESULT_NATIVE Is a Quality Flag<a class="headerlink" href="#wr-009-write_result_native-is-a-quality-flag" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>Capability.WRITE_RESULT_NATIVE</code> is a quality flag — it does not
+gate any method. <code>Store.write()</code> works on every backend regardless of whether
+the capability is declared. The flag advertises which fields in the returned
+<code>WriteResult</code> are populated from the backend's write response.</p>
+<p><strong>Backend declarations:</strong></p>
 <table>
 <thead>
 <tr>
-<th>Asset key</th>
-<th>Partition</th>
-<th>Dataset key</th>
+<th>Backend</th>
+<th>Declares <code>WRITE_RESULT_NATIVE</code>?</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>["data", "orders"]</code></td>
-<td><em>(none)</em></td>
-<td><code>data/orders</code></td>
+<td><code>AzureBackend</code></td>
+<td>yes</td>
 </tr>
 <tr>
-<td><code>["data", "orders"]</code></td>
-<td><code>"2026-01"</code></td>
-<td><code>data/orders/2026-01</code></td>
+<td><code>S3Backend</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>MemoryBackend</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>SQLBlobBackend</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>S3PyArrowBackend</code></td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>SFTPBackend</code></td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>LocalBackend</code></td>
+<td>no</td>
 </tr>
 </tbody>
 </table>
-<h3 id="dag-019-dataset-mode-via-remotestoreiomanager">DAG-019: Dataset Mode via RemoteStoreIOManager<a class="headerlink" href="#dag-019-dataset-mode-via-remotestoreiomanager" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>RemoteStoreIOManager(backend_type=..., serializer="parquet-dataset")</code> creates an IO manager that uses <code>ParquetDatasetStore</code> instead of the bytes-based Serializer protocol.</p>
-<hr />
-<h2 id="multi-partition-loading">Multi-Partition Loading<a class="headerlink" href="#multi-partition-loading" title="Permanent link">&para;</a></h2>
-<h3 id="dag-020-load_input-with-multiple-partition-keys">DAG-020: load_input with Multiple Partition Keys<a class="headerlink" href="#dag-020-load_input-with-multiple-partition-keys" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When <code>load_input</code> receives an <code>InputContext</code> with multiple
-partition keys (e.g. a downstream asset consuming a time-window aggregation
-of an upstream partitioned asset), both <code>_RemoteStoreIOManagerImpl</code> and
-<code>_DatasetIOManagerImpl</code> return <code>dict[str, Any]</code> mapping each partition key
-to its deserialized object.</p>
-<p><strong>Behaviour:</strong></p>
+<h2 id="wr-010-user_metadata-gates-the-metadata-kwarg">WR-010: USER_METADATA Gates the metadata= Kwarg<a class="headerlink" href="#wr-010-user_metadata-gates-the-metadata-kwarg" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>Capability.USER_METADATA</code> is a strict gate (see
+<a href="../../adrs/0026-strict-gate-on-kwarg/">ADR-0026</a>). Passing a <strong>non-empty</strong>
+<code>metadata</code> mapping to <code>Store.write*()</code> on a backend that does not declare
+<code>USER_METADATA</code> raises <code>CapabilityNotSupported</code> before any I/O.</p>
+<p><strong>Empty-mapping carve-out.</strong> <code>metadata=None</code> and <code>metadata={}</code> are treated
+identically by this gate: neither triggers <code>CapabilityNotSupported</code>. The
+gate fires only when <code>metadata</code> is a non-<code>None</code>, non-empty mapping — an
+empty mapping is semantically equivalent to not passing the kwarg (see
+WR-011). This keeps the gate consistent with WR-011's rule that
+<code>metadata={}</code> is a valid no-op and never a validation failure.</p>
+<p><strong>Backend declarations:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Declares <code>USER_METADATA</code>?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AzureBackend</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>S3Backend</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>MemoryBackend</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>SQLBlobBackend</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>S3PyArrowBackend</code></td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>SFTPBackend</code></td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>LocalBackend</code></td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+<h2 id="wr-011-metadata-validation">WR-011: metadata Validation<a class="headerlink" href="#wr-011-metadata-validation" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>metadata</code> is <code>Mapping[str, str]</code>. Validation is performed at the
+Store layer (one place, not per-backend) <strong>before</strong> the WR-010 capability
+dispatch. The precedence is fixed:</p>
 <ol>
-<li>If <code>context.has_asset_partitions</code> is true <strong>and</strong>
-   <code>len(context.asset_partition_keys) &gt; 1</code>:</li>
-<li>For each key in <code>context.asset_partition_keys</code>, derive the storage
-     path (or dataset key) using the asset key plus that partition key.</li>
-<li>Read and deserialize each partition independently.</li>
-<li>Return <code>{partition_key: deserialized_object, ...}</code>.</li>
-<li>Otherwise (single or no partition): existing behaviour — return a single
-   deserialized object.</li>
+<li><strong>Shape validation first.</strong> Validate <code>metadata</code> against the rules below.
+   On any violation, raise <code>ValueError</code> before any I/O — regardless of
+   whether the backend declares <code>USER_METADATA</code>.</li>
+<li><strong>Capability dispatch second.</strong> Only after shape validation passes does
+   the Store check for <code>Capability.USER_METADATA</code> (WR-010) and raise
+   <code>CapabilityNotSupported</code> on a non-declaring backend.</li>
 </ol>
-<p><strong>Applies to:</strong> both the bytes-serializer IO manager (<code>_RemoteStoreIOManagerImpl</code>)
-and the dataset IO manager (<code>_DatasetIOManagerImpl</code>).</p>
-<p><strong>Raises:</strong> The first missing partition raises immediately (no partial results).
-The bytes-serializer IO manager raises <code>NotFound</code>; the dataset IO manager
-raises <code>DatasetIncomplete</code> (from <code>ext.parquet</code>) when the <code>_SUCCESS</code> marker
-is absent.</p>
-<p><strong>Note:</strong> <code>handle_output</code> remains single-partition per Dagster convention —
-Dagster calls <code>handle_output</code> once per partition key. Multi-partition
-aggregation only applies on the <code>load_input</code> side.</p>
+<p>This ordering means a malformed <code>metadata=</code> kwarg always surfaces as
+<code>ValueError</code>, even on backends that do not declare <code>USER_METADATA</code>.</p>
+<p>Validation rules:</p>
+<ul>
+<li>Keys must be non-empty ASCII strings with no leading underscore.</li>
+<li>Values must be strings.</li>
+<li><code>sum(len(k.encode("ascii")) + len(v.encode("utf-8")) for k, v in
+  metadata.items()) ≤ 2048</code>. This measures payload bytes only — not HTTP-header
+  framing or backend-specific prefixes such as <code>x-amz-meta-</code>. The bound matches
+  the narrowest portable limit (S3's 2 KB user-metadata cap).</li>
+<li>An empty mapping (<code>{}</code>) is accepted — it is semantically equivalent to
+  <code>metadata=None</code>, which WR-010 allows — and <strong>must not</strong> be treated as a
+  validation failure. A non-declaring backend therefore treats <code>metadata={}</code>
+  the same as <code>metadata=None</code>: no <code>CapabilityNotSupported</code> is raised.</li>
+</ul>
+<p>Violations raise <code>ValueError</code> with the offending key or value before any I/O.</p>
+<h2 id="wr-012-writeresultmetadata-echo">WR-012: WriteResult.metadata Echo<a class="headerlink" href="#wr-012-writeresultmetadata-echo" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> When <code>metadata=</code> is passed and the backend declares
+<code>USER_METADATA</code>, <code>WriteResult.metadata</code> echoes the mapping <strong>verbatim, as the
+caller passed it</strong> — same keys, same values, same case. No normalisation
+(no key lowercasing, no whitespace trimming) is applied at the Store layer
+or recorded on <code>WriteResult.metadata</code>, even when the backend itself
+normalises on write (e.g., S3 lowercases <code>x-amz-meta-*</code> header names in the
+HTTP response). Backend-side normalisation is observable only through
+<code>FileInfo.metadata</code> on a subsequent <code>get_file_info()</code> call (see WR-013).</p>
+<p>When <code>metadata=</code> is not passed, <code>WriteResult.metadata</code> is <code>None</code>. This
+holds regardless of <code>source</code>: a <code>"basic"</code> result that nonetheless passed
+the <code>USER_METADATA</code> gate (a configuration not used in v1 — see WR-005
+footnote) still echoes the caller's mapping.</p>
+<h2 id="wr-013-user-metadata-round-trip">WR-013: User Metadata Round-Trip<a class="headerlink" href="#wr-013-user-metadata-round-trip" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> User metadata passed to <code>Store.write*()</code> on a backend declaring
+<code>USER_METADATA</code> survives round-trip through <code>Store.get_file_info()</code>, accessible
+as <code>FileInfo.metadata: Mapping[str, str] | None</code>. On backends that do not
+declare <code>USER_METADATA</code>, <code>FileInfo.metadata</code> is always <code>None</code>.</p>
+<h2 id="extwrite-invariants-forward-looking-spec-placement">ext.write invariants — forward-looking spec placement<a class="headerlink" href="#extwrite-invariants-forward-looking-spec-placement" title="Permanent link">&para;</a></h2>
+<p>WR-014..WR-017 below specify the <code>ext.write</code> extension. They live in
+spec 045 for this RFC/spec-only PR so the <code>ext.write</code> contract lands
+next to the <code>WriteResult</code> contract it depends on. Per the one-spec-per-
+extension convention (ADR-0008 / spec 019 / spec 023 / spec 024), the
+implementation PR will move WR-014..WR-017 into a dedicated
+<code>046-ext-write.md</code> under an <code>EW-</code> prefix and leave cross-references
+here. Tracked in the BACKLOG ID-146 "Next" step.</p>
+<h2 id="wr-014-extwritewrite_with_hash-returns-digest">WR-014: ext.write.write_with_hash Returns Digest<a class="headerlink" href="#wr-014-extwritewrite_with_hash-returns-digest" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>ext.write.write_with_hash(store, path, content, *,
+algorithm="sha256", overwrite=False, metadata=None) -&gt; WriteResult</code>
+returns a <code>WriteResult</code> with <code>digest</code> populated from a client-side
+streaming hash over the written bytes. The underlying <code>source</code> value
+from the backend write is preserved (<code>"native"</code> or <code>"basic"</code>); <code>digest</code>
+is set independently of <code>source</code> and always represents the
+client-computed hash.</p>
+<p><strong>Parameter defaults (normative):</strong></p>
+<ul>
+<li><code>algorithm: str = "sha256"</code> — hash algorithm name accepted by
+  <code>hashlib.new</code>. Single-algorithm only in v1, matching the existing
+  <code>ChecksumWriter</code> signature; multi-algorithm multiplex is deferred.</li>
+<li><code>overwrite: bool = False</code> — same semantics as <code>Store.write</code>.</li>
+<li><code>metadata: Mapping[str, str] | None = None</code> — optional user
+  metadata; subject to the <code>USER_METADATA</code> capability gate (WR-010)
+  applied inside the underlying <code>store.write()</code>.</li>
+</ul>
+<h2 id="wr-015-extwritewrite_with_hash-works-on-every-write-backend">WR-015: ext.write.write_with_hash Works on Every WRITE Backend<a class="headerlink" href="#wr-015-extwritewrite_with_hash-works-on-every-write-backend" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>ext.write.write_with_hash()</code> works on every backend declaring
+<code>Capability.WRITE</code>. The hash is always computed client-side via
+<code>ext.streams.ChecksumWriter</code> regardless of <code>WRITE_RESULT_NATIVE</code>. No additional
+capability beyond <code>WRITE</code> is required.</p>
+<h2 id="wr-016-open_atomic_with_hash-requires-atomic_write">WR-016: open_atomic_with_hash Requires ATOMIC_WRITE<a class="headerlink" href="#wr-016-open_atomic_with_hash-requires-atomic_write" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>ext.write.open_atomic_with_hash(store, path, *,
+algorithm="sha256", overwrite=False, metadata=None) -&gt;
+Iterator[HashingAtomicWriter]</code> is a <code>@contextmanager</code> that requires
+<code>Capability.ATOMIC_WRITE</code> on the underlying store (inherited from
+<code>Store.open_atomic</code>, SAW-002). If the capability is absent,
+<code>CapabilityNotSupported</code> is raised before any I/O.</p>
+<p><strong>Parameter defaults (normative):</strong> Same as WR-014 —
+<code>algorithm: str = "sha256"</code>, <code>overwrite: bool = False</code>,
+<code>metadata: Mapping[str, str] | None = None</code>.</p>
+<h2 id="wr-017-open_atomic_with_hash-exposes-result-after-exit">WR-017: open_atomic_with_hash Exposes result After Exit<a class="headerlink" href="#wr-017-open_atomic_with_hash-exposes-result-after-exit" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>ext.write.open_atomic_with_hash()</code> is an <code>@contextmanager</code>
+that yields a <code>HashingAtomicWriter</code> — a <code>ChecksumWriter</code> subclass defined in
+<code>ext.write</code> that adds a <code>.result: WriteResult | None</code> attribute. The base
+<code>ChecksumWriter</code> (spec 006 / <code>ext.streams</code>) is unchanged.</p>
+<p><strong>Lifecycle of <code>.result</code>:</strong></p>
+<ul>
+<li>Before the <code>with</code> block exits, <code>writer.result</code> is <code>None</code>.</li>
+<li>On <strong>successful</strong> exit of the <code>with</code> block, <code>writer.result</code> is populated
+  with a <code>WriteResult</code> whose <code>digest</code> field carries the client-computed
+  streaming hash and whose other fields mirror the underlying
+  <code>Store.write_atomic()</code> result.</li>
+<li>On <strong>exception</strong> exit (the <code>with</code> body or the inner <code>write_atomic</code>
+  raised), <code>writer.result</code> remains <code>None</code>; the exception propagates
+  unchanged. <code>HashingAtomicWriter</code> does not record a partial or
+  failed result.</li>
+</ul>
+<p><strong>Testability:</strong> Two positive tests (pre-exit <code>.result is None</code>; post-exit
+<code>.result is WriteResult(...)</code>), one negative test (body raises →
+post-exit <code>.result is None</code> and exception propagates).</p>
+<h2 id="wr-018-proxy-stack-forwarding">WR-018: Proxy Stack Forwarding<a class="headerlink" href="#wr-018-proxy-stack-forwarding" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> The proxy stack (<code>ext.observe</code>, <code>ext.cache</code>, <code>_proxy</code>) widens
+the return type of <code>write</code>, <code>write_text</code>, and <code>write_atomic</code> overrides from
+<code>None</code> to <code>WriteResult</code> and forwards the underlying store's <code>WriteResult</code>
+unchanged. Proxies never substitute, mutate, or synthesise fields on the
+forwarded result. <code>Store.head()</code> is added to the same proxies and forwards
+to the wrapped store's <code>head()</code>. <code>ext.cache</code> does not cache <code>WriteResult</code> —
+it forwards the write and invalidates the cache entry for the written path
+as today.</p>
+<p><strong><code>open_atomic</code> is explicitly excluded</strong> from the widening: SAW-001 /
+SAW-013 keep the <code>Iterator[BinaryIO]</code> contract, and the proxy stack's
+<code>open_atomic</code> override returns <code>Iterator[BinaryIO]</code> unchanged. Callers
+needing a <code>WriteResult</code> for a streaming atomic write use <code>Store.head()</code>
+after the <code>with</code> block or <code>ext.write.open_atomic_with_hash()</code> (see
+WR-017).</p>
+<p><strong>See also:</strong> <a href="../019-ext-observe/">019-ext-observe.md</a>,
+<a href="../023-ext-cache/">023-ext-cache.md</a>,
+<a href="../022-streaming-atomic-writes/">022-streaming-atomic-writes.md</a>
+(SAW-001, SAW-013).</p>
+<h2 id="wr-019-storeevent-carries-writeresult">WR-019: StoreEvent Carries WriteResult<a class="headerlink" href="#wr-019-storeevent-carries-writeresult" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> On successful <code>write</code>, <code>write_text</code>, and <code>write_atomic</code>, the
+post-operation <code>StoreEvent</code> emitted by <code>ext.observe</code> carries the returned
+<code>WriteResult</code> under <code>StoreEvent.metadata["write_result"]</code>. All three
+operations route through <code>on_write</code> (per OBS-003a, updated in this PR to
+add <code>write_text</code>). <code>StoreEvent.metadata</code> keeps its existing
+<code>dict[str, Any]</code> type — access via <code>event.metadata["write_result"]</code> is
+explicitly untyped; callers narrow with <code>isinstance(..., WriteResult)</code> if
+static checking is required. On failure (wrapped write raised), no
+<code>"write_result"</code> key is present.</p>
+<p><strong>Implementation note:</strong> The current <code>_observe_op</code> helper is a context
+manager that constructs the <code>StoreEvent</code> before the wrapped call returns;
+injecting <code>write_result</code> requires mutating <code>event.metadata</code> after the
+wrapped call completes but before hook dispatch, or a minor
+<code>_observe_op</code> refactor. The invariant is neutral between implementations.</p>
+<p><strong>See also:</strong> <a href="../019-ext-observe/">019-ext-observe.md</a> (OBS-003a, OBS-015).</p>
 
 
 

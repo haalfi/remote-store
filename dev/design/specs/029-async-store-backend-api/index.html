@@ -5249,6 +5249,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0026: Strict-Gate Pattern for Optional Capability Kwargs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8395,6 +8423,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#async-052f-head" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-052f: head()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#async-055-concurrency-safety" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9185,6 +9224,34 @@
     
   
     044: Microsoft Graph Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../045-write-result/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    045: WriteResult and User Metadata
   
 
     
@@ -10106,6 +10173,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#async-052f-head" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ASYNC-052f: head()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#async-055-concurrency-safety" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10529,17 +10607,17 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <strong>Raises:</strong> <code>NotFound</code> if the file does not exist.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-007</a>.</p>
 <h3 id="async-008-write">ASYNC-008: write()<a class="headerlink" href="#async-008-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>async def write(path, content, *, overwrite=False)</code> creates or overwrites a file.
+<p><strong>Invariant:</strong> <code>async def write(path, content, *, overwrite=False, metadata=None) -&gt; WriteResult</code> creates or overwrites a file and returns a <code>WriteResult</code>.
 <strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>AsyncIterator[bytes]</code> (see ASYNC-021).
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.
-<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-008</a>.</p>
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out).
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-008</a>; <a href="../045-write-result/">045-write-result.md</a> (WR-001, WR-004, WR-010).</p>
 <h3 id="async-009-write-creates-intermediate-directories">ASYNC-009: write Creates Intermediate Directories<a class="headerlink" href="#async-009-write-creates-intermediate-directories" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write</code> creates any intermediate directories automatically.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-009</a>.</p>
 <h3 id="async-010-write_atomic">ASYNC-010: write_atomic()<a class="headerlink" href="#async-010-write_atomic" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>async def write_atomic(path, content, *, overwrite=False)</code> writes via a temporary file + atomic rename.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.
-<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-010</a>, <a href="../007-atomic-writes/">007-atomic-writes.md</a>.</p>
+<p><strong>Invariant:</strong> <code>async def write_atomic(path, content, *, overwrite=False, metadata=None) -&gt; WriteResult</code> writes via a temporary file + atomic rename and returns a <code>WriteResult</code>.
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. <code>CapabilityNotSupported</code> if a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend lacks <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out).
+<strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-010</a>, <a href="../007-atomic-writes/">007-atomic-writes.md</a>; <a href="../045-write-result/">045-write-result.md</a> (WR-001, WR-010).</p>
 <h3 id="async-011-write_atomic-capability-gate">ASYNC-011: write_atomic Capability Gate<a class="headerlink" href="#async-011-write_atomic-capability-gate" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_atomic</code> raises <code>CapabilityNotSupported</code> if the backend lacks <code>ATOMIC_WRITE</code>.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-011</a>.</p>
@@ -10652,9 +10730,9 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <p><strong>Invariant:</strong> Capability-gated methods raise <code>CapabilityNotSupported</code> before delegating if the capability is missing. For methods that return <code>AsyncIterator</code> (<code>read</code>, <code>list_files</code>, <code>list_folders</code>, <code>iter_children</code>, <code>glob</code>), validation happens eagerly on call (these are regular <code>def</code> methods that validate, then return an inner async generator), not lazily on first iteration.
 <strong>See also:</strong> <a href="../001-store-api/">STORE-006</a>.</p>
 <h3 id="async-046-full-api-surface">ASYNC-046: Full API Surface<a class="headerlink" href="#async-046-full-api-surface" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AsyncStore</code> exposes async equivalents of all <code>Store</code> methods: <code>read</code>, <code>read_bytes</code>, <code>read_text</code>, <code>write</code>, <code>write_text</code>, <code>write_atomic</code>, <code>delete</code>, <code>delete_folder</code>, <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code>, <code>copy</code>, <code>ping</code>, <code>resolve</code>, <code>aclose</code>, <code>supports</code>, <code>to_key</code>, <code>native_path</code>, <code>unwrap</code>, <code>child</code>.
+<p><strong>Invariant:</strong> <code>AsyncStore</code> exposes async equivalents of all <code>Store</code> methods: <code>read</code>, <code>read_bytes</code>, <code>read_text</code>, <code>write</code>, <code>write_text</code>, <code>write_atomic</code>, <code>delete</code>, <code>delete_folder</code>, <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>head</code>, <code>move</code>, <code>copy</code>, <code>ping</code>, <code>resolve</code>, <code>aclose</code>, <code>supports</code>, <code>to_key</code>, <code>native_path</code>, <code>unwrap</code>, <code>child</code>.
 <strong>Deferred:</strong> <code>read_seekable</code> and <code>open_atomic</code> are not available in the async API — see ASYNC-061, ASYNC-062.
-<strong>See also:</strong> <a href="../001-store-api/">STORE-008</a>.</p>
+<strong>See also:</strong> <a href="../001-store-api/">STORE-008</a>; <a href="../045-write-result/">045-write-result.md</a> (WR-001, WR-008) for <code>write*</code> return type widening and <code>head()</code> semantics; ASYNC-052f for the normative async <code>head()</code> invariant.</p>
 <h3 id="async-047-same-path-move-and-copy">ASYNC-047: Same-Path Move and Copy<a class="headerlink" href="#async-047-same-path-move-and-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst)</code> or <code>copy(src, dst)</code> where <code>src</code> and <code>dst</code> resolve to the same path is a no-op. The source must be an existing file; otherwise <code>NotFound</code> is raised.
 <strong>See also:</strong> <a href="../001-store-api/">STORE-008a</a>.</p>
@@ -10681,7 +10759,9 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <p><strong>Invariant:</strong> <code>child(subpath) -&gt; AsyncStore</code>. Returns a new <code>AsyncStore</code> scoped to a subfolder. Same semantics as <code>Store.child()</code>: shared backend identity, composed root path, no-op <code>aclose()</code>, supports chaining.
 <strong>See also:</strong> <a href="../015-store-child/">015-store-child.md</a> (CHILD-001 through CHILD-011).</p>
 <h3 id="async-052a-write_text">ASYNC-052a: write_text()<a class="headerlink" href="#async-052a-write_text" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>async def write_text(path, text, *, encoding="utf-8", overwrite=False)</code> encodes the string and delegates to <code>write()</code>. Convenience method — no separate backend call.</p>
+<p><strong>Invariant:</strong> <code>async def write_text(path, text, *, encoding="utf-8", overwrite=False, metadata=None) -&gt; WriteResult</code> encodes the string and delegates to <code>write(path, encoded, overwrite=overwrite, metadata=metadata)</code>, forwarding the returned <code>WriteResult</code> unchanged. Convenience method — no separate backend call. <code>metadata</code> is a pass-through: the <code>USER_METADATA</code> capability gate and validation are applied inside <code>write()</code> (per WR-010 / WR-011).
+<strong>Raises:</strong> <code>CapabilityNotSupported</code> before any I/O when a non-<code>None</code>, non-empty <code>metadata</code> mapping is passed and the backend does not declare <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out).
+<strong>See also:</strong> <a href="../045-write-result/">045-write-result.md</a> (WR-001, WR-010) for the return-type widening and the <code>metadata=</code> capability gate.</p>
 <h3 id="async-052b-list_foldersmax_depth">ASYNC-052b: list_folders(max_depth=)<a class="headerlink" href="#async-052b-list_foldersmax_depth" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>list_folders(path, *, max_depth=None)</code> accepts an optional <code>max_depth</code> keyword. Depth expansion is implemented at the <code>AsyncStore</code> level via BFS traversal over the backend's <code>list_folders()</code>. <code>max_depth=None</code> returns immediate subfolders only (same as omitting).
 <strong>See also:</strong> <a href="../037-depth-limited-listing/">037-depth-limited-listing.md</a> (DEPTH-002).</p>
@@ -10695,6 +10775,20 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <p><strong>Invariant:</strong> <code>async def ping()</code> verifies backend connectivity. Delegates to <code>await backend.check_health()</code>. The threading concern is handled by the backend layer: <code>SyncBackendAdapter.check_health()</code> uses <code>asyncio.to_thread()</code> (ASYNC-037); native async backends execute directly.
 <strong>Raises:</strong> <code>PermissionDenied</code> if credentials are invalid. <code>NotFound</code> if the bucket, container, or root path does not exist. <code>BackendUnavailable</code> if the backend cannot be reached.
 <strong>See also:</strong> <a href="../026-health-check/">026-health-check.md</a>.</p>
+<h3 id="async-052f-head">ASYNC-052f: head()<a class="headerlink" href="#async-052f-head" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>async def head(path) -&gt; WriteResult</code> returns a sidecar
+<code>WriteResult</code> constructed from the <code>FileInfo</code> returned by
+<code>await self.get_file_info(path)</code>. Convenience method — no separate
+backend call; implemented at the <code>AsyncStore</code> level using the same
+<code>FileInfo → WriteResult</code> field mapping as the sync <code>Store.head()</code>.
+<strong>Gating:</strong> Capability-gated on <code>Capability.METADATA</code> only; <strong>not</strong>
+gated on <code>Capability.WRITE</code>.
+<strong>Raises:</strong> <code>NotFound</code> if the path does not exist.
+<code>CapabilityNotSupported</code> if the backend lacks <code>METADATA</code>.
+<strong>Postconditions:</strong> Returns <code>WriteResult</code> with <code>source == "sidecar"</code>.
+<strong>See also:</strong> <a href="../045-write-result/">045-write-result.md</a> (WR-008) for
+the full <code>FileInfo → WriteResult</code> field mapping and sync-parity
+semantics.</p>
 <h3 id="async-055-concurrency-safety">ASYNC-055: Concurrency Safety<a class="headerlink" href="#async-055-concurrency-safety" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>AsyncStore</code> is safe for concurrent coroutines on the same event loop. It is not safe across multiple event loops (each event loop requires its own <code>AsyncStore</code> instance).</p>
 <h3 id="async-056-no-new-dependencies">ASYNC-056: No New Dependencies<a class="headerlink" href="#async-056-no-new-dependencies" title="Permanent link">&para;</a></h3>

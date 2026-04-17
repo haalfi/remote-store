@@ -5249,6 +5249,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0026: Strict-Gate Pattern for Optional Capability Kwargs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8217,6 +8245,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../045-write-result/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    045: WriteResult and User Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8547,21 +8603,39 @@ concern.</p>
 <hr />
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <h3 id="wtxt-001-storewrite_text-signature-and-behavior">WTXT-001: <code>Store.write_text()</code> Signature and Behavior<a class="headerlink" href="#wtxt-001-storewrite_text-signature-and-behavior" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>Store.write_text(path, text, *, encoding="utf-8", overwrite=False)</code>
-encodes a string and writes it to a file.</p>
+<p><strong>Invariant:</strong> <code>Store.write_text(path, text, *, encoding="utf-8", overwrite=False, metadata=None)</code>
+encodes a string and writes it to a file, returning a <code>WriteResult</code>.</p>
 <p><strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="o">...</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write_text</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WriteResult</span><span class="p">:</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="o">...</span>
 </code></pre></div></p>
 <p><strong>Implementation:</strong> Encodes <code>text</code> via <code>.encode(encoding)</code> and delegates to
-<code>self.write(path, encoded, overwrite=overwrite)</code>.</p>
+<code>self.write(path, encoded, overwrite=overwrite, metadata=metadata)</code>,
+forwarding the returned <code>WriteResult</code> unchanged. <code>metadata</code> is a pass-
+through: validation and the <code>USER_METADATA</code> capability gate are applied
+inside <code>write()</code> (per WR-010 / WR-011), not duplicated here.</p>
 <p><strong>Postconditions:</strong>
 - Writes <code>text.encode(encoding)</code> to the file at <code>path</code>.
 - <code>encoding</code> parameter matches <code>pathlib.Path.write_text()</code> semantics.
 - <code>overwrite</code> parameter controls whether existing files may be replaced.
 - Raises <code>InvalidPath</code> if <code>path</code> is empty or <code>"."</code>.
 - Raises <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>.
+- Raises <code>CapabilityNotSupported</code> before any I/O when a non-<code>None</code>,
+  non-empty <code>metadata</code> mapping is passed and the backend does not
+  declare <code>USER_METADATA</code> (per WR-010 empty-mapping carve-out —
+  <code>metadata=None</code> and <code>metadata={}</code> are both no-ops with respect to
+  this gate).
 - Capability-gated on <code>Capability.WRITE</code> (inherited from <code>write</code>).</p>
+<p><strong>See also:</strong> <a href="../045-write-result/">045-write-result.md</a> (WR-001, WR-010)
+for the return-type widening and the <code>metadata=</code> capability gate.</p>
 <h3 id="wtxt-002-no-backend-abc-change">WTXT-002: No Backend ABC Change<a class="headerlink" href="#wtxt-002-no-backend-abc-change" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_text()</code> is a Store-level convenience only. No abstract
 method is added to <code>Backend</code>.</p>
@@ -8574,7 +8648,13 @@ encode logic across 6 implementations.</p>
 <h2 id="extension-integration">Extension Integration<a class="headerlink" href="#extension-integration" title="Permanent link">&para;</a></h2>
 <h3 id="wtxt-004-extobserve">WTXT-004: ext.observe<a class="headerlink" href="#wtxt-004-extobserve" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>ObservedStore.write_text()</code> emits a <code>"write_text"</code> operation
-event via <code>_observe_op</code>. The event metadata includes <code>encoding</code> and <code>overwrite</code>.</p>
+event via <code>_observe_op</code>. The event metadata includes <code>encoding</code> and <code>overwrite</code>
+on both the pre- and post-operation events, plus <code>write_result</code> on the
+successful post-operation event (per OBS-015 / WR-019 — the <code>WriteResult</code>
+returned by the wrapped store is injected under
+<code>StoreEvent.metadata["write_result"]</code>).</p>
+<p><strong>See also:</strong> <a href="../019-ext-observe/">019-ext-observe.md</a> (OBS-015),
+<a href="../045-write-result/">045-write-result.md</a> (WR-019).</p>
 <h3 id="wtxt-005-extcache">WTXT-005: ext.cache<a class="headerlink" href="#wtxt-005-extcache" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>CachedStore.write_text()</code> delegates to the inner store's
 <code>write_text()</code> and invalidates the cache for the written path. No separate

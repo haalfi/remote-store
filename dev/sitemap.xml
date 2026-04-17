@@ -437,6 +437,10 @@
          <lastmod>2026-04-17</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0026-strict-gate-on-kwarg/</loc>
+         <lastmod>2026-04-17</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/audits/</loc>
          <lastmod>2026-04-17</lastmod>
     </url>
@@ -818,6 +822,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/044-graph-backend/</loc>
+         <lastmod>2026-04-17</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/045-write-result/</loc>
          <lastmod>2026-04-17</lastmod>
     </url>
     <url>
