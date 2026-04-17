@@ -62,9 +62,12 @@ constructed by `Store.head()`. Direct write calls never produce `source ==
 ## WR-007: No Default Hashing
 
 **Invariant:** The default write path (`Store.write*()` without `ext.write`)
-returns `WriteResult.digest is None` on every backend that does not surface a
-server-verified digest on its write response. No streaming hash wrapper is
-inserted on the default path.
+returns `WriteResult.digest is None` on every v1 backend. No streaming hash
+wrapper is inserted on the default path. (No v1 backend surfaces a
+server-verified digest on its write response: Azure's `content_md5` is
+client-supplied, S3's single-PUT `ETag` is explicitly documented as *not* a
+content hash, and multipart `ETag` values have the form
+`"<md5-of-part-md5s>-<N>"`.)
 
 ## WR-008: Store.head() Gating and Semantics
 
@@ -171,3 +174,28 @@ capability beyond `WRITE` is required.
 that yields a `ChecksumWriter`. After successful exit of the `with` block,
 `writer.result` contains the `WriteResult` with `digest` populated. Accessing
 `writer.result` before the `with` block exits raises `RuntimeError`.
+
+## WR-018: Proxy Stack Forwarding
+
+**Invariant:** The proxy stack (`ext.observe`, `ext.cache`, `_proxy`) widens
+the return type of `write`, `write_text`, and `write_atomic` overrides from
+`None` to `WriteResult` and forwards the underlying store's `WriteResult`
+unchanged. Proxies never substitute, mutate, or synthesise fields on the
+forwarded result. `Store.head()` is added to the same proxies and forwards
+to the wrapped store's `head()`. `ext.cache` does not cache `WriteResult` —
+it forwards the write and invalidates the cache entry for the written path
+as today.
+
+**See also:** [019-ext-observe.md](019-ext-observe.md),
+[023-ext-cache.md](023-ext-cache.md).
+
+## WR-019: StoreEvent Carries WriteResult
+
+**Invariant:** The post-operation `StoreEvent` emitted by `ext.observe` after
+`write`, `write_text`, and `write_atomic` carries the returned `WriteResult`
+under `StoreEvent.metadata["write_result"]`. The pre-operation event is
+unchanged. `StoreEvent.metadata` keeps its existing `dict[str, Any]` type —
+access via `event.metadata["write_result"]` is explicitly untyped; callers
+narrow with `isinstance(..., WriteResult)` if static checking is required.
+
+**See also:** [019-ext-observe.md](019-ext-observe.md).

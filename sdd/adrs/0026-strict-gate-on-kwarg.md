@@ -11,7 +11,7 @@ Accepted
 (`Capability.USER_METADATA`) or it does not. When it does not, the question
 is: raise or silently drop?
 
-The same question was settled for atomic writes in AW-007 (spec 007): if a
+The same question was settled for atomic writes in AW-002 (spec 007): if a
 caller opts into `write_atomic` on a backend without `ATOMIC_WRITE`, we raise
 `CapabilityNotSupported` before I/O. The pattern was called "strict gate":
 every optional behaviour that the caller explicitly requests — rather than a
@@ -75,7 +75,7 @@ The validation happens in the Store layer (one place), not in each backend.
 
 | Capability        | Kwarg gated          | Method(s)              | Spec ref |
 | ----------------- | -------------------- | ---------------------- | -------- |
-| `ATOMIC_WRITE`    | (gates whole method) | `write_atomic()`       | AW-007   |
+| `ATOMIC_WRITE`    | (gates whole method) | `write_atomic()`       | AW-002   |
 | `USER_METADATA`   | `metadata=`          | `write*()` variants    | WR-010   |
 
 `ATOMIC_WRITE` is listed here because it established the raise-before-I/O

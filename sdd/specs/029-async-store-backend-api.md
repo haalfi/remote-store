@@ -302,7 +302,8 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ### ASYNC-052a: write_text()
 
-**Invariant:** `async def write_text(path, text, *, encoding="utf-8", overwrite=False)` encodes the string and delegates to `write()`. Convenience method — no separate backend call.
+**Invariant:** `async def write_text(path, text, *, encoding="utf-8", overwrite=False) -> WriteResult` encodes the string and delegates to `write()`, forwarding the returned `WriteResult` unchanged. Convenience method — no separate backend call.
+**See also:** [045-write-result.md](045-write-result.md) (WR-001) for the return-type widening from `None` to `WriteResult`.
 
 ### ASYNC-052b: list_folders(max_depth=)
 

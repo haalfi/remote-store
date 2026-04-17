@@ -467,6 +467,8 @@ echoed back if the caller passed `metadata=`.
 | WR-015 | `ext.write.write_with_hash()` works on every backend declaring `WRITE` — the hash is always computed client-side regardless of `WRITE_RESULT_NATIVE`. No additional capability is required beyond what `Store.write()` already requires. |
 | WR-016 | `ext.write.open_atomic_with_hash()` requires `Capability.ATOMIC_WRITE` on the underlying store (inherited from `Store.open_atomic`, SAW-002); absence raises `CapabilityNotSupported` before any I/O. |
 | WR-017 | `ext.write.open_atomic_with_hash()` exposes the `WriteResult` on the yielded writer's `.result` attribute after successful exit; access before exit raises `RuntimeError`. |
+| WR-018 | The proxy stack (`ext.observe`, `ext.cache`, `_proxy`) widens `write*` override return types from `None` to `WriteResult` and forwards the underlying `WriteResult` unchanged. `Store.head()` is added to the same proxies and forwards to the wrapped store. |
+| WR-019 | The post-operation `StoreEvent` emitted by `ext.observe` after `write`, `write_text`, and `write_atomic` carries the returned `WriteResult` under `StoreEvent.metadata["write_result"]`. The pre-operation event is unchanged. |
 
 `open_atomic` retains its `Iterator[BinaryIO]` contract (SAW-001 / SAW-013) and does **not** return a `WriteResult`. This is design context, not a new requirement — see "open_atomic — unchanged" above and Alternative E.
 
@@ -619,7 +621,10 @@ Pre-v1 semver — return-type changes are acceptable in a minor bump.
 - Negative tests (parametrised) for `metadata=` raising
   `CapabilityNotSupported` on every non-declaring backend.
 - MD validation negative tests (parametrised): leading underscore,
-  non-ASCII, oversize, empty key, non-string value, empty mapping.
+  non-ASCII, oversize, empty key, non-string value. An empty
+  `Mapping[str, str]` is accepted — it is semantically
+  indistinguishable from `metadata=None`, which WR-010 allows — and
+  so is not a negative case.
 - `ext.write.write_with_hash` round-trip test on every backend:
   written hash matches a re-stream hash on a 10 MiB random payload.
 
@@ -637,7 +642,7 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   to `_capabilities.py`. CAP-001 (capability enum) and CAP-007
   (quality-flag list) in spec 003 amended.
 - **Models.** `FileInfo.metadata` field added. MOD-003 (the
-  `FileInfo` optional fields list in spec 002) amended to include
+  `FileInfo` optional fields list in spec 001) amended to include
   `metadata`. `tests/test_models.py` defaults assertion updated.
 - **Store API.** `Store.head()` added. `STORE-008` in spec 001
   amended to include it. `Store.write*` return types widened in
@@ -654,17 +659,23 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   return `None` and must forward the underlying `WriteResult`
   unchanged. `Store.head()` is added to the same proxies and
   forwards to the wrapped store's `head()`. No structural changes
-  (no holder, no tuple). For `ext.observe` specifically: the post-
-  operation `StoreEvent` emitted after `write`, `write_text`, and
-  `write_atomic` carries the returned `WriteResult` under
+  (no holder, no tuple). Captured normatively in WR-018 (spec 045).
+  For `ext.observe` specifically: the post-operation `StoreEvent`
+  emitted after `write`, `write_text`, and `write_atomic` carries
+  the returned `WriteResult` under
   `StoreEvent.metadata["write_result"]`. `StoreEvent.metadata`
   keeps its existing `dict[str, Any]` type — access to
   `event.metadata["write_result"]` is explicitly untyped; callers
   narrow with `isinstance(..., WriteResult)` if static checking is
   required. A typed field on `StoreEvent` is deferred (see Open
-  Questions). The pre-operation event is unchanged. `ext.cache`
-  does not cache `WriteResult` — it forwards the write and
-  invalidates the cache entry as today.
+  Questions). The pre-operation event is unchanged. Captured
+  normatively in WR-019 (spec 045). `ext.cache` does not cache
+  `WriteResult` — it forwards the write and invalidates the cache
+  entry as today. Spec 019 (OBS-) and spec 023 (CACHE-) receive no
+  per-spec amendments in this PR; the proxy contract is carried by
+  WR-018 / WR-019 at the Store-API level and will be reflected in
+  spec 019 / 023 only if per-extension invariants become necessary
+  during implementation.
 - **Documentation.** `docs-src/api/models.md` (WriteResult),
   `docs-src/api/capabilities.md` (two new capabilities),
   `docs-src/api/store.md` (return types + `head()`),
@@ -724,10 +735,10 @@ Per `sdd/CLAUDE-REFERENCE.md`, this RFC touches:
   `sdd/specs/045-write-result.md`. WR- IDs in the table above will
   be reflected there; `@pytest.mark.spec("WR-NNN")` traceability
   applies once the file lands.
-- Spec 001 (Store API — STORE-008 amendment for `head` and `write_text`): `sdd/specs/001-store-api.md`
-- Spec 002 (Models — MOD-003 amendment for `FileInfo.metadata`): `sdd/specs/002-models.md`
+- Spec 001 (Store API — STORE-008 amendment for `head` and `write_text`; MOD-003 amendment for `FileInfo.metadata`): `sdd/specs/001-store-api.md`
 - Spec 003 (Backend Adapter Contract — CAP-001, CAP-007 amendment, BE write return types): `sdd/specs/003-backend-adapter-contract.md`
-- Spec 029 (Async Store API — async write return types): `sdd/specs/029-async-store-backend-api.md`
+- Spec 029 (Async Store API — async write return types, ASYNC-052a return-type widening): `sdd/specs/029-async-store-backend-api.md`
+- Spec 030 (write_text — WTXT-001 return-type widening): `sdd/specs/030-write-text.md`
 - Spec 035 (ContentDigest — used by `WriteResult.digest`): `sdd/specs/035-content-digest.md`
 - Spec 007 (atomic writes — referenced for AW-007 strict-gate precedent): `sdd/specs/007-atomic-writes.md`
 - Spec 022 (streaming atomic writes — SAW-001 / SAW-013 unchanged, SAW-002 gate inherited by `open_atomic_with_hash`): `sdd/specs/022-streaming-atomic-writes.md`
