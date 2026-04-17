@@ -305,6 +305,30 @@ conventions:
 - Duration is recorded in **seconds** (OTel convention), converted from
   `StoreEvent.duration_ms`.
 
+### OBS-014: Import Gating
+
+**Invariant:** `ext.otel` requires `opentelemetry-api>=1.28.0`. The module
+performs a top-level `import opentelemetry` and raises `ImportError` if the
+package is missing.
+
+`otel_hooks` and `otel_observe` are imported directly from
+`remote_store.ext.otel` (ADR-0013).
+
+**Convenience wrapper:**
+
+```python
+def otel_observe(
+    store: Store,
+    *,
+    tracer_name: str = "remote_store",
+    meter_name: str = "remote_store",
+    tracer: Tracer | None = None,
+    meter: Meter | None = None,
+) -> ObservedStore: ...
+```
+
+Equivalent to `observe(store, **otel_hooks(tracer_name=..., meter_name=..., tracer=..., meter=...))`.
+
 ### OBS-015: WriteResult in Post-Operation StoreEvent
 
 **Invariant:** After a successful `write`, `write_text`, or `write_atomic`
@@ -336,27 +360,3 @@ these implementations; the test harness asserts only the observable
 contract (`event.metadata["write_result"] is result`).
 
 **See also:** [045-write-result.md](045-write-result.md) (WR-019).
-
-### OBS-014: Import Gating
-
-**Invariant:** `ext.otel` requires `opentelemetry-api>=1.28.0`. The module
-performs a top-level `import opentelemetry` and raises `ImportError` if the
-package is missing.
-
-`otel_hooks` and `otel_observe` are imported directly from
-`remote_store.ext.otel` (ADR-0013).
-
-**Convenience wrapper:**
-
-```python
-def otel_observe(
-    store: Store,
-    *,
-    tracer_name: str = "remote_store",
-    meter_name: str = "remote_store",
-    tracer: Tracer | None = None,
-    meter: Meter | None = None,
-) -> ObservedStore: ...
-```
-
-Equivalent to `observe(store, **otel_hooks(tracer_name=..., meter_name=..., tracer=..., meter=...))`.

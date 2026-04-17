@@ -73,7 +73,14 @@ encode logic across 6 implementations.
 ### WTXT-004: ext.observe
 
 **Invariant:** `ObservedStore.write_text()` emits a `"write_text"` operation
-event via `_observe_op`. The event metadata includes `encoding` and `overwrite`.
+event via `_observe_op`. The event metadata includes `encoding` and `overwrite`
+on both the pre- and post-operation events, plus `write_result` on the
+successful post-operation event (per OBS-015 / WR-019 — the `WriteResult`
+returned by the wrapped store is injected under
+`StoreEvent.metadata["write_result"]`).
+
+**See also:** [019-ext-observe.md](019-ext-observe.md) (OBS-015),
+[045-write-result.md](045-write-result.md) (WR-019).
 
 ### WTXT-005: ext.cache
 

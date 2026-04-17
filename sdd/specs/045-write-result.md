@@ -155,7 +155,20 @@ the capability is declared. The flag advertises which fields in the returned
 ## WR-011: metadata Validation
 
 **Invariant:** `metadata` is `Mapping[str, str]`. Validation is performed at the
-Store layer (one place, not per-backend) before capability dispatch:
+Store layer (one place, not per-backend) **before** the WR-010 capability
+dispatch. The precedence is fixed:
+
+1. **Shape validation first.** Validate `metadata` against the rules below.
+   On any violation, raise `ValueError` before any I/O — regardless of
+   whether the backend declares `USER_METADATA`.
+2. **Capability dispatch second.** Only after shape validation passes does
+   the Store check for `Capability.USER_METADATA` (WR-010) and raise
+   `CapabilityNotSupported` on a non-declaring backend.
+
+This ordering means a malformed `metadata=` kwarg always surfaces as
+`ValueError`, even on backends that do not declare `USER_METADATA`.
+
+Validation rules:
 
 - Keys must be non-empty ASCII strings with no leading underscore.
 - Values must be strings.
@@ -165,7 +178,8 @@ Store layer (one place, not per-backend) before capability dispatch:
   the narrowest portable limit (S3's 2 KB user-metadata cap).
 - An empty mapping (`{}`) is accepted — it is semantically equivalent to
   `metadata=None`, which WR-010 allows — and **must not** be treated as a
-  validation failure.
+  validation failure. A non-declaring backend therefore treats `metadata={}`
+  the same as `metadata=None`: no `CapabilityNotSupported` is raised.
 
 Violations raise `ValueError` with the offending key or value before any I/O.
 

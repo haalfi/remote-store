@@ -140,9 +140,16 @@ Items graduate through the SDD pipeline:
   (`write_with_hash`, `open_atomic_with_hash`) reusing existing
   `ext.streams.ChecksumWriter`. `open_atomic` stays unchanged.
   - RFC + spec: [rfc-0011](rfcs/rfc-0011-write-result.md) (Proposed);
-    spec file `sdd/specs/045-write-result.md` (WR-001..WR-017) created;
-    specs 001, 003, 029 amended; ADR-0026 created.
-  - Next: implement (models, capabilities, backends, Store, ext.write).
+    spec file `sdd/specs/045-write-result.md` (WR-001..WR-019) created;
+    specs 001, 003, 019, 029, 030 amended; ADR-0026 created.
+  - Next: implement (models, capabilities, backends, Store, ext.write),
+    then land user-facing ripple — `FEATURES.md` capability matrix rows
+    for `WRITE_RESULT_NATIVE` / `USER_METADATA`, `CHANGELOG.md` entries
+    for the return-type widening + new surfaces, and the doc pages
+    (`docs-src/api/models.md`, `.../capabilities.md`, `.../store.md`,
+    new `guides/write-integrity.md`) listed in the RFC ripple-check.
+    Those edits are deferred out of this spec-only PR per the RFC
+    "Scope of this PR" note.
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Proposed
 
 ## Summary
 
@@ -491,7 +491,7 @@ echoed back if the caller passed `metadata=`.
 | WR-009 | `Capability.WRITE_RESULT_NATIVE` is a quality flag — it does not gate any method.                                 |
 | WR-010 | `Capability.USER_METADATA` gates the `metadata=` kwarg. Passing `metadata=` to a non-declaring backend raises `CapabilityNotSupported` before any I/O. |
 | WR-011 | `metadata` is `Mapping[str, str]`. Keys must be non-empty ASCII without a leading underscore; values must be strings; `sum(len(k.encode("ascii")) + len(v.encode("utf-8")))` over all entries must be ≤ 2048. Violations raise `ValueError` before any I/O. |
-| WR-012 | When `metadata=` is passed, `WriteResult.metadata` echoes the stored canonicalised mapping.                       |
+| WR-012 | When `metadata=` is passed, `WriteResult.metadata` echoes the caller's mapping verbatim (same keys, same values, same case — no normalisation). Backend-side normalisation is observable only through `FileInfo.metadata` on a subsequent `get_file_info()`. |
 | WR-013 | User metadata survives round-trip through `get_file_info()` on backends declaring `USER_METADATA`, accessible as `FileInfo.metadata`. |
 | WR-014 | `ext.write.write_with_hash()` returns a `WriteResult` with `digest` populated from a streaming hash; the underlying `source` value is preserved. |
 | WR-015 | `ext.write.write_with_hash()` works on every backend declaring `WRITE` — the hash is always computed client-side regardless of `WRITE_RESULT_NATIVE`. No additional capability is required beyond what `Store.write()` already requires. |
@@ -596,6 +596,15 @@ caller cannot suppress). Available as an explicit
 follow-up; off by default in v1.
 
 ## Impact
+
+> **Scope of this PR.** This RFC PR is **spec-only**: it lands the RFC
+> and the `WR-` / `OBS-015` / `WTXT-004` / `MOD-003` spec invariants.
+> User-facing surfaces that describe release output (`FEATURES.md`,
+> `CHANGELOG.md`) and documentation pages (`docs-src/api/*`, new
+> `guides/write-integrity.md`) are **deferred to the implementation PR**
+> that lands the behaviour; this PR intentionally does not edit them.
+> They appear in the ripple-check below as forward-looking ripple targets,
+> not as PR deliverables. Tracked under ID-146 in `sdd/BACKLOG.md`.
 
 ### Public API
 
