@@ -149,10 +149,15 @@ Items graduate through the SDD pipeline:
     (`docs-src/api/models.md`, `.../capabilities.md`, `.../store.md`,
     new `guides/write-integrity.md`) listed in the RFC ripple-check.
     Those edits are deferred out of this spec-only PR per the RFC
-    "Scope of this PR" note. Also split WR-014..WR-017 into a
-    dedicated `sdd/specs/046-ext-write.md` under an `EW-` prefix
-    during implementation, per the one-spec-per-extension convention
-    (ADR-0008); leave cross-refs from 045.
+    "Scope of this PR" note. Also update **spec 023 (ext.cache)** —
+    CACHE-007 / CACHE-008 currently reference `write()`, `write_text()`,
+    `write_atomic()`, and `open_atomic()` with implicit `None` return
+    types, which will be stale once those methods return `WriteResult`.
+    A new CACHE-NNN invariant covering `head()` forwarding (per WR-018)
+    should also be added. And split WR-014..WR-017 into a dedicated
+    `sdd/specs/046-ext-write.md` under an `EW-` prefix during
+    implementation, per the one-spec-per-extension convention
+    (ADR-0008), leaving cross-refs from 045.
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of

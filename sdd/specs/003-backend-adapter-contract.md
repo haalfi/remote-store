@@ -98,7 +98,7 @@ for cap in cs:
 
 **Invariant:** `write(path, content, *, overwrite=False, metadata=None) -> WriteResult` creates or overwrites a file and returns a `WriteResult`.
 **Preconditions:** `content` is `bytes` or `BinaryIO`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if `metadata=` is passed and the backend lacks `USER_METADATA`.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out — `metadata=None` and `metadata={}` are both no-ops with respect to this gate).
 **See also:** [045-write-result.md](045-write-result.md) (WR-001 through WR-005, WR-010 through WR-012).
 **Precondition evaluation order:** Backends MUST evaluate preconditions in this
 order: (1) path validity — if `path` names an existing *directory*, raises
@@ -120,7 +120,7 @@ writable) → overwrite conflict → I/O.
 ### BE-010: write_atomic()
 
 **Invariant:** `write_atomic(path, content, *, overwrite=False, metadata=None) -> WriteResult` writes via a temporary file + atomic rename and returns a `WriteResult`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if `metadata=` is passed and the backend lacks `USER_METADATA`.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
 **Precondition order:** Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies.
 **See also:** [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
 

@@ -54,7 +54,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 **Invariant:** `async def write(path, content, *, overwrite=False, metadata=None) -> WriteResult` creates or overwrites a file and returns a `WriteResult`.
 **Preconditions:** `content` is `bytes` or `AsyncIterator[bytes]` (see ASYNC-021).
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if `metadata=` is passed and the backend lacks `USER_METADATA`.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
 **See also:** [BE-008](003-backend-adapter-contract.md); [045-write-result.md](045-write-result.md) (WR-001, WR-004, WR-010).
 
 ### ASYNC-009: write Creates Intermediate Directories
@@ -65,7 +65,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-010: write_atomic()
 
 **Invariant:** `async def write_atomic(path, content, *, overwrite=False, metadata=None) -> WriteResult` writes via a temporary file + atomic rename and returns a `WriteResult`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if `metadata=` is passed and the backend lacks `USER_METADATA`.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
 **See also:** [BE-010](003-backend-adapter-contract.md), [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
 
 ### ASYNC-011: write_atomic Capability Gate
@@ -257,7 +257,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 **Invariant:** `AsyncStore` exposes async equivalents of all `Store` methods: `read`, `read_bytes`, `read_text`, `write`, `write_text`, `write_atomic`, `delete`, `delete_folder`, `exists`, `is_file`, `is_folder`, `iter_children`, `list_files`, `list_folders`, `glob`, `get_file_info`, `get_folder_info`, `head`, `move`, `copy`, `ping`, `resolve`, `aclose`, `supports`, `to_key`, `native_path`, `unwrap`, `child`.
 **Deferred:** `read_seekable` and `open_atomic` are not available in the async API — see ASYNC-061, ASYNC-062.
-**See also:** [STORE-008](001-store-api.md); [045-write-result.md](045-write-result.md) (WR-001, WR-008) for `write*` return type widening and `head()` semantics.
+**See also:** [STORE-008](001-store-api.md); [045-write-result.md](045-write-result.md) (WR-001, WR-008) for `write*` return type widening and `head()` semantics; ASYNC-052f for the normative async `head()` invariant.
 
 ### ASYNC-047: Same-Path Move and Copy
 
@@ -303,7 +303,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-052a: write_text()
 
 **Invariant:** `async def write_text(path, text, *, encoding="utf-8", overwrite=False, metadata=None) -> WriteResult` encodes the string and delegates to `write(path, encoded, overwrite=overwrite, metadata=metadata)`, forwarding the returned `WriteResult` unchanged. Convenience method — no separate backend call. `metadata` is a pass-through: the `USER_METADATA` capability gate and validation are applied inside `write()` (per WR-010 / WR-011).
-**Raises:** `CapabilityNotSupported` before any I/O when `metadata` is non-`None` and the backend does not declare `USER_METADATA` (per WR-010).
+**Raises:** `CapabilityNotSupported` before any I/O when a non-`None`, non-empty `metadata` mapping is passed and the backend does not declare `USER_METADATA` (per WR-010 empty-mapping carve-out).
 **See also:** [045-write-result.md](045-write-result.md) (WR-001, WR-010) for the return-type widening and the `metadata=` capability gate.
 
 ### ASYNC-052b: list_folders(max_depth=)
@@ -326,6 +326,22 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 **Invariant:** `async def ping()` verifies backend connectivity. Delegates to `await backend.check_health()`. The threading concern is handled by the backend layer: `SyncBackendAdapter.check_health()` uses `asyncio.to_thread()` (ASYNC-037); native async backends execute directly.
 **Raises:** `PermissionDenied` if credentials are invalid. `NotFound` if the bucket, container, or root path does not exist. `BackendUnavailable` if the backend cannot be reached.
 **See also:** [026-health-check.md](026-health-check.md).
+
+### ASYNC-052f: head()
+
+**Invariant:** `async def head(path) -> WriteResult` returns a sidecar
+`WriteResult` constructed from the `FileInfo` returned by
+`await self.get_file_info(path)`. Convenience method — no separate
+backend call; implemented at the `AsyncStore` level using the same
+`FileInfo → WriteResult` field mapping as the sync `Store.head()`.
+**Gating:** Capability-gated on `Capability.METADATA` only; **not**
+gated on `Capability.WRITE`.
+**Raises:** `NotFound` if the path does not exist.
+`CapabilityNotSupported` if the backend lacks `METADATA`.
+**Postconditions:** Returns `WriteResult` with `source == "sidecar"`.
+**See also:** [045-write-result.md](045-write-result.md) (WR-008) for
+the full `FileInfo → WriteResult` field mapping and sync-parity
+semantics.
 
 ### ASYNC-055: Concurrency Safety
 

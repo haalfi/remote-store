@@ -11,12 +11,22 @@ Accepted
 (`Capability.USER_METADATA`) or it does not. When it does not, the question
 is: raise or silently drop?
 
-The same question was settled for atomic writes in AW-002 (spec 007): if a
-caller opts into `write_atomic` on a backend without `ATOMIC_WRITE`, we raise
-`CapabilityNotSupported` before I/O. The pattern was called "strict gate":
-every optional behaviour that the caller explicitly requests — rather than a
-capability that merely upgrades a default path — raises before I/O if the
-backend cannot honour it.
+The same question was settled for atomic writes. Two atomic-write
+invariants together establish the precedent:
+
+- **AW-007 (spec 007) — "Atomicity is Never Assumed":** the core never
+  silently falls back to non-atomic writes when `ATOMIC_WRITE` is
+  missing. This is the *never-silently-degrade* principle the present
+  ADR inherits for `USER_METADATA`.
+- **AW-002 (spec 007) — "Capability Gate":** `write_atomic` raises
+  `CapabilityNotSupported` before any I/O if the backend lacks
+  `ATOMIC_WRITE`. This is the *raise-before-I/O* mechanism the present
+  ADR inherits for `USER_METADATA`.
+
+Together, these two invariants name a pattern: every optional
+behaviour that the caller explicitly requests — rather than a
+capability that merely upgrades a default path — raises before I/O
+if the backend cannot honour it, and never silently drops.
 
 `USER_METADATA` is a second instance of this pattern. The decision deserves
 its own ADR to name the pattern so future contributors can follow it

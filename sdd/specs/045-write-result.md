@@ -273,12 +273,23 @@ here. Tracked in the BACKLOG ID-146 "Next" step.
 
 ## WR-014: ext.write.write_with_hash Returns Digest
 
-**Invariant:** `ext.write.write_with_hash(store, path, content, *, algorithm,
-overwrite, metadata) -> WriteResult` returns a `WriteResult` with `digest`
-populated from a client-side streaming hash over the written bytes. The
-underlying `source` value from the backend write is preserved (`"native"` or
-`"basic"`); `digest` is set independently of `source` and always represents
-the client-computed hash.
+**Invariant:** `ext.write.write_with_hash(store, path, content, *,
+algorithm="sha256", overwrite=False, metadata=None) -> WriteResult`
+returns a `WriteResult` with `digest` populated from a client-side
+streaming hash over the written bytes. The underlying `source` value
+from the backend write is preserved (`"native"` or `"basic"`); `digest`
+is set independently of `source` and always represents the
+client-computed hash.
+
+**Parameter defaults (normative):**
+
+- `algorithm: str = "sha256"` — hash algorithm name accepted by
+  `hashlib.new`. Single-algorithm only in v1, matching the existing
+  `ChecksumWriter` signature; multi-algorithm multiplex is deferred.
+- `overwrite: bool = False` — same semantics as `Store.write`.
+- `metadata: Mapping[str, str] | None = None` — optional user
+  metadata; subject to the `USER_METADATA` capability gate (WR-010)
+  applied inside the underlying `store.write()`.
 
 ## WR-015: ext.write.write_with_hash Works on Every WRITE Backend
 
@@ -289,10 +300,16 @@ capability beyond `WRITE` is required.
 
 ## WR-016: open_atomic_with_hash Requires ATOMIC_WRITE
 
-**Invariant:** `ext.write.open_atomic_with_hash()` requires
+**Invariant:** `ext.write.open_atomic_with_hash(store, path, *,
+algorithm="sha256", overwrite=False, metadata=None) ->
+Iterator[HashingAtomicWriter]` is a `@contextmanager` that requires
 `Capability.ATOMIC_WRITE` on the underlying store (inherited from
 `Store.open_atomic`, SAW-002). If the capability is absent,
 `CapabilityNotSupported` is raised before any I/O.
+
+**Parameter defaults (normative):** Same as WR-014 —
+`algorithm: str = "sha256"`, `overwrite: bool = False`,
+`metadata: Mapping[str, str] | None = None`.
 
 ## WR-017: open_atomic_with_hash Exposes result After Exit
 

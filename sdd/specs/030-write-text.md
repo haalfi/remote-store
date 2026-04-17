@@ -46,8 +46,11 @@ inside `write()` (per WR-010 / WR-011), not duplicated here.
 - `overwrite` parameter controls whether existing files may be replaced.
 - Raises `InvalidPath` if `path` is empty or `"."`.
 - Raises `AlreadyExists` if the file exists and `overwrite=False`.
-- Raises `CapabilityNotSupported` before any I/O when `metadata` is
-  non-`None` and the backend does not declare `USER_METADATA` (per WR-010).
+- Raises `CapabilityNotSupported` before any I/O when a non-`None`,
+  non-empty `metadata` mapping is passed and the backend does not
+  declare `USER_METADATA` (per WR-010 empty-mapping carve-out —
+  `metadata=None` and `metadata={}` are both no-ops with respect to
+  this gate).
 - Capability-gated on `Capability.WRITE` (inherited from `write`).
 
 **See also:** [045-write-result.md](045-write-result.md) (WR-001, WR-010)
