@@ -119,38 +119,45 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
-- [ ] **ID-147 — Specula spike: TLA+ protocol verification for async API and proxy stack**
-  PR 448 (WriteResult) amended 5 specs in one feature, exposing that cross-spec
-  protocol consistency cannot be verified by Dafny alone — Dafny covers
-  per-operation contracts and invariants, but not multi-layer protocol
-  behaviour or concurrent interleaving.
+- [ ] **ID-147 — TLA+ augmentation spike: machine-checkable cross-spec consistency**
+  PR 448 (WriteResult) amended 5 specs in one feature. The manual ripple-check
+  table catches what to review; it cannot catch whether the reviewed specs are
+  mutually consistent. Dafny covers per-operation contracts — it has no model
+  of how layers compose. This item explores TLA+ as a lightweight, additive
+  layer to machine-check that consistency.
 
-  [Specula](https://github.com/specula-org/Specula) is an LLM-accelerated
-  pipeline that generates TLA+ specs from production code, runs TLC model
-  checking, and confirms findings against real execution traces. It supports
-  Claude Code as the agent. This item captures the exploration — **no
-  implementation commitment yet**.
+  **Framing:** TLA+ modules *augment* the existing Markdown specs — they do
+  not replace them. Markdown stays as the human-readable contract; TLA+ is the
+  machine-checkable shadow for protocol-level properties. Goal is learning: find
+  the right workflow for this repo before committing to any permanent structure.
 
-  **Recommended first target:** async store API (ID-013b, spec 029).
-  Concurrent read/write interleaving is the canonical TLA+ use case and the
-  highest-risk area the Dafny layer does not cover. Scope: run Specula's
-  five phases (code analysis → spec generation → trace validation → model
-  checking → bug confirmation) against `src/remote_store/aio/` and spec 029.
+  **Minimal scope — three modules to start:**
+  - `Backend.tla` — abstract backend contract: operations, error outcomes,
+    capability gates. Shadows spec 003.
+  - `Store.tla` — store layer composing backend + extensions; WriteResult
+    forwarding. Shadows specs 001 + 045 (WR-019).
+  - `Observer.tla` — event dispatch: every write fires exactly one StoreEvent,
+    none dropped. Shadows spec 019 OBS-015.
 
-  **Follow-up targets if spike proves value:**
-  - WR-019 proxy forwarding chain (spec 045): prove WriteResult is never
-    dropped at any proxy layer, for any stack depth.
-  - OBS-015 observer event dispatch (spec 019): prove every write fires
-    exactly one StoreEvent (safety + liveness pair).
+  These three cover the PR 448 ripple surface with the smallest possible TLA+
+  footprint. `Store EXTENDS Backend` and `Observer INSTANCE Store` — so a
+  change to `Backend.tla` that breaks `Observer.tla` is caught by TLC, not by
+  a human reviewer.
 
-  **Deliverable for this item:** spike report — did Specula run cleanly,
-  did TLC find any counterexamples, are the generated specs worth keeping
-  as a CI artefact? Outcome decides whether to promote to `BK-NNN` with a
-  concrete implementation plan or move to Icebox.
+  **Deliverable:** spike report answering: (1) do the three modules verify
+  cleanly under TLC? (2) did model checking surface any spec inconsistency
+  the Markdown review missed? (3) what does the authoring workflow feel like —
+  is it sustainable for contributors? Outcome drives whether to extend coverage,
+  keep as-is, or move to Icebox.
 
-  **Relation to existing formal layer:** additive, not a replacement.
-  Dafny (`sdd/formal/`) stays as the per-operation contract and oracle layer.
-  TLA+/Specula would sit above it, verifying protocol-level composition.
+  **Tooling note:** [Specula](https://github.com/specula-org/Specula) (LLM +
+  TLC pipeline, Claude Code–compatible) may help bootstrap initial module
+  drafts from existing Python source and Markdown specs, but is not required.
+  TLC alone suffices for model checking once modules exist.
+
+  **Relation to existing formal layer:** additive. Dafny (`sdd/formal/`) stays
+  as the per-operation contract and oracle layer. TLA+ sits above it, covering
+  protocol composition across layers that Dafny cannot express.
 
 - [ ] **ID-138 — Async streaming integrity e2e test**
   The e2e streaming test only covers sync backends. Add an async variant
