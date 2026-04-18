@@ -711,7 +711,10 @@ class TestAzureHNSPaths:
         backend._cc_instance.get_blob_client.return_value = bc
         tmp_fc = MagicMock(spec=DataLakeFileClient)
         tmp_fc.upload_data.return_value = None  # production-accurate: upload_data returns None
-        tmp_fc.get_file_properties.return_value = MagicMock(etag=None, last_modified=None)
+        tmp_fc.get_file_properties.return_value = MagicMock(
+            etag=None,
+            last_modified=None,
+        )
         backend._fs_instance.get_file_client.return_value = tmp_fc
         result = backend.write_atomic("dir/file.txt", b"content")
         tmp_fc.upload_data.assert_called_once_with(b"content", overwrite=True, max_concurrency=4, metadata=None)
@@ -730,7 +733,10 @@ class TestAzureHNSPaths:
         backend._cc_instance.get_blob_client.return_value = bc
         tmp_fc = MagicMock(spec=DataLakeFileClient)
         tmp_fc.upload_data.return_value = None  # production-accurate: upload_data returns None
-        tmp_fc.get_file_properties.return_value = MagicMock(etag='"abc123"', last_modified=None)
+        tmp_fc.get_file_properties.return_value = MagicMock(
+            etag='"abc123"',
+            last_modified=None,
+        )
         backend._fs_instance.get_file_client.return_value = tmp_fc
         result = backend.write_atomic("dir/file.txt", b"data")
         assert result.etag == "abc123"
