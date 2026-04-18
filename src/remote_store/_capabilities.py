@@ -93,8 +93,8 @@ class Capability(enum.Enum):
       Backends without this flag return a ``WriteResult`` with only
       ``path`` and ``size`` populated (``source == "basic"``).
       Use ``store.supports(Capability.WRITE_RESULT_NATIVE)`` to decide
-      whether to call ``Store.head()`` after a write if you need the
-      full metadata set.
+      whether to call ``store.get_file_info()`` after a write if you
+      need the full metadata set.
     """
 
     # Core I/O

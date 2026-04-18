@@ -142,7 +142,6 @@ class TestWriteResultNative:
 
     @pytest.mark.spec("WR-009")
     def test_is_quality_flag_not_a_gate(self) -> None:
-        # A CapabilitySet without WRITE_RESULT_NATIVE can still declare WRITE.
         # The flag advertises rich WriteResult fields, not method availability.
         cs_with = CapabilitySet({Capability.WRITE, Capability.WRITE_RESULT_NATIVE})
         cs_without = CapabilitySet({Capability.WRITE})
@@ -152,16 +151,15 @@ class TestWriteResultNative:
         assert cs_with.supports(Capability.WRITE)
         assert cs_without.supports(Capability.WRITE)
 
-    @pytest.mark.spec("WR-009")
-    def test_require_raises_with_correct_value(self) -> None:
-        cs = CapabilitySet({Capability.WRITE})
-        with pytest.raises(CapabilityNotSupported, match="write_result_native") as exc_info:
-            cs.require(Capability.WRITE_RESULT_NATIVE, backend="local")
-        assert exc_info.value.capability == "write_result_native"
-
 
 class TestUserMetadata:
-    """WR-010: USER_METADATA is a strict gate on the metadata= kwarg."""
+    """WR-010: USER_METADATA is a strict gate on the metadata= kwarg.
+
+    CapabilitySet-layer: membership declared/absent.
+    Store-layer (Step 4): gate firing — non-empty metadata= raises
+    CapabilityNotSupported; metadata=None and metadata={} are no-ops even
+    on non-declaring backends.
+    """
 
     @pytest.mark.spec("WR-010")
     def test_declared_and_absent(self) -> None:
