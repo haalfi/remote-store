@@ -11,4 +11,5 @@
 - ext.pydantic: pydantic.md
 - ext.streams: streams.md
 - ext.transfer: transfer.md
+- ext.write: write.md
 - ext.yaml: yaml.md

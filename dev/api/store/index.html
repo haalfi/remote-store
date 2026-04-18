@@ -2698,6 +2698,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../write-integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Write Integrity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../health-check/" class="md-nav__link">
         
   
@@ -3329,6 +3357,17 @@
   
     <nav class="md-nav" aria-label="Metadata">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.Store.head" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;head
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#remote_store.Store.exists" class="md-nav__link">
@@ -4565,6 +4604,34 @@
     
   
     ext.transfer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extensions/write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.write
   
 
     
@@ -9224,6 +9291,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#remote_store.Store.head" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;head
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#remote_store.Store.exists" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11003,6 +11081,91 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 <hr />
 <h2 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.Store.head" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">head</span>
+
+
+<a href="#remote_store.Store.head" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">head</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Return a <code>WriteResult</code> snapshot of <em>path</em> via a metadata lookup.</p>
+<p>Gated on <code>Capability.METADATA</code> only — works on read-only backends
+that declare <code>METADATA</code>.  The returned <code>WriteResult</code> has
+<code>source="sidecar"</code> (populated from a <code>get_file_info()</code> call, not
+from a write response).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative file path.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p><code>WriteResult</code> with <code>source="sidecar"</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the file does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the backend lacks <code>METADATA</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 

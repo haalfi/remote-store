@@ -2698,6 +2698,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../write-integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Write Integrity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../health-check/" class="md-nav__link">
         
   
@@ -4011,6 +4039,34 @@
     
   
     ext.transfer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/extensions/write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ext.write
   
 
     
@@ -11260,7 +11316,7 @@
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
-<p><strong><code>WriteResult</code>, <code>Store.head()</code>, and <code>ext.write</code> hashing helpers</strong> (ID-146):
+<p><strong><code>WriteResult</code>, <code>Store.head()</code>, and <code>ext.write</code> hashing helpers</strong> (ID-146, ID-148):
   <code>Store.write*()</code> now returns a <code>WriteResult</code> frozen dataclass (<code>path</code>, <code>size</code>,
   <code>source</code>, <code>digest</code>, <code>etag</code>, <code>version_id</code>, <code>last_modified</code>, <code>metadata</code>).
   <code>Store.head(path)</code> retrieves file metadata as a <code>WriteResult</code> (requires
@@ -11270,7 +11326,8 @@
   <code>write_with_hash</code> and <code>open_atomic_with_hash</code> for guaranteed client-side
   digest regardless of backend capability. All proxy layers (<code>ProxyStore</code>,
   <code>ObservedStore</code>, <code>CachedStore</code>) forward <code>WriteResult</code> and <code>head()</code>;
-  <code>StoreEvent.metadata["write_result"]</code> is populated on successful writes.</p>
+  <code>StoreEvent.metadata["write_result"]</code> is populated on successful writes.
+  Docs: Write Integrity guide, full API surface, and RFC-0011 (Implemented) landed in ID-148.</p>
 </li>
 <li>
 <p><strong><code>AsyncBackendSyncAdapter</code></strong> (ID-141–143c): new public class wrapping any
