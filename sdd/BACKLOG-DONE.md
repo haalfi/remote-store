@@ -5,6 +5,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-148 — ID-146 docs ripple: WriteResult / head() / ext.write in guides and API reference**
+  `docs-src/write-integrity.md` new guide (write_with_hash, open_atomic_with_hash,
+  head(), user metadata). `Store.head()` exposed in `docs-src/api/store.md`.
+  `ext.write` surfaced in extensions nav and index. `FEATURES.md` gains `head()`
+  and ext.write row. README "What you get" and extensions table updated.
+  RFC-0011 status flipped to Implemented. PR #455.
+
 - [x] **ID-146 — Land RFC-0011: `WriteResult` + opt-in hashing**
   `Store.write*()` returns `WriteResult`; `Store.head()` added (requires
   `Capability.METADATA`); `metadata=` kwarg gated by `Capability.USER_METADATA`;

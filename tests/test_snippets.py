@@ -57,3 +57,14 @@ class TestAsyncSyncBridgesSnippets:
 
         result = demo()
         assert result is None
+
+
+class TestWriteIntegritySnippets:
+    """Snippets used in the Write Integrity guide."""
+
+    @pytest.mark.spec("ID-148")
+    def test_write_integrity_demo(self) -> None:
+        from examples.snippets.write_integrity import demo
+
+        result = demo()
+        assert result is None

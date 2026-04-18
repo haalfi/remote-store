@@ -142,6 +142,11 @@
 
 ## Metadata
 
+::: remote_store.Store.head
+    options:
+      show_root_heading: true
+      heading_level: 3
+
 ::: remote_store.Store.exists
     options:
       show_root_heading: true

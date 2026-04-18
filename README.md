@@ -187,6 +187,7 @@ store.write("path/to/data.bin", binary_stream)  # streaming write
 store.list_files("reports/", pattern="*.csv")   # iterate FileInfo
 store.glob("**/*.parquet")                      # native glob (capability-gated)
 store.exists("path/to/file.txt")                # → bool
+store.head("path/to/file.txt")                  # WriteResult snapshot (size, etag, …)
 
 store.move("old.txt", "new.txt")                # move / rename
 store.copy("src.txt", "dst.txt")                # copy
@@ -220,6 +221,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
 | Stream wrappers | *(none)* | Composable BinaryIO wrappers for progress tracking and checksums |
 | Integrity helpers | *(none)* | Checksum computation and verification over Store's public API |
+| Write helpers | *(none)* | Client-side content hashing for write operations — works on any backend |
 | Dagster IO manager | `remote-store[dagster]` | IOManager adapter + config-driven Store resource for Dagster pipelines |
 
 Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.

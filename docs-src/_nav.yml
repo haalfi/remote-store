@@ -17,6 +17,7 @@
         - Retry Policy: retry.md
     - Async Store: async.md
     - Async/Sync Bridges: async-sync-bridges.md
+    - Write Integrity: write-integrity.md
     - Health Check: health-check.md
     - Data Lake Patterns: data-lake-patterns.md
     - Troubleshooting: troubleshooting.md

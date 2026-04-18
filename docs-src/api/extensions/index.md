@@ -19,6 +19,7 @@ to enable each one. For usage guides, see [Extensions](../../extensions.md).
 | [ext.pydantic](pydantic.md) | Pydantic model to RegistryConfig adapter |
 | [ext.streams](streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](transfer.md) | Upload, download, and cross-store transfer |
+| [ext.write](write.md) | Write helpers with guaranteed client-side content hashing |
 | [ext.yaml](yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |
 
 ## See also
