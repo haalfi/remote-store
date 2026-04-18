@@ -989,25 +989,26 @@ class TestCacheWriteResult:
     """WR-018: CachedStore.write* returns WriteResult; head() delegates."""
 
     @pytest.mark.spec("WR-018")
-    def test_write_returns_write_result(self, cached: CachedStore) -> None:
+    @pytest.mark.parametrize(
+        ("method", "args", "expected_size"),
+        [
+            ("write", ("new.txt", b"content"), 7),
+            ("write_text", ("new.txt", "text"), 4),
+            ("write_atomic", ("new.txt", b"atomic"), 6),
+        ],
+    )
+    def test_write_methods_return_write_result(
+        self,
+        cached: CachedStore,
+        method: str,
+        args: tuple[object, ...],
+        expected_size: int,
+    ) -> None:
         from remote_store._models import WriteResult
 
-        result = cached.write("new.txt", b"content")
+        result = getattr(cached, method)(*args)
         assert isinstance(result, WriteResult)
-
-    @pytest.mark.spec("WR-018")
-    def test_write_text_returns_write_result(self, cached: CachedStore) -> None:
-        from remote_store._models import WriteResult
-
-        result = cached.write_text("new.txt", "text")
-        assert isinstance(result, WriteResult)
-
-    @pytest.mark.spec("WR-018")
-    def test_write_atomic_returns_write_result(self, cached: CachedStore) -> None:
-        from remote_store._models import WriteResult
-
-        result = cached.write_atomic("new.txt", b"atomic")
-        assert isinstance(result, WriteResult)
+        assert result.size == expected_size
 
     @pytest.mark.spec("WR-018")
     def test_head_delegates_to_inner(self, cached: CachedStore) -> None:

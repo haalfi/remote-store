@@ -654,6 +654,7 @@ def test_observed_write_returns_write_result() -> None:
     observed = observe(store)
     result = observed.write("f.bin", b"data")
     assert isinstance(result, WriteResult)
+    assert result.size == 4
 
 
 @pytest.mark.spec("WR-019")

@@ -30,6 +30,7 @@ class TestWriteWithHash:
         result = write_with_hash(store, "f.bin", b"hello")
         assert isinstance(result, WriteResult)
         assert isinstance(result.digest, ContentDigest)
+        assert result.size == 5
 
     @pytest.mark.spec("WR-014")
     def test_digest_algorithm_default_sha256(self, store: Store) -> None:
@@ -116,6 +117,8 @@ class TestOpenAtomicWithHash:
         with open_atomic_with_hash(store, "f.bin") as writer:
             assert isinstance(writer, HashingAtomicWriter)
             writer.write(b"data")
+
+        assert store.read_bytes("f.bin") == b"data"
 
     @pytest.mark.spec("WR-017")
     def test_result_populated_after_exit(self, store: Store) -> None:

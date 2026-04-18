@@ -310,25 +310,26 @@ class TestWriteResultProxy:
     """WR-018: ProxyStore forwards write* return values and head()."""
 
     @pytest.mark.spec("WR-018")
-    def test_write_returns_write_result(self, proxy: _TestProxy) -> None:
+    @pytest.mark.parametrize(
+        ("method", "args", "expected_size"),
+        [
+            ("write", ("new.txt", b"content"), 7),
+            ("write_text", ("new.txt", "text"), 4),
+            ("write_atomic", ("new.txt", b"atomic"), 6),
+        ],
+    )
+    def test_write_methods_return_write_result(
+        self,
+        proxy: _TestProxy,
+        method: str,
+        args: tuple[object, ...],
+        expected_size: int,
+    ) -> None:
         from remote_store._models import WriteResult
 
-        result = proxy.write("new.txt", b"content")
+        result = getattr(proxy, method)(*args)
         assert isinstance(result, WriteResult)
-
-    @pytest.mark.spec("WR-018")
-    def test_write_text_returns_write_result(self, proxy: _TestProxy) -> None:
-        from remote_store._models import WriteResult
-
-        result = proxy.write_text("new.txt", "text")
-        assert isinstance(result, WriteResult)
-
-    @pytest.mark.spec("WR-018")
-    def test_write_atomic_returns_write_result(self, proxy: _TestProxy) -> None:
-        from remote_store._models import WriteResult
-
-        result = proxy.write_atomic("new.txt", b"atomic")
-        assert isinstance(result, WriteResult)
+        assert result.size == expected_size
 
     @pytest.mark.spec("WR-018")
     def test_head_forwards_to_inner(self, proxy: _TestProxy) -> None:

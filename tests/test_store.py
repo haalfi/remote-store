@@ -580,27 +580,26 @@ class TestWriteReturnsResult:
         return Store(backend=MemoryBackend(), root_path="data")
 
     @pytest.mark.spec("WR-001")
-    def test_write_returns_write_result(self, store: Store) -> None:
+    @pytest.mark.parametrize(
+        ("method", "args", "expected_size"),
+        [
+            ("write", ("f.bin", b"hello"), 5),
+            ("write_text", ("f.txt", "hi"), 2),
+            ("write_atomic", ("f.bin", b"atomic"), 6),
+        ],
+    )
+    def test_write_methods_return_write_result(
+        self,
+        store: Store,
+        method: str,
+        args: tuple[object, ...],
+        expected_size: int,
+    ) -> None:
         from remote_store._models import WriteResult
 
-        result = store.write("f.bin", b"hello")
+        result = getattr(store, method)(*args)
         assert isinstance(result, WriteResult)
-        assert result.size == 5
-
-    @pytest.mark.spec("WR-001")
-    def test_write_text_returns_write_result(self, store: Store) -> None:
-        from remote_store._models import WriteResult
-
-        result = store.write_text("f.txt", "hi")
-        assert isinstance(result, WriteResult)
-
-    @pytest.mark.spec("WR-001")
-    def test_write_atomic_returns_write_result(self, store: Store) -> None:
-        from remote_store._models import WriteResult
-
-        result = store.write_atomic("f.bin", b"atomic")
-        assert isinstance(result, WriteResult)
-        assert result.size == 6
+        assert result.size == expected_size
 
 
 class TestStoreHead:
@@ -624,7 +623,7 @@ class TestStoreHead:
     def test_head_raises_not_found(self, store: Store) -> None:
         from remote_store._errors import NotFound
 
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="missing"):
             store.head("missing.txt")
 
     @pytest.mark.spec("WR-008")
@@ -658,29 +657,13 @@ class TestMetadataGate:
     def store(self) -> Store:
         return Store(backend=MemoryBackend(), root_path="data")
 
-    @pytest.fixture
-    def no_user_metadata_store(self) -> Store:
-        backend = MemoryBackend()
-        from remote_store._capabilities import CapabilitySet
-
-        object.__setattr__(  # MemoryBackend capabilities is a property; patch via Store wrapper
-            backend,
-            "_caps_override",
-            CapabilitySet(set(Capability) - {Capability.USER_METADATA}),
-        )
-        # Use a Store backed by a real MemoryBackend minus USER_METADATA via mock
-        from unittest.mock import patch
-
-        caps = CapabilitySet(set(Capability) - {Capability.USER_METADATA, Capability.GLOB, Capability.LAZY_READ})
-        with patch.object(type(backend), "capabilities", new_callable=lambda: property(lambda _: caps)):
-            yield Store(backend=backend, root_path="data")
-
     @pytest.mark.spec("WR-011")
     def test_empty_metadata_passes_validation(self, store: Store) -> None:
         result = store.write("f.bin", b"x", metadata={})
         from remote_store._models import WriteResult
 
         assert isinstance(result, WriteResult)
+        assert result.size == 1
 
     @pytest.mark.spec("WR-011")
     def test_metadata_nonempty_key_passes(self, store: Store) -> None:
@@ -688,6 +671,7 @@ class TestMetadataGate:
         from remote_store._models import WriteResult
 
         assert isinstance(result, WriteResult)
+        assert result.size == 1
 
     @pytest.mark.spec("WR-011")
     def test_metadata_empty_key_raises_value_error(self, store: Store) -> None:
@@ -754,3 +738,4 @@ class TestMetadataGate:
             from remote_store._models import WriteResult
 
             assert isinstance(result, WriteResult)
+            assert result.size == 1
