@@ -8615,6 +8615,13 @@ Use <code>Store.supports()</code> to query at runtime.</p>
 <ul>
 <li><code>METADATA</code> -- Retrieve file or folder metadata.
   Gates <code>Store.get_file_info()</code> and <code>Store.get_folder_info()</code>.</li>
+<li><code>USER_METADATA</code> -- Store user-supplied key/value pairs alongside
+  a file. Strict gate on the <code>metadata=</code> kwarg in
+  <code>Store.write()</code>, <code>Store.write_text()</code>, and
+  <code>Store.write_atomic()</code>: passing a non-empty mapping to a backend
+  that does not declare this capability raises
+  <code>CapabilityNotSupported</code> before any I/O.
+  <code>metadata=None</code> and <code>metadata={}</code> are always allowed.</li>
 </ul>
 <p><em>Quality flags</em></p>
 <ul>
@@ -8631,6 +8638,18 @@ Use <code>Store.supports()</code> to query at runtime.</p>
   Callers can use <code>store.supports(Capability.LAZY_READ)</code> to know
   whether partial reads avoid loading the entire file.
   See also: spec SIO-009 in <code>sdd/specs/006-streaming-io.md</code>.</li>
+<li><code>WRITE_RESULT_NATIVE</code> -- Quality flag: the backend populates the
+  rich fields of the returned <code>WriteResult</code> (<code>etag</code>,
+  <code>last_modified</code>, <code>version_id</code>, and where applicable
+  <code>digest</code>) directly from its write response.  Does <strong>not</strong> gate
+  any method — <code>Store.write*()</code> works on every backend.
+  Backends without this flag return a <code>WriteResult</code> with only
+  <code>path</code> and <code>size</code> populated (<code>source == "basic"</code>);
+  <code>metadata</code> is governed independently by the <code>USER_METADATA</code>
+  gate (WR-005, WR-012) and is not subject to this flag.
+  Use <code>store.supports(Capability.WRITE_RESULT_NATIVE)</code> to decide
+  whether to call <code>store.get_file_info()</code> after a write if you
+  need the full metadata set.</li>
 </ul>
 
 

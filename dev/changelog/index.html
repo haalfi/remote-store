@@ -11231,7 +11231,19 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>AsyncBackendSyncAdapter</code></strong> (ID-141–143c): new public class wrapping any
+<li>
+<p><strong><code>WriteResult</code> model + <code>WRITE_RESULT_NATIVE</code>/<code>USER_METADATA</code> capabilities</strong> (ID-146, steps 1–2):
+  <code>WriteResult</code> is a new frozen dataclass returned by <code>Store.write*()</code> methods,
+  carrying <code>path</code>, <code>size</code>, <code>source</code>, <code>digest</code>, <code>etag</code>, <code>version_id</code>,
+  <code>last_modified</code>, and <code>metadata</code>. <code>FileInfo.metadata: Mapping[str, str] | None</code>
+  is added (defaults to <code>None</code>). Two new <code>Capability</code> members:
+  <code>WRITE_RESULT_NATIVE</code> (quality flag — advertises rich <code>WriteResult</code> fields from
+  the backend write response) and <code>USER_METADATA</code> (strict gate on the non-empty
+  <code>metadata=</code> kwarg in write methods). Backend return-type widening and Store-layer
+  gate land in subsequent PRs.</p>
+</li>
+<li>
+<p><strong><code>AsyncBackendSyncAdapter</code></strong> (ID-141–143c): new public class wrapping any
   <code>AsyncBackend</code> as a synchronous <code>Backend</code> via a private event loop on a
   dedicated daemon thread. Design in ADR-0025; spec 029 § AsyncBackendSyncAdapter
   (ASYNC-080…093) covers streaming read/list pumps, write bridging, <code>open_atomic</code>
@@ -11241,7 +11253,8 @@
   <code>tests/aio/</code> (every test traced to spec IDs), Azurite-backed integration suite
   for the full sync <code>Backend</code> contract, and bridged-Azure variant in the e2e
   streaming chain. Decision guide: <code>guides/async-sync-bridges.md</code>. Unblocks
-  ID-127 (Graph backend).</li>
+  ID-127 (Graph backend).</p>
+</li>
 </ul>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>

@@ -8935,18 +8935,17 @@ is expressed against it.</p>
 </ul>
 <p><strong>Optional (default <code>None</code> unless noted):</strong></p>
 <ul>
-<li><code>digest</code> (<code>ContentDigest | None</code>) — verified content digest; only
-  populated when the caller opts into <code>ext.write.write_with_hash</code>
-  (WR-014) or a future backend surfaces a server-verified digest on
-  its write response (WR-007 clause).</li>
+<li><code>digest</code> (<code>ContentDigest | None</code>) — verified content digest:
+  client-computed via <code>ext.write.write_with_hash</code> (WR-014), or a
+  backend-echoed content hash from the write response (e.g., Azure
+  <code>content_md5</code> surfaced as <code>ContentDigest("md5", …)</code>); <code>None</code> on
+  the default write path for all v1 backends (WR-007).</li>
 <li><code>etag</code> (<code>str | None</code>) — backend change tag; not a content hash on
   every backend (see RFC-0011 § Proposal for per-backend semantics).</li>
 <li><code>version_id</code> (<code>str | None</code>) — backend-provided immutable version
   identifier; <code>None</code> when the backend does not version objects.</li>
 <li><code>last_modified</code> (<code>datetime | None</code>) — server timestamp from the
   write response; <code>None</code> when the backend's write response omits it.</li>
-<li><code>content_md5</code> (<code>str | None</code>) — client-supplied MD5 stored
-  alongside the object (Azure only in v1); <code>None</code> otherwise.</li>
 <li><code>metadata</code> (<code>Mapping[str, str] | None</code>) — echo of the user
   metadata that was stored (WR-012).</li>
 </ul>
@@ -8958,8 +8957,12 @@ is expressed against it.</p>
 <p><strong>Postconditions:</strong></p>
 <ul>
 <li>Attribute assignment raises <code>FrozenInstanceError</code>.</li>
-<li><code>WriteResult</code> supports equality and hashing by field-wise value
-  (standard dataclass behaviour).</li>
+<li><code>WriteResult</code> supports equality by field-wise value (standard dataclass
+  behaviour). It is hashable when all field values are hashable; <code>metadata</code>
+  (typed <code>Mapping[str, str] | None</code>) is hashable only when <code>None</code> or
+  backed by an immutable mapping — a plain <code>dict</code> makes <code>hash(wr)</code> raise
+  <code>TypeError</code>. Use <code>_hashable_write_result_st</code> (the PBT strategy) when
+  hash properties must be tested.</li>
 </ul>
 <p><strong>See also:</strong> <a href="../035-content-digest/">035-content-digest.md</a> for
 <code>ContentDigest</code>; RFC-0011 § Proposal for the canonical Python
@@ -8989,8 +8992,8 @@ successful <code>Store.write*()</code> returns <code>WriteResult.source == "nati
 does not declare the capability, <code>source == "basic"</code>.</p>
 <h2 id="wr-005-basic-source-guarantees">WR-005: Basic Source Guarantees<a class="headerlink" href="#wr-005-basic-source-guarantees" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> When <code>WriteResult.source == "basic"</code>, only <code>path</code> and <code>size</code> are
-guaranteed populated. The rich fields <code>digest</code>, <code>etag</code>, <code>version_id</code>,
-<code>last_modified</code>, and <code>content_md5</code> are <code>None</code>. The <code>metadata</code> field is
+guaranteed populated. The rich fields <code>digest</code>, <code>etag</code>, <code>version_id</code>, and
+<code>last_modified</code> are <code>None</code>. The <code>metadata</code> field is
 <strong>not</strong> governed by <code>source</code> — it is governed independently by WR-012:
 <code>WriteResult.metadata</code> echoes the caller's mapping whenever the
 <code>USER_METADATA</code> gate was passed, and is <code>None</code> otherwise, regardless of
@@ -9009,16 +9012,23 @@ constructed by <code>Store.head()</code>. Direct write calls never produce <code
 <h2 id="wr-007-no-default-hashing">WR-007: No Default Hashing<a class="headerlink" href="#wr-007-no-default-hashing" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> The default write path (<code>Store.write*()</code> without <code>ext.write</code>)
 returns <code>WriteResult.digest is None</code> on every backend that does not surface a
-server-verified digest on its write response. No streaming hash wrapper is
-inserted on the default path.</p>
-<p><strong>Current backend set (v1):</strong> No v1 backend surfaces a server-verified
-digest. Azure's <code>content_md5</code> is client-supplied and stored server-side;
-S3's single-PUT <code>ETag</code> is explicitly documented as <em>not</em> a content hash;
-multipart <code>ETag</code> values have the form <code>"&lt;md5-of-part-md5s&gt;-&lt;N&gt;"</code>. So in
-v1 the invariant simplifies to "<code>digest is None</code> on every backend," but
-the invariant is written so that a future backend surfacing a
-server-verified digest (e.g., opt-in S3 <code>ChecksumSHA256</code>) does not
-require amending WR-007.</p>
+server-verified or backend-echoed content hash on its write response. No
+streaming hash wrapper is inserted on the default path.</p>
+<p><strong>Current backend set (v1):</strong></p>
+<ul>
+<li><em>Server-verified digest:</em> none. No v1 backend surfaces a server-verified
+  content digest on the default write path. S3's single-PUT <code>ETag</code> is
+  explicitly documented as <em>not</em> a content hash; multipart <code>ETag</code> values
+  have the form <code>"&lt;md5-of-part-md5s&gt;-&lt;N&gt;"</code>.</li>
+<li><em>Backend-echoed digest:</em> Azure only. Azure echoes the client-supplied MD5
+  as <code>ContentDigest("md5", …)</code> in <code>WriteResult.digest</code> when the caller
+  supplied an MD5 on the write request. That value is client-originated but
+  surfaces what the backend stored, satisfying the "backend-echoed" clause.
+  All other v1 backends return <code>WriteResult.digest is None</code>.</li>
+</ul>
+<p>The invariant is written to accommodate a future backend surfacing a
+server-verified digest (e.g., opt-in S3 <code>ChecksumSHA256</code>) without amending
+WR-007.</p>
 <h2 id="wr-008-storehead-gating-and-semantics">WR-008: Store.head() Gating and Semantics<a class="headerlink" href="#wr-008-storehead-gating-and-semantics" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Store.head(path) -&gt; WriteResult</code> is gated on
 <code>Capability.METADATA</code> only. It is <strong>not</strong> gated on <code>Capability.WRITE</code> — callers
@@ -9063,10 +9073,6 @@ constructed from the <code>FileInfo</code> returned by <code>Store.get_file_info
 <tr>
 <td><code>version_id</code></td>
 <td><code>None</code> (no corresponding <code>FileInfo</code> field in v1)</td>
-</tr>
-<tr>
-<td><code>content_md5</code></td>
-<td><code>None</code> (client-supplied only at write time)</td>
 </tr>
 <tr>
 <td><code>source</code></td>

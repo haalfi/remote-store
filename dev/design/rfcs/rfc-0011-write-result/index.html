@@ -9240,7 +9240,8 @@
 <p>Replace the <code>None</code> return from <code>Store.write*()</code> with a <code>WriteResult</code>
 dataclass carrying whatever metadata the backend already produced for
 free during the write — <code>etag</code>, <code>version_id</code>, <code>last_modified</code>, <code>size</code>,
-and (on Azure) <code>content_md5</code>. A new quality flag
+and (on Azure) a <code>digest</code> echoing the client-supplied MD5 as
+<code>ContentDigest("md5", …)</code>. A new quality flag
 <code>Capability.WRITE_RESULT_NATIVE</code> advertises which backends fill the
 rich fields; backends without it return a <code>WriteResult</code> containing
 just <code>path</code> and <code>size</code>. A separate strict-gate capability
@@ -9289,15 +9290,15 @@ they returned:</p>
 <tbody>
 <tr>
 <td>Azure Blob</td>
-<td><code>etag</code>, <code>last_modified</code>, <code>version_id</code>, <code>content_md5</code> (when client supplied it)</td>
+<td><code>etag</code>, <code>last_modified</code>, <code>version_id</code>, MD5 when client supplied it</td>
 <td>yes (<code>metadata=</code>)</td>
-<td><code>content_md5</code> — client-supplied via <code>ContentSettings(content_md5=…)</code> or <code>validate_content=True</code>, stored (not computed) server-side</td>
+<td>client-supplied MD5 surfaced as <code>digest=ContentDigest("md5", …)</code> via <code>ContentSettings(content_md5=…)</code> or <code>validate_content=True</code>; stored (not computed) server-side</td>
 </tr>
 <tr>
 <td>Azure DataLake (HNS)</td>
 <td><code>etag</code>, <code>last_modified</code></td>
 <td>yes (<code>metadata=</code>)</td>
-<td><code>content_md5</code> — client-supplied via <code>ContentSettings</code>, same storage semantics as Azure Blob</td>
+<td>client-supplied MD5 surfaced as <code>digest=ContentDigest("md5", …)</code> via <code>ContentSettings</code>; same storage semantics as Azure Blob</td>
 </tr>
 <tr>
 <td>S3 (boto3 <code>put_object</code>)</td>
@@ -9361,9 +9362,9 @@ returns nothing (the output stream eats the PUT response).</p>
 <h2 id="goals">Goals<a class="headerlink" href="#goals" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Surface native write metadata (<code>etag</code>, <code>version_id</code>,
-  <code>last_modified</code>, <code>content_md5</code>, <code>size</code>) on every backend that
-  produces it, with zero added round trips and zero added bytes on
-  the wire.</li>
+  <code>last_modified</code>, <code>size</code>, and backend-echoed content hashes via
+  <code>digest</code>) on every backend that produces it, with zero added round
+  trips and zero added bytes on the wire.</li>
 <li>Give saga consumers a one-call API
   (<code>ext.write.write_with_hash</code>) for verified content hashes when
   they actually need them.</li>
@@ -9401,57 +9402,50 @@ returns nothing (the output stream eats the PUT response).</p>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">    Attributes:</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="sd">        path: Normalized remote path written, store-relative.</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">        size: Bytes written. Always populated.</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="sd">        digest: Verified content digest. ``None`` unless the caller</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">            opted into a streaming hash (``ext.write.write_with_hash``)</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">            or the backend surfaces a server-verified digest on its</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="sd">            write response.</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">        etag: Backend-provided change tag. ``None`` when the backend</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="sd">            does not produce one. **Not a content hash** on every</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">            backend — on S3, single-PUT ETags are the MD5 of the</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="sd">            body but multipart ETags have the form</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">            ``&quot;&lt;md5-of-part-md5s&gt;-&lt;N&gt;&quot;``. Callers doing content</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="sd">            verification should use ``digest`` from</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="sd">            ``ext.write.write_with_hash`` rather than comparing</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="sd">            ``etag`` to a client-computed hash.</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="sd">        version_id: Backend-provided immutable version identifier.</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="sd">            ``None`` when the backend does not version objects.</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="sd">        last_modified: Server timestamp from the write response.</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="sd">            ``None`` when the backend&#39;s write response omits it; call</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="sd">            ``Store.head(path)`` if needed.</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="sd">        content_md5: MD5 stored alongside the object when the client</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="sd">            supplied one at write time (Azure: via</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="sd">            ``ContentSettings(content_md5=…)`` or</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="sd">            ``validate_content=True``). ``None`` otherwise.</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="sd">            **Not** a server-computed hash — Azure does not compute</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="sd">            MD5 server-side on ``Put Blob``; it only stores what the</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="sd">            client sent.</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="sd">        metadata: Echo of the user metadata that was stored. ``None``</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="sd">            when ``metadata=`` was not passed or the backend does not</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="sd">            declare ``USER_METADATA``.</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="sd">        source: Provenance of the rich fields.</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="sd">            ``&quot;native&quot;`` -- populated from the backend&#39;s write</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="sd">            response.</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="sd">            ``&quot;basic&quot;`` -- the backend produced no rich fields; only</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="sd">            ``path`` and ``size`` are guaranteed.</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="sd">            ``&quot;sidecar&quot;`` -- constructed post-write from</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="sd">            ``Store.get_file_info()`` via ``Store.head()``.</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="sd">    The ``source`` field tells callers what they can trust.</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="sd">    A ``&quot;native&quot;`` ``etag`` is the backend&#39;s confirmation of what it</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="sd">    stored. A ``&quot;basic&quot;`` result means the backend cannot confirm</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="sd">    anything beyond size; if you need more, opt in via</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="sd">    ``ext.write.write_with_hash`` or call ``Store.head(path)`` after.</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    <span class="n">path</span><span class="p">:</span> <span class="n">RemotePath</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>    <span class="n">digest</span><span class="p">:</span> <span class="n">ContentDigest</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>    <span class="n">etag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>    <span class="n">version_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>    <span class="n">last_modified</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>    <span class="n">content_md5</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>    <span class="n">source</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;native&quot;</span><span class="p">,</span> <span class="s2">&quot;basic&quot;</span><span class="p">,</span> <span class="s2">&quot;sidecar&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;basic&quot;</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="sd">        digest: Content digest — client-computed via</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">            ``ext.write.write_with_hash``, or a backend-echoed hash</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">            from the write response (e.g., Azure ``content_md5``</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="sd">            surfaced as ``ContentDigest(&quot;md5&quot;, …)``). ``None`` on the</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">            default write path for all v1 backends.</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="sd">        etag: Backend-provided change tag. ``None`` when the backend</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">            does not produce one. **Not a content hash** on every</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="sd">            backend — on S3, single-PUT ETags are the MD5 of the</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">            body but multipart ETags have the form</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="sd">            ``&quot;&lt;md5-of-part-md5s&gt;-&lt;N&gt;&quot;``. Callers doing content</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="sd">            verification should use ``digest`` from</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="sd">            ``ext.write.write_with_hash`` rather than comparing</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="sd">            ``etag`` to a client-computed hash.</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="sd">        version_id: Backend-provided immutable version identifier.</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="sd">            ``None`` when the backend does not version objects.</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="sd">        last_modified: Server timestamp from the write response.</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="sd">            ``None`` when the backend&#39;s write response omits it; call</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="sd">            ``Store.head(path)`` if needed.</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="sd">        metadata: Echo of the user metadata that was stored. ``None``</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="sd">            when ``metadata=`` was not passed or the backend does not</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="sd">            declare ``USER_METADATA``.</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="sd">        source: Provenance of the rich fields.</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="sd">            ``&quot;native&quot;`` -- populated from the backend&#39;s write</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="sd">            response.</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="sd">            ``&quot;basic&quot;`` -- the backend produced no rich fields; only</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="sd">            ``path`` and ``size`` are guaranteed.</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="sd">            ``&quot;sidecar&quot;`` -- constructed post-write from</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="sd">            ``Store.get_file_info()`` via ``Store.head()``.</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="sd">    The ``source`` field tells callers what they can trust.</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="sd">    A ``&quot;native&quot;`` ``etag`` is the backend&#39;s confirmation of what it</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="sd">    stored. A ``&quot;basic&quot;`` result means the backend cannot confirm</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="sd">    anything beyond size; if you need more, opt in via</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="sd">    ``ext.write.write_with_hash`` or call ``Store.head(path)`` after.</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>    <span class="n">path</span><span class="p">:</span> <span class="n">RemotePath</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    <span class="n">source</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;native&quot;</span><span class="p">,</span> <span class="s2">&quot;basic&quot;</span><span class="p">,</span> <span class="s2">&quot;sidecar&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;basic&quot;</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>    <span class="n">digest</span><span class="p">:</span> <span class="n">ContentDigest</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>    <span class="n">etag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>    <span class="n">version_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    <span class="n">last_modified</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div>
 <p><code>digest</code> reuses the existing <code>ContentDigest</code> model from spec 035 for
 shape consistency with <code>FileInfo.digest</code>.</p>
@@ -9473,20 +9467,25 @@ hashing wrapper, no proxying, no extra round trip. It calls
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="n">etag</span><span class="o">=</span><span class="n">response</span><span class="p">[</span><span class="s2">&quot;etag&quot;</span><span class="p">],</span>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="n">version_id</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;version_id&quot;</span><span class="p">),</span>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        <span class="n">last_modified</span><span class="o">=</span><span class="n">response</span><span class="p">[</span><span class="s2">&quot;last_modified&quot;</span><span class="p">],</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="n">content_md5</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content_md5&quot;</span><span class="p">),</span>  <span class="c1"># only present if client supplied</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        <span class="n">source</span><span class="o">=</span><span class="s2">&quot;native&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="p">)</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="c1"># Backends without native metadata -- Local example</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WriteResult</span><span class="p">:</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">full</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="n">size</span> <span class="o">=</span> <span class="n">_write_and_count</span><span class="p">(</span><span class="n">full</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="k">return</span> <span class="n">WriteResult</span><span class="p">(</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>        <span class="n">path</span><span class="o">=</span><span class="n">RemotePath</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>  <span class="c1"># backend-native; Store rebases to store-relative</span>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>        <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>        <span class="n">source</span><span class="o">=</span><span class="s2">&quot;basic&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>    <span class="p">)</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="c1"># Azure returns content_md5 as a base64-encoded bytes object when the</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="c1"># caller supplied one; convert to hex for ContentDigest, or None.</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        <span class="n">digest</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>            <span class="n">ContentDigest</span><span class="p">(</span><span class="s2">&quot;md5&quot;</span><span class="p">,</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;content_md5&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">hex</span><span class="p">())</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content_md5&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        <span class="p">),</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>        <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>        <span class="n">source</span><span class="o">=</span><span class="s2">&quot;native&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="p">)</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="c1"># Backends without native metadata -- Local example</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WriteResult</span><span class="p">:</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>    <span class="n">full</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>    <span class="n">size</span> <span class="o">=</span> <span class="n">_write_and_count</span><span class="p">(</span><span class="n">full</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>    <span class="k">return</span> <span class="n">WriteResult</span><span class="p">(</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>        <span class="n">path</span><span class="o">=</span><span class="n">RemotePath</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>  <span class="c1"># backend-native; Store rebases to store-relative</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>        <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>        <span class="n">source</span><span class="o">=</span><span class="s2">&quot;basic&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    <span class="p">)</span>
 </code></pre></div>
 <p>Backends construct <code>WriteResult</code> with the backend-native path. The Store
 layer rebases <code>WriteResult.path</code> into the store's root the same way it
@@ -9815,7 +9814,7 @@ echoed back if the caller passed <code>metadata=</code>.</p>
 </tr>
 <tr>
 <td>WR-005</td>
-<td>When <code>source == "basic"</code>, only <code>path</code> and <code>size</code> are guaranteed populated; the rich fields <code>digest</code>, <code>etag</code>, <code>version_id</code>, <code>last_modified</code>, <code>content_md5</code> are <code>None</code>. <code>metadata</code> is governed independently by WR-012 regardless of <code>source</code>.</td>
+<td>When <code>source == "basic"</code>, only <code>path</code> and <code>size</code> are guaranteed populated; the rich fields <code>digest</code>, <code>etag</code>, <code>version_id</code>, and <code>last_modified</code> are <code>None</code>. <code>metadata</code> is governed independently by WR-012 regardless of <code>source</code>.</td>
 </tr>
 <tr>
 <td>WR-006</td>
@@ -9823,7 +9822,7 @@ echoed back if the caller passed <code>metadata=</code>.</p>
 </tr>
 <tr>
 <td>WR-007</td>
-<td>The default write path (<code>Store.write*()</code> without <code>ext.write</code>) returns <code>WriteResult.digest is None</code> on every backend that does not surface a server-verified digest.</td>
+<td>The default write path (<code>Store.write*()</code> without <code>ext.write</code>) returns <code>WriteResult.digest is None</code> on every backend that does not surface a server-verified or backend-echoed content hash on its write response.</td>
 </tr>
 <tr>
 <td>WR-008</td>

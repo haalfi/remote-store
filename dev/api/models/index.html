@@ -3292,6 +3292,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.WriteResult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;WriteResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remote_store.FolderEntry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8734,6 +8745,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#remote_store.WriteResult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;WriteResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#remote_store.FolderEntry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9209,8 +9231,9 @@ construction.</p>
    (remote_store._models.ContentDigest)" href="#remote_store.ContentDigest">ContentDigest</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">etag</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">content_type</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">extra</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="object">object</span></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="dict">dict</span></span><span class="p">(),</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">extra</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="object">object</span></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="dict">dict</span></span><span class="p">(),</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -9285,11 +9308,173 @@ construction.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.FileInfo.metadata">metadata</span></code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>User-supplied key/value metadata echoed from the backend.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
           <b><code><span title="remote_store.FileInfo.extra">extra</span></code></b>
               (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="object">object</span>]</code>)
           –
           <div class="doc-md-description">
             <p>Backend-specific metadata.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="remote_store.WriteResult" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">WriteResult</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#remote_store.WriteResult" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">WriteResult</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RemotePath (remote_store._path.RemotePath)" href="#remote_store.RemotePath">RemotePath</a></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">source</span><span class="p">:</span> <span class="n"><span title="typing.Literal">Literal</span></span><span class="p">[</span><span class="s2">&quot;native&quot;</span><span class="p">,</span> <span class="s2">&quot;basic&quot;</span><span class="p">,</span> <span class="s2">&quot;sidecar&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;basic&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">digest</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            ContentDigest
+
+
+  
+      dataclass
+   (remote_store._models.ContentDigest)" href="#remote_store.ContentDigest">ContentDigest</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">etag</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">version_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">last_modified</span><span class="p">:</span> <span class="n"><span title="datetime.datetime">datetime</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Immutable snapshot of a completed write operation.</p>
+<p>Returned by <code>Store.write()</code>, <code>Store.write_text()</code>, and
+<code>Store.write_atomic()</code>.</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.WriteResult.path">path</span></code></b>
+              (<code><a class="autorefs autorefs-internal" title="            RemotePath (remote_store._path.RemotePath)" href="#remote_store.RemotePath">RemotePath</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Normalized written path, store-relative.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.WriteResult.size">size</span></code></b>
+              (<code><span title="int">int</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Bytes written.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.WriteResult.source">source</span></code></b>
+              (<code><span title="typing.Literal">Literal</span>[&#39;native&#39;, &#39;basic&#39;, &#39;sidecar&#39;]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Provenance of the optional fields.
+<code>"native"</code> — the backend populated them from its write
+response; trust <code>digest</code>, <code>etag</code>, and <code>last_modified</code>.
+<code>"basic"</code> — only <code>path</code> and <code>size</code> are reliable; call
+<code>Store.head()</code> or use <code>ext.write</code> helpers if you need
+more.
+<code>"sidecar"</code> — constructed by <code>Store.head()</code> from a
+subsequent <code>get_file_info()</code> call.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.WriteResult.digest">digest</span></code></b>
+              (<code><a class="autorefs autorefs-internal" title="            ContentDigest
+
+
+  
+      dataclass
+   (remote_store._models.ContentDigest)" href="#remote_store.ContentDigest">ContentDigest</a> | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>Content digest from the write — either a client-computed
+hash from <code>ext.write</code> helpers, or a hash echoed by the
+backend from its write response (e.g., Azure echoes the
+client-supplied MD5 as <code>ContentDigest("md5", …)</code>).
+<code>None</code> when neither source applies.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.WriteResult.etag">etag</span></code></b>
+              (<code><span title="str">str</span> | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>Opaque backend change tag; semantics vary by backend.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.WriteResult.version_id">version_id</span></code></b>
+              (<code><span title="str">str</span> | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>Immutable backend version identifier; <code>None</code> when
+the backend does not version objects.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.WriteResult.last_modified">last_modified</span></code></b>
+              (<code><span title="datetime.datetime">datetime</span> | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>Server timestamp from the write response; <code>None</code>
+when the backend's write response omits it.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><span title="remote_store.WriteResult.metadata">metadata</span></code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>Echo of user metadata stored with the object.</p>
           </div>
         </li>
     </ul>
