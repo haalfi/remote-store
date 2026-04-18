@@ -35,8 +35,11 @@ exit `writer.result` holds the `WriteResult`:
 --8<-- "examples/snippets/write_integrity.py:open-atomic-with-hash"
 ```
 
-This requires `Capability.ATOMIC_WRITE`. If the backend lacks it,
-`CapabilityNotSupported` is raised before any data is written.
+This requires `Capability.ATOMIC_WRITE`. When called without `metadata=`,
+`CapabilityNotSupported` is raised before any data is written. When `metadata=`
+is supplied, capability checks run on exit — see the
+[`open_atomic_with_hash` docstring](api/extensions/write.md) for the metadata-branch
+caveat.
 
 ## Comparing write-time and read-time digests
 

@@ -161,7 +161,6 @@ Extensions add optional capabilities alongside the core.
 | Extension | Description | Module | Key exports |
 |---|---|---|---|
 | Batch | Bulk copy, delete, and existence checks across files | `remote_store.ext.batch` | `BatchResult`, `batch_copy`, `batch_delete`, `batch_exists` |
-| Write | Client-side hashing helpers for write operations | `remote_store.ext.write` | `write_with_hash`, `open_atomic_with_hash`, `HashingAtomicWriter` |
 | Cache | Transparent read-through caching layer | `remote_store.ext.cache` | `CachedStore`, `CacheBackend`, `CacheStats`, `MemoryCache`, `cache` |
 | Glob | Portable glob for backends without native GLOB capability | `remote_store.ext.glob` | `glob_files` |
 | Integrity | Content checksums and digest verification | `remote_store.ext.integrity` | `checksum`, `verify`, `verify_hex`, `content_digest` |
@@ -169,6 +168,7 @@ Extensions add optional capabilities alongside the core.
 | Partition | Hive-style partition path parsing and construction | `remote_store.ext.partition` | `ParsedPartition`, `parse_partition`, `partition_path` |
 | Streams | Progress reporting and checksum wrappers for streams | `remote_store.ext.streams` | `ChecksumReader`, `ChecksumWriter`, `ProgressReader`, `ProgressWriter`, `read_with_progress` |
 | Transfer | High-level upload, download, and store-to-store transfer | `remote_store.ext.transfer` | `upload`, `download`, `transfer` |
+| Write | Client-side hashing helpers for write operations | `remote_store.ext.write` | `write_with_hash`, `open_atomic_with_hash`, `HashingAtomicWriter` |
 
 ### Optional (require extras)
 

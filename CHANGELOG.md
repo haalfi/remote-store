@@ -52,6 +52,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Documentation
 
+- **Write Integrity guide and API surface docs** (ID-148): new
+  `docs-src/write-integrity.md` guide covering `write_with_hash`,
+  `open_atomic_with_hash`, `Store.head()`, and user metadata.
+  `Store.head()` exposed in the API reference; `ext.write` added to the
+  extensions nav, index, and `guides/extensions.md`. `FEATURES.md` updated.
+  RFC-0011 status flipped to Implemented.
+
 - **Content rule 6 — code examples are sourced, not written** (ID-144):
   codifies the existing `examples/snippets/` practice (ID-057, ID-106) in
   `sdd/CONTENT-RULES.md` so future doc PRs pull tested snippets rather than
