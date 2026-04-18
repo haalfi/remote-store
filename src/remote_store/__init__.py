@@ -25,7 +25,7 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._info import BackendInfo, ExtensionInfo, InfoResult, info
-from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry
+from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry, WriteResult
 from remote_store._path import RemotePath
 from remote_store._proxy import ProxyStore
 from remote_store._registry import Registry, register_backend
@@ -66,6 +66,7 @@ __all__ = [
     "FolderEntry",
     "FolderInfo",
     "PathEntry",
+    "WriteResult",
     # Capabilities
     "Capability",
     "CapabilitySet",

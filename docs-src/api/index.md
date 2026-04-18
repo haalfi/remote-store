@@ -62,6 +62,7 @@ Complete reference for all public exports of `remote-store`.
 | [ResolutionPlan](models.md#remote_store.ResolutionPlan) | Frozen introspection result from `resolve()` |
 | [ContentDigest](models.md#remote_store.ContentDigest) | Verified content digest with known algorithm |
 | [FileInfo](models.md#remote_store.FileInfo) | Metadata for a file (name, size, modified time) |
+| [WriteResult](models.md#remote_store.WriteResult) | Immutable snapshot of a completed write operation |
 | [FolderEntry](models.md#remote_store.FolderEntry) | Folder identity returned by listing operations |
 | [FolderInfo](models.md#remote_store.FolderInfo) | Aggregated folder metadata (file count, total size); satisfies `PathEntry` |
 | [PathEntry](models.md#remote_store.PathEntry) | Protocol for uniform listing (name + path) |

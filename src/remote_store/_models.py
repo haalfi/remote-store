@@ -9,9 +9,10 @@ from __future__ import annotations
 import dataclasses
 import re
 import typing
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from datetime import datetime
 
     from remote_store._path import RemotePath
@@ -77,6 +78,7 @@ class FileInfo:
         digest: Verified content digest with known algorithm.
         etag: Opaque backend-provided tag for change detection.
         content_type: Optional MIME type.
+        metadata: User-supplied key/value metadata echoed from the backend (WR-012).
         extra: Backend-specific metadata.
     """
 
@@ -87,6 +89,7 @@ class FileInfo:
     digest: ContentDigest | None = None
     etag: str | None = None
     content_type: str | None = None
+    metadata: Mapping[str, str] | None = None
     extra: dict[str, object] = dataclasses.field(default_factory=dict)
 
     def __eq__(self, other: object) -> bool:
@@ -96,6 +99,43 @@ class FileInfo:
 
     def __hash__(self) -> int:
         return hash(self.path)
+
+
+@dataclasses.dataclass(frozen=True)
+class WriteResult:
+    """Immutable snapshot of a completed write operation.
+
+    Returned by ``Store.write()``, ``Store.write_text()``, and
+    ``Store.write_atomic()``.
+
+    Attributes:
+        path: Normalised written path, store-relative (WR-002).
+        size: Bytes written (WR-003).
+        source: Provenance of the optional fields — ``"native"`` when the
+            backend populated them from its write response,
+            ``"basic"`` when derived locally, ``"sidecar"`` when
+            constructed by ``Store.head()`` (WR-004, WR-006).
+        digest: Verified content digest; populated by ``ext.write``
+            helpers or a future backend server-verified digest (WR-014).
+        etag: Opaque backend change tag; semantics vary by backend.
+        version_id: Immutable backend version identifier; ``None`` when
+            the backend does not version objects.
+        last_modified: Server timestamp from the write response; ``None``
+            when the backend's write response omits it.
+        content_md5: Client-supplied MD5 stored alongside the object
+            (Azure only in v1); ``None`` otherwise.
+        metadata: Echo of user metadata stored with the object (WR-012).
+    """
+
+    path: RemotePath
+    size: int
+    source: Literal["native", "basic", "sidecar"] = "basic"
+    digest: ContentDigest | None = None
+    etag: str | None = None
+    version_id: str | None = None
+    last_modified: datetime | None = None
+    content_md5: str | None = None
+    metadata: Mapping[str, str] | None = None
 
 
 @dataclasses.dataclass(frozen=True, eq=False)

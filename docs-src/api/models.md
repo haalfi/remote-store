@@ -8,6 +8,8 @@
 
 ::: remote_store.FileInfo
 
+::: remote_store.WriteResult
+
 ::: remote_store.FolderEntry
 
 ::: remote_store.FolderInfo
