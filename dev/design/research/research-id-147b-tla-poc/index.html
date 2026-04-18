@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-testing-best-practices/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-id-147b-tla-poc/">
       
       
-        <link rel="prev" href="../research-store-middleware-architecture/">
+        <link rel="prev" href="../research-health-check/">
       
       
-        <link rel="next" href="../research-v1-communication-plan/">
+        <link rel="next" href="../research-logging-monitoring-tracing/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Testing Best Practices for Long-Term Package Quality - remote-store</title>
+        <title>TLA+ PoC — WriteResult Spec Consistency (ID-147b) - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#research-testing-best-practices-for-long-term-package-quality" class="md-skip">
+        <a href="#research-tla-poc-writeresult-spec-consistency-id-147b" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Testing Best Practices for Long-Term Package Quality
+              TLA+ PoC — WriteResult Spec Consistency (ID-147b)
             
           </span>
         </div>
@@ -6430,10 +6430,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../research-id-147b-tla-poc/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TLA+ PoC — WriteResult Spec Consistency (ID-147b)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6449,6 +6476,198 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-poc-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. PoC scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-green-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Green runs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-break-and-catch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Break-and-catch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Findings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Findings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-tla-as-a-bug-finder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 TLA+ as a bug finder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-tla-as-a-spec-decomposition-discipline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 TLA+ as a spec-decomposition discipline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-combined-consequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Combined consequence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Recommendations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Recommendations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-feeding-the-pr-450-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Feeding the PR 450 review
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-proposed-repo-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Proposed repo workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-not-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Not recommended
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-artefacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Artefacts
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -6766,37 +6985,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Testing Best Practices for Long-Term Package Quality
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -6812,392 +7004,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-our-history-what-we-fixed-and-what-keeps-coming-back" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Our History: What We Fixed and What Keeps Coming Back
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Our History: What We Fixed and What Keeps Coming Back">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#11-audit-001-adversarial-review-v050-findings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.1 Audit 001 (Adversarial Review, v0.5.0) Findings
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#12-bk-014-test-suite-deduplication-v0190" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.2 BK-014: Test Suite Deduplication (v0.19.0)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#13-pr-301-fix-coverage-and-resourcewarning-v0200-dev" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.3 PR #301: Fix Coverage and ResourceWarning (v0.20.0-dev)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#14-pattern-what-keeps-recurring" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.4 Pattern: What Keeps Recurring
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-current-anti-patterns-in-our-codebase" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Current Anti-Patterns in Our Codebase
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Current Anti-Patterns in Our Codebase">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#summary-statistics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Summary Statistics
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-industry-best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Industry Best Practices
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Industry Best Practices">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31-the-core-principle-test-behavior-not-implementation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1 The Core Principle: Test Behavior, Not Implementation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#32-test-code-economy-less-code-same-coverage-better-signal" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.2 Test Code Economy: Less Code, Same Coverage, Better Signal
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#33-how-major-python-projects-test" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.3 How Major Python Projects Test
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#34-hynek-schlawack-dont-mock-what-you-dont-own" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.4 Hynek Schlawack: "Don't Mock What You Don't Own"
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#35-ned-batchelder-coverage-is-necessary-but-not-sufficient" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.5 Ned Batchelder: Coverage Is Necessary But Not Sufficient
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#36-property-based-testing-hypothesis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.6 Property-Based Testing (Hypothesis)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#37-mutation-testing-pytest-gremlins" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.7 Mutation Testing (pytest-gremlins)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#38-testing-retry-and-concurrency-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.8 Testing Retry and Concurrency Behavior
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-proposed-testing-rules-for-remote-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Proposed Testing Rules for remote-store
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Proposed Testing Rules for remote-store">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#41-the-eight-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.1 The Eight Rules
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#42-ruff-pt-rules-mechanical-enforcement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.2 Ruff PT Rules (Mechanical Enforcement)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#43-ci-enforced-checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.3 CI-Enforced Checks
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#44-pr-review-checklist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.4 PR Review Checklist
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#45-claudemd-additions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.5 CLAUDE.md Additions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-phased-adoption-plan" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Phased Adoption Plan
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Phased Adoption Plan">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phase-1-prevent-new-anti-patterns-immediate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 1: Prevent New Anti-Patterns (Immediate)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-2-fix-existing-anti-patterns-diagnostics-next-sprint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 2: Fix Existing Anti-Patterns + Diagnostics (Next Sprint)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-3-advanced-quality-measures-future" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 3: Advanced Quality Measures (Future)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-references" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. References
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. References">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#books" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Books
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#articles-talks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Articles &amp; Talks
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tools" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tools
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -8747,22 +8553,33 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-our-history-what-we-fixed-and-what-keeps-coming-back" class="md-nav__link">
+  <a href="#1-poc-scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Our History: What We Fixed and What Keeps Coming Back
+        1. PoC scope
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Our History: What We Fixed and What Keeps Coming Back">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Results">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-audit-001-adversarial-review-v050-findings" class="md-nav__link">
+  <a href="#21-green-runs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Audit 001 (Adversarial Review, v0.5.0) Findings
+        2.1 Green runs
       
     </span>
   </a>
@@ -8770,32 +8587,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#12-bk-014-test-suite-deduplication-v0190" class="md-nav__link">
+  <a href="#22-break-and-catch" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.2 BK-014: Test Suite Deduplication (v0.19.0)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#13-pr-301-fix-coverage-and-resourcewarning-v0200-dev" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.3 PR #301: Fix Coverage and ResourceWarning (v0.20.0-dev)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#14-pattern-what-keeps-recurring" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1.4 Pattern: What Keeps Recurring
+        2.2 Break-and-catch
       
     </span>
   </a>
@@ -8808,22 +8603,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-current-anti-patterns-in-our-codebase" class="md-nav__link">
+  <a href="#3-findings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Current Anti-Patterns in Our Codebase
+        3. Findings
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Current Anti-Patterns in Our Codebase">
+    <nav class="md-nav" aria-label="3. Findings">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#summary-statistics" class="md-nav__link">
+  <a href="#31-tla-as-a-bug-finder" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Summary Statistics
+        3.1 TLA+ as a bug finder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-tla-as-a-spec-decomposition-discipline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 TLA+ as a spec-decomposition discipline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-combined-consequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Combined consequence
       
     </span>
   </a>
@@ -8836,22 +8653,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-industry-best-practices" class="md-nav__link">
+  <a href="#4-recommendations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Industry Best Practices
+        4. Recommendations
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. Industry Best Practices">
+    <nav class="md-nav" aria-label="4. Recommendations">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-the-core-principle-test-behavior-not-implementation" class="md-nav__link">
+  <a href="#41-feeding-the-pr-450-review" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 The Core Principle: Test Behavior, Not Implementation
+        4.1 Feeding the PR 450 review
       
     </span>
   </a>
@@ -8859,10 +8676,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#32-test-code-economy-less-code-same-coverage-better-signal" class="md-nav__link">
+  <a href="#42-proposed-repo-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.2 Test Code Economy: Less Code, Same Coverage, Better Signal
+        4.2 Proposed repo workflow
       
     </span>
   </a>
@@ -8870,65 +8687,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#33-how-major-python-projects-test" class="md-nav__link">
+  <a href="#43-not-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.3 How Major Python Projects Test
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#34-hynek-schlawack-dont-mock-what-you-dont-own" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.4 Hynek Schlawack: "Don't Mock What You Don't Own"
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#35-ned-batchelder-coverage-is-necessary-but-not-sufficient" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.5 Ned Batchelder: Coverage Is Necessary But Not Sufficient
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#36-property-based-testing-hypothesis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.6 Property-Based Testing (Hypothesis)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#37-mutation-testing-pytest-gremlins" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.7 Mutation Testing (pytest-gremlins)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#38-testing-retry-and-concurrency-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.8 Testing Retry and Concurrency Behavior
+        4.3 Not recommended
       
     </span>
   </a>
@@ -8941,174 +8703,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-proposed-testing-rules-for-remote-store" class="md-nav__link">
+  <a href="#5-limitations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Proposed Testing Rules for remote-store
+        5. Limitations
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="4. Proposed Testing Rules for remote-store">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#41-the-eight-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.1 The Eight Rules
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#42-ruff-pt-rules-mechanical-enforcement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.2 Ruff PT Rules (Mechanical Enforcement)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#43-ci-enforced-checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.3 CI-Enforced Checks
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#44-pr-review-checklist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.4 PR Review Checklist
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#45-claudemd-additions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.5 CLAUDE.md Additions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-phased-adoption-plan" class="md-nav__link">
+  <a href="#6-artefacts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Phased Adoption Plan
+        6. Artefacts
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="5. Phased Adoption Plan">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phase-1-prevent-new-anti-patterns-immediate" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 1: Prevent New Anti-Patterns (Immediate)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-2-fix-existing-anti-patterns-diagnostics-next-sprint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 2: Fix Existing Anti-Patterns + Diagnostics (Next Sprint)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-3-advanced-quality-measures-future" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 3: Advanced Quality Measures (Future)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-references" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. References
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. References">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#books" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Books
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#articles-talks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Articles &amp; Talks
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tools" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tools
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -9129,546 +8741,263 @@
 
 
 
-<h1 id="research-testing-best-practices-for-long-term-package-quality">Research: Testing Best Practices for Long-Term Package Quality<a class="headerlink" href="#research-testing-best-practices-for-long-term-package-quality" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-03-28
-<strong>Context:</strong> Recurring test quality issues keep resurfacing in remote-store.
-PR #301 is the latest fix round; audits and backlog items show a pattern of
-the same anti-patterns returning after being fixed. This document compiles
-lessons learned, industry best practices, and proposes enforceable guardrails.</p>
+<h1 id="research-tla-poc-writeresult-spec-consistency-id-147b">Research: TLA+ PoC — WriteResult Spec Consistency (ID-147b)<a class="headerlink" href="#research-tla-poc-writeresult-spec-consistency-id-147b" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-04-18
+<strong>Status:</strong> PoC complete; feeds <a href="https://github.com/haalfi/remote-store/pull/450">PR 450</a> review.
+<strong>Scope:</strong> A deliberately minimal TLA+ spike targeting ID-146's <code>WriteResult</code>
+landing (spec 045), evaluating TLA+ as both a bug-finder and a
+spec-decomposition discipline.
+<strong>Related:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">ID-146</a>, <a href="https://github.com/haalfi/remote-store/pull/450">PR 450</a>,
+<a href="../../specs/045-write-result/">spec 045</a>,
+<a href="../../specs/001-store-api/">spec 001</a>,
+<a href="../../specs/003-backend-adapter-contract/">spec 003</a>,
+<a href="../../rfcs/rfc-0011-write-result/">RFC-0011</a>.</p>
+<p><strong>Context.</strong> The ID-146 spec round was long and mixed human/AI review
+still left latent spec bugs. Markdown specs grow expressive faster than
+they grow checkable: a single item like WR-018 can bundle four
+independent claims behind one paragraph, and a reviewer (human or AI)
+has no mechanical way to confirm they've checked each claim in
+isolation. This PoC asks whether a minimal TLA+ layer — one module per
+spec concern — can address both problems at once: catch bugs, and
+force the spec into smaller, non-contradicting pieces.</p>
 <hr />
-<h2 id="1-our-history-what-we-fixed-and-what-keeps-coming-back">1. Our History: What We Fixed and What Keeps Coming Back<a class="headerlink" href="#1-our-history-what-we-fixed-and-what-keeps-coming-back" title="Permanent link">&para;</a></h2>
-<h3 id="11-audit-001-adversarial-review-v050-findings">1.1 Audit 001 (Adversarial Review, v0.5.0) Findings<a class="headerlink" href="#11-audit-001-adversarial-review-v050-findings" title="Permanent link">&para;</a></h3>
+<h2 id="1-poc-scope">1. PoC scope<a class="headerlink" href="#1-poc-scope" title="Permanent link">&para;</a></h2>
+<p>Two modules, one invariant table each, deliberately disjoint:</p>
 <table>
 <thead>
 <tr>
-<th>ID</th>
-<th>Problem</th>
-<th>Anti-Pattern</th>
-<th>Status</th>
+<th>Module</th>
+<th>Targets</th>
+<th>Invariants</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>M-12</td>
-<td>Azure HNS tested via unconstrained <code>MagicMock()</code></td>
-<td>Mock accepts any call/signature</td>
-<td><strong>Open</strong></td>
+<td><code>WriteHeadRoundTrip.tla</code></td>
+<td>spec 045 § WR-006, WR-008 (field mapping only; gating not modelled)</td>
+<td><code>WriteHeadAgree</code>, <code>HeadIsSidecar</code></td>
 </tr>
 <tr>
-<td>M-13</td>
-<td><code>test_coverage_gaps.py</code> inflated coverage with <code>assert X is not None</code></td>
-<td>Pure-import assertions</td>
-<td>Fixed (BK-014)</td>
-</tr>
-<tr>
-<td>M-14</td>
-<td>Zero concurrency tests despite thread-safety spec claims</td>
-<td>Missing behavioral tests</td>
-<td><strong>Open</strong></td>
-</tr>
-<tr>
-<td>M-16</td>
-<td>No tests for <code>PermissionDenied</code>/<code>BackendUnavailable</code> in S3/SFTP</td>
-<td>Untested error paths</td>
-<td>Fixed (AF-013)</td>
-</tr>
-<tr>
-<td>M-17</td>
-<td>SFTP retry logic (tenacity) never tested</td>
-<td>Untested retry paths</td>
-<td><strong>Open</strong></td>
-</tr>
-<tr>
-<td>L-18</td>
-<td><code>test_list_files_round_trip</code> checks <code>len(data) == 3</code>, not content</td>
-<td>Weak assertions</td>
-<td><strong>Open</strong></td>
-</tr>
-<tr>
-<td>L-19</td>
-<td>S3/S3-PyArrow ~500 lines near-identical copy-paste</td>
-<td>Test duplication</td>
-<td>Fixed (BK-011)</td>
-</tr>
-<tr>
-<td>L-20</td>
-<td>No tests for Unicode paths, special chars, empty/large files</td>
-<td>Missing edge cases</td>
-<td><strong>Open</strong></td>
+<td><code>WR018ProxyForwarding.tla</code></td>
+<td>spec 045 § WR-018</td>
+<td><code>ProxyForwardUnchanged</code>, <code>PostWriteCacheNotTracked</code>, <code>EventPerWrite</code></td>
 </tr>
 </tbody>
 </table>
-<h3 id="12-bk-014-test-suite-deduplication-v0190">1.2 BK-014: Test Suite Deduplication (v0.19.0)<a class="headerlink" href="#12-bk-014-test-suite-deduplication-v0190" title="Permanent link">&para;</a></h3>
-<p>Reduced ~17,800 to ~16,300 lines (-8.6%) across 30 of 40 test files while
-preserving 1,866 passed tests. Key techniques:</p>
-<ul>
-<li>Parametrized similar tests (error mapping, validation, operation variants)</li>
-<li>Extracted shared fixtures</li>
-<li>Merged single-method test classes into parent classes</li>
-<li>Consolidated repeated assertion patterns</li>
-<li>Reviewed <code>test_coverage_gaps.py</code> pure-import assertions (M-13)</li>
-</ul>
-<h3 id="13-pr-301-fix-coverage-and-resourcewarning-v0200-dev">1.3 PR #301: Fix Coverage and ResourceWarning (v0.20.0-dev)<a class="headerlink" href="#13-pr-301-fix-coverage-and-resourcewarning-v0200-dev" title="Permanent link">&para;</a></h3>
-<ul>
-<li>SQLBlob test fixtures now yield+close; engines disposed on teardown</li>
-<li>ProxyStore delegation coverage 68% -&gt; 100% (new <code>test_proxy.py</code>, 33 tests)</li>
-<li>SQLAlchemy backend coverage 90% -&gt; 99%</li>
-<li><code>/pr</code> skill now gates on <code>hatch run test-cov</code> (95% threshold)</li>
-</ul>
-<h3 id="14-pattern-what-keeps-recurring">1.4 Pattern: What Keeps Recurring<a class="headerlink" href="#14-pattern-what-keeps-recurring" title="Permanent link">&para;</a></h3>
-<p>Despite fixes, the <strong>same categories</strong> of bad tests reappear:</p>
+<p>Both run under a single TLC image built by <code>scripts/tlc_check.sh</code> (Docker
+wrapper, no local Java, no local jar). First-run image build ≈ 15 s;
+subsequent runs ≈ 3 s end-to-end for either model.</p>
+<p>Everything outside this scope (async, errors beyond <code>CapabilityNotSupported</code>,
+backend-specific variants, multi-writer interleaving, the rest of
+spec 045) is explicitly deferred — the point is to evaluate the
+approach on the smallest useful target, not to cover the spec.</p>
+<h2 id="2-results">2. Results<a class="headerlink" href="#2-results" title="Permanent link">&para;</a></h2>
+<h3 id="21-green-runs">2.1 Green runs<a class="headerlink" href="#21-green-runs" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Distinct states</th>
+<th>Depth</th>
+<th>TLC runtime</th>
+<th>All invariants</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MC</code> (WriteHead)</td>
+<td>1092</td>
+<td>5</td>
+<td>&lt;1 s</td>
+<td>hold</td>
+</tr>
+<tr>
+<td><code>MC2</code> (WR-018)</td>
+<td>116</td>
+<td>4</td>
+<td>&lt;1 s</td>
+<td>hold</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-break-and-catch">2.2 Break-and-catch<a class="headerlink" href="#22-break-and-catch" title="Permanent link">&para;</a></h3>
+<p>Each break mutates one line of the TLA+ model to violate exactly one
+invariant; TLC should produce a counterexample at minimum depth and
+report only the violated invariant. If the reported error set is larger
+than one invariant, the invariants are redundant (a signal that the
+spec items they came from are not actually independent).</p>
+<table>
+<thead>
+<tr>
+<th>Break</th>
+<th>Module change</th>
+<th>Invariant triggered</th>
+<th>Others triggered</th>
+<th>Depth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Drop WR-008 rename (<code>last_modified ← fi_size</code>)</td>
+<td><code>HeadResult.last_modified</code></td>
+<td><code>WriteHeadAgree</code></td>
+<td>—</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Wrong <code>source</code> (<code>BASIC</code> instead of <code>SIDECAR</code>)</td>
+<td><code>HeadResult.source</code></td>
+<td><code>HeadIsSidecar</code></td>
+<td>—</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Proxy mutates on forward (+1 to size)</td>
+<td><code>wr_c = [wr_b EXCEPT !.size = ...]</code></td>
+<td><code>ProxyForwardUnchanged</code></td>
+<td>—</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Skip cache invalidation</td>
+<td><code>cache_paths' = cache_paths</code></td>
+<td><code>PostWriteCacheNotTracked</code></td>
+<td>—</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Skip event emission</td>
+<td><code>events' = events</code></td>
+<td><code>EventPerWrite</code></td>
+<td>—</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p>Every break surfaced its target invariant and no others at the minimum
+possible depth (one Write). <code>WriteHeadAgree</code> and <code>HeadIsSidecar</code> are
+deliberately disjoint — the data-field break and the source break each
+trigger exactly one. The five invariants are mutually independent.</p>
+<h2 id="3-findings">3. Findings<a class="headerlink" href="#3-findings" title="Permanent link">&para;</a></h2>
+<h3 id="31-tla-as-a-bug-finder">3.1 TLA+ as a bug finder<a class="headerlink" href="#31-tla-as-a-bug-finder" title="Permanent link">&para;</a></h3>
+<p>TLC caught every deliberate bug at the first opportunity. That is not
+an achievement — the bugs were seeded to be catchable — but it
+establishes that the model is actually checking what the invariant
+names claim it checks. With that baseline, the model becomes
+useful for regressions a reviewer could miss: the WR-008 field rename
+is easy for a human to transcribe wrong into Python; the proxy
+forwarding contract is easy to violate accidentally when a proxy layer
+adds ergonomic features; cache invalidation is the class of bug that
+only surfaces on a second read.</p>
+<h3 id="32-tla-as-a-spec-decomposition-discipline">3.2 TLA+ as a spec-decomposition discipline<a class="headerlink" href="#32-tla-as-a-spec-decomposition-discipline" title="Permanent link">&para;</a></h3>
+<p>The more interesting finding is what writing the TLA+ module surfaced
+about the Markdown spec.</p>
+<p><strong>WR-018's Markdown is one paragraph. Its TLA+ encoding surfaces four
+distinct claims.</strong> Three are independently checkable TLC invariants;
+the fourth is trivially enforced by the action's constructor:</p>
 <ol>
-<li><strong>Tests with no assertions</strong> -- just call a method, assume "no crash = pass"</li>
-<li><strong><code>isinstance</code> as the only assertion</strong> -- verifies type, not behavior</li>
-<li><strong>Private attribute access</strong> (<code>._backends</code>, <code>._ttl</code>, <code>._owns_backend</code>)</li>
-<li><strong>Unconstrained mocks</strong> (<code>MagicMock()</code> without <code>spec=</code>)</li>
-<li><strong>Factory helpers duplicating constructor logic</strong></li>
+<li>Return-type widening — trivially enforced: <code>MkWR</code> always produces a
+   record with the expected domain; no reachable state can violate it.
+   Noted for completeness; not a TLC invariant.</li>
+<li>Unchanged forwarding (<code>ProxyForwardUnchanged</code>) — independently breakable.</li>
+<li>Post-write cache state (<code>PostWriteCacheNotTracked</code>) — independently breakable.</li>
+<li>Event emission (<code>EventPerWrite</code>) — independently breakable.</li>
 </ol>
-<p>These recur because they are <strong>not mechanically prevented</strong>. A code reviewer
-(human or AI) must catch them every time, and that is not sustainable.</p>
-<hr />
-<h2 id="2-current-anti-patterns-in-our-codebase">2. Current Anti-Patterns in Our Codebase<a class="headerlink" href="#2-current-anti-patterns-in-our-codebase" title="Permanent link">&para;</a></h2>
-<p>Detailed audit of recurring anti-patterns with file-path evidence. Each
-category maps to a proposed rule in section 4.1.</p>
+<p>The break-and-catch table above is the empirical evidence: breaks for
+(2), (3), (4) each trigger exactly one invariant without disturbing the
+others. An independent failure mode per claim is the definition of
+"this is really multiple specs pretending to be one".</p>
+<p>A secondary observation: WR-018's phrase <em>"never substitute, mutate,
+or synthesise fields"</em> collapses in TLA+ to a single field-wise
+equality. The three verbs are stylistic emphasis, not independent
+content. The cost of that emphasis in a Markdown-only world is zero;
+the cost in a world where reviewers are counting claims is a false
+signal that there are three things to check.</p>
+<h3 id="33-combined-consequence">3.3 Combined consequence<a class="headerlink" href="#33-combined-consequence" title="Permanent link">&para;</a></h3>
+<p>The two findings reinforce each other: the bugs TLC catches are easier
+to think about precisely because the invariants they violate have
+names. A spec item that bundles four claims under one label gives
+reviewers — human or AI — no hooks to attach verification to. A spec
+item that maps 1:1 to one named invariant can be reviewed as "is this
+invariant correctly stated, and did the code preserve it?" The
+TLA+ translation is the forcing function that produces the named hooks.</p>
+<h2 id="4-recommendations">4. Recommendations<a class="headerlink" href="#4-recommendations" title="Permanent link">&para;</a></h2>
+<h3 id="41-feeding-the-pr-450-review">4.1 Feeding the PR 450 review<a class="headerlink" href="#41-feeding-the-pr-450-review" title="Permanent link">&para;</a></h3>
+<p>PR 450's three-module plan (<code>Backend</code>, <code>Store</code>, <code>Observer</code>) is right in
+principle but over-scoped for a first commitment. Based on this PoC's
+data points:</p>
 <ul>
-<li><strong>No assertions (~35 instances):</strong> Tests that call a method but never
-  assert on the outcome. Examples: <code>test_ping.py</code>, <code>test_proxy.py:205</code>,
-  <code>test_config.py:82</code>. Mutation testing would flag all of these. → Rule 1.</li>
-<li><strong><code>isinstance</code> as primary assertion (~100+ instances):</strong> Verifies type,
-  not behavior. A <code>FileInfo</code> with wrong path/size/timestamp passes
-  <code>isinstance</code>. Examples: <code>test_store.py:136</code>, <code>test_sftp.py:130</code>. → Rule 2.</li>
-<li><strong>Private attribute access (~100+ instances):</strong> <code>assert obj._field == x</code>
-  couples tests to internals. Examples: <code>test_registry.py:61</code> (<code>_backends</code>),
-  <code>test_cache.py:151</code> (<code>_ttl</code>), <code>test_arrow.py:75</code> (<code>_store</code>). → Rule 3.</li>
-<li><strong>Unconstrained mocks (~67 instances):</strong> <code>MagicMock()</code> without <code>spec=</code>
-  accepts any call (68 total, 1 with <code>spec=</code>). Examples: <code>test_azure.py</code>
-  (46), <code>test_ping.py</code> (11), <code>test_depth_listing.py</code> (4). → Rule 4.</li>
+<li><strong>Keep the one-module-per-concern rule, drop the three-module
+  hierarchy.</strong> <code>EXTENDS</code> composition was not needed to express either
+  invariant in this PoC; stand-alone modules were cleaner.</li>
+<li><strong>Target spec items with demonstrable bundling, not abstract layers.</strong>
+  WR-018 was a concrete win because it had four visibly independent
+  claims. "Capability gate ordering" in the abstract does not.</li>
+<li><strong>Scope CI enforcement to modules that have survived break-and-catch.</strong>
+  Until a module demonstrates independent invariants (as these two did),
+  its CI value is aspirational.</li>
 </ul>
-<h3 id="summary-statistics">Summary Statistics<a class="headerlink" href="#summary-statistics" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Anti-Pattern</th>
-<th>Count</th>
-<th>Severity</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>No assertions (void call only)</td>
-<td>~35</td>
-<td>High</td>
-</tr>
-<tr>
-<td><code>isinstance</code> as primary assertion</td>
-<td>~100+</td>
-<td>Medium</td>
-</tr>
-<tr>
-<td>Private attribute access in assertions</td>
-<td>~100+</td>
-<td>Medium</td>
-</tr>
-<tr>
-<td>Unconstrained <code>MagicMock()</code></td>
-<td>~67</td>
-<td>Medium</td>
-</tr>
-<tr>
-<td>Factory helpers duplicating constructors</td>
-<td>~6</td>
-<td>Low</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="3-industry-best-practices">3. Industry Best Practices<a class="headerlink" href="#3-industry-best-practices" title="Permanent link">&para;</a></h2>
-<h3 id="31-the-core-principle-test-behavior-not-implementation">3.1 The Core Principle: Test Behavior, Not Implementation<a class="headerlink" href="#31-the-core-principle-test-behavior-not-implementation" title="Permanent link">&para;</a></h3>
-<p>Vladimir Khorikov (<em>Unit Testing: Principles, Practices, and Patterns</em>,
-Manning) defines the key insight:</p>
+<h3 id="42-proposed-repo-workflow">4.2 Proposed repo workflow<a class="headerlink" href="#42-proposed-repo-workflow" title="Permanent link">&para;</a></h3>
+<p>A lightweight rule that this PoC's data supports:</p>
 <blockquote>
-<p>Tests should verify <strong>units of behavior</strong> -- something meaningful for the
-problem domain -- not units of code. The number of classes it takes to
-implement that behavior is irrelevant.</p>
+<p>When adding a normative spec item with more than one conjunction in
+its Markdown statement, write the corresponding TLA+ invariant
+first. If the invariant decomposes into independent top-level
+conjuncts, split the spec item into that many sub-items <em>before</em>
+review.</p>
 </blockquote>
-<p>His four pillars of a good test:
-1. <strong>Protection against regressions</strong> -- catches real bugs
-2. <strong>Resistance to refactoring</strong> -- doesn't break on harmless changes
-3. <strong>Fast feedback</strong> -- runs quickly
-4. <strong>Maintainability</strong> -- easy to read and change</p>
-<p>Most of our anti-patterns violate pillar 2 (private attribute access,
-implementation-coupled mocks) or pillar 1 (no assertions, isinstance-only).</p>
-<p><strong>Important nuance:</strong> Khorikov's "the number of classes is irrelevant"
-applies to <em>what you test</em> (a unit of behavior may span classes). It does
-<strong>not</strong> mean the volume of test code is irrelevant. Pillar 4
-(maintainability) directly addresses this -- and our own history proves it.</p>
-<h3 id="32-test-code-economy-less-code-same-coverage-better-signal">3.2 Test Code Economy: Less Code, Same Coverage, Better Signal<a class="headerlink" href="#32-test-code-economy-less-code-same-coverage-better-signal" title="Permanent link">&para;</a></h3>
-<p><strong>Why bloated test suites are dangerous:</strong></p>
-<ol>
-<li><strong>Distraction.</strong> Meaningful tests buried among trivial ones; reviewers miss real issues.</li>
-<li><strong>False confidence.</strong> High test count masks low distinct behavioral coverage.</li>
-<li><strong>Maintenance drag.</strong> At ~1.3:1 test-to-production line ratio, refactoring costs double.</li>
-<li><strong>Anti-pattern camouflage.</strong> No-assertion tests hide in large classes but stand out in tight parametrized suites.</li>
-</ol>
-<p>Jay Fields (<em>Working Effectively with Unit Tests</em>):</p>
-<blockquote>
-<p>It's acceptable to delete tests that don't provide value. Tests are an
-investment; if the return is negative, cut your losses.</p>
-</blockquote>
-<p>BK-014 validated this: -8.6% test code, zero coverage loss (see section 1.2).</p>
-<h3 id="33-how-major-python-projects-test">3.3 How Major Python Projects Test<a class="headerlink" href="#33-how-major-python-projects-test" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Project</th>
-<th>Key Strategy</th>
-<th>Mocking Approach</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>requests</strong></td>
-<td>Real local HTTP server (pytest-httpbin)</td>
-<td>Adapter pattern as natural mock point</td>
-</tr>
-<tr>
-<td><strong>SQLAlchemy</strong></td>
-<td>In-memory SQLite for fast real DB tests</td>
-<td>Almost never mocks own internals</td>
-</tr>
-<tr>
-<td><strong>Django</strong></td>
-<td>Transaction-wrapped tests with auto-rollback</td>
-<td><code>--shuffle</code> flag to detect isolation bugs</td>
-</tr>
-<tr>
-<td><strong>FastAPI</strong></td>
-<td><code>TestClient</code> + dependency overrides</td>
-<td>DI as the testability mechanism</td>
-</tr>
-<tr>
-<td><strong>Pydantic</strong></td>
-<td>Extensive parametrization, property-based tests</td>
-<td>Minimal mocking</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Common theme:</strong> Prefer real dependencies over mocks. Use architecture
-(dependency injection, adapter pattern, functional core) to make code
-testable without mocks.</p>
-<h3 id="34-hynek-schlawack-dont-mock-what-you-dont-own">3.4 Hynek Schlawack: "Don't Mock What You Don't Own"<a class="headerlink" href="#34-hynek-schlawack-dont-mock-what-you-dont-own" title="Permanent link">&para;</a></h3>
-<p>Key principles from <a href="https://hynek.me/articles/what-to-mock-in-5-mins/">hynek.me</a>:</p>
-<ol>
-<li><strong>Never mock third-party code directly</strong> -- wrap it in your own function,
-   mock that wrapper</li>
-<li><strong>Keep test code paths close to production</strong> -- an in-process test server
-   is closer to reality than magically replacing a client with a fake</li>
-<li><strong>Use verified fakes</strong> over unconstrained mocks</li>
-<li><strong>Heavy mocking signals architectural problems</strong>, not testing problems</li>
-</ol>
-<p>His talk "Design Pressure" (PyCon US 2025) extends this: if you need many
-mocks, your code has a design problem. Push I/O to the edges ("Functional
-Core, Imperative Shell") and the core becomes trivially testable.</p>
-<h3 id="35-ned-batchelder-coverage-is-necessary-but-not-sufficient">3.5 Ned Batchelder: Coverage Is Necessary But Not Sufficient<a class="headerlink" href="#35-ned-batchelder-coverage-is-necessary-but-not-sufficient" title="Permanent link">&para;</a></h3>
-<p>From his <a href="https://nedbatchelder.com/blog/tag/coverage.html">blog</a> and talks:</p>
-<blockquote>
-<p>100% statement coverage doesn't mean much. There are dozens of ways your
-code or tests could still be broken. Statement coverage has taken you to
-the end of its road, and the bad news is, you aren't at your destination.</p>
-</blockquote>
-<p><strong>Implication for us:</strong> Our 95% coverage threshold is good as a floor, but
-it doesn't prevent tests with no assertions from inflating the number. We
-need quality metrics alongside quantity metrics.</p>
-<h3 id="36-property-based-testing-hypothesis">3.6 Property-Based Testing (Hypothesis)<a class="headerlink" href="#36-property-based-testing-hypothesis" title="Permanent link">&para;</a></h3>
-<p>Hypothesis generates random inputs and checks invariant properties.
-Hillel Wayne's insight: <strong>Contracts + Property-Based Testing = Integration
-Tests</strong> -- define invariants as contracts, let Hypothesis find violations.</p>
-<p>Candidate invariants for remote-store: write/read round-trip, path
-normalization idempotency, config serialization round-trip, batch operation
-completeness. Implementation details belong in the PR that adds these tests.</p>
-<h3 id="37-mutation-testing-pytest-gremlins">3.7 Mutation Testing (pytest-gremlins)<a class="headerlink" href="#37-mutation-testing-pytest-gremlins" title="Permanent link">&para;</a></h3>
-<p>Mutation testing answers: "If a bug were introduced, would my tests catch it?"
-A mutation testing tool systematically mutates production code and re-runs
-tests. Surviving mutants = potential undetected bugs. Our "no assertion"
-tests would be flagged immediately -- every mutant survives because nothing
-checks the output. Too slow for per-PR CI; run on a weekly schedule.</p>
-<p><strong>Tool choice: pytest-gremlins</strong> (v1.5+) selected over mutmut after
-evaluation. Key advantages:</p>
-<table>
-<thead>
-<tr>
-<th>Factor</th>
-<th>pytest-gremlins</th>
-<th>mutmut</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Integration</td>
-<td>Native pytest plugin (<code>pytest --gremlins</code>)</td>
-<td>Separate CLI</td>
-</tr>
-<tr>
-<td>Test selection</td>
-<td>Coverage-guided (only runs tests covering mutated line)</td>
-<td>Runs all tests per mutant</td>
-</tr>
-<tr>
-<td>Caching</td>
-<td>Incremental (content hash, skips unchanged code)</td>
-<td>File-based</td>
-</tr>
-<tr>
-<td>Speed</td>
-<td>3.7-13.8x faster in benchmarks</td>
-<td>Baseline</td>
-</tr>
-<tr>
-<td>Regression guard</td>
-<td>Pardon system (<code>--gremlin-max-pardons-pct</code>)</td>
-<td>Manual</td>
-</tr>
-<tr>
-<td>Parallelism</td>
-<td>Built-in multi-core</td>
-<td>Requires <code>--runners</code> flag</td>
-</tr>
-</tbody>
-</table>
-<p>mutmut would work but adds friction: separate CLI, no coverage-guided
-selection, slower I/O-bound mutations. pytest-gremlins fits our
-all-pytest workflow and keeps weekly CI budgets reasonable for ~12K
-source lines.</p>
-<h3 id="38-testing-retry-and-concurrency-behavior">3.8 Testing Retry and Concurrency Behavior<a class="headerlink" href="#38-testing-retry-and-concurrency-behavior" title="Permanent link">&para;</a></h3>
-<p>Two known gaps (M-14 concurrency, M-17 retry) require specific patterns:</p>
+<p>This is cheap (the TLA+ need not be verified to pay off — just
+written), mechanical (the count of top-level conjuncts is
+objective), and addresses the problem the ID-146 round surfaced:
+long spec PRs with bundled claims that survive review.</p>
+<h3 id="43-not-recommended">4.3 Not recommended<a class="headerlink" href="#43-not-recommended" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Retry testing:</strong> Controlled failure injection -- a deterministic fake
-  that fails N times then succeeds. Assert attempt count + final outcome,
-  never wall-clock time.</li>
-<li><strong>Concurrency testing:</strong> Invariant assertions under contention --
-  <code>ThreadPoolExecutor</code> with deterministic checks for no lost writes, no
-  partial reads, no duplicate entries, no deadlocks (timeout on the test).</li>
+<li>Promoting <code>sdd/research/tla-poc/</code> to <code>sdd/formal/tla/</code> until at least
+  one TLA+ check would have caught a historical spec bug on a real
+  branch. A seeded break is evidence the tool works; a caught
+  regression is evidence the workflow pays.</li>
+<li>CI gating. The existing Dafny job is optional for a reason; adding a
+  mandatory TLA+ gate on the back of a two-module PoC would be
+  over-confident.</li>
+<li>Larger models covering more of spec 045 in one file. The
+  decomposition argument cuts against it.</li>
 </ul>
-<p>Full code examples belong in the PR that implements these tests.</p>
-<hr />
-<h2 id="4-proposed-testing-rules-for-remote-store">4. Proposed Testing Rules for remote-store<a class="headerlink" href="#4-proposed-testing-rules-for-remote-store" title="Permanent link">&para;</a></h2>
-<h3 id="41-the-eight-rules">4.1 The Eight Rules<a class="headerlink" href="#41-the-eight-rules" title="Permanent link">&para;</a></h3>
-<p>These rules should be added to <code>sdd/DESIGN.md</code> section 11 (Test Style) and
-enforced in code review:</p>
-<p><strong>Rule 1: Every test must have at least one meaningful assertion.</strong> [CI-enforced]
-"No crash" is not a test. If the method returns void and the point is that
-it doesn't raise, add a post-condition assertion proving the system is in
-the expected state. Every public API method should also have at least one
-failure-path test (<code>pytest.raises</code> with <code>match=</code>).</p>
-<p><strong>Rule 2: Assert behavior, not types.</strong> [review-enforced]
-Replace <code>assert isinstance(x, FileInfo)</code> with assertions on <code>x.path</code>,
-<code>x.size</code>, or <code>x.name</code>. The type is already guaranteed by the type checker.</p>
-<p><strong>Rule 3: Never assert on private attributes.</strong> [review-enforced]
-If you need to verify internal state, either (a) expose it through a public
-API, or (b) verify it through observable behavior. <code>assert obj._field == x</code>
-is banned in new tests. Exception: if no public observable exists, annotate
-with <code># internal: no public observable</code> and justify in the PR.</p>
-<p><strong>Rule 4: Always use <code>spec=</code> (or <code>spec_set=</code>) with MagicMock.</strong> [CI-enforced]
-<code>MagicMock()</code> without spec is banned. Use <code>MagicMock(spec=RealClass)</code> or
-<code>create_autospec(RealClass)</code> to constrain mocks to real interfaces.</p>
-<p><strong>Rule 5: Don't mock what you don't own.</strong> [review-enforced]
-Never <code>patch("boto3.client")</code> or <code>patch("paramiko.SFTPClient")</code>. Instead,
-mock at our own boundary (the Backend ABC or a wrapper function).</p>
-<p><strong>Rule 6: Prefer real dependencies over mocks.</strong> [review-enforced]
-Use <code>MemoryBackend</code> or in-memory SQLite over mocked backends. Use
-<code>pytest-httpserver</code> over mocked HTTP clients. Reserve mocks for external
-services that can't be run locally.</p>
-<p><strong>Rule 7: Maximize behavioral coverage per line of test code.</strong> [review-enforced]
-Parametrize similar tests instead of writing separate methods. Merge
-single-method test classes. Delete tests subsumed by others. Three
-parametrized cases in 10 lines beat three methods in 30 lines -- same
-coverage, one-third the maintenance surface. (See BK-014: -8.6% test
-code, zero coverage loss.) When removing a test, verify via coverage that
-the deleted path is still exercised by remaining tests.</p>
-<p><strong>Rule 8: Tests must survive refactoring.</strong> [review-enforced]
-If renaming a private method or changing internal data structures would
-break a test without changing behavior, the test is coupled to
-implementation. Fix the test.</p>
-<h3 id="42-ruff-pt-rules-mechanical-enforcement">4.2 Ruff PT Rules (Mechanical Enforcement)<a class="headerlink" href="#42-ruff-pt-rules-mechanical-enforcement" title="Permanent link">&para;</a></h3>
-<p>Add to <code>pyproject.toml</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[tool.ruff.lint]</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">extend-select</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;PT&quot;</span><span class="p">]</span><span class="w">  </span><span class="c1"># flake8-pytest-style</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">[tool.ruff.lint.flake8-pytest-style]</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">raises-require-match-for</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="s2">&quot;ValueError&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;TypeError&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;KeyError&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;RuntimeError&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="s2">&quot;NotFound&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;AlreadyExists&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CapabilityNotSupported&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="s2">&quot;BackendUnavailable&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PermissionDenied&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">]</span>
-</code></pre></div>
-<p>Key PT rules that catch our recurring issues:
-- <strong>PT011</strong>: <code>pytest.raises()</code> too broad (no <code>match=</code>) -- prevents lazy
-  exception checks
-- <strong>PT018</strong>: Composite assertions should use multiple <code>assert</code> statements
-- <strong>PT006/PT007</strong>: Consistent parametrize style</p>
-<h3 id="43-ci-enforced-checks">4.3 CI-Enforced Checks<a class="headerlink" href="#43-ci-enforced-checks" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Check</th>
-<th>Rule</th>
-<th>Phase</th>
-<th>Effort</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>AST check: test has no <code>assert</code> and no <code>pytest.raises</code></td>
-<td>Rule 1</td>
-<td><strong>1</strong></td>
-<td>Low (script)</td>
-</tr>
-<tr>
-<td>Grep: <code>MagicMock(</code> without <code>spec=</code> or <code>autospec=</code></td>
-<td>Rule 4</td>
-<td><strong>1</strong></td>
-<td>Low (grep)</td>
-</tr>
-<tr>
-<td><code>--cov-branch</code></td>
-<td>Coverage quality</td>
-<td><strong>1</strong></td>
-<td>Low (flag)</td>
-</tr>
-<tr>
-<td><code>diff-cover --fail-under=90</code></td>
-<td>New code without tests</td>
-<td><strong>2</strong></td>
-<td>Low (pip)</td>
-</tr>
-<tr>
-<td><code>pytest-gremlins</code> baseline run (diagnostic, not blocking)</td>
-<td>Assertion quality</td>
-<td><strong>2</strong></td>
-<td>Medium</td>
-</tr>
-<tr>
-<td><code>pytest-smell --ci</code></td>
-<td>17 types of test smells</td>
-<td><strong>3</strong></td>
-<td>Low (pip)</td>
-</tr>
-<tr>
-<td><code>pytest-gremlins</code> weekly with threshold</td>
-<td>Assertion quality gate</td>
-<td><strong>3</strong></td>
-<td>Medium</td>
-</tr>
-</tbody>
-</table>
-<h3 id="44-pr-review-checklist">4.4 PR Review Checklist<a class="headerlink" href="#44-pr-review-checklist" title="Permanent link">&para;</a></h3>
-<p>Add to the PR template as a reviewer aid:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gu">### Test review</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">- [ ]</span> Every new test has at least one <span class="sb">`assert`</span> or <span class="sb">`pytest.raises`</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">- [ ]</span> Assertions are behavioral (not <span class="sb">`isinstance`</span>-only, not type-only)
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">- [ ]</span> No new <span class="sb">`._private`</span> attribute access in assertions (or justified)
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">- [ ]</span> Mocks use <span class="sb">`spec=`</span> or <span class="sb">`create_autospec`</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">- [ ]</span> Failure path covered for new/changed public API methods
-</code></pre></div>
-<h3 id="45-claudemd-additions">4.5 CLAUDE.md Additions<a class="headerlink" href="#45-claudemd-additions" title="Permanent link">&para;</a></h3>
-<p>Add a <code>## Testing rules</code> section to CLAUDE.md summarizing the 8 rules above
-with CI/review enforcement tags. See section 4.1 for the full text. The
-actual CLAUDE.md edit will be reviewed in its own implementation PR.</p>
-<hr />
-<h2 id="5-phased-adoption-plan">5. Phased Adoption Plan<a class="headerlink" href="#5-phased-adoption-plan" title="Permanent link">&para;</a></h2>
-<h3 id="phase-1-prevent-new-anti-patterns-immediate">Phase 1: Prevent New Anti-Patterns (Immediate)<a class="headerlink" href="#phase-1-prevent-new-anti-patterns-immediate" title="Permanent link">&para;</a></h3>
+<h2 id="5-limitations">5. Limitations<a class="headerlink" href="#5-limitations" title="Permanent link">&para;</a></h2>
 <ul>
-<li>[ ] Add the 8 testing rules to <code>sdd/DESIGN.md</code> section 11</li>
-<li>[ ] Add testing rules summary (with CI/review tags) to <code>CLAUDE.md</code></li>
-<li>[ ] Enable Ruff <code>PT</code> rules in <code>pyproject.toml</code></li>
-<li>[ ] Switch coverage to branch mode (<code>--cov-branch</code>)</li>
-<li>[ ] Add CI check: fail if test function has no <code>assert</code> and no <code>pytest.raises</code></li>
-<li>[ ] Add CI grep check: fail if <code>MagicMock(</code> appears without <code>spec=</code></li>
-<li>[ ] Add PR review checklist to PR template (section 4.4)</li>
+<li><strong>Bounded models.</strong> TLC's guarantees are finite-state. <code>MaxClock=4</code>
+  with two paths and two data sizes enumerates cleanly; scaling
+  constants changes runtime from milliseconds to minutes.</li>
+<li><strong>WR-008 gating not modelled.</strong> WR-008 requires <code>head()</code> to raise
+  <code>CapabilityNotSupported</code> when the backend lacks <code>METADATA</code>. Because
+  <code>HeadResult</code> is a pure function (not an action), the capability gate
+  cannot be expressed as a reachability property in this module.
+  Only the field-mapping half of WR-008 is checked.</li>
+<li><strong>PostWriteCacheNotTracked is stronger than WR-018.</strong> The model has
+  no <code>Read</code> action, so a legitimate post-read cache re-population
+  cannot happen. The invariant therefore bans tracking a written path
+  forever, not just at write time.</li>
+<li><strong>Method collapse.</strong> WR-018 names <code>write</code>, <code>write_text</code>, and
+  <code>write_atomic</code>. All three collapse into one <code>Write(p, sz)</code> action
+  in <code>WR018ProxyForwarding</code>. The structural claims (forwarding,
+  invalidation, event emission) are identical for all three, so the
+  simplification is valid for those; the model cannot catch a proxy
+  that handles one method differently from another.</li>
+<li><strong>No async.</strong> Spec 029 (async Store API) is not modelled; async
+  concurrency is the regime where TLC's interleaving enumeration is
+  most valuable, and also where authoring cost is highest.</li>
+<li><strong>Translation risk.</strong> A TLA+ module can be internally consistent
+  and still misrepresent the Markdown. This PoC mitigated it by
+  seeding deliberate bugs and confirming TLC caught them at minimum
+  depth; it does not eliminate it.</li>
 </ul>
-<h3 id="phase-2-fix-existing-anti-patterns-diagnostics-next-sprint">Phase 2: Fix Existing Anti-Patterns + Diagnostics (Next Sprint)<a class="headerlink" href="#phase-2-fix-existing-anti-patterns-diagnostics-next-sprint" title="Permanent link">&para;</a></h3>
+<h2 id="6-artefacts">6. Artefacts<a class="headerlink" href="#6-artefacts" title="Permanent link">&para;</a></h2>
 <ul>
-<li>[ ] Fix all ~35 "no assertion" tests (add meaningful post-conditions)</li>
-<li>[ ] Replace top ~20 <code>isinstance</code>-only assertions with behavioral checks</li>
-<li>[ ] Add <code>spec=</code> to all existing <code>MagicMock()</code> calls</li>
-<li>[ ] Replace private attribute assertions in <code>test_registry.py</code>,
-  <code>test_cache.py</code>, <code>test_proxy.py</code> with public API checks</li>
-<li>[ ] Add <code>diff-cover</code> to PR CI (fail-under=90 for new code)</li>
-<li>[ ] Run <code>pytest-gremlins</code> baseline (diagnostic only, establish starting score)</li>
-<li>[ ] Add concurrency test suite for thread-safety claims (M-14)</li>
+<li><code>sdd/research/tla-poc/WriteHeadRoundTrip.tla</code> + <code>MC.tla</code> + <code>MC.cfg</code></li>
+<li><code>sdd/research/tla-poc/WR018ProxyForwarding.tla</code> + <code>MC2.tla</code> + <code>MC2.cfg</code></li>
+<li><code>scripts/tlc.Dockerfile</code>, <code>scripts/tlc_check.sh</code></li>
+<li>Run: <code>bash scripts/tlc_check.sh sdd/research/tla-poc MC</code>
+  or <code>... MC2</code></li>
 </ul>
-<h3 id="phase-3-advanced-quality-measures-future">Phase 3: Advanced Quality Measures (Future)<a class="headerlink" href="#phase-3-advanced-quality-measures-future" title="Permanent link">&para;</a></h3>
-<ul>
-<li>[ ] Add <code>pytest-gremlins</code> to weekly CI schedule with threshold gate</li>
-<li>[ ] Add <code>pytest-smell --ci</code> to lint step</li>
-<li>[ ] Add retry testing with controlled failure injection fakes (M-17)</li>
-<li>[ ] Explore Hypothesis for round-trip and path normalization properties
-  (provide 2-3 canonical examples in-repo)</li>
-<li>[ ] Create a <code>TestingBackend</code> (controlled fake) to replace mock injection
-  in tests like <code>test_registry.py:119</code></li>
-</ul>
-<hr />
-<h2 id="6-references">6. References<a class="headerlink" href="#6-references" title="Permanent link">&para;</a></h2>
-<h3 id="books">Books<a class="headerlink" href="#books" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Vladimir Khorikov, <em>Unit Testing: Principles, Practices, and Patterns</em> (<a href="https://www.manning.com/books/unit-testing">Manning</a>) — cited in §3.1</li>
-<li>Jay Fields, <em>Working Effectively with Unit Tests</em> (<a href="https://leanpub.com/wewut">Leanpub</a>) — cited in §3.2</li>
-</ul>
-<h3 id="articles-talks">Articles &amp; Talks<a class="headerlink" href="#articles-talks" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Hynek Schlawack, <a href="https://hynek.me/articles/what-to-mock-in-5-mins/">"Don't Mock What You Don't Own" in 5 Minutes</a> — cited in §3.4</li>
-<li>Hynek Schlawack, <a href="https://hynek.me/talks/design-pressure/">"Design Pressure"</a> (PyCon US 2025) — cited in §3.4</li>
-<li>Ned Batchelder, <a href="https://nedbatchelder.com/blog/200710/flaws_in_coverage_measurement.html">"Flaws in Coverage Measurement"</a> — cited in §3.5</li>
-<li>Hillel Wayne, <a href="https://www.hillelwayne.com/post/pbt-contracts/">"Property Tests + Contracts = Integration Tests"</a> — cited in §3.6</li>
-<li>Google Testing Blog, <a href="https://testing.googleblog.com/2013/08/testing-on-toilet-test-behavior-not.html">"Test Behavior, Not Implementation"</a> — cited in §3.1</li>
-</ul>
-<h3 id="tools">Tools<a class="headerlink" href="#tools" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Tool</th>
-<th>Purpose</th>
-<th>Link</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Hypothesis</td>
-<td>Property-based testing</td>
-<td><a href="https://github.com/HypothesisWorks/hypothesis">github.com/HypothesisWorks/hypothesis</a></td>
-</tr>
-<tr>
-<td>pytest-gremlins</td>
-<td>Mutation testing (selected)</td>
-<td><a href="https://pypi.org/project/pytest-gremlins/">pypi.org/project/pytest-gremlins</a></td>
-</tr>
-<tr>
-<td>mutmut</td>
-<td>Mutation testing (considered)</td>
-<td><a href="https://github.com/boxed/mutmut">github.com/boxed/mutmut</a></td>
-</tr>
-<tr>
-<td>pytest-smell</td>
-<td>Test smell detection</td>
-<td><a href="https://pypi.org/project/pytest-smell/">pypi.org/project/pytest-smell</a></td>
-</tr>
-<tr>
-<td>diff-cover</td>
-<td>Delta coverage on PRs</td>
-<td><a href="https://pypi.org/project/diff-cover/">pypi.org/project/diff-cover</a></td>
-</tr>
-<tr>
-<td>Ruff PT rules</td>
-<td>Test style linting</td>
-<td><a href="https://docs.astral.sh/ruff/rules/#flake8-pytest-style-pt">docs.astral.sh/ruff/rules/#flake8-pytest-style-pt</a></td>
-</tr>
-<tr>
-<td>pytest-httpserver</td>
-<td>Real HTTP in tests</td>
-<td><a href="https://pypi.org/project/pytest-httpserver/">pypi.org/project/pytest-httpserver</a></td>
-</tr>
-</tbody>
-</table>
 
 
 
