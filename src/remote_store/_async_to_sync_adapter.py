@@ -175,13 +175,18 @@ class AsyncBackendSyncAdapter(Backend):
     def capabilities(self) -> CapabilitySet:
         """Capabilities with ASYNC-084 translation applied.
 
-        ``SEEKABLE_READ`` is masked off unconditionally -- the chunk-pull
-        stream this adapter returns is forward-only.  All other flags
-        are preserved verbatim from the wrapped backend.
+        ``SEEKABLE_READ`` is masked off unconditionally — the chunk-pull
+        stream this adapter returns is forward-only.
+
+        ``WRITE_RESULT_NATIVE`` and ``USER_METADATA`` are masked off until
+        the async ABC grows a ``metadata=`` parameter (Step 3c).  Without
+        masking, the Store layer would allow non-empty ``metadata=`` through
+        (WR-010 gate passes), but the adapter has no forwarding target and
+        would silently drop the metadata — a WR-012 violation.
         """
+        _MASKED = {Capability.SEEKABLE_READ, Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA}
         inner = self._async_backend.capabilities
-        translated: set[Capability] = {cap for cap in inner if cap is not Capability.SEEKABLE_READ}
-        return CapabilitySet(translated)
+        return CapabilitySet({cap for cap in inner if cap not in _MASKED})
 
     # -- Non-I/O passthrough (no loop, no thread) ---------------------------
 

@@ -692,6 +692,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if "extra" in self._optional_columns:
                 col_names.append("extra")
                 select_cols.append(t.c.extra)
+            if "user_metadata" in self._optional_columns:
+                col_names.append("user_metadata")
+                select_cols.append(t.c.user_metadata)
 
             conn.execute(
                 t.insert().from_select(
