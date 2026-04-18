@@ -9112,7 +9112,7 @@ the capability is declared. The flag advertises which fields in the returned
 </tr>
 <tr>
 <td><code>SQLBlobBackend</code></td>
-<td>yes</td>
+<td>yes — when <code>user_metadata</code> column is present; no otherwise (dynamic)</td>
 </tr>
 <tr>
 <td><code>S3PyArrowBackend</code></td>
@@ -9125,6 +9125,10 @@ the capability is declared. The flag advertises which fields in the returned
 <tr>
 <td><code>LocalBackend</code></td>
 <td>no</td>
+</tr>
+<tr>
+<td><code>AsyncBackendSyncAdapter</code></td>
+<td>no — masked unconditionally regardless of what the inner async backend declares (see WR-010)</td>
 </tr>
 </tbody>
 </table>
@@ -9162,7 +9166,7 @@ WR-011). This keeps the gate consistent with WR-011's rule that
 </tr>
 <tr>
 <td><code>SQLBlobBackend</code></td>
-<td>yes</td>
+<td>yes — when <code>user_metadata</code> column is present; no otherwise (dynamic)</td>
 </tr>
 <tr>
 <td><code>S3PyArrowBackend</code></td>
@@ -9176,8 +9180,20 @@ WR-011). This keeps the gate consistent with WR-011's rule that
 <td><code>LocalBackend</code></td>
 <td>no</td>
 </tr>
+<tr>
+<td><code>AsyncBackendSyncAdapter</code></td>
+<td>no — masked unconditionally (see below)</td>
+</tr>
 </tbody>
 </table>
+<p><strong>Adapter masking.</strong> <code>AsyncBackendSyncAdapter</code> strips both <code>WRITE_RESULT_NATIVE</code>
+and <code>USER_METADATA</code> from the inner async backend's capability set, even when the
+wrapped backend declares them. This is the strict-gate-on-kwarg pattern (ADR-0026)
+applied defensively: without masking, the Store layer's WR-010 gate would pass a
+non-empty <code>metadata=</code> through to the adapter, but the adapter's <code>write*()</code> methods
+do not forward <code>metadata=</code> to the async backend (the async ABC does not yet accept
+it — Step 3c). Masking ensures <code>CapabilityNotSupported</code> is raised at the gate
+rather than silently dropping the metadata, preserving the WR-012 echo guarantee.</p>
 <h2 id="wr-011-metadata-validation">WR-011: metadata Validation<a class="headerlink" href="#wr-011-metadata-validation" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>metadata</code> is <code>Mapping[str, str]</code>. Validation is performed at the
 Store layer (one place, not per-backend) <strong>before</strong> the WR-010 capability

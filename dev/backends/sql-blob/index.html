@@ -2402,6 +2402,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#user-metadata-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User metadata column
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#using-an-existing-table" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8735,6 +8746,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#user-metadata-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User metadata column
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#using-an-existing-table" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8983,17 +9005,27 @@
 <h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
 <p>The default table schema:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">remote_store_objects</span><span class="w"> </span><span class="p">(</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="k">key</span><span class="w">          </span><span class="nb">TEXT</span><span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="k">data</span><span class="w">         </span><span class="nb">BLOB</span><span class="w">    </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="k">size</span><span class="w">         </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="n">modified_at</span><span class="w">  </span><span class="nb">REAL</span><span class="w">    </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="n">content_type</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="n">digest</span><span class="w">       </span><span class="nb">TEXT</span><span class="p">,</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="n">extra</span><span class="w">        </span><span class="nb">TEXT</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="p">);</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="k">key</span><span class="w">           </span><span class="nb">TEXT</span><span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="k">data</span><span class="w">          </span><span class="nb">BLOB</span><span class="w">    </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="k">size</span><span class="w">          </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="n">modified_at</span><span class="w">   </span><span class="nb">REAL</span><span class="w">    </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="n">content_type</span><span class="w">  </span><span class="nb">TEXT</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="n">digest</span><span class="w">        </span><span class="nb">TEXT</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="n">extra</span><span class="w">         </span><span class="nb">TEXT</span><span class="p">,</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="n">user_metadata</span><span class="w"> </span><span class="nb">TEXT</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">);</span>
+</code></pre></div>
+<h3 id="user-metadata-column">User metadata column<a class="headerlink" href="#user-metadata-column" title="Permanent link">&para;</a></h3>
+<p>When the <code>user_metadata</code> column is present, <code>SQLBlobBackend</code> declares the
+<code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code> capabilities. When absent (legacy
+tables), neither is declared — a <code>Store.write*()</code> call with a non-empty
+<code>metadata=</code> kwarg raises <code>CapabilityNotSupported</code> before any I/O runs.</p>
+<p>To add the column to an existing table:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1">-- hand-written: schema migrations cannot run in CI</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">remote_store_objects</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">user_metadata</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="using-an-existing-table">Using an existing table<a class="headerlink" href="#using-an-existing-table" title="Permanent link">&para;</a></h3>
-<p>Set <code>create_table=False</code> to use a pre-existing table. Minimum required columns: <code>key TEXT</code> (primary key) and <code>data BLOB</code>. Optional columns (<code>size</code>, <code>modified_at</code>, <code>content_type</code>, <code>digest</code>, <code>extra</code>) are detected automatically; missing ones degrade gracefully.</p>
+<p>Set <code>create_table=False</code> to use a pre-existing table. Minimum required columns: <code>key TEXT</code> (primary key) and <code>data BLOB</code>. Optional columns (<code>size</code>, <code>modified_at</code>, <code>content_type</code>, <code>digest</code>, <code>extra</code>, <code>user_metadata</code>) are detected automatically; missing ones degrade gracefully.</p>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <p>Supports all capabilities except <code>LAZY_READ</code> — the entire blob is loaded into memory before a stream is returned.
 See the <a href="../../capabilities-matrix/">capabilities matrix</a> for full details.</p>

@@ -11232,15 +11232,20 @@
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
-<p><strong><code>WriteResult</code> model + <code>WRITE_RESULT_NATIVE</code>/<code>USER_METADATA</code> capabilities</strong> (ID-146, steps 1–2):
-  <code>WriteResult</code> is a new frozen dataclass returned by <code>Store.write*()</code> methods,
+<p><strong><code>WriteResult</code> model + <code>WRITE_RESULT_NATIVE</code>/<code>USER_METADATA</code> capabilities</strong> (ID-146, steps 1–3b):
+  <code>WriteResult</code> is a new frozen dataclass returned by backend <code>write*()</code> methods,
   carrying <code>path</code>, <code>size</code>, <code>source</code>, <code>digest</code>, <code>etag</code>, <code>version_id</code>,
   <code>last_modified</code>, and <code>metadata</code>. <code>FileInfo.metadata: Mapping[str, str] | None</code>
   is added (defaults to <code>None</code>). Two new <code>Capability</code> members:
   <code>WRITE_RESULT_NATIVE</code> (quality flag — advertises rich <code>WriteResult</code> fields from
   the backend write response) and <code>USER_METADATA</code> (strict gate on the non-empty
-  <code>metadata=</code> kwarg in write methods). Backend return-type widening and Store-layer
-  gate land in subsequent PRs.</p>
+  <code>metadata=</code> kwarg in write methods). All backends now return <code>WriteResult</code> from
+  <code>write*()</code> — Azure, S3, and Memory declare <code>WRITE_RESULT_NATIVE</code> and
+  <code>USER_METADATA</code>; <code>SQLBlobBackend</code> declares both only when the backing table
+  has a <code>user_metadata</code> column (schema-dependent), neither for legacy tables
+  without it; basic backends (Local, SFTP, S3PyArrow, HTTP,
+  <code>AsyncBackendSyncAdapter</code>) declare neither. Store-layer gate and <code>ext.write</code>
+  helpers land in step 4.</p>
 </li>
 <li>
 <p><strong><code>AsyncBackendSyncAdapter</code></strong> (ID-141–143c): new public class wrapping any

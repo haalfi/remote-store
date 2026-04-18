@@ -9925,7 +9925,13 @@ seekable. Override for efficiency when the backend supports range reads.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">content</span><span class="p">:</span> <span class="n"><span title="remote_store._types.WritableContent">WritableContent</span></span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -9959,6 +9965,58 @@ seekable. Override for efficiency when the backend supports range reads.</p>
           –
           <div class="doc-md-description">
             <p>If <code>False</code>, raise if file already exists.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>metadata</code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional user-supplied key/value pairs to store alongside the
+file. Only honoured when the backend declares <code>USER_METADATA</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p>A <code>WriteResult</code> with at least <code>path</code> and <code>size</code> populated.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p>Backends declaring <code>WRITE_RESULT_NATIVE</code> also populate <code>etag</code>,</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p><code>last_modified</code>, and where available <code>digest</code> and <code>version_id</code>.</p>
           </div>
         </li>
     </ul>
@@ -10004,7 +10062,13 @@ seekable. Override for efficiency when the backend supports range reads.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">content</span><span class="p">:</span> <span class="n"><span title="remote_store._types.WritableContent">WritableContent</span></span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -10038,6 +10102,33 @@ seekable. Override for efficiency when the backend supports range reads.</p>
           –
           <div class="doc-md-description">
             <p>If <code>False</code>, raise if file already exists.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>metadata</code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional user-supplied key/value pairs (see <code>write()</code>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p>A <code>WriteResult</code> (same contract as <code>write()</code>).</p>
           </div>
         </li>
     </ul>

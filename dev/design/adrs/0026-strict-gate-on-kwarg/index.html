@@ -5434,6 +5434,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#adapter-masking-as-a-defensive-application-of-the-strict-gate-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapter masking as a defensive application of the strict-gate pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8658,6 +8669,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#adapter-masking-as-a-defensive-application-of-the-strict-gate-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapter masking as a defensive application of the strict-gate pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8811,6 +8833,20 @@ instances of this pattern go in this table.</p>
 <li>Document per-backend declarations in the feature spec (e.g., WR-010).</li>
 <li>Add negative tests: every non-declaring backend raises on the guarded kwarg.</li>
 </ol>
+<h3 id="adapter-masking-as-a-defensive-application-of-the-strict-gate-pattern">Adapter masking as a defensive application of the strict-gate pattern<a class="headerlink" href="#adapter-masking-as-a-defensive-application-of-the-strict-gate-pattern" title="Permanent link">&para;</a></h3>
+<p><code>AsyncBackendSyncAdapter</code> applies the pattern defensively via capability masking.
+It strips <code>USER_METADATA</code> (and <code>WRITE_RESULT_NATIVE</code>) from the inner async
+backend's capability set, even when the wrapped backend declares them.  Without
+masking, the Store-layer WR-010 gate would pass a non-empty <code>metadata=</code> argument
+through to the adapter, but the adapter has no forwarding target — the async ABC
+does not yet accept <code>metadata=</code>.  A silent drop would violate WR-012 (the
+<code>WriteResult.metadata</code> echo guarantee) without triggering any error.</p>
+<p>Masking is the mechanism that keeps the strict-gate invariant intact across
+adapter wrapping: the gate fires at the Store layer (<code>CapabilityNotSupported</code>)
+before the adapter is reached, so no I/O runs and no metadata is silently lost.
+This is not an exception to the pattern; it is the same pattern applied one layer
+earlier.  When the async ABC grows <code>metadata=</code> support (Step 3c), the masking is
+removed and the adapter naturally inherits the inner backend's declarations.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Callers get a clear, early error rather than a silent correctness failure.</li>
