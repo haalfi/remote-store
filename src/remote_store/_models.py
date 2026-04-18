@@ -101,6 +101,7 @@ class FileInfo:
         return hash(self.path)
 
 
+# Field-wise eq/hash by design (WR-001a) — intentionally different from the path-based eq=False on sibling models.
 @dataclasses.dataclass(frozen=True)
 class WriteResult:
     """Immutable snapshot of a completed write operation.

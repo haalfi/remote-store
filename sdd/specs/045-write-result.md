@@ -55,8 +55,12 @@ is expressed against it.
 **Postconditions:**
 
 - Attribute assignment raises `FrozenInstanceError`.
-- `WriteResult` supports equality and hashing by field-wise value
-  (standard dataclass behaviour).
+- `WriteResult` supports equality by field-wise value (standard dataclass
+  behaviour). It is hashable when all field values are hashable; `metadata`
+  (typed `Mapping[str, str] | None`) is hashable only when `None` or
+  backed by an immutable mapping — a plain `dict` makes `hash(wr)` raise
+  `TypeError`. Use `_hashable_write_result_st` (the PBT strategy) when
+  hash properties must be tested.
 
 **See also:** [035-content-digest.md](035-content-digest.md) for
 `ContentDigest`; RFC-0011 § Proposal for the canonical Python
@@ -121,17 +125,21 @@ returns `WriteResult.digest is None` on every backend that does not surface a
 server-verified or backend-echoed content hash on its write response. No
 streaming hash wrapper is inserted on the default path.
 
-**Current backend set (v1):** No v1 backend surfaces a server-verified
-digest on the default write path. Azure echoes the client-supplied MD5 as
-`ContentDigest("md5", …)` in `WriteResult.digest`; that value is
-client-originated but surfaces what the backend stored, so it falls under
-the "backend-echoed" clause. S3's single-PUT `ETag` is explicitly documented
-as *not* a content hash; multipart `ETag` values have the form
-`"<md5-of-part-md5s>-<N>"`. So in v1 the invariant simplifies to
-"`digest is None` on every backend except Azure when the caller supplied an
-MD5," but the invariant is written so that a future backend surfacing a
-server-verified digest (e.g., opt-in S3 `ChecksumSHA256`) does not require
-amending WR-007.
+**Current backend set (v1):**
+
+- *Server-verified digest:* none. No v1 backend surfaces a server-verified
+  content digest on the default write path. S3's single-PUT `ETag` is
+  explicitly documented as *not* a content hash; multipart `ETag` values
+  have the form `"<md5-of-part-md5s>-<N>"`.
+- *Backend-echoed digest:* Azure only. Azure echoes the client-supplied MD5
+  as `ContentDigest("md5", …)` in `WriteResult.digest` when the caller
+  supplied an MD5 on the write request. That value is client-originated but
+  surfaces what the backend stored, satisfying the "backend-echoed" clause.
+  All other v1 backends return `WriteResult.digest is None`.
+
+The invariant is written to accommodate a future backend surfacing a
+server-verified digest (e.g., opt-in S3 `ChecksumSHA256`) without amending
+WR-007.
 
 ## WR-008: Store.head() Gating and Semantics
 

@@ -153,12 +153,11 @@ class TestWriteResultNative:
 
 
 class TestUserMetadata:
-    """WR-010: USER_METADATA is a strict gate on the metadata= kwarg.
+    """WR-010 (CapabilitySet layer): USER_METADATA membership declared/absent.
 
-    CapabilitySet-layer: membership declared/absent.
-    Store-layer (Step 4): gate firing — non-empty metadata= raises
-    CapabilityNotSupported; metadata=None and metadata={} are no-ops even
-    on non-declaring backends.
+    Gate firing (non-empty metadata= raises CapabilityNotSupported) and the
+    empty-mapping carve-out (metadata=None / metadata={} are no-ops) are
+    Store-layer concerns tested in Step 4.
     """
 
     @pytest.mark.spec("WR-010")

@@ -67,7 +67,7 @@ class TestFileInfoFields:
     @pytest.mark.spec("CDG-004")
     def test_defaults(self) -> None:
         fi = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW)
-        assert (fi.digest, fi.etag, fi.content_type, fi.extra) == (None, None, None, {})
+        assert (fi.digest, fi.etag, fi.content_type, fi.extra, fi.metadata) == (None, None, None, {}, None)
 
     @pytest.mark.spec("MOD-003")
     @pytest.mark.spec("CDG-004")

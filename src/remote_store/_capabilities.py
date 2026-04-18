@@ -91,7 +91,9 @@ class Capability(enum.Enum):
       ``digest``) directly from its write response.  Does **not** gate
       any method — ``Store.write*()`` works on every backend.
       Backends without this flag return a ``WriteResult`` with only
-      ``path`` and ``size`` populated (``source == "basic"``).
+      ``path`` and ``size`` populated (``source == "basic"``);
+      ``metadata`` is governed independently by the ``USER_METADATA``
+      gate (WR-005, WR-012) and is not subject to this flag.
       Use ``store.supports(Capability.WRITE_RESULT_NATIVE)`` to decide
       whether to call ``store.get_file_info()`` after a write if you
       need the full metadata set.

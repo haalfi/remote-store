@@ -26,6 +26,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- **`WriteResult` model + `WRITE_RESULT_NATIVE`/`USER_METADATA` capabilities** (ID-146, steps 1–2):
+  `WriteResult` is a new frozen dataclass returned by `Store.write*()` methods,
+  carrying `path`, `size`, `source`, `digest`, `etag`, `version_id`,
+  `last_modified`, and `metadata`. `FileInfo.metadata: Mapping[str, str] | None`
+  is added (defaults to `None`). Two new `Capability` members:
+  `WRITE_RESULT_NATIVE` (quality flag — advertises rich `WriteResult` fields from
+  the backend write response) and `USER_METADATA` (strict gate on the non-empty
+  `metadata=` kwarg in write methods). Backend return-type widening and Store-layer
+  gate land in subsequent PRs.
+
 - **`AsyncBackendSyncAdapter`** (ID-141–143c): new public class wrapping any
   `AsyncBackend` as a synchronous `Backend` via a private event loop on a
   dedicated daemon thread. Design in ADR-0025; spec 029 § AsyncBackendSyncAdapter
