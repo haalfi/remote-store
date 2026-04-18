@@ -386,9 +386,17 @@ class AsyncBackendSyncAdapter(Backend):
         from remote_store._models import WriteResult
         from remote_store._path import RemotePath
 
-        # metadata= is intentionally not forwarded: the async ABC does not yet
-        # accept it (Step 3c).  USER_METADATA is masked in capabilities() so the
-        # Store-layer WR-010 gate rejects non-empty metadata= before reaching here.
+        # USER_METADATA is masked in capabilities() so the Store-layer WR-010
+        # gate rejects non-empty metadata= before reaching here.  Callers that
+        # bypass the Store and call the adapter directly still get a clean error
+        # rather than a silent drop (defense-in-depth, ADR-0026 adapter masking).
+        if metadata:
+            raise CapabilityNotSupported(
+                "AsyncBackendSyncAdapter does not support user metadata (Step 3c pending); "
+                "pass metadata= through a Store instead.",
+                capability="USER_METADATA",
+                backend=self.name,
+            )
         if isinstance(content, (bytes, bytearray, memoryview)):
             raw = bytes(content)
             self._submit(self._async_backend.write(path, raw, overwrite=overwrite))
@@ -411,9 +419,14 @@ class AsyncBackendSyncAdapter(Backend):
         from remote_store._models import WriteResult
         from remote_store._path import RemotePath
 
-        # metadata= is intentionally not forwarded: the async ABC does not yet
-        # accept it (Step 3c).  USER_METADATA is masked in capabilities() so the
-        # Store-layer WR-010 gate rejects non-empty metadata= before reaching here.
+        # Same defense-in-depth guard as write() above.
+        if metadata:
+            raise CapabilityNotSupported(
+                "AsyncBackendSyncAdapter does not support user metadata (Step 3c pending); "
+                "pass metadata= through a Store instead.",
+                capability="USER_METADATA",
+                backend=self.name,
+            )
         if isinstance(content, (bytes, bytearray, memoryview)):
             raw = bytes(content)
             self._submit(self._async_backend.write_atomic(path, raw, overwrite=overwrite))

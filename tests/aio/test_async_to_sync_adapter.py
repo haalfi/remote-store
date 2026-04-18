@@ -1105,3 +1105,17 @@ class TestAdapterWriteResult:
         result = adapter.write_atomic("f.txt", _io.BytesIO(payload))
         assert result.size == expected_size
         adapter.close()
+
+    @pytest.mark.spec("WR-010")
+    def test_write_with_nonempty_metadata_raises_capability_not_supported(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        with pytest.raises(CapabilityNotSupported):
+            adapter.write("f.txt", b"x", metadata={"k": "v"})
+        adapter.close()
+
+    @pytest.mark.spec("WR-010")
+    def test_write_atomic_with_nonempty_metadata_raises_capability_not_supported(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        with pytest.raises(CapabilityNotSupported):
+            adapter.write_atomic("f.txt", b"x", metadata={"k": "v"})
+        adapter.close()

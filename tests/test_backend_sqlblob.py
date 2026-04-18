@@ -984,17 +984,19 @@ class TestSQLBlobWriteResult:
     def test_legacy_schema_without_user_metadata_column_does_not_advertise_user_metadata(
         self, minimal_engine: sa.Engine
     ) -> None:
-        """Legacy table missing user_metadata must not declare USER_METADATA capability."""
+        """Legacy table missing user_metadata must not declare USER_METADATA or WRITE_RESULT_NATIVE."""
         b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
         assert not b.capabilities.supports(Capability.USER_METADATA)
+        assert not b.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
         b.close()
 
     @pytest.mark.spec("WR-013")
     def test_legacy_schema_write_without_metadata_succeeds(self, minimal_engine: sa.Engine) -> None:
-        """Write without metadata works fine on a legacy schema."""
+        """Write without metadata works fine on a legacy schema; source is basic."""
         b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
         result = b.write("f.txt", b"data")
         assert isinstance(result, WriteResult)
+        assert result.source == "basic"
         assert result.metadata is None
         b.close()
 

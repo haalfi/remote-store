@@ -286,13 +286,16 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 "user_metadata",
             }
 
-        # USER_METADATA is only declared when the backing table has the column.
-        # Advertising it against a legacy schema that lacks user_metadata would
-        # cause silent WR-013 violations (Store gate passes, data never stored).
+        # Both USER_METADATA and WRITE_RESULT_NATIVE are declared only when the
+        # backing table has the user_metadata column.  Advertising USER_METADATA
+        # without the column causes silent WR-013 violations (Store gate passes,
+        # data never stored).  WRITE_RESULT_NATIVE is stripped alongside it so
+        # the spec 045 WR-004/WR-010 tables ("dynamic") agree with the code.
         if "user_metadata" in self._optional_columns:
             self._capabilities: CapabilitySet = _ALL_CAPABILITIES
         else:
-            self._capabilities = CapabilitySet({c for c in _ALL_CAPABILITIES if c is not Capability.USER_METADATA})
+            _legacy_excluded = {Capability.USER_METADATA, Capability.WRITE_RESULT_NATIVE}
+            self._capabilities = CapabilitySet({c for c in _ALL_CAPABILITIES if c not in _legacy_excluded})
 
     # region: properties
 
@@ -433,7 +436,13 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 values["key"] = path
                 conn.execute(t.insert().values(**values))
 
-        return WriteResult(path=RemotePath(path), size=len(raw), source="native", metadata=metadata)
+        has_meta_col = "user_metadata" in self._optional_columns
+        return WriteResult(
+            path=RemotePath(path),
+            size=len(raw),
+            source="native" if has_meta_col else "basic",
+            metadata=metadata if has_meta_col else None,
+        )
 
     def write_atomic(
         self,
