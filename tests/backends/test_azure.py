@@ -712,6 +712,7 @@ class TestAzureHNSPaths:
         tmp_fc = MagicMock(spec=DataLakeFileClient)
         tmp_fc.upload_data.return_value = None  # production-accurate: upload_data returns None
         tmp_fc.get_file_properties.return_value = MagicMock(
+            spec=["etag", "last_modified"],
             etag=None,
             last_modified=None,
         )
@@ -734,6 +735,7 @@ class TestAzureHNSPaths:
         tmp_fc = MagicMock(spec=DataLakeFileClient)
         tmp_fc.upload_data.return_value = None  # production-accurate: upload_data returns None
         tmp_fc.get_file_properties.return_value = MagicMock(
+            spec=["etag", "last_modified"],
             etag='"abc123"',
             last_modified=None,
         )
