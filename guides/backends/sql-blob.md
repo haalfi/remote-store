@@ -80,27 +80,30 @@ The default table schema:
 
 ```sql
 CREATE TABLE remote_store_objects (
-    key          TEXT    PRIMARY KEY,
-    data         BLOB    NOT NULL,
-    size         INTEGER NOT NULL,
-    modified_at  REAL    NOT NULL,
-    content_type TEXT,
-    digest       TEXT,
-    extra        TEXT
+    key           TEXT    PRIMARY KEY,
+    data          BLOB    NOT NULL,
+    size          INTEGER NOT NULL,
+    modified_at   REAL    NOT NULL,
+    content_type  TEXT,
+    digest        TEXT,
+    extra         TEXT,
+    user_metadata TEXT
 );
 ```
 
 ### User metadata column
 
-To store per-file user metadata, add a `user_metadata TEXT` column to the table:
+When the `user_metadata` column is present, `SQLBlobBackend` declares the
+`WRITE_RESULT_NATIVE` and `USER_METADATA` capabilities. When absent (legacy
+tables), neither is declared — a `Store.write*()` call with a non-empty
+`metadata=` kwarg raises `CapabilityNotSupported` before any I/O runs.
+
+To add the column to an existing table:
 
 ```sql
+-- hand-written: schema migrations cannot run in CI
 ALTER TABLE remote_store_objects ADD COLUMN user_metadata TEXT;
 ```
-
-When the column is present, `SQLBlobBackend` declares the `WRITE_RESULT_NATIVE` and `USER_METADATA` capabilities and stores metadata as a JSON-encoded dict. When the column is absent (legacy tables), neither capability is declared — passing a non-empty `metadata=` kwarg to a `Store.write*()` call raises `CapabilityNotSupported`, and `write_atomic()` returns a basic (non-native) `WriteResult`.
-
-The `create_table=True` default schema includes `user_metadata TEXT` automatically.
 
 ### Using an existing table
 
