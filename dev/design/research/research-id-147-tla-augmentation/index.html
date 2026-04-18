@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/adrs/0001-architecture-store-registry-backends/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-id-147-tla-augmentation/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../research-health-check/">
       
       
-        <link rel="next" href="../0002-config-resolution-no-merge/">
+        <link rel="next" href="../research-id-147b-tla-poc/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>0001: Architecture - Store, Registry, Backends - remote-store</title>
+        <title>TLA+ Spec Augmentation (ID-147) - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0001-architecture-store-registry-backends" class="md-skip">
+        <a href="#research-tla-spec-augmentation-id-147" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              0001: Architecture - Store, Registry, Backends
+              TLA+ Spec Augmentation (ID-147)
             
           </span>
         </div>
@@ -4496,8 +4496,6 @@
                 
   
   
-    
-  
   
   
     
@@ -4508,15 +4506,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -4540,7 +4538,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4555,37 +4553,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0001: Architecture - Store, Registry, Backends
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4601,70 +4572,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4677,7 +4584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4705,7 +4612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4733,7 +4640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -4761,7 +4668,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4789,7 +4696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -4817,7 +4724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -4845,7 +4752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -4873,7 +4780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -4901,7 +4808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -4929,7 +4836,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -4957,7 +4864,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -4985,7 +4892,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5013,7 +4920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5041,7 +4948,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5069,7 +4976,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5097,7 +5004,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5125,7 +5032,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -5153,7 +5060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -5181,7 +5088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -5209,7 +5116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0021-graph-sdk-choice/" class="md-nav__link">
+      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
         
   
   
@@ -5237,7 +5144,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0022-graph-auth-model/" class="md-nav__link">
+      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
         
   
   
@@ -5265,7 +5172,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0023-async-monitor-polling/" class="md-nav__link">
+      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
         
   
   
@@ -5293,7 +5200,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0024-resource-locked-error/" class="md-nav__link">
+      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
         
   
   
@@ -5321,7 +5228,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0025-async-to-sync-backend-adapter/" class="md-nav__link">
+      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
         
   
   
@@ -5349,7 +5256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0026-strict-gate-on-kwarg/" class="md-nav__link">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
         
   
   
@@ -6044,6 +5951,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6054,15 +5963,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_9" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6086,7 +5995,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_9_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_9_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6104,7 +6013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -6132,7 +6041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6160,7 +6069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6188,7 +6097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -6216,7 +6125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6244,7 +6153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
+      <a href="../research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
   
@@ -6272,7 +6181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -6300,7 +6209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -6328,7 +6237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-doc-content-longevity/" class="md-nav__link">
+      <a href="../research-doc-content-longevity/" class="md-nav__link">
         
   
   
@@ -6356,7 +6265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -6384,7 +6293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -6412,7 +6321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -6440,7 +6349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-feature-discoverability/" class="md-nav__link">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -6468,7 +6377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -6496,7 +6405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -6521,10 +6430,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147-tla-augmentation/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TLA+ Spec Augmentation (ID-147)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6540,6 +6476,242 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-scope-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Scope boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-tlc-checks-that-dafny-does-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. What TLC checks that Dafny does not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-module-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Module design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Module design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-backendtla" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Backend.tla
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-storetla" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Store.tla
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-observertla" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Observer.tla
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-toolchain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Toolchain
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Toolchain">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-tlc-model-checker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 TLC (model checker)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-module-config-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Module + config structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-ci-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 CI integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Implementation plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Implementation plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-toolchain-session-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1 — Toolchain (session 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-backendtla-session-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2 — Backend.tla (session 2)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-storetla-session-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3 — Store.tla (session 3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-observertla-session-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4 — Observer.tla (session 4)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-5-spike-report-session-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5 — Spike report (session 5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Open questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-relationship-to-existing-formal-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Relationship to existing formal layer
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -6552,7 +6724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-id-147b-tla-poc/" class="md-nav__link">
+      <a href="../research-id-147b-tla-poc/" class="md-nav__link">
         
   
   
@@ -6580,7 +6752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -6608,7 +6780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -6636,7 +6808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-openrouter-integration/" class="md-nav__link">
+      <a href="../research-openrouter-integration/" class="md-nav__link">
         
   
   
@@ -6664,7 +6836,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -6692,7 +6864,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -6720,7 +6892,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -6748,7 +6920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -6776,7 +6948,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -6804,7 +6976,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -6832,7 +7004,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -6860,7 +7032,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -6888,7 +7060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -6916,7 +7088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -8453,10 +8625,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#1-scope-boundaries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
+        1. Scope boundaries
       
     </span>
   </a>
@@ -8464,10 +8636,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
+  <a href="#2-what-tlc-checks-that-dafny-does-not" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context
+        2. What TLC checks that Dafny does not
       
     </span>
   </a>
@@ -8475,10 +8647,182 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
+  <a href="#3-module-design" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision
+        3. Module design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Module design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-backendtla" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Backend.tla
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-storetla" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Store.tla
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-observertla" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Observer.tla
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-toolchain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Toolchain
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Toolchain">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-tlc-model-checker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 TLC (model checker)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-module-config-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Module + config structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-ci-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 CI integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Implementation plan
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Implementation plan">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-toolchain-session-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1 — Toolchain (session 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-backendtla-session-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2 — Backend.tla (session 2)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-storetla-session-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3 — Store.tla (session 3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-observertla-session-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4 — Observer.tla (session 4)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-5-spike-report-session-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5 — Spike report (session 5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Open questions
       
     </span>
   </a>
@@ -8486,10 +8830,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#7-relationship-to-existing-formal-layer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consequences
+        7. Relationship to existing formal layer
       
     </span>
   </a>
@@ -8513,42 +8857,346 @@
 
 
 
-<h1 id="adr-0001-architecture-store-registry-backends">ADR-0001: Architecture - Store, Registry, Backends<a class="headerlink" href="#adr-0001-architecture-store-registry-backends" title="Permanent link">&para;</a></h1>
-<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
-<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>We need a layered architecture for backend-agnostic remote storage. Key tensions:</p>
+<h1 id="research-tla-spec-augmentation-id-147">Research: TLA+ Spec Augmentation (ID-147)<a class="headerlink" href="#research-tla-spec-augmentation-id-147" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-04-17
+<strong>Status:</strong> In progress — spike plan
+<strong>Scope:</strong> Plan and execution record for ID-147: three minimal TLA+ modules
+augmenting existing Markdown specs with machine-checkable cross-layer
+consistency properties.
+<strong>Related:</strong> ID-147, <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md">sdd/formal/README.md</a>,
+<a href="../../specs/003-backend-adapter-contract/">spec 003</a>,
+<a href="../../specs/019-ext-observe/">spec 019</a>,
+<a href="../../rfcs/rfc-0011-write-result/">rfc-0011</a>.</p>
+<p><strong>Context:</strong> PR 448 (WriteResult) amended five specs in one feature. The
+manual ripple-check table tells reviewers <em>what</em> to check; it cannot tell
+them whether the amended specs are mutually consistent. Dafny covers
+per-operation contracts and data-structure invariants but has no model of
+how layers compose. This spike explores TLA+ as a lightweight, additive
+layer for cross-spec protocol consistency — augmenting the Markdown specs,
+not replacing them.</p>
+<hr />
+<h2 id="1-scope-boundaries">1. Scope boundaries<a class="headerlink" href="#1-scope-boundaries" title="Permanent link">&para;</a></h2>
+<p><strong>In scope for this spike:</strong></p>
+<table>
+<thead>
+<tr>
+<th>TLA+ module</th>
+<th>Shadows</th>
+<th>Key properties</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Backend.tla</code></td>
+<td>spec 003 (CAP-001..CAP-007, BE-001..BE-019)</td>
+<td>capability gate ordering, error discrimination, entry partition</td>
+<td>Exploratory — no demonstrated bundling yet; targets are abstract-layer properties</td>
+</tr>
+<tr>
+<td><code>Store.tla</code></td>
+<td>spec 001 (STORE-004, STORE-005, STORE-006)</td>
+<td>store wraps backend, capability gate fires before I/O</td>
+<td>Exploratory — thin scaffold; gains concrete targets once WR-019 is in scope</td>
+</tr>
+<tr>
+<td><code>Observer.tla</code></td>
+<td>spec 019 (OBS-001..OBS-003)</td>
+<td>every completed op fires exactly one event; hook routing matches outcome</td>
+<td>Known-value — <code>EventBijection</code>, <code>HookRouting</code>, <code>NoDoubleDispatch</code> mirror the WR-018 pattern of independently-breakable claims</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Explicitly out of scope for this spike:</strong></p>
 <ul>
-<li>Users want simplicity (one object to interact with)</li>
-<li>Backends have wildly different capabilities and lifecycles</li>
-<li>Configuration should be declarative, not imperative</li>
-<li>Multiple stores may share a single backend connection</li>
+<li>WR-019 proxy forwarding (spec 045 / OBS-015): these sections live on
+  <code>master</code> via PR 448 but not on this branch. Captured as a follow-up in
+  ID-147 once spec 045 is available here.</li>
+<li>Async store API (spec 029 / ID-013b): higher concurrency complexity;
+  defer until single-threaded model is understood.</li>
+<li>Replacing or superseding any Markdown spec section.</li>
 </ul>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Three-layer architecture:</p>
+<hr />
+<h2 id="2-what-tlc-checks-that-dafny-does-not">2. What TLC checks that Dafny does not<a class="headerlink" href="#2-what-tlc-checks-that-dafny-does-not" title="Permanent link">&para;</a></h2>
+<p>Dafny proves properties <em>within</em> a single method contract or refinement.
+TLC model-checks <em>reachable states</em> of a composed system by exhaustive
+(bounded) enumeration. The two tools are complementary:</p>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Dafny</th>
+<th>TLC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"Does this postcondition hold for all inputs?"</td>
+<td>✅ unbounded proof</td>
+<td>bounded (finite model)</td>
+</tr>
+<tr>
+<td>"Can a failed op still fire on_write instead of on_error?"</td>
+<td>❌ not expressible</td>
+<td>✅ state enumeration</td>
+</tr>
+<tr>
+<td>"Does the capability gate always fire before any I/O action?"</td>
+<td>❌ cross-layer</td>
+<td>✅ interleaving</td>
+</tr>
+<tr>
+<td>"Can two layers disagree on WriteResult?"</td>
+<td>❌ cross-module</td>
+<td>✅ composition</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-module-design">3. Module design<a class="headerlink" href="#3-module-design" title="Permanent link">&para;</a></h2>
+<h3 id="31-backendtla">3.1 Backend.tla<a class="headerlink" href="#31-backendtla" title="Permanent link">&para;</a></h3>
+<p><strong>What it models:</strong> The abstract backend interface — not the filesystem
+implementation (that is Dafny's job). This module defines the <em>protocol</em>
+a backend participates in: what capabilities exist, what errors are
+possible, what the outcome of each operation class is.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>CONSTANTS Paths, Capabilities, Errors
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>VARIABLES fs,          \* function: Paths -&gt; {&quot;file&quot;, &quot;dir&quot;, &quot;missing&quot;}
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>          declared_caps \* set of declared Capability values
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>TypeInvariant ==
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    /\ fs \in [Paths -&gt; {&quot;file&quot;, &quot;dir&quot;, &quot;missing&quot;}]
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    /\ declared_caps \subseteq Capabilities
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>EntryPartition ==
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    \A p \in Paths: ~(fs[p] = &quot;file&quot; /\ fs[p] = &quot;dir&quot;)
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>\* NOTE: sketch only. In a real TLA+ action, outcome must be declared as
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>\* a VARIABLE and assigned via a primed expression (outcome&#39;).
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>CapabilityGate(op_cap) ==
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    op_cap \notin declared_caps =&gt;
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        outcome&#39; = &quot;CapabilityNotSupported&quot;
+</code></pre></div>
+<p>Key properties to check:
+- <code>EntryPartition</code>: invariant — no path is simultaneously file and dir.
+- <code>CapabilityGateFiresFirst</code>: if a capability is missing, no <code>fs</code> mutation
+  occurs (outcome = CapabilityNotSupported AND fs' = fs).
+- <code>ErrorDiscrimination</code>: <code>NotFound # AlreadyExists # InvalidPath # ...</code>
+  (error types are distinct — catches any future enum collision).</p>
+<h3 id="32-storetla">3.2 Store.tla<a class="headerlink" href="#32-storetla" title="Permanent link">&para;</a></h3>
+<p><strong>What it models:</strong> The Store layer wrapping a Backend. Focuses on the
+protocol boundary: Store adds its own capability check (via <code>require()</code>),
+then delegates to the backend. The key question: does the Store's gate
+always fire before any backend action?</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>\* Stand-alone module (no EXTENDS Backend).
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>\* Re-declares fs and declared_caps as its own variables; Backend.tla is a
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>\* peer module, not a parent. EXTENDS composition is deferred to Phase 6
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>\* once the hierarchy value is empirically demonstrated via break-and-catch.
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>VARIABLES fs,            \* mirror of Backend fs
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>          declared_caps, \* mirror of Backend declared_caps
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>          store_outcome  \* outcome of the Store operation
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>CapGatePrecedesIO ==
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    \* If Store fires CapabilityNotSupported, backend action is skipped.
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    (store_outcome = &quot;CapabilityNotSupported&quot;) =&gt;
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        UNCHANGED fs
+</code></pre></div>
+<p>For now Store.tla is thin — it establishes the scaffold that WR-019
+forwarding will inhabit once spec 045 is available.</p>
+<h3 id="33-observertla">3.3 Observer.tla<a class="headerlink" href="#33-observertla" title="Permanent link">&para;</a></h3>
+<p><strong>What it models:</strong> The observer proxy wrapping Store. Adds an <code>events</code>
+sequence and models hook dispatch from spec 019 OBS-001..OBS-003.</p>
+<p>The key properties from OBS-003:
+- <code>on_write</code> fires after <code>write</code>, <code>write_text</code>, <code>write_atomic</code>.
+- <code>on_error</code> fires for any operation that raises.
+- <code>on_any</code> fires for every completed operation (success or error).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>VARIABLES events   \* sequence of StoreEvent records
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>EventBijection ==
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    \* Every completed operation produces exactly one event in on_any.
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    Len(events) = completedOps
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>HookRouting ==
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    \* A write that succeeds goes to on_write; one that fails goes to on_error.
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    \A e \in Range(events):
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        /\ (e.operation \in WriteOps /\ e.error = None) =&gt; on_write_fired(e)
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        /\ (e.error # None) =&gt; on_error_fired(e)
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>\* CorrelatesOp(e, op) == e.op_id = op  \* field predicate; define in module
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>NoDoubleDispatch ==
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    \* on_any fires exactly once per operation, even if around hook raises.
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    \A op \in CompletedOps: Cardinality({e \in Range(events): CorrelatesOp(e, op)}) = 1
+</code></pre></div>
+<p><code>NoDoubleDispatch</code> is the most valuable check: the around-hook pattern
+(OBS-005) nests around the operation <em>and</em> the hook dispatch. If the
+around context manager raises on <code>__exit__</code>, does on_any fire twice?
+TLC can enumerate this scenario; Dafny cannot express it.</p>
+<hr />
+<h2 id="4-toolchain">4. Toolchain<a class="headerlink" href="#4-toolchain" title="Permanent link">&para;</a></h2>
+<h3 id="41-tlc-model-checker">4.1 TLC (model checker)<a class="headerlink" href="#41-tlc-model-checker" title="Permanent link">&para;</a></h3>
+<p>TLC is the standard TLA+ model checker. It runs from <code>tla2tools.jar</code>
+(self-contained, ~10 MB, Java 11+). No Toolbox GUI required.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>java<span class="w"> </span>-jar<span class="w"> </span>tla2tools.jar<span class="w"> </span>-config<span class="w"> </span>sdd/formal/tla/MC_Observer.cfg<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span>sdd/formal/tla/MC_Observer.tla
+</code></pre></div>
+<p>Local setup: download <code>tla2tools.jar</code> into <code>scripts/</code> (gitignored) or use
+Docker (same pattern as <code>scripts/dafny_verify.sh</code>). Prefer Docker for CI
+reproducibility.</p>
+<h3 id="42-module-config-structure">4.2 Module + config structure<a class="headerlink" href="#42-module-config-structure" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>sdd/formal/tla/
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    Backend.tla         abstract backend protocol (stand-alone)
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    Store.tla           store layer properties (stand-alone; no EXTENDS Backend)
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    Observer.tla        observer proxy properties (stand-alone; no EXTENDS Store)
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    MC_Backend.tla      model-checking harness (instantiates with small Paths)
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    MC_Store.tla        model-checking harness for Store properties
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    MC_Observer.tla     model-checking harness for Observer properties
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    MC_Backend.cfg      TLC config: INIT, NEXT, INVARIANTS
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    MC_Store.cfg
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    MC_Observer.cfg
+</code></pre></div>
+<p>Stand-alone modules per concern: <code>EXTENDS</code> composition was not needed in the
+PoC and stand-alone modules were cleaner. Hierarchy via <code>EXTENDS</code> / <code>INSTANCE</code>
+can be added in Phase 6 once at least one cross-module invariant demonstrates
+value via break-and-catch.</p>
+<p>Each <code>MC_*.tla</code> file instantiates the corresponding module with a small
+finite model (e.g. <code>Paths == {"a", "b"}</code>, <code>Capabilities == {READ, WRITE}</code>).
+This keeps TLC state space tractable while covering all relevant cases.</p>
+<h3 id="43-ci-integration">4.3 CI integration<a class="headerlink" href="#43-ci-integration" title="Permanent link">&para;</a></h3>
+<p>Add a <code>verify-tla</code> job to <code>.github/workflows/ci.yml</code>, triggered when
+<code>sdd/formal/tla/**</code> changes. Pattern mirrors the existing <code>verify-formal</code>
+(Dafny) job:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">verify-tla</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...changed files include sdd/formal/tla/...</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">steps</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/setup-java@v4</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">      </span><span class="nt">with</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> java-version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;21&#39;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bash scripts/tlc_check.sh</span>
+</code></pre></div>
+<p><code>scripts/tlc_check.sh</code> runs TLC on each <code>MC_*.tla</code> and exits non-zero on
+any invariant violation or TLC error.</p>
+<hr />
+<h2 id="5-implementation-plan">5. Implementation plan<a class="headerlink" href="#5-implementation-plan" title="Permanent link">&para;</a></h2>
+<p>Each phase is a self-contained session. Commit after each phase so the
+branch records the progression.</p>
+<h3 id="phase-1-toolchain-session-1">Phase 1 — Toolchain (session 1)<a class="headerlink" href="#phase-1-toolchain-session-1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Create <code>sdd/formal/tla/</code> directory.</li>
+<li>[ ] Write <code>scripts/tlc_check.sh</code> (Docker wrapper, mirrors
+  <code>scripts/dafny_verify.sh</code>).</li>
+<li>[ ] Verify TLC runs clean on a trivial "hello world" spec.</li>
+<li>[ ] Add <code>verify-tla</code> stub to <code>.github/workflows/ci.yml</code> (not yet
+  enforced — no modules to check).</li>
+</ul>
+<h3 id="phase-2-backendtla-session-2">Phase 2 — Backend.tla (session 2)<a class="headerlink" href="#phase-2-backendtla-session-2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Write <code>Backend.tla</code>: CONSTANTS, VARIABLES, TypeInvariant,
+  EntryPartition, CapabilityGate, operation actions.</li>
+<li>[ ] Write <code>MC_Backend.tla</code> + <code>MC_Backend.cfg</code>: <code>Paths == {"a", "b"}</code>,
+  <code>Capabilities == {READ, WRITE, DELETE}</code>, INIT, NEXT, INVARIANTS.</li>
+<li>[ ] Run TLC. Confirm: all invariants hold, state space is enumerable in
+  &lt; 30 s.</li>
+<li>[ ] Record: authoring time, friction, anything surprising.</li>
+</ul>
+<h3 id="phase-3-storetla-session-3">Phase 3 — Store.tla (session 3)<a class="headerlink" href="#phase-3-storetla-session-3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Write <code>Store.tla</code>: stand-alone module (no <code>EXTENDS Backend</code>), adds <code>CapGatePrecedesIO</code>.</li>
+<li>[ ] Write <code>MC_Store.tla</code> + <code>MC_Store.cfg</code>.</li>
+<li>[ ] Run TLC. Confirm <code>CapGatePrecedesIO</code> holds.</li>
+<li>[ ] Intentionally break it (remove gate) and confirm TLC produces a
+  counterexample trace — this validates TLC is checking something real.</li>
+</ul>
+<h3 id="phase-4-observertla-session-4">Phase 4 — Observer.tla (session 4)<a class="headerlink" href="#phase-4-observertla-session-4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Write <code>Observer.tla</code>: stand-alone module (no <code>EXTENDS Store</code>), adds <code>events</code>, <code>EventBijection</code>,
+  <code>HookRouting</code>, <code>NoDoubleDispatch</code>.</li>
+<li>[ ] Write <code>MC_Observer.tla</code> + <code>MC_Observer.cfg</code>.</li>
+<li>[ ] Run TLC. Confirm all properties hold.</li>
+<li>[ ] Introduce a deliberate dispatch bug (fire on_write for failed ops)
+  and confirm TLC catches it with a counterexample.</li>
+</ul>
+<h3 id="phase-5-spike-report-session-5">Phase 5 — Spike report (session 5)<a class="headerlink" href="#phase-5-spike-report-session-5" title="Permanent link">&para;</a></h3>
+<p>Update this document with findings:
+- Authoring workflow: how long, what was hard, contributor friction estimate.
+- TLC results: state space size, check time, any real violations found.
+- Proof depth: which properties are meaningfully bounded vs. trivially small.
+- Recommendation: extend (which targets next?), keep as-is, or icebox.</p>
+<hr />
+<h2 id="6-open-questions">6. Open questions<a class="headerlink" href="#6-open-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>Store</strong> — user-facing, immutable, folder-scoped. All operations use relative paths. Delegates all I/O to a backend. Thin wrapper with path scoping and capability gating.</p>
+<p><strong>Co-location:</strong> <code>sdd/formal/tla/</code> keeps TLA+ alongside Dafny as a
+   single formal layer. Alternative: <code>sdd/tla/</code> as a peer to <code>sdd/formal/</code>.
+   Decision: <code>sdd/formal/tla/</code> preferred — both are machine-checkable
+   spec artefacts, not runtime code.</p>
 </li>
 <li>
-<p><strong>Registry</strong> — owns backend lifecycle. Lazily instantiates backends from config. Shares backend instances across stores. Acts as context manager for cleanup.</p>
+<p><strong>EXTENDS vs. INSTANCE (deferred):</strong> Modules start stand-alone (PoC §4.1
+   recommendation). If a cross-module invariant is identified that requires
+   shared state, <code>EXTENDS</code> pulls definitions in unmodified; <code>INSTANCE ... WITH</code>
+   allows variable substitution. Decide in Phase 6 once stand-alone modules
+   have survived break-and-catch and a concrete cross-module target is known.</p>
 </li>
 <li>
-<p><strong>Backend (ABC)</strong> — encapsulates all storage-specific behavior. Declares capabilities. Maps native errors to normalized types. Never exposed directly to end users.</p>
+<p><strong>Bounded model guarantees:</strong> TLC with <code>Paths == {"a", "b"}</code> exhaustively
+   checks all 2-path scenarios. Is that enough to be meaningful? Initial
+   hypothesis: yes for routing and gating properties; borderline for
+   depth-counting properties (which Dafny already covers).</p>
+</li>
+<li>
+<p><strong>CI enforcement vs. informational:</strong> Start CI as informational (non-blocking).
+   Promote to blocking only when at least one TLA+ check has caught a real
+   spec regression on a production branch — a caught regression, not a seeded
+   break. Seeded breaks (Phases 3–4) validate that TLC is checking something
+   real; they do not validate that the workflow pays. (PoC §4.3 rationale.)</p>
+</li>
+<li>
+<p><strong>Sync with master:</strong> This branch predates PR 448 (spec 045, OBS-015).
+   Once the WR-019 forwarding target is ready, sync from master and add
+   <code>Store.tla</code> WR-019 properties as a Phase 6.</p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>User → Store → Backend (ABC) → Local/S3/Azure/SFTP
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>         ↑
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>      Registry (lifecycle, config, factory)
-</code></pre></div>
-<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Users interact only with <code>Store</code> — simple, safe API</li>
-<li>Adding a backend = implement the ABC + add conformance fixture</li>
-<li>Backend lifecycle is centralized in Registry, not scattered</li>
-<li>Store is cheap and immutable — safe for concurrent use</li>
-<li>No dependency on async frameworks (sync-only initially)</li>
-</ul>
+<hr />
+<h2 id="7-relationship-to-existing-formal-layer">7. Relationship to existing formal layer<a class="headerlink" href="#7-relationship-to-existing-formal-layer" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Artefact</th>
+<th>Tool</th>
+<th>Covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Spec</td>
+<td><code>sdd/specs/*.md</code></td>
+<td>Review</td>
+<td>Human-readable contracts</td>
+</tr>
+<tr>
+<td>Dafny</td>
+<td><code>sdd/formal/*.dfy</code></td>
+<td>Dafny verifier</td>
+<td>Per-operation pre/postconditions, data invariants, resource safety</td>
+</tr>
+<tr>
+<td>TLA+</td>
+<td><code>sdd/formal/tla/*.tla</code></td>
+<td>TLC</td>
+<td>Cross-layer protocol properties, hook routing, composition</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td><code>tests/</code></td>
+<td>pytest + Hypothesis</td>
+<td>Runtime conformance, PBT</td>
+</tr>
+</tbody>
+</table>
+<p>No layer replaces another. Dafny and TLA+ answer different questions about
+the same system.</p>
 
 
 
