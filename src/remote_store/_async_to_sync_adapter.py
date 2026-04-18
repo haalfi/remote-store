@@ -386,6 +386,9 @@ class AsyncBackendSyncAdapter(Backend):
         from remote_store._models import WriteResult
         from remote_store._path import RemotePath
 
+        # metadata= is intentionally not forwarded: the async ABC does not yet
+        # accept it (Step 3c).  USER_METADATA is masked in capabilities() so the
+        # Store-layer WR-010 gate rejects non-empty metadata= before reaching here.
         if isinstance(content, (bytes, bytearray, memoryview)):
             raw = bytes(content)
             self._submit(self._async_backend.write(path, raw, overwrite=overwrite))
@@ -408,6 +411,9 @@ class AsyncBackendSyncAdapter(Backend):
         from remote_store._models import WriteResult
         from remote_store._path import RemotePath
 
+        # metadata= is intentionally not forwarded: the async ABC does not yet
+        # accept it (Step 3c).  USER_METADATA is masked in capabilities() so the
+        # Store-layer WR-010 gate rejects non-empty metadata= before reaching here.
         if isinstance(content, (bytes, bytearray, memoryview)):
             raw = bytes(content)
             self._submit(self._async_backend.write_atomic(path, raw, overwrite=overwrite))

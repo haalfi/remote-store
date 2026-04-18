@@ -1667,24 +1667,34 @@ class TestSFTPWriteResult:
     @pytest.mark.spec("WR-001")
     @pytest.mark.spec("WR-004")
     def test_write_bytes_returns_write_result(self, sftp_backend: Backend) -> None:
+        from remote_store._path import RemotePath
+
         result = sftp_backend.write("f.txt", b"hello")
         assert isinstance(result, WriteResult)
         assert result.source == "basic"
+        assert result.path == RemotePath("f.txt")
+        assert result.size == 5
 
     @pytest.mark.spec("WR-003")
-    def test_write_bytes_size(self, sftp_backend: Backend) -> None:
-        result = sftp_backend.write("f.txt", b"hello world")
-        assert result.size == 11
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
+    def test_write_bytes_size(self, sftp_backend: Backend, payload: bytes, expected_size: int) -> None:
+        result = sftp_backend.write("f.txt", payload)
+        assert result.size == expected_size
 
     @pytest.mark.spec("WR-003")
-    def test_write_binaryio_size(self, sftp_backend: Backend) -> None:
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
+    def test_write_binaryio_size(self, sftp_backend: Backend, payload: bytes, expected_size: int) -> None:
         import io
 
-        result = sftp_backend.write("f.txt", io.BytesIO(b"streamed"))
-        assert result.size == 8
+        result = sftp_backend.write("f.txt", io.BytesIO(payload))
+        assert result.size == expected_size
 
     @pytest.mark.spec("WR-001")
     def test_write_atomic_returns_write_result(self, sftp_backend: Backend) -> None:
+        from remote_store._path import RemotePath
+
         result = sftp_backend.write_atomic("f.txt", b"data")
         assert isinstance(result, WriteResult)
+        assert result.source == "basic"
+        assert result.path == RemotePath("f.txt")
         assert result.size == 4

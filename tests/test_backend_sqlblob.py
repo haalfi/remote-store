@@ -939,24 +939,34 @@ class TestSQLBlobWriteResult:
     @pytest.mark.spec("WR-001")
     @pytest.mark.spec("WR-004")
     def test_write_returns_write_result(self, backend: SQLBlobBackend) -> None:
+        from remote_store._path import RemotePath
+
         result = backend.write("f.txt", b"hello")
         assert isinstance(result, WriteResult)
         assert result.source == "native"
+        assert result.path == RemotePath("f.txt")
+        assert result.size == 5
 
     @pytest.mark.spec("WR-003")
-    def test_write_size_bytes(self, backend: SQLBlobBackend) -> None:
-        result = backend.write("f.txt", b"hello world")
-        assert result.size == 11
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
+    def test_write_size_bytes(self, backend: SQLBlobBackend, payload: bytes, expected_size: int) -> None:
+        result = backend.write("f.txt", payload)
+        assert result.size == expected_size
 
     @pytest.mark.spec("WR-003")
-    def test_write_size_binaryio(self, backend: SQLBlobBackend) -> None:
-        result = backend.write("f.txt", io.BytesIO(b"streamed"))
-        assert result.size == 8
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
+    def test_write_size_binaryio(self, backend: SQLBlobBackend, payload: bytes, expected_size: int) -> None:
+        result = backend.write("f.txt", io.BytesIO(payload))
+        assert result.size == expected_size
 
     @pytest.mark.spec("WR-001")
     def test_write_atomic_returns_write_result(self, backend: SQLBlobBackend) -> None:
+        from remote_store._path import RemotePath
+
         result = backend.write_atomic("f.txt", b"data")
         assert isinstance(result, WriteResult)
+        assert result.source == "native"
+        assert result.path == RemotePath("f.txt")
         assert result.size == 4
 
     @pytest.mark.spec("WR-012")
@@ -987,3 +997,11 @@ class TestSQLBlobWriteResult:
         assert isinstance(result, WriteResult)
         assert result.metadata is None
         b.close()
+
+    @pytest.mark.spec("WR-013")
+    def test_copy_preserves_user_metadata(self, backend: SQLBlobBackend) -> None:
+        """copy() preserves user_metadata on backends that declare USER_METADATA."""
+        backend.write("src.txt", b"data", metadata={"env": "test"})
+        backend.copy("src.txt", "dst.txt")
+        info = backend.get_file_info("dst.txt")
+        assert info.metadata == {"env": "test"}

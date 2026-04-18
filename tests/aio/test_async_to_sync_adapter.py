@@ -1056,32 +1056,52 @@ class TestAdapterWriteResult:
     @pytest.mark.spec("WR-001")
     @pytest.mark.spec("WR-004")
     def test_write_bytes_returns_write_result(self) -> None:
+        from remote_store._path import RemotePath
+
         adapter, _ = _make_memory_adapter()
         result = adapter.write("f.txt", b"hello")
         assert isinstance(result, WriteResult)
         assert result.source == "basic"
+        assert result.path == RemotePath("f.txt")
+        assert result.size == 5
         adapter.close()
 
     @pytest.mark.spec("WR-003")
-    def test_write_bytes_size_matches_payload(self) -> None:
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
+    def test_write_bytes_size_matches_payload(self, payload: bytes, expected_size: int) -> None:
         adapter, _ = _make_memory_adapter()
-        result = adapter.write("f.txt", b"hello world")
-        assert result.size == 11
+        result = adapter.write("f.txt", payload)
+        assert result.size == expected_size
         adapter.close()
 
     @pytest.mark.spec("WR-003")
-    def test_write_binaryio_size_counted_without_materialising(self) -> None:
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
+    def test_write_binaryio_size_counted_without_materialising(self, payload: bytes, expected_size: int) -> None:
         import io as _io
 
         adapter, _ = _make_memory_adapter()
-        result = adapter.write("f.txt", _io.BytesIO(b"streamed"))
-        assert result.size == 8
+        result = adapter.write("f.txt", _io.BytesIO(payload))
+        assert result.size == expected_size
         adapter.close()
 
     @pytest.mark.spec("WR-001")
     def test_write_atomic_returns_write_result(self) -> None:
+        from remote_store._path import RemotePath
+
         adapter, _ = _make_memory_adapter()
         result = adapter.write_atomic("f.txt", b"data")
         assert isinstance(result, WriteResult)
+        assert result.source == "basic"
+        assert result.path == RemotePath("f.txt")
         assert result.size == 4
+        adapter.close()
+
+    @pytest.mark.spec("WR-003")
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"atomic-stream", 13), (b"", 0)])
+    def test_write_atomic_binaryio_size(self, payload: bytes, expected_size: int) -> None:
+        import io as _io
+
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write_atomic("f.txt", _io.BytesIO(payload))
+        assert result.size == expected_size
         adapter.close()

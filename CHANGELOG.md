@@ -27,7 +27,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Added
 
 - **`WriteResult` model + `WRITE_RESULT_NATIVE`/`USER_METADATA` capabilities** (ID-146, steps 1–3b):
-  `WriteResult` is a new frozen dataclass returned by `Store.write*()` methods,
+  `WriteResult` is a new frozen dataclass returned by backend `write*()` methods,
   carrying `path`, `size`, `source`, `digest`, `etag`, `version_id`,
   `last_modified`, and `metadata`. `FileInfo.metadata: Mapping[str, str] | None`
   is added (defaults to `None`). Two new `Capability` members:

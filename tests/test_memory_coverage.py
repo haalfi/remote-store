@@ -428,19 +428,36 @@ class TestMemoryWriteResult:
     @pytest.mark.spec("WR-001")
     @pytest.mark.spec("WR-004")
     def test_write_returns_write_result(self, mb: MemoryBackend) -> None:
+        from remote_store._path import RemotePath
+
         result = mb.write("f.txt", b"hello")
         assert isinstance(result, WriteResult)
         assert result.source == "native"
+        assert result.path == RemotePath("f.txt")
+        assert result.size == 5
 
     @pytest.mark.spec("WR-003")
-    def test_write_size(self, mb: MemoryBackend) -> None:
-        result = mb.write("f.txt", b"hello world")
-        assert result.size == 11
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
+    def test_write_size(self, mb: MemoryBackend, payload: bytes, expected_size: int) -> None:
+        result = mb.write("f.txt", payload)
+        assert result.size == expected_size
+
+    @pytest.mark.spec("WR-003")
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
+    def test_write_binaryio_size(self, mb: MemoryBackend, payload: bytes, expected_size: int) -> None:
+        import io
+
+        result = mb.write("f.txt", io.BytesIO(payload))
+        assert result.size == expected_size
 
     @pytest.mark.spec("WR-001")
     def test_write_atomic_returns_write_result(self, mb: MemoryBackend) -> None:
+        from remote_store._path import RemotePath
+
         result = mb.write_atomic("f.txt", b"data")
         assert isinstance(result, WriteResult)
+        assert result.source == "native"
+        assert result.path == RemotePath("f.txt")
         assert result.size == 4
 
     @pytest.mark.spec("WR-012")
