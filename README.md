@@ -144,7 +144,6 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
-- **Write provenance:** `write*()` returns backend metadata from the write response; use `ext.write` to add a client-side content hash on any backend
 - **Async support:** `remote_store.aio` provides `AsyncStore` with coroutine methods; wrap any sync backend with `SyncBackendAdapter`
 - **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
 
