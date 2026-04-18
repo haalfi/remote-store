@@ -16,7 +16,7 @@
         <link rel="prev" href="../044-graph-backend/">
       
       
-        <link rel="next" href="../../../further-reading/">
+        <link rel="next" href="../046-ext-write/">
       
       
         
@@ -8375,10 +8375,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#extwrite-invariants-forward-looking-spec-placement" class="md-nav__link">
+  <a href="#extwrite-invariants" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ext.write invariants — forward-looking spec placement
+        ext.write invariants
       
     </span>
   </a>
@@ -8455,6 +8455,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../046-ext-write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    046: Spec 046 — ext.write Extension
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -8816,10 +8844,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#extwrite-invariants-forward-looking-spec-placement" class="md-nav__link">
+  <a href="#extwrite-invariants" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ext.write invariants — forward-looking spec placement
+        ext.write invariants
       
     </span>
   </a>
@@ -9240,67 +9268,19 @@ footnote) still echoes the caller's mapping.</p>
 <code>USER_METADATA</code> survives round-trip through <code>Store.get_file_info()</code>, accessible
 as <code>FileInfo.metadata: Mapping[str, str] | None</code>. On backends that do not
 declare <code>USER_METADATA</code>, <code>FileInfo.metadata</code> is always <code>None</code>.</p>
-<h2 id="extwrite-invariants-forward-looking-spec-placement">ext.write invariants — forward-looking spec placement<a class="headerlink" href="#extwrite-invariants-forward-looking-spec-placement" title="Permanent link">&para;</a></h2>
-<p>WR-014..WR-017 below specify the <code>ext.write</code> extension. They live in
-spec 045 for this RFC/spec-only PR so the <code>ext.write</code> contract lands
-next to the <code>WriteResult</code> contract it depends on. Per the one-spec-per-
-extension convention (ADR-0008 / spec 019 / spec 023 / spec 024), the
-implementation PR will move WR-014..WR-017 into a dedicated
-<code>046-ext-write.md</code> under an <code>EW-</code> prefix and leave cross-references
-here. Tracked in the BACKLOG ID-146 "Next" step.</p>
+<h2 id="extwrite-invariants">ext.write invariants<a class="headerlink" href="#extwrite-invariants" title="Permanent link">&para;</a></h2>
+<p>WR-014..WR-017 have been moved to
+<a href="../046-ext-write/"><code>046-ext-write.md</code></a> under the <code>EW-</code> prefix per the
+one-spec-per-extension convention (ADR-0008).  Cross-reference stubs are
+kept here for traceability.</p>
 <h2 id="wr-014-extwritewrite_with_hash-returns-digest">WR-014: ext.write.write_with_hash Returns Digest<a class="headerlink" href="#wr-014-extwritewrite_with_hash-returns-digest" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>ext.write.write_with_hash(store, path, content, *,
-algorithm="sha256", overwrite=False, metadata=None) -&gt; WriteResult</code>
-returns a <code>WriteResult</code> with <code>digest</code> populated from a client-side
-streaming hash over the written bytes. The underlying <code>source</code> value
-from the backend write is preserved (<code>"native"</code> or <code>"basic"</code>); <code>digest</code>
-is set independently of <code>source</code> and always represents the
-client-computed hash.</p>
-<p><strong>Parameter defaults (normative):</strong></p>
-<ul>
-<li><code>algorithm: str = "sha256"</code> — hash algorithm name accepted by
-  <code>hashlib.new</code>. Single-algorithm only in v1, matching the existing
-  <code>ChecksumWriter</code> signature; multi-algorithm multiplex is deferred.</li>
-<li><code>overwrite: bool = False</code> — same semantics as <code>Store.write</code>.</li>
-<li><code>metadata: Mapping[str, str] | None = None</code> — optional user
-  metadata; subject to the <code>USER_METADATA</code> capability gate (WR-010)
-  applied inside the underlying <code>store.write()</code>.</li>
-</ul>
+<p><strong>Moved to <a href="../046-ext-write/#ew-001-was-wr-014-write_with_hash-returns-digest">EW-001</a>.</strong></p>
 <h2 id="wr-015-extwritewrite_with_hash-works-on-every-write-backend">WR-015: ext.write.write_with_hash Works on Every WRITE Backend<a class="headerlink" href="#wr-015-extwritewrite_with_hash-works-on-every-write-backend" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>ext.write.write_with_hash()</code> works on every backend declaring
-<code>Capability.WRITE</code>. The hash is always computed client-side via
-<code>ext.streams.ChecksumWriter</code> regardless of <code>WRITE_RESULT_NATIVE</code>. No additional
-capability beyond <code>WRITE</code> is required.</p>
+<p><strong>Moved to <a href="../046-ext-write/#ew-002-was-wr-015-write_with_hash-works-on-every-write-backend">EW-002</a>.</strong></p>
 <h2 id="wr-016-open_atomic_with_hash-requires-atomic_write">WR-016: open_atomic_with_hash Requires ATOMIC_WRITE<a class="headerlink" href="#wr-016-open_atomic_with_hash-requires-atomic_write" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>ext.write.open_atomic_with_hash(store, path, *,
-algorithm="sha256", overwrite=False, metadata=None) -&gt;
-Iterator[HashingAtomicWriter]</code> is a <code>@contextmanager</code> that requires
-<code>Capability.ATOMIC_WRITE</code> on the underlying store (inherited from
-<code>Store.open_atomic</code>, SAW-002). If the capability is absent,
-<code>CapabilityNotSupported</code> is raised before any I/O.</p>
-<p><strong>Parameter defaults (normative):</strong> Same as WR-014 —
-<code>algorithm: str = "sha256"</code>, <code>overwrite: bool = False</code>,
-<code>metadata: Mapping[str, str] | None = None</code>.</p>
+<p><strong>Moved to <a href="../046-ext-write/#ew-003-was-wr-016-open_atomic_with_hash-requires-atomic_write">EW-003</a>.</strong></p>
 <h2 id="wr-017-open_atomic_with_hash-exposes-result-after-exit">WR-017: open_atomic_with_hash Exposes result After Exit<a class="headerlink" href="#wr-017-open_atomic_with_hash-exposes-result-after-exit" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>ext.write.open_atomic_with_hash()</code> is an <code>@contextmanager</code>
-that yields a <code>HashingAtomicWriter</code> — a <code>ChecksumWriter</code> subclass defined in
-<code>ext.write</code> that adds a <code>.result: WriteResult | None</code> attribute. The base
-<code>ChecksumWriter</code> (spec 006 / <code>ext.streams</code>) is unchanged.</p>
-<p><strong>Lifecycle of <code>.result</code>:</strong></p>
-<ul>
-<li>Before the <code>with</code> block exits, <code>writer.result</code> is <code>None</code>.</li>
-<li>On <strong>successful</strong> exit of the <code>with</code> block, <code>writer.result</code> is populated
-  with a <code>WriteResult</code> whose <code>digest</code> field carries the client-computed
-  streaming hash and whose other fields mirror the underlying
-  <code>Store.write_atomic()</code> result.</li>
-<li>On <strong>exception</strong> exit (the <code>with</code> body or the inner <code>write_atomic</code>
-  raised), <code>writer.result</code> remains <code>None</code>; the exception propagates
-  unchanged. <code>HashingAtomicWriter</code> does not record a partial or
-  failed result.</li>
-</ul>
-<p><strong>Testability:</strong> Two positive tests (pre-exit <code>.result is None</code>; post-exit
-<code>.result is WriteResult(...)</code>), one negative test (body raises →
-post-exit <code>.result is None</code> and exception propagates).</p>
+<p><strong>Moved to <a href="../046-ext-write/#ew-004-was-wr-017-open_atomic_with_hash-exposes-result-after-exit">EW-004</a>.</strong></p>
 <h2 id="wr-018-proxy-stack-forwarding">WR-018: Proxy Stack Forwarding<a class="headerlink" href="#wr-018-proxy-stack-forwarding" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> The proxy stack (<code>ext.observe</code>, <code>ext.cache</code>, <code>_proxy</code>) widens
 the return type of <code>write</code>, <code>write_text</code>, and <code>write_atomic</code> overrides from

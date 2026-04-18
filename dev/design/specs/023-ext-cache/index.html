@@ -8507,6 +8507,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../046-ext-write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    046: Spec 046 — ext.write Extension
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -9189,6 +9217,7 @@ inner store without caching:</p>
 <li><code>read(path)</code> -- returns <code>BinaryIO</code> (not serializable/reusable).</li>
 <li><code>read_text(path)</code> -- delegates to <code>self.read_bytes()</code> (uses cached
   <code>read_bytes</code> result). No separate cache key. See RTXT-005.</li>
+<li><code>head(path)</code> -- always live; sidecar metadata is not cached.</li>
 <li><code>close()</code>, <code>child()</code>, <code>to_key()</code>, <code>unwrap()</code>, <code>native_path()</code>,
   <code>supports()</code> -- no backend I/O worth caching.</li>
 </ul>
@@ -9196,7 +9225,7 @@ inner store without caching:</p>
 <h2 id="invalidation">Invalidation<a class="headerlink" href="#invalidation" title="Permanent link">&para;</a></h2>
 <h3 id="cache-008-write-invalidation">CACHE-008: Write Invalidation<a class="headerlink" href="#cache-008-write-invalidation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write()</code>, <code>write_text()</code>, <code>write_atomic()</code>, and <code>open_atomic()</code> (on
-successful context exit) invalidate:</p>
+successful context exit) return a <code>WriteResult</code> forwarded from the inner store and invalidate:</p>
 <ol>
 <li>All per-path cache entries for the written path <strong>and every ancestor
    directory</strong> of that path (all operation prefixes: <code>exists</code>, <code>is_file</code>,

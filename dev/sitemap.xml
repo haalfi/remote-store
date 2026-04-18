@@ -265,6 +265,10 @@
          <lastmod>2026-04-18</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/api/extensions/write/</loc>
+         <lastmod>2026-04-18</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/api/extensions/yaml/</loc>
          <lastmod>2026-04-18</lastmod>
     </url>
@@ -834,6 +838,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/045-write-result/</loc>
+         <lastmod>2026-04-18</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/046-ext-write/</loc>
          <lastmod>2026-04-18</lastmod>
     </url>
     <url>

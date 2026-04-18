@@ -8721,6 +8721,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/specs/046-ext-write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    046: Spec 046 — ext.write Extension
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -9846,7 +9874,13 @@ passing the stream to PyArrow or other analytical readers.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">content</span><span class="p">:</span> <span class="n"><span title="remote_store._types.WritableContent">WritableContent</span></span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -9883,6 +9917,36 @@ passing the stream to PyArrow or other analytical readers.</p>
 <em>path</em> exists.</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+            <b><code>metadata</code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional user-supplied key/value pairs to store
+alongside the file.  Requires <code>Capability.USER_METADATA</code>.
+Keys must be non-empty ASCII strings with no leading
+underscore; total payload must not exceed 2048 bytes.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p><code>WriteResult</code> with at least <code>path</code> and <code>size</code> populated.</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -9901,6 +9965,21 @@ passing the stream to PyArrow or other analytical readers.</p>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="ValueError">ValueError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>metadata</em> fails shape validation (WR-011).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>metadata</em> is non-empty and the
+backend lacks <code>USER_METADATA</code>.</p>
           </div>
         </li>
     </ul>
@@ -9924,7 +10003,13 @@ passing the stream to PyArrow or other analytical readers.</p>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">encoding</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -9971,6 +10056,33 @@ passing the stream to PyArrow or other analytical readers.</p>
 <em>path</em> exists.</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+            <b><code>metadata</code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional user-supplied key/value pairs (see <code>write()</code>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p><code>WriteResult</code>.</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -10013,7 +10125,13 @@ passing the stream to PyArrow or other analytical readers.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">content</span><span class="p">:</span> <span class="n"><span title="remote_store._types.WritableContent">WritableContent</span></span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -10050,6 +10168,33 @@ partial state.</p>
           <div class="doc-md-description">
             <p>If <code>False</code>, raises <code>AlreadyExists</code> when
 <em>path</em> exists.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>metadata</code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional user-supplied key/value pairs (see <code>write()</code>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p><code>WriteResult</code>.</p>
           </div>
         </li>
     </ul>
