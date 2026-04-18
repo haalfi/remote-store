@@ -1,15 +1,10 @@
 """Write helpers with client-side content hashing.
 
-Provides two utilities that guarantee a populated ``WriteResult.digest``
-regardless of whether the backend declares ``WRITE_RESULT_NATIVE``:
+Guarantees a populated ``WriteResult.digest`` regardless of whether the
+backend declares ``WRITE_RESULT_NATIVE``. The hash is always computed
+client-side over the bytes as they are written.
 
-- ``write_with_hash`` — write bytes or a stream and return a
-  ``WriteResult`` with ``digest`` computed client-side.
-- ``open_atomic_with_hash`` — context manager variant for streaming
-  atomic writes, yielding a ``HashingAtomicWriter`` whose ``.result``
-  is populated after successful exit.
-
-Spec: WR-014..WR-017 in ``sdd/specs/045-write-result.md``.
+Spec: EW-001..EW-004 in ``sdd/specs/046-ext-write.md``.
 """
 
 from __future__ import annotations
@@ -62,7 +57,7 @@ def write_with_hash(
 ) -> WriteResult:
     """Write *content* to *path* and return a ``WriteResult`` with a client-computed digest.
 
-    Works on every backend declaring ``Capability.WRITE`` (WR-015).
+    Works on every backend declaring ``Capability.WRITE`` (EW-002).
     The hash is always computed client-side regardless of
     ``WRITE_RESULT_NATIVE``.
 
