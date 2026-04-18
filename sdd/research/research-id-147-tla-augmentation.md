@@ -6,9 +6,9 @@
 augmenting existing Markdown specs with machine-checkable cross-layer
 consistency properties.
 **Related:** ID-147, [sdd/formal/README.md](../formal/README.md),
-[spec 003](specs/003-backend-adapter-contract.md),
-[spec 019](specs/019-ext-observe.md),
-[rfc-0011](rfcs/rfc-0011-write-result.md).
+[spec 003](../specs/003-backend-adapter-contract.md),
+[spec 019](../specs/019-ext-observe.md),
+[rfc-0011](../rfcs/rfc-0011-write-result.md).
 
 **Context:** PR 448 (WriteResult) amended five specs in one feature. The
 manual ripple-check table tells reviewers *what* to check; it cannot tell
@@ -26,8 +26,8 @@ not replacing them.
 
 | TLA+ module | Shadows | Key properties |
 |---|---|---|
-| `Backend.tla` | spec 003 (CAP-001..CAP-007, BE-001..BE-010) | capability gate ordering, error discrimination, entry partition |
-| `Store.tla` | spec 001 (STORE-002, STORE-008) | store wraps backend, capability gate fires before I/O |
+| `Backend.tla` | spec 003 (CAP-001..CAP-007, BE-001..BE-019) | capability gate ordering, error discrimination, entry partition |
+| `Store.tla` | spec 001 (STORE-004, STORE-005, STORE-006) | store wraps backend, capability gate fires before I/O |
 | `Observer.tla` | spec 019 (OBS-001..OBS-003) | every completed op fires exactly one event; hook routing matches outcome |
 
 **Explicitly out of scope for this spike:**
@@ -138,7 +138,7 @@ NoDoubleDispatch ==
 ```
 
 `NoDoubleDispatch` is the most valuable check: the around-hook pattern
-(OBS-002) nests around the operation *and* the hook dispatch. If the
+(OBS-005) nests around the operation *and* the hook dispatch. If the
 around context manager raises on `__exit__`, does on_any fire twice?
 TLC can enumerate this scenario; Dafny cannot express it.
 
