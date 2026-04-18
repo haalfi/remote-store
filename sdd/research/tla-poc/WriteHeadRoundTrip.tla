@@ -16,9 +16,14 @@
   -----
   One action (Write). Head is a pure observation, expressed as a
   function in the invariant rather than a state transition.
-  Capabilities: WRITE, METADATA, USER_METADATA. All three participate
-  in real spec gates (WR-010, WR-008). No async, no errors, no
-  overwrite semantics beyond last-write-wins.
+  Capabilities: WRITE, WRITE_RESULT_NATIVE, USER_METADATA.
+
+  What is NOT modelled: WR-008 requires head() to be gated on
+  Capability.METADATA and raise CapabilityNotSupported when absent.
+  Because Head is a pure function here (not an action), that gate
+  cannot be expressed as a reachability property — it would need a
+  Head action that guards on METADATA_CAP. Only the field-mapping
+  half of WR-008 is checked by this module.
 ***************************************************************************)
 
 EXTENDS Naturals, FiniteSets, TLC
@@ -30,9 +35,9 @@ CONSTANTS
     MaxClock         \* Nat — upper bound on timestamps (for state constraint)
 
 WRITE_CAP == "WRITE"
-METADATA_CAP == "METADATA"
+WRITE_RESULT_NATIVE_CAP == "WRITE_RESULT_NATIVE"
 USER_META_CAP == "USER_METADATA"
-Capabilities == {WRITE_CAP, METADATA_CAP, USER_META_CAP}
+Capabilities == {WRITE_CAP, WRITE_RESULT_NATIVE_CAP, USER_META_CAP}
 
 NO_META == "NO_METADATA_SENTINEL"
 ASSUME NO_META \notin MetaValues
@@ -90,10 +95,8 @@ Init ==
     /\ clock = 0
 
 \* WR-004/005: source is NATIVE when the backend declares WRITE_RESULT_NATIVE,
-\* BASIC otherwise. The PoC conflates WRITE_RESULT_NATIVE with METADATA because
-\* the v1 spec (WR-005 footnote) guarantees they co-occur. If a future backend
-\* separates them the model needs a third capability; not relevant here.
-WriteSource == IF METADATA_CAP \in caps THEN NATIVE ELSE BASIC
+\* BASIC otherwise (per WR-009, WRITE_RESULT_NATIVE is independent of METADATA).
+WriteSource == IF WRITE_RESULT_NATIVE_CAP \in caps THEN NATIVE ELSE BASIC
 
 \* WR-010: non-empty metadata kwarg requires USER_METADATA.
 MetaAllowed(m) == \/ m = NO_META
@@ -146,26 +149,20 @@ LastWriteResult(p) ==
      source        |-> wr_source[p]]
 
 \* ==========================================================================
-\* THE invariant. For every written path, Head(p) agrees with the stored
-\* WriteResult on observable fields, and Head's source is SIDECAR
-\* regardless of what the original write recorded.
+\* THE invariants. WriteHeadAgree and HeadIsSidecar are deliberately
+\* disjoint: WriteHeadAgree checks the three data fields (size, metadata,
+\* last_modified); HeadIsSidecar checks source. A break in one does not
+\* trigger the other.
 \* ==========================================================================
 WriteHeadAgree ==
     \A p \in written:
         /\ HeadResult(p).size          = LastWriteResult(p).size
         /\ HeadResult(p).metadata      = LastWriteResult(p).metadata
         /\ HeadResult(p).last_modified = LastWriteResult(p).last_modified
-        /\ HeadResult(p).source        = SIDECAR
 
 \* WR-006: head() always yields source = SIDECAR (not NATIVE, not BASIC).
 HeadIsSidecar ==
     \A p \in written: HeadResult(p).source = SIDECAR
-
-\* WR-010: strict gate held for every persisted write with non-empty metadata.
-\* If this ever fails, a write persisted user metadata without USER_META_CAP.
-MetaGateHeld ==
-    \A p \in written:
-        fi_meta[p] /= NO_META => USER_META_CAP \in caps
 
 \* Bound the state space for TLC.
 StateConstraint == clock <= MaxClock

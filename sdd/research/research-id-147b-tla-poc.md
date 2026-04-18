@@ -1,11 +1,11 @@
 # Research: TLA+ PoC — WriteResult Spec Consistency (ID-147b)
 
 **Date:** 2026-04-18
-**Status:** PoC complete; feeds [PR 450](https://github.com/haalfi/remote-store/pull/450) review and ID-147 scoping.
+**Status:** PoC complete; feeds [PR 450](https://github.com/haalfi/remote-store/pull/450) review.
 **Scope:** A deliberately minimal TLA+ spike targeting ID-146's `WriteResult`
 landing (spec 045), evaluating TLA+ as both a bug-finder and a
 spec-decomposition discipline.
-**Related:** [ID-146](../BACKLOG-DONE.md), [ID-147](../BACKLOG.md),
+**Related:** [ID-146](../BACKLOG.md), [PR 450](https://github.com/haalfi/remote-store/pull/450),
 [spec 045](../specs/045-write-result.md),
 [spec 001](../specs/001-store-api.md),
 [spec 003](../specs/003-backend-adapter-contract.md),
@@ -28,8 +28,8 @@ Two modules, one invariant table each, deliberately disjoint:
 
 | Module | Targets | Invariants |
 |---|---|---|
-| `WriteHeadRoundTrip.tla` | spec 045 § WR-006, WR-008, WR-010 | `WriteHeadAgree`, `HeadIsSidecar`, `MetaGateHeld` |
-| `WR018ProxyForwarding.tla` | spec 045 § WR-018 | `ReturnTypeIsWriteResult`, `ProxyForwardUnchanged`, `CacheInvalidated`, `EventPerWrite` |
+| `WriteHeadRoundTrip.tla` | spec 045 § WR-006, WR-008 (field mapping only; gating not modelled) | `WriteHeadAgree`, `HeadIsSidecar` |
+| `WR018ProxyForwarding.tla` | spec 045 § WR-018 | `ProxyForwardUnchanged`, `PostWriteCacheNotTracked`, `EventPerWrite` |
 
 Both run under a single TLC image built by `scripts/tlc_check.sh` (Docker
 wrapper, no local Java, no local jar). First-run image build ≈ 15 s;
@@ -60,15 +60,15 @@ spec items they came from are not actually independent).
 | Break | Module change | Invariant triggered | Others triggered | Depth |
 |---|---|---|---|---|
 | Drop WR-008 rename (`last_modified ← fi_size`) | `HeadResult.last_modified` | `WriteHeadAgree` | — | 2 |
-| Wrong `source` (`BASIC` instead of `SIDECAR`) | `HeadResult.source` | `WriteHeadAgree` | — | 2 |
+| Wrong `source` (`BASIC` instead of `SIDECAR`) | `HeadResult.source` | `HeadIsSidecar` | — | 2 |
 | Proxy mutates on forward (+1 to size) | `wr_c = [wr_b EXCEPT !.size = ...]` | `ProxyForwardUnchanged` | — | 2 |
-| Skip cache invalidation | `cache_paths' = cache_paths` | `CacheInvalidated` | — | 2 |
+| Skip cache invalidation | `cache_paths' = cache_paths` | `PostWriteCacheNotTracked` | — | 2 |
 | Skip event emission | `events' = events` | `EventPerWrite` | — | 2 |
 
-Every break surfaced its target invariant and no others, at the
-minimum possible depth (one Write). The five invariants across both
-modules are mutually independent: no break accidentally tripped a
-neighbouring claim.
+Every break surfaced its target invariant and no others at the minimum
+possible depth (one Write). `WriteHeadAgree` and `HeadIsSidecar` are
+deliberately disjoint — the data-field break and the source break each
+trigger exactly one. The five invariants are mutually independent.
 
 ## 3. Findings
 
@@ -89,19 +89,21 @@ only surfaces on a second read.
 The more interesting finding is what writing the TLA+ module surfaced
 about the Markdown spec.
 
-**WR-018's Markdown is one paragraph. Its TLA+ encoding requires four
-invariants.** Each invariant corresponds to a distinct claim in the
-paragraph:
+**WR-018's Markdown is one paragraph. Its TLA+ encoding surfaces four
+distinct claims.** Three are independently checkable TLC invariants;
+the fourth is trivially enforced by the action's constructor:
 
-1. Return-type widening (shape of the returned record at every layer).
-2. Unchanged forwarding (field-wise equality top ↔ bottom).
-3. Cache invalidation (side-effect on the cache layer).
-4. Event emission (side-effect on the observer layer).
+1. Return-type widening — trivially enforced: `MkWR` always produces a
+   record with the expected domain; no reachable state can violate it.
+   Noted for completeness; not a TLC invariant.
+2. Unchanged forwarding (`ProxyForwardUnchanged`) — independently breakable.
+3. Post-write cache state (`PostWriteCacheNotTracked`) — independently breakable.
+4. Event emission (`EventPerWrite`) — independently breakable.
 
-The break-and-catch table above is the empirical evidence that these
-four are independent: each can fail without disturbing the others. An
-independent failure mode per claim is the definition of "this is really
-four specs pretending to be one".
+The break-and-catch table above is the empirical evidence: breaks for
+(2), (3), (4) each trigger exactly one invariant without disturbing the
+others. An independent failure mode per claim is the definition of
+"this is really multiple specs pretending to be one".
 
 A secondary observation: WR-018's phrase *"never substitute, mutate,
 or synthesise fields"* collapses in TLA+ to a single field-wise
@@ -170,6 +172,15 @@ long spec PRs with bundled claims that survive review.
 - **Bounded models.** TLC's guarantees are finite-state. `MaxClock=4`
   with two paths and two data sizes enumerates cleanly; scaling
   constants changes runtime from milliseconds to minutes.
+- **WR-008 gating not modelled.** WR-008 requires `head()` to raise
+  `CapabilityNotSupported` when the backend lacks `METADATA`. Because
+  `HeadResult` is a pure function (not an action), the capability gate
+  cannot be expressed as a reachability property in this module.
+  Only the field-mapping half of WR-008 is checked.
+- **PostWriteCacheNotTracked is stronger than WR-018.** The model has
+  no `Read` action, so a legitimate post-read cache re-population
+  cannot happen. The invariant therefore bans tracking a written path
+  forever, not just at write time.
 - **No async.** Spec 029 (async Store API) is not modelled; async
   concurrency is the regime where TLC's interleaving enumeration is
   most valuable, and also where authoring cost is highest.

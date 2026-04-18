@@ -5,6 +5,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-147b — TLA+ PoC: WriteResult spec consistency**
+  Minimal TLA+ spike targeting spec 045 (WriteResult) to evaluate TLA+
+  as both bug-finder and spec-decomposition discipline. Two modules
+  (`WriteHeadRoundTrip`, `WR018ProxyForwarding`), five independently
+  verified invariants, Docker-based TLC toolchain
+  (`scripts/tlc_check.sh`). Findings: WR-018's single Markdown paragraph
+  bundles four distinct claims; three are independently breakable TLC
+  invariants. Workflow recommendation in
+  `sdd/research/research-id-147b-tla-poc.md`. PR #451.
+
 - [x] **ID-145 — `scripts/gen_pages.py` refactor**
   Split the 840-line mkdocs-gen-files hook into
   `scripts/docs/{scan,render,nav,link}.py` plus a 70-line orchestrator;

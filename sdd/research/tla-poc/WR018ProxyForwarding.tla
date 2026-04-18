@@ -13,17 +13,27 @@
   invariants here is evidence that the spec item is N items pretending
   to be one.
 
-  The four claims extracted from WR-018
-  -------------------------------------
+  The claims extracted from WR-018
+  ---------------------------------
   (I1) Return-type widening: every proxy layer's write returns a
        WriteResult record, not None.
+       NOTE: I1 is trivially enforced by the Write action — MkWR always
+       produces a record with WriteResultShape domain. No TLC invariant
+       is needed; a break-and-catch would require a hypothetical
+       Write_None action. The claim is noted for completeness.
   (I2) Unchanged forwarding: the WriteResult the caller sees equals the
        WriteResult the backend produced, field-by-field — the union of
        "no substitute", "no mutate", "no synthesise".
-  (I3) Cache invalidation: successful write on p removes p from the
-       cache layer's tracked set.
+  (I3) Post-write cache state: after a write to p, the cache layer no
+       longer tracks p. Note: the model has no Read action, so this
+       invariant is stronger than WR-018 requires — it is an eternal
+       ban on tracking a written path, not just an immediate post-write
+       guarantee. See PostWriteCacheNotTracked.
   (I4) Event emission: each successful write produces exactly one event
        at the observe layer, carrying the forwarded WriteResult.
+
+  I2, I3, I4 are independently checkable (each has a dedicated
+  break-and-catch in the research doc).
 
   Spec § WR-018 also asserts head() forwarding; head is not modelled
   here because it has its own module (WriteHeadRoundTrip). Keeping the
@@ -107,16 +117,8 @@ Next == \E p \in Paths, sz \in DataSizes: Write(p, sz)
 Spec == Init /\ [][Next]_vars
 
 \* ==========================================================================
-\* The four WR-018 claims, as independent invariants.
+\* The WR-018 invariants (I2, I3, I4 — I1 is trivially enforced by MkWR).
 \* ==========================================================================
-
-\* (I1) Return-type widening. Every layer's write returned a WriteResult
-\*      record with the expected shape — not None.
-ReturnTypeIsWriteResult ==
-    \A p \in WrittenPaths:
-        /\ DOMAIN backend_wr[p] = WriteResultShape
-        /\ DOMAIN cache_wr[p]   = WriteResultShape
-        /\ DOMAIN observe_wr[p] = WriteResultShape
 
 \* (I2) Unchanged forwarding. Top-level result equals bottom-level, field
 \*      by field. This single equality subsumes "no substitute",
@@ -127,10 +129,12 @@ ProxyForwardUnchanged ==
         /\ observe_wr[p] = cache_wr[p]
         /\ cache_wr[p]   = backend_wr[p]
 
-\* (I3) Cache invalidation. Successful write removes p from cache tracking.
-\*      Note: this holds for every written path regardless of whether the
-\*      cache contained it beforehand — invalidation is unconditional.
-CacheInvalidated ==
+\* (I3) Post-write cache state. After a write to p, the cache layer does
+\*      not track p. Stronger than WR-018: WR-018 only requires invalidation
+\*      at write time; because this model has no Read action, a legitimate
+\*      post-read re-population cannot happen, making the invariant an
+\*      eternal ban rather than a write-time guarantee.
+PostWriteCacheNotTracked ==
     \A p \in WrittenPaths: p \notin cache_paths
 
 \* (I4) Event emission. Exactly one event per successful write; every event
