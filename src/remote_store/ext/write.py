@@ -86,7 +86,7 @@ def write_with_hash(
         result = store.write(path, io.BytesIO(content), overwrite=overwrite, metadata=metadata)
     else:
         reader = ChecksumReader(content, algorithm=algorithm)
-        result = store.write(path, reader, overwrite=overwrite, metadata=metadata)
+        result = store.write(path, reader, overwrite=overwrite, metadata=metadata)  # type: ignore[arg-type]
         digest_value = reader.hexdigest()
 
     return dataclasses.replace(result, digest=ContentDigest(algorithm=algorithm, value=digest_value))
