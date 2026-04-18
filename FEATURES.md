@@ -88,7 +88,6 @@ backend. Methods are grouped by capability gate. Query at runtime with
 
 | Method | Description |
 |---|---|
-| `head(path)` | Return a `WriteResult` snapshot of a file via a metadata lookup |
 | `get_file_info(path)` | Retrieve file metadata (size, modified, etc.) |
 | `get_folder_info(path)` | Retrieve folder metadata and contents |
 
@@ -168,7 +167,6 @@ Extensions add optional capabilities alongside the core.
 | Partition | Hive-style partition path parsing and construction | `remote_store.ext.partition` | `ParsedPartition`, `parse_partition`, `partition_path` |
 | Streams | Progress reporting and checksum wrappers for streams | `remote_store.ext.streams` | `ChecksumReader`, `ChecksumWriter`, `ProgressReader`, `ProgressWriter`, `read_with_progress` |
 | Transfer | High-level upload, download, and store-to-store transfer | `remote_store.ext.transfer` | `upload`, `download`, `transfer` |
-| Write | Client-side hashing helpers for write operations | `remote_store.ext.write` | `write_with_hash`, `open_atomic_with_hash`, `HashingAtomicWriter` |
 
 ### Optional (require extras)
 
