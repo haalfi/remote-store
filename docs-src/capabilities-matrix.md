@@ -21,6 +21,8 @@ at runtime before calling an operation.
 | METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | —   | Yes | Yes |
 | LAZY_READ      | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   | —   |
+| WRITE_RESULT_NATIVE | — | — | — | — | — | — | — | — | — |
+| USER_METADATA  | —   | —   | —   | —   | —   | —   | —   | —   | —   |
 
 **Full support:** Local.
 
@@ -40,6 +42,10 @@ copy-then-delete move).
 and `SEEKABLE_READ` — no write operations.
 
 **Minimal:** HTTP supports `READ`, `METADATA`, and `LAZY_READ` (read-only backend).
+
+**In progress:** `WRITE_RESULT_NATIVE` and `USER_METADATA` are newly added
+capabilities (RFC-0011). Backend declarations land in the next step; all
+entries are `—` until that work is complete.
 
 ## Querying capabilities at runtime
 
