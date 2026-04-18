@@ -78,7 +78,7 @@ class FileInfo:
         digest: Verified content digest with known algorithm.
         etag: Opaque backend-provided tag for change detection.
         content_type: Optional MIME type.
-        metadata: User-supplied key/value metadata echoed from the backend (WR-012).
+        metadata: User-supplied key/value metadata echoed from the backend.
         extra: Backend-specific metadata.
     """
 
@@ -109,23 +109,27 @@ class WriteResult:
     ``Store.write_atomic()``.
 
     Attributes:
-        path: Normalised written path, store-relative (WR-002).
-        size: Bytes written (WR-003).
-        source: Provenance of the optional fields — ``"native"`` when the
-            backend populated them from its write response,
-            ``"basic"`` when derived locally, ``"sidecar"`` when
-            constructed by ``Store.head()`` (WR-004, WR-006).
-        digest: Verified content digest — either a client-computed hash
-            from ``ext.write`` helpers (WR-014) or a backend-echoed
-            content hash from the write response (e.g., Azure
-            ``content_md5`` surfaced as ``ContentDigest("md5", …)``).
-            ``None`` on the default write path for all v1 backends.
+        path: Normalized written path, store-relative.
+        size: Bytes written.
+        source: Provenance of the optional fields.
+            ``"native"`` — the backend populated them from its write
+            response; trust ``digest``, ``etag``, and ``last_modified``.
+            ``"basic"`` — only ``path`` and ``size`` are reliable; call
+            ``Store.head()`` or use ``ext.write`` helpers if you need
+            more.
+            ``"sidecar"`` — constructed by ``Store.head()`` from a
+            subsequent ``get_file_info()`` call.
+        digest: Content digest from the write — either a client-computed
+            hash from ``ext.write`` helpers, or a hash echoed by the
+            backend from its write response (e.g., Azure echoes the
+            client-supplied MD5 as ``ContentDigest("md5", …)``).
+            ``None`` when neither source applies.
         etag: Opaque backend change tag; semantics vary by backend.
         version_id: Immutable backend version identifier; ``None`` when
             the backend does not version objects.
         last_modified: Server timestamp from the write response; ``None``
             when the backend's write response omits it.
-        metadata: Echo of user metadata stored with the object (WR-012).
+        metadata: Echo of user metadata stored with the object.
     """
 
     path: RemotePath

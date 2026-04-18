@@ -118,18 +118,20 @@ constructed by `Store.head()`. Direct write calls never produce `source ==
 
 **Invariant:** The default write path (`Store.write*()` without `ext.write`)
 returns `WriteResult.digest is None` on every backend that does not surface a
-server-verified digest on its write response. No streaming hash wrapper is
-inserted on the default path.
+server-verified or backend-echoed content hash on its write response. No
+streaming hash wrapper is inserted on the default path.
 
 **Current backend set (v1):** No v1 backend surfaces a server-verified
 digest on the default write path. Azure echoes the client-supplied MD5 as
-`ContentDigest("md5", …)` in `WriteResult.digest`, but that value is
-client-originated, not server-computed. S3's single-PUT `ETag` is
-explicitly documented as *not* a content hash; multipart `ETag` values
-have the form `"<md5-of-part-md5s>-<N>"`. So in v1 the invariant
-simplifies to "`digest is None` on every backend," but the invariant is
-written so that a future backend surfacing a server-verified digest (e.g.,
-opt-in S3 `ChecksumSHA256`) does not require amending WR-007.
+`ContentDigest("md5", …)` in `WriteResult.digest`; that value is
+client-originated but surfaces what the backend stored, so it falls under
+the "backend-echoed" clause. S3's single-PUT `ETag` is explicitly documented
+as *not* a content hash; multipart `ETag` values have the form
+`"<md5-of-part-md5s>-<N>"`. So in v1 the invariant simplifies to
+"`digest is None` on every backend except Azure when the caller supplied an
+MD5," but the invariant is written so that a future backend surfacing a
+server-verified digest (e.g., opt-in S3 `ChecksumSHA256`) does not require
+amending WR-007.
 
 ## WR-008: Store.head() Gating and Semantics
 

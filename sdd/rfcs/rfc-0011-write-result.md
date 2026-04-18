@@ -160,12 +160,12 @@ class WriteResult:
 
     path: RemotePath
     size: int
+    source: Literal["native", "basic", "sidecar"] = "basic"
     digest: ContentDigest | None = None
     etag: str | None = None
     version_id: str | None = None
     last_modified: datetime | None = None
     metadata: Mapping[str, str] | None = None
-    source: Literal["native", "basic", "sidecar"] = "basic"
 ```
 
 `digest` reuses the existing `ContentDigest` model from spec 035 for
@@ -192,7 +192,12 @@ def write(self, path, content, *, overwrite=False, metadata=None) -> WriteResult
         etag=response["etag"],
         version_id=response.get("version_id"),
         last_modified=response["last_modified"],
-        digest=_md5_to_digest(response.get("content_md5")),  # None when not client-supplied
+        # Azure returns content_md5 as a base64-encoded bytes object when the
+        # caller supplied one; convert to hex for ContentDigest, or None.
+        digest=(
+            ContentDigest("md5", response["content_md5"].hex())
+            if response.get("content_md5") else None
+        ),
         metadata=metadata,
         source="native",
     )
@@ -480,7 +485,7 @@ echoed back if the caller passed `metadata=`.
 | WR-004 | If the backend declares `WRITE_RESULT_NATIVE`, every successful `Store.write*()` returns `WriteResult.source == "native"`; otherwise `source == "basic"`. |
 | WR-005 | When `source == "basic"`, only `path` and `size` are guaranteed populated; the rich fields `digest`, `etag`, `version_id`, and `last_modified` are `None`. `metadata` is governed independently by WR-012 regardless of `source`. |
 | WR-006 | `WriteResult.source == "sidecar"` only when constructed by `Store.head()`.                                        |
-| WR-007 | The default write path (`Store.write*()` without `ext.write`) returns `WriteResult.digest is None` on every backend that does not surface a server-verified digest. |
+| WR-007 | The default write path (`Store.write*()` without `ext.write`) returns `WriteResult.digest is None` on every backend that does not surface a server-verified or backend-echoed content hash on its write response. |
 | WR-008 | `Store.head(path) -> WriteResult` is gated on `Capability.METADATA` only. It is **not** gated on `WRITE` — callers may invoke it on read-only backends that declare `METADATA`. Raises `NotFound` if the path doesn't exist; raises `CapabilityNotSupported` if the backend lacks `METADATA`. |
 | WR-009 | `Capability.WRITE_RESULT_NATIVE` is a quality flag — it does not gate any method.                                 |
 | WR-010 | `Capability.USER_METADATA` gates the `metadata=` kwarg. Passing `metadata=` to a non-declaring backend raises `CapabilityNotSupported` before any I/O. |

@@ -6,6 +6,8 @@ import dataclasses
 from datetime import datetime, timezone
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry, WriteResult
 from remote_store._path import RemotePath
@@ -240,6 +242,28 @@ class TestContentDigest:
         assert remote_store.ContentDigest is ContentDigest
 
 
+# Hypothesis strategies for WriteResult fields
+_path_st = st.from_regex(r"[a-z]{1,8}(/[a-z]{1,8}){0,3}", fullmatch=True).map(RemotePath)
+_digest_st = st.builds(
+    ContentDigest,
+    algorithm=st.just("sha256"),
+    value=st.binary(min_size=4, max_size=32).map(lambda b: b.hex()),
+)
+_write_result_st = st.builds(
+    WriteResult,
+    path=_path_st,
+    size=st.integers(min_value=0, max_value=2**31),
+    source=st.sampled_from(["native", "basic", "sidecar"]),
+    digest=st.none() | _digest_st,
+    etag=st.none() | st.text(max_size=64),
+    version_id=st.none() | st.text(max_size=32),
+    metadata=st.none() | st.dictionaries(st.text(max_size=16), st.text(max_size=32)),
+)
+# WriteResult with dict metadata is unhashable (frozen=True guards field
+# reassignment, not dict contents). Hash tests require metadata=None.
+_hashable_write_result_st = _write_result_st.filter(lambda wr: wr.metadata is None)
+
+
 class TestWriteResultFields:
     """WR-001a: WriteResult frozen dataclass with required and optional fields."""
 
@@ -270,6 +294,12 @@ class TestWriteResultFields:
         assert wr.metadata is None
 
     @pytest.mark.spec("WR-001a")
+    def test_digest_roundtrip(self) -> None:
+        d = ContentDigest("sha256", "abcdef0123456789")
+        wr = WriteResult(path=RemotePath("a.bin"), size=10, digest=d)
+        assert wr.digest == d
+
+    @pytest.mark.spec("WR-001a")
     def test_frozen(self) -> None:
         wr = WriteResult(path=RemotePath("a.bin"), size=10)
         with pytest.raises(dataclasses.FrozenInstanceError):
@@ -277,11 +307,31 @@ class TestWriteResultFields:
 
     @pytest.mark.spec("WR-001a")
     def test_equality_field_wise(self) -> None:
-        a = WriteResult(path=RemotePath("a.bin"), size=10, etag='"abc"')
-        b = WriteResult(path=RemotePath("a.bin"), size=10, etag='"abc"')
-        c = WriteResult(path=RemotePath("a.bin"), size=99, etag='"abc"')
-        assert a == b
-        assert a != c
+        base = WriteResult(path=RemotePath("a.bin"), size=10, etag='"abc"')
+        same = WriteResult(path=RemotePath("a.bin"), size=10, etag='"abc"')
+        diff_size = WriteResult(path=RemotePath("a.bin"), size=99, etag='"abc"')
+        diff_path = WriteResult(path=RemotePath("b.bin"), size=10, etag='"abc"')
+        diff_etag = WriteResult(path=RemotePath("a.bin"), size=10, etag='"xyz"')
+        assert base == same
+        assert base != diff_size
+        assert base != diff_path
+        assert base != diff_etag
+
+    @pytest.mark.spec("WR-001a")
+    @given(_hashable_write_result_st)
+    def test_hash_reflexive(self, wr: WriteResult) -> None:
+        assert hash(wr) == hash(wr)
+
+    @pytest.mark.spec("WR-001a")
+    @given(_hashable_write_result_st, _hashable_write_result_st)
+    def test_hash_consistent_with_equality(self, a: WriteResult, b: WriteResult) -> None:
+        if a == b:
+            assert hash(a) == hash(b)
+
+    @pytest.mark.spec("WR-001a")
+    @given(_hashable_write_result_st)
+    def test_usable_in_set(self, wr: WriteResult) -> None:
+        assert len({wr, wr}) == 1
 
     @pytest.mark.spec("WR-001a")
     def test_top_level_export(self) -> None:
@@ -292,14 +342,14 @@ class TestWriteResultFields:
 
 
 class TestFileInfoMetadata:
-    """WR-012: FileInfo.metadata field."""
+    """WR-012/WR-013: FileInfo.metadata field."""
 
-    @pytest.mark.spec("WR-012")
+    @pytest.mark.spec("WR-013")
     def test_metadata_defaults_none(self) -> None:
         fi = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW)
         assert fi.metadata is None
 
-    @pytest.mark.spec("WR-012")
+    @pytest.mark.spec("WR-013")
     def test_metadata_accepted(self) -> None:
         fi = FileInfo(
             path=RemotePath("a.txt"),
@@ -310,8 +360,18 @@ class TestFileInfoMetadata:
         )
         assert fi.metadata == {"x-custom": "value"}
 
-    @pytest.mark.spec("WR-012")
+    @pytest.mark.spec("WR-013")
     def test_metadata_frozen(self) -> None:
         fi = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW, metadata={"k": "v"})
         with pytest.raises(dataclasses.FrozenInstanceError):
             fi.metadata = None  # type: ignore[misc]
+
+    @pytest.mark.spec("WR-013")
+    def test_metadata_dict_contents_are_mutable(self) -> None:
+        # frozen=True prevents field reassignment but not mutation of the stored
+        # dict. Mapping annotation signals read-only intent; enforcement is the
+        # caller's responsibility.
+        fi = FileInfo(path=RemotePath("a.txt"), name="a.txt", size=0, modified_at=NOW, metadata={"k": "v"})
+        assert fi.metadata is not None
+        fi.metadata["k"] = "mutated"  # type: ignore[index]
+        assert fi.metadata["k"] == "mutated"
