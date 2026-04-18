@@ -119,6 +119,46 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
+- [ ] **ID-147 — TLA+ augmentation spike: machine-checkable cross-spec consistency**
+  PR 448 (WriteResult) amended 5 specs in one feature. The manual ripple-check
+  table catches what to review; it cannot catch whether the reviewed specs are
+  mutually consistent. Dafny covers per-operation contracts — it has no model
+  of how layers compose. This item explores TLA+ as a lightweight, additive
+  layer to machine-check that consistency.
+
+  **Framing:** TLA+ modules *augment* the existing Markdown specs — they do
+  not replace them. Markdown stays as the human-readable contract; TLA+ is the
+  machine-checkable shadow for protocol-level properties. Goal is learning: find
+  the right workflow for this repo before committing to any permanent structure.
+
+  **Minimal scope — three modules to start:**
+  - `Backend.tla` — abstract backend contract: operations, error outcomes,
+    capability gates. Shadows spec 003.
+  - `Store.tla` — store layer composing backend + extensions; WriteResult
+    forwarding. Shadows specs 001 + 045 (WR-019).
+  - `Observer.tla` — event dispatch: every write fires exactly one StoreEvent,
+    none dropped. Shadows spec 019 OBS-001..OBS-003.
+
+  These three cover the PR 448 ripple surface with the smallest possible TLA+
+  footprint. Stand-alone modules per concern (no `EXTENDS` hierarchy — PoC §4.1
+  recommendation); cross-module composition deferred to Phase 6.
+
+  **Deliverable:** spike report answering: (1) what does the authoring workflow
+  feel like — is it sustainable for contributors? (2) do the three modules
+  verify cleanly under TLC? (3) where does partial proof land — which
+  properties can TLC check exhaustively within a bounded model, and would that
+  coverage be worth maintaining long-term? Workflow fit is the primary
+  question; proof depth is secondary but informs the long-term decision.
+
+  **Tooling note:** [Specula](https://github.com/specula-org/Specula) (LLM +
+  TLC pipeline, Claude Code–compatible) may help bootstrap initial module
+  drafts from existing Python source and Markdown specs, but is not required.
+  TLC alone suffices for model checking once modules exist.
+
+  **Relation to existing formal layer:** additive. Dafny (`sdd/formal/`) stays
+  as the per-operation contract and oracle layer. TLA+ sits above it, covering
+  protocol composition across layers that Dafny cannot express.
+
 - [ ] **ID-138 — Async streaming integrity e2e test**
   The e2e streaming test only covers sync backends. Add an async variant
   using `AsyncAzureBackend` to verify the block-size defaults work for
