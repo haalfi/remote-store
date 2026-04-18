@@ -639,3 +639,65 @@ def test_child_fires_hooks() -> None:
     child = observed.child("sub")
     child.read_bytes("file.txt")
     assert any(e.operation == "read_bytes" for e in events)
+
+
+# ---------------------------------------------------------------------------
+# WR-018, WR-019: write* return WriteResult; StoreEvent carries write_result
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("WR-018")
+def test_observed_write_returns_write_result() -> None:
+    from remote_store._models import WriteResult
+
+    store = _make_store()
+    observed = observe(store)
+    result = observed.write("f.bin", b"data")
+    assert isinstance(result, WriteResult)
+    assert result.size == 4
+
+
+@pytest.mark.spec("WR-019")
+@pytest.mark.parametrize(
+    ("method", "args"),
+    [
+        ("write", ("f.bin", b"hello")),
+        ("write_text", ("f.bin", "hello")),
+        ("write_atomic", ("f.bin", b"hello")),
+    ],
+)
+def test_store_event_write_result_populated_on_success(method: str, args: tuple[object, ...]) -> None:
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_write=events.append)
+    result = getattr(observed, method)(*args)
+    assert len(events) == 1
+    assert events[0].metadata["write_result"] is result
+
+
+@pytest.mark.spec("WR-019")
+def test_store_event_write_result_absent_on_error() -> None:
+    from remote_store._errors import AlreadyExists
+
+    store = _make_store()
+    events: list[StoreEvent] = []
+    observed = observe(store, on_write=events.append)
+    observed.write("f.bin", b"x", overwrite=False)
+    with pytest.raises(AlreadyExists):
+        observed.write("f.bin", b"x", overwrite=False)
+    error_events = [e for e in events if e.error is not None]
+    assert error_events, "expected at least one error event"
+    assert "write_result" not in error_events[0].metadata
+
+
+@pytest.mark.spec("WR-018")
+def test_observed_head_fires_event() -> None:
+    from remote_store._models import WriteResult
+
+    store = _make_store()
+    store.write("f.bin", b"data")
+    events: list[StoreEvent] = []
+    observed = observe(store, on_any=events.append)
+    result = observed.head("f.bin")
+    assert isinstance(result, WriteResult)
+    assert any(e.operation == "head" for e in events)

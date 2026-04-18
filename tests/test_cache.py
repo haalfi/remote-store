@@ -978,3 +978,42 @@ class TestPreFlightSizeCheck:
         cs.read_bytes("small.txt")  # should cache content (2 <= 50)
         cs.read_bytes("small.txt")  # should be a hit
         assert cs.stats.hits == 1
+
+
+# ---------------------------------------------------------------------------
+# WR-018: CachedStore forwards write* return values and head()
+# ---------------------------------------------------------------------------
+
+
+class TestCacheWriteResult:
+    """WR-018: CachedStore.write* returns WriteResult; head() delegates."""
+
+    @pytest.mark.spec("WR-018")
+    @pytest.mark.parametrize(
+        ("method", "args", "expected_size"),
+        [
+            ("write", ("new.txt", b"content"), 7),
+            ("write_text", ("new.txt", "text"), 4),
+            ("write_atomic", ("new.txt", b"atomic"), 6),
+        ],
+    )
+    def test_write_methods_return_write_result(
+        self,
+        cached: CachedStore,
+        method: str,
+        args: tuple[object, ...],
+        expected_size: int,
+    ) -> None:
+        from remote_store._models import WriteResult
+
+        result = getattr(cached, method)(*args)
+        assert isinstance(result, WriteResult)
+        assert result.size == expected_size
+
+    @pytest.mark.spec("WR-018")
+    def test_head_delegates_to_inner(self, cached: CachedStore) -> None:
+        from remote_store._models import WriteResult
+
+        result = cached.head("a.txt")
+        assert isinstance(result, WriteResult)
+        assert result.source == "sidecar"

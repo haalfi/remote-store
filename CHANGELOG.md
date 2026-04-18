@@ -26,20 +26,17 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
-- **`WriteResult` model + `WRITE_RESULT_NATIVE`/`USER_METADATA` capabilities** (ID-146, steps 1–3b):
-  `WriteResult` is a new frozen dataclass returned by backend `write*()` methods,
-  carrying `path`, `size`, `source`, `digest`, `etag`, `version_id`,
-  `last_modified`, and `metadata`. `FileInfo.metadata: Mapping[str, str] | None`
-  is added (defaults to `None`). Two new `Capability` members:
-  `WRITE_RESULT_NATIVE` (quality flag — advertises rich `WriteResult` fields from
-  the backend write response) and `USER_METADATA` (strict gate on the non-empty
-  `metadata=` kwarg in write methods). All backends now return `WriteResult` from
-  `write*()` — Azure, S3, and Memory declare `WRITE_RESULT_NATIVE` and
-  `USER_METADATA`; `SQLBlobBackend` declares both only when the backing table
-  has a `user_metadata` column (schema-dependent), neither for legacy tables
-  without it; basic backends (Local, SFTP, S3PyArrow, HTTP,
-  `AsyncBackendSyncAdapter`) declare neither. Store-layer gate and `ext.write`
-  helpers land in step 4.
+- **`WriteResult`, `Store.head()`, and `ext.write` hashing helpers** (ID-146):
+  `Store.write*()` now returns a `WriteResult` frozen dataclass (`path`, `size`,
+  `source`, `digest`, `etag`, `version_id`, `last_modified`, `metadata`).
+  `Store.head(path)` retrieves file metadata as a `WriteResult` (requires
+  `Capability.METADATA`). `metadata=` kwarg on write methods is gated by
+  `Capability.USER_METADATA`; `Capability.WRITE_RESULT_NATIVE` signals backends
+  that populate rich fields from the write response. `ext.write` adds
+  `write_with_hash` and `open_atomic_with_hash` for guaranteed client-side
+  digest regardless of backend capability. All proxy layers (`ProxyStore`,
+  `ObservedStore`, `CachedStore`) forward `WriteResult` and `head()`;
+  `StoreEvent.metadata["write_result"]` is populated on successful writes.
 
 - **`AsyncBackendSyncAdapter`** (ID-141–143c): new public class wrapping any
   `AsyncBackend` as a synchronous `Backend` via a private event loop on a

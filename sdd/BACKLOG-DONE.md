@@ -5,6 +5,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-146 — Land RFC-0011: `WriteResult` + opt-in hashing**
+  `Store.write*()` returns `WriteResult`; `Store.head()` added (requires
+  `Capability.METADATA`); `metadata=` kwarg gated by `Capability.USER_METADATA`;
+  `Capability.WRITE_RESULT_NATIVE` signals rich backend write responses.
+  All backends updated; proxy stack (`ProxyStore`, `ObservedStore`, `CachedStore`)
+  forwards `WriteResult` and `head()`; `StoreEvent.metadata["write_result"]`
+  populated on successful writes. `ext.write` ships `write_with_hash` and
+  `open_atomic_with_hash` (`HashingAtomicWriter`) for guaranteed client-side
+  digest. `FileInfo.metadata` added. Spec 045 (WR-001..WR-019), spec 046
+  (EW-001..004), RFC-0011, ADR-0026. PRs #452, #453, #454.
+
 - [x] **ID-147b — TLA+ PoC: WriteResult spec consistency**
   Minimal TLA+ spike targeting spec 045 (WriteResult) to evaluate TLA+
   as both bug-finder and spec-decomposition discipline. Two modules

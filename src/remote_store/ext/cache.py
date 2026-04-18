@@ -28,9 +28,9 @@ from remote_store._models import FileInfo, FolderInfo  # noqa: TCH003 — runtim
 from remote_store._proxy import ProxyStore
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
-    from remote_store._models import FolderEntry
+    from remote_store._models import FolderEntry, WriteResult
     from remote_store._store import Store
     from remote_store._types import WritableContent
 
@@ -425,6 +425,9 @@ class CachedStore(ProxyStore):
         self._cache.set(key, result, self._ttl)
         return result
 
+    def head(self, path: str) -> WriteResult:
+        return self._inner.head(path)
+
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         key = ("iter_children", path)
         cached = self._cache_get(key)
@@ -509,17 +512,42 @@ class CachedStore(ProxyStore):
 
     # region: public method overrides -- mutating (invalidate + delegate)
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        self._inner.write(path, content, overwrite=overwrite)
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        result = self._inner.write(path, content, overwrite=overwrite, metadata=metadata)
         self._invalidate_path(path)
+        return result
 
-    def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite: bool = False) -> None:
-        self._inner.write_text(path, text, encoding=encoding, overwrite=overwrite)
+    def write_text(
+        self,
+        path: str,
+        text: str,
+        *,
+        encoding: str = "utf-8",
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        result = self._inner.write_text(path, text, encoding=encoding, overwrite=overwrite, metadata=metadata)
         self._invalidate_path(path)
+        return result
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        self._inner.write_atomic(path, content, overwrite=overwrite)
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        result = self._inner.write_atomic(path, content, overwrite=overwrite, metadata=metadata)
         self._invalidate_path(path)
+        return result
 
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

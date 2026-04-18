@@ -1,0 +1,9 @@
+# ext.write
+
+Client-side hashing helpers for write operations. Guarantees a populated
+`WriteResult.digest` regardless of whether the backend declares
+`WRITE_RESULT_NATIVE`.
+
+See the [ext.write spec](https://github.com/haalfi/remote-store/blob/master/sdd/specs/046-ext-write.md) for invariants.
+
+::: remote_store.ext.write

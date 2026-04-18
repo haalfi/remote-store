@@ -45,6 +45,7 @@ from remote_store.ext.observe import (
 from remote_store.ext.partition import ParsedPartition, parse_partition, partition_path
 from remote_store.ext.streams import ChecksumReader, ChecksumWriter, ProgressReader, ProgressWriter, read_with_progress
 from remote_store.ext.transfer import download, transfer, upload
+from remote_store.ext.write import HashingAtomicWriter, open_atomic_with_hash, write_with_hash
 
 __version__ = "0.23.0"
 
@@ -125,6 +126,10 @@ __all__ = [
     "upload",
     "download",
     "transfer",
+    # Write helpers
+    "HashingAtomicWriter",
+    "open_atomic_with_hash",
+    "write_with_hash",
     # Introspection
     "BackendInfo",
     "ExtensionInfo",

@@ -281,78 +281,28 @@ footnote) still echoes the caller's mapping.
 as `FileInfo.metadata: Mapping[str, str] | None`. On backends that do not
 declare `USER_METADATA`, `FileInfo.metadata` is always `None`.
 
-## ext.write invariants — forward-looking spec placement
+## ext.write invariants
 
-WR-014..WR-017 below specify the `ext.write` extension. They live in
-spec 045 for this RFC/spec-only PR so the `ext.write` contract lands
-next to the `WriteResult` contract it depends on. Per the one-spec-per-
-extension convention (ADR-0008 / spec 019 / spec 023 / spec 024), the
-implementation PR will move WR-014..WR-017 into a dedicated
-`046-ext-write.md` under an `EW-` prefix and leave cross-references
-here. Tracked in the BACKLOG ID-146 "Next" step.
+WR-014..WR-017 have been moved to
+[`046-ext-write.md`](046-ext-write.md) under the `EW-` prefix per the
+one-spec-per-extension convention (ADR-0008).  Cross-reference stubs are
+kept here for traceability.
 
 ## WR-014: ext.write.write_with_hash Returns Digest
 
-**Invariant:** `ext.write.write_with_hash(store, path, content, *,
-algorithm="sha256", overwrite=False, metadata=None) -> WriteResult`
-returns a `WriteResult` with `digest` populated from a client-side
-streaming hash over the written bytes. The underlying `source` value
-from the backend write is preserved (`"native"` or `"basic"`); `digest`
-is set independently of `source` and always represents the
-client-computed hash.
-
-**Parameter defaults (normative):**
-
-- `algorithm: str = "sha256"` — hash algorithm name accepted by
-  `hashlib.new`. Single-algorithm only in v1, matching the existing
-  `ChecksumWriter` signature; multi-algorithm multiplex is deferred.
-- `overwrite: bool = False` — same semantics as `Store.write`.
-- `metadata: Mapping[str, str] | None = None` — optional user
-  metadata; subject to the `USER_METADATA` capability gate (WR-010)
-  applied inside the underlying `store.write()`.
+**Moved to [EW-001](046-ext-write.md#ew-001-was-wr-014-write_with_hash-returns-digest).**
 
 ## WR-015: ext.write.write_with_hash Works on Every WRITE Backend
 
-**Invariant:** `ext.write.write_with_hash()` works on every backend declaring
-`Capability.WRITE`. The hash is always computed client-side via
-`ext.streams.ChecksumWriter` regardless of `WRITE_RESULT_NATIVE`. No additional
-capability beyond `WRITE` is required.
+**Moved to [EW-002](046-ext-write.md#ew-002-was-wr-015-write_with_hash-works-on-every-write-backend).**
 
 ## WR-016: open_atomic_with_hash Requires ATOMIC_WRITE
 
-**Invariant:** `ext.write.open_atomic_with_hash(store, path, *,
-algorithm="sha256", overwrite=False, metadata=None) ->
-Iterator[HashingAtomicWriter]` is a `@contextmanager` that requires
-`Capability.ATOMIC_WRITE` on the underlying store (inherited from
-`Store.open_atomic`, SAW-002). If the capability is absent,
-`CapabilityNotSupported` is raised before any I/O.
-
-**Parameter defaults (normative):** Same as WR-014 —
-`algorithm: str = "sha256"`, `overwrite: bool = False`,
-`metadata: Mapping[str, str] | None = None`.
+**Moved to [EW-003](046-ext-write.md#ew-003-was-wr-016-open_atomic_with_hash-requires-atomic_write).**
 
 ## WR-017: open_atomic_with_hash Exposes result After Exit
 
-**Invariant:** `ext.write.open_atomic_with_hash()` is an `@contextmanager`
-that yields a `HashingAtomicWriter` — a `ChecksumWriter` subclass defined in
-`ext.write` that adds a `.result: WriteResult | None` attribute. The base
-`ChecksumWriter` (spec 006 / `ext.streams`) is unchanged.
-
-**Lifecycle of `.result`:**
-
-- Before the `with` block exits, `writer.result` is `None`.
-- On **successful** exit of the `with` block, `writer.result` is populated
-  with a `WriteResult` whose `digest` field carries the client-computed
-  streaming hash and whose other fields mirror the underlying
-  `Store.write_atomic()` result.
-- On **exception** exit (the `with` body or the inner `write_atomic`
-  raised), `writer.result` remains `None`; the exception propagates
-  unchanged. `HashingAtomicWriter` does not record a partial or
-  failed result.
-
-**Testability:** Two positive tests (pre-exit `.result is None`; post-exit
-`.result is WriteResult(...)`), one negative test (body raises →
-post-exit `.result is None` and exception propagates).
+**Moved to [EW-004](046-ext-write.md#ew-004-was-wr-017-open_atomic_with_hash-exposes-result-after-exit).**
 
 ## WR-018: Proxy Stack Forwarding
 

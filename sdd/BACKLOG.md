@@ -45,7 +45,33 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **ID-149 — e2e coverage for write_with_hash / open_atomic_with_hash across real backends**
+  `test_streaming_integrity.py` tests streaming contract (chunked transfer + memory).
+  It already uses `ChecksumReader` directly for post-transfer reads and should not be
+  reworked. Gap: no e2e test verifies that `write_with_hash` and `open_atomic_with_hash`
+  return the correct `WriteResult.digest` when the underlying backend is S3, Azure, SFTP,
+  or PyArrow — only MemoryBackend is exercised by unit tests. A new
+  `tests/e2e/test_ext_write_e2e.py` should write a known payload to each available
+  backend via both helpers and assert the returned digest matches a pre-computed
+  SHA-256. `test_streaming_integrity.py` itself does not need modification.
+
+- [ ] **ID-148 — ID-146 docs ripple: WriteResult / head() / ext.write in guides and API reference**
+  Deferred from ID-146 Step 4 to keep the PR focused. The following docs need
+  updating to reflect the shipped WriteResult model, `Store.head()`, and `ext.write`:
+
+  - `docs-src/api/store.md` — expose `head()` in the API reference page
+  - `docs-src/api/models.md` — `WriteResult` / `ContentDigest` API entries
+  - `docs-src/api/capabilities.md` — `WRITE_RESULT_NATIVE`, `USER_METADATA` entries
+  - `docs-src/api/extensions/_nav.yml` and `docs-src/api/extensions/index.md` — surface `ext.write`
+  - `FEATURES.md` — list `ext.write` helpers and `head()`
+  - `docs-src/guides/write-integrity.md` (new) — walkthrough of `write_with_hash`
+    and `open_atomic_with_hash` for integrity-conscious consumers
+  - `docs-src/capabilities-matrix.md` — add `WRITE_RESULT_NATIVE` and
+    `USER_METADATA` rows if not already present
+  - `README.md` — mention `WriteResult` / `ext.write` in the feature blurb
+  - `sdd/rfcs/RFC-0011-*.md` — flip status from Proposed/Draft to Accepted/Implemented
+
+  Blocked by nothing; purely editorial.
 
 ---
 
@@ -171,38 +197,6 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [~] **ID-146 — Land RFC-0011: `WriteResult` + opt-in hashing**
-  Implement [RFC-0011](rfcs/rfc-0011-write-result.md) per its spec
-  table: widen `Store.write*()` return type from `None` to
-  `WriteResult`, add `Capability.WRITE_RESULT_NATIVE` (quality flag)
-  and `Capability.USER_METADATA` (strict gate on `metadata=` kwarg),
-  add `Store.head()`, add `FileInfo.metadata`, and ship `ext.write`
-  (`write_with_hash`, `open_atomic_with_hash`) reusing existing
-  `ext.streams.ChecksumWriter`. `open_atomic` stays unchanged.
-  - RFC + spec: [rfc-0011](rfcs/rfc-0011-write-result.md) (Proposed);
-    spec file `sdd/specs/045-write-result.md` (WR-001..WR-019) created;
-    specs 001, 003, 019, 029, 030 amended; ADR-0026 created.
-  - Next: implement (models, capabilities, backends, Store, ext.write),
-    then land user-facing ripple — `FEATURES.md` capability matrix rows
-    for `WRITE_RESULT_NATIVE` / `USER_METADATA`, `CHANGELOG.md` entries
-    for the return-type widening + new surfaces, and the doc pages
-    (`docs-src/api/models.md`, `.../capabilities.md`, `.../store.md`,
-    new `guides/write-integrity.md`) listed in the RFC ripple-check.
-    Those edits are deferred out of this spec-only PR per the RFC
-    "Scope of this PR" note. Also rewrite the **narrative prose** under
-    the capabilities matrix table in `docs-src/capabilities-matrix.md`
-    (\"Full support: Local\", \"Near-full:\", etc.) — it will no longer be
-    accurate once Local stops picking up `WRITE_RESULT_NATIVE` /
-    `USER_METADATA` implicitly via `set(Capability)`. Also update
-    **spec 023 (ext.cache)** —
-    CACHE-007 / CACHE-008 currently reference `write()`, `write_text()`,
-    `write_atomic()`, and `open_atomic()` with implicit `None` return
-    types, which will be stale once those methods return `WriteResult`.
-    A new CACHE-NNN invariant covering `head()` forwarding (per WR-018)
-    should also be added. And split WR-014..WR-017 into a dedicated
-    `sdd/specs/046-ext-write.md` under an `EW-` prefix during
-    implementation, per the one-spec-per-extension convention
-    (ADR-0008), leaving cross-refs from 045.
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of

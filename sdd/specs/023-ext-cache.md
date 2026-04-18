@@ -171,6 +171,7 @@ inner store without caching:
 - `read(path)` -- returns `BinaryIO` (not serializable/reusable).
 - `read_text(path)` -- delegates to `self.read_bytes()` (uses cached
   `read_bytes` result). No separate cache key. See RTXT-005.
+- `head(path)` -- always live; sidecar metadata is not cached.
 - `close()`, `child()`, `to_key()`, `unwrap()`, `native_path()`,
   `supports()` -- no backend I/O worth caching.
 
@@ -181,7 +182,7 @@ inner store without caching:
 ### CACHE-008: Write Invalidation
 
 **Invariant:** `write()`, `write_text()`, `write_atomic()`, and `open_atomic()` (on
-successful context exit) invalidate:
+successful context exit) return a `WriteResult` forwarded from the inner store and invalidate:
 
 1. All per-path cache entries for the written path **and every ancestor
    directory** of that path (all operation prefixes: `exists`, `is_file`,
