@@ -26,7 +26,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
-- **`WriteResult`, `Store.head()`, and `ext.write` hashing helpers** (ID-146):
+- **`WriteResult`, `Store.head()`, and `ext.write` hashing helpers** (ID-146, ID-148):
   `Store.write*()` now returns a `WriteResult` frozen dataclass (`path`, `size`,
   `source`, `digest`, `etag`, `version_id`, `last_modified`, `metadata`).
   `Store.head(path)` retrieves file metadata as a `WriteResult` (requires
@@ -37,6 +37,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   digest regardless of backend capability. All proxy layers (`ProxyStore`,
   `ObservedStore`, `CachedStore`) forward `WriteResult` and `head()`;
   `StoreEvent.metadata["write_result"]` is populated on successful writes.
+  Docs: Write Integrity guide, full API surface, and RFC-0011 (Implemented) landed in ID-148.
 
 - **`AsyncBackendSyncAdapter`** (ID-141–143c): new public class wrapping any
   `AsyncBackend` as a synchronous `Backend` via a private event loop on a
@@ -51,13 +52,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   ID-127 (Graph backend).
 
 ### Documentation
-
-- **Write Integrity guide and API surface docs** (ID-148): new
-  `docs-src/write-integrity.md` guide covering `write_with_hash`,
-  `open_atomic_with_hash`, `Store.head()`, and user metadata.
-  `Store.head()` exposed in the API reference; `ext.write` added to the
-  extensions nav, index, and `guides/extensions.md`. `FEATURES.md` updated.
-  RFC-0011 status flipped to Implemented.
 
 - **Content rule 6 — code examples are sourced, not written** (ID-144):
   codifies the existing `examples/snippets/` practice (ID-057, ID-106) in
