@@ -5,6 +5,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-149 — e2e coverage for write_with_hash / open_atomic_with_hash across real backends**
+  New `tests/e2e/test_ext_write_e2e.py`: two test classes (`TestWriteWithHash`,
+  `TestOpenAtomicWithHash`) exercise both helpers against all available Docker
+  backends (S3/MinIO, SFTP, Azure/Azurite, S3-PyArrow, SQLBlob, Memory). Each
+  test writes a deterministic 4 KiB payload and asserts the returned
+  `WriteResult.digest` matches the pre-computed SHA-256. EW-004 pre/post-exit
+  invariant (`writer.result is None` before, populated after) verified inline.
+  Backends degrade gracefully when Docker infra is unavailable.
+
 - [x] **ID-148 — ID-146 docs ripple: WriteResult / head() / ext.write in guides and API reference**
   `docs-src/write-integrity.md` new guide (write_with_hash, open_atomic_with_hash,
   head(), user metadata). `Store.head()` exposed in `docs-src/api/store.md`.
