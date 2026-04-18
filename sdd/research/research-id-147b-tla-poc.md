@@ -181,6 +181,12 @@ long spec PRs with bundled claims that survive review.
   no `Read` action, so a legitimate post-read cache re-population
   cannot happen. The invariant therefore bans tracking a written path
   forever, not just at write time.
+- **Method collapse.** WR-018 names `write`, `write_text`, and
+  `write_atomic`. All three collapse into one `Write(p, sz)` action
+  in `WR018ProxyForwarding`. The structural claims (forwarding,
+  invalidation, event emission) are identical for all three, so the
+  simplification is valid for those; the model cannot catch a proxy
+  that handles one method differently from another.
 - **No async.** Spec 029 (async Store API) is not modelled; async
   concurrency is the regime where TLC's interleaving enumeration is
   most valuable, and also where authoring cost is highest.

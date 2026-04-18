@@ -94,8 +94,9 @@ Init ==
     /\ WRITE_CAP \in caps
     /\ clock = 0
 
-\* WR-004/005: source is NATIVE when the backend declares WRITE_RESULT_NATIVE,
+\* WR-004: source is NATIVE when the backend declares WRITE_RESULT_NATIVE,
 \* BASIC otherwise (per WR-009, WRITE_RESULT_NATIVE is independent of METADATA).
+\* (WR-005 governs field-population guarantees when source=BASIC; not modelled here.)
 WriteSource == IF WRITE_RESULT_NATIVE_CAP \in caps THEN NATIVE ELSE BASIC
 
 \* WR-010: non-empty metadata kwarg requires USER_METADATA.

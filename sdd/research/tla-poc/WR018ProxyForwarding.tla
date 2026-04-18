@@ -38,6 +38,12 @@
   Spec § WR-018 also asserts head() forwarding; head is not modelled
   here because it has its own module (WriteHeadRoundTrip). Keeping the
   modules disjoint is itself the discipline the PoC is evaluating.
+
+  Method collapse: WR-018 names write, write_text, and write_atomic.
+  All three collapse into a single Write(p, sz) action here. The
+  structural claims (forwarding, invalidation, event emission) are
+  identical for all three; the simplification is valid for those but
+  cannot catch a proxy that handles one method differently from another.
 ***************************************************************************)
 
 EXTENDS Naturals, Sequences, FiniteSets, TLC
@@ -64,6 +70,9 @@ MkWR(p, sz, ts) ==
 
 WrittenPaths == DOMAIN backend_wr
 
+\* Minimal subset of WR-001a's 9-field schema: path, size, last_modified, source only.
+\* metadata, digest, etag, version_id, content_md5 are absent — intentional for
+\* this model but the name does not imply full spec fidelity.
 WriteResultShape == {"path", "size", "last_modified", "source"}
 
 TypeOK ==
@@ -74,6 +83,9 @@ TypeOK ==
     /\ cache_paths \subseteq Paths
     /\ write_count \in Nat
     /\ clock \in Nat
+    /\ \A i \in 1..Len(events):
+           /\ DOMAIN events[i] = {"path", "write_result"}
+           /\ events[i].path \in Paths
 
 Init ==
     /\ fs = [p \in {} |-> 0]
