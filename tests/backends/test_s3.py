@@ -28,7 +28,7 @@ from remote_store._errors import (  # noqa: E402
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo  # noqa: E402
+from remote_store._models import FileInfo, FolderInfo, WriteResult  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -1029,3 +1029,52 @@ class TestS3Resolve:
 
 
 # endregion
+
+
+# ---------------------------------------------------------------------------
+# WriteResult (WR-001, WR-003, WR-004, WR-012)
+# ---------------------------------------------------------------------------
+
+
+class TestS3WriteResult:
+    """S3Backend.write/write_atomic return a valid WriteResult."""
+
+    @pytest.mark.spec("WR-001")
+    @pytest.mark.spec("WR-004")
+    def test_write_returns_write_result(self, s3_backend: Backend) -> None:
+        result = s3_backend.write("f.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.source == "native"
+
+    @pytest.mark.spec("WR-003")
+    def test_write_size_bytes(self, s3_backend: Backend) -> None:
+        result = s3_backend.write("f.txt", b"hello world")
+        assert result.size == 11
+
+    @pytest.mark.spec("WR-003")
+    def test_write_size_binaryio(self, s3_backend: Backend) -> None:
+        import io
+
+        result = s3_backend.write("f.txt", io.BytesIO(b"streamed"))
+        assert result.size == 8
+
+    @pytest.mark.spec("WR-001")
+    def test_write_atomic_returns_write_result(self, s3_backend: Backend) -> None:
+        result = s3_backend.write_atomic("f.txt", b"data")
+        assert isinstance(result, WriteResult)
+        assert result.size == 4
+
+    @pytest.mark.spec("WR-012")
+    def test_write_metadata_echoed(self, s3_backend: Backend) -> None:
+        result = s3_backend.write("f.txt", b"x", metadata={"k": "v"})
+        assert result.metadata == {"k": "v"}
+
+    @pytest.mark.spec("WR-012")
+    def test_write_metadata_passed_to_sdk(self, s3_backend: Backend) -> None:
+        """Metadata kwarg reaches the S3 object (verified via HeadObject)."""
+        from remote_store.backends._s3 import S3Backend
+
+        assert isinstance(s3_backend, S3Backend)
+        s3_backend.write("meta.txt", b"x", metadata={"env": "test"})
+        info = s3_backend.get_file_info("meta.txt")
+        assert info.metadata == {"env": "test"}

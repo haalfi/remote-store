@@ -21,6 +21,7 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
+from remote_store._models import WriteResult
 from remote_store.backends._sqlalchemy import SQLBlobBackend
 
 # ---------------------------------------------------------------------------
@@ -925,3 +926,64 @@ class TestSQLBlobResolve:
         plan = backend.resolve("file.txt")
         assert "table_name" in plan.details
         assert isinstance(plan.details["table_name"], str)
+
+
+# ---------------------------------------------------------------------------
+# WriteResult (WR-001, WR-003, WR-004, WR-012, WR-013)
+# ---------------------------------------------------------------------------
+
+
+class TestSQLBlobWriteResult:
+    """SQLBlobBackend.write/write_atomic return a valid WriteResult (source='native')."""
+
+    @pytest.mark.spec("WR-001")
+    @pytest.mark.spec("WR-004")
+    def test_write_returns_write_result(self, backend: SQLBlobBackend) -> None:
+        result = backend.write("f.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.source == "native"
+
+    @pytest.mark.spec("WR-003")
+    def test_write_size_bytes(self, backend: SQLBlobBackend) -> None:
+        result = backend.write("f.txt", b"hello world")
+        assert result.size == 11
+
+    @pytest.mark.spec("WR-003")
+    def test_write_size_binaryio(self, backend: SQLBlobBackend) -> None:
+        result = backend.write("f.txt", io.BytesIO(b"streamed"))
+        assert result.size == 8
+
+    @pytest.mark.spec("WR-001")
+    def test_write_atomic_returns_write_result(self, backend: SQLBlobBackend) -> None:
+        result = backend.write_atomic("f.txt", b"data")
+        assert isinstance(result, WriteResult)
+        assert result.size == 4
+
+    @pytest.mark.spec("WR-012")
+    def test_write_metadata_echoed(self, backend: SQLBlobBackend) -> None:
+        result = backend.write("f.txt", b"x", metadata={"k": "v"})
+        assert result.metadata == {"k": "v"}
+
+    @pytest.mark.spec("WR-013")
+    def test_write_metadata_survives_roundtrip(self, backend: SQLBlobBackend) -> None:
+        backend.write("f.txt", b"x", metadata={"k": "v"})
+        info = backend.get_file_info("f.txt")
+        assert info.metadata == {"k": "v"}
+
+    @pytest.mark.spec("WR-013")
+    def test_legacy_schema_without_user_metadata_column_does_not_advertise_user_metadata(
+        self, minimal_engine: sa.Engine
+    ) -> None:
+        """Legacy table missing user_metadata must not declare USER_METADATA capability."""
+        b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
+        assert not b.capabilities.supports(Capability.USER_METADATA)
+        b.close()
+
+    @pytest.mark.spec("WR-013")
+    def test_legacy_schema_write_without_metadata_succeeds(self, minimal_engine: sa.Engine) -> None:
+        """Write without metadata works fine on a legacy schema."""
+        b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
+        result = b.write("f.txt", b"data")
+        assert isinstance(result, WriteResult)
+        assert result.metadata is None
+        b.close()

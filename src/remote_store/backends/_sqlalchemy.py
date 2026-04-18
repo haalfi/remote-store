@@ -286,6 +286,14 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 "user_metadata",
             }
 
+        # USER_METADATA is only declared when the backing table has the column.
+        # Advertising it against a legacy schema that lacks user_metadata would
+        # cause silent WR-013 violations (Store gate passes, data never stored).
+        if "user_metadata" in self._optional_columns:
+            self._capabilities: CapabilitySet = _ALL_CAPABILITIES
+        else:
+            self._capabilities = CapabilitySet({c for c in _ALL_CAPABILITIES if c is not Capability.USER_METADATA})
+
     # region: properties
 
     @property
@@ -294,7 +302,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _ALL_CAPABILITIES
+        return self._capabilities
 
     # endregion
 

@@ -251,7 +251,7 @@ class S3PyArrowBackend(_S3Base):
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
         # S3 PUT is inherently atomic (S3PA-013)
-        return self.write(path, content, overwrite=overwrite)
+        return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

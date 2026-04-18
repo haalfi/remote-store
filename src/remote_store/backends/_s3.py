@@ -151,16 +151,17 @@ class S3Backend(_S3Base):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        sdk_metadata = dict(metadata) if metadata else {}
+        sdk_metadata = dict(metadata) if metadata else None
+        meta_kw = {"Metadata": sdk_metadata} if sdk_metadata is not None else {}
         with self._s3fs_errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             if isinstance(content, bytes):
-                self._fs.pipe_file(self._s3_path(path), content, Metadata=sdk_metadata)
+                self._fs.pipe_file(self._s3_path(path), content, **meta_kw)
                 size = len(content)
             else:
                 size = 0
-                with self._fs.open(self._s3_path(path), "wb", Metadata=sdk_metadata) as f:
+                with self._fs.open(self._s3_path(path), "wb", **meta_kw) as f:
                     while True:
                         chunk = content.read(_COPY_BUFSIZE)
                         if not chunk:

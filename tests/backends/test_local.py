@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import sys
 import tempfile
 from pathlib import Path
@@ -10,6 +11,7 @@ import pytest
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath
+from remote_store._models import WriteResult
 from remote_store.backends._local import LocalBackend
 
 pytestmark = pytest.mark.os_sensitive
@@ -275,3 +277,35 @@ class TestLocalBackendOpenAtomicPermission:
                 backend.open_atomic("file.txt"),
             ):
                 pass
+
+
+# ---------------------------------------------------------------------------
+# WriteResult (WR-001, WR-003, WR-004)
+# ---------------------------------------------------------------------------
+
+
+class TestLocalWriteResult:
+    """LocalBackend.write/write_atomic return a valid WriteResult (source='basic')."""
+
+    @pytest.mark.spec("WR-001")
+    @pytest.mark.spec("WR-004")
+    def test_write_bytes_returns_write_result(self, local_backend: LocalBackend) -> None:
+        result = local_backend.write("f.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.source == "basic"
+
+    @pytest.mark.spec("WR-003")
+    def test_write_bytes_size(self, local_backend: LocalBackend) -> None:
+        result = local_backend.write("f.txt", b"hello world")
+        assert result.size == 11
+
+    @pytest.mark.spec("WR-003")
+    def test_write_binaryio_size(self, local_backend: LocalBackend) -> None:
+        result = local_backend.write("f.txt", io.BytesIO(b"streamed"))
+        assert result.size == 8
+
+    @pytest.mark.spec("WR-001")
+    def test_write_atomic_returns_write_result(self, local_backend: LocalBackend) -> None:
+        result = local_backend.write_atomic("f.txt", b"data")
+        assert isinstance(result, WriteResult)
+        assert result.size == 4
