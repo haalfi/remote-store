@@ -387,12 +387,13 @@ class AsyncBackendSyncAdapter(Backend):
         from remote_store._path import RemotePath
 
         if isinstance(content, (bytes, bytearray, memoryview)):
-            data: bytes | _CountingBinaryIO = bytes(content)
-            size = len(data)  # type: ignore[arg-type]
-            self._submit(self._async_backend.write(path, data, overwrite=overwrite))
+            raw = bytes(content)
+            self._submit(self._async_backend.write(path, raw, overwrite=overwrite))
+            size = len(raw)
         else:
             counter = _CountingBinaryIO(content)
-            self._submit(self._async_backend.write(path, _binaryio_to_async_iter(counter), overwrite=overwrite))
+            async_iter = _binaryio_to_async_iter(counter)  # type: ignore[arg-type]
+            self._submit(self._async_backend.write(path, async_iter, overwrite=overwrite))
             size = counter.count
         return WriteResult(path=RemotePath(path), size=size, source="basic")
 
@@ -408,14 +409,15 @@ class AsyncBackendSyncAdapter(Backend):
         from remote_store._path import RemotePath
 
         if isinstance(content, (bytes, bytearray, memoryview)):
-            data2: bytes | _CountingBinaryIO = bytes(content)
-            size2 = len(data2)  # type: ignore[arg-type]
-            self._submit(self._async_backend.write_atomic(path, data2, overwrite=overwrite))
+            raw = bytes(content)
+            self._submit(self._async_backend.write_atomic(path, raw, overwrite=overwrite))
+            size = len(raw)
         else:
-            counter2 = _CountingBinaryIO(content)
-            self._submit(self._async_backend.write_atomic(path, _binaryio_to_async_iter(counter2), overwrite=overwrite))
-            size2 = counter2.count
-        return WriteResult(path=RemotePath(path), size=size2, source="basic")
+            counter = _CountingBinaryIO(content)
+            async_iter = _binaryio_to_async_iter(counter)  # type: ignore[arg-type]
+            self._submit(self._async_backend.write_atomic(path, async_iter, overwrite=overwrite))
+            size = counter.count
+        return WriteResult(path=RemotePath(path), size=size, source="basic")
 
     @staticmethod
     def _to_async_content(content: WritableContent) -> AsyncWritableContent:
