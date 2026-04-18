@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import shutil
 import tempfile
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
@@ -17,6 +16,8 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     NotFound,
 )
+from remote_store._models import WriteResult
+from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
@@ -27,7 +28,7 @@ from remote_store.backends._s3_base import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from remote_store._models import FileInfo
     from remote_store._types import WritableContent
@@ -142,19 +143,42 @@ class S3Backend(_S3Base):
         with self._s3fs_errors(path):
             return bytes(self._fs.cat_file(self._s3_path(path)))
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        sdk_metadata = dict(metadata) if metadata else {}
         with self._s3fs_errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             if isinstance(content, bytes):
-                self._fs.pipe_file(self._s3_path(path), content)
+                self._fs.pipe_file(self._s3_path(path), content, Metadata=sdk_metadata)
+                size = len(content)
             else:
-                with self._fs.open(self._s3_path(path), "wb") as f:
-                    shutil.copyfileobj(content, f, _COPY_BUFSIZE)
+                size = 0
+                with self._fs.open(self._s3_path(path), "wb", Metadata=sdk_metadata) as f:
+                    while True:
+                        chunk = content.read(_COPY_BUFSIZE)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        size += len(chunk)
+        return WriteResult(path=RemotePath(path), size=size, source="native", metadata=metadata)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         # S3 PUT is inherently atomic (S3-010)
-        self.write(path, content, overwrite=overwrite)
+        return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

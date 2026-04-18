@@ -694,7 +694,7 @@ def test_registration() -> None:
 def test_default_schema(backend: SQLBlobBackend) -> None:
     """Default table has all expected columns."""
     col_names = {c.name for c in backend._table.columns}
-    assert col_names == {"key", "data", "size", "modified_at", "content_type", "digest", "extra"}
+    assert col_names == {"key", "data", "size", "modified_at", "content_type", "digest", "extra", "user_metadata"}
 
 
 # ---------------------------------------------------------------------------

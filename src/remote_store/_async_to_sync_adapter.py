@@ -26,11 +26,11 @@ from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import CapabilityNotSupported
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, AsyncIterator, Iterator
+    from collections.abc import AsyncGenerator, AsyncIterator, Iterator, Mapping
     from contextlib import AbstractContextManager
     from types import TracebackType
 
-    from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
     from remote_store.aio._async_backend import AsyncBackend
@@ -370,11 +370,37 @@ class AsyncBackendSyncAdapter(Backend):
 
     # -- Writes (ASYNC-091) -------------------------------------------------
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
-        self._submit(self._async_backend.write(path, self._to_async_content(content), overwrite=overwrite))
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        from remote_store._models import WriteResult
+        from remote_store._path import RemotePath
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
-        self._submit(self._async_backend.write_atomic(path, self._to_async_content(content), overwrite=overwrite))
+        data = bytes(content) if isinstance(content, (bytes, bytearray, memoryview)) else content.read()
+        size = len(data)
+        self._submit(self._async_backend.write(path, data, overwrite=overwrite))
+        return WriteResult(path=RemotePath(path), size=size, source="basic")
+
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        from remote_store._models import WriteResult
+        from remote_store._path import RemotePath
+
+        data = bytes(content) if isinstance(content, (bytes, bytearray, memoryview)) else content.read()
+        size = len(data)
+        self._submit(self._async_backend.write_atomic(path, data, overwrite=overwrite))
+        return WriteResult(path=RemotePath(path), size=size, source="basic")
 
     @staticmethod
     def _to_async_content(content: WritableContent) -> AsyncWritableContent:

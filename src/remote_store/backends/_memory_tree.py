@@ -21,6 +21,7 @@ class FileEntry:
     data: bytearray
     modified_at: datetime
     content_type: str | None = None
+    metadata: dict[str, str] | None = None
 
 
 @dataclass(slots=True)
@@ -38,9 +39,10 @@ class FileSnapshot:
     ``FileInfo`` objects (e.g. new size with old timestamp).
     """
 
-    __slots__ = ("size", "modified_at", "content_type")
+    __slots__ = ("size", "modified_at", "content_type", "metadata")
 
     def __init__(self, entry: FileEntry) -> None:
         self.size = len(entry.data)
         self.modified_at = entry.modified_at
         self.content_type = entry.content_type
+        self.metadata = entry.metadata

@@ -81,9 +81,10 @@ class TestS3PyArrowConstruction:
     def test_declares_all_capabilities(self, s3pa_backend: Backend) -> None:
         caps = s3pa_backend.capabilities
         assert isinstance(caps, CapabilitySet)
+        excluded = {Capability.ATOMIC_MOVE, Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA}
         for cap in Capability:
-            if cap is Capability.ATOMIC_MOVE:
-                assert not caps.supports(cap), "S3-PyArrow must not declare ATOMIC_MOVE (copy-then-delete)"
+            if cap in excluded:
+                assert not caps.supports(cap), f"S3-PyArrow must not declare {cap.value}"
             else:
                 assert caps.supports(cap), f"Missing capability: {cap.value}"
 
