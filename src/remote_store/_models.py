@@ -9,9 +9,10 @@ from __future__ import annotations
 import dataclasses
 import re
 import typing
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from datetime import datetime
 
     from remote_store._path import RemotePath
@@ -77,6 +78,7 @@ class FileInfo:
         digest: Verified content digest with known algorithm.
         etag: Opaque backend-provided tag for change detection.
         content_type: Optional MIME type.
+        metadata: User-supplied key/value metadata echoed from the backend.
         extra: Backend-specific metadata.
     """
 
@@ -87,6 +89,7 @@ class FileInfo:
     digest: ContentDigest | None = None
     etag: str | None = None
     content_type: str | None = None
+    metadata: Mapping[str, str] | None = None
     extra: dict[str, object] = dataclasses.field(default_factory=dict)
 
     def __eq__(self, other: object) -> bool:
@@ -96,6 +99,48 @@ class FileInfo:
 
     def __hash__(self) -> int:
         return hash(self.path)
+
+
+# Field-wise eq/hash by design (WR-001a) — intentionally different from the path-based eq=False on sibling models.
+@dataclasses.dataclass(frozen=True)
+class WriteResult:
+    """Immutable snapshot of a completed write operation.
+
+    Returned by ``Store.write()``, ``Store.write_text()``, and
+    ``Store.write_atomic()``.
+
+    Attributes:
+        path: Normalized written path, store-relative.
+        size: Bytes written.
+        source: Provenance of the optional fields.
+            ``"native"`` — the backend populated them from its write
+            response; trust ``digest``, ``etag``, and ``last_modified``.
+            ``"basic"`` — only ``path`` and ``size`` are reliable; call
+            ``Store.head()`` or use ``ext.write`` helpers if you need
+            more.
+            ``"sidecar"`` — constructed by ``Store.head()`` from a
+            subsequent ``get_file_info()`` call.
+        digest: Content digest from the write — either a client-computed
+            hash from ``ext.write`` helpers, or a hash echoed by the
+            backend from its write response (e.g., Azure echoes the
+            client-supplied MD5 as ``ContentDigest("md5", …)``).
+            ``None`` when neither source applies.
+        etag: Opaque backend change tag; semantics vary by backend.
+        version_id: Immutable backend version identifier; ``None`` when
+            the backend does not version objects.
+        last_modified: Server timestamp from the write response; ``None``
+            when the backend's write response omits it.
+        metadata: Echo of user metadata stored with the object.
+    """
+
+    path: RemotePath
+    size: int
+    source: Literal["native", "basic", "sidecar"] = "basic"
+    digest: ContentDigest | None = None
+    etag: str | None = None
+    version_id: str | None = None
+    last_modified: datetime | None = None
+    metadata: Mapping[str, str] | None = None
 
 
 @dataclasses.dataclass(frozen=True, eq=False)

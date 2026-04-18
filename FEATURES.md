@@ -112,6 +112,8 @@ Query at runtime with `store.supports(Capability.X)`.
 | `METADATA` | Retrieve file/folder metadata | `get_file_info()`, `get_folder_info()` |
 | `SEEKABLE_READ` | `read()` returns natively seekable streams | — (quality flag, not a method gate) |
 | `LAZY_READ` | `read()` fetches data lazily from the native source; partial reads avoid loading the entire file | — (quality flag, not a method gate) |
+| `WRITE_RESULT_NATIVE` | `write*()` populates rich `WriteResult` fields (`etag`, `version_id`, `last_modified`, `digest`) from the backend's write response | — (quality flag, not a method gate) |
+| `USER_METADATA` | Store user-supplied key/value pairs alongside a file | — (strict gate on non-empty `metadata=` kwarg in `write*()`) |
 
 ---
 

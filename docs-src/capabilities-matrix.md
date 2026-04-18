@@ -21,6 +21,8 @@ at runtime before calling an operation.
 | METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | —   | Yes | Yes |
 | LAZY_READ      | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   | —   |
+| WRITE_RESULT_NATIVE | — | — | — | — | — | — | — | — | — |
+| USER_METADATA  | —   | —   | —   | —   | —   | —   | —   | —   | —   |
 
 **Full support:** Local.
 

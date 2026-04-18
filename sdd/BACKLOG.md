@@ -189,7 +189,12 @@ Items graduate through the SDD pipeline:
     (`docs-src/api/models.md`, `.../capabilities.md`, `.../store.md`,
     new `guides/write-integrity.md`) listed in the RFC ripple-check.
     Those edits are deferred out of this spec-only PR per the RFC
-    "Scope of this PR" note. Also update **spec 023 (ext.cache)** —
+    "Scope of this PR" note. Also rewrite the **narrative prose** under
+    the capabilities matrix table in `docs-src/capabilities-matrix.md`
+    (\"Full support: Local\", \"Near-full:\", etc.) — it will no longer be
+    accurate once Local stops picking up `WRITE_RESULT_NATIVE` /
+    `USER_METADATA` implicitly via `set(Capability)`. Also update
+    **spec 023 (ext.cache)** —
     CACHE-007 / CACHE-008 currently reference `write()`, `write_text()`,
     `write_atomic()`, and `open_atomic()` with implicit `None` return
     types, which will be stale once those methods return `WriteResult`.

@@ -26,6 +26,8 @@ class TestCapabilityEnum:
             "GLOB",
             "SEEKABLE_READ",
             "LAZY_READ",
+            "WRITE_RESULT_NATIVE",
+            "USER_METADATA",
         }
         actual = {c.name for c in Capability}
         assert actual == expected
@@ -46,6 +48,8 @@ class TestCapabilityEnum:
             pytest.param("GLOB", "glob", id="glob"),
             pytest.param("SEEKABLE_READ", "seekable_read", id="seekable_read"),
             pytest.param("LAZY_READ", "lazy_read", id="lazy_read"),
+            pytest.param("WRITE_RESULT_NATIVE", "write_result_native", id="write_result_native"),
+            pytest.param("USER_METADATA", "user_metadata", id="user_metadata"),
         ],
     )
     def test_values(self, member: str, expected_value: str) -> None:
@@ -131,3 +135,41 @@ class TestCapabilitySetImmutability:
         cs = CapabilitySet({Capability.READ})
         with pytest.raises(AttributeError, match="immutable"):
             del cs._caps  # type: ignore[attr-defined]
+
+
+class TestWriteResultNative:
+    """WR-009: WRITE_RESULT_NATIVE is a quality flag — does not gate any method."""
+
+    @pytest.mark.spec("WR-009")
+    def test_is_quality_flag_not_a_gate(self) -> None:
+        # The flag advertises rich WriteResult fields, not method availability.
+        cs_with = CapabilitySet({Capability.WRITE, Capability.WRITE_RESULT_NATIVE})
+        cs_without = CapabilitySet({Capability.WRITE})
+        assert cs_with.supports(Capability.WRITE_RESULT_NATIVE)
+        assert not cs_without.supports(Capability.WRITE_RESULT_NATIVE)
+        # Both declare WRITE — the flag is orthogonal to write access.
+        assert cs_with.supports(Capability.WRITE)
+        assert cs_without.supports(Capability.WRITE)
+
+
+class TestUserMetadata:
+    """WR-010 (CapabilitySet layer): USER_METADATA membership declared/absent.
+
+    Gate firing (non-empty metadata= raises CapabilityNotSupported) and the
+    empty-mapping carve-out (metadata=None / metadata={} are no-ops) are
+    Store-layer concerns tested in Step 4.
+    """
+
+    @pytest.mark.spec("WR-010")
+    def test_declared_and_absent(self) -> None:
+        cs_with = CapabilitySet({Capability.WRITE, Capability.USER_METADATA})
+        cs_without = CapabilitySet({Capability.WRITE})
+        assert cs_with.supports(Capability.USER_METADATA)
+        assert not cs_without.supports(Capability.USER_METADATA)
+
+    @pytest.mark.spec("WR-010")
+    def test_require_raises_with_correct_value(self) -> None:
+        cs = CapabilitySet({Capability.WRITE})
+        with pytest.raises(CapabilityNotSupported, match="user_metadata") as exc_info:
+            cs.require(Capability.USER_METADATA, backend="sftp")
+        assert exc_info.value.capability == "user_metadata"

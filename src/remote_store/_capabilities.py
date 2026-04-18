@@ -62,6 +62,13 @@ class Capability(enum.Enum):
 
     - ``METADATA`` -- Retrieve file or folder metadata.
       Gates ``Store.get_file_info()`` and ``Store.get_folder_info()``.
+    - ``USER_METADATA`` -- Store user-supplied key/value pairs alongside
+      a file. Strict gate on the ``metadata=`` kwarg in
+      ``Store.write()``, ``Store.write_text()``, and
+      ``Store.write_atomic()``: passing a non-empty mapping to a backend
+      that does not declare this capability raises
+      ``CapabilityNotSupported`` before any I/O.
+      ``metadata=None`` and ``metadata={}`` are always allowed.
 
     *Quality flags*
 
@@ -78,6 +85,18 @@ class Capability(enum.Enum):
       Callers can use ``store.supports(Capability.LAZY_READ)`` to know
       whether partial reads avoid loading the entire file.
       See also: spec SIO-009 in ``sdd/specs/006-streaming-io.md``.
+    - ``WRITE_RESULT_NATIVE`` -- Quality flag: the backend populates the
+      rich fields of the returned ``WriteResult`` (``etag``,
+      ``last_modified``, ``version_id``, and where applicable
+      ``digest``) directly from its write response.  Does **not** gate
+      any method — ``Store.write*()`` works on every backend.
+      Backends without this flag return a ``WriteResult`` with only
+      ``path`` and ``size`` populated (``source == "basic"``);
+      ``metadata`` is governed independently by the ``USER_METADATA``
+      gate (WR-005, WR-012) and is not subject to this flag.
+      Use ``store.supports(Capability.WRITE_RESULT_NATIVE)`` to decide
+      whether to call ``store.get_file_info()`` after a write if you
+      need the full metadata set.
     """
 
     # Core I/O
@@ -95,9 +114,11 @@ class Capability(enum.Enum):
     ATOMIC_MOVE = "atomic_move"
     # Metadata
     METADATA = "metadata"
+    USER_METADATA = "user_metadata"
     # Quality flags
     SEEKABLE_READ = "seekable_read"
     LAZY_READ = "lazy_read"
+    WRITE_RESULT_NATIVE = "write_result_native"
 
 
 class CapabilitySet:
