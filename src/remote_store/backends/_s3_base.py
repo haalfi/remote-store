@@ -347,6 +347,8 @@ class _S3Base(Backend):
         modified = _normalize_modified(raw.get("LastModified"))
         etag = _clean_etag(raw.get("ETag"))
         digest = self._digest_from_head_response(raw)
+        raw_meta = raw.get("Metadata") or {}
+        user_meta: dict[str, str] | None = dict(raw_meta) if raw_meta else None
         return FileInfo(
             path=RemotePath(path),
             name=name,
@@ -354,6 +356,7 @@ class _S3Base(Backend):
             modified_at=modified,
             etag=etag,
             digest=digest,
+            metadata=user_meta,
         )
 
     def _digest_from_head_response(self, raw: dict[str, Any]) -> ContentDigest | None:

@@ -23,12 +23,12 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo
+from remote_store._models import FileInfo, WriteResult
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
     from contextlib import AbstractContextManager
 
     from remote_store._config import RetryPolicy
@@ -324,10 +324,24 @@ class ReadOnlyHttpBackend(Backend):
 
     # region: unsupported operations
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         raise CapabilityNotSupported("HTTP backend is read-only", capability="write", backend=self.name)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         raise CapabilityNotSupported("HTTP backend is read-only", capability="atomic_write", backend=self.name)
 
     def open_atomic(self, path: str, *, overwrite: bool = False) -> AbstractContextManager[BinaryIO]:

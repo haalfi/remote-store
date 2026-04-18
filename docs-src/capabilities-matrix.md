@@ -21,8 +21,10 @@ at runtime before calling an operation.
 | METADATA       | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | SEEKABLE_READ  | Yes | Yes | —   | Yes | Yes | Yes | —   | Yes | Yes |
 | LAZY_READ      | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   | —   |
-| WRITE_RESULT_NATIVE | — | — | — | — | — | — | — | — | — |
-| USER_METADATA  | —   | —   | —   | —   | —   | —   | —   | —   | —   |
+| WRITE_RESULT_NATIVE | — | Yes | — | Yes | — | — | Yes | Yes† | — |
+| USER_METADATA  | —   | Yes | —   | Yes | —   | —   | Yes | Yes† | —   |
+
+† `WRITE_RESULT_NATIVE` and `USER_METADATA` are declared by `SQLBlobBackend` only when the backing table includes a `user_metadata` column (see the SQLBlob guide for schema requirements). Legacy tables without this column do not declare either capability.
 
 **Full support:** Local.
 

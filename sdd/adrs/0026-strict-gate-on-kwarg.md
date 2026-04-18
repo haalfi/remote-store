@@ -113,6 +113,23 @@ When designing a new optional kwarg on an existing Store method:
 4. Document per-backend declarations in the feature spec (e.g., WR-010).
 5. Add negative tests: every non-declaring backend raises on the guarded kwarg.
 
+### Adapter masking as a defensive application of the strict-gate pattern
+
+`AsyncBackendSyncAdapter` applies the pattern defensively via capability masking.
+It strips `USER_METADATA` (and `WRITE_RESULT_NATIVE`) from the inner async
+backend's capability set, even when the wrapped backend declares them.  Without
+masking, the Store-layer WR-010 gate would pass a non-empty `metadata=` argument
+through to the adapter, but the adapter has no forwarding target — the async ABC
+does not yet accept `metadata=`.  A silent drop would violate WR-012 (the
+`WriteResult.metadata` echo guarantee) without triggering any error.
+
+Masking is the mechanism that keeps the strict-gate invariant intact across
+adapter wrapping: the gate fires at the Store layer (`CapabilityNotSupported`)
+before the adapter is reached, so no I/O runs and no metadata is silently lost.
+This is not an exception to the pattern; it is the same pattern applied one layer
+earlier.  When the async ABC grows `metadata=` support (Step 3c), the masking is
+removed and the adapter naturally inherits the inner backend's declarations.
+
 ## Consequences
 
 - Callers get a clear, early error rather than a silent correctness failure.

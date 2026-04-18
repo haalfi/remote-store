@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import io
 import logging
-import shutil
 import tempfile
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
@@ -22,6 +21,8 @@ from remote_store._errors import (
     _not_found,
     _permission_denied,
 )
+from remote_store._models import WriteResult
+from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
@@ -32,14 +33,16 @@ from remote_store.backends._s3_base import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from remote_store._models import FileInfo
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.ATOMIC_MOVE})
+_ALL_CAPABILITIES = CapabilitySet(
+    set(Capability) - {Capability.ATOMIC_MOVE, Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA}
+)
 
 log = logging.getLogger(__name__)
 
@@ -210,7 +213,14 @@ class S3PyArrowBackend(_S3Base):
             stream = self._pa_fs.open_input_stream(self._pa_path(path))
             return bytes(stream.read())
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         with self._s3fs_errors(path):
             if not overwrite and self._s3fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
@@ -219,14 +229,29 @@ class S3PyArrowBackend(_S3Base):
             try:
                 if isinstance(content, bytes):
                     out.write(content)
+                    size = len(content)
                 else:
-                    shutil.copyfileobj(content, out, _COPY_BUFSIZE)
+                    size = 0
+                    while True:
+                        chunk = content.read(_COPY_BUFSIZE)
+                        if not chunk:
+                            break
+                        out.write(chunk)
+                        size += len(chunk)
             finally:
                 out.close()
+        return WriteResult(path=RemotePath(path), size=size, source="basic")
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         # S3 PUT is inherently atomic (S3PA-013)
-        self.write(path, content, overwrite=overwrite)
+        return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

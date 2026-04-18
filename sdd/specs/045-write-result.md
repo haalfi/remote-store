@@ -180,15 +180,16 @@ the capability is declared. The flag advertises which fields in the returned
 
 **Backend declarations:**
 
-| Backend            | Declares `WRITE_RESULT_NATIVE`? |
-| ------------------ | ------------------------------- |
-| `AzureBackend`     | yes                             |
-| `S3Backend`        | yes                             |
-| `MemoryBackend`    | yes                             |
-| `SQLBlobBackend`   | yes                             |
-| `S3PyArrowBackend` | no                              |
-| `SFTPBackend`      | no                              |
-| `LocalBackend`     | no                              |
+| Backend                      | Declares `WRITE_RESULT_NATIVE`? |
+| ---------------------------- | ------------------------------- |
+| `AzureBackend`               | yes                             |
+| `S3Backend`                  | yes                             |
+| `MemoryBackend`              | yes                             |
+| `SQLBlobBackend`             | yes — when `user_metadata` column is present; no otherwise (dynamic) |
+| `S3PyArrowBackend`           | no                              |
+| `SFTPBackend`                | no                              |
+| `LocalBackend`               | no                              |
+| `AsyncBackendSyncAdapter`    | no — masked unconditionally regardless of what the inner async backend declares (see WR-010) |
 
 ## WR-010: USER_METADATA Gates the metadata= Kwarg
 
@@ -206,15 +207,25 @@ WR-011). This keeps the gate consistent with WR-011's rule that
 
 **Backend declarations:**
 
-| Backend            | Declares `USER_METADATA`? |
-| ------------------ | ------------------------- |
-| `AzureBackend`     | yes                       |
-| `S3Backend`        | yes                       |
-| `MemoryBackend`    | yes                       |
-| `SQLBlobBackend`   | yes                       |
-| `S3PyArrowBackend` | no                        |
-| `SFTPBackend`      | no                        |
-| `LocalBackend`     | no                        |
+| Backend                      | Declares `USER_METADATA`? |
+| ---------------------------- | ------------------------- |
+| `AzureBackend`               | yes                       |
+| `S3Backend`                  | yes                       |
+| `MemoryBackend`              | yes                       |
+| `SQLBlobBackend`             | yes — when `user_metadata` column is present; no otherwise (dynamic) |
+| `S3PyArrowBackend`           | no                        |
+| `SFTPBackend`                | no                        |
+| `LocalBackend`               | no                        |
+| `AsyncBackendSyncAdapter`    | no — masked unconditionally (see below) |
+
+**Adapter masking.** `AsyncBackendSyncAdapter` strips both `WRITE_RESULT_NATIVE`
+and `USER_METADATA` from the inner async backend's capability set, even when the
+wrapped backend declares them. This is the strict-gate-on-kwarg pattern (ADR-0026)
+applied defensively: without masking, the Store layer's WR-010 gate would pass a
+non-empty `metadata=` through to the adapter, but the adapter's `write*()` methods
+do not forward `metadata=` to the async backend (the async ABC does not yet accept
+it — Step 3c). Masking ensures `CapabilityNotSupported` is raised at the gate
+rather than silently dropping the metadata, preserving the WR-012 echo guarantee.
 
 ## WR-011: metadata Validation
 

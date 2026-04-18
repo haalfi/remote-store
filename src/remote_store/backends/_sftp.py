@@ -30,12 +30,12 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
@@ -44,7 +44,10 @@ T = TypeVar("T")
 
 log = logging.getLogger(__name__)
 
-_SFTP_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB, Capability.ATOMIC_MOVE})
+_SFTP_CAPABILITIES = CapabilitySet(
+    set(Capability)
+    - {Capability.GLOB, Capability.ATOMIC_MOVE, Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA}
+)
 
 # 256 KiB: reduces round-trips on modern SSH servers; paramiko fragments
 # each write internally at the negotiated SSH packet size limit.
@@ -329,7 +332,14 @@ class SFTPBackend(Backend):
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
                 raise
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             try:
@@ -345,10 +355,25 @@ class SFTPBackend(Backend):
             with self._sftp.file(sftp_path, "w") as f:
                 if isinstance(content, bytes):
                     f.write(content)
+                    size = len(content)
                 else:
-                    shutil.copyfileobj(content, f, _CHUNK_SIZE)
+                    size = 0
+                    while True:
+                        chunk = content.read(_CHUNK_SIZE)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        size += len(chunk)
+        return WriteResult(path=RemotePath(path), size=size, source="basic")
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             self._check_not_dir(sftp_path, path)
@@ -369,8 +394,15 @@ class SFTPBackend(Backend):
                 with self._sftp.file(tmp_path, "w") as f:
                     if isinstance(content, bytes):
                         f.write(content)
+                        size = len(content)
                     else:
-                        shutil.copyfileobj(content, f, _CHUNK_SIZE)
+                        size = 0
+                        while True:
+                            chunk = content.read(_CHUNK_SIZE)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            size += len(chunk)
                 try:
                     self._sftp.posix_rename(tmp_path, sftp_path)
                 except OSError:  # pragma: no cover -- fallback for servers without posix_rename
@@ -383,6 +415,7 @@ class SFTPBackend(Backend):
                 with contextlib.suppress(Exception):
                     self._sftp.remove(tmp_path)
                 raise
+        return WriteResult(path=RemotePath(path), size=size, source="basic")
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

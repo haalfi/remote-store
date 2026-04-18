@@ -42,7 +42,7 @@ from remote_store._errors import (  # noqa: E402
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo  # noqa: E402
+from remote_store._models import FileInfo, FolderInfo, WriteResult  # noqa: E402
 from remote_store.backends._azure import AzureBackend, _AzureBinaryIO  # noqa: E402
 
 if TYPE_CHECKING:
@@ -710,11 +710,38 @@ class TestAzureHNSPaths:
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
         tmp_fc = MagicMock(spec=DataLakeFileClient)
+        tmp_fc.upload_data.return_value = None  # production-accurate: upload_data returns None
+        tmp_fc.get_file_properties.return_value = MagicMock(
+            spec=["etag", "last_modified"],
+            etag=None,
+            last_modified=None,
+        )
         backend._fs_instance.get_file_client.return_value = tmp_fc
         result = backend.write_atomic("dir/file.txt", b"content")
-        tmp_fc.upload_data.assert_called_once_with(b"content", overwrite=True, max_concurrency=4)
+        tmp_fc.upload_data.assert_called_once_with(b"content", overwrite=True, max_concurrency=4, metadata=None)
         tmp_fc.rename_file.assert_called_once()
-        assert result is None
+        assert isinstance(result, WriteResult)
+        assert result.size == len(b"content")
+
+    @pytest.mark.spec("WR-001a")
+    def test_write_atomic_hns_populates_etag_from_file_properties(self) -> None:
+        """HNS write_atomic must return a rich WriteResult populated from get_file_properties."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.return_value = bc
+        tmp_fc = MagicMock(spec=DataLakeFileClient)
+        tmp_fc.upload_data.return_value = None  # production-accurate: upload_data returns None
+        tmp_fc.get_file_properties.return_value = MagicMock(
+            spec=["etag", "last_modified"],
+            etag='"abc123"',
+            last_modified=None,
+        )
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+        result = backend.write_atomic("dir/file.txt", b"data")
+        assert result.etag == "abc123"
 
     def test_delete_folder_uses_directory_client_on_hns(self) -> None:
         backend = self._make_hns_backend()
@@ -782,10 +809,11 @@ class TestAzureMaxConcurrency:
         backend._cc_instance = MagicMock(spec=ContainerClient)
         bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        bc.upload_blob.return_value = {}
         backend._cc_instance.get_blob_client.return_value = bc
         result = backend.write("file.txt", b"data")
-        bc.upload_blob.assert_called_once_with(b"data", overwrite=True, max_concurrency=4)
-        assert result is None
+        bc.upload_blob.assert_called_once_with(b"data", overwrite=True, max_concurrency=4, metadata=None)
+        assert isinstance(result, WriteResult)
 
     def test_max_concurrency_threaded_to_download(self) -> None:
         """AZ-033: max_concurrency kwarg reaches download_blob."""
@@ -1367,3 +1395,187 @@ class TestBlobServiceOpts:
         # User override wins; max_single_put_size falls back to the library default.
         assert captured_kwargs["max_block_size"] == custom_block
         assert captured_kwargs["max_single_put_size"] == 1 * 1024 * 1024
+
+
+# =============================================================================
+# WriteResult (WR-001, WR-004, WR-009, WR-010, WR-012)
+# =============================================================================
+
+
+class TestAzureWriteResult:
+    """Unit tests (mock-based) for WriteResult from AzureBackend.write() and write_atomic()."""
+
+    def _make_non_hns(self) -> tuple[AzureBackend, MagicMock]:
+        backend = _make_backend()
+        backend._hns_enabled = False
+        backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+        backend._cc_instance = MagicMock(spec=ContainerClient)
+        bc = MagicMock(spec=BlobClient)
+        from azure.core.exceptions import ResourceNotFoundError
+
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.return_value = bc
+        return backend, bc
+
+    @pytest.mark.spec("WR-001")
+    @pytest.mark.spec("WR-004")
+    def test_write_returns_write_result(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {"etag": '"abc123"', "last_modified": None, "version_id": None}
+        result = backend.write("file.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.source == "native"
+
+    @pytest.mark.spec("WR-003")
+    def test_write_size_bytes_input(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {}
+        result = backend.write("f.txt", b"hello world")
+        assert result.size == 11
+
+    @pytest.mark.spec("WR-003")
+    def test_write_size_binaryio_input(self) -> None:
+        import io as _io
+
+        backend, bc = self._make_non_hns()
+
+        def _consuming_upload(data: Any, **_kw: Any) -> dict[str, Any]:
+            if hasattr(data, "read"):
+                data.read()  # drain so _ByteCountingIO.count is updated
+            return {}
+
+        bc.upload_blob.side_effect = _consuming_upload
+        result = backend.write("f.txt", _io.BytesIO(b"streamed content"))
+        assert result.size == 16
+
+    @pytest.mark.spec("WR-001a")
+    def test_write_etag_stripped_and_lowercased(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {"etag": '"0xABCDEF"', "last_modified": None}
+        result = backend.write("f.txt", b"x")
+        assert result.etag == "0xabcdef"
+
+    @pytest.mark.spec("WR-001a")
+    def test_write_etag_none_when_missing(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {}
+        result = backend.write("f.txt", b"x")
+        assert result.etag is None
+
+    @pytest.mark.spec("WR-001a")
+    def test_write_version_id_populated(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {"version_id": "v1"}
+        result = backend.write("f.txt", b"x")
+        assert result.version_id == "v1"
+
+    @pytest.mark.spec("WR-007")
+    def test_write_digest_none_on_default_path(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {}
+        result = backend.write("f.txt", b"x")
+        assert result.digest is None
+
+    @pytest.mark.spec("WR-012")
+    def test_write_metadata_echoed(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {}
+        result = backend.write("f.txt", b"x", metadata={"key": "val"})
+        assert result.metadata == {"key": "val"}
+
+    @pytest.mark.spec("WR-012")
+    def test_write_metadata_none_when_not_passed(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {}
+        result = backend.write("f.txt", b"x")
+        assert result.metadata is None
+
+    @pytest.mark.spec("WR-012")
+    def test_write_metadata_passed_to_sdk(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {}
+        backend.write("f.txt", b"x", metadata={"k": "v"})
+        call_kwargs = bc.upload_blob.call_args[1]
+        assert call_kwargs["metadata"] == {"k": "v"}
+
+    @pytest.mark.spec("WR-012")
+    def test_write_metadata_none_passes_none_to_sdk(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {}
+        backend.write("f.txt", b"x")
+        call_kwargs = bc.upload_blob.call_args[1]
+        assert call_kwargs["metadata"] is None
+
+    @pytest.mark.spec("WR-001")
+    def test_write_atomic_non_hns_returns_write_result(self) -> None:
+        backend, bc = self._make_non_hns()
+        bc.upload_blob.return_value = {}
+        result = backend.write_atomic("f.txt", b"data")
+        assert isinstance(result, WriteResult)
+        assert result.size == 4
+
+    @pytest.mark.spec("WR-009")
+    def test_capabilities_include_write_result_native(self) -> None:
+        from remote_store._capabilities import Capability
+
+        assert _make_backend().capabilities.supports(Capability.WRITE_RESULT_NATIVE)
+
+    @pytest.mark.spec("WR-010")
+    def test_capabilities_include_user_metadata(self) -> None:
+        from remote_store._capabilities import Capability
+
+        assert _make_backend().capabilities.supports(Capability.USER_METADATA)
+
+
+@_needs_azurite
+class TestAzureWriteResultIntegration:
+    """Azurite-based integration tests for WriteResult (WR-001, WR-003, WR-012)."""
+
+    @pytest.mark.spec("WR-001")
+    @pytest.mark.spec("WR-004")
+    def test_write_returns_native_write_result(self, azure_backend: Backend) -> None:
+        result = azure_backend.write("wr.txt", b"hello world")
+        assert isinstance(result, WriteResult)
+        assert result.source == "native"
+
+    @pytest.mark.spec("WR-003")
+    def test_write_size_bytes(self, azure_backend: Backend) -> None:
+        result = azure_backend.write("sz.txt", b"twelve bytes")
+        assert result.size == 12
+
+    @pytest.mark.spec("WR-003")
+    def test_write_size_binaryio(self, azure_backend: Backend) -> None:
+        import io as _io
+
+        result = azure_backend.write("sz2.txt", _io.BytesIO(b"streamed"))
+        assert result.size == 8
+
+    @pytest.mark.spec("WR-001a")
+    def test_write_etag_non_empty(self, azure_backend: Backend) -> None:
+        result = azure_backend.write("et.txt", b"data")
+        assert isinstance(result.etag, str)
+        assert len(result.etag) > 0
+
+    @pytest.mark.spec("WR-001a")
+    def test_write_last_modified_populated(self, azure_backend: Backend) -> None:
+        result = azure_backend.write("lm.txt", b"data")
+        assert result.last_modified is not None
+
+    @pytest.mark.spec("WR-012")
+    def test_write_metadata_echoed(self, azure_backend: Backend) -> None:
+        result = azure_backend.write("meta.txt", b"data", metadata={"Author": "test", "Version": "1"})
+        assert result.metadata == {"Author": "test", "Version": "1"}
+
+    @pytest.mark.spec("WR-013")
+    def test_write_metadata_round_trips_via_file_info(self, azure_backend: Backend) -> None:
+        azure_backend.write("rt.txt", b"data", metadata={"env": "prod"})
+        fi = azure_backend.get_file_info("rt.txt")
+        assert fi.metadata is not None
+        assert fi.metadata.get("env") == "prod"
+
+    @pytest.mark.spec("WR-001")
+    def test_write_atomic_returns_write_result(self, azure_backend: Backend) -> None:
+        result = azure_backend.write_atomic("at_wr.txt", b"atomic")
+        assert isinstance(result, WriteResult)
+        assert result.size == 6
+        assert result.source == "native"

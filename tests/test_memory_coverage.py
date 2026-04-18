@@ -8,6 +8,7 @@ import io
 import pytest
 
 from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound
+from remote_store._models import WriteResult
 from remote_store.backends._memory import MemoryBackend
 
 
@@ -414,3 +415,58 @@ class TestMemoryReadConcurrency:
             f"Torn read detected: {len(bad_reads)} result(s) were neither payload_a nor payload_b. "
             f"First bad result length: {len(bad_reads[0])}"
         )
+
+
+# ---------------------------------------------------------------------------
+# WriteResult (WR-001, WR-003, WR-004, WR-012, WR-013)
+# ---------------------------------------------------------------------------
+
+
+class TestMemoryWriteResult:
+    """MemoryBackend.write/write_atomic return a valid WriteResult (source='native')."""
+
+    @pytest.mark.spec("WR-001")
+    @pytest.mark.spec("WR-004")
+    def test_write_returns_write_result(self, mb: MemoryBackend) -> None:
+        from remote_store._path import RemotePath
+
+        result = mb.write("f.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.source == "native"
+        assert result.path == RemotePath("f.txt")
+        assert result.size == 5
+
+    @pytest.mark.spec("WR-003")
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
+    def test_write_size(self, mb: MemoryBackend, payload: bytes, expected_size: int) -> None:
+        result = mb.write("f.txt", payload)
+        assert result.size == expected_size
+
+    @pytest.mark.spec("WR-003")
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
+    def test_write_binaryio_size(self, mb: MemoryBackend, payload: bytes, expected_size: int) -> None:
+        import io
+
+        result = mb.write("f.txt", io.BytesIO(payload))
+        assert result.size == expected_size
+
+    @pytest.mark.spec("WR-001")
+    def test_write_atomic_returns_write_result(self, mb: MemoryBackend) -> None:
+        from remote_store._path import RemotePath
+
+        result = mb.write_atomic("f.txt", b"data")
+        assert isinstance(result, WriteResult)
+        assert result.source == "native"
+        assert result.path == RemotePath("f.txt")
+        assert result.size == 4
+
+    @pytest.mark.spec("WR-012")
+    def test_write_metadata_echoed(self, mb: MemoryBackend) -> None:
+        result = mb.write("f.txt", b"x", metadata={"env": "test"})
+        assert result.metadata == {"env": "test"}
+
+    @pytest.mark.spec("WR-013")
+    def test_write_metadata_survives_roundtrip(self, mb: MemoryBackend) -> None:
+        mb.write("f.txt", b"x", metadata={"k": "v"})
+        info = mb.get_file_info("f.txt")
+        assert info.metadata == {"k": "v"}

@@ -18,7 +18,7 @@ import pytest
 from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter, _SyncSafeHandleProvider
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import BackendUnavailable, CapabilityNotSupported, NotFound
-from remote_store._models import FileInfo, FolderEntry
+from remote_store._models import FileInfo, FolderEntry, WriteResult
 from remote_store.aio._async_memory import AsyncMemoryBackend
 from tests.aio._doubles import _HangingAsyncBackend, _RaisingAsyncBackend
 
@@ -1011,4 +1011,118 @@ class TestWriteAtomicMidBinaryIO:
         adapter, _ = _make_memory_adapter()
         with pytest.raises(OSError, match="disk full"):
             adapter.write_atomic("f.txt", _FailingStream())  # type: ignore[arg-type]
+        adapter.close()
+
+
+# ---------------------------------------------------------------------------
+# Capability masking — WRITE_RESULT_NATIVE / USER_METADATA (WR-004, WR-010)
+# ---------------------------------------------------------------------------
+
+
+class TestCapabilityMasking:
+    """Adapter strips WRITE_RESULT_NATIVE and USER_METADATA regardless of inner backend."""
+
+    def _adapter_with_caps(self, caps: set[Capability]) -> AsyncBackendSyncAdapter:
+        double = _HangingAsyncBackend(capabilities=CapabilitySet(caps))
+        adapter = AsyncBackendSyncAdapter(double)
+        adapter.close()  # not doing I/O — close immediately
+        return adapter
+
+    @pytest.mark.spec("WR-004")
+    def test_write_result_native_masked_when_inner_declares_it(self) -> None:
+        adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.WRITE_RESULT_NATIVE})
+        assert not adapter.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
+
+    @pytest.mark.spec("WR-010")
+    def test_user_metadata_masked_when_inner_declares_it(self) -> None:
+        adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.USER_METADATA})
+        assert not adapter.capabilities.supports(Capability.USER_METADATA)
+
+    def test_other_capabilities_pass_through_unchanged(self) -> None:
+        adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.COPY})
+        assert adapter.capabilities.supports(Capability.READ)
+        assert adapter.capabilities.supports(Capability.WRITE)
+        assert adapter.capabilities.supports(Capability.COPY)
+
+
+# ---------------------------------------------------------------------------
+# WriteResult from write / write_atomic (WR-001, WR-003, WR-004)
+# ---------------------------------------------------------------------------
+
+
+class TestAdapterWriteResult:
+    """AsyncBackendSyncAdapter.write/write_atomic return a valid WriteResult."""
+
+    @pytest.mark.spec("WR-001")
+    @pytest.mark.spec("WR-004")
+    def test_write_bytes_returns_write_result(self) -> None:
+        from remote_store._path import RemotePath
+
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write("f.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.source == "basic"
+        assert result.path == RemotePath("f.txt")
+        assert result.size == 5
+        adapter.close()
+
+    @pytest.mark.spec("WR-003")
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
+    def test_write_bytes_size_matches_payload(self, payload: bytes, expected_size: int) -> None:
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write("f.txt", payload)
+        assert result.size == expected_size
+        adapter.close()
+
+    @pytest.mark.spec("WR-003")
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
+    def test_write_binaryio_size_counted_without_materialising(self, payload: bytes, expected_size: int) -> None:
+        import io as _io
+
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write("f.txt", _io.BytesIO(payload))
+        assert result.size == expected_size
+        adapter.close()
+
+    @pytest.mark.spec("WR-001")
+    def test_write_atomic_returns_write_result(self) -> None:
+        from remote_store._path import RemotePath
+
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write_atomic("f.txt", b"data")
+        assert isinstance(result, WriteResult)
+        assert result.source == "basic"
+        assert result.path == RemotePath("f.txt")
+        assert result.size == 4
+        adapter.close()
+
+    @pytest.mark.spec("WR-003")
+    @pytest.mark.parametrize(("payload", "expected_size"), [(b"atomic-stream", 13), (b"", 0)])
+    def test_write_atomic_binaryio_size(self, payload: bytes, expected_size: int) -> None:
+        import io as _io
+
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write_atomic("f.txt", _io.BytesIO(payload))
+        assert result.size == expected_size
+        adapter.close()
+
+    @pytest.mark.spec("WR-001")
+    def test_write_with_none_metadata_returns_write_result_metadata_none(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write("f.txt", b"x", metadata=None)
+        assert result.metadata is None
+        adapter.close()
+
+    @pytest.mark.spec("WR-010")
+    def test_write_with_nonempty_metadata_raises_capability_not_supported(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        with pytest.raises(CapabilityNotSupported):
+            adapter.write("f.txt", b"x", metadata={"k": "v"})
+        adapter.close()
+
+    @pytest.mark.spec("WR-010")
+    def test_write_atomic_with_nonempty_metadata_raises_capability_not_supported(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        with pytest.raises(CapabilityNotSupported):
+            adapter.write_atomic("f.txt", b"x", metadata={"k": "v"})
         adapter.close()

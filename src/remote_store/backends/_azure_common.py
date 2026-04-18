@@ -137,6 +137,9 @@ def props_to_fileinfo(props: Any, path: str) -> FileInfo:
     digest: ContentDigest | None = None
     if isinstance(md5_bytes, (bytes, bytearray)) and md5_bytes:
         digest = ContentDigest("md5", md5_bytes.hex())
+    # User metadata: strip Azure-internal keys (e.g. hdi_isfolder used by HNS).
+    raw_meta = getattr(props, "metadata", None) or {}
+    user_meta: dict[str, str] | None = {k: v for k, v in raw_meta.items() if k != "hdi_isfolder"} or None
     return FileInfo(
         path=RemotePath(path),
         name=name,
@@ -144,6 +147,7 @@ def props_to_fileinfo(props: Any, path: str) -> FileInfo:
         modified_at=modified,
         etag=etag,
         digest=digest,
+        metadata=user_meta,
     )
 
 

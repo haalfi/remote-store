@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING, BinaryIO, TypeVar
 from remote_store._errors import CapabilityNotSupported
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
     from contextlib import AbstractContextManager
 
     from remote_store._capabilities import CapabilitySet
-    from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
@@ -176,13 +176,27 @@ class Backend(abc.ABC):
         return stream
 
     @abc.abstractmethod
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content to a file.
 
         Args:
             path: Backend-relative key.
             content: Data to write.
             overwrite: If ``False``, raise if file already exists.
+            metadata: Optional user-supplied key/value pairs to store alongside the
+                file. Only honoured when the backend declares ``USER_METADATA``.
+
+        Returns:
+            A ``WriteResult`` with at least ``path`` and ``size`` populated.
+            Backends declaring ``WRITE_RESULT_NATIVE`` also populate ``etag``,
+            ``last_modified``, and where available ``digest`` and ``version_id``.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
@@ -190,13 +204,24 @@ class Backend(abc.ABC):
         """
 
     @abc.abstractmethod
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content atomically via temp file + rename.
 
         Args:
             path: Backend-relative key.
             content: Data to write.
             overwrite: If ``False``, raise if file already exists.
+            metadata: Optional user-supplied key/value pairs (see ``write()``).
+
+        Returns:
+            A ``WriteResult`` (same contract as ``write()``).
 
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.

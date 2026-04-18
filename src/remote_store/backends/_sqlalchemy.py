@@ -22,11 +22,11 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._glob import pattern_to_regex
-from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo
+from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Iterator, Mapping, Sequence
 
     from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
@@ -267,16 +267,35 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 sa.Column("content_type", sa.Text, nullable=True),
                 sa.Column("digest", sa.Text, nullable=True),
                 sa.Column("extra", sa.Text, nullable=True),
+                sa.Column("user_metadata", sa.Text, nullable=True),
             )
             self._metadata.create_all(self._engine)
-            self._optional_columns = {"size", "modified_at", "content_type", "digest", "extra"}
+            self._optional_columns = {"size", "modified_at", "content_type", "digest", "extra", "user_metadata"}
         else:
             self._table = sa.Table(table_name, self._metadata, autoload_with=self._engine)
             col_names = {c.name for c in self._table.columns}
             if "key" not in col_names or "data" not in col_names:
                 msg = f"Table '{table_name}' must have at least 'key' and 'data' columns"
                 raise ValueError(msg)
-            self._optional_columns = col_names & {"size", "modified_at", "content_type", "digest", "extra"}
+            self._optional_columns = col_names & {
+                "size",
+                "modified_at",
+                "content_type",
+                "digest",
+                "extra",
+                "user_metadata",
+            }
+
+        # Both USER_METADATA and WRITE_RESULT_NATIVE are declared only when the
+        # backing table has the user_metadata column.  Advertising USER_METADATA
+        # without the column causes silent WR-013 violations (Store gate passes,
+        # data never stored).  WRITE_RESULT_NATIVE is stripped alongside it so
+        # the spec 045 WR-004/WR-010 tables ("dynamic") agree with the code.
+        if "user_metadata" in self._optional_columns:
+            self._capabilities: CapabilitySet = _ALL_CAPABILITIES
+        else:
+            _legacy_excluded = {Capability.USER_METADATA, Capability.WRITE_RESULT_NATIVE}
+            self._capabilities = CapabilitySet({c for c in _ALL_CAPABILITIES if c not in _legacy_excluded})
 
     # region: properties
 
@@ -286,7 +305,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _ALL_CAPABILITIES
+        return self._capabilities
 
     # endregion
 
@@ -377,7 +396,14 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     # region: public methods — writing
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         self._validate_path(path)
         # SQL BLOB columns require full materialization; streaming writes
         # are not possible.  This is by-design (ID-136).
@@ -388,6 +414,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             raise ValueError(msg)
 
         now = datetime.now(timezone.utc).timestamp()
+        meta_json = json.dumps(dict(metadata)) if metadata else None
 
         with self._map_errors(path), self._engine.begin() as conn:
             t = self._table
@@ -398,6 +425,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 values["size"] = len(raw)
             if "modified_at" in self._optional_columns:
                 values["modified_at"] = now
+            if "user_metadata" in self._optional_columns:
+                values["user_metadata"] = meta_json
 
             if existing is not None:
                 if not overwrite:
@@ -407,8 +436,23 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 values["key"] = path
                 conn.execute(t.insert().values(**values))
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        self.write(path, content, overwrite=overwrite)
+        has_meta_col = "user_metadata" in self._optional_columns
+        return WriteResult(
+            path=RemotePath(path),
+            size=len(raw),
+            source="native" if has_meta_col else "basic",
+            metadata=metadata if has_meta_col else None,
+        )
+
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
@@ -665,6 +709,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if "extra" in self._optional_columns:
                 col_names.append("extra")
                 select_cols.append(t.c.extra)
+            if "user_metadata" in self._optional_columns:
+                col_names.append("user_metadata")
+                select_cols.append(t.c.user_metadata)
 
             conn.execute(
                 t.insert().from_select(
@@ -730,6 +777,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             cols.append(t.c.digest)
         if "extra" in self._optional_columns:
             cols.append(t.c.extra)
+        if "user_metadata" in self._optional_columns:
+            cols.append(t.c.user_metadata)
 
         return cols
 
@@ -747,6 +796,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         content_type: str | None = None
         digest_obj: ContentDigest | None = None
         extra: dict[str, object] = {}
+        user_meta: dict[str, str] | None = None
 
         idx = 3
         if "content_type" in self._optional_columns:
@@ -766,6 +816,15 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if extra_raw:
                 with contextlib.suppress(json.JSONDecodeError, TypeError):
                     extra = json.loads(extra_raw)
+            idx += 1
+        if "user_metadata" in self._optional_columns:
+            meta_raw = row[idx] if idx < len(row) else None
+            if meta_raw:
+                with contextlib.suppress(json.JSONDecodeError, TypeError):
+                    parsed = json.loads(meta_raw)
+                    if isinstance(parsed, dict):
+                        user_meta = {k: v for k, v in parsed.items() if isinstance(k, str) and isinstance(v, str)}
+            idx += 1
 
         rpath = RemotePath(key)
         return FileInfo(
@@ -776,6 +835,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             content_type=content_type,
             digest=digest_obj,
             extra=extra,
+            metadata=user_meta,
         )
 
     @staticmethod
@@ -1003,10 +1063,24 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     # region: public methods — unsupported (read-only backend)
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         raise CapabilityNotSupported("SQL query backend is read-only", capability="write", backend=self.name)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         raise CapabilityNotSupported("SQL query backend is read-only", capability="atomic_write", backend=self.name)
 
     def open_atomic(self, path: str, *, overwrite: bool = False) -> contextlib.AbstractContextManager[BinaryIO]:

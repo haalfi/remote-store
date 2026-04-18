@@ -21,7 +21,7 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo
+from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 from remote_store.backends._azure_common import (
@@ -36,7 +36,7 @@ from remote_store.backends._azure_common import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
@@ -55,6 +55,44 @@ log = logging.getLogger(__name__)
 # (65% × 7 MiB min file).  Yields ~4× fewer staged-block HTTP requests vs
 # the previous 256 KiB value.  Users can override via client_options.
 _AZURE_BLOCK_SIZE = 1 * 1024 * 1024  # 1 MiB
+
+
+class _ByteCountingIO:
+    """Wraps a BinaryIO and counts bytes consumed — used to populate WriteResult.size."""
+
+    def __init__(self, stream: BinaryIO) -> None:
+        self._stream = stream
+        self.count: int = 0
+
+    def read(self, size: int = -1) -> bytes:
+        chunk = self._stream.read(size)
+        self.count += len(chunk)
+        return chunk
+
+
+def _build_azure_write_result(
+    path: str,
+    size: int,
+    resp: dict[str, Any],
+    metadata: Mapping[str, str] | None,
+) -> WriteResult:
+    """Build a WriteResult from an Azure SDK upload_blob response dict."""
+    raw_etag = resp.get("etag")
+    etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None
+    last_modified = resp.get("last_modified")
+    version_id = resp.get("version_id") or None
+    md5_bytes = resp.get("content_md5")
+    digest = ContentDigest("md5", md5_bytes.hex()) if isinstance(md5_bytes, (bytes, bytearray)) and md5_bytes else None
+    return WriteResult(
+        path=RemotePath(path),
+        size=size,
+        source="native",
+        etag=etag,
+        last_modified=last_modified,
+        version_id=version_id,
+        digest=digest,
+        metadata=metadata,
+    )
 
 
 class _AzureBinaryIO(io.RawIOBase):
@@ -356,7 +394,14 @@ class AzureBackend(Backend):
             bc = self._blob_client(path)
             return bytes(bc.download_blob(max_concurrency=self._max_concurrency).readall())
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         from azure.core.exceptions import ResourceNotFoundError
 
         with self._errors(path):
@@ -369,13 +414,31 @@ class AzureBackend(Backend):
                     raise
                 except ResourceNotFoundError:
                     pass  # Blob doesn't exist, proceed
-            bc.upload_blob(content, overwrite=True, max_concurrency=self._max_concurrency)
+            sdk_metadata = metadata or None
+            if isinstance(content, bytes):
+                size = len(content)
+                resp = bc.upload_blob(
+                    content, overwrite=True, max_concurrency=self._max_concurrency, metadata=sdk_metadata
+                )
+            else:
+                counter = _ByteCountingIO(content)
+                resp = bc.upload_blob(
+                    counter, overwrite=True, max_concurrency=self._max_concurrency, metadata=sdk_metadata
+                )
+                size = counter.count
+            return _build_azure_write_result(path, size, resp, metadata)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         if not self._hns:
             # non-HNS: direct upload is atomic (PUT semantics)
-            self.write(path, content, overwrite=overwrite)
-            return
+            return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
         # HNS: write to temp file via DFS, then atomic rename
         from azure.core.exceptions import ResourceNotFoundError
@@ -397,15 +460,38 @@ class AzureBackend(Backend):
             tmp_name = f".~tmp.{basename}.{uuid.uuid4().hex[:8]}"
             tmp_path = f"{parent}/{tmp_name}" if parent else tmp_name
 
+            sdk_metadata = metadata or None
+            size: int
+            upload_target: Any
+            if isinstance(content, bytes):
+                size = len(content)
+                upload_target = content
+            else:
+                _counter = _ByteCountingIO(content)
+                upload_target = _counter
+                size = 0  # set after upload
+
             tmp_fc = self._fs.get_file_client(tmp_path)
             try:
-                tmp_fc.upload_data(content, overwrite=True, max_concurrency=self._max_concurrency)
+                tmp_fc.upload_data(
+                    upload_target, overwrite=True, max_concurrency=self._max_concurrency, metadata=sdk_metadata
+                )
                 new_name = f"{self._container}/{azure_path}"
                 tmp_fc.rename_file(new_name)
             except Exception:
                 with contextlib.suppress(Exception):
                     tmp_fc.delete_file()
                 raise
+
+            if not isinstance(content, bytes):
+                size = _counter.count
+            dst_fc = self._fs.get_file_client(azure_path)
+            props = dst_fc.get_file_properties()
+            props_dict: dict[str, Any] = {
+                "etag": getattr(props, "etag", None),
+                "last_modified": getattr(props, "last_modified", None),
+            }
+            return _build_azure_write_result(path, size, props_dict, metadata)
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

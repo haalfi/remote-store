@@ -14,16 +14,16 @@ from typing import TYPE_CHECKING, BinaryIO
 from remote_store._backend import _COPY_BUFSIZE, Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound, PermissionDenied
-from remote_store._models import FileInfo, FolderEntry, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability))
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA})
 
 log = logging.getLogger(__name__)
 
@@ -149,7 +149,14 @@ class LocalBackend(Backend):
                 raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         full = self._resolve(path)
         if full.is_dir():
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
@@ -159,15 +166,25 @@ class LocalBackend(Backend):
             full.parent.mkdir(parents=True, exist_ok=True)
             if isinstance(content, bytes):
                 full.write_bytes(content)
+                size = len(content)
             else:
                 with open(str(full), "wb") as f:
                     shutil.copyfileobj(content, f, _COPY_BUFSIZE)
+                size = full.stat().st_size
         except IsADirectoryError:
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        return WriteResult(path=RemotePath(path), size=size, source="basic")
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         full = self._resolve(path)
         if full.is_dir():
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
@@ -180,8 +197,10 @@ class LocalBackend(Backend):
                 with os.fdopen(fd, "wb") as f:
                     if isinstance(content, bytes):
                         f.write(content)
+                        size = len(content)
                     else:
                         shutil.copyfileobj(content, f, _COPY_BUFSIZE)
+                        size = os.path.getsize(tmp_path)
                 os.replace(tmp_path, str(full))
             except BaseException:
                 with contextlib.suppress(OSError):
@@ -192,6 +211,7 @@ class LocalBackend(Backend):
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        return WriteResult(path=RemotePath(path), size=size, source="basic")
 
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

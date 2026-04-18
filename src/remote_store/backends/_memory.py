@@ -12,14 +12,14 @@ from typing import TYPE_CHECKING, Any, BinaryIO
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound
-from remote_store._models import FileInfo, FolderEntry, FolderInfo
+from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 from remote_store.backends._memory_tree import DirNode as _DirNode
 from remote_store.backends._memory_tree import FileEntry as _FileEntry
 from remote_store.backends._memory_tree import FileSnapshot as _FileSnapshot
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from remote_store._types import WritableContent
 
@@ -101,7 +101,14 @@ class MemoryBackend(Backend):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             return bytes(node.data)
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         segments = self._split_path(path)
         if not segments:
             raise InvalidPath("Path must not be empty for file operations", path=path, backend="memory")
@@ -119,6 +126,7 @@ class MemoryBackend(Backend):
                     break
                 raw.extend(chunk)
 
+        stored_meta = dict(metadata) if metadata else None
         with self._lock:
             parent = self._ensure_parents(segments)
             leaf = segments[-1]
@@ -135,15 +143,25 @@ class MemoryBackend(Backend):
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend="memory")
                 existing.data[:] = raw
                 existing.modified_at = datetime.now(timezone.utc)
+                existing.metadata = stored_meta
             else:
                 parent.children[leaf] = _FileEntry(
                     data=raw,
                     modified_at=datetime.now(timezone.utc),
+                    metadata=stored_meta,
                 )
                 self._file_count += 1
+        return WriteResult(path=RemotePath(path), size=len(raw), source="native", metadata=metadata)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        self.write(path, content, overwrite=overwrite)
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
@@ -243,6 +261,7 @@ class MemoryBackend(Backend):
                     size=child.size,
                     modified_at=child.modified_at,
                     content_type=child.content_type,
+                    metadata=child.metadata,
                 )
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
@@ -280,6 +299,7 @@ class MemoryBackend(Backend):
                     size=child.size,
                     modified_at=child.modified_at,
                     content_type=child.content_type,
+                    metadata=child.metadata,
                 )
             elif isinstance(child, _DirNode):
                 child_path = f"{prefix}/{name}" if prefix else name
@@ -301,6 +321,7 @@ class MemoryBackend(Backend):
                 size=len(node.data),
                 modified_at=node.modified_at,
                 content_type=node.content_type,
+                metadata=node.metadata,
             )
 
     def get_folder_info(self, path: str) -> FolderInfo:
@@ -557,6 +578,7 @@ class MemoryBackend(Backend):
                         size=child.size,
                         modified_at=child.modified_at,
                         content_type=child.content_type,
+                        metadata=child.metadata,
                     )
                 elif isinstance(child, dict):
                     if max_depth is not None and depth >= max_depth:
