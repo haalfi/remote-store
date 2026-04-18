@@ -386,9 +386,14 @@ class AsyncBackendSyncAdapter(Backend):
         from remote_store._models import WriteResult
         from remote_store._path import RemotePath
 
-        data = bytes(content) if isinstance(content, (bytes, bytearray, memoryview)) else content.read()
-        size = len(data)
-        self._submit(self._async_backend.write(path, data, overwrite=overwrite))
+        if isinstance(content, (bytes, bytearray, memoryview)):
+            data: bytes | _CountingBinaryIO = bytes(content)
+            size = len(data)  # type: ignore[arg-type]
+            self._submit(self._async_backend.write(path, data, overwrite=overwrite))
+        else:
+            counter = _CountingBinaryIO(content)
+            self._submit(self._async_backend.write(path, _binaryio_to_async_iter(counter), overwrite=overwrite))
+            size = counter.count
         return WriteResult(path=RemotePath(path), size=size, source="basic")
 
     def write_atomic(
@@ -402,10 +407,15 @@ class AsyncBackendSyncAdapter(Backend):
         from remote_store._models import WriteResult
         from remote_store._path import RemotePath
 
-        data = bytes(content) if isinstance(content, (bytes, bytearray, memoryview)) else content.read()
-        size = len(data)
-        self._submit(self._async_backend.write_atomic(path, data, overwrite=overwrite))
-        return WriteResult(path=RemotePath(path), size=size, source="basic")
+        if isinstance(content, (bytes, bytearray, memoryview)):
+            data2: bytes | _CountingBinaryIO = bytes(content)
+            size2 = len(data2)  # type: ignore[arg-type]
+            self._submit(self._async_backend.write_atomic(path, data2, overwrite=overwrite))
+        else:
+            counter2 = _CountingBinaryIO(content)
+            self._submit(self._async_backend.write_atomic(path, _binaryio_to_async_iter(counter2), overwrite=overwrite))
+            size2 = counter2.count
+        return WriteResult(path=RemotePath(path), size=size2, source="basic")
 
     @staticmethod
     def _to_async_content(content: WritableContent) -> AsyncWritableContent:
@@ -770,6 +780,26 @@ class _AsyncIteratorBridge:
                 self._iter.aclose(),  # type: ignore[attr-defined]
                 loop,
             )
+
+
+# ---------------------------------------------------------------------------
+# Byte-counting BinaryIO wrapper (write path size tracking)
+# ---------------------------------------------------------------------------
+
+
+class _CountingBinaryIO:
+    """Wraps a BinaryIO and counts bytes read — used to populate WriteResult.size."""
+
+    __slots__ = ("_stream", "count")
+
+    def __init__(self, stream: BinaryIO) -> None:
+        self._stream = stream
+        self.count: int = 0
+
+    def read(self, size: int = -1) -> bytes:
+        chunk = self._stream.read(size)
+        self.count += len(chunk)
+        return chunk
 
 
 # ---------------------------------------------------------------------------
