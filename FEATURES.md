@@ -88,6 +88,7 @@ backend. Methods are grouped by capability gate. Query at runtime with
 
 | Method | Description |
 |---|---|
+| `head(path)` | Return a `WriteResult` snapshot of a file via a metadata lookup |
 | `get_file_info(path)` | Retrieve file metadata (size, modified, etc.) |
 | `get_folder_info(path)` | Retrieve folder metadata and contents |
 
@@ -160,6 +161,7 @@ Extensions add optional capabilities alongside the core.
 | Extension | Description | Module | Key exports |
 |---|---|---|---|
 | Batch | Bulk copy, delete, and existence checks across files | `remote_store.ext.batch` | `BatchResult`, `batch_copy`, `batch_delete`, `batch_exists` |
+| Write | Client-side hashing helpers for write operations | `remote_store.ext.write` | `write_with_hash`, `open_atomic_with_hash`, `HashingAtomicWriter` |
 | Cache | Transparent read-through caching layer | `remote_store.ext.cache` | `CachedStore`, `CacheBackend`, `CacheStats`, `MemoryCache`, `cache` |
 | Glob | Portable glob for backends without native GLOB capability | `remote_store.ext.glob` | `glob_files` |
 | Integrity | Content checksums and digest verification | `remote_store.ext.integrity` | `checksum`, `verify`, `verify_hex`, `content_digest` |

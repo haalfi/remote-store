@@ -144,6 +144,7 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
+- **Write metadata on every write:** `write*()` returns a `WriteResult` with ETag, version ID, and last-modified; use `ext.write` for client-side SHA-256 hashing regardless of backend
 - **Async support:** `remote_store.aio` provides `AsyncStore` with coroutine methods; wrap any sync backend with `SyncBackendAdapter`
 - **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
 
@@ -196,6 +197,7 @@ store.child("subfolder")                        # scoped child store
 store.supports(Capability.ATOMIC_WRITE)         # runtime capability check (gates a method)
 store.supports(Capability.ATOMIC_MOVE)          # quality flag — move() atomicity guarantee
 store.resolve("path/to/file.txt")               # resolution plan (introspection)
+store.head("path/to/file.txt")                  # WriteResult snapshot (size, etag, …)
 store.ping()                                    # health check
 ```
 
@@ -220,6 +222,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
 | Stream wrappers | *(none)* | Composable BinaryIO wrappers for progress tracking and checksums |
 | Integrity helpers | *(none)* | Checksum computation and verification over Store's public API |
+| Write helpers | *(none)* | `write_with_hash` and `open_atomic_with_hash` — guaranteed client-side SHA-256 on every write |
 | Dagster IO manager | `remote-store[dagster]` | IOManager adapter + config-driven Store resource for Dagster pipelines |
 
 Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.
