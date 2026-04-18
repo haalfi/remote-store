@@ -187,6 +187,7 @@ store.write("path/to/data.bin", binary_stream)  # streaming write
 store.list_files("reports/", pattern="*.csv")   # iterate FileInfo
 store.glob("**/*.parquet")                      # native glob (capability-gated)
 store.exists("path/to/file.txt")                # → bool
+store.head("path/to/file.txt")                  # WriteResult snapshot (size, etag, …)
 
 store.move("old.txt", "new.txt")                # move / rename
 store.copy("src.txt", "dst.txt")                # copy
@@ -196,7 +197,6 @@ store.child("subfolder")                        # scoped child store
 store.supports(Capability.ATOMIC_WRITE)         # runtime capability check (gates a method)
 store.supports(Capability.ATOMIC_MOVE)          # quality flag — move() atomicity guarantee
 store.resolve("path/to/file.txt")               # resolution plan (introspection)
-store.head("path/to/file.txt")                  # WriteResult snapshot (size, etag, …)
 store.ping()                                    # health check
 ```
 
