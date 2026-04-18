@@ -17,12 +17,12 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Mapping
     from datetime import datetime
     from types import TracebackType
 
     from remote_store._backend import Backend
-    from remote_store._models import FileInfo
+    from remote_store._models import FileInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store.aio._async_backend import AsyncBackend
     from remote_store.aio._types import AsyncWritableContent
@@ -134,7 +134,14 @@ class AsyncStore:
 
     # region: writing
 
-    async def write(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> None:
         """Write binary content to *path*.  Creates parent folders implicitly.
 
         Args:
@@ -142,6 +149,8 @@ class AsyncStore:
             content: ``bytes`` or async iterator of ``bytes``.
             overwrite: If ``False``, raises ``AlreadyExists`` when
                 *path* exists.
+            metadata: Reserved for Phase 3 — not yet forwarded to the
+                async backend.
 
         Raises:
             AlreadyExists: If the file exists and *overwrite* is
@@ -154,7 +163,15 @@ class AsyncStore:
         await self._backend.write(self._require_file_path(path), content, overwrite=overwrite)
         log.info("write complete path=%r", path, extra={"op": "write", "path": path, "backend": _bk})
 
-    async def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite: bool = False) -> None:
+    async def write_text(
+        self,
+        path: str,
+        text: str,
+        *,
+        encoding: str = "utf-8",
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> None:
         """Write a string to *path*, encoded with the given encoding.
 
         Args:
@@ -163,6 +180,8 @@ class AsyncStore:
             encoding: Text encoding.
             overwrite: If ``False``, raises ``AlreadyExists`` when
                 *path* exists.
+            metadata: Reserved for Phase 3 — not yet forwarded to the
+                async backend.
 
         Raises:
             AlreadyExists: If the file exists and *overwrite* is
@@ -181,7 +200,14 @@ class AsyncStore:
         )
         await self.write(path, text.encode(encoding), overwrite=overwrite)
 
-    async def write_atomic(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write_atomic(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> None:
         """Write binary content to *path* atomically.
 
         If the write fails or is interrupted, *path* is not left in a
@@ -192,6 +218,8 @@ class AsyncStore:
             content: ``bytes`` or async iterator of ``bytes``.
             overwrite: If ``False``, raises ``AlreadyExists`` when
                 *path* exists.
+            metadata: Reserved for Phase 3 — not yet forwarded to the
+                async backend.
 
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
@@ -635,6 +663,39 @@ class AsyncStore:
             file_count=file_count,
             total_size=total_size,
             modified_at=latest_modified,
+        )
+
+    async def head(self, path: str) -> WriteResult:
+        """Return a ``WriteResult`` snapshot of *path* via a metadata lookup.
+
+        Async equivalent of ``Store.head()``.  Gated on ``Capability.METADATA``.
+        Returns ``source="sidecar"``.
+
+        Args:
+            path: Store-relative file path.
+
+        Returns:
+            ``WriteResult`` with ``source="sidecar"``.
+
+        Raises:
+            NotFound: If the file does not exist.
+            InvalidPath: If *path* is empty.
+            CapabilityNotSupported: If the backend lacks ``METADATA``.
+        """
+        from remote_store._models import WriteResult
+
+        _bk = self._backend.name
+        log.debug("head path=%r", path, extra={"op": "head", "path": path, "backend": _bk})
+        self._backend.capabilities.require(Capability.METADATA, backend=_bk)
+        info = await self._backend.get_file_info(self._require_file_path(path))
+        rebased = self._rebase_file_info(info)
+        return WriteResult(
+            path=rebased.path,
+            size=rebased.size,
+            source="sidecar",
+            etag=rebased.etag,
+            last_modified=rebased.modified_at,
+            metadata=rebased.metadata,
         )
 
     # endregion

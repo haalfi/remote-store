@@ -299,3 +299,41 @@ class TestProxyEquality:
         p1 = _TestProxy(inner)
         p2 = _TestProxy(inner)
         assert len({p1, p2}) == 1
+
+
+# ---------------------------------------------------------------------------
+# WR-018: write* return WriteResult, head() forwarding
+# ---------------------------------------------------------------------------
+
+
+class TestWriteResultProxy:
+    """WR-018: ProxyStore forwards write* return values and head()."""
+
+    @pytest.mark.spec("WR-018")
+    def test_write_returns_write_result(self, proxy: _TestProxy) -> None:
+        from remote_store._models import WriteResult
+
+        result = proxy.write("new.txt", b"content")
+        assert isinstance(result, WriteResult)
+
+    @pytest.mark.spec("WR-018")
+    def test_write_text_returns_write_result(self, proxy: _TestProxy) -> None:
+        from remote_store._models import WriteResult
+
+        result = proxy.write_text("new.txt", "text")
+        assert isinstance(result, WriteResult)
+
+    @pytest.mark.spec("WR-018")
+    def test_write_atomic_returns_write_result(self, proxy: _TestProxy) -> None:
+        from remote_store._models import WriteResult
+
+        result = proxy.write_atomic("new.txt", b"atomic")
+        assert isinstance(result, WriteResult)
+
+    @pytest.mark.spec("WR-018")
+    def test_head_forwards_to_inner(self, proxy: _TestProxy) -> None:
+        from remote_store._models import WriteResult
+
+        result = proxy.head("hello.txt")
+        assert isinstance(result, WriteResult)
+        assert result.source == "sidecar"

@@ -16,10 +16,10 @@ from typing import TYPE_CHECKING, BinaryIO, TypeVar
 from remote_store._store import Store
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from remote_store._capabilities import Capability
-    from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
@@ -119,14 +119,36 @@ class ProxyStore(Store):
 
     # region: writing
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        self._inner.write(path, content, overwrite=overwrite)
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        return self._inner.write(path, content, overwrite=overwrite, metadata=metadata)
 
-    def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite: bool = False) -> None:
-        self._inner.write_text(path, text, encoding=encoding, overwrite=overwrite)
+    def write_text(
+        self,
+        path: str,
+        text: str,
+        *,
+        encoding: str = "utf-8",
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        return self._inner.write_text(path, text, encoding=encoding, overwrite=overwrite, metadata=metadata)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        self._inner.write_atomic(path, content, overwrite=overwrite)
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        return self._inner.write_atomic(path, content, overwrite=overwrite, metadata=metadata)
 
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
@@ -194,6 +216,9 @@ class ProxyStore(Store):
 
     def get_folder_info(self, path: str, *, max_depth: int | None = None) -> FolderInfo:
         return self._inner.get_folder_info(path, max_depth=max_depth)
+
+    def head(self, path: str) -> WriteResult:
+        return self._inner.head(path)
 
     # endregion
 

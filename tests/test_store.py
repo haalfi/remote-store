@@ -570,3 +570,187 @@ class TestListFilesDepthFilter:
     def test_write_text_roundtrip(self, store: Store) -> None:
         store.write_text("rt.txt", "caf\u00e9", encoding="utf-8")
         assert store.read_bytes("rt.txt") == "caf\u00e9".encode()
+
+
+class TestWriteReturnsResult:
+    """WR-001: write*() return WriteResult, not None."""
+
+    @pytest.fixture
+    def store(self) -> Store:
+        return Store(backend=MemoryBackend(), root_path="data")
+
+    @pytest.mark.spec("WR-001")
+    def test_write_returns_write_result(self, store: Store) -> None:
+        from remote_store._models import WriteResult
+
+        result = store.write("f.bin", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.size == 5
+
+    @pytest.mark.spec("WR-001")
+    def test_write_text_returns_write_result(self, store: Store) -> None:
+        from remote_store._models import WriteResult
+
+        result = store.write_text("f.txt", "hi")
+        assert isinstance(result, WriteResult)
+
+    @pytest.mark.spec("WR-001")
+    def test_write_atomic_returns_write_result(self, store: Store) -> None:
+        from remote_store._models import WriteResult
+
+        result = store.write_atomic("f.bin", b"atomic")
+        assert isinstance(result, WriteResult)
+        assert result.size == 6
+
+
+class TestStoreHead:
+    """WR-008: Store.head() returns WriteResult with source='sidecar'."""
+
+    @pytest.fixture
+    def store(self) -> Store:
+        return Store(backend=MemoryBackend(), root_path="data")
+
+    @pytest.mark.spec("WR-008")
+    def test_head_returns_sidecar_write_result(self, store: Store) -> None:
+        from remote_store._models import WriteResult
+
+        store.write("f.bin", b"abc")
+        result = store.head("f.bin")
+        assert isinstance(result, WriteResult)
+        assert result.source == "sidecar"
+        assert result.size == 3
+
+    @pytest.mark.spec("WR-008")
+    def test_head_raises_not_found(self, store: Store) -> None:
+        from remote_store._errors import NotFound
+
+        with pytest.raises(NotFound):
+            store.head("missing.txt")
+
+    @pytest.mark.spec("WR-008")
+    def test_head_requires_metadata_capability(self) -> None:
+        from unittest.mock import MagicMock
+
+        from remote_store._backend import Backend
+        from remote_store._capabilities import CapabilitySet
+        from remote_store._errors import CapabilityNotSupported
+
+        mock_backend = MagicMock(spec=Backend)
+        mock_backend.capabilities = CapabilitySet(set(Capability) - {Capability.METADATA})
+        mock_backend.name = "mock"
+        s = Store(backend=mock_backend)
+        with pytest.raises(CapabilityNotSupported):
+            s.head("f.bin")
+
+    @pytest.mark.spec("WR-008")
+    def test_head_path_is_store_relative(self, store: Store) -> None:
+        from remote_store._path import RemotePath
+
+        store.write("nested/f.bin", b"xy")
+        result = store.head("nested/f.bin")
+        assert result.path == RemotePath("nested/f.bin")
+
+
+class TestMetadataGate:
+    """WR-010, WR-011: metadata= validation and USER_METADATA capability gate."""
+
+    @pytest.fixture
+    def store(self) -> Store:
+        return Store(backend=MemoryBackend(), root_path="data")
+
+    @pytest.fixture
+    def no_user_metadata_store(self) -> Store:
+        backend = MemoryBackend()
+        from remote_store._capabilities import CapabilitySet
+
+        object.__setattr__(  # MemoryBackend capabilities is a property; patch via Store wrapper
+            backend,
+            "_caps_override",
+            CapabilitySet(set(Capability) - {Capability.USER_METADATA}),
+        )
+        # Use a Store backed by a real MemoryBackend minus USER_METADATA via mock
+        from unittest.mock import patch
+
+        caps = CapabilitySet(set(Capability) - {Capability.USER_METADATA, Capability.GLOB, Capability.LAZY_READ})
+        with patch.object(type(backend), "capabilities", new_callable=lambda: property(lambda _: caps)):
+            yield Store(backend=backend, root_path="data")
+
+    @pytest.mark.spec("WR-011")
+    def test_empty_metadata_passes_validation(self, store: Store) -> None:
+        result = store.write("f.bin", b"x", metadata={})
+        from remote_store._models import WriteResult
+
+        assert isinstance(result, WriteResult)
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_nonempty_key_passes(self, store: Store) -> None:
+        result = store.write("f.bin", b"x", metadata={"key": "value"})
+        from remote_store._models import WriteResult
+
+        assert isinstance(result, WriteResult)
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_empty_key_raises_value_error(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="key"):
+            store.write("f.bin", b"x", metadata={"": "value"})
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_leading_underscore_key_raises_value_error(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="key"):
+            store.write("f.bin", b"x", metadata={"_secret": "value"})
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_non_ascii_key_raises_value_error(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="key"):
+            store.write("f.bin", b"x", metadata={"\u00e9cl\u00e9": "value"})
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_size_exceeds_2048_raises_value_error(self, store: Store) -> None:
+        big = {"k": "v" * 2049}
+        with pytest.raises(ValueError, match="2048"):
+            store.write("f.bin", b"x", metadata=big)
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_validation_before_capability_check(self) -> None:
+        from unittest.mock import MagicMock
+
+        from remote_store._backend import Backend
+        from remote_store._capabilities import CapabilitySet
+
+        mock_backend = MagicMock(spec=Backend)
+        mock_backend.capabilities = CapabilitySet(
+            set(Capability) - {Capability.USER_METADATA, Capability.GLOB, Capability.LAZY_READ}
+        )
+        mock_backend.name = "mock"
+        s = Store(backend=mock_backend)
+        with pytest.raises(ValueError, match="underscore"):
+            s.write("f.bin", b"x", metadata={"_bad": "v"})
+
+    @pytest.mark.spec("WR-010")
+    def test_nonempty_metadata_without_capability_raises(self) -> None:
+        from unittest.mock import patch
+
+        from remote_store._capabilities import CapabilitySet
+        from remote_store._errors import CapabilityNotSupported
+
+        backend = MemoryBackend()
+        caps = CapabilitySet(set(Capability) - {Capability.USER_METADATA, Capability.GLOB, Capability.LAZY_READ})
+        with patch.object(type(backend), "capabilities", new_callable=lambda: property(lambda _: caps)):
+            s = Store(backend=backend, root_path="data")
+            with pytest.raises(CapabilityNotSupported):
+                s.write("f.bin", b"x", metadata={"key": "val"})
+
+    @pytest.mark.spec("WR-010")
+    def test_empty_metadata_without_capability_allowed(self) -> None:
+        from unittest.mock import patch
+
+        from remote_store._capabilities import CapabilitySet
+
+        backend = MemoryBackend()
+        caps = CapabilitySet(set(Capability) - {Capability.USER_METADATA, Capability.GLOB, Capability.LAZY_READ})
+        with patch.object(type(backend), "capabilities", new_callable=lambda: property(lambda _: caps)):
+            s = Store(backend=backend, root_path="data")
+            result = s.write("f.bin", b"x", metadata={})
+            from remote_store._models import WriteResult
+
+            assert isinstance(result, WriteResult)

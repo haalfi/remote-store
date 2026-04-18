@@ -31,11 +31,11 @@ from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
 from remote_store._proxy import ProxyStore
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterator, Mapping
     from contextlib import AbstractContextManager
 
     from remote_store._capabilities import Capability
-    from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store._store import Store
     from remote_store._types import WritableContent
@@ -129,6 +129,7 @@ _OP_HOOK_MAP: dict[str, str] = {
     "glob": "on_list",
     "get_file_info": "on_list",
     "get_folder_info": "on_list",
+    "head": "on_list",
     "exists": "on_list",
     "is_file": "on_list",
     "is_folder": "on_list",
@@ -322,17 +323,48 @@ class ObservedStore(ProxyStore):
         with self._observe_op("read_text", path, {"encoding": encoding}):
             return self._inner.read_text(path, encoding=encoding, errors=errors)
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        with self._observe_op("write", path, {"overwrite": overwrite}):
-            self._inner.write(path, content, overwrite=overwrite)
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        extra: dict[str, Any] = {"overwrite": overwrite}
+        with self._observe_op("write", path, extra):
+            result = self._inner.write(path, content, overwrite=overwrite, metadata=metadata)
+            extra["write_result"] = result  # WR-019: inject before hook dispatch
+        return result
 
-    def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite: bool = False) -> None:
-        with self._observe_op("write_text", path, {"encoding": encoding, "overwrite": overwrite}):
-            self._inner.write_text(path, text, encoding=encoding, overwrite=overwrite)
+    def write_text(
+        self,
+        path: str,
+        text: str,
+        *,
+        encoding: str = "utf-8",
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        extra: dict[str, Any] = {"encoding": encoding, "overwrite": overwrite}
+        with self._observe_op("write_text", path, extra):
+            result = self._inner.write_text(path, text, encoding=encoding, overwrite=overwrite, metadata=metadata)
+            extra["write_result"] = result  # WR-019
+        return result
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        with self._observe_op("write_atomic", path, {"overwrite": overwrite}):
-            self._inner.write_atomic(path, content, overwrite=overwrite)
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
+        extra: dict[str, Any] = {"overwrite": overwrite}
+        with self._observe_op("write_atomic", path, extra):
+            result = self._inner.write_atomic(path, content, overwrite=overwrite, metadata=metadata)
+            extra["write_result"] = result  # WR-019
+        return result
 
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
@@ -390,6 +422,10 @@ class ObservedStore(ProxyStore):
     def get_folder_info(self, path: str, *, max_depth: int | None = None) -> FolderInfo:
         with self._observe_op("get_folder_info", path, {"max_depth": max_depth}):
             return self._inner.get_folder_info(path, max_depth=max_depth)
+
+    def head(self, path: str) -> WriteResult:
+        with self._observe_op("head", path, {}):
+            return self._inner.head(path)
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         with self._observe_op("move", src, {"dst": dst, "overwrite": overwrite}):

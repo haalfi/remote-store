@@ -171,38 +171,6 @@ Items graduate through the SDD pipeline:
 
 ### API Surface Enhancements
 
-- [~] **ID-146 — Land RFC-0011: `WriteResult` + opt-in hashing**
-  Implement [RFC-0011](rfcs/rfc-0011-write-result.md) per its spec
-  table: widen `Store.write*()` return type from `None` to
-  `WriteResult`, add `Capability.WRITE_RESULT_NATIVE` (quality flag)
-  and `Capability.USER_METADATA` (strict gate on `metadata=` kwarg),
-  add `Store.head()`, add `FileInfo.metadata`, and ship `ext.write`
-  (`write_with_hash`, `open_atomic_with_hash`) reusing existing
-  `ext.streams.ChecksumWriter`. `open_atomic` stays unchanged.
-  - RFC + spec: [rfc-0011](rfcs/rfc-0011-write-result.md) (Proposed);
-    spec file `sdd/specs/045-write-result.md` (WR-001..WR-019) created;
-    specs 001, 003, 019, 029, 030 amended; ADR-0026 created.
-  - Next: implement (models, capabilities, backends, Store, ext.write),
-    then land user-facing ripple — `FEATURES.md` capability matrix rows
-    for `WRITE_RESULT_NATIVE` / `USER_METADATA`, `CHANGELOG.md` entries
-    for the return-type widening + new surfaces, and the doc pages
-    (`docs-src/api/models.md`, `.../capabilities.md`, `.../store.md`,
-    new `guides/write-integrity.md`) listed in the RFC ripple-check.
-    Those edits are deferred out of this spec-only PR per the RFC
-    "Scope of this PR" note. Also rewrite the **narrative prose** under
-    the capabilities matrix table in `docs-src/capabilities-matrix.md`
-    (\"Full support: Local\", \"Near-full:\", etc.) — it will no longer be
-    accurate once Local stops picking up `WRITE_RESULT_NATIVE` /
-    `USER_METADATA` implicitly via `set(Capability)`. Also update
-    **spec 023 (ext.cache)** —
-    CACHE-007 / CACHE-008 currently reference `write()`, `write_text()`,
-    `write_atomic()`, and `open_atomic()` with implicit `None` return
-    types, which will be stale once those methods return `WriteResult`.
-    A new CACHE-NNN invariant covering `head()` forwarding (per WR-018)
-    should also be added. And split WR-014..WR-017 into a dedicated
-    `sdd/specs/046-ext-write.md` under an `EW-` prefix during
-    implementation, per the one-spec-per-extension convention
-    (ADR-0008), leaving cross-refs from 045.
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of

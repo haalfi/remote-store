@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath, NotFound
-from remote_store._models import FolderEntry, FolderInfo
+from remote_store._models import FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
 log = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
     from datetime import datetime
     from types import TracebackType
 
@@ -151,7 +151,14 @@ class Store:
 
     # region: writing
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write binary content to *path*.  Creates parent folders implicitly.
 
         Args:
@@ -159,19 +166,41 @@ class Store:
             content: ``bytes`` or readable binary stream (``BinaryIO``).
             overwrite: If ``False``, raises ``AlreadyExists`` when
                 *path* exists.
+            metadata: Optional user-supplied key/value pairs to store
+                alongside the file.  Requires ``Capability.USER_METADATA``.
+                Keys must be non-empty ASCII strings with no leading
+                underscore; total payload must not exceed 2048 bytes.
+
+        Returns:
+            ``WriteResult`` with at least ``path`` and ``size`` populated.
 
         Raises:
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
+            ValueError: If *metadata* fails shape validation (WR-011).
+            CapabilityNotSupported: If *metadata* is non-empty and the
+                backend lacks ``USER_METADATA``.
         """
         _bk = self._backend.name
         log.debug("write path=%r overwrite=%r", path, overwrite, extra={"op": "write", "path": path, "backend": _bk})
+        _validate_metadata(metadata)
+        if metadata:
+            self._backend.capabilities.require(Capability.USER_METADATA, backend=_bk)
         self._backend.capabilities.require(Capability.WRITE, backend=_bk)
-        self._backend.write(self._require_file_path(path), content, overwrite=overwrite)
+        result = self._backend.write(self._require_file_path(path), content, overwrite=overwrite, metadata=metadata)
         log.info("write complete path=%r", path, extra={"op": "write", "path": path, "backend": _bk})
+        return self._rebase_write_result(result)
 
-    def write_text(self, path: str, text: str, *, encoding: str = "utf-8", overwrite: bool = False) -> None:
+    def write_text(
+        self,
+        path: str,
+        text: str,
+        *,
+        encoding: str = "utf-8",
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write a string to *path*, encoded with the given encoding.
 
         Args:
@@ -180,6 +209,10 @@ class Store:
             encoding: Text encoding.
             overwrite: If ``False``, raises ``AlreadyExists`` when
                 *path* exists.
+            metadata: Optional user-supplied key/value pairs (see ``write()``).
+
+        Returns:
+            ``WriteResult``.
 
         Raises:
             AlreadyExists: If the file exists and *overwrite* is
@@ -196,9 +229,16 @@ class Store:
             overwrite,
             extra={"op": "write_text", "path": path, "backend": self._backend.name},
         )
-        self.write(path, text.encode(encoding), overwrite=overwrite)
+        return self.write(path, text.encode(encoding), overwrite=overwrite, metadata=metadata)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write binary content to *path* atomically.
 
         If the write fails or is interrupted, *path* is not left in a
@@ -209,6 +249,10 @@ class Store:
             content: ``bytes`` or readable binary stream (``BinaryIO``).
             overwrite: If ``False``, raises ``AlreadyExists`` when
                 *path* exists.
+            metadata: Optional user-supplied key/value pairs (see ``write()``).
+
+        Returns:
+            ``WriteResult``.
 
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
@@ -223,9 +267,15 @@ class Store:
             overwrite,
             extra={"op": "write_atomic", "path": path, "backend": _bk},
         )
+        _validate_metadata(metadata)
+        if metadata:
+            self._backend.capabilities.require(Capability.USER_METADATA, backend=_bk)
         self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=_bk)
-        self._backend.write_atomic(self._require_file_path(path), content, overwrite=overwrite)
+        result = self._backend.write_atomic(
+            self._require_file_path(path), content, overwrite=overwrite, metadata=metadata
+        )
         log.info("write_atomic complete path=%r", path, extra={"op": "write_atomic", "path": path, "backend": _bk})
+        return self._rebase_write_result(result)
 
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
@@ -671,6 +721,39 @@ class Store:
             modified_at=latest_modified,
         )
 
+    def head(self, path: str) -> WriteResult:
+        """Return a ``WriteResult`` snapshot of *path* via a metadata lookup.
+
+        Gated on ``Capability.METADATA`` only — works on read-only backends
+        that declare ``METADATA``.  The returned ``WriteResult`` has
+        ``source="sidecar"`` (populated from a ``get_file_info()`` call, not
+        from a write response).
+
+        Args:
+            path: Store-relative file path.
+
+        Returns:
+            ``WriteResult`` with ``source="sidecar"``.
+
+        Raises:
+            NotFound: If the file does not exist.
+            InvalidPath: If *path* is empty.
+            CapabilityNotSupported: If the backend lacks ``METADATA``.
+        """
+        _bk = self._backend.name
+        log.debug("head path=%r", path, extra={"op": "head", "path": path, "backend": _bk})
+        self._backend.capabilities.require(Capability.METADATA, backend=_bk)
+        info = self._backend.get_file_info(self._require_file_path(path))
+        rebased = self._rebase_file_info(info)
+        return WriteResult(
+            path=rebased.path,
+            size=rebased.size,
+            source="sidecar",
+            etag=rebased.etag,
+            last_modified=rebased.modified_at,
+            metadata=rebased.metadata,
+        )
+
     # endregion
 
     # region: lifecycle
@@ -905,4 +988,43 @@ class Store:
         new_path = RemotePath.from_backend_path(rel)
         return dataclasses.replace(entry, path=new_path)
 
+    def _rebase_write_result(self, result: WriteResult) -> WriteResult:
+        """Return a copy of *result* with its path rebased to store-relative."""
+        rel = self._strip_root(str(result.path))
+        if rel == str(result.path):
+            return result
+        return dataclasses.replace(result, path=RemotePath(rel))
+
     # endregion
+
+
+# ---------------------------------------------------------------------------
+# Module-level helpers
+# ---------------------------------------------------------------------------
+
+
+def _validate_metadata(metadata: Mapping[str, str] | None) -> None:
+    """Validate user metadata against WR-011 rules.
+
+    Raises:
+        ValueError: On any rule violation, before any capability check.
+    """
+    if not metadata:
+        return
+    total = 0
+    for key, value in metadata.items():
+        if not key:
+            msg = "metadata key must not be empty"
+            raise ValueError(msg)
+        if key.startswith("_"):
+            msg = f"metadata key must not start with underscore: {key!r}"
+            raise ValueError(msg)
+        try:
+            key_bytes = key.encode("ascii")
+        except UnicodeEncodeError:
+            msg = f"metadata key must be ASCII: {key!r}"
+            raise ValueError(msg) from None
+        total += len(key_bytes) + len(value.encode("utf-8"))
+    if total > 2048:
+        msg = f"metadata payload exceeds 2048 bytes: {total} bytes"
+        raise ValueError(msg)
