@@ -144,7 +144,7 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
-- **Write metadata on every write:** `write*()` returns a `WriteResult` with ETag, version ID, and last-modified; use `ext.write` for client-side SHA-256 hashing regardless of backend
+- **Write provenance:** `write*()` returns backend metadata from the write response; use `ext.write` to add a client-side content hash on any backend
 - **Async support:** `remote_store.aio` provides `AsyncStore` with coroutine methods; wrap any sync backend with `SyncBackendAdapter`
 - **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
 
@@ -222,7 +222,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
 | Stream wrappers | *(none)* | Composable BinaryIO wrappers for progress tracking and checksums |
 | Integrity helpers | *(none)* | Checksum computation and verification over Store's public API |
-| Write helpers | *(none)* | `write_with_hash` and `open_atomic_with_hash` — guaranteed client-side SHA-256 on every write |
+| Write helpers | *(none)* | Client-side content hashing for write operations — works on any backend |
 | Dagster IO manager | `remote-store[dagster]` | IOManager adapter + config-driven Store resource for Dagster pipelines |
 
 Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.
