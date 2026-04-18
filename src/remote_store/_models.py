@@ -115,15 +115,16 @@ class WriteResult:
             backend populated them from its write response,
             ``"basic"`` when derived locally, ``"sidecar"`` when
             constructed by ``Store.head()`` (WR-004, WR-006).
-        digest: Verified content digest; populated by ``ext.write``
-            helpers or a future backend server-verified digest (WR-014).
+        digest: Verified content digest — either a client-computed hash
+            from ``ext.write`` helpers (WR-014) or a backend-echoed
+            content hash from the write response (e.g., Azure
+            ``content_md5`` surfaced as ``ContentDigest("md5", …)``).
+            ``None`` on the default write path for all v1 backends.
         etag: Opaque backend change tag; semantics vary by backend.
         version_id: Immutable backend version identifier; ``None`` when
             the backend does not version objects.
         last_modified: Server timestamp from the write response; ``None``
             when the backend's write response omits it.
-        content_md5: Client-supplied MD5 stored alongside the object
-            (Azure only in v1); ``None`` otherwise.
         metadata: Echo of user metadata stored with the object (WR-012).
     """
 
@@ -134,7 +135,6 @@ class WriteResult:
     etag: str | None = None
     version_id: str | None = None
     last_modified: datetime | None = None
-    content_md5: str | None = None
     metadata: Mapping[str, str] | None = None
 
 

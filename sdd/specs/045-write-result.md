@@ -33,18 +33,17 @@ is expressed against it.
 
 **Optional (default `None` unless noted):**
 
-- `digest` (`ContentDigest | None`) — verified content digest; only
-  populated when the caller opts into `ext.write.write_with_hash`
-  (WR-014) or a future backend surfaces a server-verified digest on
-  its write response (WR-007 clause).
+- `digest` (`ContentDigest | None`) — verified content digest:
+  client-computed via `ext.write.write_with_hash` (WR-014), or a
+  backend-echoed content hash from the write response (e.g., Azure
+  `content_md5` surfaced as `ContentDigest("md5", …)`); `None` on
+  the default write path for all v1 backends (WR-007).
 - `etag` (`str | None`) — backend change tag; not a content hash on
   every backend (see RFC-0011 § Proposal for per-backend semantics).
 - `version_id` (`str | None`) — backend-provided immutable version
   identifier; `None` when the backend does not version objects.
 - `last_modified` (`datetime | None`) — server timestamp from the
   write response; `None` when the backend's write response omits it.
-- `content_md5` (`str | None`) — client-supplied MD5 stored
-  alongside the object (Azure only in v1); `None` otherwise.
 - `metadata` (`Mapping[str, str] | None`) — echo of the user
   metadata that was stored (WR-012).
 
@@ -94,8 +93,8 @@ does not declare the capability, `source == "basic"`.
 ## WR-005: Basic Source Guarantees
 
 **Invariant:** When `WriteResult.source == "basic"`, only `path` and `size` are
-guaranteed populated. The rich fields `digest`, `etag`, `version_id`,
-`last_modified`, and `content_md5` are `None`. The `metadata` field is
+guaranteed populated. The rich fields `digest`, `etag`, `version_id`, and
+`last_modified` are `None`. The `metadata` field is
 **not** governed by `source` — it is governed independently by WR-012:
 `WriteResult.metadata` echoes the caller's mapping whenever the
 `USER_METADATA` gate was passed, and is `None` otherwise, regardless of
@@ -123,13 +122,14 @@ server-verified digest on its write response. No streaming hash wrapper is
 inserted on the default path.
 
 **Current backend set (v1):** No v1 backend surfaces a server-verified
-digest. Azure's `content_md5` is client-supplied and stored server-side;
-S3's single-PUT `ETag` is explicitly documented as *not* a content hash;
-multipart `ETag` values have the form `"<md5-of-part-md5s>-<N>"`. So in
-v1 the invariant simplifies to "`digest is None` on every backend," but
-the invariant is written so that a future backend surfacing a
-server-verified digest (e.g., opt-in S3 `ChecksumSHA256`) does not
-require amending WR-007.
+digest on the default write path. Azure echoes the client-supplied MD5 as
+`ContentDigest("md5", …)` in `WriteResult.digest`, but that value is
+client-originated, not server-computed. S3's single-PUT `ETag` is
+explicitly documented as *not* a content hash; multipart `ETag` values
+have the form `"<md5-of-part-md5s>-<N>"`. So in v1 the invariant
+simplifies to "`digest is None` on every backend," but the invariant is
+written so that a future backend surfacing a server-verified digest (e.g.,
+opt-in S3 `ChecksumSHA256`) does not require amending WR-007.
 
 ## WR-008: Store.head() Gating and Semantics
 
@@ -154,7 +154,6 @@ constructed from the `FileInfo` returned by `Store.get_file_info(path)`.
 | `last_modified`     | `info.modified_at` (field rename)                 |
 | `metadata`          | `info.metadata`                                   |
 | `version_id`        | `None` (no corresponding `FileInfo` field in v1)  |
-| `content_md5`       | `None` (client-supplied only at write time)       |
 | `source`            | `"sidecar"` (always, for `head()`-produced results) |
 
 `FileInfo.name`, `FileInfo.content_type`, and `FileInfo.extra` are **not**

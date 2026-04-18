@@ -267,7 +267,6 @@ class TestWriteResultFields:
         assert wr.etag is None
         assert wr.version_id is None
         assert wr.last_modified is None
-        assert wr.content_md5 is None
         assert wr.metadata is None
 
     @pytest.mark.spec("WR-001a")

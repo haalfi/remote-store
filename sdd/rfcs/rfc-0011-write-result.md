@@ -9,7 +9,8 @@ Proposed
 Replace the `None` return from `Store.write*()` with a `WriteResult`
 dataclass carrying whatever metadata the backend already produced for
 free during the write — `etag`, `version_id`, `last_modified`, `size`,
-and (on Azure) `content_md5`. A new quality flag
+and (on Azure) a `digest` echoing the client-supplied MD5 as
+`ContentDigest("md5", …)`. A new quality flag
 `Capability.WRITE_RESULT_NATIVE` advertises which backends fill the
 rich fields; backends without it return a `WriteResult` containing
 just `path` and `size`. A separate strict-gate capability
@@ -54,8 +55,8 @@ they returned:
 
 | Backend                 | Native on write response                                                                | User metadata accepted | Server-side content hash             |
 | ----------------------- | --------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------ |
-| Azure Blob              | `etag`, `last_modified`, `version_id`, `content_md5` (when client supplied it)          | yes (`metadata=`)      | `content_md5` — client-supplied via `ContentSettings(content_md5=…)` or `validate_content=True`, stored (not computed) server-side |
-| Azure DataLake (HNS)    | `etag`, `last_modified`                                                                 | yes (`metadata=`)      | `content_md5` — client-supplied via `ContentSettings`, same storage semantics as Azure Blob |
+| Azure Blob              | `etag`, `last_modified`, `version_id`, MD5 when client supplied it | yes (`metadata=`)      | client-supplied MD5 surfaced as `digest=ContentDigest("md5", …)` via `ContentSettings(content_md5=…)` or `validate_content=True`; stored (not computed) server-side |
+| Azure DataLake (HNS)    | `etag`, `last_modified`                                            | yes (`metadata=`)      | client-supplied MD5 surfaced as `digest=ContentDigest("md5", …)` via `ContentSettings`; same storage semantics as Azure Blob |
 | S3 (boto3 `put_object`) | `ETag`, `VersionId`. Single-PUT `ETag` is the MD5 of the body. Multipart `ETag` is `"<md5-of-part-md5s>-<N>"` — **not** a content hash. | yes (`Metadata=`) | opt-in only (`ChecksumAlgorithm`)    |
 | S3 via `s3fs.pipe_file` | same as boto3 — but s3fs **discards** the response                                      | only via raw boto3     | discarded                            |
 | S3 via PyArrow          | nothing — PyArrow output stream eats the PUT response                                   | --                     | --                                   |
@@ -78,9 +79,9 @@ returns nothing (the output stream eats the PUT response).
 ## Goals
 
 - Surface native write metadata (`etag`, `version_id`,
-  `last_modified`, `content_md5`, `size`) on every backend that
-  produces it, with zero added round trips and zero added bytes on
-  the wire.
+  `last_modified`, `size`, and backend-echoed content hashes via
+  `digest`) on every backend that produces it, with zero added round
+  trips and zero added bytes on the wire.
 - Give saga consumers a one-call API
   (`ext.write.write_with_hash`) for verified content hashes when
   they actually need them.
@@ -121,10 +122,11 @@ class WriteResult:
     Attributes:
         path: Normalized remote path written, store-relative.
         size: Bytes written. Always populated.
-        digest: Verified content digest. ``None`` unless the caller
-            opted into a streaming hash (``ext.write.write_with_hash``)
-            or the backend surfaces a server-verified digest on its
-            write response.
+        digest: Content digest — client-computed via
+            ``ext.write.write_with_hash``, or a backend-echoed hash
+            from the write response (e.g., Azure ``content_md5``
+            surfaced as ``ContentDigest("md5", …)``). ``None`` on the
+            default write path for all v1 backends.
         etag: Backend-provided change tag. ``None`` when the backend
             does not produce one. **Not a content hash** on every
             backend — on S3, single-PUT ETags are the MD5 of the
@@ -138,13 +140,6 @@ class WriteResult:
         last_modified: Server timestamp from the write response.
             ``None`` when the backend's write response omits it; call
             ``Store.head(path)`` if needed.
-        content_md5: MD5 stored alongside the object when the client
-            supplied one at write time (Azure: via
-            ``ContentSettings(content_md5=…)`` or
-            ``validate_content=True``). ``None`` otherwise.
-            **Not** a server-computed hash — Azure does not compute
-            MD5 server-side on ``Put Blob``; it only stores what the
-            client sent.
         metadata: Echo of the user metadata that was stored. ``None``
             when ``metadata=`` was not passed or the backend does not
             declare ``USER_METADATA``.
@@ -169,7 +164,6 @@ class WriteResult:
     etag: str | None = None
     version_id: str | None = None
     last_modified: datetime | None = None
-    content_md5: str | None = None
     metadata: Mapping[str, str] | None = None
     source: Literal["native", "basic", "sidecar"] = "basic"
 ```
@@ -198,7 +192,7 @@ def write(self, path, content, *, overwrite=False, metadata=None) -> WriteResult
         etag=response["etag"],
         version_id=response.get("version_id"),
         last_modified=response["last_modified"],
-        content_md5=response.get("content_md5"),  # only present if client supplied
+        digest=_md5_to_digest(response.get("content_md5")),  # None when not client-supplied
         metadata=metadata,
         source="native",
     )
@@ -484,7 +478,7 @@ echoed back if the caller passed `metadata=`.
 | WR-002 | `WriteResult.path` is store-relative, matching the rebasing applied to `FileInfo.path` returned from `get_file_info()`. |
 | WR-003 | `WriteResult.size` equals the byte length of the written content on every backend. For `bytes`/`str` input, `size` is computed from the payload directly (zero added cost). For non-seekable `BinaryIO` input on backends without `WRITE_RESULT_NATIVE`, `size` is obtained by counting bytes as they stream or via a post-write `stat()` call — costs one local `stat` on `LocalBackend`, zero extra round trips on `SFTPBackend` (paramiko returns bytes transferred). |
 | WR-004 | If the backend declares `WRITE_RESULT_NATIVE`, every successful `Store.write*()` returns `WriteResult.source == "native"`; otherwise `source == "basic"`. |
-| WR-005 | When `source == "basic"`, only `path` and `size` are guaranteed populated; the rich fields `digest`, `etag`, `version_id`, `last_modified`, `content_md5` are `None`. `metadata` is governed independently by WR-012 regardless of `source`. |
+| WR-005 | When `source == "basic"`, only `path` and `size` are guaranteed populated; the rich fields `digest`, `etag`, `version_id`, and `last_modified` are `None`. `metadata` is governed independently by WR-012 regardless of `source`. |
 | WR-006 | `WriteResult.source == "sidecar"` only when constructed by `Store.head()`.                                        |
 | WR-007 | The default write path (`Store.write*()` without `ext.write`) returns `WriteResult.digest is None` on every backend that does not surface a server-verified digest. |
 | WR-008 | `Store.head(path) -> WriteResult` is gated on `Capability.METADATA` only. It is **not** gated on `WRITE` — callers may invoke it on read-only backends that declare `METADATA`. Raises `NotFound` if the path doesn't exist; raises `CapabilityNotSupported` if the backend lacks `METADATA`. |
