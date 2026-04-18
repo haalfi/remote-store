@@ -137,12 +137,11 @@ Items graduate through the SDD pipeline:
   - `Store.tla` — store layer composing backend + extensions; WriteResult
     forwarding. Shadows specs 001 + 045 (WR-019).
   - `Observer.tla` — event dispatch: every write fires exactly one StoreEvent,
-    none dropped. Shadows spec 019 OBS-015.
+    none dropped. Shadows spec 019 OBS-001..OBS-003.
 
   These three cover the PR 448 ripple surface with the smallest possible TLA+
-  footprint. `Store EXTENDS Backend` and `Observer INSTANCE Store` — so a
-  change to `Backend.tla` that breaks `Observer.tla` is caught by TLC, not by
-  a human reviewer.
+  footprint. Stand-alone modules per concern (no `EXTENDS` hierarchy — PoC §4.1
+  recommendation); cross-module composition deferred to Phase 6.
 
   **Deliverable:** spike report answering: (1) what does the authoring workflow
   feel like — is it sustainable for contributors? (2) do the three modules

@@ -24,11 +24,11 @@ not replacing them.
 
 **In scope for this spike:**
 
-| TLA+ module | Shadows | Key properties |
-|---|---|---|
-| `Backend.tla` | spec 003 (CAP-001..CAP-007, BE-001..BE-019) | capability gate ordering, error discrimination, entry partition |
-| `Store.tla` | spec 001 (STORE-004, STORE-005, STORE-006) | store wraps backend, capability gate fires before I/O |
-| `Observer.tla` | spec 019 (OBS-001..OBS-003) | every completed op fires exactly one event; hook routing matches outcome |
+| TLA+ module | Shadows | Key properties | Status |
+|---|---|---|---|
+| `Backend.tla` | spec 003 (CAP-001..CAP-007, BE-001..BE-019) | capability gate ordering, error discrimination, entry partition | Exploratory — no demonstrated bundling yet; targets are abstract-layer properties |
+| `Store.tla` | spec 001 (STORE-004, STORE-005, STORE-006) | store wraps backend, capability gate fires before I/O | Exploratory — thin scaffold; gains concrete targets once WR-019 is in scope |
+| `Observer.tla` | spec 019 (OBS-001..OBS-003) | every completed op fires exactly one event; hook routing matches outcome | Known-value — `EventBijection`, `HookRouting`, `NoDoubleDispatch` mirror the WR-018 pattern of independently-breakable claims |
 
 **Explicitly out of scope for this spike:**
 
@@ -78,9 +78,11 @@ TypeInvariant ==
 EntryPartition ==
     \A p \in Paths: ~(fs[p] = "file" /\ fs[p] = "dir")
 
+\* NOTE: sketch only. In a real TLA+ action, outcome must be declared as
+\* a VARIABLE and assigned via a primed expression (outcome').
 CapabilityGate(op_cap) ==
     op_cap \notin declared_caps =>
-        outcome = "CapabilityNotSupported"
+        outcome' = "CapabilityNotSupported"
 ```
 
 Key properties to check:
@@ -98,7 +100,14 @@ then delegates to the backend. The key question: does the Store's gate
 always fire before any backend action?
 
 ```
-EXTENDS Backend
+\* Stand-alone module (no EXTENDS Backend).
+\* Re-declares fs and declared_caps as its own variables; Backend.tla is a
+\* peer module, not a parent. EXTENDS composition is deferred to Phase 6
+\* once the hierarchy value is empirically demonstrated via break-and-catch.
+
+VARIABLES fs,            \* mirror of Backend fs
+          declared_caps, \* mirror of Backend declared_caps
+          store_outcome  \* outcome of the Store operation
 
 CapGatePrecedesIO ==
     \* If Store fires CapabilityNotSupported, backend action is skipped.
@@ -106,8 +115,8 @@ CapGatePrecedesIO ==
         UNCHANGED fs
 ```
 
-For now Store.tla is thin — it establishes the composition scaffold that
-WR-019 forwarding will inhabit once spec 045 is available.
+For now Store.tla is thin — it establishes the scaffold that WR-019
+forwarding will inhabit once spec 045 is available.
 
 ### 3.3 Observer.tla
 
@@ -132,9 +141,10 @@ HookRouting ==
         /\ (e.operation \in WriteOps /\ e.error = None) => on_write_fired(e)
         /\ (e.error # None) => on_error_fired(e)
 
+\* CorrelatesOp(e, op) == e.op_id = op  \* field predicate; define in module
 NoDoubleDispatch ==
     \* on_any fires exactly once per operation, even if around hook raises.
-    \A op \in CompletedOps: Cardinality({e \in events: e.correlates(op)}) = 1
+    \A op \in CompletedOps: Cardinality({e \in Range(events): CorrelatesOp(e, op)}) = 1
 ```
 
 `NoDoubleDispatch` is the most valuable check: the around-hook pattern
@@ -164,9 +174,9 @@ reproducibility.
 
 ```
 sdd/formal/tla/
-    Backend.tla         abstract backend protocol
-    Store.tla           store wrapping backend (EXTENDS Backend)
-    Observer.tla        observer proxy (EXTENDS Store)
+    Backend.tla         abstract backend protocol (stand-alone)
+    Store.tla           store layer properties (stand-alone; no EXTENDS Backend)
+    Observer.tla        observer proxy properties (stand-alone; no EXTENDS Store)
     MC_Backend.tla      model-checking harness (instantiates with small Paths)
     MC_Store.tla        model-checking harness for Store properties
     MC_Observer.tla     model-checking harness for Observer properties
@@ -174,6 +184,11 @@ sdd/formal/tla/
     MC_Store.cfg
     MC_Observer.cfg
 ```
+
+Stand-alone modules per concern: `EXTENDS` composition was not needed in the
+PoC and stand-alone modules were cleaner. Hierarchy via `EXTENDS` / `INSTANCE`
+can be added in Phase 6 once at least one cross-module invariant demonstrates
+value via break-and-catch.
 
 Each `MC_*.tla` file instantiates the corresponding module with a small
 finite model (e.g. `Paths == {"a", "b"}`, `Capabilities == {READ, WRITE}`).
@@ -226,7 +241,7 @@ branch records the progression.
 
 ### Phase 3 — Store.tla (session 3)
 
-- [ ] Write `Store.tla`: EXTENDS Backend, adds `CapGatePrecedesIO`.
+- [ ] Write `Store.tla`: stand-alone module (no `EXTENDS Backend`), adds `CapGatePrecedesIO`.
 - [ ] Write `MC_Store.tla` + `MC_Store.cfg`.
 - [ ] Run TLC. Confirm `CapGatePrecedesIO` holds.
 - [ ] Intentionally break it (remove gate) and confirm TLC produces a
@@ -234,7 +249,7 @@ branch records the progression.
 
 ### Phase 4 — Observer.tla (session 4)
 
-- [ ] Write `Observer.tla`: EXTENDS Store, adds `events`, `EventBijection`,
+- [ ] Write `Observer.tla`: stand-alone module (no `EXTENDS Store`), adds `events`, `EventBijection`,
   `HookRouting`, `NoDoubleDispatch`.
 - [ ] Write `MC_Observer.tla` + `MC_Observer.cfg`.
 - [ ] Run TLC. Confirm all properties hold.
@@ -258,19 +273,22 @@ Update this document with findings:
    Decision: `sdd/formal/tla/` preferred — both are machine-checkable
    spec artefacts, not runtime code.
 
-2. **EXTENDS vs. INSTANCE:** `Observer EXTENDS Store` pulls in all Store
-   definitions unmodified. `Observer INSTANCE Store WITH ...` allows
-   substituting Store variables — useful if Observer needs to track
-   Store's `fs` via a renamed variable. Decide during Phase 4 authoring.
+2. **EXTENDS vs. INSTANCE (deferred):** Modules start stand-alone (PoC §4.1
+   recommendation). If a cross-module invariant is identified that requires
+   shared state, `EXTENDS` pulls definitions in unmodified; `INSTANCE ... WITH`
+   allows variable substitution. Decide in Phase 6 once stand-alone modules
+   have survived break-and-catch and a concrete cross-module target is known.
 
 3. **Bounded model guarantees:** TLC with `Paths == {"a", "b"}` exhaustively
    checks all 2-path scenarios. Is that enough to be meaningful? Initial
    hypothesis: yes for routing and gating properties; borderline for
    depth-counting properties (which Dafny already covers).
 
-4. **CI enforcement vs. informational:** Start CI as informational (non-blocking)
-   until at least two modules verify cleanly. Promote to blocking in the
-   same commit that finishes Phase 4.
+4. **CI enforcement vs. informational:** Start CI as informational (non-blocking).
+   Promote to blocking only when at least one TLA+ check has caught a real
+   spec regression on a production branch — a caught regression, not a seeded
+   break. Seeded breaks (Phases 3–4) validate that TLC is checking something
+   real; they do not validate that the workflow pays. (PoC §4.3 rationale.)
 
 5. **Sync with master:** This branch predates PR 448 (spec 045, OBS-015).
    Once the WR-019 forwarding target is ready, sync from master and add
