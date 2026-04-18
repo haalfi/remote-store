@@ -34,7 +34,6 @@ if TYPE_CHECKING:
     from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
     from remote_store.aio._async_backend import AsyncBackend
-    from remote_store.aio._types import AsyncWritableContent
 
 T = TypeVar("T")
 
@@ -437,13 +436,6 @@ class AsyncBackendSyncAdapter(Backend):
             self._submit(self._async_backend.write_atomic(path, async_iter, overwrite=overwrite))
             size = counter.count
         return WriteResult(path=RemotePath(path), size=size, source="basic")
-
-    @staticmethod
-    def _to_async_content(content: WritableContent) -> AsyncWritableContent:
-        """Bridge sync ``BinaryIO | bytes`` into the async content shape."""
-        if isinstance(content, (bytes, bytearray, memoryview)):
-            return bytes(content)
-        return _binaryio_to_async_iter(content)
 
     # -- open_atomic synthesis (ASYNC-085) ----------------------------------
 

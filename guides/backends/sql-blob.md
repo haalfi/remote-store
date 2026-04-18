@@ -90,9 +90,21 @@ CREATE TABLE remote_store_objects (
 );
 ```
 
+### User metadata column
+
+To store per-file user metadata, add a `user_metadata TEXT` column to the table:
+
+```sql
+ALTER TABLE remote_store_objects ADD COLUMN user_metadata TEXT;
+```
+
+When the column is present, `SQLBlobBackend` declares the `WRITE_RESULT_NATIVE` and `USER_METADATA` capabilities and stores metadata as a JSON-encoded dict. When the column is absent (legacy tables), neither capability is declared — passing a non-empty `metadata=` kwarg to a `Store.write*()` call raises `CapabilityNotSupported`, and `write_atomic()` returns a basic (non-native) `WriteResult`.
+
+The `create_table=True` default schema includes `user_metadata TEXT` automatically.
+
 ### Using an existing table
 
-Set `create_table=False` to use a pre-existing table. Minimum required columns: `key TEXT` (primary key) and `data BLOB`. Optional columns (`size`, `modified_at`, `content_type`, `digest`, `extra`) are detected automatically; missing ones degrade gracefully.
+Set `create_table=False` to use a pre-existing table. Minimum required columns: `key TEXT` (primary key) and `data BLOB`. Optional columns (`size`, `modified_at`, `content_type`, `digest`, `extra`, `user_metadata`) are detected automatically; missing ones degrade gracefully.
 
 ## Capabilities
 

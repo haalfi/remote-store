@@ -1073,6 +1073,7 @@ class TestS3WriteResult:
         assert result.source == "native"
         assert result.path == RemotePath("f.txt")
         assert result.size == 4
+        assert result.metadata is None
 
     @pytest.mark.spec("WR-012")
     def test_write_metadata_echoed(self, s3_backend: Backend) -> None:

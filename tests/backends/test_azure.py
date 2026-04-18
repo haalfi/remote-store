@@ -710,7 +710,8 @@ class TestAzureHNSPaths:
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
         tmp_fc = MagicMock(spec=DataLakeFileClient)
-        tmp_fc.upload_data.return_value = {"etag": '"hns-etag"', "last_modified": None, "version_id": None}
+        tmp_fc.upload_data.return_value = None  # production-accurate: upload_data returns None
+        tmp_fc.get_file_properties.return_value = MagicMock(etag=None, last_modified=None)
         backend._fs_instance.get_file_client.return_value = tmp_fc
         result = backend.write_atomic("dir/file.txt", b"content")
         tmp_fc.upload_data.assert_called_once_with(b"content", overwrite=True, max_concurrency=4, metadata=None)
@@ -719,8 +720,8 @@ class TestAzureHNSPaths:
         assert result.size == len(b"content")
 
     @pytest.mark.spec("WR-001a")
-    def test_write_atomic_hns_populates_etag_from_upload_response(self) -> None:
-        """HNS write_atomic must return a rich WriteResult, not just size+metadata."""
+    def test_write_atomic_hns_populates_etag_from_file_properties(self) -> None:
+        """HNS write_atomic must return a rich WriteResult populated from get_file_properties."""
         from azure.core.exceptions import ResourceNotFoundError
 
         backend = self._make_hns_backend()
@@ -728,11 +729,11 @@ class TestAzureHNSPaths:
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
         tmp_fc = MagicMock(spec=DataLakeFileClient)
-        tmp_fc.upload_data.return_value = {"etag": '"abc123"', "last_modified": None, "version_id": "v1"}
+        tmp_fc.upload_data.return_value = None  # production-accurate: upload_data returns None
+        tmp_fc.get_file_properties.return_value = MagicMock(etag='"abc123"', last_modified=None)
         backend._fs_instance.get_file_client.return_value = tmp_fc
         result = backend.write_atomic("dir/file.txt", b"data")
         assert result.etag == "abc123"
-        assert result.version_id == "v1"
 
     def test_delete_folder_uses_directory_client_on_hns(self) -> None:
         backend = self._make_hns_backend()

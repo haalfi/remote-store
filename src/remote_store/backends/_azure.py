@@ -473,7 +473,7 @@ class AzureBackend(Backend):
 
             tmp_fc = self._fs.get_file_client(tmp_path)
             try:
-                resp = tmp_fc.upload_data(
+                tmp_fc.upload_data(
                     upload_target, overwrite=True, max_concurrency=self._max_concurrency, metadata=sdk_metadata
                 )
                 new_name = f"{self._container}/{azure_path}"
@@ -485,7 +485,13 @@ class AzureBackend(Backend):
 
             if not isinstance(content, bytes):
                 size = _counter.count
-            return _build_azure_write_result(path, size, resp or {}, metadata)
+            dst_fc = self._fs.get_file_client(azure_path)
+            props = dst_fc.get_file_properties()
+            props_dict: dict[str, Any] = {
+                "etag": getattr(props, "etag", None),
+                "last_modified": getattr(props, "last_modified", None),
+            }
+            return _build_azure_write_result(path, size, props_dict, metadata)
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

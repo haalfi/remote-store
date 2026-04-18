@@ -1106,6 +1106,13 @@ class TestAdapterWriteResult:
         assert result.size == expected_size
         adapter.close()
 
+    @pytest.mark.spec("WR-001")
+    def test_write_with_none_metadata_returns_write_result_metadata_none(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write("f.txt", b"x", metadata=None)
+        assert result.metadata is None
+        adapter.close()
+
     @pytest.mark.spec("WR-010")
     def test_write_with_nonempty_metadata_raises_capability_not_supported(self) -> None:
         adapter, _ = _make_memory_adapter()

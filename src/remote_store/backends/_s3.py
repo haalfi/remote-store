@@ -168,7 +168,20 @@ class S3Backend(_S3Base):
                             break
                         f.write(chunk)
                         size += len(chunk)
-        return WriteResult(path=RemotePath(path), size=size, source="native", metadata=metadata)
+            info = self._fs.info(self._s3_path(path))
+        etag_raw: str | None = info.get("ETag")
+        etag = etag_raw.strip('"').lower() if etag_raw else None
+        last_modified = info.get("LastModified")
+        version_id: str | None = info.get("VersionId") or None
+        return WriteResult(
+            path=RemotePath(path),
+            size=size,
+            source="native",
+            etag=etag,
+            last_modified=last_modified,
+            version_id=version_id,
+            metadata=metadata,
+        )
 
     def write_atomic(
         self,
