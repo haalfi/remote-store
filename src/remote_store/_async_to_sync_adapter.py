@@ -370,10 +370,10 @@ class AsyncBackendSyncAdapter(Backend):
 
     # -- Writes (ASYNC-091) -------------------------------------------------
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         self._submit(self._async_backend.write(path, self._to_async_content(content), overwrite=overwrite))
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         self._submit(self._async_backend.write_atomic(path, self._to_async_content(content), overwrite=overwrite))
 
     @staticmethod

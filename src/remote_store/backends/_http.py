@@ -324,10 +324,10 @@ class ReadOnlyHttpBackend(Backend):
 
     # region: unsupported operations
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         raise CapabilityNotSupported("HTTP backend is read-only", capability="write", backend=self.name)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         raise CapabilityNotSupported("HTTP backend is read-only", capability="atomic_write", backend=self.name)
 
     def open_atomic(self, path: str, *, overwrite: bool = False) -> AbstractContextManager[BinaryIO]:

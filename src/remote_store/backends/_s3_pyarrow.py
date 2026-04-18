@@ -210,7 +210,7 @@ class S3PyArrowBackend(_S3Base):
             stream = self._pa_fs.open_input_stream(self._pa_path(path))
             return bytes(stream.read())
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         with self._s3fs_errors(path):
             if not overwrite and self._s3fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
@@ -224,7 +224,7 @@ class S3PyArrowBackend(_S3Base):
             finally:
                 out.close()
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         # S3 PUT is inherently atomic (S3PA-013)
         self.write(path, content, overwrite=overwrite)
 

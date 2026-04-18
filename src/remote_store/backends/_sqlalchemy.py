@@ -377,7 +377,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     # region: public methods — writing
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         self._validate_path(path)
         # SQL BLOB columns require full materialization; streaming writes
         # are not possible.  This is by-design (ID-136).
@@ -407,7 +407,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 values["key"] = path
                 conn.execute(t.insert().values(**values))
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         self.write(path, content, overwrite=overwrite)
 
     @contextlib.contextmanager
@@ -1003,10 +1003,10 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     # region: public methods — unsupported (read-only backend)
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         raise CapabilityNotSupported("SQL query backend is read-only", capability="write", backend=self.name)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         raise CapabilityNotSupported("SQL query backend is read-only", capability="atomic_write", backend=self.name)
 
     def open_atomic(self, path: str, *, overwrite: bool = False) -> contextlib.AbstractContextManager[BinaryIO]:

@@ -142,7 +142,7 @@ class S3Backend(_S3Base):
         with self._s3fs_errors(path):
             return bytes(self._fs.cat_file(self._s3_path(path)))
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         with self._s3fs_errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):
                 raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
@@ -152,7 +152,7 @@ class S3Backend(_S3Base):
                 with self._fs.open(self._s3_path(path), "wb") as f:
                     shutil.copyfileobj(content, f, _COPY_BUFSIZE)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         # S3 PUT is inherently atomic (S3-010)
         self.write(path, content, overwrite=overwrite)
 

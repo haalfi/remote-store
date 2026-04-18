@@ -149,7 +149,7 @@ class LocalBackend(Backend):
                 raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         full = self._resolve(path)
         if full.is_dir():
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
@@ -167,7 +167,7 @@ class LocalBackend(Backend):
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         full = self._resolve(path)
         if full.is_dir():
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)

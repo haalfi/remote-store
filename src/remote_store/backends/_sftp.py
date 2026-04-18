@@ -329,7 +329,7 @@ class SFTPBackend(Backend):
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
                 raise
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             try:
@@ -348,7 +348,7 @@ class SFTPBackend(Backend):
                 else:
                     shutil.copyfileobj(content, f, _CHUNK_SIZE)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             self._check_not_dir(sftp_path, path)

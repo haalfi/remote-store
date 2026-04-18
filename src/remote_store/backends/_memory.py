@@ -101,7 +101,7 @@ class MemoryBackend(Backend):
                 raise NotFound(f"File not found: {path}", path=path, backend="memory")
             return bytes(node.data)
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         segments = self._split_path(path)
         if not segments:
             raise InvalidPath("Path must not be empty for file operations", path=path, backend="memory")
@@ -142,7 +142,7 @@ class MemoryBackend(Backend):
                 )
                 self._file_count += 1
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:  # type: ignore[override]  # TODO(ID-146-step3b)
         self.write(path, content, overwrite=overwrite)
 
     @contextlib.contextmanager
