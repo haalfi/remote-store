@@ -127,6 +127,8 @@ class TestWriteWithHash:
         result = write_with_hash(s, "f.bin", b"basic")
         assert result.digest is not None
         assert result.source == "basic"
+        mock_backend.write.assert_called_once()
+        assert mock_backend.write.call_args.args[1].read() == b"basic"
 
 
 class TestOpenAtomicWithHash:
@@ -236,6 +238,7 @@ class TestOpenAtomicWithHash:
         assert writer.result.digest is not None
         assert writer.result.digest.value == expected
         assert store.read_bytes("f.bin") == content
+        assert store.head("f.bin").metadata == {"k": "v"}
 
     @pytest.mark.spec("EW-004")
     def test_metadata_branch_result_none_on_exception(self, store: Store) -> None:

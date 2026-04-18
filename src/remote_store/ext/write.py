@@ -115,6 +115,13 @@ def open_atomic_with_hash(
     finished writing — not before.  For large payloads, prefer calling
     ``store.write()`` directly with ``metadata=``.
 
+    **``source`` field:** Both branches always set ``source="basic"`` on
+    the returned ``WriteResult``.  The metadata branch discards the
+    ``source`` returned by ``store.write_atomic()`` because EW-004 cannot
+    be honored for the no-metadata branch (``open_atomic`` returns only a
+    stream, not a ``WriteResult``), so both branches use the same value
+    for consistency.
+
     Args:
         store: The Store to write to.
         path: Store-relative file path.
@@ -140,7 +147,12 @@ def open_atomic_with_hash(
         yield writer
         buf.seek(0)
         result = store.write_atomic(path, buf.read(), overwrite=overwrite, metadata=metadata)
-        writer.result = dataclasses.replace(result, digest=ContentDigest(algorithm=algorithm, value=writer.hexdigest()))
+        writer.result = WriteResult(
+            path=result.path,
+            size=writer._bytes_written,
+            source="basic",
+            digest=ContentDigest(algorithm=algorithm, value=writer.hexdigest()),
+        )
     else:
         with store.open_atomic(path, overwrite=overwrite) as f:
             writer = HashingAtomicWriter(f, algorithm=algorithm)

@@ -153,6 +153,10 @@ class AsyncStore:
                 async backend.
 
         Raises:
+            ValueError: If *metadata* contains invalid keys or values
+                (see ``Store.write()`` for validation rules).
+            NotImplementedError: If *metadata* is non-empty (Phase 3
+                not yet implemented on ``AsyncStore``).
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
@@ -190,6 +194,10 @@ class AsyncStore:
                 async backend.
 
         Raises:
+            ValueError: If *metadata* contains invalid keys or values
+                (see ``Store.write()`` for validation rules).
+            NotImplementedError: If *metadata* is non-empty (Phase 3
+                not yet implemented on ``AsyncStore``).
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
@@ -197,6 +205,12 @@ class AsyncStore:
         Equivalent to
         ``await write(path, text.encode(encoding), overwrite=overwrite)``.
         """
+        from remote_store._store import _validate_metadata
+
+        _validate_metadata(metadata)
+        if metadata:
+            msg = "metadata= is not yet supported on AsyncStore; use the sync Store or wait for Phase 3"
+            raise NotImplementedError(msg)
         log.debug(
             "write_text path=%r encoding=%r overwrite=%r",
             path,
@@ -204,12 +218,6 @@ class AsyncStore:
             overwrite,
             extra={"op": "write_text", "path": path, "backend": self._backend.name},
         )
-        from remote_store._store import _validate_metadata
-
-        _validate_metadata(metadata)
-        if metadata:
-            msg = "metadata= is not yet supported on AsyncStore; use the sync Store or wait for Phase 3"
-            raise NotImplementedError(msg)
         await self.write(path, text.encode(encoding), overwrite=overwrite)
 
     async def write_atomic(
@@ -234,6 +242,10 @@ class AsyncStore:
                 async backend.
 
         Raises:
+            ValueError: If *metadata* contains invalid keys or values
+                (see ``Store.write()`` for validation rules).
+            NotImplementedError: If *metadata* is non-empty (Phase 3
+                not yet implemented on ``AsyncStore``).
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
