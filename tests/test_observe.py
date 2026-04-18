@@ -658,16 +658,21 @@ def test_observed_write_returns_write_result() -> None:
 
 
 @pytest.mark.spec("WR-019")
-def test_store_event_write_result_populated_on_success() -> None:
-    from remote_store._models import WriteResult
-
+@pytest.mark.parametrize(
+    ("method", "args"),
+    [
+        ("write", ("f.bin", b"hello")),
+        ("write_text", ("f.bin", "hello")),
+        ("write_atomic", ("f.bin", b"hello")),
+    ],
+)
+def test_store_event_write_result_populated_on_success(method: str, args: tuple[object, ...]) -> None:
     store = _make_store()
     events: list[StoreEvent] = []
     observed = observe(store, on_write=events.append)
-    observed.write("f.bin", b"hello")
+    result = getattr(observed, method)(*args)
     assert len(events) == 1
-    assert "write_result" in events[0].metadata
-    assert isinstance(events[0].metadata["write_result"], WriteResult)
+    assert events[0].metadata["write_result"] is result
 
 
 @pytest.mark.spec("WR-019")

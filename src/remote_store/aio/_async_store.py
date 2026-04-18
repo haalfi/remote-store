@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, TypeVar
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath, NotFound
-from remote_store._models import FolderEntry, FolderInfo
+from remote_store._models import FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
 log = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from remote_store._backend import Backend
-    from remote_store._models import FileInfo, WriteResult
+    from remote_store._models import FileInfo
     from remote_store._resolution import ResolutionPlan
     from remote_store.aio._async_backend import AsyncBackend
     from remote_store.aio._types import AsyncWritableContent
@@ -157,6 +157,12 @@ class AsyncStore:
                 ``False``.
             InvalidPath: If *path* is empty.
         """
+        from remote_store._store import _validate_metadata
+
+        _validate_metadata(metadata)
+        if metadata:
+            msg = "metadata= is not yet supported on AsyncStore; use the sync Store or wait for Phase 3"
+            raise NotImplementedError(msg)
         _bk = self._backend.name
         log.debug("write path=%r overwrite=%r", path, overwrite, extra={"op": "write", "path": path, "backend": _bk})
         self._backend.capabilities.require(Capability.WRITE, backend=_bk)
@@ -198,6 +204,12 @@ class AsyncStore:
             overwrite,
             extra={"op": "write_text", "path": path, "backend": self._backend.name},
         )
+        from remote_store._store import _validate_metadata
+
+        _validate_metadata(metadata)
+        if metadata:
+            msg = "metadata= is not yet supported on AsyncStore; use the sync Store or wait for Phase 3"
+            raise NotImplementedError(msg)
         await self.write(path, text.encode(encoding), overwrite=overwrite)
 
     async def write_atomic(
@@ -227,6 +239,12 @@ class AsyncStore:
                 ``False``.
             InvalidPath: If *path* is empty.
         """
+        from remote_store._store import _validate_metadata
+
+        _validate_metadata(metadata)
+        if metadata:
+            msg = "metadata= is not yet supported on AsyncStore; use the sync Store or wait for Phase 3"
+            raise NotImplementedError(msg)
         _bk = self._backend.name
         log.debug(
             "write_atomic path=%r overwrite=%r",
@@ -682,8 +700,6 @@ class AsyncStore:
             InvalidPath: If *path* is empty.
             CapabilityNotSupported: If the backend lacks ``METADATA``.
         """
-        from remote_store._models import WriteResult
-
         _bk = self._backend.name
         log.debug("head path=%r", path, extra={"op": "head", "path": path, "backend": _bk})
         self._backend.capabilities.require(Capability.METADATA, backend=_bk)
@@ -693,6 +709,7 @@ class AsyncStore:
             path=rebased.path,
             size=rebased.size,
             source="sidecar",
+            digest=rebased.digest,
             etag=rebased.etag,
             last_modified=rebased.modified_at,
             metadata=rebased.metadata,

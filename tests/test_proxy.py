@@ -332,9 +332,40 @@ class TestWriteResultProxy:
         assert result.size == expected_size
 
     @pytest.mark.spec("WR-018")
-    def test_head_forwards_to_inner(self, proxy: _TestProxy) -> None:
+    def test_head_forwards_to_inner(self, proxy: _TestProxy, inner: Store) -> None:
         from remote_store._models import WriteResult
 
         result = proxy.head("hello.txt")
+        inner_result = inner.head("hello.txt")
         assert isinstance(result, WriteResult)
         assert result.source == "sidecar"
+        assert result.path == inner_result.path
+        assert result.size == inner_result.size
+
+    @pytest.mark.spec("WR-018")
+    def test_write_result_is_forwarded_unchanged(self, proxy: _TestProxy, inner: Store) -> None:
+        """ProxyStore.write() returns the inner store's WriteResult directly."""
+        from unittest.mock import patch
+
+        from remote_store._models import WriteResult
+        from remote_store._path import RemotePath
+
+        sentinel = WriteResult(path=RemotePath("new.txt"), size=3, source="basic")
+        with patch.object(inner, "write", return_value=sentinel):
+            result = proxy.write("new.txt", b"abc")
+        assert result is sentinel
+
+    @pytest.mark.spec("WR-018")
+    def test_write_metadata_forwarded_to_inner(self, proxy: _TestProxy, inner: Store) -> None:
+        """metadata= kwarg passes through proxy to the inner store."""
+        from unittest.mock import patch
+
+        from remote_store._models import WriteResult
+        from remote_store._path import RemotePath
+
+        sentinel = WriteResult(path=RemotePath("m.txt"), size=4, source="basic")
+        with patch.object(inner, "write", return_value=sentinel) as mock_write:
+            proxy.write("m.txt", b"data", metadata={"tag": "val"})
+        mock_write.assert_called_once()
+        _, kwargs = mock_write.call_args
+        assert kwargs.get("metadata") == {"tag": "val"}

@@ -804,3 +804,68 @@ class TestAsyncStoreStripRoot:
         # list_files calls _strip_root internally; root-exact entry → ""
         files = [f async for f in store.list_files("")]
         assert any(f.name == "file.txt" for f in files)
+
+
+class TestAsyncStoreHead:
+    """WR-008 / ASYNC: AsyncStore.head() returns WriteResult with source='sidecar'."""
+
+    @pytest.fixture
+    def async_store(self) -> AsyncStore:
+        return AsyncStore(AsyncMemoryBackend(), root_path="data")
+
+    async def test_head_returns_sidecar_write_result(self, async_store: AsyncStore) -> None:
+        from remote_store._models import WriteResult
+
+        await async_store.write("f.bin", b"abc")
+        result = await async_store.head("f.bin")
+        assert isinstance(result, WriteResult)
+        assert result.source == "sidecar"
+        assert result.size == 3
+
+    async def test_head_raises_not_found(self, async_store: AsyncStore) -> None:
+        with pytest.raises(NotFound, match="not found"):
+            await async_store.head("missing.txt")
+
+    async def test_head_requires_metadata_capability(self) -> None:
+        from tests.conftest import RestrictedBackend
+
+        backend = MemoryBackend()
+        restricted = RestrictedBackend(backend, exclude={Capability.METADATA})
+        store = AsyncStore(restricted, root_path="data")  # type: ignore[arg-type]
+        with pytest.raises(CapabilityNotSupported):
+            await store.head("f.bin")
+
+    async def test_head_path_is_store_relative(self, async_store: AsyncStore) -> None:
+        from remote_store._path import RemotePath
+
+        await async_store.write("nested/f.bin", b"xy")
+        result = await async_store.head("nested/f.bin")
+        assert result.path == RemotePath("nested/f.bin")
+
+
+class TestAsyncStoreMetadataGate:
+    """WR-010/WR-011 async parity: metadata= validation and Phase 3 deferral."""
+
+    @pytest.fixture
+    def async_store(self) -> AsyncStore:
+        return AsyncStore(AsyncMemoryBackend(), root_path="data")
+
+    async def test_write_empty_metadata_passes(self, async_store: AsyncStore) -> None:
+        await async_store.write("f.bin", b"x", metadata={})
+        assert await async_store.read_bytes("f.bin") == b"x"
+
+    async def test_write_nonempty_metadata_raises_not_implemented(self, async_store: AsyncStore) -> None:
+        with pytest.raises(NotImplementedError, match="Phase 3"):
+            await async_store.write("f.bin", b"x", metadata={"k": "v"})
+
+    async def test_write_text_nonempty_metadata_raises_not_implemented(self, async_store: AsyncStore) -> None:
+        with pytest.raises(NotImplementedError, match="Phase 3"):
+            await async_store.write_text("f.bin", "hello", metadata={"k": "v"})
+
+    async def test_write_atomic_nonempty_metadata_raises_not_implemented(self, async_store: AsyncStore) -> None:
+        with pytest.raises(NotImplementedError, match="Phase 3"):
+            await async_store.write_atomic("f.bin", b"hello", metadata={"k": "v"})
+
+    async def test_write_invalid_metadata_raises_value_error(self, async_store: AsyncStore) -> None:
+        with pytest.raises(ValueError, match="underscore"):
+            await async_store.write("f.bin", b"x", metadata={"_bad": "v"})

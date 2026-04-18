@@ -45,7 +45,18 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **ID-148 — ID-146 docs ripple: WriteResult / head() / ext.write in guides and matrix**
+  Deferred from ID-146 Step 4 to keep the PR focused. The following docs need
+  updating to reflect the shipped WriteResult model, `Store.head()`, and `ext.write`:
+
+  - `docs-src/api/store.md` — expose `head()` in the API reference page
+  - `FEATURES.md` — list `ext.write` helpers and `head()`
+  - `docs-src/guides/write-integrity.md` (new) — walkthrough of `write_with_hash`
+    and `open_atomic_with_hash` for integrity-conscious consumers
+  - `docs-src/capabilities-matrix.md` — add `WRITE_RESULT_NATIVE` and
+    `USER_METADATA` rows if not already present
+
+  Blocked by nothing; purely editorial.
 
 ---
 

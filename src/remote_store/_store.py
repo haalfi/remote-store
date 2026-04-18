@@ -749,6 +749,7 @@ class Store:
             path=rebased.path,
             size=rebased.size,
             source="sidecar",
+            digest=rebased.digest,
             etag=rebased.etag,
             last_modified=rebased.modified_at,
             metadata=rebased.metadata,
@@ -1013,6 +1014,12 @@ def _validate_metadata(metadata: Mapping[str, str] | None) -> None:
         return
     total = 0
     for key, value in metadata.items():
+        if not isinstance(key, str):
+            msg = f"metadata key must be a str, got {type(key).__name__}: {key!r}"
+            raise ValueError(msg)
+        if not isinstance(value, str):
+            msg = f"metadata value must be a str, got {type(value).__name__}: {value!r}"
+            raise ValueError(msg)
         if not key:
             msg = "metadata key must not be empty"
             raise ValueError(msg)

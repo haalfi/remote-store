@@ -16,10 +16,12 @@ import io
 from typing import TYPE_CHECKING
 
 from remote_store._models import ContentDigest, WriteResult
-from remote_store.ext.streams import ChecksumWriter
+from remote_store._path import RemotePath
+from remote_store.ext.streams import ChecksumReader, ChecksumWriter
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
+    from typing import BinaryIO
 
     from remote_store._store import Store
     from remote_store._types import WritableContent
@@ -40,10 +42,17 @@ class HashingAtomicWriter(ChecksumWriter):
     """
 
     result: WriteResult | None
+    _bytes_written: int
 
-    def __init__(self, inner: object, algorithm: str = "sha256") -> None:
-        super().__init__(inner, algorithm=algorithm)  # type: ignore[arg-type]
+    def __init__(self, inner: BinaryIO, algorithm: str = "sha256") -> None:
+        super().__init__(inner, algorithm=algorithm)
         self.result = None
+        self._bytes_written = 0
+
+    def write(self, data: bytes | bytearray) -> int:
+        n = super().write(data)
+        self._bytes_written += len(data)
+        return n
 
 
 def write_with_hash(
@@ -74,14 +83,12 @@ def write_with_hash(
     """
     if isinstance(content, (bytes, bytearray)):
         digest_value = hashlib.new(algorithm, content).hexdigest()
-        readable: WritableContent = io.BytesIO(content)
+        result = store.write(path, io.BytesIO(content), overwrite=overwrite, metadata=metadata)
     else:
-        buf = io.BytesIO(content.read())
-        digest_value = hashlib.new(algorithm, buf.getvalue()).hexdigest()
-        buf.seek(0)
-        readable = buf
+        reader = ChecksumReader(content, algorithm=algorithm)
+        result = store.write(path, reader, overwrite=overwrite, metadata=metadata)
+        digest_value = reader.hexdigest()
 
-    result = store.write(path, readable, overwrite=overwrite, metadata=metadata)
     return dataclasses.replace(result, digest=ContentDigest(algorithm=algorithm, value=digest_value))
 
 
@@ -100,6 +107,14 @@ def open_atomic_with_hash(
     yielded ``HashingAtomicWriter.result`` is a ``WriteResult`` with
     ``digest`` populated.  On exception ``result`` remains ``None``.
 
+    **Metadata branch:** When *metadata* is non-empty, the implementation
+    buffers all written bytes in memory (``io.BytesIO``) and then calls
+    ``store.write_atomic()`` on exit.  This means (a) the full payload is
+    held in RAM, and (b) validation errors (``ValueError``) and capability
+    checks (``CapabilityNotSupported``) are raised after the caller has
+    finished writing — not before.  For large payloads, prefer calling
+    ``store.write()`` directly with ``metadata=``.
+
     Args:
         store: The Store to write to.
         path: Store-relative file path.
@@ -117,7 +132,9 @@ def open_atomic_with_hash(
     """
     writer: HashingAtomicWriter | None = None
     if metadata:
-        # Accumulate bytes so metadata can be forwarded to write_atomic (WR-016).
+        from remote_store._store import _validate_metadata
+
+        _validate_metadata(metadata)
         buf = io.BytesIO()
         writer = HashingAtomicWriter(buf, algorithm=algorithm)
         yield writer
@@ -128,5 +145,9 @@ def open_atomic_with_hash(
         with store.open_atomic(path, overwrite=overwrite) as f:
             writer = HashingAtomicWriter(f, algorithm=algorithm)
             yield writer
-        result = store.head(path)
-        writer.result = dataclasses.replace(result, digest=ContentDigest(algorithm=algorithm, value=writer.hexdigest()))
+        writer.result = WriteResult(
+            path=RemotePath(path),
+            size=writer._bytes_written,
+            source="basic",
+            digest=ContentDigest(algorithm=algorithm, value=writer.hexdigest()),
+        )

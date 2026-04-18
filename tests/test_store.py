@@ -649,6 +649,39 @@ class TestStoreHead:
         result = store.head("nested/f.bin")
         assert result.path == RemotePath("nested/f.bin")
 
+    @pytest.mark.spec("WR-008")
+    def test_head_maps_all_fields(self) -> None:
+        """digest, etag, last_modified, metadata all forwarded from FileInfo."""
+        from datetime import datetime, timezone
+        from unittest.mock import MagicMock
+
+        from remote_store._backend import Backend
+        from remote_store._capabilities import CapabilitySet
+        from remote_store._models import ContentDigest, FileInfo
+        from remote_store._path import RemotePath
+
+        digest = ContentDigest(algorithm="sha256", value="abc123")
+        ts = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        info = FileInfo(
+            path=RemotePath("data/f.bin"),
+            name="f.bin",
+            size=7,
+            modified_at=ts,
+            digest=digest,
+            etag="etag-xyz",
+            metadata={"k": "v"},
+        )
+        mock_backend = MagicMock(spec=Backend)
+        mock_backend.name = "mock"
+        mock_backend.capabilities = CapabilitySet(set(Capability))
+        mock_backend.get_file_info.return_value = info
+        s = Store(backend=mock_backend)
+        result = s.head("f.bin")
+        assert result.digest == digest
+        assert result.etag == "etag-xyz"
+        assert result.last_modified == ts
+        assert result.metadata == {"k": "v"}
+
 
 class TestMetadataGate:
     """WR-010, WR-011: metadata= validation and USER_METADATA capability gate."""
@@ -675,17 +708,17 @@ class TestMetadataGate:
 
     @pytest.mark.spec("WR-011")
     def test_metadata_empty_key_raises_value_error(self, store: Store) -> None:
-        with pytest.raises(ValueError, match="key"):
+        with pytest.raises(ValueError, match="empty"):
             store.write("f.bin", b"x", metadata={"": "value"})
 
     @pytest.mark.spec("WR-011")
     def test_metadata_leading_underscore_key_raises_value_error(self, store: Store) -> None:
-        with pytest.raises(ValueError, match="key"):
+        with pytest.raises(ValueError, match="underscore"):
             store.write("f.bin", b"x", metadata={"_secret": "value"})
 
     @pytest.mark.spec("WR-011")
     def test_metadata_non_ascii_key_raises_value_error(self, store: Store) -> None:
-        with pytest.raises(ValueError, match="key"):
+        with pytest.raises(ValueError, match="ASCII"):
             store.write("f.bin", b"x", metadata={"\u00e9cl\u00e9": "value"})
 
     @pytest.mark.spec("WR-011")
@@ -693,6 +726,28 @@ class TestMetadataGate:
         big = {"k": "v" * 2049}
         with pytest.raises(ValueError, match="2048"):
             store.write("f.bin", b"x", metadata=big)
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_size_at_boundary_passes(self, store: Store) -> None:
+        """Payload of exactly 2048 bytes must not raise."""
+        exact = {"k": "v" * (2048 - 1)}
+        result = store.write("f.bin", b"x", metadata=exact)
+        assert result.size == 1
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_non_str_key_raises_value_error(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="str"):
+            store.write("f.bin", b"x", metadata={1: "value"})  # type: ignore[arg-type]
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_non_str_value_raises_value_error(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="str"):
+            store.write("f.bin", b"x", metadata={"key": 42})  # type: ignore[dict-item]
+
+    @pytest.mark.spec("WR-011")
+    def test_metadata_validation_applies_to_write_atomic(self, store: Store) -> None:
+        with pytest.raises(ValueError, match="underscore"):
+            store.write_atomic("f.bin", b"x", metadata={"_bad": "v"})
 
     @pytest.mark.spec("WR-011")
     def test_metadata_validation_before_capability_check(self) -> None:
