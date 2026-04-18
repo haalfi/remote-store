@@ -1,0 +1,4 @@
+# TLC artefacts: trace exploration spec + state binary dumped into CWD
+MC_TTrace_*
+states/
+*.bin
