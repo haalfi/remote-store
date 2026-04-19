@@ -74,6 +74,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   demonstrated bundling, CI-informational with cadence-based revisit,
   promotion gated on a real regression catch).
 
+- **OBS-003 step 6 outcome clarification** (ID-147): spec 019 step 6/7
+  now state explicitly that `on_<op>` and `on_any` fire regardless of
+  outcome, cross-referencing OBS-004. Matches existing code and tests;
+  removes a drift surfaced by the OBS-003 hand-decomposition exercise
+  (`sdd/research/research-id-147-obs003-decomposition.md` § 2).
+
 ### Internal
 
 - **`scripts/gen_pages.py` refactor**: split the 840-line mkdocs-gen-files hook

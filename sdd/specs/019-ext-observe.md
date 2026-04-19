@@ -91,8 +91,9 @@ overrides every public method of `Store`. Each override:
 3. Delegates to the inner store's method.
 4. Computes `duration_ms`.
 5. Constructs a `StoreEvent`.
-6. Fires the matching `on_<op>` callback (if set).
-7. Fires `on_any` (if set).
+6. Fires the matching `on_<op>` callback (if set), regardless of outcome
+   (see OBS-004).
+7. Fires `on_any` (if set), regardless of outcome.
 8. On exception: fires `on_error` (if set), then re-raises.
 9. Returns the result from the inner store.
 
