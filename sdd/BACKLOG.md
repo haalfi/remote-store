@@ -119,7 +119,7 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
-- [ ] **ID-151 — Dafny `WriteResult` extension: field-mapping + capability round-trip**
+- [~] **ID-151 — Dafny `WriteResult` extension: field-mapping + capability round-trip**
   Follow-up to ID-146 review. Roughly a quarter of the 95 review comments on
   PRs #448–#456 were shaped as per-operation postcondition failures Dafny
   can prove directly: backends declaring a capability but silently violating
@@ -132,30 +132,38 @@ Items graduate through the SDD pipeline:
 
   **Scope:** extend `sdd/formal/BackendContract.dfy` to model `WriteResult`
   and encode WR-001a, WR-004, WR-008, WR-012, WR-013 as backend-layer
-  postconditions on `Write`, `WriteAtomic`, and a new `Head` method; refine
-  `MemoryBackend.dfy` (satisfiability witness); regenerate and wire the
-  compiled oracle so any backend that lies about its capability fails the
-  oracle-gated conformance suite.
+  postconditions on `Write`; refine `MemoryBackend.dfy` (satisfiability
+  witness); regenerate and wire the compiled oracle so any backend that
+  lies about its capability fails the oracle-gated conformance suite.
 
-  **Deliverables:**
-  - `BackendContract.dfy`: `WriteResult` datatype (WR-001a field list);
-    extend `FileEntry` with optional `etag`, `version_id`, `last_modified`,
-    `metadata`, `digest`; widen `Write` / `WriteAtomic` return to
-    `Result<WriteResult>`; add `Head` method (WR-008); add postconditions:
-    - `CapWriteResultNative in capabilities ∧ r.Ok? ⇒ r.value.source ==
-      "native"` with rich fields populated from the stored `FileEntry`
-      (WR-001a / WR-004).
-    - `CapUserMetadata in capabilities ∧ non-empty metadata ∧ r.Ok? ⇒
-      r.value.metadata == metadata` (verbatim echo, WR-012) and
-      `GetFileInfo(path).metadata == metadata` (round-trip, WR-013).
-    - `Head(path)` reproduces the WR-008 field-mapping table.
-  - `MemoryBackend.dfy` refinement discharges the new postconditions.
+  **Scope decisions (settled at kick-off):**
+  - Widen `Write` only — no separate `WriteAtomic` method. At the
+    Backend-contract level the two share the same postcondition model;
+    atomicity itself is a frame-condition property outside Dafny's
+    expressiveness. BE-010 gets a "delegates to BE-008" Formal coverage
+    note.
+  - Model WR-008 (`head()`) as a pure function `WriteResultFromFileInfo` +
+    `WR008FieldMapping` lemma — not a Backend trait method. `head()` is a
+    Store-layer composition over `get_file_info()`, not a backend method.
+
+  **Part 1 (PR #461 — shipped):**
+  - `BackendContract.dfy`: `Option<T>`, `ContentDigest`, `WriteSource`,
+    `FileInfo`, `WriteResult` datatypes; `CapWriteResultNative` and
+    `CapUserMetadata` capabilities; `HasUserMetadata` predicate +
+    `BasicFileInfo` helper; `Write` widened to `Result<WriteResult>`
+    with a fourth `metadata` parameter; WR-001a/004/005/010/012/013
+    postconditions; `WriteResultFromFileInfo` function + `WR008FieldMapping`
+    lemma.
+  - `MemoryBackend.dfy` refinement discharges all new postconditions.
+  - Spec 045 + 003 "Formal coverage" cross-refs added.
+  - `sdd/formal/README.md` BK-140 gap table row 7 added.
+
+  **Part 2 (follow-up PR — needs native Dafny):**
   - Regenerated `MemoryBackend-py/module_.py` + class-ordering fix.
-  - `tests/backends/dafny_oracle.py` adapter exposes the new fields and
-    `head()` method.
-  - `sdd/formal/README.md` BK-140 gap table gets a WriteResult row.
-  - Spec 045 + 003 "Formal coverage" cross-refs added (matching the
-    existing `GetFolderInfo` pattern).
+  - `tests/backends/dafny_oracle.py` adapter exposes the widened `Write`
+    signature (4th `metadata` parameter) and returns `WriteResult`.
+  - Oracle-gated conformance run: `pytest tests/backends/test_conformance*.py
+    -k dafny-oracle` green.
 
   **Out of scope:**
   - Proxy forwarding / event emission (WR-018, WR-019) — TLA+ territory,

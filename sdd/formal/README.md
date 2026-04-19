@@ -378,9 +378,18 @@ postcondition failures Dafny can prove directly: backends declaring a
 capability (`WRITE_RESULT_NATIVE` or `USER_METADATA`) but silently
 violating the corresponding `WriteResult`/`FileInfo` contract. The
 `Write` postcondition chain now ties capability declaration to field
-population and round-trip; `WriteResultFromFileInfo` + `WR008FieldMapping`
-pin the `head()` field table. Store-layer composition (WR-018, WR-019)
-and ext.write gating (EW-003) remain outside this layer — see
+consistency and metadata round-trip; `WriteResultFromFileInfo` +
+`WR008FieldMapping` pin the `head()` field table against the Dafny
+datatype.
+
+Honest scope: the capability-round-trip postcondition detects
+*divergence* between `WriteResult` and the subsequently readable
+`FileInfo` — not *absence*. A declaring backend that returns
+`WriteResult` with all rich fields `None` and stores `FileInfo` with
+all rich fields `None` still verifies. Empirical "rich fields were
+actually populated" is a test-assertion and review concern, not a
+Dafny-expressible postcondition. Store-layer composition (WR-018,
+WR-019) and ext.write gating (EW-003) remain outside this layer — see
 `sdd/formal/tla/` for the cross-layer track.
 
 Error-path frame conditions (gaps 1–2: `fs == old(fs)` on error) are

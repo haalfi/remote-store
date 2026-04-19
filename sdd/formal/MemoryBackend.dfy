@@ -173,7 +173,6 @@ class MemoryBackend extends Backend {
     ensures r.Ok? && CapWriteResultNative in capabilities ==>
       fs[path].info.digest == r.value.digest &&
       fs[path].info.etag == r.value.etag &&
-      fs[path].info.version_id == r.value.version_id &&
       fs[path].info.last_modified == r.value.last_modified
   {
     if path in fs && fs[path].DirEntry? {
@@ -189,11 +188,12 @@ class MemoryBackend extends Backend {
       return;
     }
 
-    // WR-010 gate: defensive branch — MemoryBackend declares
-    // CapUserMetadata, so this is unreachable for the refinement.
-    // Encoded for contract fidelity: a hypothetical MemoryBackend
-    // variant without the capability would still satisfy the
-    // postcondition by this branch.
+    // WR-010 gate.  MemoryBackend declares CapUserMetadata, so this
+    // branch is dead code for this refinement — it exists to satisfy
+    // the method contract (BackendContract.Write).  A sibling
+    // MemoryBackendMinimal fixture that drops CapUserMetadata would
+    // witness the live branch end-to-end; tracked as a follow-up
+    // improvement (not part 2 scope — part 2 is oracle regen).
     if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {
       r := Err(CapabilityNotSupported(
         CapabilityName(CapUserMetadata), name));
@@ -220,7 +220,6 @@ class MemoryBackend extends Backend {
       path, path, |content|,
       None,                                        // digest: not computed
       None,                                        // etag: opaque slot
-      None,                                        // version_id: v1 n/a
       None,                                        // last_modified: opaque
       stored_metadata
     );

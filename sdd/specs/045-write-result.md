@@ -193,10 +193,14 @@ callers needing the full `FileInfo`.
 `get_file_info()`, so the field mapping is encoded at the Backend
 contract level as a pure function `WriteResultFromFileInfo: FileInfo →
 WriteResult` with `source = SidecarSource`. The `WR008FieldMapping`
-lemma in `BackendContract.dfy` asserts the table verbatim, and
-`WR006SidecarProvenance` pins `source = SidecarSource` on every
-head-produced result. A spec change that contradicts the table would
-fail verification. See ID-151.
+lemma in `BackendContract.dfy` pins the Dafny function to the Dafny
+`FileInfo` datatype — it does not anchor this Markdown table to the
+Dafny function. Cross-check between this table and the Dafny function
+body is a human-review obligation; a reviewer who edits only this
+table does not get a Dafny failure. The WR-006 negative direction
+(`Write` never produces `SidecarSource`) is enforced structurally by
+`Write`'s postcondition restricting `source` to `NativeSource |
+BasicSource`. See ID-151.
 
 ## WR-009: WRITE_RESULT_NATIVE Is a Quality Flag
 

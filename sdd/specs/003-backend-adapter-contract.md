@@ -133,6 +133,12 @@ round-trip (`fs[path].info.metadata` reflects what was stored). Verified in
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
 **Precondition order:** Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies.
 **See also:** [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
+**Formal coverage:** Delegates to BE-008 — at the Backend-contract level
+`write_atomic` shares the `Write` postcondition model (return type, precondition
+order, WR-010 gate, WR-001a/004/005/012/013 postcondition chain). Atomicity
+itself is a frame-condition property outside Dafny's expressiveness (see
+`sdd/formal/README.md` § Design decisions, "No error-path frame condition"). No
+separate `WriteAtomic` method exists in `BackendContract.dfy`. See ID-151.
 
 ### BE-011: write_atomic Capability Gate
 

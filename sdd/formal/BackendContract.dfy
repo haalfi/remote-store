@@ -85,9 +85,13 @@ datatype FileInfo = FileInfo(
   name: string,
   size: nat,
   // Optional rich fields (spec 045 WR-013 round-trip surface).
+  // No `version_id` slot: in v1 backends FileInfo does not carry a
+  // version identifier (only WriteResult does, populated from the
+  // SDK write response and not round-tripped via get_file_info).
+  // Spec 045 WR-008 encodes this: head()-produced WriteResult has
+  // version_id = None because there is no FileInfo source.
   digest: Option<ContentDigest>,
   etag: Option<string>,
-  version_id: Option<string>,
   last_modified: Option<int>,
   metadata: Option<map<string, string>>
 )
@@ -121,7 +125,7 @@ datatype FolderInfo = FolderInfo(
 // refinement code terse when a backend does not populate rich fields.
 function BasicFileInfo(path: Path, name: string, size: nat): FileInfo
 {
-  FileInfo(path, name, size, None, None, None, None, None)
+  FileInfo(path, name, size, None, None, None, None)
 }
 
 // Whether a metadata mapping should be treated as "user metadata
@@ -330,11 +334,16 @@ trait Backend {
   //
   // WR-010 strict gate: HasUserMetadata(metadata) && CapUserMetadata
   // !in capabilities → CapabilityNotSupported before any I/O.
-  // The gate fires AFTER the existing IsDir/IsFile precondition chain
-  // only because those are type-checks on the target path; in the
-  // Python implementation the gate is at the Store layer and fires
-  // first, but at the backend-contract level either ordering is
-  // equivalent because the error states are disjoint.
+  //
+  // Ordering divergence vs the Python implementation: here the WR-010
+  // gate fires AFTER the IsDir/IsFile precondition chain, so for a
+  // directory-path + non-empty-metadata + non-declaring-backend input
+  // the Dafny contract returns InvalidPath while the Python Store layer
+  // (which evaluates WR-011 → WR-010 before dispatching to
+  // backend.write()) returns CapabilityNotSupported.  This is a known
+  // contract-level simplification: Dafny models the Backend trait in
+  // isolation; the Store-layer ordering (WR-011) is outside the trait.
+  // Tracked in the ID-151 "Out of scope" list.
   method Write(
     path: Path,
     content: seq<nat>,
@@ -389,13 +398,17 @@ trait Backend {
         then metadata
         else None)
     // WR-001a: stored FileInfo reflects the same rich-field shape as
-    // WriteResult when CapWriteResultNative is declared.  Guarantees
-    // that a subsequent GetFileInfo (and thus Store.head()) returns
-    // fields consistent with the prior WriteResult.
+    // WriteResult when CapWriteResultNative is declared.  This
+    // postcondition detects *divergence* between WriteResult and the
+    // subsequently readable FileInfo — not *absence*: a backend that
+    // returns WriteResult with all rich fields None and stores
+    // FileInfo with all rich fields None still satisfies this clause
+    // vacuously.  Absence of rich-field population by a declaring
+    // backend is an empirical quality concern (test assertion, review),
+    // not a Dafny-expressible postcondition.
     ensures r.Ok? && CapWriteResultNative in capabilities ==>
       fs[path].info.digest == r.value.digest &&
       fs[path].info.etag == r.value.etag &&
-      fs[path].info.version_id == r.value.version_id &&
       fs[path].info.last_modified == r.value.last_modified
 
   // ====================================================================
@@ -769,9 +782,8 @@ lemma MoveIsNotNoop(
 // returned by get_file_info().  Modelled as a pure function here
 // rather than a Backend method because Store.head() is a Store-layer
 // composition over the backend's GetFileInfo (not a backend method
-// itself).  The field mapping table is encoded by construction; the
-// WR008FieldMapping lemma asserts it verbatim so a spec change that
-// contradicts the table would fail verification.
+// itself).  `version_id` is hard-coded None because FileInfo carries
+// no version_id slot in v1 (spec 045 WR-008 table).
 function WriteResultFromFileInfo(info: FileInfo): WriteResult
 {
   WriteResult(
@@ -779,16 +791,24 @@ function WriteResultFromFileInfo(info: FileInfo): WriteResult
     info.size,
     info.digest,
     info.etag,
-    None,                  // version_id: no corresponding FileInfo field in v1
+    None,
     info.last_modified,
     info.metadata,
     SidecarSource
   )
 }
 
-// WR-008: asserts the field mapping table directly.  If a future
-// amendment changes the mapping, this lemma has to be updated at the
-// same time — the spec table and the Dafny postcondition cannot drift.
+// WR-008: pins the Dafny function's field mapping.  Honest scope: this
+// lemma anchors WriteResultFromFileInfo to the Dafny FileInfo datatype
+// — it does not anchor the Markdown spec table to the Dafny function.
+// A reviewer who edits only the Markdown table (spec 045 § WR-008)
+// will not get a Dafny failure.  Cross-check between the two is a
+// human-review obligation, not a verifier one.
+//
+// WR-006 negative direction (Write never produces SidecarSource) is
+// enforced structurally by Write's postcondition restricting source
+// to NativeSource | BasicSource (§6), so no separate lemma is needed
+// for that half.
 lemma WR008FieldMapping(info: FileInfo)
   ensures (
     var wr := WriteResultFromFileInfo(info);
@@ -806,14 +826,5 @@ lemma WR008FieldMapping(info: FileInfo)
   assert wr.path == info.path;
   assert wr.version_id == None;
   assert wr.source == SidecarSource;
-}
-
-// WR-006: head()-produced WriteResults always have source = Sidecar,
-// and direct write calls never produce Sidecar.  Stated as a property
-// of the two construction paths rather than an end-to-end invariant.
-lemma WR006SidecarProvenance(info: FileInfo)
-  ensures WriteResultFromFileInfo(info).source == SidecarSource
-{
-  assert WriteResultFromFileInfo(info).source == SidecarSource;
 }
 
