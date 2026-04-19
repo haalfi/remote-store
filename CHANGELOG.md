@@ -8,6 +8,17 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`AsyncBackendSyncAdapter` orphan-coroutine leak** (BUG-166): scalar
+  methods evaluated their argument before `_submit` ran the closed/running-loop
+  guard, so a `RuntimeError` from the guard left the coroutine uncollected and
+  emitted `RuntimeWarning: coroutine '…' was never awaited`. `_submit` now
+  closes the coroutine on every fail-fast path. Five `filterwarnings` workarounds
+  in the unit suite were removed and a regression test asserts the closed-guard
+  no longer leaks. Companion fix in `tests/test_backend_sqlblob.py`:
+  `test_close_owned_engine` no longer probes the disposed engine via
+  `read_bytes` (which silently re-opened a fresh pool connection); it now
+  asserts pool identity directly per SQL-BLOB-041.
+
 - **`AsyncAzureBackend.write` streaming** (BUG-165): `write` and
   `write_atomic` materialized any `AsyncIterable[bytes]` payload into a
   single `bytes` buffer before calling `upload_blob` / `upload_data`,

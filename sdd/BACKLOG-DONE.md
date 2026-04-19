@@ -48,6 +48,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   example metadata and link rewrites are now data-driven via `SddKind`,
   self-describing example docstrings, and `LinkResolver`. PR #444.
 
+- [x] **BUG-166 — `AsyncBackendSyncAdapter` leaks unawaited coroutine on closed/running-loop guard**
+  Scalar methods (e.g. `exists`) build the coroutine before `_submit` runs
+  the closed/running-loop guard, so a `RuntimeError` from the guard left the
+  coroutine uncollected and surfaced `RuntimeWarning: coroutine '…' was never
+  awaited`. `_submit` now closes the coroutine on every fail-fast path. Five
+  `@pytest.mark.filterwarnings("ignore:coroutine.*was never awaited:…")`
+  workarounds in `tests/aio/test_async_to_sync_adapter.py` were removed and a
+  `recwarn`-based regression test in `TestClosedAdapterReuse` asserts the
+  closed-guard no longer leaks. Bundled with a companion test-hygiene fix in
+  `tests/test_backend_sqlblob.py::test_close_owned_engine`: the brittle
+  post-close `read_bytes` probe (which silently re-opened a connection on the
+  disposed engine and triggered `ResourceWarning: unclosed database`) is
+  replaced with a direct pool-identity assertion against SQL-BLOB-041.
+
 - [x] **BUG-165 — `AsyncAzureBackend.write` violates streaming promise**
   `AsyncAzureBackend.write` / `write_atomic` materialized any
   `AsyncIterable[bytes]` payload into a single ``bytes`` buffer before

@@ -153,13 +153,21 @@ class AsyncBackendSyncAdapter(Backend):
         ``close(timeout=…)`` provides a global shutdown bound; there is
         no per-operation equivalent.
         """
-        self._guard()
+        # Caller built *coro* before the guard runs (Python evaluates the
+        # argument first); on either failure path we close it explicitly so
+        # CPython does not emit "coroutine was never awaited" RuntimeWarning.
+        try:
+            self._guard()
+        except BaseException:
+            coro.close()
+            raise
         try:
             future = asyncio.run_coroutine_threadsafe(coro, self._loop)
         except RuntimeError:
             # Loop was stopped between _guard() and here (close() raced us).
             # Re-raise with the canonical stem so ASYNC-083 callers see a
             # stable message rather than asyncio's internal phrasing.
+            coro.close()
             raise RuntimeError(_CLOSED_MSG) from None
         return future.result()
 
