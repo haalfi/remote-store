@@ -844,6 +844,7 @@ class TestCloseSemantics:
         loop = adapter._loop  # internal: no public observable
         loop.call_soon_threadsafe(loop.stop)
         adapter._thread.join(timeout=5.0)  # internal: no public observable
+        # internal: no public observable for thread state
         assert not adapter._thread.is_alive(), "loop thread did not stop within 5 s"
         adapter.close()
         gc.collect()
