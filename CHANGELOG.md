@@ -8,28 +8,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
-- **Five additional `AsyncBackendSyncAdapter` orphan-coroutine sites** (BUG-167):
-  same pattern as BUG-166 in `close()` (both `aclose` and `_drain_tasks`),
-  `_ChunkPullReader._pull_chunk` / `close()`, and `_AsyncIteratorBridge.__next__`
-  / `__del__` — the coroutine was built before submission and discarded unawaited
-  on the `RuntimeError` (loop-already-stopped) path. All six sites now close the
-  coroutine on every fail-fast path. Regression test in `TestCloseSemantics`.
-  Test-warning hygiene: 80 ResourceWarning sources eliminated across
-  `tests/aio/test_async_azure.py`, `tests/backends/test_azure.py`,
-  `tests/test_ping.py`, and `tests/backends/test_conformance.py` by registering
-  every helper-built backend on a per-test list and aclose'ing it in an autouse
-  fixture (TESTING.md Rule 12).
-
-- **`AsyncBackendSyncAdapter` orphan-coroutine leak** (BUG-166): scalar
-  methods evaluated their argument before `_submit` ran the closed/running-loop
-  guard, so a `RuntimeError` from the guard left the coroutine uncollected and
-  emitted `RuntimeWarning: coroutine '…' was never awaited`. `_submit` now
-  closes the coroutine on every fail-fast path. Five `filterwarnings` workarounds
-  in the unit suite were removed and a regression test asserts the closed-guard
-  no longer leaks. Companion fix in `tests/test_backend_sqlblob.py`:
-  `test_close_owned_engine` no longer probes the disposed engine via
-  `read_bytes` (which silently re-opened a fresh pool connection); it now
-  asserts pool identity directly per SQL-BLOB-041.
+- **`AsyncBackendSyncAdapter` orphan-coroutine leaks** (BUG-166, BUG-167):
+  coroutines built before `run_coroutine_threadsafe` were discarded unawaited
+  on fail-fast paths, emitting `RuntimeWarning`. All six sites now call
+  `coro.close()` on every error path. Companion cleanup eliminates 80
+  `ResourceWarning`s via autouse aclose fixtures and rewrites
+  `test_close_owned_engine` to assert pool identity (TESTING.md Rule 12).
 
 - **`AsyncAzureBackend.write` streaming** (BUG-165): `write` and
   `write_atomic` materialized any `AsyncIterable[bytes]` payload into a

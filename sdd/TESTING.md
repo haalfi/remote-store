@@ -82,7 +82,7 @@ backend = MagicMock(spec=Backend)           # good
 | 9 | `@given` has `assert` on non-rejection path | review |
 | 10 | No inline `max_examples` | grep `max_examples` |
 | 11 | Strategies at module scope | review |
-| 12 | No unjustified `filterwarnings("ignore:…")` | grep `filterwarnings.*ignore` |
+| 12 | No unjustified `filterwarnings("ignore:…")` | grep `filterwarnings.*"ignore:` |
 
 ### Test code economy
 
