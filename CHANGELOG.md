@@ -8,6 +8,18 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **Five additional `AsyncBackendSyncAdapter` orphan-coroutine sites** (BUG-167):
+  same pattern as BUG-166 in `close()` (both `aclose` and `_drain_tasks`),
+  `_ChunkPullReader._pull_chunk` / `close()`, and `_AsyncIteratorBridge.__next__`
+  / `__del__` — the coroutine was built before submission and discarded unawaited
+  on the `RuntimeError` (loop-already-stopped) path. All six sites now close the
+  coroutine on every fail-fast path. Regression test in `TestCloseSemantics`.
+  Test-warning hygiene: 80 ResourceWarning sources eliminated across
+  `tests/aio/test_async_azure.py`, `tests/backends/test_azure.py`,
+  `tests/test_ping.py`, and `tests/backends/test_conformance.py` by registering
+  every helper-built backend on a per-test list and aclose'ing it in an autouse
+  fixture (TESTING.md Rule 12).
+
 - **`AsyncBackendSyncAdapter` orphan-coroutine leak** (BUG-166): scalar
   methods evaluated their argument before `_submit` ran the closed/running-loop
   guard, so a `RuntimeError` from the guard left the coroutine uncollected and

@@ -48,6 +48,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   example metadata and link rewrites are now data-driven via `SddKind`,
   self-describing example docstrings, and `LinkResolver`. PR #444.
 
+- [x] **BUG-167 — `AsyncBackendSyncAdapter.close()` and stream paths leak unawaited coroutines**
+  Five additional `run_coroutine_threadsafe` call sites had the same
+  build-coroutine-before-submit pattern as BUG-166: `close()` (`aclose` and
+  `_drain_tasks`), `_ChunkPullReader._pull_chunk` and `close()`, and
+  `_AsyncIteratorBridge.__next__` and `__del__`. When the loop was already
+  stopped, `RuntimeError` was caught but the coroutine was discarded
+  unawaited, leaking `RuntimeWarning: coroutine '_drain_tasks' was never
+  awaited` (and equivalents). All six sites now close the coroutine on every
+  fail-fast path. Regression test
+  `TestCloseSemantics::test_close_does_not_leak_coroutine_when_loop_already_stopped`
+  asserts close() is leak-free after a forced-stop loop. Bundled with the test
+  warning hygiene cleanup in this PR (53 + 24 + 2 + 1 ResourceWarnings across
+  `tests/aio/test_async_azure.py`, `tests/backends/test_azure.py`,
+  `tests/test_ping.py`, `tests/backends/test_conformance.py`); each helper now
+  registers the backend on a per-test list aclose'd by an autouse fixture.
+
 - [x] **BUG-166 — `AsyncBackendSyncAdapter` leaks unawaited coroutine on closed/running-loop guard**
   Scalar methods (e.g. `exists`) build the coroutine before `_submit` runs
   the closed/running-loop guard, so a `RuntimeError` from the guard left the

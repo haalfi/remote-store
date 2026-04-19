@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import errno
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
@@ -14,7 +15,24 @@ from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
+
+    from remote_store._backend import Backend
+
+
+# Tracker so an autouse fixture can close() backends made by the helpers below —
+# without close, the SFTP/Azure helpers' __del__ emits ResourceWarning at GC.
+_BACKENDS: list[Backend] = []
+
+
+@pytest.fixture(autouse=True)
+def _close_tracked_backends() -> Iterator[None]:
+    yield
+    while _BACKENDS:
+        backend = _BACKENDS.pop()
+        with contextlib.suppress(Exception):
+            backend.close()
 
 
 # ---------------------------------------------------------------------------
@@ -51,6 +69,7 @@ def _sftp_backend(stat_side_effect: Any = None) -> Any:
     backend._sftp_client = sftp_mock
     backend._ssh_client = MagicMock(spec=SSHClient)
     backend._ssh_client.get_transport.return_value.is_active.return_value = True
+    _BACKENDS.append(backend)
     return backend, sftp_mock
 
 
@@ -70,6 +89,7 @@ def _azure_backend(side_effect: Any = None) -> Any:
     )
     backend._cc_instance = cc_mock
     backend._hns_enabled = False
+    _BACKENDS.append(backend)
     return backend, cc_mock
 
 

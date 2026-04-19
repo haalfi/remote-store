@@ -7,11 +7,15 @@ for async operations.
 
 from __future__ import annotations
 
+import contextlib
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-datalake not installed")
 
@@ -62,11 +66,27 @@ from remote_store.backends._azure_common import (  # noqa: E402
 # ---------------------------------------------------------------------------
 
 
+# Tracker so an autouse async fixture can aclose() every backend made in a test —
+# without aclose, AsyncAzureBackend.__del__ emits a ResourceWarning at GC time.
+_BACKENDS: list[AsyncAzureBackend] = []
+
+
 def _make_backend(**kw: Any) -> AsyncAzureBackend:
     """Shorthand for creating an AsyncAzureBackend with sensible test defaults."""
     defaults: dict[str, Any] = {"container": "test", "account_name": "x", "account_key": "fakekey"}
     defaults.update(kw)
-    return AsyncAzureBackend(**defaults)
+    backend = AsyncAzureBackend(**defaults)
+    _BACKENDS.append(backend)
+    return backend
+
+
+@pytest.fixture(autouse=True)
+async def _aclose_tracked_backends() -> AsyncIterator[None]:
+    yield
+    while _BACKENDS:
+        backend = _BACKENDS.pop()
+        with contextlib.suppress(Exception):
+            await backend.aclose()
 
 
 async def _async_iter(items: list[Any]):  # noqa: ANN201 -- async generator

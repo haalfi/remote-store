@@ -835,6 +835,23 @@ class TestCloseSemantics:
         assert not adapter._thread.is_alive()  # internal: no public observable for thread state
 
     @pytest.mark.spec("ASYNC-088")
+    def test_close_does_not_leak_coroutine_when_loop_already_stopped(self, recwarn: pytest.WarningsRecorder) -> None:
+        # close() builds aclose() and _drain_tasks() coroutines before submitting
+        # them to the loop. If the loop is already stopped, run_coroutine_threadsafe
+        # raises RuntimeError and those coroutines must be closed explicitly,
+        # otherwise CPython emits "coroutine was never awaited".
+        adapter, _ = _make_adapter()
+        loop = adapter._loop  # internal: no public observable
+        loop.call_soon_threadsafe(loop.stop)
+        adapter._thread.join(timeout=5.0)  # internal: no public observable
+        adapter.close()
+        gc.collect()
+        leaks = [
+            w for w in recwarn.list if issubclass(w.category, RuntimeWarning) and "never awaited" in str(w.message)
+        ]
+        assert leaks == [], f"close() leaked coroutine after loop stop: {leaks[0].message if leaks else ''}"
+
+    @pytest.mark.spec("ASYNC-088")
     def test_timeout_close_logs_warning(self, caplog: pytest.LogCaptureFixture) -> None:
         double = _HangingAsyncBackend()
         adapter = AsyncBackendSyncAdapter(double)

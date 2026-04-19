@@ -7,6 +7,7 @@ error-mapping tests use mocked SDK objects.
 
 from __future__ import annotations
 
+import contextlib
 import io
 import uuid
 from typing import TYPE_CHECKING, Any
@@ -51,11 +52,27 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 
+# Tracker so an autouse fixture can close() every backend made in a test —
+# without close, AzureBackend.__del__ emits a ResourceWarning at GC time.
+_BACKENDS: list[AzureBackend] = []
+
+
 def _make_backend(**kw: Any) -> AzureBackend:
     """Shorthand for creating an AzureBackend with sensible test defaults."""
     defaults: dict[str, Any] = {"container": "test", "account_name": "x", "account_key": "fakekey"}
     defaults.update(kw)
-    return AzureBackend(**defaults)
+    backend = AzureBackend(**defaults)
+    _BACKENDS.append(backend)
+    return backend
+
+
+@pytest.fixture(autouse=True)
+def _close_tracked_backends() -> Iterator[None]:
+    yield
+    while _BACKENDS:
+        backend = _BACKENDS.pop()
+        with contextlib.suppress(Exception):
+            backend.close()
 
 
 # -- Shared Azurite helpers (imported from conftest where possible) -----------
@@ -1353,7 +1370,7 @@ class TestBlobServiceOpts:
     @pytest.mark.spec("AZ-035")
     def test_blob_service_default_block_size(self) -> None:
         """_blob_service passes max_block_size=1 MiB and max_single_put_size=1 MiB by default."""
-        backend = AzureBackend(container="test", connection_string=self._CONN_STR)
+        backend = _make_backend(container="test", account_key=None, connection_string=self._CONN_STR)
 
         captured_kwargs: dict[str, Any] = {}
 
@@ -1374,8 +1391,9 @@ class TestBlobServiceOpts:
     def test_blob_service_client_options_override_wins(self) -> None:
         """User-supplied client_options values take precedence over library defaults."""
         custom_block = 512 * 1024
-        backend = AzureBackend(
+        backend = _make_backend(
             container="test",
+            account_key=None,
             connection_string=self._CONN_STR,
             client_options={"max_block_size": custom_block},
         )
