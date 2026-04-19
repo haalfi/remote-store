@@ -68,33 +68,40 @@ hand-decomposition surfaces it earlier, at no tooling cost.
 
 ## 3. Candidate invariant shortlist
 
-Five claims decomposed from OBS-003 + OBS-003a + OBS-009, each
-independently falsifiable by a one-line model mutation. The research
-doc's original three (`EventBijection`, `HookRouting`, `NoDoubleDispatch`)
-collapse `HookRouting` across two orthogonal axes (op class vs.
-outcome) and merge `NoDoubleDispatch` into `EventBijection`; the split
-below separates them.
+Claims decomposed from OBS-003 + OBS-003a + OBS-009, each independently
+falsifiable by a one-line model mutation. The research doc's original
+three (`EventBijection`, `HookRouting`, `NoDoubleDispatch`) collapse
+`HookRouting` across two orthogonal axes (op class vs. outcome) and
+merge `NoDoubleDispatch` into `EventBijection`; the split below
+separates them.
+
+This section was drafted with five invariants. Break-and-catch (§ 8)
+showed I3 bundled two independently-falsifiable claims and I3 is now
+listed as I3a/I3b below, giving six invariants total.
 
 | # | Invariant | Claim | Falsifying mutation |
 |---|-----------|-------|---------------------|
-| I1 | `EventPerCompletedOp` | For every inner-method call, exactly one `StoreEvent` is dispatched to `on_any` (if set) | skip on_any on the error branch; double-fire on_any |
-| I2 | `RoutingByOpClass` | `on_<op>` routes per OBS-003a (read→on_read, write→on_write, ...) | route `read` to `on_write` |
-| I3 | `HookOutcomeContract` | on_<op> and on_any fire regardless of outcome; on_error fires iff `error ≠ None` | fire on_error on success; skip on_<op> on failure |
-| I4 | `ErrorAlwaysReraise` | The inner exception re-raises even if `on_error` (or any after-hook) raises | on_error raises → proxy raises that instead |
-| I5 | `AfterHookExceptionIsolated` | A raising on_<op>/on_any/on_error leaves the observable result/exception of the operation unchanged | on_any raises on success → proxy raises that |
+| I1  | `EventPerCompletedOp` | For every inner-method call, exactly one `StoreEvent` is dispatched to `on_any` (if set) | skip on_any on the error branch; double-fire on_any |
+| I2  | `RoutingByOpClass` | `on_<op>` routes per OBS-003a (read→on_read, write→on_write, ...) | route `read` to `on_write` |
+| I3a | `ClassHookOutcomeIndependent` | `on_<op>` fires for every call whose op is in that class, irrespective of outcome | skip class hook on the error branch |
+| I3b | `ErrorHookFiresOnErrorOnly` | `on_error` fires for every error call and only for error calls | fire on_error on success; skip on_error on failure |
+| I4  | `ErrorAlwaysReraise` | The inner exception re-raises even if `on_error` (or any after-hook) raises | visible outcome becomes success on an inner error |
+| I5  | `AfterHookExceptionIsolated` | A raising on_<op>/on_any/on_error leaves the observable outcome of the operation unchanged | visible outcome becomes error on an inner success |
 
-Orthogonality argument (pre-TLC, to be confirmed under break-and-catch):
+Orthogonality argument (confirmed under break-and-catch, § 8):
 
 - I1 partitions by "how many events fired" — independent of which hook
   buckets were touched.
 - I2 partitions by "which hook was called" — independent of count.
-- I3 partitions by "outcome × hook" — independent of routing correctness.
-- I4, I5 partition by "what the hook did" (raise vs. not) — independent
-  of I1–I3.
+- I3a and I3b each partition the outcome×hook space along one axis
+  (per-op hook vs. error hook); a mutation on either axis leaves the
+  other untouched.
+- I4 and I5 partition by inner outcome (error path vs. success path);
+  the caller-visible outcome on one path is independent of the other.
 
-If break-and-catch later shows two invariants catch the same mutation,
-merge them; that is itself a signal the underlying claims were not
-actually independent.
+If break-and-catch had shown two invariants catching the same mutation,
+the right response would be to merge them — itself a signal the
+underlying claims were not actually independent.
 
 ---
 
@@ -119,7 +126,7 @@ actually independent.
 
 ## 5. Module plan
 
-**Single module, five invariants:** `Observer.tla` under
+**Single module, six invariants:** `Observer.tla` under
 `sdd/research/tla-poc/` (PoC staging; promotion to `sdd/formal/tla/`
 follows the authoring rule — *after* a real regression catch). Shadows
 OBS-003 + OBS-003a + OBS-009.
@@ -130,18 +137,8 @@ observedEvents`. With `OpSet = {read, write, delete}` and three hook
 buckets, TLC enumeration should finish in seconds (same order as the
 PoC's 116-state WR-018 model).
 
-**Break-and-catch matrix to populate after authoring** (mirrors PoC §2.2):
-
-| Break | Expected invariant | Others expected |
-|---|---|---|
-| Skip `on_any` on error path | `EventPerCompletedOp` | — |
-| Route `read` to `on_write` | `RoutingByOpClass` | — |
-| Fire `on_error` on success | `HookOutcomeContract` | — |
-| `on_error` suppresses inner raise | `ErrorAlwaysReraise` | — |
-| `on_any` raise masks inner result | `AfterHookExceptionIsolated` | — |
-
-If any row triggers more than one invariant, those invariants are not
-orthogonal and the decomposition needs another pass.
+See § 8 for the actual break-and-catch log populated as each invariant
+landed. Each row triggered exactly one invariant at minimum depth.
 
 ---
 
@@ -150,8 +147,8 @@ orthogonal and the decomposition needs another pass.
 1. **Spec fix (pre-TLA+):** clarify OBS-003 step 6 with outcome
    independence, or cross-reference OBS-004. Small edit; ride the ID-147
    PR.
-2. **TLA+ module:** `Observer.tla` + `MC_Observer.tla` + `MC_Observer.cfg`
-   in `sdd/research/tla-poc/` implementing I1–I5.
+2. **TLA+ module:** `Observer.tla` + `MC3.tla` + `MC3.cfg`
+   in `sdd/research/tla-poc/` implementing I1, I2, I3a, I3b, I4, I5.
 3. **Break-and-catch table:** populate § 5 after the model runs green.
 4. **Rescope ID-147 backlog item:** drop `Backend.tla` + `Store.tla`
    (abstract-layer targets the authoring rules now discourage); keep
@@ -184,14 +181,16 @@ Populated as each invariant lands. Format mirrors
 | Skip per-op hook append on error | `class_events' = class_events` when `outcome = "error"` | `ClassHookOutcomeIndependent` | — | 2 |
 | Fire `on_error` on success instead of error | `outcome = "success"` guard on `error_events` append | `ErrorHookFiresOnErrorOnly` | — | 2 |
 | Emit `"success"` on the error visible-outcome path | `visible_outcomes' = Append(visible_outcomes, "success")` | `ErrorAlwaysReraise` | — | 2 |
+| Emit `"error"` on the success visible-outcome path | `visible_outcomes' = Append(visible_outcomes, "error")` | `AfterHookExceptionIsolated` | — | 2 |
 
-I5 pending — row added as the invariant lands.
+All rows landed. Each break triggers exactly one invariant at minimum
+depth 2; no collapses. The decomposition holds under TLC.
 
-The decomposition note's § 3 `HookOutcomeContract` (I3) bundled two
-independently-falsifiable claims; break-and-catch confirms they are
-orthogonal (each mutation triggers only its own invariant). The module
-records them as `ClassHookOutcomeIndependent` (I3a) and
-`ErrorHookFiresOnErrorOnly` (I3b). The shortlist in § 3 should be
-updated to five+ invariants rather than five after all of I4 and I5
-have landed, so the reconciled count reflects the final shape of the
-module.
+Reconciliation with § 3: the original shortlist listed five invariants,
+but break-and-catch confirmed that I3 (`HookOutcomeContract`) bundled
+two independently-falsifiable claims. The module splits them as
+`ClassHookOutcomeIndependent` (I3a) and `ErrorHookFiresOnErrorOnly`
+(I3b), giving six invariants in `Observer.tla`: I1, I2, I3a, I3b, I4,
+I5. The I4/I5 split itself is orthogonal along the inner-outcome axis
+(error-path preservation vs. success-path isolation); each break
+affects only its own path and only its own invariant.

@@ -16,20 +16,20 @@
   Invariants (derived in
   sdd/research/research-id-147-obs003-decomposition.md):
 
-    (I1)  EventPerCompletedOp            - landed
-    (I2)  RoutingByOpClass               - landed
-    (I3a) ClassHookOutcomeIndependent    - landed
-    (I3b) ErrorHookFiresOnErrorOnly      - landed
-    (I4)  ErrorAlwaysReraise             - this commit
-    (I5)  AfterHookExceptionIsolated     - follow-up
+    (I1)  EventPerCompletedOp
+    (I2)  RoutingByOpClass
+    (I3a) ClassHookOutcomeIndependent
+    (I3b) ErrorHookFiresOnErrorOnly
+    (I4)  ErrorAlwaysReraise
+    (I5)  AfterHookExceptionIsolated
 
-  The decomposition note's I3 bundles two independently-falsifiable
-  claims (outcome-independence for the per-op hook; on_error fires iff
-  error). Per the authoring rules those are separate invariants here.
-  The note will be reconciled once all invariants have landed.
-
-  Each subsequent invariant is added as its own commit, expanding the
-  state (adding variables / actions) only as the new invariant requires.
+  I3 is split into I3a/I3b because the note's original I3 bundled two
+  independently-falsifiable claims (per-op-hook outcome independence
+  and error-hook fires iff error). I4 and I5 are the error-path and
+  success-path halves of "hooks never change what the caller sees",
+  kept apart so a break on one path cannot accidentally satisfy the
+  other. Every invariant has a corresponding § 8 break-and-catch row
+  in the note.
 ***************************************************************************)
 
 EXTENDS Naturals, Sequences, FiniteSets, TLC
@@ -152,6 +152,17 @@ ErrorHookFiresOnErrorOnly ==
 ErrorAlwaysReraise ==
     \A i \in 1..Len(any_events):
         any_events[i].outcome = "error" => visible_outcomes[i] = "error"
+
+\* (I5) AfterHookExceptionIsolated — every inner-method success surfaces
+\* as a success to the caller. OBS-003 postcondition: a raising after-hook
+\* (on_<op>/on_any/on_error) leaves the observable outcome unchanged. I5
+\* is the success-side mirror of I4; together they say the caller's view
+\* is entirely determined by the inner method, never by an after-hook.
+\* Break-and-catch:
+\*   - visible_outcomes' appends "error" on the success branch -> violated.
+AfterHookExceptionIsolated ==
+    \A i \in 1..Len(any_events):
+        any_events[i].outcome = "success" => visible_outcomes[i] = "success"
 
 StateConstraint == inner_calls <= MaxCalls
 =============================================================================
