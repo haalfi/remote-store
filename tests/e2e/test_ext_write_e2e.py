@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from remote_store import Capability
+from remote_store import Capability, CapabilityNotSupported
 from remote_store.ext.streams import ChecksumReader
 from remote_store.ext.write import open_atomic_with_hash, write_with_hash
 
@@ -80,6 +80,9 @@ class TestWriteWithHash:
         """
         failures: list[str] = []
         names = [name for name, _ in store_chain]
+        docker_backends = {n for n in names} - {"memory", "sql-blob"}
+        if not docker_backends:
+            pytest.skip("no Docker backend reachable")
         print(f"\n  Backends: {', '.join(names)}")  # noqa: T201
 
         for name, store in store_chain:
@@ -106,7 +109,7 @@ class TestWriteWithHash:
                             failures.append(err)
                         else:
                             print(f"  {label}: OK ({result.digest.value[:16]}...)")  # noqa: T201
-                except Exception as exc:  # noqa: BLE001
+                except (CapabilityNotSupported, OSError) as exc:
                     failures.append(f"{label}: unexpected exception — {exc!r}")
                 finally:
                     try:
@@ -119,7 +122,6 @@ class TestWriteWithHash:
 
 
 @pytest.mark.integration
-@pytest.mark.spec("EW-003")
 @pytest.mark.spec("EW-004")
 class TestOpenAtomicWithHash:
     """``open_atomic_with_hash`` returns correct digest on every real backend."""
@@ -130,12 +132,14 @@ class TestOpenAtomicWithHash:
         Writing in two chunks (``_PAYLOAD[:2048]``, ``_PAYLOAD[2048:]``) exercises
         multi-update digest accumulation in ``HashingAtomicWriter`` — the more
         interesting failure mode for a checksum wrapper than a single write call.
-        EW-003: ATOMIC_WRITE is required (all current e2e backends have it).
         EW-004: ``writer.result`` is None before exit, populated after.
         Readback via ``ChecksumReader`` closes the "correct digest, wrong bytes" gap.
         """
         failures: list[str] = []
         names = [name for name, _ in store_chain]
+        docker_backends = {n for n in names} - {"memory", "sql-blob"}
+        if not docker_backends:
+            pytest.skip("no Docker backend reachable")
         print(f"\n  Backends: {', '.join(names)}")  # noqa: T201
 
         for name, store in store_chain:
@@ -171,7 +175,7 @@ class TestOpenAtomicWithHash:
                         failures.append(err)
                     else:
                         print(f"  {name}: OK ({writer.result.digest.value[:16]}...)")  # noqa: T201
-            except Exception as exc:  # noqa: BLE001
+            except (CapabilityNotSupported, OSError) as exc:
                 failures.append(f"{name}: unexpected exception — {exc!r}")
             finally:
                 try:
@@ -181,3 +185,55 @@ class TestOpenAtomicWithHash:
                     pass
 
         assert not failures, "open_atomic_with_hash digest failures:\n" + "\n".join(f"  {f}" for f in failures)
+
+    def test_metadata_branch(self, store_chain: list[tuple[str, Store]]) -> None:
+        """metadata= path of open_atomic_with_hash on backends declaring USER_METADATA.
+
+        Exercises the buffering branch (EW-004): the payload is buffered in memory and
+        ``store.write_atomic()`` is called on context-manager exit.  Digest must match
+        whether or not metadata is present — the checksum wraps the payload, not the
+        metadata.  Skipped when no backend with both ATOMIC_WRITE and USER_METADATA is
+        reachable (Memory and SQLBlob always qualify).
+        """
+        failures: list[str] = []
+        ran = False
+
+        for name, store in store_chain:
+            if not store.supports(Capability.ATOMIC_WRITE):
+                continue
+            if not store.supports(Capability.USER_METADATA):
+                continue
+            ran = True
+
+            path = f"ext-write-e2e-meta-{uuid.uuid4().hex[:8]}.bin"
+            try:
+                with open_atomic_with_hash(store, path, metadata={"source": "e2e"}) as writer:
+                    writer.write(_PAYLOAD)
+
+                if writer.result is None:
+                    failures.append(f"{name}: writer.result is None after exit")
+                elif writer.result.digest is None:
+                    failures.append(f"{name}: writer.result.digest is None")
+                elif writer.result.digest.value != _EXPECTED_SHA256:
+                    failures.append(
+                        f"{name}: digest mismatch — got {writer.result.digest.value[:16]}..., "
+                        f"want {_EXPECTED_SHA256[:16]}..."
+                    )
+                else:
+                    err = _verify_readback(store, path, _EXPECTED_SHA256, name)
+                    if err:
+                        failures.append(err)
+                    else:
+                        print(f"  {name}[metadata]: OK ({writer.result.digest.value[:16]}...)")  # noqa: T201
+            except (CapabilityNotSupported, OSError) as exc:
+                failures.append(f"{name}: unexpected exception — {exc!r}")
+            finally:
+                try:
+                    if store.exists(path):
+                        store.delete(path)
+                except Exception:  # noqa: BLE001
+                    pass
+
+        if not ran:
+            pytest.skip("no backend with ATOMIC_WRITE + USER_METADATA reachable")
+        assert not failures, "open_atomic_with_hash[metadata] failures:\n" + "\n".join(f"  {f}" for f in failures)

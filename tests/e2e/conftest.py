@@ -342,7 +342,9 @@ class _CleanupEntry:
 def _build_store_chain() -> tuple[list[tuple[str, Store]], list[_CleanupEntry]]:
     """Return ``(stores, cleanups)`` for all available backends.
 
-    Always includes Memory first and SQLBlob last (when installed).
+    Always includes Memory first and SQLBlob last *within this function's
+    return value* (when installed).  Callers that extend the list after
+    the fact (e.g. appending ``azure-bridged``) will see it after SQLBlob.
     Docker backends (S3/MinIO, SFTP, Azure, S3-PyArrow) are included only
     when reachable.  Does *not* include ``azure-bridged``; tests that need it
     should extend the returned list before yielding.
@@ -463,6 +465,7 @@ def _build_store_chain() -> tuple[list[tuple[str, Store]], list[_CleanupEntry]]:
                 ),
             )
         )
+        # kind="s3" reuses the same boto3 teardown path as the plain S3 backend.
         cleanups.append(_CleanupEntry("s3", {"client": client, "bucket": bucket}))
 
     try:
