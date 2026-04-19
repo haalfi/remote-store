@@ -119,41 +119,50 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
-- [ ] **ID-147 — TLA+ augmentation spike: machine-checkable cross-spec consistency**
-  PR 448 (WriteResult) amended 5 specs in one feature. The manual ripple-check
-  table catches what to review; it cannot catch whether the reviewed specs are
-  mutually consistent. Dafny covers per-operation contracts — it has no model
-  of how layers compose. This item explores TLA+ as a lightweight, additive
-  layer to machine-check that consistency.
+- [ ] **ID-147 — TLA+ augmentation: Observer dispatch module + informational CI**
+  Follow-up to the ID-147b PoC (WriteResult) and the formal-layer principles
+  landed in PR 458. Picks one concrete target that satisfies the "demonstrated
+  bundling" authoring rule in `sdd/formal/README.md`, and turns the principle
+  from doc-only into enforcement by adding an informational TLC check to CI.
 
-  **Framing:** TLA+ modules *augment* the existing Markdown specs — they do
-  not replace them. Markdown stays as the human-readable contract; TLA+ is the
-  machine-checkable shadow for protocol-level properties. Goal is learning: find
-  the right workflow for this repo before committing to any permanent structure.
+  **Scope (rescoped 2026-04-19):** The earlier draft proposed three modules
+  (`Backend.tla`, `Store.tla`, `Observer.tla`) with abstract-layer targets.
+  The authoring rules landed in PR 458 now flag "capability gate ordering in
+  the abstract" as *not* a valid target — formal artefacts must target
+  demonstrated bundling, not speculative layer properties. `Backend.tla` and
+  `Store.tla` are dropped; `Observer.tla` remains because OBS-003 demonstrably
+  bundles multiple independently-falsifiable claims (see decomposition note
+  below).
 
-  **Minimal scope — three modules to start:**
-  - `Backend.tla` — abstract backend contract: operations, error outcomes,
-    capability gates. Shadows spec 003.
-  - `Store.tla` — store layer composing backend + extensions; WriteResult
-    forwarding. Shadows specs 001 + 045 (WR-019).
-  - `Observer.tla` — event dispatch: every write fires exactly one StoreEvent,
-    none dropped. Shadows spec 019 OBS-001..OBS-003.
+  **Deliverable 1 — `Observer.tla`** (under `sdd/research/tla-poc/`, promotion
+  to `sdd/formal/tla/` follows the rules):
+  - Shadows spec 019 § OBS-003 + OBS-003a + OBS-009.
+  - Five independent invariants: `EventPerCompletedOp`, `RoutingByOpClass`,
+    `HookOutcomeContract`, `ErrorAlwaysReraise`, `AfterHookExceptionIsolated`.
+  - Full break-and-catch matrix (one mutation per invariant, each triggering
+    exactly the target invariant and no others) — if rows collapse, the
+    invariants were not orthogonal and the decomposition needs another pass.
+  - Scoping rationale + invariant derivation:
+    [`sdd/research/research-id-147-obs003-decomposition.md`](research/research-id-147-obs003-decomposition.md).
 
-  These three cover the PR 448 ripple surface with the smallest possible TLA+
-  footprint. Stand-alone modules per concern (no `EXTENDS` hierarchy — PoC §4.1
-  recommendation); cross-module composition deferred to Phase 6.
+  **Deliverable 2 — informational `verify-tla` CI job:**
+  - Mirrors `verify-formal` (Dafny) pattern in `.github/workflows/ci.yml`.
+  - Triggers on `sdd/research/tla-poc/**` or `sdd/formal/tla/**` changes.
+  - Informational (non-blocking) per the authoring rules until a real
+    regression catch promotes it to blocking.
+  - Same PR opens the first 6-month revisit BACKLOG ticket (per the authoring
+    rules: "a calendar without a ticket is the same as no calendar").
 
-  **Deliverable:** spike report answering: (1) what does the authoring workflow
-  feel like — is it sustainable for contributors? (2) do the three modules
-  verify cleanly under TLC? (3) where does partial proof land — which
-  properties can TLC check exhaustively within a bounded model, and would that
-  coverage be worth maintaining long-term? Workflow fit is the primary
-  question; proof depth is secondary but informs the long-term decision.
+  **Explicitly deferred to follow-up items (if justified):**
+  - `Backend.tla` / `Store.tla`: only if a concrete bundled target appears.
+  - OBS-005 around-semantics: separate module if invariants prove useful.
+  - OBS-015 / WR-019 proxy forwarding: already modelled by the PoC's
+    `WR018ProxyForwarding.tla`; do not duplicate.
 
-  **Tooling note:** [Specula](https://github.com/specula-org/Specula) (LLM +
-  TLC pipeline, Claude Code–compatible) may help bootstrap initial module
-  drafts from existing Python source and Markdown specs, but is not required.
-  TLC alone suffices for model checking once modules exist.
+  **Workflow note:** The hand-decomposition (~30 min) surfaced a latent OBS-003
+  step 6 drift before any TLA+ was written. Decomposition belongs *before*
+  mechanical translation (Specula or hand-authoring). See the decomposition
+  note § 2 and § 7.
 
   **Relation to existing formal layer:** additive. Dafny (`sdd/formal/`) stays
   as the per-operation contract and oracle layer. TLA+ sits above it, covering
