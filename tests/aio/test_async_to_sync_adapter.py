@@ -1053,7 +1053,7 @@ class TestCapabilityMasking:
     def _adapter_with_caps(self, caps: set[Capability]) -> AsyncBackendSyncAdapter:
         double = _HangingAsyncBackend(capabilities=CapabilitySet(caps))
         adapter = AsyncBackendSyncAdapter(double)
-        adapter.close()  # not doing I/O — close immediately
+        adapter.close(timeout=0.05)  # not doing I/O — close immediately
         return adapter
 
     @pytest.mark.spec("WR-004")
