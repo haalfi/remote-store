@@ -1050,24 +1050,25 @@ class TestWriteAtomicMidBinaryIO:
 class TestCapabilityMasking:
     """Adapter strips WRITE_RESULT_NATIVE and USER_METADATA regardless of inner backend."""
 
-    def _adapter_with_caps(self, caps: set[Capability]) -> AsyncBackendSyncAdapter:
+    def _adapter_with_caps(self, caps: set[Capability], caplog: pytest.LogCaptureFixture) -> AsyncBackendSyncAdapter:
         double = _HangingAsyncBackend(capabilities=CapabilitySet(caps))
         adapter = AsyncBackendSyncAdapter(double)
-        adapter.close()  # not doing I/O — close immediately
+        with caplog.at_level(logging.CRITICAL, logger="remote_store._async_to_sync_adapter"):
+            adapter.close(timeout=0.05)  # not doing I/O — close immediately
         return adapter
 
     @pytest.mark.spec("WR-004")
-    def test_write_result_native_masked_when_inner_declares_it(self) -> None:
-        adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.WRITE_RESULT_NATIVE})
+    def test_write_result_native_masked_when_inner_declares_it(self, caplog: pytest.LogCaptureFixture) -> None:
+        adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.WRITE_RESULT_NATIVE}, caplog)
         assert not adapter.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
 
     @pytest.mark.spec("WR-010")
-    def test_user_metadata_masked_when_inner_declares_it(self) -> None:
-        adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.USER_METADATA})
+    def test_user_metadata_masked_when_inner_declares_it(self, caplog: pytest.LogCaptureFixture) -> None:
+        adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.USER_METADATA}, caplog)
         assert not adapter.capabilities.supports(Capability.USER_METADATA)
 
-    def test_other_capabilities_pass_through_unchanged(self) -> None:
-        adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.COPY})
+    def test_other_capabilities_pass_through_unchanged(self, caplog: pytest.LogCaptureFixture) -> None:
+        adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.COPY}, caplog)
         assert adapter.capabilities.supports(Capability.READ)
         assert adapter.capabilities.supports(Capability.WRITE)
         assert adapter.capabilities.supports(Capability.COPY)
