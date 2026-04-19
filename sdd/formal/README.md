@@ -151,18 +151,25 @@ age worse than the qualitative one.
    the abstract is not.
 3. **CI informational** until a TLA+ check catches a real regression
    on a production branch. Seeded breaks validate the tool; only a
-   live catch validates the workflow. *Planned policy* (not yet
-   active — no TLA+ CI step exists today; see ID-147 for the
-   augmentation spike): once an informational check lands, revisit
-   the status at a fixed cadence (every 6 months, or after every 10
-   spec amendments, whichever first) and explicitly promote, remove,
-   or re-defer. "Informational" must not silently become "unrun." Each
-   revisit is tracked as a BACKLOG entry recording the decision
-   (promote / remove / re-defer) — a calendar without a ticket is the
-   same as no calendar. The first revisit ticket is created at the
-   same time as the first informational check.
-4. **Promote `sdd/research/tla-poc/` → `sdd/formal/tla/`** only after
-   (3). Until then, TLA+ artefacts live under research.
+   live catch validates the workflow. Once an informational check
+   lands, revisit the status at a fixed cadence (every 6 months, or
+   after every 10 spec amendments, whichever first) and explicitly
+   promote, remove, or re-defer. "Informational" must not silently
+   become "unrun." Each revisit is tracked as a BACKLOG entry recording
+   the decision (promote / remove / re-defer) — a calendar without a
+   ticket is the same as no calendar. The first `verify-tla` job
+   landed under ID-147 on 2026-04-19; the first revisit is tracked as
+   ID-150.
+4. **Live TLA+ modules live under `sdd/formal/tla/`.** The
+   `sdd/research/tla-poc/` tree is the frozen 2026-04 PoC that
+   established the spec-decomposition discipline (see
+   `sdd/research/research-id-147b-tla-poc.md`) and is not extended or
+   maintained going forward. The finding stays in the repo as history
+   — the layer it motivated lives in `sdd/formal/tla/`. "Informal
+   layer" and "under `sdd/formal/`" are not contradictory: rule 3
+   controls CI gate status (blocking vs informational), rule 4
+   controls physical location. A module is informal until rule 3
+   promotes it, regardless of directory.
 
 ## Layers at a glance
 
@@ -170,7 +177,7 @@ age worse than the qualitative one.
 |-------|-----------------|-------------|
 | Spec (`.md`) | Human-readable requirements | Review |
 | Dafny (`.dfy`) | Machine-checkable per-operation contract | Dafny verifier |
-| TLA+ (`.tla`, under `sdd/research/tla-poc/`) | Cross-layer protocol properties | TLC (bounded model) |
+| TLA+ (`.tla`, under `sdd/formal/tla/`) | Cross-layer protocol properties | TLC (bounded model) |
 | Python (`_backend.py`) | Runtime implementation | pytest + Hypothesis PBT |
 
 Dafny and TLA+ are parallel specifications — not auto-generated from
@@ -189,8 +196,10 @@ the new form, the spec has an internal contradiction.
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
 
-TLA+ modules currently live in `sdd/research/tla-poc/` (PoC state —
-see *Authoring rules* for promotion criteria).
+Live TLA+ modules live in `sdd/formal/tla/`. The frozen PoC modules
+remain in `sdd/research/tla-poc/` as the historical record of the
+exercise that established the discipline — see
+`sdd/research/research-id-147b-tla-poc.md`.
 
 ### Running the verifier
 
@@ -208,6 +217,14 @@ then `dafny verify sdd/formal/<file>.dfy`.
 
 CI runs the `verify-formal` job automatically when `sdd/formal/` or
 `sdd/specs/` files change.
+
+TLA+ (TLC): `bash scripts/tlc_check.sh` runs the Observer model
+(default target `sdd/formal/tla/MC3`) via a pinned Docker image — no
+local Java or `tla2tools.jar` install required. The historical PoC
+configs still run via `bash scripts/tlc_check.sh sdd/research/tla-poc MC`
+(or `MC2`). CI's informational `verify-tla` job runs the live MC3
+model whenever files under `sdd/formal/tla/` or the TLC tooling
+change.
 
 ### Verification practices
 

@@ -2,8 +2,10 @@
 # Run TLC (TLA+ model checker) on a model via Docker.
 # Usage: bash scripts/tlc_check.sh [tla-dir] [config-name]
 #
-# Example: bash scripts/tlc_check.sh sdd/research/tla-poc MC
-# Runs:    java -jar tla2tools.jar -config MC.cfg MC.tla   (inside the image)
+# Default target is the live TLA+ layer under sdd/formal/tla/.
+# Example: bash scripts/tlc_check.sh sdd/formal/tla MC3
+# Historical PoC models under sdd/research/tla-poc/ (MC, MC2) are
+# frozen but still runnable by passing the path explicitly.
 #
 # Requires Docker Desktop running. First run builds the local image
 # remote-store-tlc:<version> from scripts/tlc.Dockerfile. No local jar,
@@ -17,8 +19,8 @@ TLA_VERSION=1.8.0
 IMAGE="remote-store-tlc:${TLA_VERSION}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-TLA_DIR="${1:-sdd/research/tla-poc}"
-CONFIG="${2:-MC}"
+TLA_DIR="${1:-sdd/formal/tla}"
+CONFIG="${2:-MC3}"
 
 if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
   echo "==> Building $IMAGE (first run only)"
