@@ -45,16 +45,6 @@ Items graduate through the SDD pipeline:
 
 ## Backlog (Prioritized)
 
-- [ ] **ID-149 — e2e coverage for write_with_hash / open_atomic_with_hash across real backends**
-  `test_streaming_integrity.py` tests streaming contract (chunked transfer + memory).
-  It already uses `ChecksumReader` directly for post-transfer reads and should not be
-  reworked. Gap: no e2e test verifies that `write_with_hash` and `open_atomic_with_hash`
-  return the correct `WriteResult.digest` when the underlying backend is S3, Azure, SFTP,
-  or PyArrow — only MemoryBackend is exercised by unit tests. A new
-  `tests/e2e/test_ext_write_e2e.py` should write a known payload to each available
-  backend via both helpers and assert the returned digest matches a pre-computed
-  SHA-256. `test_streaming_integrity.py` itself does not need modification.
-
 ---
 
 ## Ideas
