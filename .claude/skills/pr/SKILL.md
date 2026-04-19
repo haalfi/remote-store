@@ -21,6 +21,12 @@ See CLAUDE.md § GitHub operations for the full priority chain.
    - If any match: run `hatch run test-cov` (requires 95%). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
    - If none match (docs/config-only): skip coverage.
 
+2b. **Testing gate:** Do the changed tests follow the rules in `sdd/TESTING.md`?
+    Report violations before drafting the PR.
+
+2c. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
+    Report violations before drafting the PR.
+
 3. **Gather context:** `git log master..HEAD --oneline` and `git diff master...HEAD`
    to understand all changes (not just the latest commit).
 

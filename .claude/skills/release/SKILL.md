@@ -18,6 +18,9 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 ## Phase 1: Content freeze
 
 - [ ] CHANGELOG `[Unreleased]` complete — every user-facing change with backlog ID
+- [ ] CHANGELOG `[Unreleased]` condensed — one entry per user-facing concept
+      (multiple PRs or backlog IDs for the same feature → one paragraph;
+      pre-release bugs on new-in-this-release code → fold into Added or drop)
 - [ ] `sdd/BACKLOG-DONE.md`: shipping items moved, marked `[x]` with version
 - [ ] FEATURES.md: version, backends table, extensions table, extras current
 - [ ] README: backends table, installation extras, API table, badges current
