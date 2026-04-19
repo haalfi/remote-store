@@ -8,6 +8,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`_AsyncIteratorBridge.__del__` CodeQL warning** (`py/overly-complex-delete`):
+  extracted cleanup logic into `_aclose_best_effort()`; `__del__` now delegates
+  to it, keeping the finaliser trivial.
+
 - **`AsyncBackendSyncAdapter` orphan-coroutine leaks** (BUG-166, BUG-167):
   coroutines built before `run_coroutine_threadsafe` were discarded unawaited
   on fail-fast paths, emitting `RuntimeWarning`. All six sites now call
