@@ -119,6 +119,88 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
+- [ ] **ID-151 — Dafny `WriteResult` extension: field-mapping + capability round-trip**
+  Follow-up to ID-146 review. Roughly a quarter of the 95 review comments on
+  PRs #448–#456 were shaped as per-operation postcondition failures Dafny
+  can prove directly: backends declaring a capability but silently violating
+  the associated `WriteResult` or `FileInfo` contract. Examples from the
+  review: `Store.head()` dropping `digest` (WR-008 field map); `S3Backend`
+  declaring `WRITE_RESULT_NATIVE` with zero rich fields populated; the
+  adapter / PyArrow / SQLBlob-legacy paths declaring `USER_METADATA` but
+  silently dropping `metadata=`; HNS `write_atomic` returning `etag=None`
+  with rich fields only populated by a mock.
+
+  **Scope:** extend `sdd/formal/BackendContract.dfy` to model `WriteResult`
+  and encode WR-001a, WR-004, WR-008, WR-012, WR-013 as backend-layer
+  postconditions on `Write`, `WriteAtomic`, and a new `Head` method; refine
+  `MemoryBackend.dfy` (satisfiability witness); regenerate and wire the
+  compiled oracle so any backend that lies about its capability fails the
+  oracle-gated conformance suite.
+
+  **Deliverables:**
+  - `BackendContract.dfy`: `WriteResult` datatype (WR-001a field list);
+    extend `FileEntry` with optional `etag`, `version_id`, `last_modified`,
+    `metadata`, `digest`; widen `Write` / `WriteAtomic` return to
+    `Result<WriteResult>`; add `Head` method (WR-008); add postconditions:
+    - `CapWriteResultNative in capabilities ∧ r.Ok? ⇒ r.value.source ==
+      "native"` with rich fields populated from the stored `FileEntry`
+      (WR-001a / WR-004).
+    - `CapUserMetadata in capabilities ∧ non-empty metadata ∧ r.Ok? ⇒
+      r.value.metadata == metadata` (verbatim echo, WR-012) and
+      `GetFileInfo(path).metadata == metadata` (round-trip, WR-013).
+    - `Head(path)` reproduces the WR-008 field-mapping table.
+  - `MemoryBackend.dfy` refinement discharges the new postconditions.
+  - Regenerated `MemoryBackend-py/module_.py` + class-ordering fix.
+  - `tests/backends/dafny_oracle.py` adapter exposes the new fields and
+    `head()` method.
+  - `sdd/formal/README.md` BK-140 gap table gets a WriteResult row.
+  - Spec 045 + 003 "Formal coverage" cross-refs added (matching the
+    existing `GetFolderInfo` pattern).
+
+  **Out of scope:**
+  - Proxy forwarding / event emission (WR-018, WR-019) — TLA+ territory,
+    under ID-147.
+  - Streaming memory bounds (EW-001) — operational reasoning.
+  - Pre-I/O frame condition in full generality — the existing
+    "No error-path frame condition" limitation (README § Design decisions)
+    stands. `MemoryBackend` preserves state on error by construction.
+  - Store-layer ordering (WR-011 `ValueError`-before-cap-check) and
+    ext.write composition (EW-003 gating) — outside the Backend trait.
+  - Test-assertion weakness (tautological `digest is not None`, vacuous
+    `assert not failures`) — routing through the oracle promotes a
+    passing weak test to "known-correct", but does not rewrite the test.
+
+  **Honest counterweight:** catches ~24% of the defect classes on ID-146
+  review (categories A + B + partial C). The long tail — Store/ext.write
+  composition, test-assertion weakness, ripple/process, SDK-mock fidelity,
+  streaming perf — is not moved. Payoff: preventing silent
+  capability-vs-behaviour divergence from surviving review on future
+  backends.
+
+  **Ripple checks** (per `sdd/CLAUDE-REFERENCE.md`):
+  - Spec 045 (WR-001a, WR-004, WR-008, WR-012, WR-013) — add "Formal
+    coverage" notes matching spec 003's `GetFolderInfo` pattern.
+  - Spec 003 — update backend-adapter formal-coverage cross-ref.
+  - `sdd/formal/README.md` BK-140 gap table — WriteResult row.
+  - `CHANGELOG.md` Internal.
+  - Oracle regeneration: new datatype + method signatures are non-ghost;
+    full regen + class-order fix required.
+
+  **Exit criteria:**
+  1. `bash scripts/dafny_verify.sh` passes on both files.
+  2. `pytest tests/backends/test_conformance*.py -k dafny-oracle` passes.
+  3. Real-backend conformance runs unchanged or improved; any newly
+     failing backend is a confirmed declaration-vs-behaviour bug, filed
+     per-backend, not a regression of this PR.
+  4. Spec + README + CHANGELOG cross-refs landed.
+
+  **Cost estimate:** +150–250 lines contract, +50–100 refinement;
+  1–2 days end-to-end. CI takes the native Dafny path; local iteration
+  via Docker.
+
+  Related: ID-146 (done), ID-134 (ghost-aggregate pattern), ID-147
+  (parallel TLA+ track for cross-layer properties).
+
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
   ID-147 on 2026-04-19. Per `sdd/formal/README.md` § Authoring rules (3),
