@@ -145,8 +145,15 @@ ErrorHookFiresOnErrorOnly ==
     /\ \A i \in 1..Len(error_events): error_events[i].outcome = "error"
 
 \* (I4) ErrorAlwaysReraise — every inner-method error surfaces as an
-\* error to the caller. OBS-009: the original exception always re-raises,
-\* even if on_error (or any after-hook) raises; no hook can swallow it.
+\* error to the caller. Shadows OBS-009's claim that the original
+\* exception always re-raises, but at this model's level of detail.
+\* The current Call action has no HookRaise sub-action, so I4 here is
+\* a *structural* check on the action body (visible == inner on error
+\* paths), not a behavioural check that a raising after-hook is
+\* suppressed. The seeded mutation in § 8 exercises the structural
+\* property; a faithful OBS-009 behavioural check would require a
+\* non-deterministic hook-raise action and is a follow-up if a real
+\* regression surfaces (`sdd/formal/README.md` rule 3).
 \* Break-and-catch:
 \*   - visible_outcomes' appends "success" on the error branch -> violated.
 ErrorAlwaysReraise ==
@@ -154,10 +161,14 @@ ErrorAlwaysReraise ==
         any_events[i].outcome = "error" => visible_outcomes[i] = "error"
 
 \* (I5) AfterHookExceptionIsolated — every inner-method success surfaces
-\* as a success to the caller. OBS-003 postcondition: a raising after-hook
-\* (on_<op>/on_any/on_error) leaves the observable outcome unchanged. I5
-\* is the success-side mirror of I4; together they say the caller's view
-\* is entirely determined by the inner method, never by an after-hook.
+\* as a success to the caller. Success-side mirror of I4 and subject to
+\* the same caveat: without a HookRaise sub-action this is a structural
+\* check on Call (visible == inner on success paths), not a behavioural
+\* proof that a raising after-hook leaves the observable outcome
+\* unchanged. The split between I4 and I5 is orthogonal at the level of
+\* seeded mutations (error-path and success-path mutations each trigger
+\* only their own invariant), not at the level of the underlying
+\* physical claims.
 \* Break-and-catch:
 \*   - visible_outcomes' appends "error" on the success branch -> violated.
 AfterHookExceptionIsolated ==

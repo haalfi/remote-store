@@ -85,10 +85,23 @@ listed as I3a/I3b below, giving six invariants total.
 | I2  | `RoutingByOpClass` | `on_<op>` routes per OBS-003a (read→on_read, write→on_write, ...) | route `read` to `on_write` |
 | I3a | `ClassHookOutcomeIndependent` | `on_<op>` fires for every call whose op is in that class, irrespective of outcome | skip class hook on the error branch |
 | I3b | `ErrorHookFiresOnErrorOnly` | `on_error` fires for every error call and only for error calls | fire on_error on success; skip on_error on failure |
-| I4  | `ErrorAlwaysReraise` | The inner exception re-raises even if `on_error` (or any after-hook) raises | visible outcome becomes success on an inner error |
-| I5  | `AfterHookExceptionIsolated` | A raising on_<op>/on_any/on_error leaves the observable outcome of the operation unchanged | visible outcome becomes error on an inner success |
+| I4  | `ErrorAlwaysReraise` | On every error call, the caller observes an error (structural shadow of OBS-009 at this model's level of detail) | visible outcome becomes success on an inner error |
+| I5  | `AfterHookExceptionIsolated` | On every success call, the caller observes a success (structural shadow of the OBS-003 after-hook isolation postcondition) | visible outcome becomes error on an inner success |
 
-Orthogonality argument (confirmed under break-and-catch, § 8):
+I4 and I5 are *structural* invariants: the current `Call` action has no
+`HookRaise` sub-action, so they check that the action body couples
+`visible_outcomes` to `outcome`, not that a raising after-hook is
+behaviourally suppressed. A faithful behavioural encoding of OBS-009 /
+the after-hook isolation postcondition would add a non-deterministic
+`HookRaise(i)` action that may attempt to alter the visible outcome,
+and the invariants would assert that the visible outcome is still the
+inner outcome regardless. That strengthening is deferred to a
+follow-up if a real regression surfaces (`sdd/formal/README.md`
+rule 3).
+
+Orthogonality argument (confirmed under break-and-catch, § 8) — note
+"orthogonal" below means "the seeded mutations do not overlap," not
+that the underlying physical claims are fully independent:
 
 - I1 partitions by "how many events fired" — independent of which hook
   buckets were touched.
@@ -97,11 +110,13 @@ Orthogonality argument (confirmed under break-and-catch, § 8):
   (per-op hook vs. error hook); a mutation on either axis leaves the
   other untouched.
 - I4 and I5 partition by inner outcome (error path vs. success path);
-  the caller-visible outcome on one path is independent of the other.
+  an error-path mutation and a success-path mutation trigger only
+  their own invariant.
 
 If break-and-catch had shown two invariants catching the same mutation,
 the right response would be to merge them — itself a signal the
-underlying claims were not actually independent.
+underlying claims were not actually independent at the seeded-mutation
+level.
 
 ---
 
@@ -191,6 +206,9 @@ but break-and-catch confirmed that I3 (`HookOutcomeContract`) bundled
 two independently-falsifiable claims. The module splits them as
 `ClassHookOutcomeIndependent` (I3a) and `ErrorHookFiresOnErrorOnly`
 (I3b), giving six invariants in `Observer.tla`: I1, I2, I3a, I3b, I4,
-I5. The I4/I5 split itself is orthogonal along the inner-outcome axis
-(error-path preservation vs. success-path isolation); each break
-affects only its own path and only its own invariant.
+I5. The I4/I5 seeded mutations partition cleanly along the
+inner-outcome axis (error-path vs. success-path). The caveat flagged
+in § 3 stands: without a `HookRaise` sub-action in the model, the
+"orthogonality" here is at the level of the seeded mutations, not at
+the level of the OBS-009 / after-hook-isolation claims the module's
+header text shadows.

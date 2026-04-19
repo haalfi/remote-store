@@ -43,7 +43,7 @@ jobs:
           FORMAL_PAT='^sdd/(formal|specs)/|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$FORMAL_PAT"; then echo "formal=true" >> "$GITHUB_OUTPUT"
           else echo "formal=false" >> "$GITHUB_OUTPUT"; fi
-          TLA_PAT='^sdd/research/tla-poc/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
+          TLA_PAT='^sdd/(research/tla-poc|formal/tla)/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$TLA_PAT"; then echo "tla=true" >> "$GITHUB_OUTPUT"
           else echo "tla=false" >> "$GITHUB_OUTPUT"; fi
 
@@ -285,7 +285,9 @@ jobs:
             echo "==> TLC: sdd/research/tla-poc/${cfg}.tla"
             (cd sdd/research/tla-poc && \
               java -XX:+UseParallelGC -jar "$GITHUB_WORKSPACE/tla2tools.jar" \
-                -config "${cfg}.cfg" -metadir /tmp/tlc-${cfg} "${cfg}.tla")
+                -config "${cfg}.cfg" \
+                -metadir "${RUNNER_TEMP}/tlc-${cfg}" \
+                "${cfg}.tla")
           done
 
   gate:
