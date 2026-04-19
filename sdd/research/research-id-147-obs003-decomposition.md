@@ -169,3 +169,16 @@ zero cost. On that evidence alone, the hand-decomposition step belongs
 *before* any Specula-assisted authoring or direct TLA+ drafting: once
 the decomposition is explicit, mechanical translation is a smaller,
 safer task.
+
+---
+
+## 8. Break-and-catch log
+
+Populated as each invariant lands. Format mirrors
+[research-id-147b-tla-poc.md](research-id-147b-tla-poc.md) § 2.2.
+
+| Break | Module change | Invariant triggered | Others triggered | Depth |
+|---|---|---|---|---|
+| Skip `on_any` append unconditionally | `any_events' = any_events` | `EventPerCompletedOp` | — | 2 |
+
+I2–I5 pending — rows added as invariants land.
