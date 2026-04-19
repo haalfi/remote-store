@@ -59,10 +59,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   fail-fast path. Regression test
   `TestCloseSemantics::test_close_does_not_leak_coroutine_when_loop_already_stopped`
   asserts close() is leak-free after a forced-stop loop. Bundled with the test
-  warning hygiene cleanup in this PR (53 + 24 + 2 + 1 ResourceWarnings across
-  `tests/aio/test_async_azure.py`, `tests/backends/test_azure.py`,
-  `tests/test_ping.py`, `tests/backends/test_conformance.py`); each helper now
-  registers the backend on a per-test list aclose'd by an autouse fixture.
+  warning hygiene cleanup in this PR: every test helper that builds a backend
+  now registers it on a per-test list aclose'd by an autouse fixture,
+  eliminating the `ResourceWarning`s previously emitted at GC time across the
+  Azure, SFTP, and conformance suites.
 
 - [x] **BUG-166 — `AsyncBackendSyncAdapter` leaks unawaited coroutine on closed/running-loop guard**
   Scalar methods (e.g. `exists`) build the coroutine before `_submit` runs
