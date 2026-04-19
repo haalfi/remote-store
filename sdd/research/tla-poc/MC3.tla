@@ -17,5 +17,7 @@ MCClassOf == [op \in MCOps |->
                   ELSE IF op = op_write  THEN write_hook
                   ELSE (* op = op_delete *) delete_hook]
 
+MCOutcomes == {"success", "error"}
+
 MCMaxCalls == 3
 =============================================================================

@@ -181,5 +181,16 @@ Populated as each invariant lands. Format mirrors
 |---|---|---|---|---|
 | Skip `on_any` append unconditionally | `any_events' = any_events` | `EventPerCompletedOp` | — | 2 |
 | Misroute to non-matching class bucket | `![CHOOSE c : c # ClassOf[op]]` in `Call` | `RoutingByOpClass` | — | 2 |
+| Skip per-op hook append on error | `class_events' = class_events` when `outcome = "error"` | `ClassHookOutcomeIndependent` | — | 2 |
+| Fire `on_error` on success instead of error | `outcome = "success"` guard on `error_events` append | `ErrorHookFiresOnErrorOnly` | — | 2 |
 
-I3–I5 pending — rows added as invariants land.
+I4–I5 pending — rows added as invariants land.
+
+The decomposition note's § 3 `HookOutcomeContract` (I3) bundled two
+independently-falsifiable claims; break-and-catch confirms they are
+orthogonal (each mutation triggers only its own invariant). The module
+records them as `ClassHookOutcomeIndependent` (I3a) and
+`ErrorHookFiresOnErrorOnly` (I3b). The shortlist in § 3 should be
+updated to five+ invariants rather than five after all of I4 and I5
+have landed, so the reconciled count reflects the final shape of the
+module.
