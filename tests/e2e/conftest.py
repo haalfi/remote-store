@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import socket
 import uuid
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -323,3 +324,184 @@ def sql_lake() -> Iterator[Store]:
     store = Store(backend=backend)
     yield store
     store.close()
+
+
+# ---------------------------------------------------------------------------
+# Shared multi-backend store chain
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class _CleanupEntry:
+    """Resources to clean up after a multi-backend test completes."""
+
+    kind: str  # "s3", "sftp", "azure"
+    extras: dict[str, Any] = field(default_factory=dict)
+
+
+def _build_store_chain() -> tuple[list[tuple[str, Store]], list[_CleanupEntry]]:
+    """Return ``(stores, cleanups)`` for all available backends.
+
+    Always includes Memory first and SQLBlob last (when installed).
+    Docker backends (S3/MinIO, SFTP, Azure, S3-PyArrow) are included only
+    when reachable.  Does *not* include ``azure-bridged``; tests that need it
+    should extend the returned list before yielding.
+    """
+    stores: list[tuple[str, Store]] = []
+    cleanups: list[_CleanupEntry] = []
+
+    stores.append(("memory", Store(backend=MemoryBackend())))
+
+    if _minio_available():
+        import boto3
+
+        from remote_store.backends._s3 import S3Backend
+
+        tag = uuid.uuid4().hex[:8]
+        bucket = f"e2e-{tag}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=MINIO_ENDPOINT,
+            aws_access_key_id=MINIO_ACCESS_KEY,
+            aws_secret_access_key=MINIO_SECRET_KEY,
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        stores.append(
+            (
+                "s3",
+                Store(
+                    backend=S3Backend(
+                        bucket=bucket,
+                        key=MINIO_ACCESS_KEY,
+                        secret=MINIO_SECRET_KEY,
+                        region_name="us-east-1",
+                        endpoint_url=MINIO_ENDPOINT,
+                    )
+                ),
+            )
+        )
+        cleanups.append(_CleanupEntry("s3", {"client": client, "bucket": bucket}))
+
+    if _sftp_available():
+        import paramiko
+
+        from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+
+        tag = uuid.uuid4().hex[:8]
+        base_path = f"/upload/e2e-{tag}"
+        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+        transport.connect(username=SFTP_USER, password=SFTP_PASS)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        assert sftp is not None
+        try:
+            sftp.mkdir(base_path)
+        finally:
+            sftp.close()
+            transport.close()
+        stores.append(
+            (
+                "sftp",
+                Store(
+                    backend=SFTPBackend(
+                        host=SFTP_HOST,
+                        port=SFTP_PORT,
+                        username=SFTP_USER,
+                        password=SFTP_PASS,
+                        base_path=base_path,
+                        host_key_policy=HostKeyPolicy.AUTO_ADD,
+                        connect_kwargs={"allow_agent": False, "look_for_keys": False},
+                    )
+                ),
+            )
+        )
+        cleanups.append(_CleanupEntry("sftp", {"base_path": base_path}))
+
+    if _azurite_available():
+        from azure.storage.blob import BlobServiceClient
+
+        from remote_store.backends._azure import AzureBackend
+
+        tag = uuid.uuid4().hex[:8]
+        container = f"e2e-{tag}"
+        service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
+        service.create_container(container)
+        stores.append(
+            (
+                "azure",
+                Store(backend=AzureBackend(container=container, connection_string=AZURITE_CONN_STR)),
+            )
+        )
+        cleanups.append(_CleanupEntry("azure", {"service": service, "container": container}))
+
+    if _s3_pyarrow_available():
+        import boto3
+
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        tag = uuid.uuid4().hex[:8]
+        bucket = f"e2e-pa-{tag}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=MINIO_ENDPOINT,
+            aws_access_key_id=MINIO_ACCESS_KEY,
+            aws_secret_access_key=MINIO_SECRET_KEY,
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        stores.append(
+            (
+                "s3-pyarrow",
+                Store(
+                    backend=S3PyArrowBackend(
+                        bucket=bucket,
+                        key=MINIO_ACCESS_KEY,
+                        secret=MINIO_SECRET_KEY,
+                        region_name="us-east-1",
+                        endpoint_url=MINIO_ENDPOINT,
+                    )
+                ),
+            )
+        )
+        cleanups.append(_CleanupEntry("s3", {"client": client, "bucket": bucket}))
+
+    try:
+        from remote_store.backends._sqlalchemy import SQLBlobBackend
+
+        stores.append(("sql-blob", Store(backend=SQLBlobBackend(url="sqlite://"))))
+    except ImportError:
+        pass
+
+    return stores, cleanups
+
+
+def _teardown_store_chain(stores: list[tuple[str, Store]], cleanups: list[_CleanupEntry]) -> None:
+    """Close all stores and clean up remote infrastructure."""
+    for _name, store in stores:
+        store.close()
+    for entry in cleanups:
+        if entry.kind == "s3":
+            _paginated_delete_s3(entry.extras["client"], entry.extras["bucket"])
+            entry.extras["client"].delete_bucket(Bucket=entry.extras["bucket"])
+        elif entry.kind == "sftp":
+            _sftp_cleanup(SFTP_HOST, SFTP_PORT, SFTP_USER, entry.extras["base_path"], SFTP_PASS)
+        elif entry.kind == "azure":
+            entry.extras["service"].delete_container(entry.extras["container"])
+            entry.extras["service"].close()
+
+
+@pytest.fixture
+def store_chain() -> Iterator[list[tuple[str, Store]]]:
+    """Yield all available backend stores for multi-backend e2e tests.
+
+    Standard set: Memory, S3/MinIO, SFTP, Azure/Azurite, S3-PyArrow, SQLBlob.
+    Memory and SQLBlob are always present; Docker backends are included only
+    when their service is reachable.
+
+    Tests that need ``azure-bridged`` define a local ``store_chain`` fixture
+    that calls ``_build_store_chain()``, extends the list, and then calls
+    ``_teardown_store_chain()``; the local fixture shadows this one.
+    """
+    stores, cleanups = _build_store_chain()
+    yield stores
+    _teardown_store_chain(stores, cleanups)

@@ -37,7 +37,7 @@ import hashlib
 import random
 import tracemalloc
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -45,12 +45,7 @@ import pytest
 from remote_store import Capability
 from remote_store.ext.streams import ChecksumReader
 from remote_store.ext.transfer import transfer
-from tests.e2e.conftest import (
-    _azurite_available,
-    _minio_available,
-    _s3_pyarrow_available,
-    _sftp_available,
-)
+from tests.e2e.conftest import _azurite_available
 
 if TYPE_CHECKING:
     from typing import BinaryIO
@@ -270,137 +265,33 @@ def seeded_payload() -> tuple[bytes, str, int, random.Random]:
     return data, digest, size, rng
 
 
-# Store chain fixture -- builds stores directly using availability checks
-# from conftest, so the test degrades its chain instead of being skipped.
-# Tracks cleanup resources (boto3 clients, Azure services, SFTP paths)
-# for proper teardown matching conftest patterns.
-
-
-@dataclass
-class _CleanupEntry:
-    """Resources to clean up after test completes."""
-
-    kind: str  # "s3", "sftp", "azure"
-    extras: dict[str, Any] = field(default_factory=dict)
-
-
 @pytest.fixture
 def store_chain():  # -> Iterator[list[tuple[str, Store]]]
-    """Yield a list of ``(name, store)`` pairs for all available backends.
+    """Yield all available backends, including ``azure-bridged``.
 
-    Always includes memory first.  Docker backends are only included when
-    reachable.  SQL (SQLite in-memory) is always available.
-    All infrastructure (buckets, containers, directories) is cleaned up
-    after the test completes.
+    Extends the standard ``_build_store_chain()`` set (Memory, S3, SFTP,
+    Azure, S3-PyArrow, SQLBlob) with an ``azure-bridged`` backend when
+    Azurite is reachable.  The bridged backend wraps ``AsyncAzureBackend``
+    in ``AsyncBackendSyncAdapter`` and validates the adapter end-to-end in
+    the streaming integrity chain.  ASYNC-084 preserves ``LAZY_READ``, so
+    the hop uses the wider ``BRIDGED_AZURE_THRESHOLD_FACTOR`` memory budget.
     """
     from remote_store import Store
-    from remote_store.backends._memory import MemoryBackend
+    from tests.e2e.conftest import (
+        AZURITE_CONN_STR,
+        _build_store_chain,
+        _CleanupEntry,
+        _teardown_store_chain,
+    )
 
-    stores: list[tuple[str, Store]] = []
-    cleanups: list[_CleanupEntry] = []
+    stores, cleanups = _build_store_chain()
 
-    # Memory -- always available.
-    mem = Store(backend=MemoryBackend())
-    stores.append(("memory", mem))
-
-    # S3 (s3fs)
-    if _minio_available():
-        import boto3
-
-        from remote_store.backends._s3 import S3Backend
-        from tests.e2e.conftest import (
-            MINIO_ACCESS_KEY,
-            MINIO_ENDPOINT,
-            MINIO_SECRET_KEY,
-        )
-
-        tag = uuid.uuid4().hex[:8]
-        bucket = f"e2e-stream-{tag}"
-        client = boto3.client(
-            "s3",
-            endpoint_url=MINIO_ENDPOINT,
-            aws_access_key_id=MINIO_ACCESS_KEY,
-            aws_secret_access_key=MINIO_SECRET_KEY,
-            region_name="us-east-1",
-        )
-        client.create_bucket(Bucket=bucket)
-        stores.append(
-            (
-                "s3",
-                Store(
-                    backend=S3Backend(
-                        bucket=bucket,
-                        key=MINIO_ACCESS_KEY,
-                        secret=MINIO_SECRET_KEY,
-                        region_name="us-east-1",
-                        endpoint_url=MINIO_ENDPOINT,
-                    )
-                ),
-            )
-        )
-        cleanups.append(_CleanupEntry("s3", {"client": client, "bucket": bucket}))
-
-    # SFTP
-    if _sftp_available():
-        import paramiko
-
-        from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
-        from tests.e2e.conftest import SFTP_HOST, SFTP_PASS, SFTP_PORT, SFTP_USER
-
-        tag = uuid.uuid4().hex[:8]
-        base_path = f"/upload/e2e-stream-{tag}"
-        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
-        transport.connect(username=SFTP_USER, password=SFTP_PASS)
-        sftp = paramiko.SFTPClient.from_transport(transport)
-        assert sftp is not None
-        try:
-            sftp.mkdir(base_path)
-        finally:
-            sftp.close()
-            transport.close()
-        stores.append(
-            (
-                "sftp",
-                Store(
-                    backend=SFTPBackend(
-                        host=SFTP_HOST,
-                        port=SFTP_PORT,
-                        username=SFTP_USER,
-                        password=SFTP_PASS,
-                        base_path=base_path,
-                        host_key_policy=HostKeyPolicy.AUTO_ADD,
-                        connect_kwargs={"allow_agent": False, "look_for_keys": False},
-                    )
-                ),
-            )
-        )
-        cleanups.append(_CleanupEntry("sftp", {"base_path": base_path}))
-
-    # Azure (Azurite)
     if _azurite_available():
         from azure.storage.blob import BlobServiceClient
 
         from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
         from remote_store.aio._async_azure import AsyncAzureBackend
-        from remote_store.backends._azure import AzureBackend
-        from tests.e2e.conftest import AZURITE_CONN_STR
 
-        tag = uuid.uuid4().hex[:8]
-        container = f"e2e-stream-{tag}"
-        service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
-        service.create_container(container)
-        stores.append(
-            (
-                "azure",
-                Store(backend=AzureBackend(container=container, connection_string=AZURITE_CONN_STR)),
-            )
-        )
-        cleanups.append(_CleanupEntry("azure", {"service": service, "container": container}))
-
-        # Bridged-Azure: AsyncAzureBackend wrapped in AsyncBackendSyncAdapter.
-        # Validates the adapter end-to-end in the streaming integrity chain.
-        # ASYNC-084 masks SEEKABLE_READ but preserves LAZY_READ, so the hop is
-        # classified lazy with the wider BRIDGED_AZURE_THRESHOLD_FACTOR budget.
         bridged_tag = uuid.uuid4().hex[:8]
         bridged_container = f"e2e-stream-bridged-{bridged_tag}"
         bridged_service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
@@ -417,72 +308,8 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
         )
         cleanups.append(_CleanupEntry("azure", {"service": bridged_service, "container": bridged_container}))
 
-    # S3-PyArrow
-    if _s3_pyarrow_available():
-        import boto3
-
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-        from tests.e2e.conftest import (
-            MINIO_ACCESS_KEY,
-            MINIO_ENDPOINT,
-            MINIO_SECRET_KEY,
-        )
-
-        tag = uuid.uuid4().hex[:8]
-        bucket = f"e2e-stream-pa-{tag}"
-        client = boto3.client(
-            "s3",
-            endpoint_url=MINIO_ENDPOINT,
-            aws_access_key_id=MINIO_ACCESS_KEY,
-            aws_secret_access_key=MINIO_SECRET_KEY,
-            region_name="us-east-1",
-        )
-        client.create_bucket(Bucket=bucket)
-        stores.append(
-            (
-                "s3-pyarrow",
-                Store(
-                    backend=S3PyArrowBackend(
-                        bucket=bucket,
-                        key=MINIO_ACCESS_KEY,
-                        secret=MINIO_SECRET_KEY,
-                        region_name="us-east-1",
-                        endpoint_url=MINIO_ENDPOINT,
-                    )
-                ),
-            )
-        )
-        cleanups.append(_CleanupEntry("s3", {"client": client, "bucket": bucket}))
-
-    # SQL (SQLite in-memory) -- always available.
-    try:
-        from remote_store.backends._sqlalchemy import SQLBlobBackend
-
-        stores.append(("sql-blob", Store(backend=SQLBlobBackend(url="sqlite://"))))
-    except ImportError:
-        pass
-
     yield stores
-
-    # -- Teardown: close stores, then clean up infrastructure. -------------
-    for _name, store in stores:
-        store.close()
-
-    for entry in cleanups:
-        if entry.kind == "s3":
-            from tests.e2e.conftest import _paginated_delete_s3
-
-            _paginated_delete_s3(entry.extras["client"], entry.extras["bucket"])
-            entry.extras["client"].delete_bucket(Bucket=entry.extras["bucket"])
-
-        elif entry.kind == "sftp":
-            from tests.e2e.conftest import SFTP_HOST, SFTP_PASS, SFTP_PORT, SFTP_USER, _sftp_cleanup
-
-            _sftp_cleanup(SFTP_HOST, SFTP_PORT, SFTP_USER, entry.extras["base_path"], SFTP_PASS)
-
-        elif entry.kind == "azure":
-            entry.extras["service"].delete_container(entry.extras["container"])
-            entry.extras["service"].close()
+    _teardown_store_chain(stores, cleanups)
 
 
 # ---------------------------------------------------------------------------
