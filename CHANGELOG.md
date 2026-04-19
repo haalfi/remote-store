@@ -101,6 +101,20 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Dafny `WriteResult` oracle regeneration + adapter update** (ID-151,
+  part 2): `scripts/dafny_translate.sh` Docker wrapper (analogous to
+  `scripts/dafny_verify.sh`) translates Dafny specs to Python using
+  `dafny build -t py` without a native Dafny install. Companion
+  `scripts/_dafny_classorder.py` automates the previously manual class
+  reorder (ADT types → `Backend` → `default__` → `MemoryBackend`) so
+  `module_.py` imports cleanly. Regenerates `MemoryBackend-py/` under
+  the Part 1 contract (Dafny 4.11.0, matching the verify pin), and
+  `DafnyOracleBackend` now passes `Option_None()` for the new fourth
+  `metadata` parameter on `Write`. Oracle-gated conformance run green
+  (154 passed, 5 skipped). Follow-up remainder in `BACKLOG.md`:
+  `MemoryBackendMinimal` satisfiability witness for the
+  `CapabilityNotSupported` / `BasicSource` branches.
+
 - **Dafny `WriteResult` extension** (ID-151, part 1): widens the Backend
   trait `Write` to return `Result<WriteResult>` with a fourth `metadata`
   parameter, adds `FileInfo`/`WriteResult`/`ContentDigest`/`WriteSource`
@@ -111,10 +125,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Write postconditions; the WR-006 negative direction (Write never
   produces `SidecarSource`) is enforced structurally by the `Write`
   postcondition restricting `source` to `NativeSource | BasicSource`.
-  `MemoryBackend` refines the widened contract. Oracle regeneration,
-  `DafnyOracleBackend` adapter, and the oracle-gated conformance run
-  are follow-up scope (Dafny-native toolchain required; local is
-  Docker-only).
+  `MemoryBackend` refines the widened contract.
 
 - **`scripts/gen_pages.py` refactor**: split the 840-line mkdocs-gen-files hook
   into `scripts/docs/{scan,render,nav,link}.py` plus a 70-line orchestrator;

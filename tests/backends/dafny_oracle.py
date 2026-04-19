@@ -4,17 +4,6 @@ Thin wrapper that bridges Dafny types (``Seq[CodePoint]``, ``Map``,
 ``Result``) to the Python ``Backend`` ABC.  All behavioral logic lives in
 the verified Dafny spec — this module does only type marshaling.
 
-.. note::
-
-    **Stale versus live ``.dfy`` contract (ID-151 part 2 outstanding).**
-    The live ``sdd/formal/BackendContract.dfy`` widens ``Write`` to
-    ``Result<WriteResult>`` with a fourth ``metadata`` parameter.  The
-    compiled oracle in ``sdd/formal/MemoryBackend-py/module_.py`` and
-    this adapter's ``write()`` call below still reflect the pre-ID-151
-    3-argument signature.  Regenerating the compiled module and
-    updating the marshaling here is tracked as ID-151 part 2 (requires
-    native Dafny; local is Docker-only).
-
 **Principle**: the compiled oracle is correct by construction (verified by
 Dafny, 0 errors).  If the oracle fails a conformance test, the *test* has a
 bug — not the oracle.  See ``sdd/formal/README.md`` § Compiled Oracle.
@@ -60,6 +49,7 @@ if _DAFNY_PY_DIR not in sys.path:
 
 import _dafny  # noqa: E402
 import module_ as _dafny_module  # noqa: E402
+from module_ import Option_None  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Type marshaling helpers
@@ -170,7 +160,7 @@ class DafnyOracleBackend(Backend):
 
     def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         data = bytes(content) if isinstance(content, (bytes, bytearray, memoryview)) else content.read()
-        _raise_if_err(self._mb.Write(_str_to_dafny(path), _bytes_to_dafny(data), overwrite))
+        _raise_if_err(self._mb.Write(_str_to_dafny(path), _bytes_to_dafny(data), overwrite, Option_None()))
 
     def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
         self.write(path, content, overwrite=overwrite)

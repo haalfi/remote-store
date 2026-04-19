@@ -246,6 +246,8 @@ exclude = ["**/__init__.py", "**/__pycache__/*"]
 
 [tool.ruff]
 line-length = 120
+# Dafny-generated Python output (oracle + runtime); see sdd/formal/README.md.
+extend-exclude = ["sdd/formal/*-py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "BLE", "SIM", "TCH", "PT"]
