@@ -39,6 +39,23 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
+- [ ] **BUG-173 — Azure HNS `write_atomic` leaks WriteResult-construction failures as write failures** (LOW)
+  `_azure.py:488-494` (HNS-only, `# pragma: no cover`): after a successful
+  `tmp_fc.rename_file()` commit, `dst_fc.get_file_properties()` is called to
+  populate `etag`/`last_modified`. If that call raises (network blip,
+  eventual consistency, permissions), the exception flows through
+  `self._errors(path)` and surfaces as a write failure — but the file is
+  already at the destination. Callers that retry will see `AlreadyExists`
+  (when `overwrite=False`) or silently double-write.
+
+- [ ] **BUG-172 — `_ChunkPullReader.read`/`readinto` return empty on closed stream instead of raising `ValueError`** (LOW)
+  `_async_to_sync_adapter.py:613-614, 630-631`: both methods early-return
+  `0` / `b""` when `self.closed` — stdlib `io.IOBase` (which `io.RawIOBase`
+  inherits from) raises `ValueError: I/O operation on closed file.` Verified
+  against `io.BytesIO` for parity. Callers using stream state checks against
+  the standard contract silently get empty reads instead of the expected
+  exception.
+
 - [ ] **BUG-171 — `AsyncBackendSyncAdapter._aclose_best_effort` TOCTOU on shutdown** (LOW)
   `_async_to_sync_adapter.py:789-813`: the `loop.is_running()` check races with
   loop shutdown — `asyncio.run_coroutine_threadsafe` can still raise
