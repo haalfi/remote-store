@@ -65,6 +65,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `sdd/CONTENT-RULES.md` so future doc PRs pull tested snippets rather than
   hand-writing fences.
 
+- **Formal-layer principles: Dafny vs TLA+** (ID-147): rewrites
+  `sdd/formal/README.md` around the repo's stance — Dafny for
+  per-operation contracts, TLA+ for cross-layer protocol properties,
+  decoupled rather than embedded. Adds the spec-decomposition
+  authoring rule (write the TLA+ invariant first on multi-conjunction
+  spec items) and four authoring rules (stand-alone modules,
+  demonstrated bundling, CI-informational with cadence-based revisit,
+  promotion gated on a real regression catch).
+
 ### Internal
 
 - **`scripts/gen_pages.py` refactor**: split the 840-line mkdocs-gen-files hook
