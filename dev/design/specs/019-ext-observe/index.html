@@ -6487,6 +6487,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../research/research-id-147-obs003-decomposition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OBS-003 Hand Decomposition (ID-147)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../research/research-id-147-tla-augmentation/" class="md-nav__link">
         
   
@@ -9297,8 +9325,9 @@ overrides every public method of <code>Store</code>. Each override:</p>
 <li>Delegates to the inner store's method.</li>
 <li>Computes <code>duration_ms</code>.</li>
 <li>Constructs a <code>StoreEvent</code>.</li>
-<li>Fires the matching <code>on_&lt;op&gt;</code> callback (if set).</li>
-<li>Fires <code>on_any</code> (if set).</li>
+<li>Fires the matching <code>on_&lt;op&gt;</code> callback (if set), regardless of outcome
+   (see OBS-004).</li>
+<li>Fires <code>on_any</code> (if set), regardless of outcome.</li>
 <li>On exception: fires <code>on_error</code> (if set), then re-raises.</li>
 <li>Returns the result from the inner store.</li>
 </ol>
