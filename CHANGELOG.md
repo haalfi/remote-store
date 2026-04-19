@@ -80,6 +80,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   removes a drift surfaced by the OBS-003 hand-decomposition exercise
   (`sdd/research/research-id-147-obs003-decomposition.md` § 2).
 
+- **`Observer.tla` and informational `verify-tla` CI** (ID-147):
+  `sdd/research/tla-poc/Observer.tla` lands six invariants for OBS-003
+  + OBS-003a + OBS-009, each paired with a break-and-catch row confirming
+  orthogonality. `.github/workflows/ci.yml` gains a non-blocking
+  `verify-tla` job (pinned `tla2tools.jar@v1.8.0`, SHA-256 verified)
+  that runs the PoC models (MC, MC2, MC3). Status revisit tracked as
+  ID-150 for 2026-10-19.
+
 ### Internal
 
 - **`scripts/gen_pages.py` refactor**: split the 840-line mkdocs-gen-files hook

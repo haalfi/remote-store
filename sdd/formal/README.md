@@ -151,16 +151,15 @@ age worse than the qualitative one.
    the abstract is not.
 3. **CI informational** until a TLA+ check catches a real regression
    on a production branch. Seeded breaks validate the tool; only a
-   live catch validates the workflow. *Planned policy* (not yet
-   active — no TLA+ CI step exists today; see ID-147 for the
-   augmentation spike): once an informational check lands, revisit
-   the status at a fixed cadence (every 6 months, or after every 10
-   spec amendments, whichever first) and explicitly promote, remove,
-   or re-defer. "Informational" must not silently become "unrun." Each
-   revisit is tracked as a BACKLOG entry recording the decision
-   (promote / remove / re-defer) — a calendar without a ticket is the
-   same as no calendar. The first revisit ticket is created at the
-   same time as the first informational check.
+   live catch validates the workflow. Once an informational check
+   lands, revisit the status at a fixed cadence (every 6 months, or
+   after every 10 spec amendments, whichever first) and explicitly
+   promote, remove, or re-defer. "Informational" must not silently
+   become "unrun." Each revisit is tracked as a BACKLOG entry recording
+   the decision (promote / remove / re-defer) — a calendar without a
+   ticket is the same as no calendar. The first `verify-tla` job
+   landed under ID-147 on 2026-04-19; the first revisit is tracked as
+   ID-150.
 4. **Promote `sdd/research/tla-poc/` → `sdd/formal/tla/`** only after
    (3). Until then, TLA+ artefacts live under research.
 
@@ -208,6 +207,13 @@ then `dafny verify sdd/formal/<file>.dfy`.
 
 CI runs the `verify-formal` job automatically when `sdd/formal/` or
 `sdd/specs/` files change.
+
+TLA+ (TLC): `bash scripts/tlc_check.sh sdd/research/tla-poc MC3` runs
+the Observer model via a pinned Docker image (no local Java or
+`tla2tools.jar` install required); swap `MC3` for `MC` or `MC2` for
+the other PoC configs. CI runs the same three configs as the
+informational `verify-tla` job when files under
+`sdd/research/tla-poc/` or the TLC tooling change.
 
 ### Verification practices
 

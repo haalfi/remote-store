@@ -19,6 +19,7 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       docs: ${{ steps.filter.outputs.docs }}
       formal: ${{ steps.filter.outputs.formal }}
+      tla: ${{ steps.filter.outputs.tla }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -42,6 +43,9 @@ jobs:
           FORMAL_PAT='^sdd/(formal|specs)/|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$FORMAL_PAT"; then echo "formal=true" >> "$GITHUB_OUTPUT"
           else echo "formal=false" >> "$GITHUB_OUTPUT"; fi
+          TLA_PAT='^sdd/research/tla-poc/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
+          if echo "$FILES" | grep -qE "$TLA_PAT"; then echo "tla=true" >> "$GITHUB_OUTPUT"
+          else echo "tla=false" >> "$GITHUB_OUTPUT"; fi
 
   lint:
     needs: [changes]
@@ -253,6 +257,36 @@ jobs:
           dafny verify sdd/formal/MemoryBackend.dfy
           dafny verify sdd/formal/DepthCounting.dfy
           dafny verify sdd/formal/ResourceSafety.dfy
+
+  # INFORMATIONAL: TLA+ model checks for the PoC modules. Not in the gate
+  # below by design — see sdd/formal/README.md § Authoring rules (3). The
+  # first revisit ticket lives in sdd/BACKLOG.md (ID-150, due 2026-10-19).
+  verify-tla:
+    needs: [changes]
+    if: needs.changes.outputs.tla == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Download tla2tools.jar (pinned)
+        env:
+          TLA_VERSION: 1.8.0
+          TLA_SHA256: af03b2baae73b523fe162c0ff195c5adeed42cd1d092200b0bde2cd15914f624
+        run: |
+          curl -fsSL -o tla2tools.jar \
+            "https://github.com/tlaplus/tlaplus/releases/download/v${TLA_VERSION}/tla2tools.jar"
+          echo "${TLA_SHA256}  tla2tools.jar" | sha256sum -c -
+      - name: Run TLC on PoC models
+        run: |
+          for cfg in MC MC2 MC3; do
+            echo "==> TLC: sdd/research/tla-poc/${cfg}.tla"
+            (cd sdd/research/tla-poc && \
+              java -XX:+UseParallelGC -jar "$GITHUB_WORKSPACE/tla2tools.jar" \
+                -config "${cfg}.cfg" -metadir /tmp/tlc-${cfg} "${cfg}.tla")
+          done
 
   gate:
     needs: [changes, lint, typecheck, test, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]

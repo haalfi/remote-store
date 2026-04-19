@@ -119,6 +119,21 @@ Items graduate through the SDD pipeline:
 
 ### Testing & Verification
 
+- [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
+  First revisit ticket for the informational `verify-tla` job landed under
+  ID-147 on 2026-04-19. Per `sdd/formal/README.md` § Authoring rules (3),
+  the status is revisited every 6 months or every 10 spec amendments touching
+  TLA-backed sections (whichever first). At the revisit, record one of:
+  **promote** (check caught a real regression — add to the gate's `needs`),
+  **remove** (no catches, no active modules — drop the job), or **re-defer**
+  (still useful but no catch yet — open the next revisit ticket). A calendar
+  without a ticket is the same as no calendar, which is why this item exists.
+
+  **Exit criteria:** decision logged in the ticket's close note; if re-deferred,
+  the successor ticket is linked here; if promoted, `verify-tla` joins the
+  `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
+  `sdd/formal/README.md` is updated.
+
 - [ ] **ID-147 — TLA+ augmentation: Observer dispatch module + informational CI**
   Follow-up to the ID-147b PoC (WriteResult) and the formal-layer principles
   landed in PR 458. Picks one concrete target that satisfies the "demonstrated
@@ -137,8 +152,11 @@ Items graduate through the SDD pipeline:
   **Deliverable 1 — `Observer.tla`** (under `sdd/research/tla-poc/`, promotion
   to `sdd/formal/tla/` follows the rules):
   - Shadows spec 019 § OBS-003 + OBS-003a + OBS-009.
-  - Five independent invariants: `EventPerCompletedOp`, `RoutingByOpClass`,
-    `HookOutcomeContract`, `ErrorAlwaysReraise`, `AfterHookExceptionIsolated`.
+  - Six independent invariants (`EventPerCompletedOp`, `RoutingByOpClass`,
+    `ClassHookOutcomeIndependent`, `ErrorHookFiresOnErrorOnly`,
+    `ErrorAlwaysReraise`, `AfterHookExceptionIsolated`). The shortlist grew
+    from five to six under break-and-catch: the original `HookOutcomeContract`
+    bundled two independently-falsifiable claims and was split into I3a / I3b.
   - Full break-and-catch matrix (one mutation per invariant, each triggering
     exactly the target invariant and no others) — if rows collapse, the
     invariants were not orthogonal and the decomposition needs another pass.
