@@ -11295,6 +11295,14 @@
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong><code>AsyncBackendSyncAdapter</code> orphan-coroutine leaks</strong> (BUG-166, BUG-167):
+  coroutines built before <code>run_coroutine_threadsafe</code> were discarded unawaited
+  on fail-fast paths, emitting <code>RuntimeWarning</code>. All six sites now call
+  <code>coro.close()</code> on every error path. Companion cleanup eliminates 80
+  <code>ResourceWarning</code>s via autouse aclose fixtures and rewrites
+  <code>test_close_owned_engine</code> to assert pool identity (TESTING.md Rule 12).</p>
+</li>
+<li>
 <p><strong><code>AsyncAzureBackend.write</code> streaming</strong> (BUG-165): <code>write</code> and
   <code>write_atomic</code> materialized any <code>AsyncIterable[bytes]</code> payload into a
   single <code>bytes</code> buffer before calling <code>upload_blob</code> / <code>upload_data</code>,

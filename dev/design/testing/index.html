@@ -8753,6 +8753,11 @@
     — define as module-level constants for reuse. Inline <code>st.</code> chains
     only for trivial one-liners.</p>
 </li>
+<li>
+<p><strong>Treat test warnings as latent bugs</strong> [review-enforced]
+    — investigate <code>RuntimeWarning</code>/<code>ResourceWarning</code> before suppressing.
+    <code>filterwarnings("ignore:…")</code> only with a <code># acceptable because …</code> comment.</p>
+</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="examples-bad-good">Examples (bad → good)<a class="headerlink" href="#examples-bad-good" title="Permanent link">&para;</a></h3>
@@ -8832,6 +8837,11 @@
 <td>11</td>
 <td>Strategies at module scope</td>
 <td>review</td>
+</tr>
+<tr>
+<td>12</td>
+<td>No unjustified <code>filterwarnings("ignore:…")</code></td>
+<td>grep <code>filterwarnings.*"ignore:</code></td>
 </tr>
 </tbody>
 </table>
