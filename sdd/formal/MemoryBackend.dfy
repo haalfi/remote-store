@@ -190,10 +190,9 @@ class MemoryBackend extends Backend {
 
     // WR-010 gate.  MemoryBackend declares CapUserMetadata, so this
     // branch is dead code for this refinement — it exists to satisfy
-    // the method contract (BackendContract.Write).  A sibling
-    // MemoryBackendMinimal fixture that drops CapUserMetadata would
-    // witness the live branch end-to-end; tracked as a follow-up
-    // improvement (not part 2 scope — part 2 is oracle regen).
+    // the method contract (BackendContract.Write).  Concrete-class
+    // satisfiability for the CapUserMetadata-absent branch is tracked
+    // as a MemoryBackendMinimal sub-item under ID-151 Part 2.
     if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {
       r := Err(CapabilityNotSupported(
         CapabilityName(CapUserMetadata), name));

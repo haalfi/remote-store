@@ -90,6 +90,10 @@ datatype FileInfo = FileInfo(
   // SDK write response and not round-tripped via get_file_info).
   // Spec 045 WR-008 encodes this: head()-produced WriteResult has
   // version_id = None because there is no FileInfo source.
+  //
+  // Python-name map (see spec 045 WR-008 table):
+  //   last_modified → Python FileInfo.modified_at (field rename).
+  //   digest, etag, metadata → same names in Python FileInfo.
   digest: Option<ContentDigest>,
   etag: Option<string>,
   last_modified: Option<int>,

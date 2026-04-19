@@ -146,7 +146,7 @@ Items graduate through the SDD pipeline:
     `WR008FieldMapping` lemma — not a Backend trait method. `head()` is a
     Store-layer composition over `get_file_info()`, not a backend method.
 
-  **Part 1 (PR #461 — shipped):**
+  **Part 1 (open in PR #461 — in review):**
   - `BackendContract.dfy`: `Option<T>`, `ContentDigest`, `WriteSource`,
     `FileInfo`, `WriteResult` datatypes; `CapWriteResultNative` and
     `CapUserMetadata` capabilities; `HasUserMetadata` predicate +
@@ -164,6 +164,12 @@ Items graduate through the SDD pipeline:
     signature (4th `metadata` parameter) and returns `WriteResult`.
   - Oracle-gated conformance run: `pytest tests/backends/test_conformance*.py
     -k dafny-oracle` green.
+  - `MemoryBackendMinimal` satisfiability witness: a sibling refinement
+    that declares neither `CapWriteResultNative` nor `CapUserMetadata`
+    so the WR-010 `CapabilityNotSupported` branch and the `BasicSource`
+    path of the `Write` postcondition are witnessed by a concrete class
+    (currently dead code in `MemoryBackend`). Closes the refinement
+    coverage gap flagged in the part-1 review.
 
   **Out of scope:**
   - Proxy forwarding / event emission (WR-018, WR-019) — TLA+ territory,

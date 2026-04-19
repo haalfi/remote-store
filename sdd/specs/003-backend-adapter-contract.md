@@ -180,11 +180,11 @@ missing or non-existent paths.
 **Formal coverage:** `get_file_info()` is modelled in
 `sdd/formal/BackendContract.dfy` as `GetFileInfo` with postcondition
 `IsFile → r.Ok? ∧ r.value == fs[path].info`. The extended `FileInfo`
-datatype carries the optional `digest`, `etag`, `version_id`,
-`last_modified`, and `metadata` fields, so the WR-013 round-trip
-(metadata survives `write → get_file_info`) and the WR-008 field
-mapping to `head()`-produced `WriteResult` are discharged structurally.
-Verified in `MemoryBackend.dfy`. See ID-151.
+datatype carries the optional `digest`, `etag`, `last_modified`, and
+`metadata` fields (no `version_id` — only `WriteResult` does in v1), so
+the WR-013 round-trip (metadata survives `write → get_file_info`) and
+the WR-008 field mapping to `head()`-produced `WriteResult` are
+discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 
 ### BE-017: get_folder_info()
 
