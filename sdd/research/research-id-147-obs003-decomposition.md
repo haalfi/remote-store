@@ -183,8 +183,9 @@ Populated as each invariant lands. Format mirrors
 | Misroute to non-matching class bucket | `![CHOOSE c : c # ClassOf[op]]` in `Call` | `RoutingByOpClass` | — | 2 |
 | Skip per-op hook append on error | `class_events' = class_events` when `outcome = "error"` | `ClassHookOutcomeIndependent` | — | 2 |
 | Fire `on_error` on success instead of error | `outcome = "success"` guard on `error_events` append | `ErrorHookFiresOnErrorOnly` | — | 2 |
+| Emit `"success"` on the error visible-outcome path | `visible_outcomes' = Append(visible_outcomes, "success")` | `ErrorAlwaysReraise` | — | 2 |
 
-I4–I5 pending — rows added as invariants land.
+I5 pending — row added as the invariant lands.
 
 The decomposition note's § 3 `HookOutcomeContract` (I3) bundled two
 independently-falsifiable claims; break-and-catch confirms they are

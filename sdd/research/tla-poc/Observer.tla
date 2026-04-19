@@ -18,9 +18,9 @@
 
     (I1)  EventPerCompletedOp            - landed
     (I2)  RoutingByOpClass               - landed
-    (I3a) ClassHookOutcomeIndependent    - this commit
-    (I3b) ErrorHookFiresOnErrorOnly      - this commit
-    (I4)  ErrorAlwaysReraise             - follow-up
+    (I3a) ClassHookOutcomeIndependent    - landed
+    (I3b) ErrorHookFiresOnErrorOnly      - landed
+    (I4)  ErrorAlwaysReraise             - this commit
     (I5)  AfterHookExceptionIsolated     - follow-up
 
   The decomposition note's I3 bundles two independently-falsifiable
@@ -45,9 +45,10 @@ VARIABLES
     inner_calls,     \* Nat - how many times the inner method was invoked
     any_events,      \* Seq - events dispatched to the on_any hook
     class_events,    \* [HookClasses -> Seq] - events per per-op hook bucket
-    error_events     \* Seq - events dispatched to the on_error hook
+    error_events,    \* Seq - events dispatched to the on_error hook
+    visible_outcomes \* Seq - outcome observed by the caller (post-proxy)
 
-vars == <<inner_calls, any_events, class_events, error_events>>
+vars == <<inner_calls, any_events, class_events, error_events, visible_outcomes>>
 
 \* Shape of an observer event. "outcome" lands in I3 so that the
 \* per-op and error hooks can be reasoned about independently.
@@ -69,12 +70,14 @@ TypeOK ==
            /\ DOMAIN error_events[i] = EventShape
            /\ error_events[i].op \in Ops
            /\ error_events[i].outcome \in Outcomes
+    /\ \A i \in 1..Len(visible_outcomes): visible_outcomes[i] \in Outcomes
 
 Init ==
     /\ inner_calls = 0
     /\ any_events = <<>>
     /\ class_events = [c \in HookClasses |-> <<>>]
     /\ error_events = <<>>
+    /\ visible_outcomes = <<>>
 
 \* Call(op, outcome): one store operation completes. The inner method
 \* runs, on_any fires, the matching on_<op> fires (regardless of
@@ -93,6 +96,7 @@ Call(op, outcome) ==
               IF outcome = "error"
               THEN Append(error_events, evt)
               ELSE error_events
+       /\ visible_outcomes' = Append(visible_outcomes, outcome)
 
 Next == \E op \in Ops, outcome \in Outcomes: Call(op, outcome)
 
@@ -139,6 +143,15 @@ ErrorCallCount ==
 ErrorHookFiresOnErrorOnly ==
     /\ Len(error_events) = ErrorCallCount
     /\ \A i \in 1..Len(error_events): error_events[i].outcome = "error"
+
+\* (I4) ErrorAlwaysReraise — every inner-method error surfaces as an
+\* error to the caller. OBS-009: the original exception always re-raises,
+\* even if on_error (or any after-hook) raises; no hook can swallow it.
+\* Break-and-catch:
+\*   - visible_outcomes' appends "success" on the error branch -> violated.
+ErrorAlwaysReraise ==
+    \A i \in 1..Len(any_events):
+        any_events[i].outcome = "error" => visible_outcomes[i] = "error"
 
 StateConstraint == inner_calls <= MaxCalls
 =============================================================================
