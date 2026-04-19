@@ -144,14 +144,25 @@ level.
 **Single module, six invariants:** `Observer.tla` under
 `sdd/formal/tla/` (the live informal TLA+ layer — physical location is
 decoupled from CI gate status; the `sdd/research/tla-poc/` tree is the
-frozen 2026-04 PoC and stays as a historical artefact). Shadows
-OBS-003 + OBS-003a + OBS-009.
+frozen 2026-04 PoC and stays as a historical artefact). Covers OBS-003
+step 6/7 + OBS-003a dispatch routing at the checked level; OBS-009 is
+shadowed only structurally (see module header *Scope caveat*).
 
 Expected model size: small. States are `(op ∈ OpSet, outcome ∈
-{success, error}, hookRaised ∈ {none, on_any, on_op, on_error}) →
-observedEvents`. With `OpSet = {read, write, delete}` and three hook
-buckets, TLC enumeration should finish in seconds (same order as the
-PoC's 116-state WR-018 model).
+{success, error}) → five append-only sequences (inner_calls,
+any_events, class_events[class], error_events, visible_outcomes)`.
+With `OpSet = {read, write, delete}` and three hook buckets, TLC
+enumeration finishes in well under a second (259 distinct states at
+depth 4 for `MaxCalls = 3`).
+
+The original plan included a `hookRaised ∈ {none, on_any, on_op,
+on_error}` dimension to model OBS-009's "after-hook raises but inner
+outcome is re-raised" directly. The shipped `Observer.tla` omits it —
+`Call` is a single atomic transition with no hook-raise sub-action, so
+I4 and I5 check the structural property `visible == inner` on each
+path rather than the behavioural OBS-009 claim (see module header's
+*Scope caveat* paragraph). Adding `HookRaise` is deferred until a real
+regression motivates it (ID-150 revisit).
 
 See § 8 for the actual break-and-catch log populated as each invariant
 landed. Each row triggered exactly one invariant at minimum depth.

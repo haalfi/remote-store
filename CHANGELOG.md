@@ -82,8 +82,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - **`Observer.tla` and informational `verify-tla` CI** (ID-147): starts
   the live informal TLA+ layer under `sdd/formal/tla/` with
-  `Observer.tla` — six invariants for OBS-003 + OBS-003a + OBS-009,
-  each paired with a break-and-catch row confirming orthogonality. The
+  `Observer.tla` — six invariants covering OBS-003 step 6/7 and
+  OBS-003a dispatch routing, each paired with a break-and-catch row
+  confirming orthogonality of the seeded mutations (the module is an
+  *authoring* artefact per `sdd/formal/README.md` rule 3 — TLC on MC3
+  holds vacuously on the unmutated spec, so the CI job catches future
+  edits to the model, not regressions in `observe.py`; see module
+  header *Scope caveat* for the OBS-009 gap). The
   `sdd/research/tla-poc/` tree stays as the frozen 2026-04 PoC
   artefact. `.github/workflows/ci.yml` gains a non-blocking
   `verify-tla` job (pinned `tla2tools.jar@v1.8.0`, SHA-256 verified)

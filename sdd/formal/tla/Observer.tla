@@ -1,7 +1,8 @@
 --------------------------- MODULE Observer ---------------------------
 (***************************************************************************
-  TLA+ model of the ObservedStore dispatch contract (spec 019 § OBS-003,
-  OBS-003a, OBS-009).
+  TLA+ model of the ObservedStore dispatch contract — OBS-003 step 6/7
+  (every completed op fires on_any + matching on_<op> regardless of
+  outcome) and OBS-003a (per-op hook class routing) from spec 019.
 
   Aim
   ---
@@ -30,6 +31,26 @@
   kept apart so a break on one path cannot accidentally satisfy the
   other. Every invariant has a corresponding § 8 break-and-catch row
   in the note.
+
+  Scope caveat (authoring vs checked invariants)
+  ----------------------------------------------
+  `Call` is a single atomic action that couples every variable by
+  construction, so all six invariants hold vacuously on the unmutated
+  spec — TLC on `MC3` always passes green. That makes this module an
+  *authoring* artefact in the sense of `sdd/formal/README.md` rule 3:
+  the `verify-tla` CI job catches future edits to `Call` (or to the
+  invariant bodies) that break internal consistency, but it does *not*
+  catch regressions in the Python `observe.py` implementation — there
+  is no automated link between the two layers.
+
+  In particular, OBS-009's behavioural claims ("fire on_error then
+  re-raise", "after-hook exceptions are suppressed, around exceptions
+  propagate") are not directly representable in the current action
+  shape, because `Call` has no `HookRaise` sub-action that can attempt
+  to alter `visible_outcomes`. I4 and I5 verify the structural
+  property `visible == inner` on each path; a faithful OBS-009
+  behavioural check is deferred as a follow-up once a real regression
+  motivates the model extension (ID-150 revisit).
 ***************************************************************************)
 
 EXTENDS Naturals, Sequences, FiniteSets, TLC
