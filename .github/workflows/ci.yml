@@ -43,7 +43,7 @@ jobs:
           FORMAL_PAT='^sdd/(formal|specs)/|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$FORMAL_PAT"; then echo "formal=true" >> "$GITHUB_OUTPUT"
           else echo "formal=false" >> "$GITHUB_OUTPUT"; fi
-          TLA_PAT='^sdd/(research/tla-poc|formal/tla)/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
+          TLA_PAT='^sdd/formal/tla/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$TLA_PAT"; then echo "tla=true" >> "$GITHUB_OUTPUT"
           else echo "tla=false" >> "$GITHUB_OUTPUT"; fi
 
@@ -258,9 +258,11 @@ jobs:
           dafny verify sdd/formal/DepthCounting.dfy
           dafny verify sdd/formal/ResourceSafety.dfy
 
-  # INFORMATIONAL: TLA+ model checks for the PoC modules. Not in the gate
-  # below by design — see sdd/formal/README.md § Authoring rules (3). The
-  # first revisit ticket lives in sdd/BACKLOG.md (ID-150, due 2026-10-19).
+  # INFORMATIONAL: TLA+ model checks for the live informal layer under
+  # sdd/formal/tla/. Not in the gate below by design — see
+  # sdd/formal/README.md § Authoring rules (3). The first revisit ticket
+  # lives in sdd/BACKLOG.md (ID-150, due 2026-10-19). The historical
+  # PoC modules under sdd/research/tla-poc/ are frozen and not run here.
   verify-tla:
     needs: [changes]
     if: needs.changes.outputs.tla == 'true'
@@ -279,11 +281,11 @@ jobs:
           curl -fsSL -o tla2tools.jar \
             "https://github.com/tlaplus/tlaplus/releases/download/v${TLA_VERSION}/tla2tools.jar"
           echo "${TLA_SHA256}  tla2tools.jar" | sha256sum -c -
-      - name: Run TLC on PoC models
+      - name: Run TLC on live TLA+ models
         run: |
-          for cfg in MC MC2 MC3; do
-            echo "==> TLC: sdd/research/tla-poc/${cfg}.tla"
-            (cd sdd/research/tla-poc && \
+          for cfg in MC3; do
+            echo "==> TLC: sdd/formal/tla/${cfg}.tla"
+            (cd sdd/formal/tla && \
               java -XX:+UseParallelGC -jar "$GITHUB_WORKSPACE/tla2tools.jar" \
                 -config "${cfg}.cfg" \
                 -metadir "${RUNNER_TEMP}/tlc-${cfg}" \

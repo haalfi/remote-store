@@ -142,8 +142,9 @@ level.
 ## 5. Module plan
 
 **Single module, six invariants:** `Observer.tla` under
-`sdd/research/tla-poc/` (PoC staging; promotion to `sdd/formal/tla/`
-follows the authoring rule — *after* a real regression catch). Shadows
+`sdd/formal/tla/` (the live informal TLA+ layer — physical location is
+decoupled from CI gate status; the `sdd/research/tla-poc/` tree is the
+frozen 2026-04 PoC and stays as a historical artefact). Shadows
 OBS-003 + OBS-003a + OBS-009.
 
 Expected model size: small. States are `(op ∈ OpSet, outcome ∈
@@ -163,7 +164,7 @@ landed. Each row triggered exactly one invariant at minimum depth.
    independence, or cross-reference OBS-004. Small edit; ride the ID-147
    PR.
 2. **TLA+ module:** `Observer.tla` + `MC3.tla` + `MC3.cfg`
-   in `sdd/research/tla-poc/` implementing I1, I2, I3a, I3b, I4, I5.
+   in `sdd/formal/tla/` implementing I1, I2, I3a, I3b, I4, I5.
 3. **Break-and-catch table:** populate § 5 after the model runs green.
 4. **Rescope ID-147 backlog item:** drop `Backend.tla` + `Store.tla`
    (abstract-layer targets the authoring rules now discourage); keep

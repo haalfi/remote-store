@@ -149,8 +149,9 @@ Items graduate through the SDD pipeline:
   bundles multiple independently-falsifiable claims (see decomposition note
   below).
 
-  **Deliverable 1 — `Observer.tla`** (under `sdd/research/tla-poc/`, promotion
-  to `sdd/formal/tla/` follows the rules):
+  **Deliverable 1 — `Observer.tla`** (under `sdd/formal/tla/`, the live
+  informal TLA+ layer — physical location is decoupled from CI gate
+  status, see `sdd/formal/README.md` rules 3 and 4):
   - Shadows spec 019 § OBS-003 + OBS-003a + OBS-009.
   - Six independent invariants (`EventPerCompletedOp`, `RoutingByOpClass`,
     `ClassHookOutcomeIndependent`, `ErrorHookFiresOnErrorOnly`,
@@ -165,7 +166,7 @@ Items graduate through the SDD pipeline:
 
   **Deliverable 2 — informational `verify-tla` CI job:**
   - Mirrors `verify-formal` (Dafny) pattern in `.github/workflows/ci.yml`.
-  - Triggers on `sdd/research/tla-poc/**` or `sdd/formal/tla/**` changes.
+  - Triggers on `sdd/formal/tla/**` changes (the live informal TLA+ layer).
   - Informational (non-blocking) per the authoring rules until a real
     regression catch promotes it to blocking.
   - Same PR opens the first 6-month revisit BACKLOG ticket (per the authoring
