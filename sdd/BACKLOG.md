@@ -39,7 +39,31 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
-*(none)*
+- [ ] **BUG-171 — `AsyncBackendSyncAdapter._aclose_best_effort` TOCTOU on shutdown** (LOW)
+  `_async_to_sync_adapter.py:789-813`: the `loop.is_running()` check races with
+  loop shutdown — `asyncio.run_coroutine_threadsafe` can still raise
+  `RuntimeError` if the loop stops between check and submit. Swallow the race
+  (the `except Exception` already closes `coro`, but the bare raise escapes
+  `_aclose_best_effort`, which by contract should be silent).
+
+- [ ] **BUG-170 — `SQLBlobBackend.write` leaves `last_modified` None under `WRITE_RESULT_NATIVE`** (MEDIUM)
+  `_sqlalchemy.py:438-444`: when the `user_metadata` column is present the
+  backend advertises `WRITE_RESULT_NATIVE` but the returned `WriteResult` has
+  `last_modified=None`, violating spec 045 WR-004 (native results must populate
+  rich fields). The `now` timestamp computed at line 411 is not surfaced.
+
+- [ ] **BUG-169 — `MemoryBackend.write` leaves `last_modified` None under `WRITE_RESULT_NATIVE`** (MEDIUM)
+  `_memory.py:148-152`: backend declares `WRITE_RESULT_NATIVE` but returns
+  `WriteResult(source="native", last_modified=None, ...)`. Violates spec 045
+  WR-004; the `mtime` stored in the in-memory node is available but discarded.
+
+- [ ] **BUG-168 — `LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming input** (HIGH)
+  `_local.py:197-214`: `size = os.path.getsize(tmp_path)` is called *inside*
+  the `with os.fdopen(fd, "wb") as f:` block, before the `BufferedWriter` has
+  flushed. For any `BinaryIO` content whose tail chunk is still buffered (e.g.
+  260 KiB payload with default 8 KiB buffer), the returned `size` is truncated
+  to the last-flushed offset while the file on disk is correct. Move the
+  `getsize` call outside the `with` (or `f.flush()` first).
 
 ---
 
