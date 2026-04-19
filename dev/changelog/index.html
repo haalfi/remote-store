@@ -11323,6 +11323,11 @@
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong><code>_AsyncIteratorBridge.__del__</code> CodeQL warning</strong> (<code>py/overly-complex-delete</code>):
+  extracted cleanup logic into <code>_aclose_best_effort()</code>; <code>__del__</code> now delegates
+  to it, keeping the finaliser trivial.</p>
+</li>
+<li>
 <p><strong><code>AsyncBackendSyncAdapter</code> orphan-coroutine leaks</strong> (BUG-166, BUG-167):
   coroutines built before <code>run_coroutine_threadsafe</code> were discarded unawaited
   on fail-fast paths, emitting <code>RuntimeWarning</code>. All six sites now call
