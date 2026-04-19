@@ -626,12 +626,14 @@ def test_close_owned_engine() -> None:
     # SQL-BLOB-041: close() on an owned engine calls Engine.dispose(), which
     # swaps the connection pool with a fresh one. Probing post-close behaviour
     # via an I/O call would silently re-open a connection on the disposed
-    # engine and leak it (ResourceWarning), so assert pool identity instead.
+    # engine and leak it (ResourceWarning), so assert pool identity instead
+    # via the publicly-unwrapped Engine handle.
     b = SQLBlobBackend(url="sqlite:///:memory:")
     b.write("f.txt", b"data")
-    pool_before = b._engine.pool
+    engine = b.unwrap(sa.Engine)
+    pool_before = engine.pool
     b.close()
-    assert b._engine.pool is not pool_before
+    assert engine.pool is not pool_before
 
 
 @pytest.mark.spec("SQL-BLOB-041")
