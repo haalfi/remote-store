@@ -111,7 +111,8 @@ class TestBackendRead:
     def test_read_returns_binary_stream(self, backend: Backend) -> None:
         _require(backend, Capability.WRITE)
         backend.write("data.bin", b"\x00\x01\x02")
-        assert backend.read("data.bin").read() == b"\x00\x01\x02"
+        with backend.read("data.bin") as stream:
+            assert stream.read() == b"\x00\x01\x02"
 
     @pytest.mark.spec("BE-007")
     def test_read_bytes(self, backend: Backend) -> None:

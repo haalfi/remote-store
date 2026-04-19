@@ -153,13 +153,21 @@ class AsyncBackendSyncAdapter(Backend):
         ``close(timeout=…)`` provides a global shutdown bound; there is
         no per-operation equivalent.
         """
-        self._guard()
+        # Caller built *coro* before the guard runs (Python evaluates the
+        # argument first); on either failure path we close it explicitly so
+        # CPython does not emit "coroutine was never awaited" RuntimeWarning.
+        try:
+            self._guard()
+        except BaseException:
+            coro.close()
+            raise
         try:
             future = asyncio.run_coroutine_threadsafe(coro, self._loop)
         except RuntimeError:
             # Loop was stopped between _guard() and here (close() raced us).
             # Re-raise with the canonical stem so ASYNC-083 callers see a
             # stable message rather than asyncio's internal phrasing.
+            coro.close()
             raise RuntimeError(_CLOSED_MSG) from None
         return future.result()
 
@@ -486,13 +494,12 @@ class AsyncBackendSyncAdapter(Backend):
 
         # 1. Submit aclose -- swallow any raise (ASYNC-090 bullet 3).
         aclose_fut: concurrent.futures.Future[Any] | None
+        aclose_coro = self._async_backend.aclose()
         try:
-            aclose_fut = asyncio.run_coroutine_threadsafe(
-                self._async_backend.aclose(),
-                self._loop,
-            )
+            aclose_fut = asyncio.run_coroutine_threadsafe(aclose_coro, self._loop)
         except RuntimeError:
             # Loop already stopped (shouldn't happen with a fresh adapter).
+            aclose_coro.close()
             aclose_fut = None
 
         if aclose_fut is not None:
@@ -519,9 +526,11 @@ class AsyncBackendSyncAdapter(Backend):
             if not _snapshot_tasks(self._loop):
                 break
             drain_fut: concurrent.futures.Future[None] | None
+            drain_coro = _drain_tasks()
             try:
-                drain_fut = asyncio.run_coroutine_threadsafe(_drain_tasks(), self._loop)
+                drain_fut = asyncio.run_coroutine_threadsafe(drain_coro, self._loop)
             except RuntimeError:
+                drain_coro.close()
                 break
             try:
                 drain_fut.result(timeout=_remaining())
@@ -658,12 +667,12 @@ class _ChunkPullReader(io.RawIOBase):
         if self._eof:
             return None
         self._adapter._guard()
+        coro = self._iter.__anext__()
         try:
-            fut: concurrent.futures.Future[bytes] = asyncio.run_coroutine_threadsafe(
-                self._iter.__anext__(), self._adapter._loop
-            )
+            fut: concurrent.futures.Future[bytes] = asyncio.run_coroutine_threadsafe(coro, self._adapter._loop)
         except RuntimeError:
             # Loop stopped between _guard() and here (close() raced us).
+            coro.close()
             self._eof = True
             self.close()
             raise RuntimeError(_CLOSED_MSG) from None
@@ -705,15 +714,17 @@ class _ChunkPullReader(io.RawIOBase):
         """
         if self.closed:
             return
+        coro = self._iter.aclose()
         try:
-            fut = asyncio.run_coroutine_threadsafe(self._iter.aclose(), self._adapter._loop)
+            fut = asyncio.run_coroutine_threadsafe(coro, self._adapter._loop)
+        except RuntimeError:
+            # Loop already stopped (adapter closed concurrently) -- best effort.
+            coro.close()
+        else:
             try:
                 fut.result()
             except Exception:  # noqa: BLE001
                 log.debug("AsyncBackendSyncAdapter: stream aclose raised", exc_info=True)
-        except RuntimeError:
-            # Loop already stopped (adapter closed concurrently) -- best effort.
-            pass
         super().close()  # sets self.closed = True via io.IOBase
 
 
@@ -758,13 +769,12 @@ class _AsyncIteratorBridge:
         if self._done:
             raise StopIteration
         self._adapter._guard()
+        coro: Any = self._iter.__anext__()
         try:
-            fut: concurrent.futures.Future[Any] = asyncio.run_coroutine_threadsafe(
-                self._iter.__anext__(),  # type: ignore[arg-type]
-                self._adapter._loop,
-            )
+            fut: concurrent.futures.Future[Any] = asyncio.run_coroutine_threadsafe(coro, self._adapter._loop)
         except RuntimeError:
             # Loop stopped between _guard() and here (close() raced us).
+            coro.close()
             self._done = True
             raise RuntimeError(_CLOSED_MSG) from None
         try:
@@ -788,11 +798,14 @@ class _AsyncIteratorBridge:
         loop = getattr(getattr(self, "_adapter", None), "_loop", None)
         if loop is None or not loop.is_running():
             return
-        with contextlib.suppress(Exception):
-            asyncio.run_coroutine_threadsafe(
-                self._iter.aclose(),  # type: ignore[attr-defined]
-                loop,
-            )
+        coro = None
+        try:
+            coro = self._iter.aclose()  # type: ignore[attr-defined]
+            asyncio.run_coroutine_threadsafe(coro, loop)
+        except Exception:  # noqa: BLE001
+            if coro is not None:
+                with contextlib.suppress(Exception):
+                    coro.close()
 
 
 # ---------------------------------------------------------------------------

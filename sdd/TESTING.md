@@ -45,6 +45,10 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
     — define as module-level constants for reuse. Inline `st.` chains
     only for trivial one-liners.
 
+12. **Treat test warnings as latent bugs** [review-enforced]
+    — investigate `RuntimeWarning`/`ResourceWarning` before suppressing.
+    `filterwarnings("ignore:…")` only with a `# acceptable because …` comment.
+
 ## Guides
 
 ### Examples (bad → good)
@@ -78,6 +82,7 @@ backend = MagicMock(spec=Backend)           # good
 | 9 | `@given` has `assert` on non-rejection path | review |
 | 10 | No inline `max_examples` | grep `max_examples` |
 | 11 | Strategies at module scope | review |
+| 12 | No unjustified `filterwarnings("ignore:…")` | grep `filterwarnings.*"ignore:` |
 
 ### Test code economy
 

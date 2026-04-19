@@ -643,7 +643,6 @@ class TestOpenAtomic:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.filterwarnings("ignore:coroutine.*was never awaited:RuntimeWarning")
 class TestRunningLoopFailFast:
     """ASYNC-082: adapter methods raise RuntimeError when called from a running loop."""
 
@@ -690,7 +689,6 @@ class TestRunningLoopFailFast:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.filterwarnings("ignore:coroutine.*was never awaited:RuntimeWarning")
 class TestClosedAdapterReuse:
     """ASYNC-083: after close(), any sync I/O method raises RuntimeError."""
 
@@ -725,13 +723,26 @@ class TestClosedAdapterReuse:
         with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
             adapter.exists("x")
 
+    @pytest.mark.spec("ASYNC-083")
+    def test_closed_guard_does_not_leak_coroutine(self, recwarn: pytest.WarningsRecorder) -> None:
+        # _submit must close the coroutine that the caller built before
+        # _guard() ran; otherwise CPython emits "coroutine was never awaited".
+        adapter, _ = _make_adapter()
+        adapter.close()
+        with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
+            adapter.exists("x")
+        gc.collect()
+        leaks = [
+            w for w in recwarn.list if issubclass(w.category, RuntimeWarning) and "never awaited" in str(w.message)
+        ]
+        assert leaks == [], f"closed-guard leaked coroutine: {leaks[0].message if leaks else ''}"
+
 
 # ---------------------------------------------------------------------------
 # Sync context-manager protocol (ASYNC-092)
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.filterwarnings("ignore:coroutine.*was never awaited:RuntimeWarning")
 class TestSyncContextManager:
     """ASYNC-092: __enter__ returns self; __exit__ calls close(); no async touch."""
 
@@ -777,7 +788,6 @@ class TestSyncContextManager:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.filterwarnings("ignore:coroutine.*was never awaited:RuntimeWarning")
 class TestCloseSemantics:
     """ASYNC-088: drain order, idempotency, aclose propagation, timeout warning."""
 
@@ -825,6 +835,25 @@ class TestCloseSemantics:
         assert not adapter._thread.is_alive()  # internal: no public observable for thread state
 
     @pytest.mark.spec("ASYNC-088")
+    def test_close_does_not_leak_coroutine_when_loop_already_stopped(self, recwarn: pytest.WarningsRecorder) -> None:
+        # close() builds aclose() and _drain_tasks() coroutines before submitting
+        # them to the loop. If the loop is already stopped, run_coroutine_threadsafe
+        # raises RuntimeError and those coroutines must be closed explicitly,
+        # otherwise CPython emits "coroutine was never awaited".
+        adapter, _ = _make_adapter()
+        loop = adapter._loop  # internal: no public observable
+        loop.call_soon_threadsafe(loop.stop)
+        adapter._thread.join(timeout=5.0)  # internal: no public observable
+        # internal: no public observable for thread state
+        assert not adapter._thread.is_alive(), "loop thread did not stop within 5 s"
+        adapter.close()
+        gc.collect()
+        leaks = [
+            w for w in recwarn.list if issubclass(w.category, RuntimeWarning) and "never awaited" in str(w.message)
+        ]
+        assert leaks == [], f"close() leaked coroutine after loop stop: {leaks[0].message if leaks else ''}"
+
+    @pytest.mark.spec("ASYNC-088")
     def test_timeout_close_logs_warning(self, caplog: pytest.LogCaptureFixture) -> None:
         double = _HangingAsyncBackend()
         adapter = AsyncBackendSyncAdapter(double)
@@ -843,7 +872,6 @@ class TestCloseSemantics:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.filterwarnings("ignore:coroutine.*was never awaited:RuntimeWarning")
 class TestConcurrency:
     """ASYNC-089: N=32 threads, M≥16 iterations each, no deadlock."""
 

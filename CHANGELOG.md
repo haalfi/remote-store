@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`AsyncBackendSyncAdapter` orphan-coroutine leaks** (BUG-166, BUG-167):
+  coroutines built before `run_coroutine_threadsafe` were discarded unawaited
+  on fail-fast paths, emitting `RuntimeWarning`. All six sites now call
+  `coro.close()` on every error path. Companion cleanup eliminates 80
+  `ResourceWarning`s via autouse aclose fixtures and rewrites
+  `test_close_owned_engine` to assert pool identity (TESTING.md Rule 12).
+
 - **`AsyncAzureBackend.write` streaming** (BUG-165): `write` and
   `write_atomic` materialized any `AsyncIterable[bytes]` payload into a
   single `bytes` buffer before calling `upload_blob` / `upload_data`,

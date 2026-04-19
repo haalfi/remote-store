@@ -19,7 +19,6 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
-    RemoteStoreError,
 )
 from remote_store._models import WriteResult
 from remote_store.backends._sqlalchemy import SQLBlobBackend
@@ -624,12 +623,17 @@ def test_check_health(backend: SQLBlobBackend) -> None:
 
 @pytest.mark.spec("SQL-BLOB-041")
 def test_close_owned_engine() -> None:
+    # SQL-BLOB-041: close() on an owned engine calls Engine.dispose(), which
+    # swaps the connection pool with a fresh one. Probing post-close behaviour
+    # via an I/O call would silently re-open a connection on the disposed
+    # engine and leak it (ResourceWarning), so assert pool identity instead
+    # via the publicly-unwrapped Engine handle.
     b = SQLBlobBackend(url="sqlite:///:memory:")
     b.write("f.txt", b"data")
+    engine = b.unwrap(sa.Engine)
+    pool_before = engine.pool
     b.close()
-    # After close, operations should fail (engine disposed)
-    with pytest.raises((RemoteStoreError, Exception)):
-        b.read_bytes("f.txt")
+    assert engine.pool is not pool_before
 
 
 @pytest.mark.spec("SQL-BLOB-041")
