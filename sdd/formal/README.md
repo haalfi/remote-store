@@ -105,6 +105,13 @@ reviewer — human or AI — has no hooks to check individually. Spec 045
   (trivially enforced by constructor), `ProxyForwardUnchanged`,
   `PostWriteCacheNotTracked`, `EventPerWrite`. Three are independently
   breakable under TLC; the first is structural.
+  `PostWriteCacheNotTracked` is *stronger* than WR-018 strictly
+  requires: WR-018 mandates invalidation at write time, but the
+  current model omits a Read action and so the invariant reads as an
+  eternal ban on tracking a written path (see I3 in
+  `WR018ProxyForwarding.tla`). The mismatch is documented in the
+  module; a future Read action would relax the invariant to match
+  WR-018 exactly.
 
 The rule applies **per spec item**, not to the spec as a whole.
 Specifying a whole system as a conjunction of properties becomes
@@ -144,13 +151,16 @@ age worse than the qualitative one.
    the abstract is not.
 3. **CI informational** until a TLA+ check catches a real regression
    on a production branch. Seeded breaks validate the tool; only a
-   live catch validates the workflow. Informational signals atrophy —
-   revisit the status at a fixed cadence (every 6 months, or after
-   every 10 spec amendments, whichever first) and explicitly promote,
-   remove, or re-defer. "Informational" must not silently become
-   "unrun." Each revisit is tracked as a BACKLOG entry recording the
-   decision (promote / remove / re-defer) — a calendar without a
-   ticket is the same as no calendar.
+   live catch validates the workflow. *Planned policy* (not yet
+   active — no TLA+ CI step exists today; see ID-147 for the
+   augmentation spike): once an informational check lands, revisit
+   the status at a fixed cadence (every 6 months, or after every 10
+   spec amendments, whichever first) and explicitly promote, remove,
+   or re-defer. "Informational" must not silently become "unrun." Each
+   revisit is tracked as a BACKLOG entry recording the decision
+   (promote / remove / re-defer) — a calendar without a ticket is the
+   same as no calendar. The first revisit ticket is created at the
+   same time as the first informational check.
 4. **Promote `sdd/research/tla-poc/` → `sdd/formal/tla/`** only after
    (3). Until then, TLA+ artefacts live under research.
 
@@ -282,10 +292,15 @@ Dafny appends `-py` to the output directory name automatically.
 **Class-ordering fix.** Dafny's Python translator emits
 `MemoryBackend(Backend)` before `Backend` is defined — a
 forward-reference error. After regeneration, reorder `module_.py` so
-ADT types (`Error`, `Result`, `Entry`, `FileInfo`, `FolderInfo`,
-`FolderEntry`, `Capability`) and `Backend` come before `MemoryBackend`,
-with the `default__` helper (which uses `Path`, `IsChildOf`, `Depth`)
-between them. Verify the reordering:
+the classes appear in this order:
+
+1. ADT types (`Error`, `Result`, `Entry`, `FileInfo`, `FolderInfo`,
+   `FolderEntry`, `Capability`)
+2. `Backend`
+3. `default__` (uses `Path`, `IsChildOf`, `Depth` from the ADT block)
+4. `MemoryBackend`
+
+Verify the reordering:
 
 ```bash
 python -c "import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import module_"
@@ -303,12 +318,23 @@ Any failure indicates a conformance suite bug.
 
 ### Test conformance
 
-Every Dafny postcondition has a corresponding Hypothesis property test
-in `tests/backends/`. Dafny proves the property structurally for all
-inputs a type admits; Hypothesis stress-tests the Python
-implementation with randomised inputs, using the Python
-`MemoryBackend` as the oracle. The authoritative list of current
-tests is the test suite itself — not a mirror here.
+Two distinct test suites cover the contract:
+
+- **Conformance tests** (`tests/backends/test_conformance*.py`) drive
+  every backend — including the compiled Dafny oracle
+  (`DafnyOracleBackend`) — against the same scenarios. The oracle is
+  the gate; if it passes, the test is known-correct.
+- **Hypothesis property tests** (`tests/test_pbt_properties.py`,
+  `tests/test_pbt_stateful.py`) stress-test the Python implementation
+  with randomised inputs, using the Python `MemoryBackend` as the
+  oracle.
+
+Dafny postconditions and Hypothesis properties cover overlapping but
+not identical surface — Dafny proves properties structurally for all
+inputs a type admits; Hypothesis exercises a sampled subset against
+the runtime. A 1:1 mapping is *not* maintained or enforced; the
+authoritative list of current tests is the test suite itself, not a
+mirror here.
 
 ## Origin — how we landed here
 
