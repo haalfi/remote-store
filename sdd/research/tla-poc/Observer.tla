@@ -16,8 +16,8 @@
   Invariants (derived in
   sdd/research/research-id-147-obs003-decomposition.md):
 
-    (I1) EventPerCompletedOp        - this commit
-    (I2) RoutingByOpClass           - follow-up
+    (I1) EventPerCompletedOp        - landed
+    (I2) RoutingByOpClass           - this commit
     (I3) HookOutcomeContract        - follow-up
     (I4) ErrorAlwaysReraise         - follow-up
     (I5) AfterHookExceptionIsolated - follow-up
@@ -30,17 +30,21 @@
 
 EXTENDS Naturals, Sequences, FiniteSets, TLC
 
-CONSTANTS Ops, MaxCalls
+CONSTANTS
+    Ops,             \* set of operation names
+    HookClasses,     \* set of per-op hook classes (OBS-003a: read/write/...)
+    ClassOf,         \* [Ops -> HookClasses] — OBS-003a mapping
+    MaxCalls
 
 VARIABLES
-    inner_calls,   \* Nat     - how many times the inner method was invoked
-    any_events     \* Seq     - events dispatched to the on_any hook
+    inner_calls,     \* Nat - how many times the inner method was invoked
+    any_events,      \* Seq - events dispatched to the on_any hook
+    class_events     \* [HookClasses -> Seq] - events per per-op hook bucket
 
-vars == <<inner_calls, any_events>>
+vars == <<inner_calls, any_events, class_events>>
 
-\* Shape of an on_any event. Deliberately minimal for I1 - only the
-\* operation name matters. I2 will add an op-class field; I3 will add
-\* an outcome field; etc.
+\* Shape of an on_any event. Minimal for I1 - only the operation name
+\* matters. I3 will add an outcome field.
 EventShape == {"op"}
 
 TypeOK ==
@@ -48,21 +52,29 @@ TypeOK ==
     /\ \A i \in 1..Len(any_events):
            /\ DOMAIN any_events[i] = EventShape
            /\ any_events[i].op \in Ops
+    /\ DOMAIN class_events = HookClasses
+    /\ \A c \in HookClasses:
+           \A i \in 1..Len(class_events[c]):
+               /\ DOMAIN class_events[c][i] = EventShape
+               /\ class_events[c][i].op \in Ops
 
 Init ==
     /\ inner_calls = 0
     /\ any_events = <<>>
+    /\ class_events = [c \in HookClasses |-> <<>>]
 
 \* Call(op): one store operation completes through the ObservedStore
-\* proxy. The inner method runs (inner_calls bumps by 1) and on_any
-\* fires exactly once, appending an event for this operation. Outcome
-\* (success vs. error) is not modelled yet because I1 is
-\* outcome-independent (OBS-003 step 7 fires regardless of outcome, per
-\* the step 6/7 clarification).
+\* proxy. The inner method runs (inner_calls bumps by 1), on_any fires
+\* once, and the matching on_<op> hook fires once (appended to the
+\* ClassOf[op] bucket). Outcome is not modelled yet because I1/I2 are
+\* outcome-independent (OBS-003 step 6/7 fire regardless of outcome).
 Call(op) ==
     /\ op \in Ops
     /\ inner_calls' = inner_calls + 1
     /\ any_events' = Append(any_events, [op |-> op])
+    /\ class_events' =
+           [class_events EXCEPT
+               ![ClassOf[op]] = Append(class_events[ClassOf[op]], [op |-> op])]
 
 Next == \E op \in Ops: Call(op)
 
@@ -78,6 +90,18 @@ Spec == Init /\ [][Next]_vars
 \*   - any_events' = Append(Append(any_events, e), e) (double-fire) -> violated.
 \*   - inner_calls' = inner_calls (skip bump) -> violated.
 EventPerCompletedOp == Len(any_events) = inner_calls
+
+\* (I2) RoutingByOpClass — every event in a per-op hook bucket has an op
+\* whose OBS-003a class equals that bucket. Catches a proxy that routes
+\* an operation to the wrong hook (e.g. read → on_write). Does not
+\* check count; a separate count invariant could be added if
+\* break-and-catch reveals a gap (see decomposition note § 8).
+\* Break-and-catch:
+\*   - Append to ClassOf[op] neighbour instead of ClassOf[op] -> violated.
+RoutingByOpClass ==
+    \A c \in HookClasses:
+        \A i \in 1..Len(class_events[c]):
+            ClassOf[class_events[c][i].op] = c
 
 StateConstraint == inner_calls <= MaxCalls
 =============================================================================

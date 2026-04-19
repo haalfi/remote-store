@@ -180,5 +180,6 @@ Populated as each invariant lands. Format mirrors
 | Break | Module change | Invariant triggered | Others triggered | Depth |
 |---|---|---|---|---|
 | Skip `on_any` append unconditionally | `any_events' = any_events` | `EventPerCompletedOp` | — | 2 |
+| Misroute to non-matching class bucket | `![CHOOSE c : c # ClassOf[op]]` in `Call` | `RoutingByOpClass` | — | 2 |
 
-I2–I5 pending — rows added as invariants land.
+I3–I5 pending — rows added as invariants land.
