@@ -787,11 +787,12 @@ class _AsyncIteratorBridge:
             raise
 
     def _aclose_best_effort(self) -> None:
-        """Best-effort ``aclose()`` when GC'd before exhaustion.
+        """Submit a fire-and-forget ``aclose()`` to the adapter's event loop.
 
-        Fire-and-forget: the future is not awaited so the GC thread is never
-        blocked.  Uses ``getattr`` guards to stay safe if ``__init__`` did
-        not complete or the adapter itself is being collected concurrently.
+        Returns immediately; the coroutine is not awaited.  Safe to call from
+        any thread, including the GC thread.  Uses ``getattr`` guards to stay
+        safe if ``__init__`` did not complete or the adapter is being collected
+        concurrently.
         """
         if getattr(self, "_done", True):
             return
@@ -808,6 +809,7 @@ class _AsyncIteratorBridge:
                     coro.close()
 
     def __del__(self) -> None:
+        """Best-effort cleanup when GC'd before exhaustion."""
         self._aclose_best_effort()
 
 

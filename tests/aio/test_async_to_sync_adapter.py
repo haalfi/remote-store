@@ -1021,6 +1021,41 @@ class TestAbandonedIteratorGC:
         adapter.close(timeout=1.0)
         assert aclose_called.is_set(), "__del__ did not trigger aclose() on abandoned iterator"
 
+    def test_aclose_best_effort_direct(self) -> None:
+        """Calling _aclose_best_effort() directly submits aclose() without GC."""
+        aclose_called = threading.Event()
+
+        class _TrackingBackend(_RaisingAsyncBackend):
+            async def list_files(self, path: str, *, recursive: bool = False, max_depth: int | None = None):  # type: ignore[override]
+                from datetime import datetime, timezone
+
+                from remote_store._models import FileInfo
+
+                try:
+                    yield FileInfo(
+                        name="x.txt",
+                        path="x.txt",
+                        size=1,
+                        modified_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+                    )
+                    import asyncio as _asyncio
+
+                    await _asyncio.Event().wait()
+                finally:
+                    aclose_called.set()
+
+        backend = _TrackingBackend()
+        adapter = AsyncBackendSyncAdapter(backend)
+
+        bridge = adapter.list_files("")
+        next(bridge)  # suspend the generator at the second yield
+
+        bridge._aclose_best_effort()  # call directly, not via GC
+
+        aclose_called.wait(timeout=2.0)
+        adapter.close(timeout=1.0)
+        assert aclose_called.is_set(), "_aclose_best_effort() did not submit aclose()"
+
 
 # ---------------------------------------------------------------------------
 # write_atomic mid-BinaryIO error path
