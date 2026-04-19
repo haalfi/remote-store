@@ -786,7 +786,7 @@ class _AsyncIteratorBridge:
             self._done = True
             raise
 
-    def __del__(self) -> None:
+    def _aclose_best_effort(self) -> None:
         """Best-effort ``aclose()`` when GC'd before exhaustion.
 
         Fire-and-forget: the future is not awaited so the GC thread is never
@@ -806,6 +806,9 @@ class _AsyncIteratorBridge:
             if coro is not None:
                 with contextlib.suppress(Exception):
                     coro.close()
+
+    def __del__(self) -> None:
+        self._aclose_best_effort()
 
 
 # ---------------------------------------------------------------------------
