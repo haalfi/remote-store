@@ -11424,6 +11424,22 @@
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Dafny <code>WriteResult</code> extension</strong> (ID-151, part 1): widens the Backend
+  trait <code>Write</code> to return <code>Result&lt;WriteResult&gt;</code> with a fourth <code>metadata</code>
+  parameter, adds <code>FileInfo</code>/<code>WriteResult</code>/<code>ContentDigest</code>/<code>WriteSource</code>
+  data models, <code>CapWriteResultNative</code> and <code>CapUserMetadata</code> capabilities,
+  and the <code>WriteResultFromFileInfo</code> function plus the <code>WR008FieldMapping</code>
+  lemma. Encodes WR-001a, WR-004, WR-005, WR-010 (with the
+  empty-mapping carve-out via <code>HasUserMetadata</code>), WR-012, and WR-013 as
+  Write postconditions; the WR-006 negative direction (Write never
+  produces <code>SidecarSource</code>) is enforced structurally by the <code>Write</code>
+  postcondition restricting <code>source</code> to <code>NativeSource | BasicSource</code>.
+  <code>MemoryBackend</code> refines the widened contract. Oracle regeneration,
+  <code>DafnyOracleBackend</code> adapter, and the oracle-gated conformance run
+  are follow-up scope (Dafny-native toolchain required; local is
+  Docker-only).</p>
+</li>
+<li>
 <p><strong><code>scripts/gen_pages.py</code> refactor</strong>: split the 840-line mkdocs-gen-files hook
   into <code>scripts/docs/{scan,render,nav,link}.py</code> plus a 70-line orchestrator;
   example metadata and link rewrites are now data-driven via <code>SddKind</code>,

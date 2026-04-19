@@ -9079,6 +9079,15 @@ is expressed against it.</p>
 <p><strong>See also:</strong> <a href="../035-content-digest/">035-content-digest.md</a> for
 <code>ContentDigest</code>; RFC-0011 § Proposal for the canonical Python
 dataclass definition and docstring.</p>
+<p><strong>Formal coverage:</strong> <code>WriteResult</code> is modelled in
+<code>sdd/formal/BackendContract.dfy</code> as a datatype with the fields listed
+above (<code>path</code>, <code>size</code>, <code>digest</code>, <code>etag</code>, <code>version_id</code>, <code>last_modified</code>,
+<code>metadata</code>, <code>source</code>). The <code>Write</code> method's postcondition chain
+discharges <code>r.value.path == path</code>, <code>r.value.size == |content|</code>, and —
+when <code>CapWriteResultNative in capabilities</code> — that rich fields on the
+returned <code>WriteResult</code> match the stored <code>FileInfo</code>, so a subsequent
+<code>GetFileInfo</code> (and <code>head()</code> via <code>WriteResultFromFileInfo</code>) returns
+consistent fields. Verified in <code>MemoryBackend.dfy</code>. See ID-151.</p>
 <h2 id="wr-002-writeresultpath-is-store-relative">WR-002: WriteResult.path Is Store-Relative<a class="headerlink" href="#wr-002-writeresultpath-is-store-relative" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>WriteResult.path</code> is store-relative — <code>root_path</code> is stripped
 exactly as <code>FileInfo.path</code> is stripped by <code>list_files</code> and <code>get_file_info</code>.
@@ -9102,6 +9111,13 @@ on every backend.</p>
 <p><strong>Invariant:</strong> If the backend declares <code>Capability.WRITE_RESULT_NATIVE</code>, every
 successful <code>Store.write*()</code> returns <code>WriteResult.source == "native"</code>. If it
 does not declare the capability, <code>source == "basic"</code>.</p>
+<p><strong>Formal coverage:</strong> encoded in <code>BackendContract.dfy</code> as a <code>Write</code>
+postcondition: <code>r.Ok? ⇒ r.value.source == (if CapWriteResultNative in
+capabilities then NativeSource else BasicSource)</code>. A backend that
+declares the capability but fails to populate <code>source = Native</code> — or
+fails to populate the rich fields that the spec promises alongside it —
+does not satisfy the refinement. Verified in <code>MemoryBackend.dfy</code>.
+See ID-151.</p>
 <h2 id="wr-005-basic-source-guarantees">WR-005: Basic Source Guarantees<a class="headerlink" href="#wr-005-basic-source-guarantees" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> When <code>WriteResult.source == "basic"</code>, only <code>path</code> and <code>size</code> are
 guaranteed populated. The rich fields <code>digest</code>, <code>etag</code>, <code>version_id</code>, and
@@ -9196,6 +9212,18 @@ constructed from the <code>FileInfo</code> returned by <code>Store.get_file_info
 propagated to <code>WriteResult</code> — they are file-listing concerns, not
 write-result concerns. A subsequent <code>get_file_info()</code> remains the path for
 callers needing the full <code>FileInfo</code>.</p>
+<p><strong>Formal coverage:</strong> <code>head()</code> is a Store-layer composition over
+<code>get_file_info()</code>, so the field mapping is encoded at the Backend
+contract level as a pure function <code>WriteResultFromFileInfo: FileInfo →
+WriteResult</code> with <code>source = SidecarSource</code>. The <code>WR008FieldMapping</code>
+lemma in <code>BackendContract.dfy</code> pins the Dafny function to the Dafny
+<code>FileInfo</code> datatype — it does not anchor this Markdown table to the
+Dafny function. Cross-check between this table and the Dafny function
+body is a human-review obligation; a reviewer who edits only this
+table does not get a Dafny failure. The WR-006 negative direction
+(<code>Write</code> never produces <code>SidecarSource</code>) is enforced structurally by
+<code>Write</code>'s postcondition restricting <code>source</code> to <code>NativeSource |
+BasicSource</code>. See ID-151.</p>
 <h2 id="wr-009-write_result_native-is-a-quality-flag">WR-009: WRITE_RESULT_NATIVE Is a Quality Flag<a class="headerlink" href="#wr-009-write_result_native-is-a-quality-flag" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Capability.WRITE_RESULT_NATIVE</code> is a quality flag — it does not
 gate any method. <code>Store.write()</code> works on every backend regardless of whether
@@ -9347,11 +9375,25 @@ HTTP response). Backend-side normalisation is observable only through
 holds regardless of <code>source</code>: a <code>"basic"</code> result that nonetheless passed
 the <code>USER_METADATA</code> gate (a configuration not used in v1 — see WR-005
 footnote) still echoes the caller's mapping.</p>
+<p><strong>Formal coverage:</strong> encoded in <code>BackendContract.dfy</code> as a <code>Write</code>
+postcondition: <code>r.Ok? ⇒ r.value.metadata == (if HasUserMetadata(metadata)
+∧ CapUserMetadata in capabilities then metadata else None)</code>. The
+<code>HasUserMetadata</code> predicate captures the empty-mapping carve-out
+(WR-010). A backend that declares <code>CapUserMetadata</code> but silently drops
+the caller's mapping does not satisfy the refinement. Verified in
+<code>MemoryBackend.dfy</code>. See ID-151.</p>
 <h2 id="wr-013-user-metadata-round-trip">WR-013: User Metadata Round-Trip<a class="headerlink" href="#wr-013-user-metadata-round-trip" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> User metadata passed to <code>Store.write*()</code> on a backend declaring
 <code>USER_METADATA</code> survives round-trip through <code>Store.get_file_info()</code>, accessible
 as <code>FileInfo.metadata: Mapping[str, str] | None</code>. On backends that do not
 declare <code>USER_METADATA</code>, <code>FileInfo.metadata</code> is always <code>None</code>.</p>
+<p><strong>Formal coverage:</strong> encoded in <code>BackendContract.dfy</code> as a <code>Write</code>
+postcondition pinning <code>fs[path].info.metadata</code> to the same value that
+<code>WriteResult.metadata</code> carries, under the same <code>HasUserMetadata ∧
+CapUserMetadata in capabilities</code> condition. Since <code>GetFileInfo</code>'s
+postcondition is <code>r.value == fs[path].info</code>, the round-trip is
+structural: what <code>Write</code> stores is what <code>GetFileInfo</code> returns.
+Verified in <code>MemoryBackend.dfy</code>. See ID-151.</p>
 <h2 id="extwrite-invariants">ext.write invariants<a class="headerlink" href="#extwrite-invariants" title="Permanent link">&para;</a></h2>
 <p>WR-014..WR-017 have been moved to
 <a href="../046-ext-write/"><code>046-ext-write.md</code></a> under the <code>EW-</code> prefix per the
