@@ -12,11 +12,13 @@ class MemoryBackend extends Backend {
     ensures fs == map[Root := DirEntry]
     ensures name == "memory"
     ensures capabilities == {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
-                             CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead}
+                             CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead,
+                             CapWriteResultNative, CapUserMetadata}
   {
     name := "memory";
     capabilities := {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
-                     CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead};
+                     CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead,
+                     CapWriteResultNative, CapUserMetadata};
     fs := map[Root := DirEntry];
   }
 
@@ -127,17 +129,52 @@ class MemoryBackend extends Backend {
     }
   }
 
-  method Write(path: Path, content: seq<nat>, overwrite: bool)
-    returns (r: Result<()>)
+  method Write(
+    path: Path,
+    content: seq<nat>,
+    overwrite: bool,
+    metadata: Option<map<string, string>>
+  )
+    returns (r: Result<WriteResult>)
     modifies this
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
-    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite)
+    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
+      ==> r == Err(CapabilityNotSupported(
+            CapabilityName(CapUserMetadata), name))
+    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            (!HasUserMetadata(metadata) || CapUserMetadata in capabilities)
       ==> r.Ok?
     ensures r.Ok? ==>
       IsFile(fs, path) && fs[path].content == content
+    ensures r.Ok? ==>
+      r.value.path == path && r.value.size == |content|
+    ensures r.Ok? ==>
+      r.value.source == (
+        if CapWriteResultNative in capabilities
+        then NativeSource
+        else BasicSource)
+    ensures r.Ok? && r.value.source == BasicSource ==>
+      r.value.digest.None? && r.value.etag.None? &&
+      r.value.version_id.None? && r.value.last_modified.None?
+    ensures r.Ok? ==>
+      r.value.metadata == (
+        if HasUserMetadata(metadata) && CapUserMetadata in capabilities
+        then metadata
+        else None)
+    ensures r.Ok? ==>
+      fs[path].info.metadata == (
+        if HasUserMetadata(metadata) && CapUserMetadata in capabilities
+        then metadata
+        else None)
+    ensures r.Ok? && CapWriteResultNative in capabilities ==>
+      fs[path].info.digest == r.value.digest &&
+      fs[path].info.etag == r.value.etag &&
+      fs[path].info.version_id == r.value.version_id &&
+      fs[path].info.last_modified == r.value.last_modified
   {
     if path in fs && fs[path].DirEntry? {
       assert IsDir(old(fs), path);
@@ -152,12 +189,60 @@ class MemoryBackend extends Backend {
       return;
     }
 
+    // WR-010 gate: defensive branch — MemoryBackend declares
+    // CapUserMetadata, so this is unreachable for the refinement.
+    // Encoded for contract fidelity: a hypothetical MemoryBackend
+    // variant without the capability would still satisfy the
+    // postcondition by this branch.
+    if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {
+      r := Err(CapabilityNotSupported(
+        CapabilityName(CapUserMetadata), name));
+      return;
+    }
+
     EnsureParents(path);
-    var info := FileInfo(path, path, |content|);
+
+    // WR-012 / WR-013: store metadata verbatim when the gate was
+    // passed (non-empty mapping AND CapUserMetadata declared);
+    // otherwise store None (covers the empty-mapping carve-out and
+    // the no-metadata case).
+    var stored_metadata: Option<map<string, string>> :=
+      if HasUserMetadata(metadata) && CapUserMetadata in capabilities
+      then metadata
+      else None;
+
+    // WR-001a / WR-004: MemoryBackend declares CapWriteResultNative,
+    // so source is NativeSource and rich fields are populated from
+    // the write response.  The verifier treats these values as
+    // opaque — no semantic meaning attached; stability across
+    // Write/GetFileInfo is what matters.
+    var info := FileInfo(
+      path, path, |content|,
+      None,                                        // digest: not computed
+      None,                                        // etag: opaque slot
+      None,                                        // version_id: v1 n/a
+      None,                                        // last_modified: opaque
+      stored_metadata
+    );
     fs := fs[path := FileEntry(content, info)];
     assert IsFile(fs, path);
     assert fs[path].content == content;
-    r := Ok(());
+
+    var wr_source: WriteSource :=
+      if CapWriteResultNative in capabilities
+      then NativeSource
+      else BasicSource;
+
+    r := Ok(WriteResult(
+      path,
+      |content|,
+      None,                                        // digest
+      None,                                        // etag
+      None,                                        // version_id
+      None,                                        // last_modified
+      stored_metadata,
+      wr_source
+    ));
   }
 
   method Delete(path: Path, missing_ok: bool) returns (r: Result<()>)
@@ -308,7 +393,7 @@ class MemoryBackend extends Backend {
                          else true;
         if dominated {
           assert IsFile(fs, k);
-          var fi := FileInfo(k, k, |fs[k].content|);
+          var fi := BasicFileInfo(k, k, |fs[k].content|);
           assert fi.path == k;
           assert IsFile(fs, fi.path);
           assert IsChildOf(fi.path, path);
@@ -498,7 +583,7 @@ class MemoryBackend extends Backend {
 
     EnsureParents(dst);
     var srcEntry := fs[src];
-    var newInfo := FileInfo(dst, dst, srcEntry.info.size);
+    var newInfo := BasicFileInfo(dst, dst, srcEntry.info.size);
     var newEntry := FileEntry(srcEntry.content, newInfo);
     fs := (map k | k in fs && k != src :: fs[k])[dst := newEntry];
     assert dst in fs;
@@ -567,7 +652,7 @@ class MemoryBackend extends Backend {
 
     EnsureParents(dst);
     var srcEntry := fs[src];
-    var newInfo := FileInfo(dst, dst, srcEntry.info.size);
+    var newInfo := BasicFileInfo(dst, dst, srcEntry.info.size);
     fs := fs[dst := FileEntry(srcEntry.content, newInfo)];
     assert dst in fs && fs[dst].FileEntry?;
     assert IsFile(fs, dst);
@@ -597,10 +682,10 @@ class MemoryBackend extends Backend {
 lemma WriteReadRoundtrip(fs: Filesystem, path: Path, content: seq<nat>)
   requires !IsDir(fs, path)
   requires !IsFile(fs, path)
-  ensures var newFs := fs[path := FileEntry(content, FileInfo(path, path, |content|))];
+  ensures var newFs := fs[path := FileEntry(content, BasicFileInfo(path, path, |content|))];
           IsFile(newFs, path) && newFs[path].content == content
 {
-  var newFs := fs[path := FileEntry(content, FileInfo(path, path, |content|))];
+  var newFs := fs[path := FileEntry(content, BasicFileInfo(path, path, |content|))];
   assert path in newFs;
   assert newFs[path].FileEntry?;
 }
@@ -621,13 +706,13 @@ lemma MovePreservesContent(
   requires IsFile(fs, src)
   requires fs[src].content == content
   ensures var newFs := (map k | k in fs && k != src :: fs[k])
-                        [dst := FileEntry(content, FileInfo(dst, dst, size))];
+                        [dst := FileEntry(content, BasicFileInfo(dst, dst, size))];
           IsFile(newFs, dst) &&
           newFs[dst].content == content &&
           !PathExists(newFs, src)
 {
   var newFs := (map k | k in fs && k != src :: fs[k])
-                [dst := FileEntry(content, FileInfo(dst, dst, size))];
+                [dst := FileEntry(content, BasicFileInfo(dst, dst, size))];
   assert dst in newFs;
   assert newFs[dst].FileEntry?;
   assert src !in newFs;
@@ -638,10 +723,10 @@ lemma CopyPreservesSource(
 )
   requires IsFile(fs, src)
   requires fs[src].content == content
-  ensures var newFs := fs[dst := FileEntry(content, FileInfo(dst, dst, size))];
+  ensures var newFs := fs[dst := FileEntry(content, BasicFileInfo(dst, dst, size))];
           IsFile(newFs, src) && newFs[src].content == content
 {
-  var newFs := fs[dst := FileEntry(content, FileInfo(dst, dst, size))];
+  var newFs := fs[dst := FileEntry(content, BasicFileInfo(dst, dst, size))];
   assert src in newFs;
   if src == dst {
     assert newFs[src].content == content;

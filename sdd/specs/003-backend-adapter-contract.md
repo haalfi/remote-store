@@ -112,6 +112,16 @@ native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 exist", so they MUST skip the type-conflict check entirely. For these backends
 the effective order is: existence check (non-existent target treated as
 writable) → overwrite conflict → I/O.
+**Formal coverage:** `write()` is modelled in `sdd/formal/BackendContract.dfy`
+as `Write` with postconditions covering the precondition evaluation order
+(`IsDir → InvalidPath`, `IsFile ∧ !overwrite → AlreadyExists`), the WR-010
+strict gate (`HasUserMetadata(metadata) ∧ CapUserMetadata !in capabilities →
+CapabilityNotSupported`, with empty-mapping carve-out encoded by
+`HasUserMetadata`), the WR-001a schema (`r.value.path == path ∧ r.value.size
+== |content|`), WR-004 (source Native iff `CapWriteResultNative`), WR-005
+(Basic source → rich fields None), WR-012 metadata echo, and WR-013
+round-trip (`fs[path].info.metadata` reflects what was stored). Verified in
+`MemoryBackend.dfy`. See ID-151.
 
 ### BE-009: write Creates Intermediate Directories
 
@@ -161,6 +171,14 @@ missing or non-existent paths.
 
 **Invariant:** `get_file_info(path)` returns `FileInfo`.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a directory (Dafny: `GetFileInfo: IsDir → InvalidPath`). See BE-021.
+**Formal coverage:** `get_file_info()` is modelled in
+`sdd/formal/BackendContract.dfy` as `GetFileInfo` with postcondition
+`IsFile → r.Ok? ∧ r.value == fs[path].info`. The extended `FileInfo`
+datatype carries the optional `digest`, `etag`, `version_id`,
+`last_modified`, and `metadata` fields, so the WR-013 round-trip
+(metadata survives `write → get_file_info`) and the WR-008 field
+mapping to `head()`-produced `WriteResult` are discharged structurally.
+Verified in `MemoryBackend.dfy`. See ID-151.
 
 ### BE-017: get_folder_info()
 

@@ -66,6 +66,16 @@ is expressed against it.
 `ContentDigest`; RFC-0011 § Proposal for the canonical Python
 dataclass definition and docstring.
 
+**Formal coverage:** `WriteResult` is modelled in
+`sdd/formal/BackendContract.dfy` as a datatype with the fields listed
+above (`path`, `size`, `digest`, `etag`, `version_id`, `last_modified`,
+`metadata`, `source`). The `Write` method's postcondition chain
+discharges `r.value.path == path`, `r.value.size == |content|`, and —
+when `CapWriteResultNative in capabilities` — that rich fields on the
+returned `WriteResult` match the stored `FileInfo`, so a subsequent
+`GetFileInfo` (and `head()` via `WriteResultFromFileInfo`) returns
+consistent fields. Verified in `MemoryBackend.dfy`. See ID-151.
+
 ## WR-002: WriteResult.path Is Store-Relative
 
 **Invariant:** `WriteResult.path` is store-relative — `root_path` is stripped
@@ -93,6 +103,14 @@ on every backend.
 **Invariant:** If the backend declares `Capability.WRITE_RESULT_NATIVE`, every
 successful `Store.write*()` returns `WriteResult.source == "native"`. If it
 does not declare the capability, `source == "basic"`.
+
+**Formal coverage:** encoded in `BackendContract.dfy` as a `Write`
+postcondition: `r.Ok? ⇒ r.value.source == (if CapWriteResultNative in
+capabilities then NativeSource else BasicSource)`. A backend that
+declares the capability but fails to populate `source = Native` — or
+fails to populate the rich fields that the spec promises alongside it —
+does not satisfy the refinement. Verified in `MemoryBackend.dfy`.
+See ID-151.
 
 ## WR-005: Basic Source Guarantees
 
@@ -170,6 +188,15 @@ constructed from the `FileInfo` returned by `Store.get_file_info(path)`.
 propagated to `WriteResult` — they are file-listing concerns, not
 write-result concerns. A subsequent `get_file_info()` remains the path for
 callers needing the full `FileInfo`.
+
+**Formal coverage:** `head()` is a Store-layer composition over
+`get_file_info()`, so the field mapping is encoded at the Backend
+contract level as a pure function `WriteResultFromFileInfo: FileInfo →
+WriteResult` with `source = SidecarSource`. The `WR008FieldMapping`
+lemma in `BackendContract.dfy` asserts the table verbatim, and
+`WR006SidecarProvenance` pins `source = SidecarSource` on every
+head-produced result. A spec change that contradicts the table would
+fail verification. See ID-151.
 
 ## WR-009: WRITE_RESULT_NATIVE Is a Quality Flag
 
@@ -274,12 +301,28 @@ holds regardless of `source`: a `"basic"` result that nonetheless passed
 the `USER_METADATA` gate (a configuration not used in v1 — see WR-005
 footnote) still echoes the caller's mapping.
 
+**Formal coverage:** encoded in `BackendContract.dfy` as a `Write`
+postcondition: `r.Ok? ⇒ r.value.metadata == (if HasUserMetadata(metadata)
+∧ CapUserMetadata in capabilities then metadata else None)`. The
+`HasUserMetadata` predicate captures the empty-mapping carve-out
+(WR-010). A backend that declares `CapUserMetadata` but silently drops
+the caller's mapping does not satisfy the refinement. Verified in
+`MemoryBackend.dfy`. See ID-151.
+
 ## WR-013: User Metadata Round-Trip
 
 **Invariant:** User metadata passed to `Store.write*()` on a backend declaring
 `USER_METADATA` survives round-trip through `Store.get_file_info()`, accessible
 as `FileInfo.metadata: Mapping[str, str] | None`. On backends that do not
 declare `USER_METADATA`, `FileInfo.metadata` is always `None`.
+
+**Formal coverage:** encoded in `BackendContract.dfy` as a `Write`
+postcondition pinning `fs[path].info.metadata` to the same value that
+`WriteResult.metadata` carries, under the same `HasUserMetadata ∧
+CapUserMetadata in capabilities` condition. Since `GetFileInfo`'s
+postcondition is `r.value == fs[path].info`, the round-trip is
+structural: what `Write` stores is what `GetFileInfo` returns.
+Verified in `MemoryBackend.dfy`. See ID-151.
 
 ## ext.write invariants
 

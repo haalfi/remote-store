@@ -370,6 +370,18 @@ Each gap is now encoded as a machine-checkable pre/postcondition:
 | 4 | Depth-counting algorithm | DEPTH-001 | `DepthCounting.dfy` |
 | 5 | Move atomicity | BE-018 | `ResourceSafety.dfy` |
 | 6 | Acquire-then-wrap safety | SIO-001 | `ResourceSafety.dfy` |
+| 7 | `WriteResult` field mapping + capability round-trip | WR-001a, WR-004, WR-008, WR-012, WR-013 | `BackendContract.dfy` |
+
+Gap 7 was added under ID-151 after root-cause analysis of the ID-146
+review. Review found ~24% of the 95 comments were shaped as per-operation
+postcondition failures Dafny can prove directly: backends declaring a
+capability (`WRITE_RESULT_NATIVE` or `USER_METADATA`) but silently
+violating the corresponding `WriteResult`/`FileInfo` contract. The
+`Write` postcondition chain now ties capability declaration to field
+population and round-trip; `WriteResultFromFileInfo` + `WR008FieldMapping`
+pin the `head()` field table. Store-layer composition (WR-018, WR-019)
+and ext.write gating (EW-003) remain outside this layer — see
+`sdd/formal/tla/` for the cross-layer track.
 
 Error-path frame conditions (gaps 1–2: `fs == old(fs)` on error) are
 not machine-checked — the `r.Err?` discriminator taints method bodies
