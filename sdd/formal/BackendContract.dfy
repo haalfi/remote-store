@@ -48,6 +48,11 @@ datatype Result<T> = Ok(value: T) | Err(error: Error)
 datatype Capability =
   | CapRead | CapWrite | CapDelete | CapList | CapMove | CapCopy
   | CapAtomicWrite | CapAtomicMove | CapMetadata | CapGlob | CapSeekableRead
+  // ID-151 / spec 045: WriteResult provenance + user metadata gate.
+  // CapWriteResultNative is a quality flag (WR-009); does not gate any
+  // method. CapUserMetadata is a strict gate on the `metadata=` kwarg
+  // (WR-010, ADR-0026).
+  | CapWriteResultNative | CapUserMetadata
 
 // CapGlob is defined but the Glob method is intentionally excluded
 // from this contract — it is a capability-gated convenience method
@@ -61,10 +66,51 @@ type CapabilitySet = set<Capability>
 
 type Path = s: string | s != "" witness "a"
 
+// ID-151 / spec 045: optional rich-field slots on FileInfo and
+// WriteResult.  The verifier does not reason about hash algorithms
+// or clock values; it reasons about field presence and identity only.
+datatype Option<T> = None | Some(value: T)
+
+// Backend-echoed or client-verified content digest (spec 035).
+datatype ContentDigest = ContentDigest(kind: string, value: string)
+
+// WriteResult source provenance (WR-004, WR-006).  Native = rich
+// fields populated from the backend write response.  Basic = only
+// path/size guaranteed.  Sidecar = constructed from a subsequent
+// FileInfo read (head()/WriteResultFromFileInfo).
+datatype WriteSource = NativeSource | BasicSource | SidecarSource
+
 datatype FileInfo = FileInfo(
   path: Path,
   name: string,
-  size: nat
+  size: nat,
+  // Optional rich fields (spec 045 WR-013 round-trip surface).
+  // No `version_id` slot: in v1 backends FileInfo does not carry a
+  // version identifier (only WriteResult does, populated from the
+  // SDK write response and not round-tripped via get_file_info).
+  // Spec 045 WR-008 encodes this: head()-produced WriteResult has
+  // version_id = None because there is no FileInfo source.
+  //
+  // Python-name map (see spec 045 WR-008 table):
+  //   last_modified → Python FileInfo.modified_at (field rename).
+  //   digest, etag, metadata → same names in Python FileInfo.
+  digest: Option<ContentDigest>,
+  etag: Option<string>,
+  last_modified: Option<int>,
+  metadata: Option<map<string, string>>
+)
+
+// WR-001a: normative WriteResult field schema.  Every other WR-
+// invariant is expressed against this shape.
+datatype WriteResult = WriteResult(
+  path: Path,
+  size: nat,
+  digest: Option<ContentDigest>,
+  etag: Option<string>,
+  version_id: Option<string>,
+  last_modified: Option<int>,
+  metadata: Option<map<string, string>>,
+  source: WriteSource
 )
 
 datatype FolderEntry = FolderEntry(
@@ -78,6 +124,21 @@ datatype FolderInfo = FolderInfo(
   file_count: nat,
   total_size: nat
 )
+
+// Constructor helper for the default rich-field-empty FileInfo — keeps
+// refinement code terse when a backend does not populate rich fields.
+function BasicFileInfo(path: Path, name: string, size: nat): FileInfo
+{
+  FileInfo(path, name, size, None, None, None, None)
+}
+
+// Whether a metadata mapping should be treated as "user metadata
+// supplied" for the purposes of the WR-010 gate (WR-010 empty-mapping
+// carve-out: None and {} are both treated as no-metadata).
+predicate HasUserMetadata(m: Option<map<string, string>>)
+{
+  m.Some? && |m.value| > 0
+}
 
 // ---------------------------------------------------------------------------
 // §4  Filesystem model
@@ -268,20 +329,91 @@ trait Backend {
     ensures IsFile(fs, path)      ==> r == Ok(fs[path].content)
 
   // ====================================================================
-  // write(path, content, overwrite)
+  // write(path, content, overwrite, metadata)
   // ====================================================================
-  method Write(path: Path, content: seq<nat>, overwrite: bool)
-    returns (r: Result<()>)
+  // Return type widened from Result<()> to Result<WriteResult> per
+  // spec 045 WR-001 (ID-151).  The `metadata` parameter carries the
+  // WR-010 user-metadata payload; the empty-mapping carve-out is
+  // encoded via HasUserMetadata.
+  //
+  // WR-010 strict gate: HasUserMetadata(metadata) && CapUserMetadata
+  // !in capabilities → CapabilityNotSupported before any I/O.
+  //
+  // Ordering divergence vs the Python implementation: here the WR-010
+  // gate fires AFTER the IsDir/IsFile precondition chain, so for a
+  // directory-path + non-empty-metadata + non-declaring-backend input
+  // the Dafny contract returns InvalidPath while the Python Store layer
+  // (which evaluates WR-011 → WR-010 before dispatching to
+  // backend.write()) returns CapabilityNotSupported.  This is a known
+  // contract-level simplification: Dafny models the Backend trait in
+  // isolation; the Store-layer ordering (WR-011) is outside the trait.
+  // Tracked in the ID-151 "Out of scope" list.
+  method Write(
+    path: Path,
+    content: seq<nat>,
+    overwrite: bool,
+    metadata: Option<map<string, string>>
+  )
+    returns (r: Result<WriteResult>)
     modifies this
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
+    // WR-010 strict gate: non-empty metadata on a backend without
+    // CapUserMetadata → CapabilityNotSupported (pre-I/O).
+    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            HasUserMetadata(metadata) && CapUserMetadata !in capabilities
+      ==> r == Err(CapabilityNotSupported(
+            CapabilityName(CapUserMetadata), name))
     // Happy path: no error condition → must succeed.
-    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite)
+    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+            (!HasUserMetadata(metadata) || CapUserMetadata in capabilities)
       ==> r.Ok?
+    // WR-001 / WR-003: written content is stored verbatim.
     ensures r.Ok? ==>
       IsFile(fs, path) && fs[path].content == content
+    // WR-001a / WR-002 / WR-003: WriteResult path and size schema.
+    ensures r.Ok? ==>
+      r.value.path == path && r.value.size == |content|
+    // WR-004: source is Native iff CapWriteResultNative is declared.
+    ensures r.Ok? ==>
+      r.value.source == (
+        if CapWriteResultNative in capabilities
+        then NativeSource
+        else BasicSource)
+    // WR-005: Basic source → rich fields are all None.
+    ensures r.Ok? && r.value.source == BasicSource ==>
+      r.value.digest.None? && r.value.etag.None? &&
+      r.value.version_id.None? && r.value.last_modified.None?
+    // WR-012: metadata echo — verbatim when the gate was passed,
+    // None otherwise (including the empty-mapping carve-out).
+    ensures r.Ok? ==>
+      r.value.metadata == (
+        if HasUserMetadata(metadata) && CapUserMetadata in capabilities
+        then metadata
+        else None)
+    // WR-013: user-metadata round-trip — FileInfo carries what was
+    // written when the gate was passed.  On a non-declaring backend
+    // FileInfo.metadata is None regardless of what was passed.
+    ensures r.Ok? ==>
+      fs[path].info.metadata == (
+        if HasUserMetadata(metadata) && CapUserMetadata in capabilities
+        then metadata
+        else None)
+    // WR-001a: stored FileInfo reflects the same rich-field shape as
+    // WriteResult when CapWriteResultNative is declared.  This
+    // postcondition detects *divergence* between WriteResult and the
+    // subsequently readable FileInfo — not *absence*: a backend that
+    // returns WriteResult with all rich fields None and stores
+    // FileInfo with all rich fields None still satisfies this clause
+    // vacuously.  Absence of rich-field population by a declaring
+    // backend is an empirical quality concern (test assertion, review),
+    // not a Dafny-expressible postcondition.
+    ensures r.Ok? && CapWriteResultNative in capabilities ==>
+      fs[path].info.digest == r.value.digest &&
+      fs[path].info.etag == r.value.etag &&
+      fs[path].info.last_modified == r.value.last_modified
 
   // ====================================================================
   // delete(path, missing_ok)
@@ -471,6 +603,8 @@ function CapabilityName(c: Capability): string
   case CapMetadata => "metadata"
   case CapGlob => "glob"
   case CapSeekableRead => "seekable_read"
+  case CapWriteResultNative => "write_result_native"
+  case CapUserMetadata => "user_metadata"
 }
 
 // ---------------------------------------------------------------------------
@@ -516,10 +650,10 @@ lemma WriteReadConsistency(
 )
   requires !IsDir(fs, path)
   requires !IsFile(fs, path)
-  ensures var newFs := fs[path := FileEntry(content, FileInfo(path, path, |content|))];
+  ensures var newFs := fs[path := FileEntry(content, BasicFileInfo(path, path, |content|))];
           IsFile(newFs, path) && newFs[path].content == content
 {
-  var newFs := fs[path := FileEntry(content, FileInfo(path, path, |content|))];
+  var newFs := fs[path := FileEntry(content, BasicFileInfo(path, path, |content|))];
   assert path in newFs;
   assert newFs[path].FileEntry?;
   assert IsFile(newFs, path);
@@ -643,3 +777,58 @@ lemma MoveIsNotNoop(
   assert src !in newFs;
   assert oldFs != newFs;
 }
+
+// ---------------------------------------------------------------------------
+// §9  WriteResult field mapping  (spec 045, ID-151)
+// ---------------------------------------------------------------------------
+
+// WR-008: Store.head() constructs a WriteResult from the FileInfo
+// returned by get_file_info().  Modelled as a pure function here
+// rather than a Backend method because Store.head() is a Store-layer
+// composition over the backend's GetFileInfo (not a backend method
+// itself).  `version_id` is hard-coded None because FileInfo carries
+// no version_id slot in v1 (spec 045 WR-008 table).
+function WriteResultFromFileInfo(info: FileInfo): WriteResult
+{
+  WriteResult(
+    info.path,
+    info.size,
+    info.digest,
+    info.etag,
+    None,
+    info.last_modified,
+    info.metadata,
+    SidecarSource
+  )
+}
+
+// WR-008: pins the Dafny function's field mapping.  Honest scope: this
+// lemma anchors WriteResultFromFileInfo to the Dafny FileInfo datatype
+// — it does not anchor the Markdown spec table to the Dafny function.
+// A reviewer who edits only the Markdown table (spec 045 § WR-008)
+// will not get a Dafny failure.  Cross-check between the two is a
+// human-review obligation, not a verifier one.
+//
+// WR-006 negative direction (Write never produces SidecarSource) is
+// enforced structurally by Write's postcondition restricting source
+// to NativeSource | BasicSource (§6), so no separate lemma is needed
+// for that half.
+lemma WR008FieldMapping(info: FileInfo)
+  ensures (
+    var wr := WriteResultFromFileInfo(info);
+    wr.path == info.path
+      && wr.size == info.size
+      && wr.digest == info.digest
+      && wr.etag == info.etag
+      && wr.last_modified == info.last_modified
+      && wr.metadata == info.metadata
+      && wr.version_id.None?
+      && wr.source == SidecarSource
+  )
+{
+  var wr := WriteResultFromFileInfo(info);
+  assert wr.path == info.path;
+  assert wr.version_id == None;
+  assert wr.source == SidecarSource;
+}
+

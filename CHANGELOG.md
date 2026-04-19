@@ -97,6 +97,21 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Dafny `WriteResult` extension** (ID-151, part 1): widens the Backend
+  trait `Write` to return `Result<WriteResult>` with a fourth `metadata`
+  parameter, adds `FileInfo`/`WriteResult`/`ContentDigest`/`WriteSource`
+  data models, `CapWriteResultNative` and `CapUserMetadata` capabilities,
+  and the `WriteResultFromFileInfo` function plus the `WR008FieldMapping`
+  lemma. Encodes WR-001a, WR-004, WR-005, WR-010 (with the
+  empty-mapping carve-out via `HasUserMetadata`), WR-012, and WR-013 as
+  Write postconditions; the WR-006 negative direction (Write never
+  produces `SidecarSource`) is enforced structurally by the `Write`
+  postcondition restricting `source` to `NativeSource | BasicSource`.
+  `MemoryBackend` refines the widened contract. Oracle regeneration,
+  `DafnyOracleBackend` adapter, and the oracle-gated conformance run
+  are follow-up scope (Dafny-native toolchain required; local is
+  Docker-only).
+
 - **`scripts/gen_pages.py` refactor**: split the 840-line mkdocs-gen-files hook
   into `scripts/docs/{scan,render,nav,link}.py` plus a 70-line orchestrator;
   example metadata and link rewrites are now data-driven via `SddKind`,

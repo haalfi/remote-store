@@ -112,6 +112,16 @@ native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 exist", so they MUST skip the type-conflict check entirely. For these backends
 the effective order is: existence check (non-existent target treated as
 writable) → overwrite conflict → I/O.
+**Formal coverage:** `write()` is modelled in `sdd/formal/BackendContract.dfy`
+as `Write` with postconditions covering the precondition evaluation order
+(`IsDir → InvalidPath`, `IsFile ∧ !overwrite → AlreadyExists`), the WR-010
+strict gate (`HasUserMetadata(metadata) ∧ CapUserMetadata !in capabilities →
+CapabilityNotSupported`, with empty-mapping carve-out encoded by
+`HasUserMetadata`), the WR-001a schema (`r.value.path == path ∧ r.value.size
+== |content|`), WR-004 (source Native iff `CapWriteResultNative`), WR-005
+(Basic source → rich fields None), WR-012 metadata echo, and WR-013
+round-trip (`fs[path].info.metadata` reflects what was stored). Verified in
+`MemoryBackend.dfy`. See ID-151.
 
 ### BE-009: write Creates Intermediate Directories
 
@@ -123,6 +133,12 @@ writable) → overwrite conflict → I/O.
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out).
 **Precondition order:** Same as BE-008 — path validity (type conflict) → overwrite conflict → I/O. Flat-namespace exemption from BE-008 applies.
 **See also:** [007-atomic-writes.md](007-atomic-writes.md); [045-write-result.md](045-write-result.md) (WR-001, WR-010).
+**Formal coverage:** Delegates to BE-008 — at the Backend-contract level
+`write_atomic` shares the `Write` postcondition model (return type, precondition
+order, WR-010 gate, WR-001a/004/005/012/013 postcondition chain). Atomicity
+itself is a frame-condition property outside Dafny's expressiveness (see
+`sdd/formal/README.md` § Design decisions, "No error-path frame condition"). No
+separate `WriteAtomic` method exists in `BackendContract.dfy`. See ID-151.
 
 ### BE-011: write_atomic Capability Gate
 
@@ -161,6 +177,14 @@ missing or non-existent paths.
 
 **Invariant:** `get_file_info(path)` returns `FileInfo`.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a directory (Dafny: `GetFileInfo: IsDir → InvalidPath`). See BE-021.
+**Formal coverage:** `get_file_info()` is modelled in
+`sdd/formal/BackendContract.dfy` as `GetFileInfo` with postcondition
+`IsFile → r.Ok? ∧ r.value == fs[path].info`. The extended `FileInfo`
+datatype carries the optional `digest`, `etag`, `last_modified`, and
+`metadata` fields (no `version_id` — only `WriteResult` does in v1), so
+the WR-013 round-trip (metadata survives `write → get_file_info`) and
+the WR-008 field mapping to `head()`-produced `WriteResult` are
+discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 
 ### BE-017: get_folder_info()
 
