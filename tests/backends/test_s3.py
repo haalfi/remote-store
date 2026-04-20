@@ -723,6 +723,22 @@ class TestS3ETagAndDigest:
         assert isinstance(fi.digest, ContentDigest)
         assert fi.digest.algorithm == "crc32"
 
+    @pytest.mark.spec("S3-024")
+    def test_write_result_digest_for_standard_upload(self, s3_backend: Backend) -> None:
+        """S3 auto-CRC32 is surfaced in WriteResult.digest (BUG-177 regression guard).
+
+        write() issues head_object(ChecksumMode="ENABLED") after the upload,
+        so WriteResult.digest is populated from the same source as
+        get_file_info().  This liveness assertion ensures a bilateral
+        regression (stripping ChecksumMode from both paths) would be caught.
+        """
+        from remote_store._models import ContentDigest
+
+        result = s3_backend.write("write_result_digest.txt", b"hello")
+        assert result.digest is not None
+        assert isinstance(result.digest, ContentDigest)
+        assert result.digest.algorithm == "crc32"
+
     @pytest.mark.spec("S3-023")
     @pytest.mark.parametrize(
         ("info_dict", "expected_etag"),

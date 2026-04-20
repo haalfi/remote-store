@@ -168,11 +168,12 @@ class S3Backend(_S3Base):
                             break
                         f.write(chunk)
                         size += len(chunk)
-            info = self._fs.info(self._s3_path(path))
-        etag_raw: str | None = info.get("ETag")
+            raw = self._fs.call_s3("head_object", Bucket=self._bucket, Key=path, ChecksumMode="ENABLED")
+        etag_raw: str | None = raw.get("ETag")
         etag = etag_raw.strip('"').lower() if etag_raw else None
-        last_modified = info.get("LastModified")
-        version_id: str | None = info.get("VersionId") or None
+        last_modified = raw.get("LastModified")
+        version_id: str | None = raw.get("VersionId") or None
+        digest = self._digest_from_head_response(raw)
         return WriteResult(
             path=RemotePath(path),
             size=size,
@@ -180,6 +181,7 @@ class S3Backend(_S3Base):
             etag=etag,
             last_modified=last_modified,
             version_id=version_id,
+            digest=digest,
             metadata=metadata,
         )
 

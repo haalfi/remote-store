@@ -5,6 +5,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-177 — `S3Backend.write` does not surface the auto-CRC32 digest that `get_file_info` returns**
+  `write()` called `s3fs.info()` after the upload, which omits checksum
+  fields, leaving `WriteResult.digest = None` while `get_file_info()` issued
+  `head_object(..., ChecksumMode="ENABLED")` and returned
+  `ContentDigest('crc32', …)` — a WR-001a divergence.
+  Fix: replaced `self._fs.info(...)` with `self._fs.call_s3("head_object",
+  ..., ChecksumMode="ENABLED")` in `_s3.py:write()`, then extracted `digest`
+  via `_digest_from_head_response()` (the same path `get_file_info` uses).
+  New conformance test `TestWriteResultConformance.test_digest_matches_file_info`
+  enforces `result.digest == info.digest` across all `WRITE_RESULT_NATIVE +
+  METADATA` backends. `_DIGEST_XFAIL` table is empty (no known lags).
+  WR-007 comment in `test_native_file_info_matches_write_result` updated to
+  point to the new test.
+
 - [x] **ID-147 — TLA+ augmentation: Observer dispatch module + informational CI**
   `Observer.tla` shipped under `sdd/formal/tla/` shadowing spec 019
   § OBS-003, OBS-003a, OBS-009. Six independent invariants (I1

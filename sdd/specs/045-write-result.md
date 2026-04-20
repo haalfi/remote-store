@@ -34,10 +34,11 @@ is expressed against it.
 **Optional (default `None` unless noted):**
 
 - `digest` (`ContentDigest | None`) — verified content digest:
-  client-computed via `ext.write.write_with_hash` (WR-014), or a
+  client-computed via `ext.write.write_with_hash` (WR-014), a
   backend-echoed content hash from the write response (e.g., Azure
-  `content_md5` surfaced as `ContentDigest("md5", …)`); `None` on
-  the default write path for all v1 backends (WR-007).
+  `content_md5`), or a server-verified hash surfaced by the write path
+  (e.g., S3 auto-CRC32 via `head_object(ChecksumMode="ENABLED")`);
+  `None` when the backend does not surface any digest on write (WR-007).
 - `etag` (`str | None`) — backend change tag; not a content hash on
   every backend (see RFC-0011 § Proposal for per-backend semantics).
 - `version_id` (`str | None`) — backend-provided immutable version
@@ -79,7 +80,8 @@ consistent fields. Verified in `MemoryBackend.dfy`. Python backstop in
 (`test_result_is_write_result_with_path_and_size`,
 `test_size_matches_written_bytes_for_streaming_input`,
 `test_native_populates_last_modified`,
-`test_native_file_info_matches_write_result`). See ID-151.
+`test_native_file_info_matches_write_result`,
+`test_digest_matches_file_info`). See ID-151.
 
 ## WR-002: WriteResult.path Is Store-Relative
 
@@ -160,19 +162,18 @@ streaming hash wrapper is inserted on the default path.
 
 **Current backend set (v1):**
 
-- *Server-verified digest:* none. No v1 backend surfaces a server-verified
-  content digest on the default write path. S3's single-PUT `ETag` is
-  explicitly documented as *not* a content hash; multipart `ETag` values
-  have the form `"<md5-of-part-md5s>-<N>"`.
+- *Server-verified digest:* S3 only. `S3Backend.write()` calls
+  `head_object(..., ChecksumMode="ENABLED")` after the upload — the same
+  call used by `get_file_info` (S3-024) — and wraps the returned
+  auto-CRC32 in `ContentDigest("crc32", …)`. Amazon S3 has automatically
+  stored CRC32 checksums for new objects since late 2022, so this digest
+  is present for all standard single-PUT uploads. S3's `ETag` is separately
+  *not* a content hash; this invariant refers to the `digest` field only.
 - *Backend-echoed digest:* Azure only. Azure echoes the client-supplied MD5
   as `ContentDigest("md5", …)` in `WriteResult.digest` when the caller
   supplied an MD5 on the write request. That value is client-originated but
   surfaces what the backend stored, satisfying the "backend-echoed" clause.
-  All other v1 backends return `WriteResult.digest is None`.
-
-The invariant is written to accommodate a future backend surfacing a
-server-verified digest (e.g., opt-in S3 `ChecksumSHA256`) without amending
-WR-007.
+- All other v1 backends return `WriteResult.digest is None`.
 
 ## WR-008: Store.head() Gating and Semantics
 
