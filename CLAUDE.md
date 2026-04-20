@@ -46,6 +46,8 @@ Run `hatch run` to list them. `hatch run all` is the pre-commit gate.
 Claude-specific shell constraints:
 
 - **No `&&`, `||`, or `;`.** Split into separate Bash tool calls for auto-approval.
+- **No shell redirects (`>`, `2>&1`, `| tee`).** Run commands plain and read output from the tool result. Redirects always
+  trigger an approval prompt.
 - **No heredoc in git commits.** `git commit -m "$(cat <<'EOF'...)"` breaks the `Bash(git:*)` auto-approve pattern. Use multiple `-m` flags instead.
 - **No `/tmp/`.** Use `./tmp/` instead (gitignored). `/tmp/` is a system directory and triggers a separate permission prompt.
 
