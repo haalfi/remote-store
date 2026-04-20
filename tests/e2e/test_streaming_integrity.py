@@ -43,7 +43,6 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from remote_store import Capability
-from remote_store.backends._azure import _AZURE_BLOCK_SIZE
 from remote_store.ext.streams import ChecksumReader
 from remote_store.ext.transfer import transfer
 from tests.e2e.conftest import _azurite_available
@@ -63,18 +62,21 @@ DRAIN_CHUNK = 1_048_576  # 1 MiB read chunks for checksum verification
 
 # Pipe cost: transfer layer overhead (transfer.py + streams.py + _stream.py).
 # Most backends read in _COPY_BUFSIZE (256 KiB) chunks; when Azure is the
-# write destination, the Azure SDK calls source_stream.read(_AZURE_BLOCK_SIZE)
-# (1 MiB), and its staged-block uploader keeps the *previous* chunk alive
-# until the next stage_block ack returns — so at sample time two 1 MiB
-# buffers are live simultaneously (current + previously-staged).  Sources
-# wrapped in io.BufferedReader (SFTP, sync Azure) attribute both chunks to
-# the innermost Python frame above the C-level read (ProgressReader.read in
-# ext/streams.py), which lands in this filter.  Azure-bridged hops use
-# AsyncBackendSyncAdapter's _ChunkPullReader (RawIOBase, not wrapped in
-# BufferedReader), so their reads are attributed to _async_to_sync_adapter
-# and fall outside the pipe filter — observed at ~0.13 MiB in practice.
-# Threshold = 2.25 × block = 2 × in-flight + 12.5% headroom.  See BUG-174.
-PIPE_THRESHOLD = _AZURE_BLOCK_SIZE * 9 // 4  # 2.25 MiB
+# write destination, the Azure SDK's staged-block uploader issues 1 MiB
+# reads and keeps the *previous* chunk alive until the next stage_block
+# ack returns — so at sample time two 1 MiB buffers are live simultaneously
+# (current + previously-staged).  Sources wrapped in io.BufferedReader
+# (SFTP, sync Azure) attribute both chunks to the innermost Python frame
+# above the C-level read (ProgressReader.read in ext/streams.py), which
+# lands in this filter.  Azure-bridged hops use AsyncBackendSyncAdapter's
+# _ChunkPullReader (RawIOBase, not wrapped in BufferedReader), so their
+# reads are attributed to _async_to_sync_adapter and fall outside the pipe
+# filter — observed at ~0.13 MiB in practice.  Threshold is an independent
+# test-layer budget (not coupled to the backend's block size): if the SDK
+# starts holding more than two chunks, or if the backend tunes its block
+# size such that the pipe cost exceeds this ceiling, this test *should*
+# fail loudly rather than silently track the new value.  See BUG-174.
+PIPE_THRESHOLD = 2304 * 1024  # 2.25 MiB
 
 # Total cost thresholds (as multipliers of file_size).
 # Lazy-lazy hops carry a ~4 MiB floor from s3fs multipart upload staging
