@@ -69,9 +69,11 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | suites). Periodically re-audit existing files for          |
 |                            | correctness — see `@pytest.mark.os_sensitive` in          |
 |                            | `pyproject.toml` for rationale.                           |
-| **CHANGELOG entry**        | During development: one stub line per item —              |
-|                            | `- <ID> <Title> [<type>]` under the correct section.      |
-|                            | No details. One heading per section — no duplicates.      |
+| **CHANGELOG entry**        | During development: one stub line per item under the      |
+|                            | matching section heading. `<type>` = the section name     |
+|                            | (Added, Fixed, Docs, Internal, …). No details.            |
+|                            | Example: `- BUG-177 S3 write digest missing [Fixed]`      |
+|                            | One heading per section — no duplicates.                  |
 |                            | Section order: Added > Fixed > Known Issues > Changed >   |
 |                            | Deprecated > Removed > Documentation > Internal.          |
 

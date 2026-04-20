@@ -94,7 +94,7 @@ The SDD workflow includes a DOCS step (see `sdd/000-process.md` rule 6). When re
 - Docstrings meet rule 3 for all new/changed public symbols
 - Relevant guide updated (if behavior changed)
 - Example updated or added (if user-facing)
-- CHANGELOG entry present
+- CHANGELOG stub present (one line per completed item — see ripple-check table **CHANGELOG entry**)
 - No orphaned cross-links (renamed/removed APIs)
 
 ### 6. README requirements
