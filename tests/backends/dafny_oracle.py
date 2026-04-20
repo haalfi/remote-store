@@ -12,6 +12,16 @@ Root path translation: the Python Backend ABC uses ``""`` for root, but
 Dafny's ``Path`` type requires non-empty strings.  The Dafny spec models
 root as ``"."`` (seeded as DirEntry in the constructor).  Translation
 happens once in ``_str_to_dafny`` — no per-method root guards needed.
+
+**Known adapter gap (tracked under ID-151):** ``write()`` and
+``write_atomic()`` here do not accept the ``metadata=`` keyword and
+return ``None`` instead of ``WriteResult`` — the Dafny ``Write`` method
+is called with a hardcoded ``Option_None()`` fourth argument.  That
+narrows the Part-1 ABC return type and leaves the oracle unable to
+witness the ``HasUserMetadata(metadata) && CapUserMetadata in capabilities``
+branch (WR-012 / WR-013) through conformance.  Scoped out of Part 2 to
+keep the regen diff narrow; adapter widening is listed under ID-151's
+follow-ups in ``sdd/BACKLOG.md``.
 """
 
 from __future__ import annotations

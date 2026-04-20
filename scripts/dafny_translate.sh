@@ -42,6 +42,12 @@ CMDS="$CMDS && chmod +x /opt/dafny/dafny /opt/dafny/z3/bin/z3-*"
 CMDS="$CMDS && mkdir -p /build && cp /work/*.dfy /build/ && cd /build"
 for f in "${FILES[@]}"; do
   stem="${f%.dfy}"
+  # Clear any stale output first: a mid-build dafny failure with a stale
+  # /build/${stem}-py from a previous run would otherwise masquerade as
+  # success at the directory-existence gate below.  The `|| true` on the
+  # dafny invocation swallows the expected post-translate python3-missing
+  # exit, so the stale-dir guard is load-bearing.
+  CMDS="$CMDS && rm -rf /build/${stem}-py"
   CMDS="$CMDS && echo '==> Translating $f' && (/opt/dafny/dafny build -t py $f --output:$stem 2>&1 | grep -v 'Unable to start python3' | grep -v 'An error occurred trying to start process' || true)"
   CMDS="$CMDS && if [ -d /build/${stem}-py ]; then rm -rf /out/${stem}-py && cp -r /build/${stem}-py /out/; echo '    wrote /out/${stem}-py'; else echo '    skipped: no compilable output'; fi"
 done
@@ -53,14 +59,14 @@ docker run --rm \
   bash -c "$CMDS"
 
 # Post-process: class reorder so module_.py is importable (Dafny emits
-# MemoryBackend(Backend) before Backend).  Runs on the host, uses Python
-# which is available via hatch env but we call plain python to avoid
-# requiring hatch in CI.
+# MemoryBackend(Backend) before Backend).  Runs on the host.  Use `python3`
+# — it's the portable name on Linux/macOS CI runners; Windows resolves it
+# via the py launcher.
 cd "$REPO_ROOT"
 for f in "${FILES[@]}"; do
   stem="${f%.dfy}"
   module="sdd/formal/${stem}-py/module_.py"
   if [ -f "$module" ]; then
-    python scripts/_dafny_classorder.py "$module"
+    python3 scripts/_dafny_classorder.py "$module"
   fi
 done

@@ -253,6 +253,14 @@ Items graduate through the SDD pipeline:
     path of the `Write` postcondition are witnessed by a concrete class
     (currently dead code in `MemoryBackend`). Closes the refinement
     coverage gap flagged in the part-1 review.
+  - `DafnyOracleBackend` adapter widening (`tests/backends/dafny_oracle.py`):
+    accept `metadata=` and return `WriteResult` from `write()` /
+    `write_atomic()` to match the Part-1 ABC. Currently the adapter
+    hardcodes `Option_None()` and returns `None`, so the oracle cannot
+    witness the `HasUserMetadata(metadata) && CapUserMetadata in capabilities`
+    branch (WR-012 / WR-013) through conformance, and narrows the ABC
+    return type. Scoped out of Part 2 to keep the regen diff narrow;
+    tracked for a follow-up PR.
 
   **Out of scope:**
   - Proxy forwarding / event emission (WR-018, WR-019) — TLA+ territory,
