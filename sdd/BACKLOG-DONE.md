@@ -222,6 +222,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   invariants. Workflow recommendation in
   `sdd/research/research-id-147b-tla-poc.md`. PR #451.
 
+- [x] **ID-147 — TLA+ augmentation: Observer dispatch module + informational CI**
+  `Observer.tla` shipped under `sdd/formal/tla/` shadowing spec 019
+  § OBS-003, OBS-003a, OBS-009. Six independent invariants (I1
+  `EventPerCompletedOp`, I2 `RoutingByOpClass`, I3a
+  `ClassHookOutcomeIndependent`, I3b `ErrorHookFiresOnErrorOnly`, I4
+  `ErrorAlwaysReraise`, I5 `AfterHookExceptionIsolated`) — I3 was split
+  from the original five under break-and-catch. Full break-and-catch
+  matrix verified each invariant is independently falsifiable.
+  `Backend.tla` and `Store.tla` dropped — no valid bundled target per
+  the authoring rules. Informational `verify-tla` CI job added to
+  `.github/workflows/ci.yml` (non-blocking; first revisit tracked as
+  ID-150, due 2026-10-19). PRs #458 (formal-layer principles) and #460
+  (Observer.tla + CI job).
+
 - [x] **ID-145 — `scripts/gen_pages.py` refactor**
   Split the 840-line mkdocs-gen-files hook into
   `scripts/docs/{scan,render,nav,link}.py` plus a 70-line orchestrator;

@@ -243,59 +243,6 @@ Existing items may be more verbose — trim on next touch.
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
-- [ ] **ID-147 — TLA+ augmentation: Observer dispatch module + informational CI**
-  Follow-up to the ID-147b PoC (WriteResult) and the formal-layer principles
-  landed in PR 458. Picks one concrete target that satisfies the "demonstrated
-  bundling" authoring rule in `sdd/formal/README.md`, and turns the principle
-  from doc-only into enforcement by adding an informational TLC check to CI.
-
-  **Scope (rescoped 2026-04-19):** The earlier draft proposed three modules
-  (`Backend.tla`, `Store.tla`, `Observer.tla`) with abstract-layer targets.
-  The authoring rules landed in PR 458 now flag "capability gate ordering in
-  the abstract" as *not* a valid target — formal artefacts must target
-  demonstrated bundling, not speculative layer properties. `Backend.tla` and
-  `Store.tla` are dropped; `Observer.tla` remains because OBS-003 demonstrably
-  bundles multiple independently-falsifiable claims (see decomposition note
-  below).
-
-  **Deliverable 1 — `Observer.tla`** (under `sdd/formal/tla/`, the live
-  informal TLA+ layer — physical location is decoupled from CI gate
-  status, see `sdd/formal/README.md` rules 3 and 4):
-  - Shadows spec 019 § OBS-003 + OBS-003a + OBS-009.
-  - Six independent invariants (`EventPerCompletedOp`, `RoutingByOpClass`,
-    `ClassHookOutcomeIndependent`, `ErrorHookFiresOnErrorOnly`,
-    `ErrorAlwaysReraise`, `AfterHookExceptionIsolated`). The shortlist grew
-    from five to six under break-and-catch: the original `HookOutcomeContract`
-    bundled two independently-falsifiable claims and was split into I3a / I3b.
-  - Full break-and-catch matrix (one mutation per invariant, each triggering
-    exactly the target invariant and no others) — if rows collapse, the
-    invariants were not orthogonal and the decomposition needs another pass.
-  - Scoping rationale + invariant derivation:
-    [`sdd/research/research-id-147-obs003-decomposition.md`](research/research-id-147-obs003-decomposition.md).
-
-  **Deliverable 2 — informational `verify-tla` CI job:**
-  - Mirrors `verify-formal` (Dafny) pattern in `.github/workflows/ci.yml`.
-  - Triggers on `sdd/formal/tla/**` changes (the live informal TLA+ layer).
-  - Informational (non-blocking) per the authoring rules until a real
-    regression catch promotes it to blocking.
-  - Same PR opens the first 6-month revisit BACKLOG ticket (per the authoring
-    rules: "a calendar without a ticket is the same as no calendar").
-
-  **Explicitly deferred to follow-up items (if justified):**
-  - `Backend.tla` / `Store.tla`: only if a concrete bundled target appears.
-  - OBS-005 around-semantics: separate module if invariants prove useful.
-  - OBS-015 / WR-019 proxy forwarding: already modelled by the PoC's
-    `WR018ProxyForwarding.tla`; do not duplicate.
-
-  **Workflow note:** The hand-decomposition (~30 min) surfaced a latent OBS-003
-  step 6 drift before any TLA+ was written. Decomposition belongs *before*
-  mechanical translation (Specula or hand-authoring). See the decomposition
-  note § 2 and § 7.
-
-  **Relation to existing formal layer:** additive. Dafny (`sdd/formal/`) stays
-  as the per-operation contract and oracle layer. TLA+ sits above it, covering
-  protocol composition across layers that Dafny cannot express.
-
 - [ ] **ID-138 — Async streaming integrity e2e test**
   The e2e streaming test only covers sync backends. Add an async variant
   using `AsyncAzureBackend` to verify the block-size defaults work for
