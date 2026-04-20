@@ -328,7 +328,7 @@ class TestWriteResultConformance:
             request.applymarker(
                 pytest.mark.xfail(
                     reason=(
-                        "BUG-169/BUG-170: native backend returns last_modified=None"
+                        "BUG-169: MemoryBackend returns last_modified=None under WRITE_RESULT_NATIVE"
                         if backend.name == "memory"
                         else "BUG-170: SQLBlob returns last_modified=None under WRITE_RESULT_NATIVE"
                     ),
@@ -362,6 +362,9 @@ class TestWriteResultConformance:
         result = getattr(backend, op)(key, b"data")
         info = backend.get_file_info(key)
         assert info.etag == result.etag
+        # BUG-169 (memory) and BUG-170 (sql-blob) return last_modified=None from
+        # the write path, so the divergence check is vacuous on those backends;
+        # test_native_populates_last_modified xfails the underlying defect.
         if result.last_modified is not None:
             assert info.modified_at == result.last_modified
 

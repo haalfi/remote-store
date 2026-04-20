@@ -121,7 +121,10 @@ CapabilityNotSupported`, with empty-mapping carve-out encoded by
 == |content|`), WR-004 (source Native iff `CapWriteResultNative`), WR-005
 (Basic source → rich fields None), WR-012 metadata echo, and WR-013
 round-trip (`fs[path].info.metadata` reflects what was stored). Verified in
-`MemoryBackend.dfy`. See ID-151.
+`MemoryBackend.dfy`. Python backstop: the WR-001a/004/005/012/013
+postcondition chain is exercised against every backend by
+`tests/backends/test_conformance.py::TestWriteResultConformance`. See
+ID-151.
 
 ### BE-009: write Creates Intermediate Directories
 
@@ -138,7 +141,10 @@ round-trip (`fs[path].info.metadata` reflects what was stored). Verified in
 order, WR-010 gate, WR-001a/004/005/012/013 postcondition chain). Atomicity
 itself is a frame-condition property outside Dafny's expressiveness (see
 `sdd/formal/README.md` § Design decisions, "No error-path frame condition"). No
-separate `WriteAtomic` method exists in `BackendContract.dfy`. See ID-151.
+separate `WriteAtomic` method exists in `BackendContract.dfy`. Python backstop:
+the Python conformance suite parametrizes `TestWriteResultConformance` over
+both `write` and `write_atomic`, so `write_atomic` carries the same
+postcondition-chain coverage as `write`. See ID-151.
 
 ### BE-011: write_atomic Capability Gate
 
