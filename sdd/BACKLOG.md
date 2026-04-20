@@ -184,21 +184,23 @@ Items graduate through the SDD pipeline:
   assert result.last_modified is not None       # FAILS — is None
   ```
 
-- [ ] **BUG-168 — `LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming input** (HIGH)
+- [ ] **BUG-168 — `LocalBackend.write_atomic` captures size inside the BufferedWriter context** (LOW — not currently reproducible)
   `_local.py:197-214`: `size = os.path.getsize(tmp_path)` is called *inside*
-  the `with os.fdopen(fd, "wb") as f:` block, before the `BufferedWriter` has
-  flushed. For any `BinaryIO` content whose tail chunk is still buffered the
-  returned `size` is truncated to the last-flushed offset while the file on
-  disk is correct.
-  **Repro:**
-  ```python
-  payload = b"x" * 266240                       # 260 KiB
-  backend = LocalBackend(root=tmp_path)
-  result = backend.write_atomic("a.bin", io.BytesIO(payload))
-  assert (tmp_path / "a.bin").stat().st_size == 266240  # passes
-  assert result.size == 266240                  # FAILS — reports 262144
-  # (Last 4 KiB still in the BufferedWriter's 8 KiB buffer at getsize() time.)
-  ```
+  the `with os.fdopen(fd, "wb") as f:` block, before the `BufferedWriter`
+  has flushed. In principle, for any `BinaryIO` content whose tail chunk is
+  still buffered the returned `size` would be truncated to the last-flushed
+  offset while the file on disk is correct. Original repro (260 KiB payload,
+  Windows local) does *not* reproduce under the CI matrix (Linux 3.13 +
+  Windows cross-OS): the companion conformance test
+  (`TestWriteResultConformance.test_size_matches_written_bytes_for_streaming_input`)
+  passes on every runner, and was initially xfailed for `local` then
+  de-marked when the xfail went XPASS strict on both Linux and Windows CI.
+  Entry kept on the books — the control-flow concern is real (the `size`
+  capture is latently order-dependent on BufferedWriter flush timing) — but
+  demoted to LOW since no current runner observes a divergence. Fix scope
+  when picked up: move the `size` capture after the `with` block closes,
+  or count bytes as they stream via `shutil.copyfileobj`'s return value
+  (Python 3.14+) or a manual loop.
 
 ---
 
