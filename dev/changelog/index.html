@@ -11500,6 +11500,20 @@
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Hypothesis property coverage for <code>WriteResult</code></strong> (ID-151c): adds
+  <code>tests/test_pbt_write_result.py</code> with two property tests on top of
+  <code>TestWriteResultConformance</code>.  The first exercises
+  <code>WriteResult.size == len(payload)</code> on <code>MemoryBackend</code> (small regime) and
+  <code>LocalBackend</code> (256 KiB – 1 MiB BUG-168 buffer boundary — the only v1
+  backend whose write path runs through a real <code>BufferedWriter</code>) across
+  <code>bytes</code> / <code>BinaryIO</code> inputs and <code>overwrite=True</code> / <code>overwrite=False</code>.  The
+  second exercises WR-012 echo + WR-013 <code>get_file_info</code> round-trip on the two
+  backends that go through a real SDK serialisation layer (S3 via <code>moto</code>
+  server mode; Azure via Azurite when reachable).  Strategies are
+  module-scope and WR-011-compliant; profiles inherit from
+  <code>tests/conftest.py</code> (dev 50 / ci 100 / nightly 1000).</p>
+</li>
+<li>
 <p><strong>Retired per-backend <code>WriteResult</code> test duplication</strong> (ID-151b): removed
   <code>TestLocalWriteResult</code>, <code>TestSFTPWriteResult</code>, <code>TestS3PyArrowWriteResult</code>,
   and the generic <code>write</code> / <code>write_atomic</code> / size / metadata-echo methods from
