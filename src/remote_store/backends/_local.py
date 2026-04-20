@@ -197,11 +197,10 @@ class LocalBackend(Backend):
                 with os.fdopen(fd, "wb") as f:
                     if isinstance(content, bytes):
                         f.write(content)
-                        size = len(content)
                     else:
                         shutil.copyfileobj(content, f, _COPY_BUFSIZE)
-                        size = os.path.getsize(tmp_path)
                 os.replace(tmp_path, str(full))
+                size = full.stat().st_size
             except BaseException:
                 with contextlib.suppress(OSError):
                     if os.path.exists(tmp_path):

@@ -266,14 +266,12 @@ class TestWriteResultConformance:
     def test_size_matches_written_bytes_for_streaming_input(self, backend: Backend) -> None:
         """WR-001a size clause for BinaryIO input on write_atomic.
 
-        Uses a payload that is larger than a typical ``BufferedWriter``
-        block but fits inside one ``_COPY_BUFSIZE`` read, so
-        ``shutil.copyfileobj`` delivers it in a single direct pass-through
-        write. BUG-168 (``sdd/BACKLOG.md``) tracks a separate
-        ``LocalBackend.write_atomic`` concern where ``size`` is captured
-        inside the ``BufferedWriter`` context; it is a latent order
-        dependency that is not reproducible on the current CI matrix and
-        is deliberately out of scope here.
+        Payload is larger than the default ``BufferedWriter`` block so that
+        any backend capturing ``size`` before the writer flushes would
+        report a truncated value. This surfaced BUG-168 on
+        ``LocalBackend.write_atomic`` under Python 3.14, where the
+        pre-flush ``os.path.getsize`` call observed ``0`` — fixed by
+        moving the size capture after the ``with`` block closes.
         """
         _require(backend, Capability.ATOMIC_WRITE)
         self._skip_oracle_adapter(backend)

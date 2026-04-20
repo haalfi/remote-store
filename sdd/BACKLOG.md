@@ -184,24 +184,6 @@ Items graduate through the SDD pipeline:
   assert result.last_modified is not None       # FAILS — is None
   ```
 
-- [ ] **BUG-168 — `LocalBackend.write_atomic` captures size inside the BufferedWriter context** (LOW — not currently reproducible)
-  `_local.py:197-214`: `size = os.path.getsize(tmp_path)` is called *inside*
-  the `with os.fdopen(fd, "wb") as f:` block, before the `BufferedWriter`
-  has flushed. In principle, for any `BinaryIO` content whose tail chunk is
-  still buffered the returned `size` would be truncated to the last-flushed
-  offset while the file on disk is correct. Original repro (260 KiB payload,
-  Windows local) does *not* reproduce under the CI matrix (Linux 3.13 +
-  Windows cross-OS): the companion conformance test
-  (`TestWriteResultConformance.test_size_matches_written_bytes_for_streaming_input`)
-  passes on every runner, and was initially xfailed for `local` then
-  de-marked when the xfail went XPASS strict on both Linux and Windows CI.
-  Entry kept on the books — the control-flow concern is real (the `size`
-  capture is latently order-dependent on BufferedWriter flush timing) — but
-  demoted to LOW since no current runner observes a divergence. Fix scope
-  when picked up: move the `size` capture after the `with` block closes,
-  or count bytes as they stream via `shutil.copyfileobj`'s return value
-  (Python 3.14+) or a manual loop.
-
 ---
 
 ## Backlog (Prioritized)
@@ -341,11 +323,12 @@ Items graduate through the SDD pipeline:
   strict `xfail`s — BUG-169 (`MemoryBackend` drops `last_modified`) and
   BUG-170 (`SQLBlobBackend` drops `last_modified`). The companion
   streaming-size test (`test_size_matches_written_bytes_for_streaming_input`)
-  was initially xfailed for `local` against BUG-168 and then de-marked
-  when the XPASS held on both Linux 3.13 and Windows cross-OS CI;
-  BUG-168 is now tracked at LOW severity as a latent order-dependency
-  concern (see BUG-168 entry above). The `dafny-oracle` fixture is
-  skipped pending the adapter-widening follow-up below.
+  also caught BUG-168 on Python 3.14 (`LocalBackend.write_atomic`
+  captured `size` inside the `BufferedWriter` context, yielding `0` on
+  a 100 KiB streaming payload); fixed in the same PR by moving the
+  `size` capture after the `with` block closes, using
+  `full.stat().st_size`. The `dafny-oracle` fixture is skipped pending
+  the adapter-widening follow-up below.
 
   **Remaining follow-up:**
   - `MemoryBackendMinimal` satisfiability witness: a sibling refinement

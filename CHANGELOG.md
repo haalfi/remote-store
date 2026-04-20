@@ -32,6 +32,18 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming
+  input** (BUG-168): `_local.py:197-203` called `os.path.getsize(tmp_path)`
+  *inside* the `with os.fdopen(fd, "wb") as f:` block, before the
+  `BufferedWriter` had flushed. For `BinaryIO` content whose tail was still
+  buffered, the returned `size` was truncated to the last-flushed offset while
+  the file on disk was correct. Fix moves the `size` capture after the `with`
+  block closes and after `os.replace`, using `full.stat().st_size` (matching
+  the pattern already used by the non-atomic `write()` branch). Caught by
+  `TestWriteResultConformance.test_size_matches_written_bytes_for_streaming_input`
+  under ID-151 Part 3 on Python 3.14, where the default `BufferedWriter`
+  block size is large enough to hold a 100 KiB payload unflushed.
+
 - **`test_streaming_integrity` SFTP→Azure pipe-threshold flake** (BUG-174):
   `PIPE_THRESHOLD` raised 1.5 MiB → 2.25 MiB. Root cause is a tracemalloc
   attribution artifact — Azure SDK's staged-block uploader holds two 1 MiB

@@ -5,6 +5,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-168 — `LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming input**
+  `_local.py:197-203`: `size = os.path.getsize(tmp_path)` was called *inside*
+  the `with os.fdopen(fd, "wb") as f:` block, before the `BufferedWriter`
+  had flushed. For `BinaryIO` content whose tail was still buffered the
+  returned `size` was truncated to the last-flushed offset. Originally
+  demoted to LOW when the conformance xfail went XPASS on Linux 3.13 and
+  Windows cross-OS CI, but Python 3.14 surfaced the defect as
+  `size == 0` on a 100 KiB payload (the 3.14 `BufferedWriter` default
+  block size is large enough that none of the payload reaches disk
+  before `getsize` runs). Fix: move the `size` capture after the `with`
+  block closes and after `os.replace`, using `full.stat().st_size`
+  (matching the pattern already used by the non-atomic `write()`
+  branch on line 173). Caught by
+  `TestWriteResultConformance.test_size_matches_written_bytes_for_streaming_input`
+  under ID-151 Part 3.
+
 - [x] **BUG-174 — `test_streaming_integrity` SFTP→Azure pipe-threshold flake**
   Intermittent CI failure on the 7-backend streaming chain, always on the
   `sftp -> azure` hop, always `pipe memory 2.00 MiB > threshold 1.50 MiB` on
