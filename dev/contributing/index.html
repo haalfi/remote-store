@@ -9598,9 +9598,10 @@ errors.</p>
 </ul>
 <h4 id="phase-1-content-freeze">Phase 1: Content freeze<a class="headerlink" href="#phase-1-content-freeze" title="Permanent link">&para;</a></h4>
 <ul>
-<li>[ ] CHANGELOG.md <code>[Unreleased]</code> is complete — every user-facing change listed with its backlog ID</li>
+<li>[ ] CHANGELOG.md <code>[Unreleased]</code> is complete — every completed item has a stub line (see ripple-check row <strong>CHANGELOG entry</strong>)</li>
+<li>[ ] CHANGELOG.md <code>[Unreleased]</code> condensed — stubs expanded to prose at release time (release skill Phase 1)</li>
 <li>[ ] <code>sdd/BACKLOG-DONE.md</code>: all shipping items moved here, marked <code>[x]</code> with version (e.g. <code>(v0.8.0)</code>)</li>
-<li>[ ] FEATURES.md: version, backends table, extensions table, extras are current</li>
+<li>[ ] FEATURES.md updated for this release: version, backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited</li>
 <li>[ ] README.md: backends table, installation extras, API table, badges are current</li>
 <li>[ ] Specs vs code: spot-check shipped features match their specs (<code>pytest -m spec</code> as proxy)</li>
 <li>[ ] Examples: <code>hatch run examples</code> passes; manually review notebooks if API surface changed</li>
