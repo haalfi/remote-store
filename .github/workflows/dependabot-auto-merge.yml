@@ -11,6 +11,9 @@
 #   will dismiss approvals and block already-enabled auto-merge.
 # - Token model: triggered by the reviewer (not dependabot), so GITHUB_TOKEN has
 #   full write perms; no PAT needed.
+# - `github.event.pull_request.state` is the webhook payload snapshot at review
+#   submission time, not queried live. `gh pr merge --auto` handles the merged
+#   case correctly on its own, so the guard is best-effort, not authoritative.
 name: Dependabot auto-merge
 on:
   pull_request_review:
