@@ -319,10 +319,10 @@ class TestWriteResultConformance:
         passes the divergence check but violates the quality obligation
         the capability advertises (spec 045 WR-009, WR-001a).
 
-        Per-backend xfail reasons are in ``_LAST_MODIFIED_XFAIL``.  BUG-170
-        (``sql-blob``) is a Python defect with ``strict=True``;
-        ``dafny-oracle`` uses ``strict=False`` because the Dafny spec treats
-        ``last_modified`` as opaque — that entry is removed as part of ID-152.
+        Per-backend xfail reasons are in ``_LAST_MODIFIED_XFAIL``.  Only
+        ``dafny-oracle`` remains (``strict=False``) because the Dafny spec
+        treats ``last_modified`` as opaque — that entry is removed as part
+        of ID-152.
         """
         _require(backend, cap, Capability.WRITE_RESULT_NATIVE)
         if backend.name in _LAST_MODIFIED_XFAIL:

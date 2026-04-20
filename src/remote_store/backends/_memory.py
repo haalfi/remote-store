@@ -127,8 +127,12 @@ class MemoryBackend(Backend):
                 raw.extend(chunk)
 
         stored_meta = dict(metadata) if metadata else None
-        now = datetime.now(timezone.utc)
         with self._lock:
+            # Capture ``now`` under the lock so that ``modified_at`` values
+            # reflect lock-acquisition order: a late-acquiring writer must
+            # not stamp an earlier timestamp than an earlier-acquiring writer
+            # on the same key.
+            now = datetime.now(timezone.utc)
             parent = self._ensure_parents(segments)
             leaf = segments[-1]
             existing = parent.children.get(leaf)
