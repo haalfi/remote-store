@@ -41,6 +41,7 @@ from remote_store._capabilities import Capability
 from remote_store._models import WriteResult
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
+from tests.backends.conftest import _free_port
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -63,8 +64,11 @@ def _s3_available() -> bool:
 
 
 def _azure_available() -> bool:
+    # The ``azure_backend`` fixture only touches ``azure.storage.blob`` (via
+    # ``BlobServiceClient`` and ``AzureBackend``), so probe that package — not
+    # ``azure.storage.filedatalake``, which is a separate install extra.
     try:
-        import azure.storage.filedatalake  # noqa: F401
+        import azure.storage.blob  # noqa: F401
     except ImportError:
         return False
     return True
@@ -77,12 +81,6 @@ def _azurite_reachable() -> bool:
     except OSError:
         return False
     return True
-
-
-def _free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("", 0))
-        return s.getsockname()[1]
 
 
 # ---------------------------------------------------------------------------
@@ -152,8 +150,13 @@ def _meta_payload_bytes(m: dict[str, str]) -> int:
 
 
 # WR-011 caps the total payload at 2048 bytes; leave headroom so the
-# ``filter`` does not reject too many generated examples.
-_metadata = st.dictionaries(keys=_meta_key, values=_meta_value, min_size=0, max_size=6).filter(
+# ``filter`` does not reject too many generated examples.  ``min_size=1``
+# excludes the empty-dict case from PBT 2: when ``metadata={}`` is passed,
+# WR-010 routes to the no-metadata branch and WR-012 does not apply, so the
+# property being tested here is vacuous.  The empty-dict / ``None``
+# equivalence is already covered by
+# ``TestWriteResultConformance.test_metadata_is_none_when_not_passed``.
+_metadata = st.dictionaries(keys=_meta_key, values=_meta_value, min_size=1, max_size=6).filter(
     lambda m: _meta_payload_bytes(m) <= 2000
 )
 
@@ -197,6 +200,7 @@ class TestWriteResultSizeSmall:
     """WR-001a / WR-003: ``size`` matches payload length across the small regime."""
 
     @pytest.mark.pbt
+    @pytest.mark.spec("WR-001a")
     @pytest.mark.spec("WR-003")
     @given(
         payload=_small_payload,
@@ -213,6 +217,7 @@ class TestWriteResultSizeSmall:
         assert result.size == len(payload)
 
     @pytest.mark.pbt
+    @pytest.mark.spec("WR-001a")
     @pytest.mark.spec("WR-003")
     @pytest.mark.os_sensitive
     @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
@@ -242,6 +247,7 @@ class TestWriteResultSizeBug168Regime:
     """WR-001a / WR-003 at the 256 KiB – 1 MiB buffer boundary (BUG-168 net)."""
 
     @pytest.mark.pbt
+    @pytest.mark.spec("WR-001a")
     @pytest.mark.spec("WR-003")
     @pytest.mark.os_sensitive
     @settings(
@@ -369,16 +375,6 @@ def _require_user_metadata(backend: Backend) -> None:
         pytest.skip(f"{backend.name} does not declare METADATA")
 
 
-def _assert_metadata_roundtrip(backend: Backend, path: str, metadata: dict[str, str]) -> None:
-    """WR-012 echo and WR-013 get_file_info round-trip under USER_METADATA."""
-    passed = metadata if metadata else None
-    result = backend.write(path, b"pbt", overwrite=True, metadata=passed)
-    assert isinstance(result, WriteResult)
-    assert result.metadata == passed
-    info = backend.get_file_info(path)
-    assert info.metadata == passed
-
-
 @pytest.mark.skipif(not _s3_available(), reason="moto/s3fs not installed")
 class TestMetadataRoundTripS3:
     """WR-012 / WR-013 under ``S3Backend`` via moto."""
@@ -394,7 +390,11 @@ class TestMetadataRoundTripS3:
     def test_round_trip(self, s3_backend: Backend, metadata: dict[str, str]) -> None:
         _require_user_metadata(s3_backend)
         path = f"pbt/s3-meta-{uuid.uuid4().hex[:8]}.bin"
-        _assert_metadata_roundtrip(s3_backend, path, metadata)
+        result = s3_backend.write(path, b"pbt", overwrite=True, metadata=metadata)
+        assert isinstance(result, WriteResult)
+        assert result.metadata == metadata  # WR-012
+        info = s3_backend.get_file_info(path)
+        assert info.metadata == metadata  # WR-013
 
 
 @pytest.mark.requires_docker
@@ -416,4 +416,8 @@ class TestMetadataRoundTripAzure:
     def test_round_trip(self, azure_backend: Backend, metadata: dict[str, str]) -> None:
         _require_user_metadata(azure_backend)
         path = f"pbt/az-meta-{uuid.uuid4().hex[:8]}.bin"
-        _assert_metadata_roundtrip(azure_backend, path, metadata)
+        result = azure_backend.write(path, b"pbt", overwrite=True, metadata=metadata)
+        assert isinstance(result, WriteResult)
+        assert result.metadata == metadata  # WR-012
+        info = azure_backend.get_file_info(path)
+        assert info.metadata == metadata  # WR-013
