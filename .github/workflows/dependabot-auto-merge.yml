@@ -1,5 +1,7 @@
 name: Dependabot auto-merge
-on: pull_request
+on:
+  pull_request_review:
+    types: [submitted]
 
 permissions:
   contents: write
@@ -8,7 +10,10 @@ permissions:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'haalfi/remote-store'
+    if: >
+      github.event.review.state == 'approved' &&
+      github.event.review.user.login == 'haalfi' &&
+      github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
       - name: Dependabot metadata
         id: metadata
@@ -18,5 +23,5 @@ jobs:
       - name: Enable auto-merge for Dependabot PRs
         run: gh pr merge --auto --merge "$PR_URL"
         env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
