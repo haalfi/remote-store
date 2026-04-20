@@ -246,6 +246,11 @@ exclude = ["**/__init__.py", "**/__pycache__/*"]
 
 [tool.ruff]
 line-length = 120
+# Defense-in-depth for ad-hoc `ruff check .` / IDE integrations that scan the
+# whole tree: excludes Dafny-generated Python output (oracle + runtime); see
+# sdd/formal/README.md.  The canonical `hatch run lint` script targets only
+# `src/ tests/ examples/`, so this exclude has no effect on CI lint.
+extend-exclude = ["sdd/formal/*-py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "BLE", "SIM", "TCH", "PT"]

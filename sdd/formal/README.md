@@ -291,33 +291,24 @@ the test itself has a bug and must be fixed.
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
 | `tests/backends/dafny_oracle.py` | Adapter: compiled oracle → `Backend` ABC |
 
-**Regenerating the compiled output.** The Dafny version is pinned
-(see the toolchain reference above). Ghost-only changes (lemmas,
-invariants, ghost variables, postconditions) erase at compile time
-and produce no Python output — regeneration is not needed. Non-ghost
-changes (method bodies, datatype definitions, function implementations)
-do require regeneration:
+**Regenerating the compiled output.** Ghost-only changes (lemmas,
+invariants, ghost variables, postconditions) erase at compile time and
+produce no Python output — regeneration is not needed. Non-ghost changes
+(method bodies, datatype definitions, function implementations) do require
+regeneration. Run the Docker wrapper:
 
 ```bash
-dafny verify sdd/formal/MemoryBackend.dfy          # confirm spec
-dafny translate py sdd/formal/MemoryBackend.dfy \
-    --include-runtime --output sdd/formal/MemoryBackend
+bash scripts/dafny_verify.sh MemoryBackend.dfy     # confirm spec
+bash scripts/dafny_translate.sh                    # translate + reorder
 ```
 
-Dafny appends `-py` to the output directory name automatically.
+The translate wrapper uses the same Dafny release and SHA-256 pin as
+`dafny_verify.sh`, writes `sdd/formal/MemoryBackend-py/`, and calls
+`scripts/_dafny_classorder.py` on the output so classes are emitted in
+importable order (ADT types → `Backend` → `default__` → `MemoryBackend`).
+No local Dafny toolchain required — Docker Desktop is enough.
 
-**Class-ordering fix.** Dafny's Python translator emits
-`MemoryBackend(Backend)` before `Backend` is defined — a
-forward-reference error. After regeneration, reorder `module_.py` so
-the classes appear in this order:
-
-1. ADT types (`Error`, `Result`, `Entry`, `FileInfo`, `FolderInfo`,
-   `FolderEntry`, `Capability`)
-2. `Backend`
-3. `default__` (uses `Path`, `IsChildOf`, `Depth` from the ADT block)
-4. `MemoryBackend`
-
-Verify the reordering:
+Verify the regenerated module imports:
 
 ```bash
 python -c "import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import module_"

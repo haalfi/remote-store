@@ -1,35 +1,30 @@
 """Runtime enabling Dafny language features."""
-
 import builtins
+from dataclasses import dataclass
+from contextlib import contextmanager
+from fractions import Fraction
 from collections import Counter, deque
 from collections.abc import Iterable
-from contextlib import contextmanager
-from dataclasses import dataclass
-from fractions import Fraction
 from functools import reduce
-from itertools import chain, combinations, count
+from types import GeneratorType, FunctionType
 from math import floor
-from types import FunctionType, GeneratorType
-
+from itertools import chain, combinations, count
 
 class classproperty(property):
     def __get__(self, instance, owner):
         return classmethod(self.fget).__get__(None, owner)()
 
-
 def print(value):
     builtins.print(value, end="")
-
 
 # Dafny strings are currently sequences of UTF-16 code units.
 # To make a best effort attempt at printing the right characters we attempt to decode,
 # but have to allow for invalid sequences.
 def string_from_utf_16(utf_16_code_units):
-    return b"".join(ord(c).to_bytes(2, "little") for c in utf_16_code_units).decode("utf-16-le", errors="replace")
-
+    return b''.join(ord(c).to_bytes(2, 'little') for c in utf_16_code_units).decode("utf-16-le", errors = 'replace')
 
 def string_of(value) -> str:
-    if hasattr(value, "__dafnystr__"):
+    if hasattr(value, '__dafnystr__'):
         return value.__dafnystr__()
     elif value is None:
         return "null"
@@ -41,26 +36,22 @@ def string_of(value) -> str:
         # and Seq defines __dafnystr__.
         return string_from_utf_16(value)
     elif isinstance(value, tuple):
-        return "(" + ", ".join(map(string_of, value)) + ")"
+        return '(' + ', '.join(map(string_of, value)) + ')'
     elif isinstance(value, FunctionType):
         return "Function"
     else:
         return str(value)
 
-
 @dataclass
 class Break(Exception):
     target: str
-
 
 @dataclass
 class Continue(Exception):
     target: str
 
-
 class TailCall(Exception):
     pass
-
 
 @contextmanager
 def label(name: str = None):
@@ -73,7 +64,6 @@ def label(name: str = None):
         if name is not None:
             raise g
 
-
 @contextmanager
 def c_label(name: str = None):
     try:
@@ -82,16 +72,16 @@ def c_label(name: str = None):
         if g.target != name:
             raise g
 
-
 class CodePoint(str):
+
     escapes = {
-        "\n": "\\n",
-        "\r": "\\r",
-        "\t": "\\t",
-        "\0": "\\0",
-        "'": "\\'",
-        '"': '\\"',
-        "\\": "\\\\",
+      '\n' : "\\n",
+      '\r' : "\\r",
+      '\t' : "\\t",
+      '\0' : "\\0",
+      '\'' : "\\'",
+      '\"' : "\\\"",
+      '\\' : "\\\\",
     }
 
     def __escaped__(self):
@@ -108,8 +98,7 @@ class CodePoint(str):
 
     @staticmethod
     def is_code_point(i):
-        return (i >= 0 and i < 0xD800) or (i >= 0xE000 and i < 0x11_0000)
-
+        return (0 <= i and i < 0xD800) or (0xE000 <= i and i < 0x11_0000)
 
 class Concat:
     def __init__(self, l, r):
@@ -125,17 +114,66 @@ class Concat:
         q = deque([self])
         while q:
             e = q.pop()
-            if isinstance(e, list):
+            if isinstance(e, list) or isinstance(e, Slice):
                 l += e
             elif isinstance(e, Concat):
                 q.append(e.r)
                 q.append(e.l)
         return l
 
+class Slice:
+    """
+    Internal class enabling constant time slices of Seqs.
+    This should only be used internally from the Seq class when a Seq is sliced.
+    This class assumes the source data is immutable, which is true for Seqs.
+    """
+    def __init__(self, source, start=0, stop=None, step=1):
+        if isinstance(source, Slice):
+            # A Slice constructed from a Slice shares the same underlying source list,
+            self._source = source._source
+            # but updates its indices based on the original Slice's indices:
+            self._start = source._start + start * source._step
+            self._step = source._step * step
+            self._stop = (
+                source._stop
+                if stop is None
+                else source._start + stop * source._step
+            )
+        else:
+            # source will not change if it is constructed from a Seq because Dafny Seqs are immutable.
+            self._source = source
+            self._start = start
+            self._stop = len(source) if stop is None else stop
+            self._step = step
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            # Slice in constant time by returning a reference to the source list with updated indices
+            start, stop, step = index.indices(len(self))
+            return Slice(
+                self._source,
+                self._start + start * self._step,
+                self._start + stop * self._step,
+                self._step * step,
+            )
+        # Access the corresponding element in the source list
+        if index < 0:
+            index += len(self)
+        if index < 0 or index >= len(self):
+            raise IndexError("Slice index out of range")
+        return self._source[self._start + index * self._step]
+
+    def __len__(self):
+        # Constant-time len
+        return max(0, (self._stop - self._start + (self._step - 1)) // self._step)
+
+    def __iter__(self):
+        for i in range(self._start, self._stop, self._step):
+            yield self._source[i]
 
 class Seq:
-    def __init__(self, iterable=None, isStr=False):
-        """
+    def __init__(self, iterable = None, isStr = False):
+        '''
         isStr defines whether this value should be tracked at runtime as a string (a.k.a. seq<char>)
         It accepts three different values:
          - True: this value is definitely a string, mark it as such
@@ -145,14 +183,33 @@ class Seq:
         None is used when --unicode-char is true, to ensure consistent printing of strings
         across backends without depending on any runtime tracking.
         See docs/Compilation/StringsAndChars.md.
-        """
+        '''
 
-        self.elems = iterable if isinstance(iterable, Concat) else (list(iterable) if iterable is not None else [])
-        self.len = len(self.elems)
+        if isinstance(iterable, Seq):
+            # Seqs' elements are immutable.
+            # The new Seq can reference the original Seq's properties.
+            self.elems = iterable.elems
+            self.len = iterable.len
+            self.isStr = iterable.isStr
+            return
+        elif isinstance(iterable, Slice):
+            # Slices are lazy slices.
+            # Accessing self.elems returns the underlying Slice in constant time.
+            # Turning this into a list, or accessing self.Elements, returns a list of the Slice's elements in linear time.
+            self.elems = iterable
+            self.len = len(iterable)
+            self.isStr = isStr
+            return
+        else:
+            self.elems = iterable if isinstance(iterable, Concat) else (list(iterable) if iterable is not None else [])
+            self.len = len(self.elems)
+
         if isStr is None:
             self.isStr = None
         else:
-            self.isStr = isStr or isinstance(iterable, str) or (isinstance(iterable, Seq) and iterable.isStr)
+            self.isStr = isStr \
+                        or isinstance(iterable, str) \
+                        or (isinstance(iterable, Seq) and iterable.isStr)
             # delay expensive computation
             if not self.isStr and isinstance(iterable, Concat):
                 self.isStr = 0
@@ -161,6 +218,8 @@ class Seq:
     def Elements(self):
         if isinstance(self.elems, Concat):
             self.elems = self.elems.flatten()
+        if isinstance(self.elems, Slice):
+            self.elems = list(self.elems)
         return self.elems
 
     @property
@@ -169,9 +228,9 @@ class Seq:
 
     def VerbatimString(self, asliteral):
         if asliteral:
-            return f'"{"".join(map(lambda c: c.__escaped__(), self.Elements))}"'
+            return f"\"{''.join(map(lambda c: c.__escaped__(), self.Elements))}\""
         else:
-            return "".join(self)
+            return ''.join(self)
 
     def __dafnystr__(self) -> str:
         if self.isStr == 0:
@@ -180,15 +239,19 @@ class Seq:
             # This should never be true when using --unicode-char,
             # so it is safe to assume we are a sequence of UTF-16 code units.
             return string_from_utf_16(self.Elements)
-        return "[" + ", ".join(map(string_of, self.Elements)) + "]"
+        return '[' + ', '.join(map(string_of, self.Elements)) + ']'
 
     def __add__(self, other):
         return Seq(Concat(self.elems, other.elems), isStr=self.isStr and other.isStr)
 
     def __getitem__(self, key):
         if isinstance(key, slice):
-            indices = range(*key.indices(len(self)))
-            return Seq((self.Elements[i] for i in indices), isStr=self.isStr)
+            start, stop, step = key.indices(len(self))
+            elements = self.elems if isinstance(self.elems, Slice) else self.Elements
+            return Seq(Slice(elements, start=start, stop=stop, step=step), isStr=self.isStr)
+        elif isinstance(self.elems, Slice):
+            # The .Elements call takes linear time, but a single element can be retrieved from a Slice in constant time.
+            return self.elems[key]
         return self.Elements.__getitem__(key)
 
     def set(self, key, value):
@@ -206,27 +269,24 @@ class Seq:
         return self.Elements == other.Elements
 
     def __lt__(self, other):
-        return len(self) < len(other) and self == other[: len(self)]
+        return len(self) < len(other) and self == other[:len(self)]
 
     def __le__(self, other):
-        return len(self) <= len(other) and self == other[: len(self)]
-
+        return len(self) <= len(other) and self == other[:len(self)]
 
 # Convenience for translation when --unicode-char is enabled
-def SeqWithoutIsStrInference(__iterable=None):
-    return Seq(__iterable, isStr=None)
-
+def SeqWithoutIsStrInference(__iterable = None):
+    return Seq(__iterable, isStr = None)
 
 class Array:
     def __init__(self, initValue, *dims):
         def create_structure(initValue, *dims):
             return [initValue if len(dims) <= 1 else create_structure(initValue, *dims[1:]) for _ in range(dims[0])]
-
         self.dims = list(dims)
         self.arr = create_structure(initValue, *dims)
 
     def __dafnystr__(self) -> str:
-        return f"array{self.dims}"
+        return f'array{self.dims}'
 
     def __str__(self):
         return self.__dafnystr__()
@@ -250,10 +310,9 @@ class Array:
             self.arr[key] = value
             return
         arr = self.arr
-        for i in range(len(key) - 1):
+        for i in range(len(key)-1):
             arr = arr[key[i]]
         arr[key[-1]] = value
-
 
 class Set(frozenset):
     @property
@@ -264,10 +323,10 @@ class Set(frozenset):
     def AllSubsets(self):
         # https://docs.python.org/3/library/itertools.html#itertools-recipes
         s = list(self)
-        return map(Set, chain.from_iterable(combinations(s, r) for r in range(len(s) + 1)))
+        return map(Set, chain.from_iterable(combinations(s, r) for r in range(len(s)+1)))
 
     def __dafnystr__(self) -> str:
-        return "{" + ", ".join(map(string_of, self)) + "}"
+        return '{' + ', '.join(map(string_of, self)) + '}'
 
     def union(self, other):
         return Set(super().union(self, other))
@@ -284,10 +343,9 @@ class Set(frozenset):
     def __sub__(self, other):
         return Set(super().__sub__(other))
 
-
 class MultiSet(Counter):
     def __dafnystr__(self) -> str:
-        return "multiset{" + ", ".join(map(string_of, self.elements())) + "}"
+        return 'multiset{' + ', '.join(map(string_of, self.elements())) + '}'
 
     @property
     def cardinality(self):
@@ -341,15 +399,14 @@ class MultiSet(Counter):
         return not (self == other)
 
     def __setattr__(self, key, value):
-        raise TypeError("'MultiSet' object is immutable")
+        raise TypeError("'Map' object is immutable")
 
     def __contains__(self, item):
         return self[item] > 0
 
-
 class Map(dict):
     def __dafnystr__(self) -> str:
-        return "map[" + ", ".join(map(lambda i: f"{string_of(i[0])} := {string_of(i[1])}", self.items)) + "]"
+        return 'map[' + ', '.join(map(lambda i: f'{string_of(i[0])} := {string_of(i[1])}', self.items)) + ']'
 
     @property
     def Elements(self):
@@ -390,7 +447,6 @@ class Map(dict):
     def __setattr__(self, key, value):
         raise TypeError("'Map' object is immutable")
 
-
 class BigOrdinal:
     @staticmethod
     def is_limit(ord):
@@ -398,7 +454,7 @@ class BigOrdinal:
 
     @staticmethod
     def is_succ(ord):
-        return ord > 0
+        return 0 < ord
 
     @staticmethod
     def offset(ord):
@@ -409,7 +465,6 @@ class BigOrdinal:
         # at run time, every ORDINAL is a natural number
         return True
 
-
 class BigRational(Fraction):
     def __dafnystr__(self):
         if self.denominator == 1:
@@ -419,9 +474,9 @@ class BigRational(Fraction):
             return f"({self.numerator}.0 / {self.denominator}.0)"
         compensation, shift = correction
         if self.numerator < 0:
-            sign, digits = "-", str(-self.numerator * compensation)
+            sign, digits = "-", str(-self.numerator*compensation)
         else:
-            sign, digits = "", str(self.numerator * compensation)
+            sign, digits = "", str(self.numerator*compensation)
         if shift < len(digits):
             n = len(digits) - shift
             return f"{sign}{digits[:n]}.{digits[n:]}"
@@ -444,7 +499,7 @@ class BigRational(Fraction):
         if rem % 5 == 0 or rem % 2 == 0 or rem == 1:
             major, minor = (5, 2) if rem % 5 == 0 else (2, 5)
             rem, expB = BigRational.isolate_factor(major, rem)
-            return (minor**expB, expA + expB) if rem == 1 else None
+            return (minor**expB, expA+expB) if rem == 1 else None
         return None
 
     def __add__(self, other):
@@ -459,40 +514,34 @@ class BigRational(Fraction):
     def __truediv__(self, other):
         return BigRational(super().__truediv__(other))
 
-
 def plus_char(a, b):
     return chr(ord(a) + ord(b))
-
 
 def minus_char(a, b):
     return chr(ord(a) - ord(b))
 
-
 def euclidian_division(a, b):
-    if a >= 0:
-        if b >= 0:
+    if 0 <= a:
+        if 0 <= b:
             return a // b
         else:
             return -(a // (-b))
     else:
-        if b >= 0:
-            return -((-a - 1) // b) - 1
+        if 0 <= b:
+            return -((-a-1) // b) - 1
         else:
-            return (-a - 1) // (-b) + 1
-
+            return (-a-1) // (-b) + 1
 
 def euclidian_modulus(a, b):
     bp = abs(b)
-    if a >= 0:
+    if 0 <= a:
         return a % bp
     c = (-a) % bp
     return c if c == 0 else bp - c
 
-
 @dataclass
 class HaltException(Exception):
     message: str
-
 
 def quantifier(vals, frall, pred):
     for u in vals:
@@ -500,30 +549,25 @@ def quantifier(vals, frall, pred):
             return not frall
     return frall
 
-
 def AllBooleans():
     return [False, True]
-
 
 def AllChars():
     return (chr(i) for i in range(0x10000))
 
-
 def AllUnicodeChars():
-    return chain((CodePoint(chr(i)) for i in range(0xD800)), (CodePoint(chr(i)) for i in range(0xE000, 0x11_0000)))
-
+    return chain((CodePoint(chr(i)) for i in range(0xD800)), 
+                 (CodePoint(chr(i)) for i in range(0xE000, 0x11_0000)))
 
 def AllIntegers():
-    return (i // 2 if i % 2 == 0 else -i // 2 for i in count(0))
-
+    return (i//2 if i % 2 == 0 else -i//2 for i in count(0))
 
 def IntegerRange(lo, hi):
     if lo is None:
-        return count(hi - 1, -1)
+        return count(hi-1, -1)
     if hi is None:
         return count(lo)
     return range(lo, hi)
-
 
 class Doubler:
     def __init__(self, start):
@@ -535,10 +579,9 @@ class Doubler:
             yield i
             i *= 2
 
-
 class defaults:
     bool = staticmethod(lambda: False)
-    char = staticmethod(lambda: "D")
+    char = staticmethod(lambda: 'D')
     codepoint = staticmethod(lambda: CodePoint(defaults.char()))
     int = staticmethod(lambda: 0)
     real = staticmethod(BigRational)

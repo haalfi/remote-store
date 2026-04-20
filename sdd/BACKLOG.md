@@ -235,18 +235,32 @@ Items graduate through the SDD pipeline:
   - Spec 045 + 003 "Formal coverage" cross-refs added.
   - `sdd/formal/README.md` BK-140 gap table row 7 added.
 
-  **Part 2 (follow-up PR — needs native Dafny):**
-  - Regenerated `MemoryBackend-py/module_.py` + class-ordering fix.
-  - `tests/backends/dafny_oracle.py` adapter exposes the widened `Write`
-    signature (4th `metadata` parameter) and returns `WriteResult`.
+  **Part 2 (open in PR — in review):** Docker-based Dafny translate
+  (`scripts/dafny_translate.sh`) lifted the toolchain blocker — no native
+  install required.
+  - Regenerated `MemoryBackend-py/module_.py` with Part 1's `WriteResult`
+    contract (Dafny 4.11.0, matching `dafny_verify.sh`'s pin) and
+    automated class reorder (`scripts/_dafny_classorder.py`).
+  - `tests/backends/dafny_oracle.py` adapter passes `Option_None()` for
+    the fourth `metadata` parameter on `Write` calls.
   - Oracle-gated conformance run: `pytest tests/backends/test_conformance*.py
-    -k dafny-oracle` green.
+    -k dafny-oracle` — 154 passed, 5 skipped.
+
+  **Remaining follow-up:**
   - `MemoryBackendMinimal` satisfiability witness: a sibling refinement
     that declares neither `CapWriteResultNative` nor `CapUserMetadata`
     so the WR-010 `CapabilityNotSupported` branch and the `BasicSource`
     path of the `Write` postcondition are witnessed by a concrete class
     (currently dead code in `MemoryBackend`). Closes the refinement
     coverage gap flagged in the part-1 review.
+  - `DafnyOracleBackend` adapter widening (`tests/backends/dafny_oracle.py`):
+    accept `metadata=` and return `WriteResult` from `write()` /
+    `write_atomic()` to match the Part-1 ABC. Currently the adapter
+    hardcodes `Option_None()` and returns `None`, so the oracle cannot
+    witness the `HasUserMetadata(metadata) && CapUserMetadata in capabilities`
+    branch (WR-012 / WR-013) through conformance, and narrows the ABC
+    return type. Scoped out of Part 2 to keep the regen diff narrow;
+    tracked for a follow-up PR.
 
   **Out of scope:**
   - Proxy forwarding / event emission (WR-018, WR-019) — TLA+ territory,
