@@ -63,9 +63,14 @@ DRAIN_CHUNK = 1_048_576  # 1 MiB read chunks for checksum verification
 # Pipe cost: transfer layer overhead (transfer.py + streams.py + _stream.py).
 # Most backends read in _COPY_BUFSIZE (256 KiB) chunks; when Azure is the
 # write destination, the Azure SDK calls source_stream.read(_AZURE_BLOCK_SIZE)
-# (1 MiB), so the pipe holds one 1 MiB buffer.  Threshold at 1.5 MiB gives
-# 50% headroom over the 1 MiB Azure block size.
-PIPE_THRESHOLD = 1536 * 1024  # 1.5 MiB
+# (1 MiB), and its staged-block uploader keeps the *previous* chunk alive
+# until the next stage_block ack returns — so at sample time two 1 MiB
+# buffers are live simultaneously (current + previously-staged).  Sources
+# wrapped in io.BufferedReader (SFTP, Azure) attribute both chunks to the
+# innermost Python frame above the C-level read (ProgressReader.read in
+# ext/streams.py), which lands in this filter.  Threshold at 2.25 MiB gives
+# ~12% headroom over 2 × _AZURE_BLOCK_SIZE.  See BUG-174.
+PIPE_THRESHOLD = 2304 * 1024  # 2.25 MiB
 
 # Total cost thresholds (as multipliers of file_size).
 # Lazy-lazy hops carry a ~4 MiB floor from s3fs multipart upload staging
