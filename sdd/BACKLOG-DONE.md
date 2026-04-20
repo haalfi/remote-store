@@ -5,6 +5,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-151b — Retire per-backend `WriteResult` test duplication**
+  Follow-up to ID-151 Part 3. With `TestWriteResultConformance` now covering
+  every backend's `WriteResult` path+size, source, rich-field gating,
+  last_modified, `get_file_info` divergence, and metadata echo/round-trip,
+  the per-backend `write` / `write_atomic` / size / metadata-echo methods
+  were redundant. Deleted `TestLocalWriteResult`, `TestSFTPWriteResult`,
+  `TestS3PyArrowWriteResult`, and the generic overlap from `TestS3WriteResult`,
+  `TestAzureWriteResult`, `TestAzureWriteResultIntegration`. Kept SDK-level
+  assertions not expressible at the conformance layer: Azure etag stripping,
+  version_id population, digest-None-on-default, metadata-passed-to-SDK (mock
+  kwargs), non-HNS `write_atomic` path, `WRITE_RESULT_NATIVE` /
+  `USER_METADATA` capability declarations, and Azurite-wire etag /
+  last_modified checks. S3 `test_write_metadata_passed_to_sdk` retained as
+  the only HeadObject-verifying metadata test on that backend. Accepted
+  trade-off: WR-001 / WR-003 / WR-004 on Azure are now covered by
+  `TestWriteResultConformance` via the `azure_backend` Azurite fixture only;
+  Azurite-less matrix runs (Windows, macOS, Docker-less Linux) skip those
+  assertions rather than keep a mock-of-third-party smoke, per TESTING.md
+  Rules 5 (don't mock what you don't own) and 6 (prefer real dependencies).
+  `hatch run lint` clean; `hatch run test-cov` 97.98 %.
+
+  Related: ID-151 (done).
+
 - [x] **ID-151 — Dafny `WriteResult` extension: field-mapping + capability round-trip**
   Five-part series extending `sdd/formal/BackendContract.dfy` to model
   `WriteResult` and encoding WR-001a, WR-004, WR-008, WR-012, WR-013 as

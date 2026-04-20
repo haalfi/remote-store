@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import io
 import sys
 import tempfile
 from pathlib import Path
@@ -11,7 +10,6 @@ import pytest
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath
-from remote_store._models import WriteResult
 from remote_store.backends._local import LocalBackend
 
 pytestmark = pytest.mark.os_sensitive
@@ -277,45 +275,3 @@ class TestLocalBackendOpenAtomicPermission:
                 backend.open_atomic("file.txt"),
             ):
                 pass
-
-
-# ---------------------------------------------------------------------------
-# WriteResult (WR-001, WR-003, WR-004)
-# ---------------------------------------------------------------------------
-
-
-class TestLocalWriteResult:
-    """LocalBackend.write/write_atomic return a valid WriteResult (source='basic')."""
-
-    @pytest.mark.spec("WR-001")
-    @pytest.mark.spec("WR-004")
-    def test_write_bytes_returns_write_result(self, local_backend: LocalBackend) -> None:
-        from remote_store._path import RemotePath
-
-        result = local_backend.write("f.txt", b"hello")
-        assert isinstance(result, WriteResult)
-        assert result.source == "basic"
-        assert result.path == RemotePath("f.txt")
-        assert result.size == 5
-
-    @pytest.mark.spec("WR-003")
-    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
-    def test_write_bytes_size(self, local_backend: LocalBackend, payload: bytes, expected_size: int) -> None:
-        result = local_backend.write("f.txt", payload)
-        assert result.size == expected_size
-
-    @pytest.mark.spec("WR-003")
-    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
-    def test_write_binaryio_size(self, local_backend: LocalBackend, payload: bytes, expected_size: int) -> None:
-        result = local_backend.write("f.txt", io.BytesIO(payload))
-        assert result.size == expected_size
-
-    @pytest.mark.spec("WR-001")
-    def test_write_atomic_returns_write_result(self, local_backend: LocalBackend) -> None:
-        from remote_store._path import RemotePath
-
-        result = local_backend.write_atomic("f.txt", b"data")
-        assert isinstance(result, WriteResult)
-        assert result.source == "basic"
-        assert result.path == RemotePath("f.txt")
-        assert result.size == 4

@@ -1416,7 +1416,7 @@ class TestBlobServiceOpts:
 
 
 # =============================================================================
-# WriteResult (WR-001, WR-004, WR-009, WR-010, WR-012)
+# WriteResult (WR-001, WR-001a, WR-007, WR-009, WR-010, WR-012)
 # =============================================================================
 
 
@@ -1434,37 +1434,6 @@ class TestAzureWriteResult:
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
         return backend, bc
-
-    @pytest.mark.spec("WR-001")
-    @pytest.mark.spec("WR-004")
-    def test_write_returns_write_result(self) -> None:
-        backend, bc = self._make_non_hns()
-        bc.upload_blob.return_value = {"etag": '"abc123"', "last_modified": None, "version_id": None}
-        result = backend.write("file.txt", b"hello")
-        assert isinstance(result, WriteResult)
-        assert result.source == "native"
-
-    @pytest.mark.spec("WR-003")
-    def test_write_size_bytes_input(self) -> None:
-        backend, bc = self._make_non_hns()
-        bc.upload_blob.return_value = {}
-        result = backend.write("f.txt", b"hello world")
-        assert result.size == 11
-
-    @pytest.mark.spec("WR-003")
-    def test_write_size_binaryio_input(self) -> None:
-        import io as _io
-
-        backend, bc = self._make_non_hns()
-
-        def _consuming_upload(data: Any, **_kw: Any) -> dict[str, Any]:
-            if hasattr(data, "read"):
-                data.read()  # drain so _ByteCountingIO.count is updated
-            return {}
-
-        bc.upload_blob.side_effect = _consuming_upload
-        result = backend.write("f.txt", _io.BytesIO(b"streamed content"))
-        assert result.size == 16
 
     @pytest.mark.spec("WR-001a")
     def test_write_etag_stripped_and_lowercased(self) -> None:
@@ -1493,20 +1462,6 @@ class TestAzureWriteResult:
         bc.upload_blob.return_value = {}
         result = backend.write("f.txt", b"x")
         assert result.digest is None
-
-    @pytest.mark.spec("WR-012")
-    def test_write_metadata_echoed(self) -> None:
-        backend, bc = self._make_non_hns()
-        bc.upload_blob.return_value = {}
-        result = backend.write("f.txt", b"x", metadata={"key": "val"})
-        assert result.metadata == {"key": "val"}
-
-    @pytest.mark.spec("WR-012")
-    def test_write_metadata_none_when_not_passed(self) -> None:
-        backend, bc = self._make_non_hns()
-        bc.upload_blob.return_value = {}
-        result = backend.write("f.txt", b"x")
-        assert result.metadata is None
 
     @pytest.mark.spec("WR-012")
     def test_write_metadata_passed_to_sdk(self) -> None:
@@ -1547,26 +1502,7 @@ class TestAzureWriteResult:
 
 @_needs_azurite
 class TestAzureWriteResultIntegration:
-    """Azurite-based integration tests for WriteResult (WR-001, WR-003, WR-012)."""
-
-    @pytest.mark.spec("WR-001")
-    @pytest.mark.spec("WR-004")
-    def test_write_returns_native_write_result(self, azure_backend: Backend) -> None:
-        result = azure_backend.write("wr.txt", b"hello world")
-        assert isinstance(result, WriteResult)
-        assert result.source == "native"
-
-    @pytest.mark.spec("WR-003")
-    def test_write_size_bytes(self, azure_backend: Backend) -> None:
-        result = azure_backend.write("sz.txt", b"twelve bytes")
-        assert result.size == 12
-
-    @pytest.mark.spec("WR-003")
-    def test_write_size_binaryio(self, azure_backend: Backend) -> None:
-        import io as _io
-
-        result = azure_backend.write("sz2.txt", _io.BytesIO(b"streamed"))
-        assert result.size == 8
+    """Azurite-based integration tests for Azure-wire WriteResult behaviour."""
 
     @pytest.mark.spec("WR-001a")
     def test_write_etag_non_empty(self, azure_backend: Backend) -> None:
@@ -1579,21 +1515,9 @@ class TestAzureWriteResultIntegration:
         result = azure_backend.write("lm.txt", b"data")
         assert result.last_modified is not None
 
-    @pytest.mark.spec("WR-012")
-    def test_write_metadata_echoed(self, azure_backend: Backend) -> None:
-        result = azure_backend.write("meta.txt", b"data", metadata={"Author": "test", "Version": "1"})
-        assert result.metadata == {"Author": "test", "Version": "1"}
-
     @pytest.mark.spec("WR-013")
     def test_write_metadata_round_trips_via_file_info(self, azure_backend: Backend) -> None:
         azure_backend.write("rt.txt", b"data", metadata={"env": "prod"})
         fi = azure_backend.get_file_info("rt.txt")
         assert fi.metadata is not None
         assert fi.metadata.get("env") == "prod"
-
-    @pytest.mark.spec("WR-001")
-    def test_write_atomic_returns_write_result(self, azure_backend: Backend) -> None:
-        result = azure_backend.write_atomic("at_wr.txt", b"atomic")
-        assert isinstance(result, WriteResult)
-        assert result.size == 6
-        assert result.source == "native"
