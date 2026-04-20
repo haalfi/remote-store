@@ -28,7 +28,7 @@ from remote_store._errors import (  # noqa: E402
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo, WriteResult  # noqa: E402
+from remote_store._models import FileInfo, FolderInfo  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -1037,48 +1037,7 @@ class TestS3Resolve:
 
 
 class TestS3WriteResult:
-    """S3Backend.write/write_atomic return a valid WriteResult."""
-
-    @pytest.mark.spec("WR-001")
-    @pytest.mark.spec("WR-004")
-    def test_write_returns_write_result(self, s3_backend: Backend) -> None:
-        from remote_store._path import RemotePath
-
-        result = s3_backend.write("f.txt", b"hello")
-        assert isinstance(result, WriteResult)
-        assert result.source == "native"
-        assert result.path == RemotePath("f.txt")
-        assert result.size == 5
-
-    @pytest.mark.spec("WR-003")
-    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
-    def test_write_size_bytes(self, s3_backend: Backend, payload: bytes, expected_size: int) -> None:
-        result = s3_backend.write("f.txt", payload)
-        assert result.size == expected_size
-
-    @pytest.mark.spec("WR-003")
-    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
-    def test_write_size_binaryio(self, s3_backend: Backend, payload: bytes, expected_size: int) -> None:
-        import io
-
-        result = s3_backend.write("f.txt", io.BytesIO(payload))
-        assert result.size == expected_size
-
-    @pytest.mark.spec("WR-001")
-    def test_write_atomic_returns_write_result(self, s3_backend: Backend) -> None:
-        from remote_store._path import RemotePath
-
-        result = s3_backend.write_atomic("f.txt", b"data")
-        assert isinstance(result, WriteResult)
-        assert result.source == "native"
-        assert result.path == RemotePath("f.txt")
-        assert result.size == 4
-        assert result.metadata is None
-
-    @pytest.mark.spec("WR-012")
-    def test_write_metadata_echoed(self, s3_backend: Backend) -> None:
-        result = s3_backend.write("f.txt", b"x", metadata={"k": "v"})
-        assert result.metadata == {"k": "v"}
+    """S3Backend.write/write_atomic WriteResult behaviour not covered by conformance."""
 
     @pytest.mark.spec("WR-012")
     def test_write_metadata_passed_to_sdk(self, s3_backend: Backend) -> None:

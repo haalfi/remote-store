@@ -27,7 +27,7 @@ from remote_store._errors import (  # noqa: E402
     NotFound,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo, WriteResult  # noqa: E402
+from remote_store._models import FileInfo, FolderInfo  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -1044,47 +1044,3 @@ class TestS3PyArrowRetryNonDefaultParams:
 
 
 # endregion
-
-
-# ---------------------------------------------------------------------------
-# WriteResult (WR-001, WR-003, WR-004)
-# ---------------------------------------------------------------------------
-
-
-class TestS3PyArrowWriteResult:
-    """S3PyArrowBackend.write/write_atomic return a valid WriteResult (source='basic')."""
-
-    @pytest.mark.spec("WR-001")
-    @pytest.mark.spec("WR-004")
-    def test_write_returns_write_result(self, s3pa_backend: Backend) -> None:
-        from remote_store._path import RemotePath
-
-        result = s3pa_backend.write("f.txt", b"hello")
-        assert isinstance(result, WriteResult)
-        assert result.source == "basic"
-        assert result.path == RemotePath("f.txt")
-        assert result.size == 5
-
-    @pytest.mark.spec("WR-003")
-    @pytest.mark.parametrize(("payload", "expected_size"), [(b"hello world", 11), (b"", 0)])
-    def test_write_size_bytes(self, s3pa_backend: Backend, payload: bytes, expected_size: int) -> None:
-        result = s3pa_backend.write("f.txt", payload)
-        assert result.size == expected_size
-
-    @pytest.mark.spec("WR-003")
-    @pytest.mark.parametrize(("payload", "expected_size"), [(b"streamed", 8), (b"", 0)])
-    def test_write_size_binaryio(self, s3pa_backend: Backend, payload: bytes, expected_size: int) -> None:
-        import io
-
-        result = s3pa_backend.write("f.txt", io.BytesIO(payload))
-        assert result.size == expected_size
-
-    @pytest.mark.spec("WR-001")
-    def test_write_atomic_returns_write_result(self, s3pa_backend: Backend) -> None:
-        from remote_store._path import RemotePath
-
-        result = s3pa_backend.write_atomic("f.txt", b"data")
-        assert isinstance(result, WriteResult)
-        assert result.source == "basic"
-        assert result.path == RemotePath("f.txt")
-        assert result.size == 4

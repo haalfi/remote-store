@@ -144,6 +144,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Retired per-backend `WriteResult` test duplication** (ID-151b): removed
+  `TestLocalWriteResult`, `TestSFTPWriteResult`, `TestS3PyArrowWriteResult`,
+  and the generic `write` / `write_atomic` / size / metadata-echo methods from
+  `TestS3WriteResult`, `TestAzureWriteResult`, and
+  `TestAzureWriteResultIntegration`. All removed cases are now covered by
+  `TestWriteResultConformance`. Azure- and S3-specific SDK-level assertions
+  (etag stripping, version_id, digest, metadata-passed-to-SDK, HNS atomic
+  path, capability declarations, Azurite etag / last_modified wire checks)
+  are retained.
+
 - **Dependabot auto-merge workflow hardening**: restores the
   `github.repository == 'haalfi/remote-store'` guard, removes the unused
   `dependabot/fetch-metadata` step, switches the merge command to
