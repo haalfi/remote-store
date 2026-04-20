@@ -234,6 +234,10 @@ _WRITE_OPS = [
 # last_modified.  Add an entry when a new declaring backend temporarily lags.
 _LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
 
+# reason → (message, strict).  Empty: all declaring backends currently agree
+# on digest between write() and get_file_info().  Add an entry when a new
+# declaring backend's write path is known not to surface a digest that
+# get_file_info() does.
 _DIGEST_XFAIL: dict[str, tuple[str, bool]] = {}
 
 

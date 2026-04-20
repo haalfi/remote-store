@@ -193,26 +193,33 @@ assert backend.is_folder("dir") is False  # folder vanishes
 
 ### S3-024: Digest Population via `ChecksumMode: ENABLED`
 
-**Invariant:** `get_file_info` populates `FileInfo.digest` from the `x-amz-checksum-*`
-response header when the object was uploaded with a checksum algorithm.
+**Invariant:** Both `write()` and `get_file_info` populate their respective
+digest fields via `head_object(..., ChecksumMode="ENABLED")`, using the shared
+`_digest_from_head_response` helper. This guarantees `WriteResult.digest` and
+`FileInfo.digest` are always consistent for the same key (WR-001a).
 **Mechanism:**
-1. `get_file_info` calls `_fs.call_s3("head_object", Bucket=..., Key=...,
-   ChecksumMode="ENABLED")` unconditionally — this single request returns both
-   standard metadata and any `x-amz-checksum-*` headers.
-2. The base64-encoded checksum value from the response is decoded to hex and
+1. After a successful upload, `write()` calls `_fs.call_s3("head_object",
+   Bucket=..., Key=..., ChecksumMode="ENABLED")` to retrieve checksum headers
+   and stores the result in `WriteResult.digest`.
+2. `get_file_info` issues the same `head_object` call and stores the result
+   in `FileInfo.digest`.
+3. In both cases, the base64-encoded checksum value is decoded to hex and
    wrapped in a `ContentDigest(algorithm, hex_value)`.
 **Supported algorithms:** `sha256`, `sha1`, `crc32`, `crc32c` (case-insensitive on input,
 lowercase-normalized in `ContentDigest`).
 **Postconditions:**
-- `FileInfo.digest` is a `ContentDigest` with the correct algorithm and hex value when
-  the `HeadObject` response with `ChecksumMode: ENABLED` contains any known checksum key.
-- `FileInfo.digest` may be a `ContentDigest` even for objects uploaded without an
-  explicit checksum algorithm, because Amazon S3 (and moto) automatically computes and
-  stores CRC32 checksums for new objects.
-- `FileInfo.digest` is `None` only when the response contains no known checksum key, or
+- `WriteResult.digest` and `FileInfo.digest` agree for the same key — both
+  are populated from the same `head_object` mechanism.
+- Both fields are a `ContentDigest` with the correct algorithm and hex value
+  when the `HeadObject` response contains any known checksum key.
+- Both may be a `ContentDigest` even without an explicit checksum algorithm,
+  because Amazon S3 (and moto) automatically computes and stores CRC32
+  checksums for new objects since late 2022.
+- Both are `None` only when the response contains no known checksum key, or
   base64 decoding the value fails.
-- `FileInfo.digest` from listing paths (`list_files`, `iter_children`) is always `None`
-  — the extra request is only issued by `get_file_info`.
+- `FileInfo.digest` from listing paths (`list_files`, `iter_children`) is
+  always `None` — the extra request is only issued by `get_file_info` and
+  `write()`.
 
 ### S3-025: Endpoint URL Normalization
 
