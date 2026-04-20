@@ -78,6 +78,15 @@ def _azure_available() -> bool:
         return False
 
 
+def _sqlblob_available() -> bool:
+    try:
+        import sqlalchemy  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _azurite_reachable() -> bool:
     """Check if Azurite is reachable (started externally via Docker)."""
     try:
@@ -217,6 +226,11 @@ _local_param = pytest.param("local", marks=pytest.mark.os_sensitive)
 _memory_param = pytest.param("memory")
 _dafny_oracle_param = pytest.param("dafny-oracle")
 
+_sqlblob_param = pytest.param(
+    "sql-blob",
+    marks=pytest.mark.skipif(not _sqlblob_available(), reason="sqlalchemy not installed"),
+)
+
 
 @pytest.fixture(
     params=[
@@ -227,6 +241,7 @@ _dafny_oracle_param = pytest.param("dafny-oracle")
         _s3_pyarrow_param,
         _sftp_param,
         _azure_param,
+        _sqlblob_param,
         _dafny_oracle_param,
     ]
 )
@@ -327,6 +342,12 @@ def backend(
         from tests.backends.dafny_oracle import DafnyOracleBackend
 
         yield DafnyOracleBackend()
+    elif request.param == "sql-blob":
+        from remote_store.backends._sqlalchemy import SQLBlobBackend
+
+        b = SQLBlobBackend(url="sqlite:///:memory:")
+        yield b
+        b.close()
     elif request.param == "azure":
         from remote_store.backends._azure import AzureBackend
 
