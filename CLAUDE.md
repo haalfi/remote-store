@@ -42,10 +42,10 @@ the failing test, run it, see it fail** before implementing the fix.
 
 `CHANGELOG.md` has two modes:
 
-- **[Unreleased] (during development):** one stub line per completed backlog item —
-  `- <ID> <Title> [<type>]` where type is `Feature`, `Fix`, `Docs`, or `Internal`.
-  Place under the correct section heading (`### Added`, `### Fixed`, etc.). No details.
-- **At release:** the release skill condenses stubs into polished prose and updates `FEATURES.md`.
+During development, add one stub line per completed backlog item under `[Unreleased]`:
+`- <ID> <Title> [<type>]` where type is `Feature`, `Fix`, `Docs`, or `Internal`.
+Place under the correct section heading (`### Added`, `### Fixed`, etc.). No details.
+The release skill handles everything else.
 
 ## Dev commands
 
