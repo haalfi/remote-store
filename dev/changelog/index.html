@@ -11500,6 +11500,15 @@
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Dependabot auto-merge workflow hardening</strong>: restores the
+  <code>github.repository == 'haalfi/remote-store'</code> guard, removes the unused
+  <code>dependabot/fetch-metadata</code> step, switches the merge command to
+  <code>--squash --delete-branch</code>, adds a per-PR <code>concurrency</code> group, and
+  guards on <code>pull_request.state == 'open'</code>. Header comment documents the
+  intentional <code>pull_request_review</code> trigger and the recovery path for
+  PRs that miss the workflow window.</p>
+</li>
+<li>
 <p><strong>Python WR-* conformance assertions</strong> (ID-151, part 3): adds
   <code>TestWriteResultConformance</code> in <code>tests/backends/test_conformance.py</code>,
   exercising every backend's <code>write</code> / <code>write_atomic</code> return value against
