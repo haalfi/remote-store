@@ -38,15 +38,6 @@ the failing test, run it, see it fail** before implementing the fix.
 - **Completing work:** done → move item to `BACKLOG-DONE.md` (same commit). Partially done → split: ship done part to `BACKLOG-DONE.md`, create new ID here for remainder, link both.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
-## CHANGELOG (mandatory)
-
-`CHANGELOG.md` has two modes:
-
-During development, add one stub line per completed backlog item under `[Unreleased]`:
-`- <ID> <Title> [<type>]` where type is `Feature`, `Fix`, `Docs`, or `Internal`.
-Place under the correct section heading (`### Added`, `### Fixed`, etc.). No details.
-The release skill handles everything else.
-
 ## Dev commands
 
 Scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.scripts]`.
