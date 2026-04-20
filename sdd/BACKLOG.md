@@ -39,6 +39,33 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
+- [ ] **BUG-175 — `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (MEDIUM)
+  `_sqlalchemy.py:734-745`: for SQLite dialects, `glob()` uses
+  `t.c.key GLOB pattern` as an SQL-side pre-filter, then applies
+  `pattern_to_regex` to the rows returned. SQLite's `GLOB` operator treats
+  `**` as two independent `*`s and `/` as a literal separator — it cannot
+  match the zero-directory case that `pattern_to_regex` and the spec
+  (018 § "``**`` matches zero or more path segments") require. Rows that
+  the regex would accept are silently dropped by the SQL filter before
+  the regex runs.
+  **Repro:**
+  ```python
+  b = SQLBlobBackend(url="sqlite:///:memory:")
+  b.write("gr/a.txt", b"a")
+  b.write("gr/sub/b.txt", b"b")
+  # Pattern 'gr/**/*.txt' must match both files per spec 018.
+  assert sorted(str(f.path) for f in b.glob("gr/**/*.txt")) == ["gr/a.txt", "gr/sub/b.txt"]
+  # FAILS — returns only ['gr/sub/b.txt'].
+  ```
+  Fix candidates: (a) drop the SQLite pre-filter when the pattern contains
+  `**` and rely on the regex alone; (b) follow the S3 `extract_prefix`
+  approach and use the longest non-wildcard prefix as a `LIKE` narrowing,
+  then regex-filter; (c) translate `**/` into a regex-equivalent SQL pattern
+  directly (no obvious SQLite equivalent). Option (b) matches the pattern
+  already used by S3/Azure glob implementations.
+  Currently skipped in the conformance suite (recursive-glob case) pending
+  a fix. Non-SQLite dialects use `LIKE` pre-filtering and are not affected.
+
 - [ ] **BUG-173 — Azure HNS `write_atomic` leaks WriteResult-construction failures as write failures** (LOW)
   `_azure.py:488-494` (HNS-only, `# pragma: no cover`): after a successful
   `tmp_fc.rename_file()` commit, `dst_fc.get_file_properties()` is called to

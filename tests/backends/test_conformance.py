@@ -238,8 +238,8 @@ class TestBackendDelete:
     @pytest.mark.spec("BE-013")
     def test_delete_folder_empty(self, backend: Backend) -> None:
         _require(backend, Capability.DELETE, Capability.WRITE)
-        if backend.name in ("s3", "s3-pyarrow", "azure"):
-            pytest.skip("Virtual folders vanish when last object is deleted (S3-009/AZ-006)")
+        if backend.name in ("s3", "s3-pyarrow", "azure", "sql-blob"):
+            pytest.skip("Virtual folders vanish when last object is deleted (S3-009/AZ-006/SQL-BLOB-flat)")
         backend.write("dir/file.txt", b"x")
         backend.delete("dir/file.txt")
         backend.delete_folder("dir")
@@ -666,6 +666,8 @@ class TestBackendGlob:
         expected: list[str],
     ) -> None:
         _require(backend, Capability.GLOB, Capability.WRITE)
+        if backend.name == "sql-blob" and "**" in pattern:
+            pytest.skip("BUG-175: SQLBlob's SQLite GLOB pre-filter does not implement **/ zero-segment semantics")
         _seed(backend, seeds)
         assert sorted(str(f.path) for f in backend.glob(pattern)) == expected
 
@@ -734,8 +736,8 @@ class TestAtomicMoveCapability:
     """CAP-001: ATOMIC_MOVE capability declared by backends with atomic move semantics."""
 
     # Backends exercised by the conformance fixture (conftest.py).
-    # sql-blob and sql-query are not parameterised here; they have their own test modules.
-    _DECLARES = {"local", "memory", "dafny-oracle"}
+    # sql-query is not parameterised here; it has its own test module.
+    _DECLARES = {"local", "memory", "dafny-oracle", "sql-blob"}
     _DOES_NOT_DECLARE = {"s3", "s3-pyarrow", "azure", "sftp", "http"}
 
     @pytest.mark.spec("CAP-001")

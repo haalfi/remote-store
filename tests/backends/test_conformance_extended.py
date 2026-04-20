@@ -37,10 +37,10 @@ if TYPE_CHECKING:
 
 # Backends that use flat/virtual namespace — no real directory entries.
 # Update this set when adding a new flat-namespace backend.
-_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http"})
+_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})
 
 # Backends that do not yet handle self-copy/self-move correctly.
-_NO_SELF_OP_BACKENDS = frozenset({"azure", "http"})
+_NO_SELF_OP_BACKENDS = frozenset({"azure", "http", "sql-blob"})
 
 
 def _require(backend: Backend, *caps: Capability) -> None:
