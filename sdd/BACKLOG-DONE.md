@@ -5,6 +5,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-151c — Hypothesis property coverage for `WriteResult`**
+  Step 3 of the WriteResult testing plan. `TestWriteResultConformance`
+  (ID-151 Part 3 / ID-151b) covers fixed-example WR-001a / WR-003 / WR-004 /
+  WR-005 / WR-012 / WR-013 across the full fixture matrix; a property net
+  then exercises size-regime randomness and metadata-shape randomness that
+  example-based cases cannot enumerate. Adds `tests/test_pbt_write_result.py`
+  with two properties:
+  1. `WriteResult.size == len(payload)` for `write` / `write_atomic` across
+     payload regimes (0 B, `<` 4 KiB small, 256 KiB–1 MiB BUG-168 buffer
+     boundary) on `MemoryBackend` (fast oracle) and `LocalBackend` (only
+     backend that exercises a real `BufferedWriter`), for both `bytes` and
+     `BinaryIO` inputs under `overwrite=True` / `overwrite=False`.
+  2. Metadata round-trip (WR-012 echo + WR-013 `get_file_info` round-trip)
+     on S3 via `moto` (server mode) and Azure via Azurite (when reachable)
+     — the two v1 backends that declare `USER_METADATA` and go through a
+     real SDK serialisation path. Strategies are module-scope and
+     WR-011-compliant (ASCII keys, printable-ASCII values, 2 KB cap).
+     Profiles inherit from `tests/conftest.py` (dev 50 / ci 100 /
+     nightly 1000). Per TESTING.md Rules 5 + 6, no mocks of third-party
+     SDKs — Azurite / moto are used as the real dependencies.
+
+  Related: ID-151 (done), ID-151b (done), BUG-168 (done).
+
 - [x] **ID-151b — Retire per-backend `WriteResult` test duplication**
   Follow-up to ID-151 Part 3. With `TestWriteResultConformance` now covering
   every backend's `WriteResult` path+size, source, rich-field gating,
