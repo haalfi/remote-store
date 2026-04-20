@@ -794,6 +794,410 @@ class MemoryBackend(Backend):
             d_0_stored__metadata_ = metadata
         elif True:
             d_0_stored__metadata_ = Option_None()
+        d_1_ts_: Option
+        if (Capability_CapWriteResultNative()) in ((self).capabilities):
+            d_1_ts_ = Option_Some(0)
+        elif True:
+            d_1_ts_ = Option_None()
+        d_2_info_: FileInfo
+        d_2_info_ = FileInfo_FileInfo(path, path, len(content), Option_None(), Option_None(), d_1_ts_, d_0_stored__metadata_)
+        (self).fs = (self.fs).set(path, Entry_FileEntry(content, d_2_info_))
+        d_3_wr__source_: WriteSource
+        if (Capability_CapWriteResultNative()) in ((self).capabilities):
+            d_3_wr__source_ = WriteSource_NativeSource()
+        elif True:
+            d_3_wr__source_ = WriteSource_BasicSource()
+        r = Result_Ok(WriteResult_WriteResult(path, len(content), Option_None(), Option_None(), Option_None(), d_1_ts_, d_0_stored__metadata_, d_3_wr__source_))
+        return r
+
+    def Delete(self, path, missing__ok):
+        r: Result = Result.default()()
+        if (path) in (self.fs):
+            source0_ = (self.fs)[path]
+            with _dafny.label("match0"):
+                if True:
+                    if source0_.is_DirEntry:
+                        r = Result_Err(Error_InvalidPath(path, (self).name))
+                        raise _dafny.Break("match0")
+                if True:
+                    def iife0_():
+                        coll0_ = _dafny.Map()
+                        compr_0_: _dafny.Seq
+                        for compr_0_ in (self.fs).keys.Elements:
+                            d_0_k_: _dafny.Seq = compr_0_
+                            if Path._Is(d_0_k_):
+                                if ((d_0_k_) in (self.fs)) and ((d_0_k_) != (path)):
+                                    coll0_[d_0_k_] = (self.fs)[d_0_k_]
+                        return _dafny.Map(coll0_)
+                    (self).fs = iife0_()
+                    
+                    r = Result_Ok(())
+                pass
+        elif True:
+            if missing__ok:
+                r = Result_Ok(())
+            elif True:
+                r = Result_Err(Error_NotFound(path, (self).name))
+        return r
+
+    def DeleteFolder(self, path, recursive, missing__ok):
+        r: Result = Result.default()()
+        if ((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
+        if not(((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry)):
+            if missing__ok:
+                r = Result_Ok(())
+            elif True:
+                r = Result_Err(Error_NotFound(path, (self).name))
+            return r
+        if (not(recursive)) and (default__.HasChildren(self.fs, path)):
+            r = Result_Err(Error_DirectoryNotEmpty(path, (self).name))
+            return r
+        if recursive:
+            def iife0_():
+                coll0_ = _dafny.Map()
+                compr_0_: _dafny.Seq
+                for compr_0_ in (self.fs).keys.Elements:
+                    d_0_k_: _dafny.Seq = compr_0_
+                    if Path._Is(d_0_k_):
+                        if (((d_0_k_) in (self.fs)) and ((d_0_k_) != (path))) and (not(default__.IsChildOf(d_0_k_, path))):
+                            coll0_[d_0_k_] = (self.fs)[d_0_k_]
+                return _dafny.Map(coll0_)
+            (self).fs = iife0_()
+            
+        elif True:
+            def iife1_():
+                coll1_ = _dafny.Map()
+                compr_1_: _dafny.Seq
+                for compr_1_ in (self.fs).keys.Elements:
+                    d_1_k_: _dafny.Seq = compr_1_
+                    if Path._Is(d_1_k_):
+                        if ((d_1_k_) in (self.fs)) and ((d_1_k_) != (path)):
+                            coll1_[d_1_k_] = (self.fs)[d_1_k_]
+                return _dafny.Map(coll1_)
+            (self).fs = iife1_()
+            
+        r = Result_Ok(())
+        return r
+
+    def ListFiles(self, path, recursive, max__depth):
+        r: Result = Result.default()()
+        if (path) not in (self.fs):
+            r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
+            return r
+        d_0_result_: _dafny.Seq
+        d_0_result_ = _dafny.SeqWithoutIsStrInference([])
+        d_1_remaining_: _dafny.Set
+        d_1_remaining_ = (self.fs).keys
+        while (d_1_remaining_) != (_dafny.Set({})):
+            d_2_k_: _dafny.Seq
+            with _dafny.label("_ASSIGN_SUCH_THAT_d_0"):
+                assign_such_that_0_: _dafny.Seq
+                for assign_such_that_0_ in (d_1_remaining_).Elements:
+                    d_2_k_ = assign_such_that_0_
+                    if Path._Is(d_2_k_):
+                        if (d_2_k_) in (d_1_remaining_):
+                            raise _dafny.Break("_ASSIGN_SUCH_THAT_d_0")
+                raise Exception("assign-such-that search produced no value")
+                pass
+            d_1_remaining_ = (d_1_remaining_) - (_dafny.Set({d_2_k_}))
+            if (((d_2_k_) in (self.fs)) and (((self.fs)[d_2_k_]).is_FileEntry)) and (default__.IsChildOf(d_2_k_, path)):
+                d_3_d_: int
+                d_3_d_ = default__.Depth(path, d_2_k_)
+                d_4_dominated_: bool
+                if not(recursive):
+                    d_4_dominated_ = (d_3_d_) == (0)
+                elif (max__depth) >= (0):
+                    d_4_dominated_ = (d_3_d_) <= (max__depth)
+                elif True:
+                    d_4_dominated_ = True
+                if d_4_dominated_:
+                    d_5_fi_: FileInfo
+                    d_5_fi_ = default__.BasicFileInfo(d_2_k_, d_2_k_, len(((self.fs)[d_2_k_]).content))
+                    d_0_result_ = (d_0_result_) + (_dafny.SeqWithoutIsStrInference([d_5_fi_]))
+        r = Result_Ok(d_0_result_)
+        return r
+
+    def ListFolders(self, path):
+        r: Result = Result.default()()
+        if (path) not in (self.fs):
+            r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
+            return r
+        d_0_result_: _dafny.Seq
+        d_0_result_ = _dafny.SeqWithoutIsStrInference([])
+        d_1_remaining_: _dafny.Set
+        d_1_remaining_ = (self.fs).keys
+        while (d_1_remaining_) != (_dafny.Set({})):
+            d_2_k_: _dafny.Seq
+            with _dafny.label("_ASSIGN_SUCH_THAT_d_0"):
+                assign_such_that_0_: _dafny.Seq
+                for assign_such_that_0_ in (d_1_remaining_).Elements:
+                    d_2_k_ = assign_such_that_0_
+                    if Path._Is(d_2_k_):
+                        if (d_2_k_) in (d_1_remaining_):
+                            raise _dafny.Break("_ASSIGN_SUCH_THAT_d_0")
+                raise Exception("assign-such-that search produced no value")
+                pass
+            d_1_remaining_ = (d_1_remaining_) - (_dafny.Set({d_2_k_}))
+            if (((d_2_k_) in (self.fs)) and (((self.fs)[d_2_k_]).is_DirEntry)) and (default__.IsChildOf(d_2_k_, path)):
+                d_3_fe_: FolderEntry
+                d_3_fe_ = FolderEntry_FolderEntry(d_2_k_, d_2_k_)
+                d_0_result_ = (d_0_result_) + (_dafny.SeqWithoutIsStrInference([d_3_fe_]))
+        r = Result_Ok(d_0_result_)
+        return r
+
+    def GetFileInfo(self, path):
+        r: Result = Result.default()()
+        if (path) in (self.fs):
+            source0_ = (self.fs)[path]
+            with _dafny.label("match0"):
+                if True:
+                    if source0_.is_FileEntry:
+                        d_0_info_ = source0_.info
+                        r = Result_Ok(d_0_info_)
+                        raise _dafny.Break("match0")
+                if True:
+                    r = Result_Err(Error_InvalidPath(path, (self).name))
+                pass
+        elif True:
+            r = Result_Err(Error_NotFound(path, (self).name))
+        return r
+
+    def GetFolderInfo(self, path):
+        r: Result = Result.default()()
+        if (path) in (self.fs):
+            source0_ = (self.fs)[path]
+            with _dafny.label("match0"):
+                if True:
+                    if source0_.is_DirEntry:
+                        d_0_file__count_: int
+                        d_0_file__count_ = 0
+                        d_1_total__size_: int
+                        d_1_total__size_ = 0
+                        d_2_remaining_: _dafny.Set
+                        d_2_remaining_ = (self.fs).keys
+                        while (d_2_remaining_) != (_dafny.Set({})):
+                            d_3_k_: _dafny.Seq
+                            with _dafny.label("_ASSIGN_SUCH_THAT_d_0"):
+                                assign_such_that_0_: _dafny.Seq
+                                for assign_such_that_0_ in (d_2_remaining_).Elements:
+                                    d_3_k_ = assign_such_that_0_
+                                    if Path._Is(d_3_k_):
+                                        if (d_3_k_) in (d_2_remaining_):
+                                            raise _dafny.Break("_ASSIGN_SUCH_THAT_d_0")
+                                raise Exception("assign-such-that search produced no value")
+                                pass
+                            d_2_remaining_ = (d_2_remaining_) - (_dafny.Set({d_3_k_}))
+                            if (((d_3_k_) in (self.fs)) and (((self.fs)[d_3_k_]).is_FileEntry)) and (default__.IsChildOf(d_3_k_, path)):
+                                d_0_file__count_ = (d_0_file__count_) + (1)
+                                d_1_total__size_ = (d_1_total__size_) + ((((self.fs)[d_3_k_]).info).size)
+                        r = Result_Ok(FolderInfo_FolderInfo(path, path, d_0_file__count_, d_1_total__size_))
+                        raise _dafny.Break("match0")
+                if True:
+                    r = Result_Err(Error_InvalidPath(path, (self).name))
+                pass
+        elif True:
+            r = Result_Err(Error_NotFound(path, (self).name))
+        return r
+
+    def Move(self, src, dst, overwrite):
+        r: Result = Result.default()()
+        if ((src) in (self.fs)) and (((self.fs)[src]).is_DirEntry):
+            r = Result_Err(Error_InvalidPath(src, (self).name))
+            return r
+        if not(((src) in (self.fs)) and (((self.fs)[src]).is_FileEntry)):
+            r = Result_Err(Error_NotFound(src, (self).name))
+            return r
+        if ((dst) in (self.fs)) and (((self.fs)[dst]).is_DirEntry):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
+        if (src) == (dst):
+            r = Result_Ok(())
+            return r
+        if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
+            r = Result_Err(Error_AlreadyExists(dst, (self).name))
+            return r
+        (self).EnsureParents(dst)
+        d_0_srcEntry_: Entry
+        d_0_srcEntry_ = (self.fs)[src]
+        d_1_newInfo_: FileInfo
+        d_1_newInfo_ = default__.BasicFileInfo(dst, dst, ((d_0_srcEntry_).info).size)
+        d_2_newEntry_: Entry
+        d_2_newEntry_ = Entry_FileEntry((d_0_srcEntry_).content, d_1_newInfo_)
+        def iife0_():
+            coll0_ = _dafny.Map()
+            compr_0_: _dafny.Seq
+            for compr_0_ in (self.fs).keys.Elements:
+                d_3_k_: _dafny.Seq = compr_0_
+                if ((d_3_k_) in (self.fs)) and ((d_3_k_) != (src)):
+                    coll0_[d_3_k_] = (self.fs)[d_3_k_]
+            return _dafny.Map(coll0_)
+        (self).fs = (iife0_()
+        ).set(dst, d_2_newEntry_)
+        r = Result_Ok(())
+        return r
+
+    def Copy(self, src, dst, overwrite):
+        r: Result = Result.default()()
+        if ((src) in (self.fs)) and (((self.fs)[src]).is_DirEntry):
+            r = Result_Err(Error_InvalidPath(src, (self).name))
+            return r
+        if not(((src) in (self.fs)) and (((self.fs)[src]).is_FileEntry)):
+            r = Result_Err(Error_NotFound(src, (self).name))
+            return r
+        if ((dst) in (self.fs)) and (((self.fs)[dst]).is_DirEntry):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
+        if (src) == (dst):
+            r = Result_Ok(())
+            return r
+        if (((dst) in (self.fs)) and (((self.fs)[dst]).is_FileEntry)) and (not(overwrite)):
+            r = Result_Err(Error_AlreadyExists(dst, (self).name))
+            return r
+        (self).EnsureParents(dst)
+        d_0_srcEntry_: Entry
+        d_0_srcEntry_ = (self.fs)[src]
+        d_1_newInfo_: FileInfo
+        d_1_newInfo_ = default__.BasicFileInfo(dst, dst, ((d_0_srcEntry_).info).size)
+        (self).fs = (self.fs).set(dst, Entry_FileEntry((d_0_srcEntry_).content, d_1_newInfo_))
+        r = Result_Ok(())
+        return r
+
+    def RequireCapability(self, cap):
+        r: Result = Result.default()()
+        if (cap) in ((self).capabilities):
+            r = Result_Ok(())
+        elif True:
+            r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(cap), (self).name))
+        return r
+
+
+class MemoryBackendMinimal(Backend):
+    def  __init__(self):
+        self._fs: _dafny.Map = _dafny.Map({})
+        self._name: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
+        self._capabilities: _dafny.Set = _dafny.Set({})
+        pass
+
+    def __dafnystr__(self) -> str:
+        return "_module.MemoryBackendMinimal"
+    @property
+    def fs(self):
+        return self._fs
+    @fs.setter
+    def fs(self, value):
+        self._fs = value
+    @property
+    def name(self):
+        return self._name
+    @property
+    def capabilities(self):
+        return self._capabilities
+    def ctor__(self):
+        (self)._name = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "memory-minimal"))
+        (self)._capabilities = _dafny.Set({Capability_CapRead(), Capability_CapWrite(), Capability_CapDelete(), Capability_CapList(), Capability_CapMove(), Capability_CapCopy(), Capability_CapAtomicWrite(), Capability_CapAtomicMove(), Capability_CapMetadata(), Capability_CapSeekableRead()})
+        (self).fs = _dafny.Map({default__.Root: Entry_DirEntry()})
+
+    def Exists(self, path):
+        r: Result = Result.default()()
+        d_0_path__exists_: bool
+        d_0_path__exists_ = (path) in (self.fs)
+        d_1_ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(path)
+        d_1_ancestors__ok_ = out0_
+        r = Result_Ok((d_0_path__exists_) and (d_1_ancestors__ok_))
+        return r
+
+    def IsFileMethod(self, path):
+        r: Result = Result.default()()
+        d_0_is__file_: bool
+        d_0_is__file_ = ((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry)
+        d_1_ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(path)
+        d_1_ancestors__ok_ = out0_
+        r = Result_Ok((d_0_is__file_) and (d_1_ancestors__ok_))
+        return r
+
+    def IsFolderMethod(self, path):
+        r: Result = Result.default()()
+        d_0_is__dir_: bool
+        d_0_is__dir_ = ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry)
+        d_1_ancestors__ok_: bool
+        out0_: bool
+        out0_ = (self).AncestorsTraversableCheck(path)
+        d_1_ancestors__ok_ = out0_
+        r = Result_Ok((d_0_is__dir_) and (d_1_ancestors__ok_))
+        return r
+
+    def AncestorsTraversableCheck(self, path):
+        result: bool = False
+        result = True
+        if (len(path)) <= (2):
+            return result
+        d_0_i_: int
+        d_0_i_ = 1
+        with _dafny.label("0"):
+            while (d_0_i_) < ((len(path)) - (1)):
+                with _dafny.c_label("0"):
+                    if ((path)[d_0_i_]) == (_dafny.CodePoint('/')):
+                        d_1_prefix_: _dafny.Seq
+                        d_1_prefix_ = _dafny.SeqWithoutIsStrInference((path)[:d_0_i_:])
+                        if ((d_1_prefix_) in (self.fs)) and (((self.fs)[d_1_prefix_]).is_FileEntry):
+                            result = False
+                            raise _dafny.Break("0")
+                    d_0_i_ = (d_0_i_) + (1)
+                    pass
+            pass
+        return result
+
+    def Read(self, path):
+        r: Result = Result.default()()
+        if (path) in (self.fs):
+            source0_ = (self.fs)[path]
+            with _dafny.label("match0"):
+                if True:
+                    if source0_.is_FileEntry:
+                        d_0_content_ = source0_.content
+                        r = Result_Ok(d_0_content_)
+                        raise _dafny.Break("match0")
+                if True:
+                    r = Result_Err(Error_InvalidPath(path, (self).name))
+                pass
+        elif True:
+            r = Result_Err(Error_NotFound(path, (self).name))
+        return r
+
+    def EnsureParents(self, path):
+        d_0_i_: int
+        d_0_i_ = 1
+        while (d_0_i_) < (len(path)):
+            if ((path)[d_0_i_]) == (_dafny.CodePoint('/')):
+                d_1_prefix_: _dafny.Seq
+                d_1_prefix_ = _dafny.SeqWithoutIsStrInference((path)[:d_0_i_:])
+                if (d_1_prefix_) not in (self.fs):
+                    (self).fs = (self.fs).set(d_1_prefix_, Entry_DirEntry())
+            d_0_i_ = (d_0_i_) + (1)
+
+    def Write(self, path, content, overwrite, metadata):
+        r: Result = Result.default()()
+        if ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
+        if (((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry)) and (not(overwrite)):
+            r = Result_Err(Error_AlreadyExists(path, (self).name))
+            return r
+        if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) not in ((self).capabilities)):
+            r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(Capability_CapUserMetadata()), (self).name))
+            return r
+        (self).EnsureParents(path)
+        d_0_stored__metadata_: Option
+        if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) in ((self).capabilities)):
+            d_0_stored__metadata_ = metadata
+        elif True:
+            d_0_stored__metadata_ = Option_None()
         d_1_info_: FileInfo
         d_1_info_ = FileInfo_FileInfo(path, path, len(content), Option_None(), Option_None(), Option_None(), d_0_stored__metadata_)
         (self).fs = (self.fs).set(path, Entry_FileEntry(content, d_1_info_))

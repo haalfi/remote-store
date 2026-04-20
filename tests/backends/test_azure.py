@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import logging
 import uuid
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
@@ -759,6 +760,52 @@ class TestAzureHNSPaths:
         backend._fs_instance.get_file_client.return_value = tmp_fc
         result = backend.write_atomic("dir/file.txt", b"data")
         assert result.etag == "abc123"
+
+    @pytest.mark.spec("WR-001a")
+    def test_write_atomic_hns_swallows_post_rename_read_failure(self, caplog: pytest.LogCaptureFixture) -> None:
+        """BUG-173: a post-rename get_file_properties failure must not surface as a write failure.
+
+        After the temp-file rename commits the write, fetching properties to
+        populate etag/last_modified can fail (network blip, eventual
+        consistency, permissions). Because the commit already happened,
+        propagating the error as a write failure would cause the caller to
+        retry against a file that already exists -- raising AlreadyExists
+        (overwrite=False) or silently double-writing (overwrite=True). The
+        fix swallows the post-commit read error, logs a warning, and returns
+        a WriteResult with rich fields unset.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("dst not present yet")
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = MagicMock(spec=DataLakeFileClient)
+        tmp_fc.upload_data.return_value = None
+        tmp_fc.rename_file.return_value = None  # commit succeeds
+
+        dst_fc = MagicMock(spec=DataLakeFileClient)
+        dst_fc.get_file_properties.side_effect = ResourceNotFoundError("eventual consistency")
+
+        # Production calls get_file_client twice: first for tmp_path, then for the
+        # destination after rename. Distinct mocks prevent a future regression
+        # where post-rename reads hit the wrong client from slipping past.
+        backend._fs_instance.get_file_client.side_effect = [tmp_fc, dst_fc]
+
+        with caplog.at_level(logging.WARNING, logger="remote_store.backends._azure"):
+            result = backend.write_atomic("dir/file.txt", b"content")
+
+        assert isinstance(result, WriteResult)
+        assert result.size == len(b"content")
+        assert result.source == "native"
+        assert result.etag is None
+        assert result.last_modified is None
+        tmp_fc.rename_file.assert_called_once()
+        dst_fc.get_file_properties.assert_called_once()
+        assert any("post-rename get_file_properties failed" in record.message for record in caplog.records), (
+            "expected warning log on swallowed post-commit read failure"
+        )
 
     def test_delete_folder_uses_directory_client_on_hns(self) -> None:
         backend = self._make_hns_backend()

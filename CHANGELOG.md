@@ -30,7 +30,58 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `INSERT ... SELECT` runs. The two `self_copy` tests in
   `TestMoveCopySelfOperation` are skipped on `sql-blob` pending a fix.
 
+### Changed
+
+- **Dafny `MemoryBackend` spec now populates `last_modified`** (ID-152):
+  `MemoryBackend.dfy:Write` returned `Option_None()` for `last_modified` by
+  design, which forced the `dafny-oracle` branch of
+  `test_native_populates_last_modified` to carry `strict=False` and never
+  self-flip after BUG-169. With BUG-169 landed, the spec now returns a
+  capability-conditional timestamp witness (`Some(0)` under
+  `CapWriteResultNative`, `None` otherwise) for both `FileInfo.last_modified`
+  and `WriteResult.last_modified`; the oracle adapter lifts it to a Python
+  UTC datetime. `MemoryBackendMinimal` (no `CapWriteResultNative`) is
+  unchanged. Generated runtime regenerated via `scripts/dafny_translate.sh`.
+  `_LAST_MODIFIED_XFAIL` is now empty.
+
 ### Fixed
+
+- **Azure HNS `write_atomic` leaks `WriteResult`-construction failures as
+  write failures** (BUG-173): after a successful `tmp_fc.rename_file()`
+  commit, `dst_fc.get_file_properties()` was called to populate
+  `etag`/`last_modified`; a failure there (eventual consistency, network
+  blip, permissions) propagated as a write failure even though the data
+  was already at the destination. Callers that retried saw
+  `AlreadyExists` (with `overwrite=False`) or silently double-wrote. Fix
+  wraps the post-rename `get_file_properties` in a try/except, logs a
+  warning, and returns a native-source `WriteResult` with rich fields
+  left unset. Covered by new mock regression test
+  `TestAzureHNSPaths.test_write_atomic_hns_swallows_post_rename_read_failure`.
+
+- **`SQLBlobBackend.write` omits `last_modified` from `WriteResult` under
+  `WRITE_RESULT_NATIVE`** (BUG-170): `_sqlalchemy.py:write` advertised
+  `WRITE_RESULT_NATIVE` when the `user_metadata` column was present but
+  returned `WriteResult(last_modified=None, ...)` while the `now` timestamp
+  was being written to the DB — a WR-001a rich-field obligation violation.
+  Fix derives the WriteResult's `last_modified` from the same
+  float → datetime round-trip that `get_file_info` already uses
+  (`datetime.fromtimestamp(now, tz=timezone.utc)`), gated on both
+  `user_metadata` and `modified_at` column presence. The `"sql-blob"`
+  entry in `_LAST_MODIFIED_XFAIL` flipped from strict-xfail to pass and
+  was removed.
+
+- **`MemoryBackend.write` omits `last_modified` from `WriteResult` under
+  `WRITE_RESULT_NATIVE`** (BUG-169): `_memory.py:write` declared
+  `WRITE_RESULT_NATIVE` but returned `WriteResult(last_modified=None, ...)`
+  while the in-memory node's `modified_at` was populated — a violation of
+  the WR-001a rich-field obligation on a declaring backend. Fix captures a
+  single `now = datetime.now(timezone.utc)` under the lock and reuses it for
+  both `_FileEntry.modified_at` (new and update paths) and
+  `WriteResult.last_modified`, so `result.last_modified == info.modified_at`
+  on a subsequent `get_file_info`. The `"memory"` entry in the
+  `_LAST_MODIFIED_XFAIL` registry used by
+  `TestWriteResultConformance.test_native_populates_last_modified` flipped
+  from strict-xfail to pass and was removed.
 
 - **`LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming
   input** (BUG-168): `_local.py:197-203` called `os.path.getsize(tmp_path)`

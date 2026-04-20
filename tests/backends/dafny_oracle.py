@@ -104,11 +104,29 @@ def _raise_if_err(result: object) -> object:
     return result.value  # type: ignore[union-attr]
 
 
-def _to_file_info(path_str: str, size: int, now: datetime, dafny_metadata: object) -> FileInfo:
+def _dafny_ts_to_dt(opt: object, fallback: datetime) -> datetime:
+    """Lift a Dafny ``Option<int>`` timestamp to a Python UTC datetime.
+
+    Falls back to ``fallback`` when the spec returns ``None`` (the
+    non-declaring ``MemoryBackendMinimal`` branch) so that ``FileInfo``
+    still carries a non-None ``modified_at`` as the Python model requires.
+    """
+    if opt.is_Some:  # type: ignore[union-attr]
+        return datetime.fromtimestamp(int(opt.value), tz=timezone.utc)  # type: ignore[union-attr]
+    return fallback
+
+
+def _to_file_info(dafny_fi: object, fallback_now: datetime) -> FileInfo:
     meta = None
-    if dafny_metadata.is_Some:  # type: ignore[union-attr]
-        meta = {_dafny_to_str(k): _dafny_to_str(v) for k, v in dict.items(dafny_metadata.value)}  # type: ignore[union-attr]
-    return FileInfo(path=RemotePath(path_str), name=_filename(path_str), size=size, modified_at=now, metadata=meta)
+    if dafny_fi.metadata.is_Some:  # type: ignore[union-attr]
+        meta = {_dafny_to_str(k): _dafny_to_str(v) for k, v in dict.items(dafny_fi.metadata.value)}  # type: ignore[union-attr]
+    return FileInfo(
+        path=RemotePath(_dafny_to_str(dafny_fi.path)),  # type: ignore[union-attr]
+        name=_filename(_dafny_to_str(dafny_fi.path)),  # type: ignore[union-attr]
+        size=int(dafny_fi.size),  # type: ignore[union-attr]
+        modified_at=_dafny_ts_to_dt(dafny_fi.last__modified, fallback_now),  # type: ignore[union-attr]
+        metadata=meta,
+    )
 
 
 def _to_folder_entry(path_str: str) -> FolderEntry:
@@ -250,9 +268,9 @@ class DafnyOracleBackend(Backend):
         result = _raise_if_err(
             self._mb.ListFiles(_str_to_dafny(path), recursive, -1 if max_depth is None else max_depth)
         )
-        now = datetime.now(tz=timezone.utc)
+        fallback = datetime.now(tz=timezone.utc)
         for fi in result:
-            yield _to_file_info(_dafny_to_str(fi.path), int(fi.size), now, fi.metadata)
+            yield _to_file_info(fi, fallback)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         for fe in _raise_if_err(self._mb.ListFolders(_str_to_dafny(path))):
@@ -260,9 +278,7 @@ class DafnyOracleBackend(Backend):
 
     def get_file_info(self, path: str) -> FileInfo:
         dafny_fi = _raise_if_err(self._mb.GetFileInfo(_str_to_dafny(path)))
-        return _to_file_info(
-            _dafny_to_str(dafny_fi.path), int(dafny_fi.size), datetime.now(tz=timezone.utc), dafny_fi.metadata
-        )
+        return _to_file_info(dafny_fi, datetime.now(tz=timezone.utc))
 
     def get_folder_info(self, path: str) -> FolderInfo:
         dafny_fi = _raise_if_err(self._mb.GetFolderInfo(_str_to_dafny(path)))

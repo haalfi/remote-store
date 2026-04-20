@@ -35,6 +35,9 @@ _SCRAMBLED = '''\
 
 import foo
 
+class MemoryBackendMinimal(Backend):
+    pass
+
 class default__:
     pass
 
@@ -53,16 +56,24 @@ class Result_Ok:
 
 
 def test_reorder_canonical_order() -> None:
-    """ADT classes come first, then Backend, default__, MemoryBackend."""
+    """ADT classes come first, then Backend, default__, MemoryBackend, MemoryBackendMinimal."""
     result = reorder(_SCRAMBLED)
     positions = {
         name: result.index(f"class {name}")
-        for name in ("Option_None", "Result_Ok", "Backend", "default__", "MemoryBackend")
+        for name in (
+            "Option_None",
+            "Result_Ok",
+            "Backend",
+            "default__",
+            "MemoryBackend",
+            "MemoryBackendMinimal",
+        )
     }
     assert positions["Option_None"] < positions["Backend"]
     assert positions["Result_Ok"] < positions["Backend"]
     assert positions["Backend"] < positions["default__"]
     assert positions["default__"] < positions["MemoryBackend"]
+    assert positions["MemoryBackend"] < positions["MemoryBackendMinimal"]
     assert result.startswith('"""preamble docstring"""')
 
 

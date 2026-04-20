@@ -312,7 +312,8 @@ bash scripts/dafny_translate.sh                    # translate + reorder
 The translate wrapper uses the same Dafny release and SHA-256 pin as
 `dafny_verify.sh`, writes `sdd/formal/MemoryBackend-py/`, and calls
 `scripts/_dafny_classorder.py` on the output so classes are emitted in
-importable order (ADT types → `Backend` → `default__` → `MemoryBackend`).
+importable order (ADT types → `Backend` → `default__` → `MemoryBackend` →
+`MemoryBackendMinimal`).
 No local Dafny toolchain required — Docker Desktop is enough.
 
 Verify the regenerated module imports:

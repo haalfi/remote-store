@@ -128,6 +128,11 @@ class MemoryBackend(Backend):
 
         stored_meta = dict(metadata) if metadata else None
         with self._lock:
+            # Capture ``now`` under the lock so that ``modified_at`` values
+            # reflect lock-acquisition order: a late-acquiring writer must
+            # not stamp an earlier timestamp than an earlier-acquiring writer
+            # on the same key.
+            now = datetime.now(timezone.utc)
             parent = self._ensure_parents(segments)
             leaf = segments[-1]
             existing = parent.children.get(leaf)
@@ -142,16 +147,22 @@ class MemoryBackend(Backend):
                 if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend="memory")
                 existing.data[:] = raw
-                existing.modified_at = datetime.now(timezone.utc)
+                existing.modified_at = now
                 existing.metadata = stored_meta
             else:
                 parent.children[leaf] = _FileEntry(
                     data=raw,
-                    modified_at=datetime.now(timezone.utc),
+                    modified_at=now,
                     metadata=stored_meta,
                 )
                 self._file_count += 1
-        return WriteResult(path=RemotePath(path), size=len(raw), source="native", metadata=metadata)
+        return WriteResult(
+            path=RemotePath(path),
+            size=len(raw),
+            source="native",
+            last_modified=now,
+            metadata=metadata,
+        )
 
     def write_atomic(
         self,

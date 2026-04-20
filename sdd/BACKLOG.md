@@ -125,21 +125,6 @@ Existing items may be more verbose — trim on next touch.
   Currently skipped in the conformance suite (recursive-glob case) pending
   a fix. Non-SQLite dialects use `LIKE` pre-filtering and are not affected.
 
-- [ ] **BUG-173 — Azure HNS `write_atomic` leaks WriteResult-construction failures as write failures** (LOW)
-  `_azure.py:488-494` (HNS-only, `# pragma: no cover`): after a successful
-  `tmp_fc.rename_file()` commit, `dst_fc.get_file_properties()` is called to
-  populate `etag`/`last_modified`. If that call raises (network blip,
-  eventual consistency, permissions), the exception flows through
-  `self._errors(path)` and surfaces as a write failure — but the file is
-  already at the destination. Callers that retry will see `AlreadyExists`
-  (when `overwrite=False`) or silently double-write.
-  **Repro:** HNS backend, `write_atomic(path, data, overwrite=False)`; have
-  `FileSystemClient.get_file_client(path).get_file_properties` raise
-  `ResourceNotFoundError` (mock) after the rename succeeds. Expected: call
-  returns a `WriteResult` (or, at worst, a `NotFound` that documents the
-  committed-but-unreadable state). Actual: `NotFound` propagates; second
-  invocation with the same args raises `AlreadyExists`.
-
 - [ ] **BUG-172 — `_ChunkPullReader.read`/`readinto` return empty on closed stream instead of raising `ValueError`** (LOW)
   `_async_to_sync_adapter.py:613-614, 630-631`: both methods early-return
   `0` / `b""` when `self.closed`. Stdlib `io.IOBase` (which `io.RawIOBase`
@@ -156,37 +141,6 @@ Existing items may be more verbose — trim on next touch.
   b.read()  # raises ValueError
   ```
 
-- [ ] **BUG-170 — `SQLBlobBackend.write` omits `last_modified` from `WriteResult` under `WRITE_RESULT_NATIVE`** (MEDIUM)
-  `_sqlalchemy.py:438-444`: when the `user_metadata` column is present the
-  backend advertises `WRITE_RESULT_NATIVE` but returns
-  `WriteResult(source="native", last_modified=None, ...)`. The `now`
-  timestamp computed at line 411 is discarded. Quality gap — `source="native"`
-  satisfies WR-004's textual invariant, but the Dafny refinement obligation
-  under WR-004's formal-coverage clause ("rich fields on the returned
-  WriteResult match the stored FileInfo") is not met.
-  **Repro:**
-  ```python
-  backend = SQLBlobBackend(url="sqlite:///:memory:", table_name="blobs")
-  # (default schema includes the user_metadata column)
-  result = backend.write("a.txt", b"hi", overwrite=True)
-  assert result.source == "native"              # passes
-  assert result.last_modified is not None       # FAILS — is None
-  ```
-
-- [ ] **BUG-169 — `MemoryBackend.write` omits `last_modified` from `WriteResult` under `WRITE_RESULT_NATIVE`** (MEDIUM)
-  `_memory.py:148-152`: backend declares `WRITE_RESULT_NATIVE` but returns
-  `WriteResult(source="native", last_modified=None, ...)`. The `mtime`
-  stored on the in-memory node (`datetime.now(timezone.utc)`) is available
-  but not surfaced. Same quality gap as BUG-170 — WR-004's textual invariant
-  (`source == "native"`) is satisfied, but the rich-field obligation from
-  the formal-coverage clause is not.
-  **Repro:**
-  ```python
-  backend = MemoryBackend()
-  result = backend.write("a.txt", b"hi", overwrite=True)
-  assert result.source == "native"              # passes
-  assert result.last_modified is not None       # FAILS — is None
-  ```
 
 ---
 
@@ -273,27 +227,6 @@ Existing items may be more verbose — trim on next touch.
   `tests/` vs `tests/backends/` boundary. Promote `moto_server`, `_free_port`,
   and `_AZURITE_CONN_STR` to `tests/conftest.py` so both test trees share one
   server. Non-blocking — flagged in PR #478 review.
-
-- [ ] **ID-152 — Dafny `last_modified` spec-opacity follow-up (unblocks oracle xfail)**
-  `MemoryBackend.dfy:Write` currently hardcodes `Option_None()` for
-  `last_modified` in the returned `WriteResult` — a deliberate opacity choice
-  (`// last_modified: opaque`).  This means the `dafny-oracle` branch of the
-  `test_native_populates_last_modified` xfail carries `strict=False` and will
-  never self-flip when BUG-169 (`_memory.py`) is fixed.
-
-  When BUG-169 is resolved, also:
-  1. Update `BackendContract.dfy` / `MemoryBackend.dfy` to populate
-     `last_modified` in the `WriteResult` under `CapWriteResultNative`
-     (e.g. by threading a timestamp through `EnsureParents` or by using
-     a spec-level ghost value).
-  2. Regenerate `MemoryBackend-py/module_.py` via `scripts/dafny_translate.sh`.
-  3. Drop the `"dafny-oracle"` entry from `_LAST_MODIFIED_XFAIL` in
-     `tests/backends/test_conformance.py`.
-
-  **Exit criteria:** `test_native_populates_last_modified[dafny-oracle-*]`
-  passes without xfail.  `bash scripts/dafny_verify.sh` still green.
-
-  Related: BUG-169, ID-151 (done).
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
