@@ -5,6 +5,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-173 — Azure HNS `write_atomic` leaks WriteResult-construction failures as write failures**
+  `_azure.py:write_atomic` (HNS branch): after a successful
+  `tmp_fc.rename_file()` commit, `dst_fc.get_file_properties()` was called
+  to populate `etag`/`last_modified`; a failure there (eventual
+  consistency, network blip, permissions) propagated through
+  `self._errors(path)` as a write failure even though the data was
+  already at the destination. Callers that retried saw `AlreadyExists`
+  (with `overwrite=False`) or silently double-wrote. Fix wraps the
+  post-rename `get_file_properties` in try/except, logs a
+  `log.warning`, and returns a native-source `WriteResult` with rich
+  fields left unset. New mock-based regression test
+  `TestAzureHNSPaths.test_write_atomic_hns_swallows_post_rename_read_failure`
+  pins the behaviour (conformance/Azurite cannot reach this failure mode).
+
+  Related: ID-151 (done), BUG-169 (done), BUG-170 (done).
+
 - [x] **BUG-170 — `SQLBlobBackend.write` omits `last_modified` from `WriteResult` under `WRITE_RESULT_NATIVE`**
   `_sqlalchemy.py:write` advertised `WRITE_RESULT_NATIVE` when the
   `user_metadata` column was present but returned

@@ -32,6 +32,18 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **Azure HNS `write_atomic` leaks `WriteResult`-construction failures as
+  write failures** (BUG-173): after a successful `tmp_fc.rename_file()`
+  commit, `dst_fc.get_file_properties()` was called to populate
+  `etag`/`last_modified`; a failure there (eventual consistency, network
+  blip, permissions) propagated as a write failure even though the data
+  was already at the destination. Callers that retried saw
+  `AlreadyExists` (with `overwrite=False`) or silently double-wrote. Fix
+  wraps the post-rename `get_file_properties` in a try/except, logs a
+  warning, and returns a native-source `WriteResult` with rich fields
+  left unset. Covered by new mock regression test
+  `TestAzureHNSPaths.test_write_atomic_hns_swallows_post_rename_read_failure`.
+
 - **`SQLBlobBackend.write` omits `last_modified` from `WriteResult` under
   `WRITE_RESULT_NATIVE`** (BUG-170): `_sqlalchemy.py:write` advertised
   `WRITE_RESULT_NATIVE` when the `user_metadata` column was present but

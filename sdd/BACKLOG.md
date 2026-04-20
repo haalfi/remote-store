@@ -125,21 +125,6 @@ Existing items may be more verbose — trim on next touch.
   Currently skipped in the conformance suite (recursive-glob case) pending
   a fix. Non-SQLite dialects use `LIKE` pre-filtering and are not affected.
 
-- [ ] **BUG-173 — Azure HNS `write_atomic` leaks WriteResult-construction failures as write failures** (LOW)
-  `_azure.py:488-494` (HNS-only, `# pragma: no cover`): after a successful
-  `tmp_fc.rename_file()` commit, `dst_fc.get_file_properties()` is called to
-  populate `etag`/`last_modified`. If that call raises (network blip,
-  eventual consistency, permissions), the exception flows through
-  `self._errors(path)` and surfaces as a write failure — but the file is
-  already at the destination. Callers that retry will see `AlreadyExists`
-  (when `overwrite=False`) or silently double-write.
-  **Repro:** HNS backend, `write_atomic(path, data, overwrite=False)`; have
-  `FileSystemClient.get_file_client(path).get_file_properties` raise
-  `ResourceNotFoundError` (mock) after the rename succeeds. Expected: call
-  returns a `WriteResult` (or, at worst, a `NotFound` that documents the
-  committed-but-unreadable state). Actual: `NotFound` propagates; second
-  invocation with the same args raises `AlreadyExists`.
-
 - [ ] **BUG-172 — `_ChunkPullReader.read`/`readinto` return empty on closed stream instead of raising `ValueError`** (LOW)
   `_async_to_sync_adapter.py:613-614, 630-631`: both methods early-return
   `0` / `b""` when `self.closed`. Stdlib `io.IOBase` (which `io.RawIOBase`
