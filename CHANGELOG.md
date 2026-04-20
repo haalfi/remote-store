@@ -152,6 +152,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   intentional `pull_request_review` trigger and the recovery path for
   PRs that miss the workflow window.
 
+- **`MemoryBackendMinimal` satisfiability witness** (ID-151, part 4): adds a
+  sibling refinement class to `sdd/formal/MemoryBackend.dfy` that declares
+  neither `CapWriteResultNative` nor `CapUserMetadata`. This makes the
+  WR-010 `CapabilityNotSupported` gate live code (not dead code as in
+  `MemoryBackend`) and forces `wr_source` to `BasicSource` on every
+  successful write — closing the refinement coverage gap flagged in the
+  part-1 review. `bash scripts/dafny_verify.sh MemoryBackend.dfy` passes
+  with 98 verified, 0 errors.
+
 - **`DafnyOracleBackend` adapter widening** (ID-151, part 5): `write()` and
   `write_atomic()` in `tests/backends/dafny_oracle.py` now accept a
   `metadata=` kwarg and return `WriteResult`, matching the Part-1 ABC.
