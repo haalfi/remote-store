@@ -39,6 +39,35 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
+- [ ] **BUG-177 — `S3Backend.write` does not surface the auto-CRC32 digest that `get_file_info` returns** (LOW)
+  `_s3.py:171-184` vs `_s3.py:240-248`: the write path populates `WriteResult`
+  from `self._fs.info(...)` (s3fs metadata, no checksum fields), so
+  `result.digest is None`. `get_file_info()` issues a direct
+  `head_object(..., ChecksumMode="ENABLED")` and `_head_to_fileinfo` converts
+  any returned `ChecksumCRC32` / `ChecksumSHA256` / etc. into a
+  `ContentDigest`. Since late 2022, Amazon S3 auto-computes and stores a
+  CRC32 for every object uploaded without an explicit checksum algorithm, so
+  for a declaring backend (`WRITE_RESULT_NATIVE`) a caller who reads back
+  the object sees `info.digest == ContentDigest('crc32', ...)` while
+  `result.digest` is `None` — a WR-001a divergence between `WriteResult` and
+  `FileInfo` for the same just-written key.
+  **Repro:** under `moto` (or any post-2022 S3 endpoint), call
+  `S3Backend.write(key, data)`, then `S3Backend.get_file_info(key)`, and
+  observe `info.digest is not None and result.digest is None`.
+  Fix candidates: (a) in `write()`, call `head_object(..., ChecksumMode="ENABLED")`
+  after the upload (same call `get_file_info` uses) and reuse
+  `_digest_from_head_response` to populate `WriteResult.digest`; (b) accept
+  the asymmetry as intentional (WR-007: "no v1 backend surfaces a
+  server-verified digest on the default write path") and document that
+  `WriteResult.digest is None` does not imply `FileInfo.digest is None`
+  for the same key on the same backend. (a) is preferred because it keeps
+  the two entry points consistent at no extra round-trip cost beyond what
+  `get_file_info` already pays. Not yet surfaced in the conformance suite —
+  `TestWriteResultConformance.test_native_file_info_matches_write_result`
+  deliberately excludes `digest` from the equality check and carries a
+  WR-007 comment explaining why. Wire up a strict S3 xfail alongside the
+  fix.
+
 - [ ] **BUG-176 — `SQLBlobBackend.copy(src, src, overwrite=True)` silently destroys data** (MEDIUM)
   `_sqlalchemy.py:673-721`: `copy()` has no `src == dst` early-return guard.
   The companion `move()` at `_sqlalchemy.py:649-655` does have the guard and
