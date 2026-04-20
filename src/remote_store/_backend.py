@@ -23,8 +23,9 @@ T = TypeVar("T")
 # BUG-162: Explicit copy buffer size for shutil.copyfileobj.  On Windows
 # the default (shutil.COPY_BUFSIZE = 1 MiB) causes the transfer pipe layer
 # to hold two chunks simultaneously (current + previous), exceeding the
-# 1.5 MiB pipe-memory threshold.  256 KiB keeps peak pipe cost < 512 KiB
-# for backends that drive reads at this size (Local, SFTP, S3).
+# pipe-memory threshold (see PIPE_THRESHOLD in
+# tests/e2e/test_streaming_integrity.py).  256 KiB keeps peak pipe cost
+# < 512 KiB for backends that drive reads at this size (Local, SFTP, S3).
 _COPY_BUFSIZE = 256 * 1024
 
 

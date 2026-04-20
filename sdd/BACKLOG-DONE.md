@@ -5,6 +5,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-174 — `test_streaming_integrity` SFTP→Azure pipe-threshold flake**
+  Intermittent CI failure on the 7-backend streaming chain, always on the
+  `sftp -> azure` hop, always `pipe memory 2.00 MiB > threshold 1.50 MiB` on
+  payloads of 7–14 MiB (e.g. PR #460 run 2026-04-19). Isolated reproducer
+  (`tmp/sftp_azure_pipe_probe.py`) shows the violation is structural: 35/35
+  runs across sizes 7/10/11.4/13/14 MiB × 7 seeds measure exactly 2.00 MiB,
+  100 % attributed to `ext/streams.py`. Root cause is a tracemalloc
+  attribution pile-up: Azure SDK's staged-block uploader retains the
+  previously-staged 1 MiB chunk until the next `stage_block` ack returns,
+  and when the source is wrapped in `io.BufferedReader` (SFTP, Azure) the
+  C-level bytes allocation is attributed to `ProgressReader.read` in
+  `ext/streams.py`, landing both chunks in the pipe filter. Stripping
+  `BufferedReader` in the probe drops the measurement to 0.00 MiB
+  (allocations then live in paramiko's Python code, outside the filter) —
+  confirming it's an attribution artifact, not a real regression. Fix:
+  `PIPE_THRESHOLD` raised 1.5 MiB → 2.25 MiB in
+  `tests/e2e/test_streaming_integrity.py`, with the comment updated to
+  document the two-chunk hold. No production-code change.
+
 - [x] **ID-149 — e2e coverage for write_with_hash / open_atomic_with_hash across real backends**
   New `tests/e2e/test_ext_write_e2e.py`: two test classes (`TestWriteWithHash`,
   `TestOpenAtomicWithHash`) exercise both helpers against all available Docker

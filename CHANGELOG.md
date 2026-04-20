@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`test_streaming_integrity` SFTP→Azure pipe-threshold flake** (BUG-174):
+  `PIPE_THRESHOLD` raised 1.5 MiB → 2.25 MiB. Root cause is a tracemalloc
+  attribution artifact — Azure SDK's staged-block uploader holds two 1 MiB
+  chunks live simultaneously when the source is wrapped in
+  `io.BufferedReader`; revised ceiling reflects that two-chunk hold plus
+  ~12 % headroom. No production-code change.
+
 - **`_AsyncIteratorBridge.__del__` CodeQL warning** (`py/overly-complex-delete`):
   extracted cleanup logic into `_aclose_best_effort()`; `__del__` now delegates
   to it, keeping the finaliser trivial.
