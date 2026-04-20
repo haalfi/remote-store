@@ -121,6 +121,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Dependabot auto-merge workflow**: adds
+  `.github/workflows/dependabot-auto-merge.yml`. On approval of a
+  Dependabot PR by the repo owner, enables GitHub auto-merge (squash);
+  GitHub merges automatically once the `gate` check passes.
+
 - **Dafny `WriteResult` oracle regeneration + adapter update** (ID-151,
   part 2): `scripts/dafny_translate.sh` Docker wrapper (analogous to
   `scripts/dafny_verify.sh`) translates Dafny specs to Python using
