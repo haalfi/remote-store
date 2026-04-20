@@ -11344,6 +11344,18 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong><code>S3Backend.write</code> does not surface the auto-CRC32 digest that <code>get_file_info</code>
+  returns</strong> (BUG-177): the write path populates <code>WriteResult</code> from
+  <code>s3fs.info()</code>, which omits checksum fields, so <code>result.digest is None</code>.
+  <code>get_file_info()</code> issues a direct <code>head_object(..., ChecksumMode="ENABLED")</code>
+  and surfaces the auto-CRC32 that S3 stores for every upload since late</li>
+<li>
+<p>Under <code>WRITE_RESULT_NATIVE</code>, a caller who reads the object back sees
+  a <code>ContentDigest('crc32', …)</code> on <code>FileInfo</code> while <code>WriteResult.digest</code> is
+  <code>None</code> — a WR-001a divergence between the two entry points for the same
+  key. The conformance test deliberately excludes <code>digest</code> from the
+  <code>FileInfo</code>/<code>WriteResult</code> equality check pending a fix.</p>
+</li>
 <li>
 <p><strong><code>SQLBlobBackend.glob</code> drops zero-segment <code>**/</code> matches on SQLite</strong> (BUG-175):
   the zero-segment half of the recursive <code>test_glob</code> case is skipped on
@@ -11360,6 +11372,19 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong><code>LocalBackend.write_atomic</code> reports stale <code>WriteResult.size</code> for streaming
+  input</strong> (BUG-168): <code>_local.py:197-203</code> called <code>os.path.getsize(tmp_path)</code>
+  <em>inside</em> the <code>with os.fdopen(fd, "wb") as f:</code> block, before the
+  <code>BufferedWriter</code> had flushed. For <code>BinaryIO</code> content whose tail was still
+  buffered, the returned <code>size</code> was truncated to the last-flushed offset while
+  the file on disk was correct. Fix moves the <code>size</code> capture after the <code>with</code>
+  block closes and after <code>os.replace</code>, using <code>full.stat().st_size</code> (matching
+  the pattern already used by the non-atomic <code>write()</code> branch). Caught by
+  <code>TestWriteResultConformance.test_size_matches_written_bytes_for_streaming_input</code>
+  under ID-151 Part 3 on Python 3.14, where the default <code>BufferedWriter</code>
+  block size is large enough to hold a 100 KiB payload unflushed.</p>
+</li>
 <li>
 <p><strong><code>test_streaming_integrity</code> SFTP→Azure pipe-threshold flake</strong> (BUG-174):
   <code>PIPE_THRESHOLD</code> raised 1.5 MiB → 2.25 MiB. Root cause is a tracemalloc
@@ -11474,6 +11499,21 @@
 </ul>
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong>Python WR-* conformance assertions</strong> (ID-151, part 3): adds
+  <code>TestWriteResultConformance</code> in <code>tests/backends/test_conformance.py</code>,
+  exercising every backend's <code>write</code> / <code>write_atomic</code> return value against
+  the Dafny <code>Write</code> postconditions in <code>sdd/formal/BackendContract.dfy</code>
+  (spec 045 WR-001a, WR-004, WR-005, WR-012, WR-013). Rich-field checks
+  are gated on <code>Capability.WRITE_RESULT_NATIVE</code>; metadata checks are gated
+  on <code>Capability.USER_METADATA</code>. The new fixture-level assertions surface
+  two pre-existing backend defects as strict <code>xfail</code>s — BUG-169
+  (<code>MemoryBackend</code> drops <code>last_modified</code>) and BUG-170 (<code>SQLBlobBackend</code>
+  drops <code>last_modified</code>) — so fixing each bug flips the xfail and forces
+  the <code>xfail</code> marker off in the same commit. The <code>dafny-oracle</code> adapter
+  is skipped pending the ID-151 follow-up that widens its <code>write</code> /
+  <code>write_atomic</code> bindings.</p>
+</li>
 <li>
 <p><strong>Dependabot auto-merge workflow</strong>: adds
   <code>.github/workflows/dependabot-auto-merge.yml</code>. On approval of a

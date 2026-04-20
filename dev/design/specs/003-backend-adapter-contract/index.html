@@ -9438,7 +9438,10 @@ CapabilityNotSupported</code>, with empty-mapping carve-out encoded by
 == |content|</code>), WR-004 (source Native iff <code>CapWriteResultNative</code>), WR-005
 (Basic source → rich fields None), WR-012 metadata echo, and WR-013
 round-trip (<code>fs[path].info.metadata</code> reflects what was stored). Verified in
-<code>MemoryBackend.dfy</code>. See ID-151.</p>
+<code>MemoryBackend.dfy</code>. Python backstop: the WR-001a/004/005/012/013
+postcondition chain is exercised against every backend by
+<code>tests/backends/test_conformance.py::TestWriteResultConformance</code>. See
+ID-151.</p>
 <h3 id="be-009-write-creates-intermediate-directories">BE-009: write Creates Intermediate Directories<a class="headerlink" href="#be-009-write-creates-intermediate-directories" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write</code> creates any intermediate directories automatically.</p>
 <h3 id="be-010-write_atomic">BE-010: write_atomic()<a class="headerlink" href="#be-010-write_atomic" title="Permanent link">&para;</a></h3>
@@ -9451,7 +9454,10 @@ round-trip (<code>fs[path].info.metadata</code> reflects what was stored). Verif
 order, WR-010 gate, WR-001a/004/005/012/013 postcondition chain). Atomicity
 itself is a frame-condition property outside Dafny's expressiveness (see
 <code>sdd/formal/README.md</code> § Design decisions, "No error-path frame condition"). No
-separate <code>WriteAtomic</code> method exists in <code>BackendContract.dfy</code>. See ID-151.</p>
+separate <code>WriteAtomic</code> method exists in <code>BackendContract.dfy</code>. Python backstop:
+the Python conformance suite parametrizes <code>TestWriteResultConformance</code> over
+both <code>write</code> and <code>write_atomic</code>, so <code>write_atomic</code> carries the same
+postcondition-chain coverage as <code>write</code>. See ID-151.</p>
 <h3 id="be-011-write_atomic-capability-gate">BE-011: write_atomic Capability Gate<a class="headerlink" href="#be-011-write_atomic-capability-gate" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_atomic</code> raises <code>CapabilityNotSupported</code> if the backend lacks <code>ATOMIC_WRITE</code>.</p>
 <h3 id="be-012-delete">BE-012: delete()<a class="headerlink" href="#be-012-delete" title="Permanent link">&para;</a></h3>
