@@ -188,7 +188,7 @@ assert backend.is_folder("dir") is False  # folder vanishes
 **Postconditions:**
 - `FileInfo.etag` is a non-empty lowercase string when the info dict contains an `ETag` key.
 - `FileInfo.etag` is `None` only when the info dict has no ETag (not expected for well-formed S3 responses).
-- `FileInfo.digest` from listing paths (`list_files`, `iter_children`) is always `None` — the extra `HeadObject` call required for checksum data is issued only by `get_file_info`.
+- `FileInfo.digest` from listing paths (`list_files`, `iter_children`) is always `None` — checksum data requires a separate `HeadObject` call (see S3-024).
 - `FileInfo.digest` from `get_file_info` may be a `ContentDigest` even for objects uploaded without an explicit checksum, because Amazon S3 has automatically computed and stored CRC32 checksums for new objects since late 2022 (see S3-024).
 
 ### S3-024: Digest Population via `ChecksumMode: ENABLED`
