@@ -195,9 +195,8 @@ class MemoryBackend extends Backend {
 
     // WR-010 gate.  MemoryBackend declares CapUserMetadata, so this
     // branch is dead code for this refinement — it exists to satisfy
-    // the method contract (BackendContract.Write).  Concrete-class
-    // satisfiability for the CapUserMetadata-absent branch is tracked
-    // as a MemoryBackendMinimal sub-item under ID-151 Part 2.
+    // the method contract (BackendContract.Write).  The live witness
+    // for this branch is MemoryBackendMinimal at the end of this file.
     if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {
       r := Err(CapabilityNotSupported(
         CapabilityName(CapUserMetadata), name));

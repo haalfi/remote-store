@@ -32,7 +32,7 @@ from remote_store._errors import (
     InvalidPath,
     NotFound,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
+from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
@@ -104,9 +104,9 @@ def _raise_if_err(result: object) -> object:
     return result.value  # type: ignore[union-attr]
 
 
-def _to_file_info(path_str: str, size: int, now: datetime, dafny_metadata: object = None) -> FileInfo:
+def _to_file_info(path_str: str, size: int, now: datetime, dafny_metadata: object) -> FileInfo:
     meta = None
-    if dafny_metadata is not None and dafny_metadata.is_Some:  # type: ignore[union-attr]
+    if dafny_metadata.is_Some:  # type: ignore[union-attr]
         meta = {_dafny_to_str(k): _dafny_to_str(v) for k, v in dict.items(dafny_metadata.value)}  # type: ignore[union-attr]
     return FileInfo(path=RemotePath(path_str), name=_filename(path_str), size=size, modified_at=now, metadata=meta)
 
@@ -135,10 +135,25 @@ def _dafny_wr_to_python(path_str: str, dwr: object) -> WriteResult:
     meta = None
     if dwr.metadata.is_Some:  # type: ignore[union-attr]
         meta = {_dafny_to_str(k): _dafny_to_str(v) for k, v in dict.items(dwr.metadata.value)}  # type: ignore[union-attr]
+    digest = None
+    if dwr.digest.is_Some:  # type: ignore[union-attr]
+        cd = dwr.digest.value  # type: ignore[union-attr]
+        digest = ContentDigest(algorithm=_dafny_to_str(cd.kind), value=_dafny_to_str(cd.value))
+    etag = _dafny_to_str(dwr.etag.value) if dwr.etag.is_Some else None  # type: ignore[union-attr]
+    version_id = _dafny_to_str(dwr.version__id.value) if dwr.version__id.is_Some else None  # type: ignore[union-attr]
+    last_modified = (
+        datetime.fromtimestamp(int(dwr.last__modified.value), tz=timezone.utc)  # type: ignore[union-attr]
+        if dwr.last__modified.is_Some  # type: ignore[union-attr]
+        else None
+    )
     return WriteResult(
         path=RemotePath(path_str),
         size=int(dwr.size),  # type: ignore[union-attr]
         source=_dafny_write_source(dwr.source),  # type: ignore[union-attr]
+        digest=digest,
+        etag=etag,
+        version_id=version_id,
+        last_modified=last_modified,
         metadata=meta,
     )
 
