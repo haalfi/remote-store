@@ -11323,6 +11323,14 @@
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong><code>test_streaming_integrity</code> SFTP→Azure pipe-threshold flake</strong> (BUG-174):
+  <code>PIPE_THRESHOLD</code> raised 1.5 MiB → 2.25 MiB. Root cause is a tracemalloc
+  attribution artifact — Azure SDK's staged-block uploader holds two 1 MiB
+  chunks live simultaneously when the source is wrapped in
+  <code>io.BufferedReader</code>; revised ceiling reflects that two-chunk hold plus
+  ~12 % headroom. No production-code change.</p>
+</li>
+<li>
 <p><strong><code>_AsyncIteratorBridge.__del__</code> CodeQL warning</strong> (<code>py/overly-complex-delete</code>):
   extracted cleanup logic into <code>_aclose_best_effort()</code>; <code>__del__</code> now delegates
   to it, keeping the finaliser trivial.</p>
