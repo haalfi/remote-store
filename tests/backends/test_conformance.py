@@ -230,6 +230,21 @@ _WRITE_OPS = [
     pytest.param("write_atomic", Capability.ATOMIC_WRITE, id="write_atomic"),
 ]
 
+# reason → (message, strict).  strict=False for dafny-oracle: the Dafny spec
+# treats last_modified as opaque and hardcodes None by design — it is not a
+# Python defect, so BUG-169's fix won't flip this xfail.  Flipping requires a
+# BackendContract.dfy / MemoryBackend.dfy edit plus a dafny_translate.sh regen
+# (tracked as a separate follow-up item in BACKLOG.md).
+_LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {
+    "memory": ("BUG-169: MemoryBackend returns last_modified=None under WRITE_RESULT_NATIVE", True),
+    "sql-blob": ("BUG-170: SQLBlob returns last_modified=None under WRITE_RESULT_NATIVE", True),
+    "dafny-oracle": (
+        "spec opacity: Dafny MemoryBackend.Write returns Option_None() for last_modified by design; "
+        "flip requires BackendContract.dfy edit + oracle regen (see BACKLOG.md)",
+        False,
+    ),
+}
+
 
 class TestWriteResultConformance:
     """WR-001a / WR-004 / WR-005 / WR-012 / WR-013: WriteResult field contract.
@@ -308,21 +323,9 @@ class TestWriteResultConformance:
         Surfaces BUG-169 (``MemoryBackend``) and BUG-170 (``SQLBlobBackend``).
         """
         _require(backend, cap, Capability.WRITE_RESULT_NATIVE)
-        if backend.name in {"memory", "sql-blob", "dafny-oracle"}:
-            request.applymarker(
-                pytest.mark.xfail(
-                    reason=(
-                        "BUG-169: MemoryBackend returns last_modified=None under WRITE_RESULT_NATIVE"
-                        if backend.name == "memory"
-                        else (
-                            "BUG-170: SQLBlob returns last_modified=None under WRITE_RESULT_NATIVE"
-                            if backend.name == "sql-blob"
-                            else "BUG-169 (oracle): Dafny MemoryBackend.Write hardcodes Option_None() for last_modified"
-                        )
-                    ),
-                    strict=True,
-                )
-            )
+        if backend.name in _LAST_MODIFIED_XFAIL:
+            reason, strict = _LAST_MODIFIED_XFAIL[backend.name]
+            request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
         result = getattr(backend, op)(f"wr/{op}-lm.txt", b"data")
         assert result.last_modified is not None
 

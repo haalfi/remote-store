@@ -3,6 +3,11 @@
 // Proves that an in-memory implementation satisfies every postcondition
 // of the Backend trait.  This is the "model" backend — if Dafny can
 // verify it, the contract is satisfiable and internally consistent.
+//
+// NOTE: MemoryBackendMinimal at the bottom of this file mirrors every method
+// body of MemoryBackend with a narrower capability set.  Dafny has no
+// class-to-class inheritance, so any postcondition or body change to
+// MemoryBackend must be manually reflected in MemoryBackendMinimal.
 
 include "BackendContract.dfy"
 

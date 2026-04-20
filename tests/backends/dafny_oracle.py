@@ -126,7 +126,9 @@ def _dafny_write_source(src: object) -> str:
         return "native"
     if src.is_SidecarSource:  # type: ignore[union-attr]
         return "sidecar"
-    return "basic"
+    if src.is_BasicSource:  # type: ignore[union-attr]
+        return "basic"
+    raise AssertionError(f"unknown Dafny WriteSource variant: {src}")
 
 
 def _dafny_wr_to_python(path_str: str, dwr: object) -> WriteResult:
