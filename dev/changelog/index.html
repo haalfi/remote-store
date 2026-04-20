@@ -11475,6 +11475,12 @@
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Dependabot auto-merge workflow</strong>: adds
+  <code>.github/workflows/dependabot-auto-merge.yml</code>. On approval of a
+  Dependabot PR by the repo owner, enables GitHub auto-merge (squash);
+  GitHub merges automatically once the <code>gate</code> check passes.</p>
+</li>
+<li>
 <p><strong>Dafny <code>WriteResult</code> oracle regeneration + adapter update</strong> (ID-151,
   part 2): <code>scripts/dafny_translate.sh</code> Docker wrapper (analogous to
   <code>scripts/dafny_verify.sh</code>) translates Dafny specs to Python using
