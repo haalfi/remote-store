@@ -8,17 +8,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Known Issues
 
-- **`S3Backend.write` does not surface the auto-CRC32 digest that `get_file_info`
-  returns** (BUG-177): the write path populates `WriteResult` from
-  `s3fs.info()`, which omits checksum fields, so `result.digest is None`.
-  `get_file_info()` issues a direct `head_object(..., ChecksumMode="ENABLED")`
-  and surfaces the auto-CRC32 that S3 stores for every upload since late
-  2022. Under `WRITE_RESULT_NATIVE`, a caller who reads the object back sees
-  a `ContentDigest('crc32', …)` on `FileInfo` while `WriteResult.digest` is
-  `None` — a WR-001a divergence between the two entry points for the same
-  key. The conformance test deliberately excludes `digest` from the
-  `FileInfo`/`WriteResult` equality check pending a fix.
-
 - **`SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (BUG-175):
   the zero-segment half of the recursive `test_glob` case is skipped on
   `sql-blob` pending a rewrite of the SQLite GLOB pre-filter in
@@ -45,6 +34,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `_LAST_MODIFIED_XFAIL` is now empty.
 
 ### Fixed
+
+- **`S3Backend.write` now surfaces the auto-CRC32 digest** (BUG-177):
+  `write()` previously called `s3fs.info()` after the upload, which omits
+  checksum fields, leaving `WriteResult.digest` as `None` while a subsequent
+  `get_file_info()` returned `ContentDigest('crc32', …)` — a WR-001a
+  divergence. Fixed by replacing the `s3fs.info()` call with a direct
+  `head_object(..., ChecksumMode="ENABLED")` (the same call `get_file_info`
+  uses), so `write()` and `get_file_info()` now agree on `digest`. New
+  conformance test `test_digest_matches_file_info` enforces this invariant
+  across all `WRITE_RESULT_NATIVE` backends.
 
 - **Azure HNS `write_atomic` leaks `WriteResult`-construction failures as
   write failures** (BUG-173): after a successful `tmp_fc.rename_file()`
