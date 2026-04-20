@@ -144,6 +144,19 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Hypothesis property coverage for `WriteResult`** (ID-151c): adds
+  `tests/test_pbt_write_result.py` with two property tests on top of
+  `TestWriteResultConformance`.  The first exercises
+  `WriteResult.size == len(payload)` on `MemoryBackend` (small regime) and
+  `LocalBackend` (256 KiB – 1 MiB BUG-168 buffer boundary — the only v1
+  backend whose write path runs through a real `BufferedWriter`) across
+  `bytes` / `BinaryIO` inputs and `overwrite=True` / `overwrite=False`.  The
+  second exercises WR-012 echo + WR-013 `get_file_info` round-trip on the two
+  backends that go through a real SDK serialisation layer (S3 via `moto`
+  server mode; Azure via Azurite when reachable).  Strategies are
+  module-scope and WR-011-compliant; profiles inherit from
+  `tests/conftest.py` (dev 50 / ci 100 / nightly 1000).
+
 - **Retired per-backend `WriteResult` test duplication** (ID-151b): removed
   `TestLocalWriteResult`, `TestSFTPWriteResult`, `TestS3PyArrowWriteResult`,
   and the generic `write` / `write_atomic` / size / metadata-echo methods from

@@ -266,6 +266,14 @@ Existing items may be more verbose — trim on next touch.
 
 ### Testing & Verification
 
+- [ ] **ID-153 — Consolidate moto / Azurite fixtures at `tests/conftest.py`**
+  `tests/test_pbt_write_result.py::_moto_endpoint` spins up a second
+  `ThreadedMotoServer` alongside the session-scope `moto_server` in
+  `tests/backends/conftest.py` because conftest scope does not cross the
+  `tests/` vs `tests/backends/` boundary. Promote `moto_server`, `_free_port`,
+  and `_AZURITE_CONN_STR` to `tests/conftest.py` so both test trees share one
+  server. Non-blocking — flagged in PR #478 review.
+
 - [ ] **ID-152 — Dafny `last_modified` spec-opacity follow-up (unblocks oracle xfail)**
   `MemoryBackend.dfy:Write` currently hardcodes `Option_None()` for
   `last_modified` in the returned `WriteResult` — a deliberate opacity choice
