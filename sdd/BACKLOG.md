@@ -123,15 +123,17 @@ Existing items may be more verbose — trim on next touch.
   which lets backends that declare `source="basic"` escape the check even when their
   `get_file_info()` returns richer data than their `write()`.
 
-  **Test gap:** `TestWriteResultConformance` covers `etag`+`last_modified` (in
-  `test_native_file_info_matches_write_result`), `digest` (in
-  `test_digest_matches_file_info`, PR #482), and `metadata` (in
-  `test_metadata_round_trips_via_get_file_info`) as three separate tests all gated on
-  `WRITE_RESULT_NATIVE + METADATA`. Replace/augment with one
-  `test_write_result_consistent_with_file_info` gated on `WRITE + METADATA` only:
-  after `write()` / `write_atomic()`, assert `result.etag == info.etag`,
-  `result.digest == info.digest`, and `result.last_modified == info.modified_at`
-  (when `last_modified is not None`).
+  **Test change:** add one `test_write_result_consistent_with_file_info` gated on
+  `WRITE + METADATA` only: after `write()` / `write_atomic()`, assert
+  `result.etag == info.etag`, `result.digest == info.digest`, and
+  `result.last_modified == info.modified_at` (when `last_modified is not None`).
+  Remove the two tests it supersedes:
+  - `test_native_file_info_matches_write_result` (covers `etag`+`last_modified`,
+    gated on `WRITE_RESULT_NATIVE`) — strict subset of the new test
+  - `test_digest_matches_file_info` (covers `digest`, gated on `WRITE_RESULT_NATIVE`,
+    added in PR #482) — strict subset of the new test
+  Keep `test_metadata_round_trips_via_get_file_info` (WR-013 round-trip, different
+  spec obligation).
 
   **Backends that currently fail this test:**
   - `S3PyArrowBackend` (`_s3_pyarrow.py:243`): `write()` returns `source="basic"` with
