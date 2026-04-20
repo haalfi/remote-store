@@ -121,6 +121,21 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Python WR-* conformance assertions** (ID-151, part 3): adds
+  `TestWriteResultConformance` in `tests/backends/test_conformance.py`,
+  exercising every backend's `write` / `write_atomic` return value against
+  the Dafny `Write` postconditions in `sdd/formal/BackendContract.dfy`
+  (spec 045 WR-001a, WR-004, WR-005, WR-012, WR-013). Rich-field checks
+  are gated on `Capability.WRITE_RESULT_NATIVE`; metadata checks are gated
+  on `Capability.USER_METADATA`. The new fixture-level assertions surface
+  three pre-existing backend defects as strict `xfail`s — BUG-168
+  (`LocalBackend.write_atomic` stale streaming size), BUG-169
+  (`MemoryBackend` drops `last_modified`), BUG-170 (`SQLBlobBackend`
+  drops `last_modified`) — so fixing each bug flips the xfail and
+  forces the `xfail` marker off in the same commit. The `dafny-oracle`
+  adapter is skipped pending the ID-151 follow-up that widens its
+  `write` / `write_atomic` bindings.
+
 - **Dependabot auto-merge workflow**: adds
   `.github/workflows/dependabot-auto-merge.yml`. On approval of a
   Dependabot PR by the repo owner, enables GitHub auto-merge (squash);
