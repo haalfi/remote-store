@@ -239,23 +239,12 @@ class TestWriteResultConformance:
     backend layer.  Rich-field checks are gated on
     ``Capability.WRITE_RESULT_NATIVE``; metadata checks are gated on
     ``Capability.USER_METADATA``.
-
-    The ``dafny-oracle`` adapter is skipped here because its ``write`` /
-    ``write_atomic`` bindings still return ``None`` and do not forward the
-    ``metadata=`` kwarg — the adapter widening is tracked as a separate
-    follow-up under ID-151 in ``sdd/BACKLOG.md``.
     """
-
-    @staticmethod
-    def _skip_oracle_adapter(backend: Backend) -> None:
-        if backend.name == "dafny-oracle":
-            pytest.skip("ID-151 follow-up: dafny-oracle adapter does not yet return WriteResult")
 
     @pytest.mark.spec("WR-001a")
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
     def test_result_is_write_result_with_path_and_size(self, backend: Backend, op: str, cap: Capability) -> None:
         _require(backend, cap)
-        self._skip_oracle_adapter(backend)
         payload = b"wr001a-payload"
         result = getattr(backend, op)(f"wr/{op}-path-size.txt", payload)
         assert isinstance(result, WriteResult)
@@ -274,7 +263,6 @@ class TestWriteResultConformance:
         moving the size capture after the ``with`` block closes.
         """
         _require(backend, Capability.ATOMIC_WRITE)
-        self._skip_oracle_adapter(backend)
         payload = b"x" * (100 * 1024)
         result = backend.write_atomic("wr/streaming-size.bin", io.BytesIO(payload))
         assert result.size == len(payload)
@@ -283,7 +271,6 @@ class TestWriteResultConformance:
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
     def test_source_matches_write_result_native(self, backend: Backend, op: str, cap: Capability) -> None:
         _require(backend, cap)
-        self._skip_oracle_adapter(backend)
         result = getattr(backend, op)(f"wr/{op}-source.txt", b"data")
         expected = "native" if backend.capabilities.supports(Capability.WRITE_RESULT_NATIVE) else "basic"
         assert result.source == expected
@@ -292,7 +279,6 @@ class TestWriteResultConformance:
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
     def test_basic_source_leaves_rich_fields_none(self, backend: Backend, op: str, cap: Capability) -> None:
         _require(backend, cap)
-        self._skip_oracle_adapter(backend)
         if backend.capabilities.supports(Capability.WRITE_RESULT_NATIVE):
             pytest.skip("WR-005 governs basic-source results")
         result = getattr(backend, op)(f"wr/{op}-basic.txt", b"data")
@@ -322,14 +308,17 @@ class TestWriteResultConformance:
         Surfaces BUG-169 (``MemoryBackend``) and BUG-170 (``SQLBlobBackend``).
         """
         _require(backend, cap, Capability.WRITE_RESULT_NATIVE)
-        self._skip_oracle_adapter(backend)
-        if backend.name in {"memory", "sql-blob"}:
+        if backend.name in {"memory", "sql-blob", "dafny-oracle"}:
             request.applymarker(
                 pytest.mark.xfail(
                     reason=(
                         "BUG-169: MemoryBackend returns last_modified=None under WRITE_RESULT_NATIVE"
                         if backend.name == "memory"
-                        else "BUG-170: SQLBlob returns last_modified=None under WRITE_RESULT_NATIVE"
+                        else (
+                            "BUG-170: SQLBlob returns last_modified=None under WRITE_RESULT_NATIVE"
+                            if backend.name == "sql-blob"
+                            else "BUG-169 (oracle): Dafny MemoryBackend.Write hardcodes Option_None() for last_modified"
+                        )
                     ),
                     strict=True,
                 )
@@ -356,7 +345,6 @@ class TestWriteResultConformance:
         rich-field absence to *capability*, not to ``get_file_info``.
         """
         _require(backend, cap, Capability.WRITE_RESULT_NATIVE, Capability.METADATA)
-        self._skip_oracle_adapter(backend)
         key = f"wr/{op}-fi-match.txt"
         result = getattr(backend, op)(key, b"data")
         info = backend.get_file_info(key)
@@ -371,7 +359,6 @@ class TestWriteResultConformance:
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
     def test_metadata_echoed_when_gate_passes(self, backend: Backend, op: str, cap: Capability) -> None:
         _require(backend, cap, Capability.USER_METADATA)
-        self._skip_oracle_adapter(backend)
         meta = {"author": "alice", "project": "conformance"}
         result = getattr(backend, op)(f"wr/{op}-meta-echo.txt", b"data", metadata=meta)
         assert result.metadata == meta
@@ -380,7 +367,6 @@ class TestWriteResultConformance:
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
     def test_metadata_is_none_when_not_passed(self, backend: Backend, op: str, cap: Capability) -> None:
         _require(backend, cap)
-        self._skip_oracle_adapter(backend)
         result = getattr(backend, op)(f"wr/{op}-meta-absent.txt", b"data")
         assert result.metadata is None
 
@@ -388,7 +374,6 @@ class TestWriteResultConformance:
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
     def test_metadata_round_trips_via_get_file_info(self, backend: Backend, op: str, cap: Capability) -> None:
         _require(backend, cap, Capability.USER_METADATA, Capability.METADATA)
-        self._skip_oracle_adapter(backend)
         meta = {"author": "bob", "version": "v1"}
         key = f"wr/{op}-meta-roundtrip.txt"
         getattr(backend, op)(key, b"data", metadata=meta)
@@ -398,7 +383,6 @@ class TestWriteResultConformance:
     @pytest.mark.spec("WR-013")
     def test_file_info_metadata_none_when_capability_absent(self, backend: Backend) -> None:
         _require(backend, Capability.WRITE, Capability.METADATA)
-        self._skip_oracle_adapter(backend)
         if backend.capabilities.supports(Capability.USER_METADATA):
             pytest.skip("WR-013 negative direction targets non-declaring backends")
         backend.write("wr/meta-no-cap.txt", b"data")

@@ -152,6 +152,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   intentional `pull_request_review` trigger and the recovery path for
   PRs that miss the workflow window.
 
+- **`DafnyOracleBackend` adapter widening** (ID-151, part 5): `write()` and
+  `write_atomic()` in `tests/backends/dafny_oracle.py` now accept a
+  `metadata=` kwarg and return `WriteResult`, matching the Part-1 ABC.
+  `get_file_info()` and `list_files()` now marshal the Dafny `FileInfo.metadata`
+  field. All `TestWriteResultConformance` skips on `dafny-oracle` are removed;
+  `test_native_populates_last_modified` is xfailed (BUG-169 parity — the Dafny
+  `MemoryBackend.Write` hardcodes `Option_None()` for `last_modified`).
+
 - **Python WR-* conformance assertions** (ID-151, part 3): adds
   `TestWriteResultConformance` in `tests/backends/test_conformance.py`,
   exercising every backend's `write` / `write_atomic` return value against
@@ -162,9 +170,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   two pre-existing backend defects as strict `xfail`s — BUG-169
   (`MemoryBackend` drops `last_modified`) and BUG-170 (`SQLBlobBackend`
   drops `last_modified`) — so fixing each bug flips the xfail and forces
-  the `xfail` marker off in the same commit. The `dafny-oracle` adapter
-  is skipped pending the ID-151 follow-up that widens its `write` /
-  `write_atomic` bindings.
+  the `xfail` marker off in the same commit.
 
 - **Dependabot auto-merge workflow**: adds
   `.github/workflows/dependabot-auto-merge.yml`. On approval of a
