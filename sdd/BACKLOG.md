@@ -337,11 +337,15 @@ Items graduate through the SDD pipeline:
   postconditions (spec 045 WR-001a, WR-004, WR-005, WR-012, WR-013).
   Rich-field checks are gated on `Capability.WRITE_RESULT_NATIVE`;
   metadata checks are gated on `Capability.USER_METADATA`. The
-  fixture-level assertions surface three pre-existing backend defects
-  as strict `xfail`s — BUG-168 (`LocalBackend.write_atomic` stale
-  streaming size), BUG-169 (`MemoryBackend` drops `last_modified`),
-  BUG-170 (`SQLBlobBackend` drops `last_modified`). The `dafny-oracle`
-  fixture is skipped pending the adapter-widening follow-up below.
+  fixture-level assertions surface two pre-existing backend defects as
+  strict `xfail`s — BUG-169 (`MemoryBackend` drops `last_modified`) and
+  BUG-170 (`SQLBlobBackend` drops `last_modified`). The companion
+  streaming-size test (`test_size_matches_written_bytes_for_streaming_input`)
+  was initially xfailed for `local` against BUG-168 and then de-marked
+  when the XPASS held on both Linux 3.13 and Windows cross-OS CI;
+  BUG-168 is now tracked at LOW severity as a latent order-dependency
+  concern (see BUG-168 entry above). The `dafny-oracle` fixture is
+  skipped pending the adapter-widening follow-up below.
 
   **Remaining follow-up:**
   - `MemoryBackendMinimal` satisfiability witness: a sibling refinement
