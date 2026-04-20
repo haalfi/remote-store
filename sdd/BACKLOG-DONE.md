@@ -5,6 +5,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-147 — TLA+ augmentation: Observer dispatch module + informational CI**
+  `Observer.tla` shipped under `sdd/formal/tla/` shadowing spec 019
+  § OBS-003, OBS-003a, OBS-009. Six independent invariants (I1
+  `EventPerCompletedOp`, I2 `RoutingByOpClass`, I3a
+  `ClassHookOutcomeIndependent`, I3b `ErrorHookFiresOnErrorOnly`, I4
+  `ErrorAlwaysReraise`, I5 `AfterHookExceptionIsolated`) — the shortlist
+  grew from five to six when `HookOutcomeContract` was split into I3a / I3b
+  under break-and-catch. Full break-and-catch matrix verified each invariant
+  is independently falsifiable. `Backend.tla` and `Store.tla` dropped — no
+  valid bundled target per the authoring rules. Informational `verify-tla`
+  CI job added to `.github/workflows/ci.yml` (non-blocking; first revisit
+  tracked as ID-150, due 2026-10-19). PRs #458 (formal-layer principles)
+  and #460 (Observer.tla + CI job).
+
 - [x] **ID-152 — Dafny `last_modified` spec-opacity follow-up (oracle xfail closed)**
   Prerequisite (BUG-169) landed: the Python `MemoryBackend.write` now populates
   `last_modified`, so the Dafny spec could drop its opaque `Option_None()`
