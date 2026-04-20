@@ -228,27 +228,6 @@ Existing items may be more verbose — trim on next touch.
   and `_AZURITE_CONN_STR` to `tests/conftest.py` so both test trees share one
   server. Non-blocking — flagged in PR #478 review.
 
-- [ ] **ID-152 — Dafny `last_modified` spec-opacity follow-up (unblocks oracle xfail)**
-  `MemoryBackend.dfy:Write` currently hardcodes `Option_None()` for
-  `last_modified` in the returned `WriteResult` — a deliberate opacity choice
-  (`// last_modified: opaque`).  This means the `dafny-oracle` branch of the
-  `test_native_populates_last_modified` xfail carries `strict=False` and will
-  never self-flip when BUG-169 (`_memory.py`) is fixed.
-
-  When BUG-169 is resolved, also:
-  1. Update `BackendContract.dfy` / `MemoryBackend.dfy` to populate
-     `last_modified` in the `WriteResult` under `CapWriteResultNative`
-     (e.g. by threading a timestamp through `EnsureParents` or by using
-     a spec-level ghost value).
-  2. Regenerate `MemoryBackend-py/module_.py` via `scripts/dafny_translate.sh`.
-  3. Drop the `"dafny-oracle"` entry from `_LAST_MODIFIED_XFAIL` in
-     `tests/backends/test_conformance.py`.
-
-  **Exit criteria:** `test_native_populates_last_modified[dafny-oracle-*]`
-  passes without xfail.  `bash scripts/dafny_verify.sh` still green.
-
-  Related: BUG-169, ID-151 (done).
-
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
   ID-147 on 2026-04-19. Per `sdd/formal/README.md` § Authoring rules (3),

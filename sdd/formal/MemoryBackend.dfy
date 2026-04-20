@@ -216,14 +216,23 @@ class MemoryBackend extends Backend {
 
     // WR-001a / WR-004: MemoryBackend declares CapWriteResultNative,
     // so source is NativeSource and rich fields are populated from
-    // the write response.  The verifier treats these values as
-    // opaque — no semantic meaning attached; stability across
-    // Write/GetFileInfo is what matters.
+    // the write response.  ``last_modified`` carries an opaque Some(_)
+    // witness when the capability is declared — the contract at
+    // BackendContract.dfy:404-412 only detects divergence between
+    // WriteResult and FileInfo, so any consistent Some(_) value satisfies
+    // the postcondition and also lets the Python oracle adapter surface
+    // a non-None ``datetime`` on the declaring backend (ID-152).  When
+    // the capability is absent (source == BasicSource) the WR-005 rich
+    // fields must stay None.
+    var ts: Option<int> :=
+      if CapWriteResultNative in capabilities
+      then Some(0)
+      else None;
     var info := FileInfo(
       path, path, |content|,
       None,                                        // digest: not computed
       None,                                        // etag: opaque slot
-      None,                                        // last_modified: opaque
+      ts,                                          // last_modified: opaque witness
       stored_metadata
     );
     fs := fs[path := FileEntry(content, info)];
@@ -241,7 +250,7 @@ class MemoryBackend extends Backend {
       None,                                        // digest
       None,                                        // etag
       None,                                        // version_id
-      None,                                        // last_modified
+      ts,                                          // last_modified: same witness as info
       stored_metadata,
       wr_source
     ));

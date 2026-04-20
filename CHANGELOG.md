@@ -30,6 +30,20 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `INSERT ... SELECT` runs. The two `self_copy` tests in
   `TestMoveCopySelfOperation` are skipped on `sql-blob` pending a fix.
 
+### Changed
+
+- **Dafny `MemoryBackend` spec now populates `last_modified`** (ID-152):
+  `MemoryBackend.dfy:Write` returned `Option_None()` for `last_modified` by
+  design, which forced the `dafny-oracle` branch of
+  `test_native_populates_last_modified` to carry `strict=False` and never
+  self-flip after BUG-169. With BUG-169 landed, the spec now returns a
+  capability-conditional timestamp witness (`Some(0)` under
+  `CapWriteResultNative`, `None` otherwise) for both `FileInfo.last_modified`
+  and `WriteResult.last_modified`; the oracle adapter lifts it to a Python
+  UTC datetime. `MemoryBackendMinimal` (no `CapWriteResultNative`) is
+  unchanged. Generated runtime regenerated via `scripts/dafny_translate.sh`.
+  `_LAST_MODIFIED_XFAIL` is now empty.
+
 ### Fixed
 
 - **Azure HNS `write_atomic` leaks `WriteResult`-construction failures as

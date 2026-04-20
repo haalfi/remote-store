@@ -5,6 +5,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-152 — Dafny `last_modified` spec-opacity follow-up (oracle xfail closed)**
+  Prerequisite (BUG-169) landed: the Python `MemoryBackend.write` now populates
+  `last_modified`, so the Dafny spec could drop its opaque `Option_None()`
+  hardcode.  `MemoryBackend.dfy:Write` now returns a capability-conditional
+  timestamp witness (`Some(0)` when `CapWriteResultNative in capabilities`,
+  `None` otherwise) for both `FileInfo.last_modified` and
+  `WriteResult.last_modified`; the adapter at `tests/backends/dafny_oracle.py`
+  lifts `Some(n)` to `datetime.fromtimestamp(n, tz=timezone.utc)`.
+  `MemoryBackendMinimal` is untouched (it does not declare
+  `CapWriteResultNative`).  `MemoryBackend-py/module_.py` regenerated via
+  `scripts/dafny_translate.sh` + `_dafny_classorder.py`.  The `"dafny-oracle"`
+  entry in `_LAST_MODIFIED_XFAIL` was removed; the dict is now empty.
+
+  **Exit criteria met:** `test_native_populates_last_modified[dafny-oracle-*]`
+  passes without xfail; `bash scripts/dafny_verify.sh` green (98 verified, 0
+  errors).
+
+  Related: BUG-169 (done), ID-151 (done).
+
 - [x] **BUG-173 — Azure HNS `write_atomic` leaks WriteResult-construction failures as write failures**
   `_azure.py:write_atomic` (HNS branch): after a successful
   `tmp_fc.rename_file()` commit, `dst_fc.get_file_properties()` was called

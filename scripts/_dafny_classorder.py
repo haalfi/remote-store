@@ -1,9 +1,10 @@
 """Post-translate class reordering for Dafny's Python output.
 
-Dafny emits ``class MemoryBackend(Backend)`` before ``class Backend`` is
-defined, which breaks import.  This rewrites ``module_.py`` so classes
-appear in an importable order (ADT types, then ``Backend``, then
-``default__``, then ``MemoryBackend``).
+Dafny emits ``class MemoryBackend(Backend)`` (and other ``Backend``
+subclasses) before ``class Backend`` is defined, which breaks import.
+This rewrites ``module_.py`` so classes appear in an importable order
+(ADT types, then ``Backend``, then ``default__``, then ``MemoryBackend``,
+then ``MemoryBackendMinimal``).
 
 See ``sdd/formal/README.md`` § Class-ordering fix for the authoritative
 order specification.
@@ -19,7 +20,8 @@ from pathlib import Path
 
 _CLASS_RE = re.compile(r"^class\s+(\w+)(?:\b|\()", re.MULTILINE)
 
-_SPECIAL = {"default__", "Backend", "MemoryBackend"}
+_TAIL_ORDER = ("Backend", "default__", "MemoryBackend", "MemoryBackendMinimal")
+_SPECIAL = set(_TAIL_ORDER)
 
 
 def _split_blocks(source: str) -> tuple[str, list[tuple[str, str]]]:
@@ -45,7 +47,7 @@ def reorder(source: str) -> str:
         else:
             adt.append((name, text))
     ordered: list[tuple[str, str]] = list(adt)
-    for key in ("Backend", "default__", "MemoryBackend"):
+    for key in _TAIL_ORDER:
         if key in special:
             ordered.append(special[key])
     return preamble + "".join(text for _, text in ordered)
