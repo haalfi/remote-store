@@ -144,6 +144,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Internal
 
+- **Dependabot auto-merge workflow hardening**: restores the
+  `github.repository == 'haalfi/remote-store'` guard, removes the unused
+  `dependabot/fetch-metadata` step, switches the merge command to
+  `--squash --delete-branch`, adds a per-PR `concurrency` group, and
+  guards on `pull_request.state == 'open'`. Header comment documents the
+  intentional `pull_request_review` trigger and the recovery path for
+  PRs that miss the workflow window.
+
 - **Python WR-* conformance assertions** (ID-151, part 3): adds
   `TestWriteResultConformance` in `tests/backends/test_conformance.py`,
   exercising every backend's `write` / `write_atomic` return value against

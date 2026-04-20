@@ -1,3 +1,16 @@
+# Intentional design: trigger on pull_request_review (not pull_request) so the
+# workflow only enables auto-merge after a human approval. The fetch-metadata
+# action is deliberately omitted -- the human review is the gate, so update-type
+# filtering would be redundant.
+#
+# Things to be aware of:
+# - Recovery for a missed PR: dismiss + re-approve (fires a new submitted event),
+#   or run `gh pr merge <N> --auto --squash --delete-branch` locally.
+# - `dismiss_stale_reviews: true` on master is currently cosmetic because
+#   `required_approving_review_count: 0`. If that count is ever raised, rebases
+#   will dismiss approvals and block already-enabled auto-merge.
+# - Token model: triggered by the reviewer (not dependabot), so GITHUB_TOKEN has
+#   full write perms; no PAT needed.
 name: Dependabot auto-merge
 on:
   pull_request_review:
@@ -7,21 +20,22 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   dependabot:
     runs-on: ubuntu-latest
     if: >
+      github.repository == 'haalfi/remote-store' &&
+      github.event.pull_request.state == 'open' &&
       github.event.review.state == 'approved' &&
       github.event.review.user.login == 'haalfi' &&
       github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
-      - name: Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@d7267f607e9d3fb96fc2fbe83e0af444713e90b7
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Enable auto-merge for Dependabot PRs
-        run: gh pr merge --auto --merge "$PR_URL"
+        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
