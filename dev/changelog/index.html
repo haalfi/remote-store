@@ -11429,6 +11429,21 @@
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Dafny <code>WriteResult</code> oracle regeneration + adapter update</strong> (ID-151,
+  part 2): <code>scripts/dafny_translate.sh</code> Docker wrapper (analogous to
+  <code>scripts/dafny_verify.sh</code>) translates Dafny specs to Python using
+  <code>dafny build -t py</code> without a native Dafny install. Companion
+  <code>scripts/_dafny_classorder.py</code> automates the previously manual class
+  reorder (ADT types → <code>Backend</code> → <code>default__</code> → <code>MemoryBackend</code>) so
+  <code>module_.py</code> imports cleanly. Regenerates <code>MemoryBackend-py/</code> under
+  the Part 1 contract (Dafny 4.11.0, matching the verify pin), and
+  <code>DafnyOracleBackend</code> now passes <code>Option_None()</code> for the new fourth
+  <code>metadata</code> parameter on <code>Write</code>. Oracle-gated conformance run green
+  (154 passed, 5 skipped). Follow-up remainder in <code>BACKLOG.md</code>:
+  <code>MemoryBackendMinimal</code> satisfiability witness for the
+  <code>CapabilityNotSupported</code> / <code>BasicSource</code> branches.</p>
+</li>
+<li>
 <p><strong>Dafny <code>WriteResult</code> extension</strong> (ID-151, part 1): widens the Backend
   trait <code>Write</code> to return <code>Result&lt;WriteResult&gt;</code> with a fourth <code>metadata</code>
   parameter, adds <code>FileInfo</code>/<code>WriteResult</code>/<code>ContentDigest</code>/<code>WriteSource</code>
@@ -11439,10 +11454,7 @@
   Write postconditions; the WR-006 negative direction (Write never
   produces <code>SidecarSource</code>) is enforced structurally by the <code>Write</code>
   postcondition restricting <code>source</code> to <code>NativeSource | BasicSource</code>.
-  <code>MemoryBackend</code> refines the widened contract. Oracle regeneration,
-  <code>DafnyOracleBackend</code> adapter, and the oracle-gated conformance run
-  are follow-up scope (Dafny-native toolchain required; local is
-  Docker-only).</p>
+  <code>MemoryBackend</code> refines the widened contract.</p>
 </li>
 <li>
 <p><strong><code>scripts/gen_pages.py</code> refactor</strong>: split the 840-line mkdocs-gen-files hook
