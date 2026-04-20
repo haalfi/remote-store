@@ -9,17 +9,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Fixed
 
 - **`test_streaming_integrity` SFTP→Azure pipe-threshold flake** (BUG-174):
-  `PIPE_THRESHOLD` raised 1.5 MiB → 2.25 MiB. Root cause (measurement
-  artifact, not a regression): Azure SDK's staged-block uploader retains the
-  previously-staged 1 MiB chunk until the next `stage_block` ack returns, so
-  at `on_progress` sample time both the current and previous chunks are live.
-  When the source is wrapped in `io.BufferedReader` (SFTP, Azure), tracemalloc
-  attributes the C-level bytes allocation to the innermost Python frame
-  above the read (`ProgressReader.read` in `ext/streams.py`), landing both
-  chunks in the pipe filter. Previous 1.5 MiB threshold was calibrated
-  assuming a single in-flight buffer; revised ceiling reflects the SDK's
-  two-chunk hold plus ~12 % headroom. No behaviour change — memory
-  characteristics unchanged.
+  `PIPE_THRESHOLD` raised 1.5 MiB → 2.25 MiB. Root cause is a tracemalloc
+  attribution artifact — Azure SDK's staged-block uploader holds two 1 MiB
+  chunks live simultaneously when the source is wrapped in
+  `io.BufferedReader`; revised ceiling reflects that two-chunk hold plus
+  ~12 % headroom. No production-code change.
 
 - **`_AsyncIteratorBridge.__del__` CodeQL warning** (`py/overly-complex-delete`):
   extracted cleanup logic into `_aclose_best_effort()`; `__del__` now delegates

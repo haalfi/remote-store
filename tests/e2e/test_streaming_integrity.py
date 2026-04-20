@@ -43,6 +43,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from remote_store import Capability
+from remote_store.backends._azure import _AZURE_BLOCK_SIZE
 from remote_store.ext.streams import ChecksumReader
 from remote_store.ext.transfer import transfer
 from tests.e2e.conftest import _azurite_available
@@ -66,11 +67,14 @@ DRAIN_CHUNK = 1_048_576  # 1 MiB read chunks for checksum verification
 # (1 MiB), and its staged-block uploader keeps the *previous* chunk alive
 # until the next stage_block ack returns — so at sample time two 1 MiB
 # buffers are live simultaneously (current + previously-staged).  Sources
-# wrapped in io.BufferedReader (SFTP, Azure) attribute both chunks to the
-# innermost Python frame above the C-level read (ProgressReader.read in
-# ext/streams.py), which lands in this filter.  Threshold at 2.25 MiB gives
-# ~12% headroom over 2 × _AZURE_BLOCK_SIZE.  See BUG-174.
-PIPE_THRESHOLD = 2304 * 1024  # 2.25 MiB
+# wrapped in io.BufferedReader (SFTP, sync Azure) attribute both chunks to
+# the innermost Python frame above the C-level read (ProgressReader.read in
+# ext/streams.py), which lands in this filter.  Azure-bridged hops use
+# AsyncBackendSyncAdapter's _ChunkPullReader (RawIOBase, not wrapped in
+# BufferedReader), so their reads are attributed to _async_to_sync_adapter
+# and fall outside the pipe filter — observed at ~0.13 MiB in practice.
+# Threshold = 2.25 × block = 2 × in-flight + 12.5% headroom.  See BUG-174.
+PIPE_THRESHOLD = _AZURE_BLOCK_SIZE * 9 // 4  # 2.25 MiB
 
 # Total cost thresholds (as multipliers of file_size).
 # Lazy-lazy hops carry a ~4 MiB floor from s3fs multipart upload staging
