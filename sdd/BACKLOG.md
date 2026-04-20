@@ -117,7 +117,41 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **BK-152 — Single conformance test for WriteResult/FileInfo consistency + fix violating backends**
+  The contract "write a file, then fetch its info — shared fields must agree" has no
+  single test and the existing partial coverage is gated on `WRITE_RESULT_NATIVE`,
+  which lets backends that declare `source="basic"` escape the check even when their
+  `get_file_info()` returns richer data than their `write()`.
+
+  **Test gap:** `TestWriteResultConformance` covers `etag`+`last_modified` (in
+  `test_native_file_info_matches_write_result`), `digest` (in
+  `test_digest_matches_file_info`, PR #482), and `metadata` (in
+  `test_metadata_round_trips_via_get_file_info`) as three separate tests all gated on
+  `WRITE_RESULT_NATIVE + METADATA`. Replace/augment with one
+  `test_write_result_consistent_with_file_info` gated on `WRITE + METADATA` only:
+  after `write()` / `write_atomic()`, assert `result.etag == info.etag`,
+  `result.digest == info.digest`, and `result.last_modified == info.modified_at`
+  (when `last_modified is not None`).
+
+  **Backends that currently fail this test:**
+  - `S3PyArrowBackend` (`_s3_pyarrow.py:243`): `write()` returns `source="basic"` with
+    all optional fields `None`, but `get_file_info()` calls
+    `head_object(ChecksumMode="ENABLED")` and returns `etag`, `digest`, and
+    `modified_at`. Fix: add the same `head_object` call after the PyArrow upload, set
+    `source="native"`, declare `WRITE_RESULT_NATIVE`.
+  - `LocalBackend` (`_local.py:178`): `write()` already calls `full.stat()` for
+    `st_size` and discards `st_mtime`; `get_file_info()` returns that mtime as
+    `modified_at`. Fix: reuse the existing `stat()` result for `last_modified`, set
+    `source="native"`, declare `WRITE_RESULT_NATIVE`.
+  - `SFTPBackend` (`_sftp.py:367`, `418`): `write()` returns `last_modified=None`;
+    `get_file_info()` returns `modified_at` from `sftp.stat()`. Fix: call `sftp.stat()`
+    after write (extra round-trip), populate `last_modified`, declare
+    `WRITE_RESULT_NATIVE`. Cost: one extra SFTP round-trip per write.
+  - `SQLAlchemyBackend` (`_sqlalchemy.py:439-450`): `write()` gates `last_modified` on
+    `user_metadata` column presence; `get_file_info()` always reads `modified_at` from
+    the row when the `modified_at` column exists. Fix: decouple the `last_modified`
+    gate from the `user_metadata` check — set it whenever `modified_at` is in
+    `self._optional_columns`, regardless of `user_metadata`.
 
 ---
 
