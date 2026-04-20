@@ -58,9 +58,9 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `sdd/DOCUMENTATION.md` § Content homes                    |
 | **An API reference page**  | `sdd/DOCUMENTATION.md` § 8 — page-type templates          |
 | (new or restructured)      | and building blocks for required sections                 |
-| **A bug fix**              | `sdd/BACKLOG.md` (item), `CHANGELOG.md` (`[Unreleased]`),|
-|                            | failing test **before** the fix, spec if the bug          |
-|                            | contradicts a spec invariant                              |
+| **A bug fix**              | `sdd/BACKLOG.md` (item), `CHANGELOG.md` (stub line under  |
+|                            | `[Unreleased]`), failing test **before** the fix, spec if |
+|                            | the bug contradicts a spec invariant                      |
 | **Source/test/spec counts**| README badge + CI coverage report (no manual table)       |
 | **A new test file**        | Ask: does it exercise OS-specific code (path separators,  |
 |                            | `os.replace`, `tempfile`, local filesystem, atomic writes)?|
@@ -69,7 +69,9 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | suites). Periodically re-audit existing files for          |
 |                            | correctness — see `@pytest.mark.os_sensitive` in          |
 |                            | `pyproject.toml` for rationale.                           |
-| **CHANGELOG entry**        | One heading per section per release — no duplicates.      |
+| **CHANGELOG entry**        | During development: one stub line per item —              |
+|                            | `- <ID> <Title> [<type>]` under the correct section.      |
+|                            | No details. One heading per section — no duplicates.      |
 |                            | Section order: Added > Fixed > Known Issues > Changed >   |
 |                            | Deprecated > Removed > Documentation > Internal.          |
 

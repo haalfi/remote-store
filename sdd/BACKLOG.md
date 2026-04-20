@@ -12,6 +12,9 @@ Items graduate through the SDD pipeline:
 
 **Ordering:** newest first within each section.
 
+**Item scope:** idea + decision-relevant constraints + open questions.
+Do not repeat process steps (those live in CLAUDE-REFERENCE.md and TESTING.md).
+
 **Completing work:**
 
 - Fully done → delete from here, add to `BACKLOG-DONE.md` as `[x]`
