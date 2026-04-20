@@ -4231,6 +4231,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fixed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9919,6 +9930,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fixed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11320,6 +11342,22 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><strong><code>SQLBlobBackend.glob</code> drops zero-segment <code>**/</code> matches on SQLite</strong> (BUG-175):
+  the zero-segment half of the recursive <code>test_glob</code> case is skipped on
+  <code>sql-blob</code> pending a rewrite of the SQLite GLOB pre-filter in
+  <code>_sqlalchemy.py</code>. Non-SQLite dialects are unaffected.</p>
+</li>
+<li>
+<p><strong><code>SQLBlobBackend.copy(src, src)</code> silently destroys data</strong> (BUG-176):
+  <code>copy()</code> lacks the <code>src == dst</code> early-return guard that <code>move()</code> has;
+  with <code>overwrite=True</code> the single row is deleted before the
+  <code>INSERT ... SELECT</code> runs. The two <code>self_copy</code> tests in
+  <code>TestMoveCopySelfOperation</code> are skipped on <code>sql-blob</code> pending a fix.</p>
+</li>
+</ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
