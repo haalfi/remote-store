@@ -12,16 +12,6 @@ Root path translation: the Python Backend ABC uses ``""`` for root, but
 Dafny's ``Path`` type requires non-empty strings.  The Dafny spec models
 root as ``"."`` (seeded as DirEntry in the constructor).  Translation
 happens once in ``_str_to_dafny`` — no per-method root guards needed.
-
-**Known adapter gap (tracked under ID-151):** ``write()`` and
-``write_atomic()`` here do not accept the ``metadata=`` keyword and
-return ``None`` instead of ``WriteResult`` — the Dafny ``Write`` method
-is called with a hardcoded ``Option_None()`` fourth argument.  That
-narrows the Part-1 ABC return type and leaves the oracle unable to
-witness the ``HasUserMetadata(metadata) && CapUserMetadata in capabilities``
-branch (WR-012 / WR-013) through conformance.  Scoped out of Part 2 to
-keep the regen diff narrow; adapter widening is listed under ID-151's
-follow-ups in ``sdd/BACKLOG.md``.
 """
 
 from __future__ import annotations
@@ -42,7 +32,7 @@ from remote_store._errors import (
     InvalidPath,
     NotFound,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo
+from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
@@ -59,7 +49,7 @@ if _DAFNY_PY_DIR not in sys.path:
 
 import _dafny  # noqa: E402
 import module_ as _dafny_module  # noqa: E402
-from module_ import Option_None  # noqa: E402
+from module_ import Option_None, Option_Some  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Type marshaling helpers
@@ -114,12 +104,58 @@ def _raise_if_err(result: object) -> object:
     return result.value  # type: ignore[union-attr]
 
 
-def _to_file_info(path_str: str, size: int, now: datetime) -> FileInfo:
-    return FileInfo(path=RemotePath(path_str), name=_filename(path_str), size=size, modified_at=now)
+def _to_file_info(path_str: str, size: int, now: datetime, dafny_metadata: object) -> FileInfo:
+    meta = None
+    if dafny_metadata.is_Some:  # type: ignore[union-attr]
+        meta = {_dafny_to_str(k): _dafny_to_str(v) for k, v in dict.items(dafny_metadata.value)}  # type: ignore[union-attr]
+    return FileInfo(path=RemotePath(path_str), name=_filename(path_str), size=size, modified_at=now, metadata=meta)
 
 
 def _to_folder_entry(path_str: str) -> FolderEntry:
     return FolderEntry(path=RemotePath(path_str), name=_filename(path_str))
+
+
+def _metadata_to_dafny(metadata: dict[str, str] | None) -> object:
+    if metadata is None:
+        return Option_None()
+    return Option_Some(_dafny.Map({_str_to_dafny(k): _str_to_dafny(v) for k, v in metadata.items()}))
+
+
+def _dafny_write_source(src: object) -> str:
+    if src.is_NativeSource:  # type: ignore[union-attr]
+        return "native"
+    if src.is_SidecarSource:  # type: ignore[union-attr]
+        return "sidecar"
+    if src.is_BasicSource:  # type: ignore[union-attr]
+        return "basic"
+    raise AssertionError(f"unknown Dafny WriteSource variant: {src}")
+
+
+def _dafny_wr_to_python(path_str: str, dwr: object) -> WriteResult:
+    meta = None
+    if dwr.metadata.is_Some:  # type: ignore[union-attr]
+        meta = {_dafny_to_str(k): _dafny_to_str(v) for k, v in dict.items(dwr.metadata.value)}  # type: ignore[union-attr]
+    digest = None
+    if dwr.digest.is_Some:  # type: ignore[union-attr]
+        cd = dwr.digest.value  # type: ignore[union-attr]
+        digest = ContentDigest(algorithm=_dafny_to_str(cd.kind), value=_dafny_to_str(cd.value))
+    etag = _dafny_to_str(dwr.etag.value) if dwr.etag.is_Some else None  # type: ignore[union-attr]
+    version_id = _dafny_to_str(dwr.version__id.value) if dwr.version__id.is_Some else None  # type: ignore[union-attr]
+    last_modified = (
+        datetime.fromtimestamp(int(dwr.last__modified.value), tz=timezone.utc)  # type: ignore[union-attr]
+        if dwr.last__modified.is_Some  # type: ignore[union-attr]
+        else None
+    )
+    return WriteResult(
+        path=RemotePath(path_str),
+        size=int(dwr.size),  # type: ignore[union-attr]
+        source=_dafny_write_source(dwr.source),  # type: ignore[union-attr]
+        digest=digest,
+        etag=etag,
+        version_id=version_id,
+        last_modified=last_modified,
+        metadata=meta,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -168,12 +204,29 @@ class DafnyOracleBackend(Backend):
     def read_bytes(self, path: str) -> bytes:
         return _dafny_to_bytes(_raise_if_err(self._mb.Read(_str_to_dafny(path))))
 
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: dict[str, str] | None = None,
+    ) -> WriteResult:
         data = bytes(content) if isinstance(content, (bytes, bytearray, memoryview)) else content.read()
-        _raise_if_err(self._mb.Write(_str_to_dafny(path), _bytes_to_dafny(data), overwrite, Option_None()))
+        dwr = _raise_if_err(
+            self._mb.Write(_str_to_dafny(path), _bytes_to_dafny(data), overwrite, _metadata_to_dafny(metadata))
+        )
+        return _dafny_wr_to_python(path, dwr)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
-        self.write(path, content, overwrite=overwrite)
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: dict[str, str] | None = None,
+    ) -> WriteResult:
+        return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
     def open_atomic(self, path: str, *, overwrite: bool = False) -> contextlib.AbstractContextManager[io.BytesIO]:
         @contextlib.contextmanager
@@ -199,7 +252,7 @@ class DafnyOracleBackend(Backend):
         )
         now = datetime.now(tz=timezone.utc)
         for fi in result:
-            yield _to_file_info(_dafny_to_str(fi.path), int(fi.size), now)
+            yield _to_file_info(_dafny_to_str(fi.path), int(fi.size), now, fi.metadata)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         for fe in _raise_if_err(self._mb.ListFolders(_str_to_dafny(path))):
@@ -207,7 +260,9 @@ class DafnyOracleBackend(Backend):
 
     def get_file_info(self, path: str) -> FileInfo:
         dafny_fi = _raise_if_err(self._mb.GetFileInfo(_str_to_dafny(path)))
-        return _to_file_info(_dafny_to_str(dafny_fi.path), int(dafny_fi.size), datetime.now(tz=timezone.utc))
+        return _to_file_info(
+            _dafny_to_str(dafny_fi.path), int(dafny_fi.size), datetime.now(tz=timezone.utc), dafny_fi.metadata
+        )
 
     def get_folder_info(self, path: str) -> FolderInfo:
         dafny_fi = _raise_if_err(self._mb.GetFolderInfo(_str_to_dafny(path)))

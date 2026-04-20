@@ -5,6 +5,41 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-151 — Dafny `WriteResult` extension: field-mapping + capability round-trip**
+  Five-part series extending `sdd/formal/BackendContract.dfy` to model
+  `WriteResult` and encoding WR-001a, WR-004, WR-008, WR-012, WR-013 as
+  backend-layer postconditions on `Write`; refining `MemoryBackend.dfy`;
+  regenerating and wiring the compiled oracle; and adding Python conformance
+  assertions for every backend.
+
+  - **Part 1** — `BackendContract.dfy`: `Option<T>`, `ContentDigest`,
+    `WriteSource`, `FileInfo`, `WriteResult` datatypes; `CapWriteResultNative`
+    and `CapUserMetadata` capabilities; `HasUserMetadata` predicate +
+    `BasicFileInfo` helper; `Write` widened to `Result<WriteResult>` with
+    fourth `metadata` parameter; WR-001a/004/005/010/012/013 postconditions;
+    `WriteResultFromFileInfo` function + `WR008FieldMapping` lemma.
+    `MemoryBackend.dfy` refinement discharges all new postconditions.
+  - **Part 2** — Docker-based Dafny translate (`scripts/dafny_translate.sh`)
+    lifted the toolchain blocker. Regenerated `MemoryBackend-py/module_.py`;
+    automated class reorder (`scripts/_dafny_classorder.py`). Oracle-gated
+    conformance: 154 passed, 5 skipped.
+  - **Part 3** — Adds `TestWriteResultConformance` in
+    `tests/backends/test_conformance.py` exercising every backend's `write` /
+    `write_atomic` return value against the Dafny postconditions. Surfaces
+    BUG-169, BUG-170 as strict `xfail`s; catches BUG-168.
+  - **Part 4** — `MemoryBackendMinimal` sibling refinement in
+    `MemoryBackend.dfy` declares neither `CapWriteResultNative` nor
+    `CapUserMetadata`, making the WR-010 `CapabilityNotSupported` gate live
+    code and always producing `BasicSource` — closes the refinement coverage
+    gap. 98 verified, 0 errors.
+  - **Part 5** — `DafnyOracleBackend` adapter widening: `write()` /
+    `write_atomic()` accept `metadata=` and return `WriteResult`;
+    `get_file_info()` / `list_files()` marshal `FileInfo.metadata`. All
+    oracle skips in `TestWriteResultConformance` removed; 101 passed,
+    2 xfailed (BUG-169 parity).
+
+  Related: ID-146 (done), ID-134, ID-147.
+
 - [x] **BUG-168 — `LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming input**
   `_local.py:197-203`: `size = os.path.getsize(tmp_path)` was called *inside*
   the `with os.fdopen(fd, "wb") as f:` block, before the `BufferedWriter`

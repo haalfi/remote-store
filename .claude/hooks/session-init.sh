@@ -83,7 +83,7 @@ if ! command -v dafny &>/dev/null && ls sdd/formal/*.dfy &>/dev/null; then
       fi
     fi
   else
-    echo "dafny: not found — install manually (see sdd/CLAUDE-REFERENCE.md § Local toolchain)"
+    echo "dafny: not found natively — use Docker: bash scripts/dafny_verify.sh (verify) or bash scripts/dafny_translate.sh (codegen)"
   fi
 fi
 

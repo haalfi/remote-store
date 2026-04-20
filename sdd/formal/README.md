@@ -248,6 +248,13 @@ small, stable, and maintainable:
 - **Root as `"."`.** The Dafny `Path` type requires non-empty strings;
   the Python adapter translates `""` → `"."` once in `_str_to_dafny`,
   eliminating per-method root guards.
+- **`MemoryBackend` / `MemoryBackendMinimal` parity.** Dafny has no
+  class-to-class inheritance, so `MemoryBackendMinimal` duplicates every
+  method body of `MemoryBackend` with a narrower capability set.  Any
+  postcondition or body change to `MemoryBackend` **must be manually
+  mirrored** in `MemoryBackendMinimal`.  `dafny_verify.sh` will still pass
+  on both after a one-sided edit (each class proves its own contract),
+  so drift is invisible in CI — it is caught only in review.
 
 ### Design decisions
 
