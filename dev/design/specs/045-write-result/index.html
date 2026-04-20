@@ -9048,10 +9048,11 @@ is expressed against it.</p>
 <p><strong>Optional (default <code>None</code> unless noted):</strong></p>
 <ul>
 <li><code>digest</code> (<code>ContentDigest | None</code>) — verified content digest:
-  client-computed via <code>ext.write.write_with_hash</code> (WR-014), or a
+  client-computed via <code>ext.write.write_with_hash</code> (WR-014), a
   backend-echoed content hash from the write response (e.g., Azure
-  <code>content_md5</code> surfaced as <code>ContentDigest("md5", …)</code>); <code>None</code> on
-  the default write path for all v1 backends (WR-007).</li>
+  <code>content_md5</code>), or a server-verified hash surfaced by the write path
+  (e.g., S3 auto-CRC32 via <code>head_object(ChecksumMode="ENABLED")</code>);
+  <code>None</code> when the backend does not surface any digest on write (WR-007).</li>
 <li><code>etag</code> (<code>str | None</code>) — backend change tag; not a content hash on
   every backend (see RFC-0011 § Proposal for per-backend semantics).</li>
 <li><code>version_id</code> (<code>str | None</code>) — backend-provided immutable version
@@ -9092,7 +9093,8 @@ consistent fields. Verified in <code>MemoryBackend.dfy</code>. Python backstop i
 (<code>test_result_is_write_result_with_path_and_size</code>,
 <code>test_size_matches_written_bytes_for_streaming_input</code>,
 <code>test_native_populates_last_modified</code>,
-<code>test_native_file_info_matches_write_result</code>). See ID-151.</p>
+<code>test_native_file_info_matches_write_result</code>,
+<code>test_digest_matches_file_info</code>). See ID-151.</p>
 <h2 id="wr-002-writeresultpath-is-store-relative">WR-002: WriteResult.path Is Store-Relative<a class="headerlink" href="#wr-002-writeresultpath-is-store-relative" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>WriteResult.path</code> is store-relative — <code>root_path</code> is stripped
 exactly as <code>FileInfo.path</code> is stripped by <code>list_files</code> and <code>get_file_info</code>.
@@ -9158,19 +9160,19 @@ server-verified or backend-echoed content hash on its write response. No
 streaming hash wrapper is inserted on the default path.</p>
 <p><strong>Current backend set (v1):</strong></p>
 <ul>
-<li><em>Server-verified digest:</em> none. No v1 backend surfaces a server-verified
-  content digest on the default write path. S3's single-PUT <code>ETag</code> is
-  explicitly documented as <em>not</em> a content hash; multipart <code>ETag</code> values
-  have the form <code>"&lt;md5-of-part-md5s&gt;-&lt;N&gt;"</code>.</li>
+<li><em>Server-verified digest:</em> S3 only. <code>S3Backend.write()</code> calls
+  <code>head_object(..., ChecksumMode="ENABLED")</code> after the upload — the same
+  call used by <code>get_file_info</code> (S3-024) — and wraps the returned
+  auto-CRC32 in <code>ContentDigest("crc32", …)</code>. Amazon S3 has automatically
+  stored CRC32 checksums for new objects since late 2022, so this digest
+  is present for all standard single-PUT uploads. S3's <code>ETag</code> is separately
+  <em>not</em> a content hash; this invariant refers to the <code>digest</code> field only.</li>
 <li><em>Backend-echoed digest:</em> Azure only. Azure echoes the client-supplied MD5
   as <code>ContentDigest("md5", …)</code> in <code>WriteResult.digest</code> when the caller
   supplied an MD5 on the write request. That value is client-originated but
-  surfaces what the backend stored, satisfying the "backend-echoed" clause.
-  All other v1 backends return <code>WriteResult.digest is None</code>.</li>
+  surfaces what the backend stored, satisfying the "backend-echoed" clause.</li>
+<li>All other v1 backends return <code>WriteResult.digest is None</code>.</li>
 </ul>
-<p>The invariant is written to accommodate a future backend surfacing a
-server-verified digest (e.g., opt-in S3 <code>ChecksumSHA256</code>) without amending
-WR-007.</p>
 <h2 id="wr-008-storehead-gating-and-semantics">WR-008: Store.head() Gating and Semantics<a class="headerlink" href="#wr-008-storehead-gating-and-semantics" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Store.head(path) -&gt; WriteResult</code> is gated on
 <code>Capability.METADATA</code> only. It is <strong>not</strong> gated on <code>Capability.WRITE</code> — callers

@@ -9469,29 +9469,36 @@
 <strong>Postconditions:</strong>
 - <code>FileInfo.etag</code> is a non-empty lowercase string when the info dict contains an <code>ETag</code> key.
 - <code>FileInfo.etag</code> is <code>None</code> only when the info dict has no ETag (not expected for well-formed S3 responses).
-- <code>FileInfo.digest</code> from listing paths (<code>list_files</code>, <code>iter_children</code>) is always <code>None</code> — the extra <code>HeadObject</code> call required for checksum data is issued only by <code>get_file_info</code>.
+- <code>FileInfo.digest</code> from listing paths (<code>list_files</code>, <code>iter_children</code>) is always <code>None</code> — checksum data requires a separate <code>HeadObject</code> call (see S3-024).
 - <code>FileInfo.digest</code> from <code>get_file_info</code> may be a <code>ContentDigest</code> even for objects uploaded without an explicit checksum, because Amazon S3 has automatically computed and stored CRC32 checksums for new objects since late 2022 (see S3-024).</p>
 <h3 id="s3-024-digest-population-via-checksummode-enabled">S3-024: Digest Population via <code>ChecksumMode: ENABLED</code><a class="headerlink" href="#s3-024-digest-population-via-checksummode-enabled" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>get_file_info</code> populates <code>FileInfo.digest</code> from the <code>x-amz-checksum-*</code>
-response header when the object was uploaded with a checksum algorithm.
+<p><strong>Invariant:</strong> Both <code>write()</code> and <code>get_file_info</code> populate their respective
+digest fields via <code>head_object(..., ChecksumMode="ENABLED")</code>, using the shared
+<code>_digest_from_head_response</code> helper. This guarantees <code>WriteResult.digest</code> and
+<code>FileInfo.digest</code> are always consistent for the same key (WR-001a).
 <strong>Mechanism:</strong>
-1. <code>get_file_info</code> calls <code>_fs.call_s3("head_object", Bucket=..., Key=...,
-   ChecksumMode="ENABLED")</code> unconditionally — this single request returns both
-   standard metadata and any <code>x-amz-checksum-*</code> headers.
-2. The base64-encoded checksum value from the response is decoded to hex and
+1. After a successful upload, <code>write()</code> calls <code>_fs.call_s3("head_object",
+   Bucket=..., Key=..., ChecksumMode="ENABLED")</code> to retrieve checksum headers
+   and stores the result in <code>WriteResult.digest</code>.
+2. <code>get_file_info</code> issues the same <code>head_object</code> call and stores the result
+   in <code>FileInfo.digest</code>.
+3. In both cases, the base64-encoded checksum value is decoded to hex and
    wrapped in a <code>ContentDigest(algorithm, hex_value)</code>.
 <strong>Supported algorithms:</strong> <code>sha256</code>, <code>sha1</code>, <code>crc32</code>, <code>crc32c</code> (case-insensitive on input,
 lowercase-normalized in <code>ContentDigest</code>).
 <strong>Postconditions:</strong>
-- <code>FileInfo.digest</code> is a <code>ContentDigest</code> with the correct algorithm and hex value when
-  the <code>HeadObject</code> response with <code>ChecksumMode: ENABLED</code> contains any known checksum key.
-- <code>FileInfo.digest</code> may be a <code>ContentDigest</code> even for objects uploaded without an
-  explicit checksum algorithm, because Amazon S3 (and moto) automatically computes and
-  stores CRC32 checksums for new objects.
-- <code>FileInfo.digest</code> is <code>None</code> only when the response contains no known checksum key, or
+- <code>WriteResult.digest</code> and <code>FileInfo.digest</code> agree for the same key — both
+  are populated from the same <code>head_object</code> mechanism.
+- Both fields are a <code>ContentDigest</code> with the correct algorithm and hex value
+  when the <code>HeadObject</code> response contains any known checksum key.
+- Both may be a <code>ContentDigest</code> even without an explicit checksum algorithm,
+  because Amazon S3 (and moto) automatically computes and stores CRC32
+  checksums for new objects since late 2022.
+- Both are <code>None</code> only when the response contains no known checksum key, or
   base64 decoding the value fails.
-- <code>FileInfo.digest</code> from listing paths (<code>list_files</code>, <code>iter_children</code>) is always <code>None</code>
-  — the extra request is only issued by <code>get_file_info</code>.</p>
+- <code>FileInfo.digest</code> from listing paths (<code>list_files</code>, <code>iter_children</code>) is
+  always <code>None</code> — the extra request is only issued by <code>get_file_info</code> and
+  <code>write()</code>.</p>
 <h3 id="s3-025-endpoint-url-normalization">S3-025: Endpoint URL Normalization<a class="headerlink" href="#s3-025-endpoint-url-normalization" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>endpoint_url</code> is normalized at construction time so that bare <code>host:port</code> values are usable.
 <strong>Rules:</strong>

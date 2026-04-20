@@ -11366,18 +11366,6 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>S3Backend.write</code> does not surface the auto-CRC32 digest that <code>get_file_info</code>
-  returns</strong> (BUG-177): the write path populates <code>WriteResult</code> from
-  <code>s3fs.info()</code>, which omits checksum fields, so <code>result.digest is None</code>.
-  <code>get_file_info()</code> issues a direct <code>head_object(..., ChecksumMode="ENABLED")</code>
-  and surfaces the auto-CRC32 that S3 stores for every upload since late</li>
-<li>
-<p>Under <code>WRITE_RESULT_NATIVE</code>, a caller who reads the object back sees
-  a <code>ContentDigest('crc32', …)</code> on <code>FileInfo</code> while <code>WriteResult.digest</code> is
-  <code>None</code> — a WR-001a divergence between the two entry points for the same
-  key. The conformance test deliberately excludes <code>digest</code> from the
-  <code>FileInfo</code>/<code>WriteResult</code> equality check pending a fix.</p>
-</li>
 <li>
 <p><strong><code>SQLBlobBackend.glob</code> drops zero-segment <code>**/</code> matches on SQLite</strong> (BUG-175):
   the zero-segment half of the recursive <code>test_glob</code> case is skipped on
@@ -11408,6 +11396,17 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong><code>S3Backend.write</code> now surfaces the auto-CRC32 digest</strong> (BUG-177):
+  <code>write()</code> previously called <code>s3fs.info()</code> after the upload, which omits
+  checksum fields, leaving <code>WriteResult.digest</code> as <code>None</code> while a subsequent
+  <code>get_file_info()</code> returned <code>ContentDigest('crc32', …)</code> — a WR-001a
+  divergence. Fixed by replacing the <code>s3fs.info()</code> call with a direct
+  <code>head_object(..., ChecksumMode="ENABLED")</code> (the same call <code>get_file_info</code>
+  uses), so <code>write()</code> and <code>get_file_info()</code> now agree on <code>digest</code>. New
+  conformance test <code>test_digest_matches_file_info</code> enforces this invariant
+  across all <code>WRITE_RESULT_NATIVE</code> backends.</p>
+</li>
 <li>
 <p><strong>Azure HNS <code>write_atomic</code> leaks <code>WriteResult</code>-construction failures as
   write failures</strong> (BUG-173): after a successful <code>tmp_fc.rename_file()</code>
