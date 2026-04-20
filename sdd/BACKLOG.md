@@ -13,7 +13,8 @@ Items graduate through the SDD pipeline:
 **Ordering:** newest first within each section.
 
 **Item scope:** idea + decision-relevant constraints + open questions.
-Do not repeat process steps (those live in CLAUDE-REFERENCE.md and TESTING.md).
+Do not repeat process steps (those live in `sdd/000-process.md` and the ripple-check table).
+Existing items may be more verbose — trim on next touch.
 
 **Completing work:**
 

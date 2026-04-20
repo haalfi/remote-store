@@ -24,7 +24,6 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [ ] `FEATURES.md` updated to match condensed CHANGELOG (backends, extensions,
       capabilities, extras) — this is the only time FEATURES.md is edited
 - [ ] `sdd/BACKLOG-DONE.md`: shipping items moved, marked `[x]` with version
-- [ ] FEATURES.md: version, backends table, extensions table, extras current
 - [ ] README: backends table, installation extras, API table, badges current
 - [ ] Specs vs code: `pytest -m spec` as proxy
 - [ ] `hatch run examples` passes; review notebooks if API changed

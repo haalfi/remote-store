@@ -287,9 +287,8 @@ experts*, not just their own domain. Each returns:
    triggered row, verify target files were updated. For domain-specific gaps
    (e.g., missing test), re-spawn the relevant expert. For cross-domain gaps,
    fix directly.
-2. **CHANGELOG**: Add one stub line per completed item under `[Unreleased]`:
-   `- <ID> <Title> [<type>]` (type: `Feature`, `Fix`, `Docs`, `Internal`).
-   Place under the correct section heading. No details — release skill polishes.
+2. **CHANGELOG**: Add one stub line per completed item under `[Unreleased]` —
+   see format in `sdd/CLAUDE-REFERENCE.md` ripple-check row **CHANGELOG entry**.
 3. **BACKLOG**: Delete completed items from BACKLOG.md, add as `[x]` to
    BACKLOG-DONE.md. Partially done → split: done part to BACKLOG-DONE.md as
    `[x]`, new ID in BACKLOG.md for remainder.
