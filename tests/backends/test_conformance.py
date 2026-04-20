@@ -354,9 +354,10 @@ class TestWriteResultConformance:
         result = getattr(backend, op)(key, b"data")
         info = backend.get_file_info(key)
         assert info.etag == result.etag
-        # BUG-170 (sql-blob) returns last_modified=None from the write path, so
-        # the divergence check is vacuous there; test_native_populates_last_modified
-        # xfails the underlying defect.
+        # Guard: backends that do not populate ``result.last_modified`` are
+        # still permitted by the rich-field obligation (dafny-oracle is the
+        # remaining xfail in ``_LAST_MODIFIED_XFAIL``); the round-trip check
+        # applies only when the write path produced a concrete timestamp.
         if result.last_modified is not None:
             assert info.modified_at == result.last_modified
 

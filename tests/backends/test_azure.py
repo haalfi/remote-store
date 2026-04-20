@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import logging
 import uuid
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
@@ -760,7 +761,8 @@ class TestAzureHNSPaths:
         result = backend.write_atomic("dir/file.txt", b"data")
         assert result.etag == "abc123"
 
-    def test_write_atomic_hns_swallows_post_rename_read_failure(self) -> None:
+    @pytest.mark.spec("WR-001a")
+    def test_write_atomic_hns_swallows_post_rename_read_failure(self, caplog: pytest.LogCaptureFixture) -> None:
         """BUG-173: a post-rename get_file_properties failure must not surface as a write failure.
 
         After the temp-file rename commits the write, fetching properties to
@@ -782,10 +784,17 @@ class TestAzureHNSPaths:
         tmp_fc = MagicMock(spec=DataLakeFileClient)
         tmp_fc.upload_data.return_value = None
         tmp_fc.rename_file.return_value = None  # commit succeeds
-        tmp_fc.get_file_properties.side_effect = ResourceNotFoundError("eventual consistency")
-        backend._fs_instance.get_file_client.return_value = tmp_fc
 
-        result = backend.write_atomic("dir/file.txt", b"content")
+        dst_fc = MagicMock(spec=DataLakeFileClient)
+        dst_fc.get_file_properties.side_effect = ResourceNotFoundError("eventual consistency")
+
+        # Production calls get_file_client twice: first for tmp_path, then for the
+        # destination after rename. Distinct mocks prevent a future regression
+        # where post-rename reads hit the wrong client from slipping past.
+        backend._fs_instance.get_file_client.side_effect = [tmp_fc, dst_fc]
+
+        with caplog.at_level(logging.WARNING, logger="remote_store.backends._azure"):
+            result = backend.write_atomic("dir/file.txt", b"content")
 
         assert isinstance(result, WriteResult)
         assert result.size == len(b"content")
@@ -793,6 +802,10 @@ class TestAzureHNSPaths:
         assert result.etag is None
         assert result.last_modified is None
         tmp_fc.rename_file.assert_called_once()
+        dst_fc.get_file_properties.assert_called_once()
+        assert any("post-rename get_file_properties failed" in record.message for record in caplog.records), (
+            "expected warning log on swallowed post-commit read failure"
+        )
 
     def test_delete_folder_uses_directory_client_on_hns(self) -> None:
         backend = self._make_hns_backend()
