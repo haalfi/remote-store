@@ -651,23 +651,33 @@ class TestBackendGlob:
                 id="basic",
             ),
             pytest.param(
-                {"gr/a.txt": b"a", "gr/sub/b.txt": b"b", "gr/sub/c.csv": b"c"},
+                {"gr/a.txt": b"a"},
                 "gr/**/*.txt",
-                ["gr/a.txt", "gr/sub/b.txt"],
-                id="recursive",
+                ["gr/a.txt"],
+                id="recursive-zero-seg",
+            ),
+            pytest.param(
+                {"gr/sub/b.txt": b"b", "gr/sub/c.csv": b"c"},
+                "gr/**/*.txt",
+                ["gr/sub/b.txt"],
+                id="recursive-one-seg",
             ),
         ],
     )
     def test_glob(
         self,
         backend: Backend,
+        request: pytest.FixtureRequest,
         seeds: dict[str, bytes],
         pattern: str,
         expected: list[str],
     ) -> None:
         _require(backend, Capability.GLOB, Capability.WRITE)
-        if backend.name == "sql-blob" and "**" in pattern:
-            pytest.skip("BUG-175: SQLBlob's SQLite GLOB pre-filter does not implement **/ zero-segment semantics")
+        # BUG-175: SQLite GLOB pre-filter rejects the zero-directory match
+        # for `**/` (treats `**` as two `*`s separated by a literal `/`).
+        # The one-segment variant passes today.
+        if backend.name == "sql-blob" and request.node.callspec.id.endswith("recursive-zero-seg"):
+            pytest.skip("BUG-175: SQLBlob SQLite GLOB pre-filter drops zero-segment **/ matches")
         _seed(backend, seeds)
         assert sorted(str(f.path) for f in backend.glob(pattern)) == expected
 

@@ -6,6 +6,19 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Known Issues
+
+- **`SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (BUG-175):
+  the zero-segment half of the recursive `test_glob` case is skipped on
+  `sql-blob` pending a rewrite of the SQLite GLOB pre-filter in
+  `_sqlalchemy.py`. Non-SQLite dialects are unaffected.
+
+- **`SQLBlobBackend.copy(src, src)` silently destroys data** (BUG-176):
+  `copy()` lacks the `src == dst` early-return guard that `move()` has;
+  with `overwrite=True` the single row is deleted before the
+  `INSERT ... SELECT` runs. The two `self_copy` tests in
+  `TestMoveCopySelfOperation` are skipped on `sql-blob` pending a fix.
+
 ### Fixed
 
 - **`test_streaming_integrity` SFTP→Azure pipe-threshold flake** (BUG-174):

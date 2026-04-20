@@ -40,7 +40,11 @@ if TYPE_CHECKING:
 _FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})
 
 # Backends that do not yet handle self-copy/self-move correctly.
-_NO_SELF_OP_BACKENDS = frozenset({"azure", "http", "sql-blob"})
+_NO_SELF_OP_BACKENDS = frozenset({"azure", "http"})
+
+# Backends that do not yet handle self-copy (but self-move is fine).
+# sql-blob: copy() lacks the src == dst guard that move() has — see BUG-176.
+_NO_SELF_COPY_BACKENDS = frozenset({"sql-blob"})
 
 
 def _require(backend: Backend, *caps: Capability) -> None:
@@ -475,7 +479,7 @@ class TestMoveCopySelfOperation:
     def test_self_copy_preserves_data(self, backend: Backend) -> None:
         """copy(src, src, overwrite=True) must not lose data."""
         _require(backend, Capability.COPY, Capability.WRITE)
-        if backend.name in _NO_SELF_OP_BACKENDS:
+        if backend.name in _NO_SELF_OP_BACKENDS or backend.name in _NO_SELF_COPY_BACKENDS:
             pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
         backend.write("selfcp.txt", b"data")
         backend.copy("selfcp.txt", "selfcp.txt", overwrite=True)
@@ -495,7 +499,7 @@ class TestMoveCopySelfOperation:
     def test_self_copy_no_overwrite_preserves_data(self, backend: Backend) -> None:
         """copy(src, src, overwrite=False) is a no-op — must not raise AlreadyExists."""
         _require(backend, Capability.COPY, Capability.WRITE)
-        if backend.name in _NO_SELF_OP_BACKENDS:
+        if backend.name in _NO_SELF_OP_BACKENDS or backend.name in _NO_SELF_COPY_BACKENDS:
             pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
         backend.write("selfcp2.txt", b"data")
         backend.copy("selfcp2.txt", "selfcp2.txt", overwrite=False)
