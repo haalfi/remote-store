@@ -11509,6 +11509,25 @@
   PRs that miss the workflow window.</p>
 </li>
 <li>
+<p><strong><code>MemoryBackendMinimal</code> satisfiability witness</strong> (ID-151, part 4): adds a
+  sibling refinement class to <code>sdd/formal/MemoryBackend.dfy</code> that declares
+  neither <code>CapWriteResultNative</code> nor <code>CapUserMetadata</code>. This makes the
+  WR-010 <code>CapabilityNotSupported</code> gate live code (not dead code as in
+  <code>MemoryBackend</code>) and forces <code>wr_source</code> to <code>BasicSource</code> on every
+  successful write — closing the refinement coverage gap flagged in the
+  part-1 review. <code>bash scripts/dafny_verify.sh MemoryBackend.dfy</code> passes
+  with 98 verified, 0 errors.</p>
+</li>
+<li>
+<p><strong><code>DafnyOracleBackend</code> adapter widening</strong> (ID-151, part 5): <code>write()</code> and
+  <code>write_atomic()</code> in <code>tests/backends/dafny_oracle.py</code> now accept a
+  <code>metadata=</code> kwarg and return <code>WriteResult</code>, matching the Part-1 ABC.
+  <code>get_file_info()</code> and <code>list_files()</code> now marshal the Dafny <code>FileInfo.metadata</code>
+  field. All <code>TestWriteResultConformance</code> skips on <code>dafny-oracle</code> are removed;
+  <code>test_native_populates_last_modified</code> is xfailed (BUG-169 parity — the Dafny
+  <code>MemoryBackend.Write</code> hardcodes <code>Option_None()</code> for <code>last_modified</code>).</p>
+</li>
+<li>
 <p><strong>Python WR-* conformance assertions</strong> (ID-151, part 3): adds
   <code>TestWriteResultConformance</code> in <code>tests/backends/test_conformance.py</code>,
   exercising every backend's <code>write</code> / <code>write_atomic</code> return value against
@@ -11519,9 +11538,7 @@
   two pre-existing backend defects as strict <code>xfail</code>s — BUG-169
   (<code>MemoryBackend</code> drops <code>last_modified</code>) and BUG-170 (<code>SQLBlobBackend</code>
   drops <code>last_modified</code>) — so fixing each bug flips the xfail and forces
-  the <code>xfail</code> marker off in the same commit. The <code>dafny-oracle</code> adapter
-  is skipped pending the ID-151 follow-up that widens its <code>write</code> /
-  <code>write_atomic</code> bindings.</p>
+  the <code>xfail</code> marker off in the same commit.</p>
 </li>
 <li>
 <p><strong>Dependabot auto-merge workflow</strong>: adds
