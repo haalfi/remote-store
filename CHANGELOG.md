@@ -32,6 +32,18 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`SQLBlobBackend.write` omits `last_modified` from `WriteResult` under
+  `WRITE_RESULT_NATIVE`** (BUG-170): `_sqlalchemy.py:write` advertised
+  `WRITE_RESULT_NATIVE` when the `user_metadata` column was present but
+  returned `WriteResult(last_modified=None, ...)` while the `now` timestamp
+  was being written to the DB — a WR-001a rich-field obligation violation.
+  Fix derives the WriteResult's `last_modified` from the same
+  float → datetime round-trip that `get_file_info` already uses
+  (`datetime.fromtimestamp(now, tz=timezone.utc)`), gated on both
+  `user_metadata` and `modified_at` column presence. The `"sql-blob"`
+  entry in `_LAST_MODIFIED_XFAIL` flipped from strict-xfail to pass and
+  was removed.
+
 - **`MemoryBackend.write` omits `last_modified` from `WriteResult` under
   `WRITE_RESULT_NATIVE`** (BUG-169): `_memory.py:write` declared
   `WRITE_RESULT_NATIVE` but returned `WriteResult(last_modified=None, ...)`

@@ -156,22 +156,6 @@ Existing items may be more verbose — trim on next touch.
   b.read()  # raises ValueError
   ```
 
-- [ ] **BUG-170 — `SQLBlobBackend.write` omits `last_modified` from `WriteResult` under `WRITE_RESULT_NATIVE`** (MEDIUM)
-  `_sqlalchemy.py:438-444`: when the `user_metadata` column is present the
-  backend advertises `WRITE_RESULT_NATIVE` but returns
-  `WriteResult(source="native", last_modified=None, ...)`. The `now`
-  timestamp computed at line 411 is discarded. Quality gap — `source="native"`
-  satisfies WR-004's textual invariant, but the Dafny refinement obligation
-  under WR-004's formal-coverage clause ("rich fields on the returned
-  WriteResult match the stored FileInfo") is not met.
-  **Repro:**
-  ```python
-  backend = SQLBlobBackend(url="sqlite:///:memory:", table_name="blobs")
-  # (default schema includes the user_metadata column)
-  result = backend.write("a.txt", b"hi", overwrite=True)
-  assert result.source == "native"              # passes
-  assert result.last_modified is not None       # FAILS — is None
-  ```
 
 ---
 

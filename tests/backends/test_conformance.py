@@ -235,7 +235,6 @@ _WRITE_OPS = [
 # Python defect.  Flipping requires a BackendContract.dfy / MemoryBackend.dfy
 # edit plus a dafny_translate.sh regen (tracked as ID-152 in BACKLOG.md).
 _LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {
-    "sql-blob": ("BUG-170: SQLBlob returns last_modified=None under WRITE_RESULT_NATIVE", True),
     # strict=False: spec-opacity, not a Python defect.  Remove it together with
     # the BackendContract.dfy change tracked in ID-152 (BACKLOG.md).
     "dafny-oracle": (

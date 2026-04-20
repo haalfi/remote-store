@@ -5,6 +5,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-170 — `SQLBlobBackend.write` omits `last_modified` from `WriteResult` under `WRITE_RESULT_NATIVE`**
+  `_sqlalchemy.py:write` advertised `WRITE_RESULT_NATIVE` when the
+  `user_metadata` column was present but returned
+  `WriteResult(last_modified=None, ...)` while the `now` timestamp was
+  being written to the DB — WR-001a rich-field obligation violation. Fix
+  derives the WriteResult's `last_modified` from the same float →
+  datetime round-trip that `get_file_info` already uses
+  (`datetime.fromtimestamp(now, tz=timezone.utc)`), gated on both
+  `user_metadata` and `modified_at` column presence so that a subset
+  schema still returns `None`. The `"sql-blob"` entry in
+  `_LAST_MODIFIED_XFAIL` flipped from strict-xfail to pass and was
+  removed.
+
+  Related: ID-151 (done), BUG-169 (done).
+
 - [x] **BUG-169 — `MemoryBackend.write` omits `last_modified` from `WriteResult` under `WRITE_RESULT_NATIVE`**
   `_memory.py:write` declared `WRITE_RESULT_NATIVE` but returned
   `WriteResult(last_modified=None, ...)` while the node's `modified_at`
