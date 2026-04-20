@@ -8,6 +8,17 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Known Issues
 
+- **`S3Backend.write` does not surface the auto-CRC32 digest that `get_file_info`
+  returns** (BUG-177): the write path populates `WriteResult` from
+  `s3fs.info()`, which omits checksum fields, so `result.digest is None`.
+  `get_file_info()` issues a direct `head_object(..., ChecksumMode="ENABLED")`
+  and surfaces the auto-CRC32 that S3 stores for every upload since late
+  2022. Under `WRITE_RESULT_NATIVE`, a caller who reads the object back sees
+  a `ContentDigest('crc32', …)` on `FileInfo` while `WriteResult.digest` is
+  `None` — a WR-001a divergence between the two entry points for the same
+  key. The conformance test deliberately excludes `digest` from the
+  `FileInfo`/`WriteResult` equality check pending a fix.
+
 - **`SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (BUG-175):
   the zero-segment half of the recursive `test_glob` case is skipped on
   `sql-blob` pending a rewrite of the SQLite GLOB pre-filter in
@@ -20,6 +31,18 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `TestMoveCopySelfOperation` are skipped on `sql-blob` pending a fix.
 
 ### Fixed
+
+- **`LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming
+  input** (BUG-168): `_local.py:197-203` called `os.path.getsize(tmp_path)`
+  *inside* the `with os.fdopen(fd, "wb") as f:` block, before the
+  `BufferedWriter` had flushed. For `BinaryIO` content whose tail was still
+  buffered, the returned `size` was truncated to the last-flushed offset while
+  the file on disk was correct. Fix moves the `size` capture after the `with`
+  block closes and after `os.replace`, using `full.stat().st_size` (matching
+  the pattern already used by the non-atomic `write()` branch). Caught by
+  `TestWriteResultConformance.test_size_matches_written_bytes_for_streaming_input`
+  under ID-151 Part 3 on Python 3.14, where the default `BufferedWriter`
+  block size is large enough to hold a 100 KiB payload unflushed.
 
 - **`test_streaming_integrity` SFTP→Azure pipe-threshold flake** (BUG-174):
   `PIPE_THRESHOLD` raised 1.5 MiB → 2.25 MiB. Root cause is a tracemalloc
@@ -120,6 +143,20 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   ID-150 for 2026-10-19.
 
 ### Internal
+
+- **Python WR-* conformance assertions** (ID-151, part 3): adds
+  `TestWriteResultConformance` in `tests/backends/test_conformance.py`,
+  exercising every backend's `write` / `write_atomic` return value against
+  the Dafny `Write` postconditions in `sdd/formal/BackendContract.dfy`
+  (spec 045 WR-001a, WR-004, WR-005, WR-012, WR-013). Rich-field checks
+  are gated on `Capability.WRITE_RESULT_NATIVE`; metadata checks are gated
+  on `Capability.USER_METADATA`. The new fixture-level assertions surface
+  two pre-existing backend defects as strict `xfail`s — BUG-169
+  (`MemoryBackend` drops `last_modified`) and BUG-170 (`SQLBlobBackend`
+  drops `last_modified`) — so fixing each bug flips the xfail and forces
+  the `xfail` marker off in the same commit. The `dafny-oracle` adapter
+  is skipped pending the ID-151 follow-up that widens its `write` /
+  `write_atomic` bindings.
 
 - **Dependabot auto-merge workflow**: adds
   `.github/workflows/dependabot-auto-merge.yml`. On approval of a

@@ -39,6 +39,35 @@ Items graduate through the SDD pipeline:
 
 ## Bugs
 
+- [ ] **BUG-177 — `S3Backend.write` does not surface the auto-CRC32 digest that `get_file_info` returns** (LOW)
+  `_s3.py:171-184` vs `_s3.py:240-248`: the write path populates `WriteResult`
+  from `self._fs.info(...)` (s3fs metadata, no checksum fields), so
+  `result.digest is None`. `get_file_info()` issues a direct
+  `head_object(..., ChecksumMode="ENABLED")` and `_head_to_fileinfo` converts
+  any returned `ChecksumCRC32` / `ChecksumSHA256` / etc. into a
+  `ContentDigest`. Since late 2022, Amazon S3 auto-computes and stores a
+  CRC32 for every object uploaded without an explicit checksum algorithm, so
+  for a declaring backend (`WRITE_RESULT_NATIVE`) a caller who reads back
+  the object sees `info.digest == ContentDigest('crc32', ...)` while
+  `result.digest` is `None` — a WR-001a divergence between `WriteResult` and
+  `FileInfo` for the same just-written key.
+  **Repro:** under `moto` (or any post-2022 S3 endpoint), call
+  `S3Backend.write(key, data)`, then `S3Backend.get_file_info(key)`, and
+  observe `info.digest is not None and result.digest is None`.
+  Fix candidates: (a) in `write()`, call `head_object(..., ChecksumMode="ENABLED")`
+  after the upload (same call `get_file_info` uses) and reuse
+  `_digest_from_head_response` to populate `WriteResult.digest`; (b) accept
+  the asymmetry as intentional (WR-007: "no v1 backend surfaces a
+  server-verified digest on the default write path") and document that
+  `WriteResult.digest is None` does not imply `FileInfo.digest is None`
+  for the same key on the same backend. (a) is preferred because it keeps
+  the two entry points consistent at no extra round-trip cost beyond what
+  `get_file_info` already pays. Not yet surfaced in the conformance suite —
+  `TestWriteResultConformance.test_native_file_info_matches_write_result`
+  deliberately excludes `digest` from the equality check and carries a
+  WR-007 comment explaining why. Wire up a strict S3 xfail alongside the
+  fix.
+
 - [ ] **BUG-176 — `SQLBlobBackend.copy(src, src, overwrite=True)` silently destroys data** (MEDIUM)
   `_sqlalchemy.py:673-721`: `copy()` has no `src == dst` early-return guard.
   The companion `move()` at `_sqlalchemy.py:649-655` does have the guard and
@@ -153,22 +182,6 @@ Items graduate through the SDD pipeline:
   result = backend.write("a.txt", b"hi", overwrite=True)
   assert result.source == "native"              # passes
   assert result.last_modified is not None       # FAILS — is None
-  ```
-
-- [ ] **BUG-168 — `LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming input** (HIGH)
-  `_local.py:197-214`: `size = os.path.getsize(tmp_path)` is called *inside*
-  the `with os.fdopen(fd, "wb") as f:` block, before the `BufferedWriter` has
-  flushed. For any `BinaryIO` content whose tail chunk is still buffered the
-  returned `size` is truncated to the last-flushed offset while the file on
-  disk is correct.
-  **Repro:**
-  ```python
-  payload = b"x" * 266240                       # 260 KiB
-  backend = LocalBackend(root=tmp_path)
-  result = backend.write_atomic("a.bin", io.BytesIO(payload))
-  assert (tmp_path / "a.bin").stat().st_size == 266240  # passes
-  assert result.size == 266240                  # FAILS — reports 262144
-  # (Last 4 KiB still in the BufferedWriter's 8 KiB buffer at getsize() time.)
   ```
 
 ---
@@ -298,6 +311,24 @@ Items graduate through the SDD pipeline:
     the fourth `metadata` parameter on `Write` calls.
   - Oracle-gated conformance run: `pytest tests/backends/test_conformance*.py
     -k dafny-oracle` — 154 passed, 5 skipped.
+
+  **Part 3 (open in PR — in review):** Python WR-\* conformance
+  assertions. Adds `TestWriteResultConformance` in
+  `tests/backends/test_conformance.py` that exercises every backend's
+  `write` / `write_atomic` return value against the Dafny `Write`
+  postconditions (spec 045 WR-001a, WR-004, WR-005, WR-012, WR-013).
+  Rich-field checks are gated on `Capability.WRITE_RESULT_NATIVE`;
+  metadata checks are gated on `Capability.USER_METADATA`. The
+  fixture-level assertions surface two pre-existing backend defects as
+  strict `xfail`s — BUG-169 (`MemoryBackend` drops `last_modified`) and
+  BUG-170 (`SQLBlobBackend` drops `last_modified`). The companion
+  streaming-size test (`test_size_matches_written_bytes_for_streaming_input`)
+  also caught BUG-168 on Python 3.14 (`LocalBackend.write_atomic`
+  captured `size` inside the `BufferedWriter` context, yielding `0` on
+  a 100 KiB streaming payload); fixed in the same PR by moving the
+  `size` capture after the `with` block closes, using
+  `full.stat().st_size`. The `dafny-oracle` fixture is skipped pending
+  the adapter-widening follow-up below.
 
   **Remaining follow-up:**
   - `MemoryBackendMinimal` satisfiability witness: a sibling refinement
