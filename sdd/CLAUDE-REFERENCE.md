@@ -69,13 +69,9 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | suites). Periodically re-audit existing files for          |
 |                            | correctness — see `@pytest.mark.os_sensitive` in          |
 |                            | `pyproject.toml` for rationale.                           |
-| **CHANGELOG entry**        | During development: one stub line per item under the      |
-|                            | matching section heading. `<type>` = the section name     |
-|                            | (Added, Fixed, Docs, Internal, …). No details.            |
-|                            | Example: `- BUG-177 S3 write digest missing [Fixed]`      |
-|                            | One heading per section — no duplicates.                  |
-|                            | Section order: Added > Fixed > Known Issues > Changed >   |
-|                            | Deprecated > Removed > Documentation > Internal.          |
+| **CHANGELOG entry**        | Add `- <ID>: <Title>` at the top of `[Unreleased]`.       |
+|                            | One line, no details, no sections. Release skill          |
+|                            | organises into sections and expands to prose.             |
 
 ---
 

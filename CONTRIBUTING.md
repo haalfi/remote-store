@@ -289,10 +289,10 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 #### Phase 1: Content freeze
 
-- [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check table **CHANGELOG entry** for format)
+- [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**)
 - [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time (release skill Phase 1)
 - [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here, marked `[x]` with version (e.g. `(v0.8.0)`)
-- [ ] FEATURES.md updated to match condensed CHANGELOG — this is the only time FEATURES.md is edited
+- [ ] FEATURES.md updated for this release: version, backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited
 - [ ] README.md: backends table, installation extras, API table, badges are current
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
 - [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed

@@ -21,8 +21,8 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [ ] CHANGELOG `[Unreleased]` condensed — expand stubs into prose; one entry per
       user-facing concept (multiple IDs for the same feature → one paragraph;
       pre-release bugs on new-in-this-release code → fold into Added or drop)
-- [ ] `FEATURES.md` updated to match condensed CHANGELOG (backends, extensions,
-      capabilities, extras) — this is the only time FEATURES.md is edited
+- [ ] `FEATURES.md` updated for this release: version, backends, extensions,
+      capabilities, extras — this is the only time FEATURES.md is edited
 - [ ] `sdd/BACKLOG-DONE.md`: shipping items moved, marked `[x]` with version
 - [ ] README: backends table, installation extras, API table, badges current
 - [ ] Specs vs code: `pytest -m spec` as proxy
