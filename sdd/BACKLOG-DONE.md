@@ -18,7 +18,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   kwargs), non-HNS `write_atomic` path, `WRITE_RESULT_NATIVE` /
   `USER_METADATA` capability declarations, and Azurite-wire etag /
   last_modified checks. S3 `test_write_metadata_passed_to_sdk` retained as
-  the only HeadObject-verifying metadata test on that backend.
+  the only HeadObject-verifying metadata test on that backend. Accepted
+  trade-off: WR-001 / WR-003 / WR-004 on Azure are now covered by
+  `TestWriteResultConformance` via the `azure_backend` Azurite fixture only;
+  Azurite-less matrix runs (Windows, macOS, Docker-less Linux) skip those
+  assertions rather than keep a mock-of-third-party smoke, per TESTING.md
+  Rules 5 (don't mock what you don't own) and 6 (prefer real dependencies).
   `hatch run lint` clean; `hatch run test-cov` 97.98 %.
 
   Related: ID-151 (done).
