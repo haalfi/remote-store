@@ -11500,6 +11500,17 @@
 <h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
+<p><strong>Retired per-backend <code>WriteResult</code> test duplication</strong> (ID-151b): removed
+  <code>TestLocalWriteResult</code>, <code>TestSFTPWriteResult</code>, <code>TestS3PyArrowWriteResult</code>,
+  and the generic <code>write</code> / <code>write_atomic</code> / size / metadata-echo methods from
+  <code>TestS3WriteResult</code>, <code>TestAzureWriteResult</code>, and
+  <code>TestAzureWriteResultIntegration</code>. All removed cases are now covered by
+  <code>TestWriteResultConformance</code>. Azure- and S3-specific SDK-level assertions
+  (etag stripping, version_id, digest, metadata-passed-to-SDK, HNS atomic
+  path, capability declarations, Azurite etag / last_modified wire checks)
+  are retained.</p>
+</li>
+<li>
 <p><strong>Dependabot auto-merge workflow hardening</strong>: restores the
   <code>github.repository == 'haalfi/remote-store'</code> guard, removes the unused
   <code>dependabot/fetch-metadata</code> step, switches the merge command to
