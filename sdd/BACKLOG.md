@@ -173,21 +173,6 @@ Existing items may be more verbose — trim on next touch.
   assert result.last_modified is not None       # FAILS — is None
   ```
 
-- [ ] **BUG-169 — `MemoryBackend.write` omits `last_modified` from `WriteResult` under `WRITE_RESULT_NATIVE`** (MEDIUM)
-  `_memory.py:148-152`: backend declares `WRITE_RESULT_NATIVE` but returns
-  `WriteResult(source="native", last_modified=None, ...)`. The `mtime`
-  stored on the in-memory node (`datetime.now(timezone.utc)`) is available
-  but not surfaced. Same quality gap as BUG-170 — WR-004's textual invariant
-  (`source == "native"`) is satisfied, but the rich-field obligation from
-  the formal-coverage clause is not.
-  **Repro:**
-  ```python
-  backend = MemoryBackend()
-  result = backend.write("a.txt", b"hi", overwrite=True)
-  assert result.source == "native"              # passes
-  assert result.last_modified is not None       # FAILS — is None
-  ```
-
 ---
 
 ## Backlog (Prioritized)

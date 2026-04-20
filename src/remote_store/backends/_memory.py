@@ -127,6 +127,7 @@ class MemoryBackend(Backend):
                 raw.extend(chunk)
 
         stored_meta = dict(metadata) if metadata else None
+        now = datetime.now(timezone.utc)
         with self._lock:
             parent = self._ensure_parents(segments)
             leaf = segments[-1]
@@ -142,16 +143,22 @@ class MemoryBackend(Backend):
                 if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend="memory")
                 existing.data[:] = raw
-                existing.modified_at = datetime.now(timezone.utc)
+                existing.modified_at = now
                 existing.metadata = stored_meta
             else:
                 parent.children[leaf] = _FileEntry(
                     data=raw,
-                    modified_at=datetime.now(timezone.utc),
+                    modified_at=now,
                     metadata=stored_meta,
                 )
                 self._file_count += 1
-        return WriteResult(path=RemotePath(path), size=len(raw), source="native", metadata=metadata)
+        return WriteResult(
+            path=RemotePath(path),
+            size=len(raw),
+            source="native",
+            last_modified=now,
+            metadata=metadata,
+        )
 
     def write_atomic(
         self,

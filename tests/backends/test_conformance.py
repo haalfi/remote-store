@@ -232,15 +232,12 @@ _WRITE_OPS = [
 
 # reason → (message, strict).  strict=False for dafny-oracle: the Dafny spec
 # treats last_modified as opaque and hardcodes None by design — it is not a
-# Python defect, so BUG-169's fix won't flip this xfail.  Flipping requires a
-# BackendContract.dfy / MemoryBackend.dfy edit plus a dafny_translate.sh regen
-# (tracked as a separate follow-up item in BACKLOG.md).
+# Python defect.  Flipping requires a BackendContract.dfy / MemoryBackend.dfy
+# edit plus a dafny_translate.sh regen (tracked as ID-152 in BACKLOG.md).
 _LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {
-    "memory": ("BUG-169: MemoryBackend returns last_modified=None under WRITE_RESULT_NATIVE", True),
     "sql-blob": ("BUG-170: SQLBlob returns last_modified=None under WRITE_RESULT_NATIVE", True),
-    # strict=False: spec-opacity, not a Python defect — BUG-169's fix will NOT
-    # flip this entry.  Remove it together with the BackendContract.dfy change
-    # tracked in ID-152 (BACKLOG.md).
+    # strict=False: spec-opacity, not a Python defect.  Remove it together with
+    # the BackendContract.dfy change tracked in ID-152 (BACKLOG.md).
     "dafny-oracle": (
         "spec opacity: Dafny MemoryBackend.Write returns Option_None() for last_modified by design; "
         "flip requires BackendContract.dfy edit + oracle regen (ID-152)",
@@ -323,11 +320,10 @@ class TestWriteResultConformance:
         passes the divergence check but violates the quality obligation
         the capability advertises (spec 045 WR-009, WR-001a).
 
-        Per-backend xfail reasons are in ``_LAST_MODIFIED_XFAIL``.  BUG-169
-        (``memory``) and BUG-170 (``sql-blob``) are Python defects with
-        ``strict=True``; ``dafny-oracle`` uses ``strict=False`` because the Dafny
-        spec treats ``last_modified`` as opaque — that entry is removed as part
-        of ID-152, not BUG-169.
+        Per-backend xfail reasons are in ``_LAST_MODIFIED_XFAIL``.  BUG-170
+        (``sql-blob``) is a Python defect with ``strict=True``;
+        ``dafny-oracle`` uses ``strict=False`` because the Dafny spec treats
+        ``last_modified`` as opaque — that entry is removed as part of ID-152.
         """
         _require(backend, cap, Capability.WRITE_RESULT_NATIVE)
         if backend.name in _LAST_MODIFIED_XFAIL:
@@ -359,9 +355,9 @@ class TestWriteResultConformance:
         result = getattr(backend, op)(key, b"data")
         info = backend.get_file_info(key)
         assert info.etag == result.etag
-        # BUG-169 (memory) and BUG-170 (sql-blob) return last_modified=None from
-        # the write path, so the divergence check is vacuous on those backends;
-        # test_native_populates_last_modified xfails the underlying defect.
+        # BUG-170 (sql-blob) returns last_modified=None from the write path, so
+        # the divergence check is vacuous there; test_native_populates_last_modified
+        # xfails the underlying defect.
         if result.last_modified is not None:
             assert info.modified_at == result.last_modified
 

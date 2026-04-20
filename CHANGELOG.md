@@ -32,6 +32,19 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- **`MemoryBackend.write` omits `last_modified` from `WriteResult` under
+  `WRITE_RESULT_NATIVE`** (BUG-169): `_memory.py:write` declared
+  `WRITE_RESULT_NATIVE` but returned `WriteResult(last_modified=None, ...)`
+  while the in-memory node's `modified_at` was populated — a violation of
+  the WR-001a rich-field obligation on a declaring backend. Fix captures a
+  single `now = datetime.now(timezone.utc)` under the lock and reuses it for
+  both `_FileEntry.modified_at` (new and update paths) and
+  `WriteResult.last_modified`, so `result.last_modified == info.modified_at`
+  on a subsequent `get_file_info`. The `"memory"` entry in the
+  `_LAST_MODIFIED_XFAIL` registry used by
+  `TestWriteResultConformance.test_native_populates_last_modified` flipped
+  from strict-xfail to pass and was removed.
+
 - **`LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming
   input** (BUG-168): `_local.py:197-203` called `os.path.getsize(tmp_path)`
   *inside* the `with os.fdopen(fd, "wb") as f:` block, before the

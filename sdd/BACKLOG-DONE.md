@@ -5,6 +5,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-169 — `MemoryBackend.write` omits `last_modified` from `WriteResult` under `WRITE_RESULT_NATIVE`**
+  `_memory.py:write` declared `WRITE_RESULT_NATIVE` but returned
+  `WriteResult(last_modified=None, ...)` while the node's `modified_at`
+  was populated — WR-001a rich-field obligation violation on a declaring
+  backend. Fix captures a single `now = datetime.now(timezone.utc)` under
+  the lock and uses it for both `_FileEntry.modified_at` (new and updated
+  paths) and `WriteResult.last_modified`, giving `result.last_modified ==
+  info.modified_at` on a subsequent `get_file_info`. The `"memory"` entry
+  in `_LAST_MODIFIED_XFAIL` (strict-xfail in
+  `TestWriteResultConformance.test_native_populates_last_modified`) flipped
+  and was removed.
+
+  Related: ID-151 (done), BUG-170.
+
 - [x] **ID-151c — Hypothesis property coverage for `WriteResult`**
   Step 3 of the WriteResult testing plan. `TestWriteResultConformance`
   (ID-151 Part 3 / ID-151b) covers fixed-example WR-001a / WR-003 / WR-004 /
