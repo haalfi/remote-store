@@ -43,16 +43,26 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-178 — `S3Backend._fs` raises "got multiple values for keyword argument 'config'" when `config_kwargs` and `retry=RetryPolicy` are both supplied** (HIGH)
-  `_s3.py:334-341`: when the caller passes `client_options={"config_kwargs": {...}}` together
-  with `retry=RetryPolicy(...)`, the `_fs` lazy-init creates `client_kwargs["config"]` from
-  the retry policy without checking for a pre-existing `config_kwargs` entry.  `s3fs` converts
-  `config_kwargs` into a `botocore.config.Config` and passes it as `config=` to
-  `aiobotocore.session.AioSession.create_client()`; the retry path also injects a second
-  `config=` via `client_kwargs`, so `create_client()` receives the keyword twice and raises
-  `TypeError: got multiple values for keyword argument 'config'`.  The error surfaces wrapped as
-  a `RemoteStoreError` with the raw aiobotocore message.
-  **Repro (caller-side):**
+- [ ] **BUG-178 — s3fs lazy init raises "got multiple values for keyword argument 'config'" when `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy` are both supplied** (HIGH)
+  Affects both s3fs-based backends via two near-verbatim copies of the lazy-init body:
+  - `S3Backend._fs` (`_s3.py:307-347`) — retry block at `_s3.py:324-341`, duplicate-config
+    injection at lines 333 (`client_kwargs` acquired from `opts`) and 339/341 (assignment).
+  - `S3PyArrowBackend._s3fs` (`_s3_pyarrow.py:416-457`) — retry block at `_s3_pyarrow.py:434-451`,
+    duplicate-config injection at lines 443 and 449/451.
+
+  `client_options["config_kwargs"]` sits at the **top of `opts`**, not inside
+  `opts["client_kwargs"]`. `s3fs.S3FileSystem` converts the top-level `config_kwargs` dict into
+  a `botocore.config.Config` and passes it as `config=` to
+  `aiobotocore.session.AioSession.create_client()`. When `retry=RetryPolicy(...)` is also
+  supplied, the retry block separately assigns `opts["client_kwargs"]["config"]` — s3fs forwards
+  that too as `config=`, so `create_client()` receives the keyword twice and raises
+  `TypeError: got multiple values for keyword argument 'config'`.  The error surfaces wrapped
+  as a `RemoteStoreError` with the raw aiobotocore message.
+  The existing `existing_config.merge(retry_config)` branch (lines 338-341 in `_s3.py`;
+  448-451 in `_s3_pyarrow.py`) only handles the case where the caller supplied
+  `client_kwargs["config"]` as an already-constructed `Config` object — it does not see the
+  sibling top-level `config_kwargs` dict.
+  **Repro (caller-side, same on both backends):**
   ```python
   S3Backend(
       bucket="mybucket",
@@ -62,23 +72,25 @@ Existing items may be more verbose — trim on next touch.
   ```
   **Workaround:** pass retries only through one path — either keep `config_kwargs` and drop
   `retry=`, or move all config into `client_options={"client_kwargs": {"config": botocore.config.Config(...)}}` and drop `config_kwargs`.
-  **Fix:** in `_fs`, before applying the retry policy, canonicalize any `config_kwargs` in
-  `opts` into `client_kwargs["config"]` (via `botocore.config.Config(**config_kwargs)`), then
-  merge the retry config on top using the existing `.merge()` path.  Eliminates the duplicate
-  `config=` at the aiobotocore call site.
-
-- [ ] **BUG-179 — `S3PyArrowBackend._s3fs` raises "got multiple values for keyword argument 'config'" when `config_kwargs` and `retry=RetryPolicy` are both supplied** (HIGH)
-  `_s3_pyarrow.py:434-451`: the `_s3fs` lazy-init property is a near-verbatim copy of
-  `S3Backend._fs` and carries the identical defect described in BUG-178.  When the caller
-  passes `client_options={"config_kwargs": {...}}` together with `retry=RetryPolicy(...)`,
-  the retry block creates `client_kwargs["config"]` without first canonicalizing the
-  pre-existing `config_kwargs` entry.  s3fs then passes both as `config=` to
-  `aiobotocore.session.AioSession.create_client()`, which raises
-  `TypeError: got multiple values for keyword argument 'config'`.
-  The same workarounds and fix strategy as BUG-178 apply.
-  Note: the `_pa_fs` (PyArrow data-path) property does not use `self._client_options`
-  at all and is unaffected.
-  Related: BUG-178.
+  **Fix (land once on the shared base):** `_S3Base` (`_s3_base.py:74`) already declares
+  `_s3fs` as the abstract surface, and the two subclass `__init__`s set the same eight
+  inputs (`_bucket`, `_endpoint_url`, `_key`, `_secret`, `_region_name`, `_tls_ca_bundle`,
+  `_client_options`, `_retry`) — a single base-class helper can build the s3fs kwargs dict
+  for both.  In that helper, before the retry block:
+  1. `cfg_kwargs = opts.pop("config_kwargs", None)` — remove the top-level dict so s3fs does
+     not separately convert it to `config=`.
+  2. If `cfg_kwargs`, construct `caller_config = botocore.config.Config(**cfg_kwargs)` and
+     seed `opts["client_kwargs"]["config"]` with it (merging with any pre-existing
+     `client_kwargs["config"]` using `.merge()`; `Config.merge(other)` lets `other` win, so
+     the caller-supplied object wins on conflicts).
+  3. The existing retry path then merges `retry_config` on top — retry-policy values win on
+     conflicts (e.g. `retries.max_attempts`), the caller's `connect_timeout` / `read_timeout`
+     survive. This matches the docstring expectation that `retry=` overrides per-request
+     retry knobs.
+  Migrate both subclass properties to call the shared helper; the `S3Backend._fs_instance`
+  and `S3PyArrowBackend._s3fs_instance` caches can be consolidated on the base or kept local.
+  Note: `S3PyArrowBackend._pa_fs` (PyArrow data-path property) does not read
+  `self._client_options` and is unaffected.
 
 - [ ] **BUG-175 — `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (MEDIUM)
   `_sqlalchemy.py:734-745`: for SQLite dialects, `glob()` uses
