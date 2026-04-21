@@ -57,21 +57,46 @@ above.
 
 ### Category A — Interop methods missing the warning admonition
 
-The four interop methods (`unwrap`, `native_path`, `to_key`, `supports`)
-are documented with the warning admonition in `store.md:211-241`. The same
-methods exist on `AsyncStore`, `Backend`, `AsyncBackend`, `ProxyStore`,
-and every concrete backend, with no equivalent visual flag.
+`store.md:211-241` groups three backend-coupling methods (`unwrap`,
+`native_path`, `to_key`) under a single `!!! warning` admonition, then
+documents `supports()` in the same section with a distinguishing `!!!
+note` clarifying that **`supports()` is portable** — it works on every
+backend; only the capability-gated methods it guards are backend-
+specific. Category A is about the three-method coupling trio; where
+`supports()` appears, the fix is to carry over the portable-method note,
+not the backend-specific warning.
+
+**Source-level region tag inconsistency (applies to all findings in
+this category):** both `src/remote_store/_store.py:812` and
+`src/remote_store/aio/_async_store.py:785` mark the same block
+`# region: interop (backend-specific)` and include `supports()` inside
+that block. The source label directly contradicts the `store.md:238-241`
+portable-method note. Closing any Category A finding entails deciding
+whether to extract `supports()` from the region tag, or to rename the
+tag (e.g. `# region: interop`). The audit does not prescribe which — it
+flags the inconsistency so the implementer resolves it once, not three
+times.
 
 #### A-1 — `aio.md` AsyncStore — interop methods entirely hidden
 
 **File:** `docs-src/api/aio.md:11-13`
 **Severity:** High
 
-`AsyncStore` is rendered with `members: false`. The interop methods at
-`src/remote_store/aio/_async_store.py:787-869` (`unwrap`, `native_path`,
-`to_key`, `supports`, marked `# region: interop (backend-specific)` in
-source) are not in the rendered reference at all. Async users get *less*
-warning than sync users, not the same.
+`AsyncStore` is rendered with `members: false`. The interop block at
+`src/remote_store/aio/_async_store.py:787-869` is not in the rendered
+reference at all. Async users get *less* visibility than sync users, not
+the same. Two distinct visibility gaps nested in this one finding:
+
+- The **coupling trio** (`unwrap`, `native_path`, `to_key`) needs the
+  same `!!! warning "Backend-specific methods"` admonition that
+  `store.md:211-241` carries.
+- `supports()` needs the same `!!! note` clarifying that *it* is
+  portable — mirroring `store.md:238-241`. Without this, an implementer
+  working off BK-153's exit criteria might apply the warning to
+  `supports()` and contradict the sync-Store docs.
+
+The source-level region tag inconsistency noted above must also be
+resolved as part of the fix.
 
 #### A-2 — `aio.md` AsyncBackend — no Interop section, no admonition
 
@@ -99,22 +124,42 @@ client with no stability guarantees from `remote-store`, or that
 **Severity:** Medium
 
 `ProxyStore` redeclares `unwrap`, `native_path`, `to_key`, `supports` for
-delegation and renders them with default `mkdocstrings` options. Same
-four methods, same backend-specific implication, no warning.
+delegation and renders them with default `mkdocstrings` options. The
+coupling trio (`unwrap`, `native_path`, `to_key`) renders without the
+`!!! warning` admonition; `supports()` renders without the portable-
+method note. Same distinction as A-1 applies.
 
-#### A-5 — `backends/{s3,local,sftp,azure,s3-pyarrow,http,sql-blob}.md` — `unwrap` overrides unflagged
+#### A-5 — `backends/http.md` — `unwrap`, `native_path`, `to_key` render without the warning admonition
 
-**Files:** seven concrete-backend reference pages
+**File:** `docs-src/api/backends/http.md` (verified against local
+`hatch run docs-build` output, 2026-04-21).
 **Severity:** Low
 
-Each backend overrides `unwrap` (e.g. `_s3.py:277`, `_azure.py:839`,
-`_sftp.py:714`, `_s3_pyarrow.py:339`, `_http.py:424`,
-`_sqlalchemy.py:111`). The overrides render with the rest of the
-backend's API. No section break or admonition signals that the returned
-native client is an escape hatch with no portability or stability
-guarantees from `remote-store`. The page title hints at backend-
-specificness, but `unwrap` is qualitatively different from the other
-overridden methods on the same page.
+Empirical check: of the nine concrete-backend reference pages, **only
+`http.md` renders the interop methods as public members**. The other
+eight pages render only the class-level signature and class docstring,
+because mkdocstrings defaults to `inherited_members: false` and
+`S3Backend` / `S3PyArrowBackend` / `SQLBlobBackend` / `SQLQueryBackend`
+inherit their `unwrap` from intermediate private base classes
+(`_S3Base`, `_SQLAlchemyBaseBackend`), while `LocalBackend`,
+`MemoryBackend`, `SFTPBackend`, `AzureBackend` inherit the base
+`Backend.unwrap` (a raise) without overriding. None of those overrides
+or inherited methods surface in the rendered reference today.
+
+`ReadOnlyHttpBackend` is the only concrete backend that subclasses
+`Backend` directly *and* defines all its methods on the subclass — so
+its page renders 13 methods including `unwrap`, `native_path`, `to_key`
+without a warning admonition. A reader landing on this page from search
+sees the interop methods mixed in with `read()`, `is_file()`, etc., with
+no visual cue that three of them are escape hatches.
+
+**Scope correction:** the earlier draft of this finding named seven
+pages. That was wrong — the visibility gap exists on exactly one page
+(`http.md`). The corollary question — whether the other eight pages
+*should* render their interop methods with a warning — is a
+reference-completeness question out of scope for audit-009 (it would
+require enabling `inherited_members` or restructuring the backend class
+hierarchy). If raised later, track separately.
 
 #### A-6 — `sftp-utils.md` — SFTP-only module, no top-of-page admonition
 

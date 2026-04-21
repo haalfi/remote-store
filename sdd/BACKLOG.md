@@ -144,6 +144,22 @@ Existing items may be more verbose — trim on next touch.
   pattern in the audit (§ "Recommended pattern") consistently across
   `docs-src/api/`. Verify by re-walking the reference and confirming each
   audit finding is closed.
+  **Two cross-cutting tasks called out by audit-009:**
+  1. `supports()` is portable, not backend-specific. The fix for A-1
+     (AsyncStore) must carry the `store.md:238-241` portable-method note
+     across, not the warning admonition — otherwise the async docs would
+     contradict the sync docs. Category-A intro explains this.
+  2. Source-level region tag `# region: interop (backend-specific)` in
+     `_store.py:812` and `_async_store.py:785` includes `supports()`,
+     contradicting the portable-method note. Resolve by extracting
+     `supports()` from the region or renaming the tag
+     (e.g. `# region: interop`). Decide once, apply to both files.
+  **A-5 scope note:** only `backends/http.md` renders interop methods
+  as public members (confirmed against a local docs build). The other
+  eight concrete-backend pages render only the class signature because
+  mkdocstrings defaults to `inherited_members: false`. Widening rendering
+  on those pages is a completeness question out of scope for BK-153 —
+  track separately if raised.
   **Ripple checks** (per `sdd/CLAUDE-REFERENCE.md`): docstrings in `src/`
   (admonition syntax may need to be embedded in source for mkdocstrings to
   render it; alternatively wrapped at the `.md` level via `mkdocstrings`
