@@ -469,7 +469,10 @@ iterator's `aclose()` to the loop.
 explicitly invokes `close()` raises `ValueError: I/O operation on closed file.`,
 matching the `io.IOBase` contract.  Streams closed as a side effect of an
 async error or adapter shutdown (see ASYNC-090) instead return `b""` / `0`
-from subsequent `read()` / `readinto()` calls.
+from subsequent `read()` / `readinto()` calls.  Error-close is sticky: if a
+stream already transitioned to error-closed state, a subsequent caller-invoked
+`close()` is a no-op per `io.IOBase` and does not switch the stream to the
+user-closed (`ValueError`) contract.
 **See also:** [006-streaming-io.md](006-streaming-io.md) (SIO-001, SIO-009),
 ASYNC-080, ASYNC-090.
 

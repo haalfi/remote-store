@@ -610,6 +610,10 @@ class _ChunkPullReader(io.RawIOBase):
         remainder is consumed), matching ``io.RawIOBase``'s documented
         "at most one underlying system call" contract.  Callers that need a
         full buffer should wrap this stream in ``io.BufferedReader``.
+
+        Raises:
+            ValueError: if the stream was explicitly closed by the caller
+                (see ASYNC-081 § Closed-stream reads).
         """
         if self.closed:
             if not self._closed_on_error:
@@ -629,7 +633,12 @@ class _ChunkPullReader(io.RawIOBase):
         return take
 
     def read(self, size: int = -1) -> bytes:
-        """Read and return up to *size* bytes, or all remaining if *size* == -1."""
+        """Read and return up to *size* bytes, or all remaining if *size* == -1.
+
+        Raises:
+            ValueError: if the stream was explicitly closed by the caller
+                (see ASYNC-081 § Closed-stream reads).
+        """
         if self.closed:
             if not self._closed_on_error:
                 raise ValueError("I/O operation on closed file.")

@@ -435,8 +435,10 @@ class TestStreamingRead:
         loop.close()
         with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
             stream.read(1)
-        # _closed_on_error = True: error-close contract returns empty, not ValueError
+        # _closed_on_error = True: error-close contract returns empty/0, not ValueError
         assert stream.read() == b""
+        buf = bytearray(8)
+        assert stream.readinto(buf) == 0
         adapter.close()
 
 
