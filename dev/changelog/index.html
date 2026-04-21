@@ -11394,23 +11394,25 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h3>
 <ul>
-<li>
-<p><strong><code>SQLBlobBackend.glob</code> drops zero-segment <code>**/</code> matches on SQLite</strong> (BUG-175):
+<li><strong><code>SQLBlobBackend.glob</code> drops zero-segment <code>**/</code> matches on SQLite</strong> (BUG-175):
   the zero-segment half of the recursive <code>test_glob</code> case is skipped on
   <code>sql-blob</code> pending a rewrite of the SQLite GLOB pre-filter in
-  <code>_sqlalchemy.py</code>. Non-SQLite dialects are unaffected.</p>
-</li>
-<li>
-<p><strong><code>SQLBlobBackend.copy(src, src)</code> silently destroys data</strong> (BUG-176):
-  <code>copy()</code> lacks the <code>src == dst</code> early-return guard that <code>move()</code> has;
-  with <code>overwrite=True</code> the single row is deleted before the
-  <code>INSERT ... SELECT</code> runs. The two <code>self_copy</code> tests in
-  <code>TestMoveCopySelfOperation</code> are skipped on <code>sql-blob</code> pending a fix.</p>
-</li>
+  <code>_sqlalchemy.py</code>. Non-SQLite dialects are unaffected.</li>
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Dafny <code>MemoryBackend</code> spec now populates <code>last_modified</code></strong> (ID-152):
+<li>
+<p><strong>pyarrow 24.x mypy compatibility</strong> (BK-154): pyarrow 24.0.0 shipped partial
+  type stubs that surfaced <code>attr-defined</code>, <code>name-defined</code>, and <code>no-untyped-call</code>
+  errors under mypy strict mode. Added <code>follow_imports = "skip"</code> for
+  <code>pyarrow</code>/<code>pyarrow.*</code> in <code>pyproject.toml</code>, restoring pre-24 behaviour where
+  all <code>pa.*</code> resolves as <code>Any</code>. Removed the now-redundant
+  <code># type: ignore[import-untyped]</code> annotations on pyarrow imports in
+  <code>ext/arrow.py</code>, <code>ext/parquet.py</code>, <code>backends/_s3_pyarrow.py</code>, and
+  <code>backends/_sqlalchemy.py</code>.</p>
+</li>
+<li>
+<p><strong>Dafny <code>MemoryBackend</code> spec now populates <code>last_modified</code></strong> (ID-152):
   <code>MemoryBackend.dfy:Write</code> returned <code>Option_None()</code> for <code>last_modified</code> by
   design, which forced the <code>dafny-oracle</code> branch of
   <code>test_native_populates_last_modified</code> to carry <code>strict=False</code> and never
@@ -11420,10 +11422,21 @@
   and <code>WriteResult.last_modified</code>; the oracle adapter lifts it to a Python
   UTC datetime. <code>MemoryBackendMinimal</code> (no <code>CapWriteResultNative</code>) is
   unchanged. Generated runtime regenerated via <code>scripts/dafny_translate.sh</code>.
-  <code>_LAST_MODIFIED_XFAIL</code> is now empty.</li>
+  <code>_LAST_MODIFIED_XFAIL</code> is now empty.</p>
+</li>
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>
+<p><strong><code>SQLBlobBackend.copy(src, src)</code> no longer silently destroys data</strong> (BUG-176):
+  <code>copy()</code> lacked the <code>src == dst</code> early-return guard that <code>move()</code> has. With
+  <code>overwrite=True</code> the single row was deleted before the <code>INSERT ... SELECT</code>
+  ran, destroying the file; with <code>overwrite=False</code> the method incorrectly
+  raised <code>AlreadyExists</code>. Fixed by mirroring <code>move()</code>'s guard at the top of
+  <code>copy()</code>: verify source exists, then return immediately. Both
+  <code>test_self_copy_preserves_data</code> and <code>test_self_copy_no_overwrite_preserves_data</code>
+  now pass on <code>sql-blob</code>.</p>
+</li>
 <li>
 <p><strong><code>S3Backend.write</code> now surfaces the auto-CRC32 digest</strong> (BUG-177):
   <code>write()</code> previously called <code>s3fs.info()</code> after the upload, which omits
