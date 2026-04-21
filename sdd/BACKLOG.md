@@ -117,6 +117,40 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-153 — Address backend-specifics visibility findings from audit-009**
+  Follow-up to [audit-009](audits/audit-009-backend-specifics-visibility.md)
+  (2026-04-21). Today, only `Store.unwrap` carries the `!!! warning
+  "Backend-specific methods"` admonition (`docs-src/api/store.md:211-241`).
+  Every other place in the reference where a symbol couples user code to a
+  specific backend or capability — interop methods on `AsyncStore`,
+  `AsyncBackend`, `Backend`, `ProxyStore`, and concrete backends; capability
+  gates on `Store.glob` / `write_atomic` / `head`; the `metadata=` argument
+  on `write*`; backend-conditional fields on `WriteResult`, `FileInfo`,
+  `FolderInfo`, `ResolutionPlan`, `BackendConfig`; the SFTP-only
+  `SFTPUtils` module — describes the coupling in prose only. Users who scan
+  for the same visual signal `unwrap` carries will not find it.
+  **20 findings across 5 categories** (A: 6 interop, B: 5 capability-gated
+  methods, C: 2 capability-gated arguments, D: 4 backend-conditional fields,
+  E: 3 whole-class/module). The audit document includes a recommended
+  pattern table mapping each granularity to an admonition style.
+  **Most user-impactful:** D-1 (`WriteResult` — return type of every write,
+  every optional field is backend-conditional via the `source` discriminator).
+  Pairs naturally with BK-152 (this audit's D-1 documents what BK-152 fixes
+  in code: once write/get_file_info agree, the visibility fix can lean on a
+  consistent contract rather than caveats).
+  **Exit criteria:** every reference symbol where a user could stumble into
+  backend or capability dependence carries a visible admonition (warning or
+  note) — not just a sentence inside a docstring. Apply the recommended
+  pattern in the audit (§ "Recommended pattern") consistently across
+  `docs-src/api/`. Verify by re-walking the reference and confirming each
+  audit finding is closed.
+  **Ripple checks** (per `sdd/CLAUDE-REFERENCE.md`): docstrings in `src/`
+  (admonition syntax may need to be embedded in source for mkdocstrings to
+  render it; alternatively wrapped at the `.md` level via `mkdocstrings`
+  directive scaffolding); `CONTENT-RULES.md` for admonition vocabulary;
+  `sdd/audits/audit-009-backend-specifics-visibility.md` (mark closed in
+  CHANGELOG entry).
+
 - [ ] **BK-152 — Single conformance test for WriteResult/FileInfo consistency + fix violating backends**
   The contract "write a file, then fetch its info — shared fields must agree" has no
   single test and the existing partial coverage is gated on `WRITE_RESULT_NATIVE`,
