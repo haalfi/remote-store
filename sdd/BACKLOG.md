@@ -139,6 +139,13 @@ Existing items may be more verbose — trim on next touch.
   Keep `test_metadata_round_trips_via_get_file_info` (WR-013 round-trip, different
   spec obligation).
 
+  **`Store.head()` note:** `head()` returns `source="sidecar"` by constructing its
+  `WriteResult` directly from `get_file_info()`, so `head()` vs `get_file_info()` is
+  consistent by construction. However, `head()` is also used to *enrich* a prior
+  `write()` result — that enrichment is only unambiguous once write and info agree on
+  the fields write populated. Fixing this item closes that ambiguity too; no separate
+  item is needed for `head()`.
+
   **Formal layer:** `BackendContract.dfy:413-416` already encodes WR-001a correctly
   for `WRITE_RESULT_NATIVE` backends; the comment at lines 410-412 explicitly defers
   "absence of rich-field population" to empirical testing. No Dafny amendment is
