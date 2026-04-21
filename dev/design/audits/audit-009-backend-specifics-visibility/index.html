@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/adrs/0009-glob-three-tier-design/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/audits/audit-009-backend-specifics-visibility/">
       
       
-        <link rel="prev" href="../0008-extension-architecture/">
+        <link rel="prev" href="../audit-008-package-bugs/">
       
       
-        <link rel="next" href="../0010-observe-proxy-pattern/">
+        <link rel="next" href="../../rfcs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>0009: Glob - Three-Tier Design - remote-store</title>
+        <title>009: Backend-Specifics Visibility in Reference - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0009-glob-three-tier-design" class="md-skip">
+        <a href="#audit-009-backend-specifics-visibility-in-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              0009: Glob - Three-Tier Design
+              009: Backend-Specifics Visibility in Reference
             
           </span>
         </div>
@@ -4552,8 +4552,6 @@
                 
   
   
-    
-  
   
   
     
@@ -4564,15 +4562,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_6" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -4596,7 +4594,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4614,7 +4612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4642,7 +4640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4670,7 +4668,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4698,7 +4696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -4726,7 +4724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -4754,7 +4752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -4782,7 +4780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -4810,7 +4808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -4818,6 +4816,801 @@
     
   
     0008: Extension Namespace Contract (ext.*)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: Glob - Three-Tier Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: Observe - Proxy Subclass Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: Retry - Per-Backend Native Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012: Async Store / Backend API — Hybrid Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: Drop Optional-Extension Re-exports from __init__.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014: Middleware Architecture — Path 1 (ProxyStore + Stream Wrappers)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0015: Document ProxyStore in the Public API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0016: Seekable Read — Three-Tier Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017: Seekable Read on Store API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0018: SQLAlchemy Backend — Two-Class Architecture with Shared Base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0019: Multi-Agent Orchestration Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0020: Orchestrate Iterative Convergence Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0021: Microsoft Graph SDK Choice — httpx + msal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0022: Microsoft Graph Auth Model — Dual Flows Behind a Token-Provider Protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0023: Async Monitor-URL Polling as a Shared Backend-Local Module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0024: ResourceLocked Error Type
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0025: Async-to-Sync Backend Adapter (AsyncBackendSyncAdapter)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0026: Strict-Gate Pattern for Optional Capability Kwargs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_7" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audits
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5_7" id="__nav_5_5_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Audits
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-001-adversarial-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    001: Adversarial Review of v0.5.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-002-design-compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    002: Design & Spec Compliance Review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-003-documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    003: Documentation Quality & Spec Compliance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-004-docs-structural-consistency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    004: Documentation Structural Consistency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-005-laziness-memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    005: Laziness & Memory Efficiency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-006-docs-list-completeness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    006: Documentation List Completeness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-007-test-behavior-assertions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    007: Test Behavior Assertions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit-008-package-bugs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    008: Package Bugs (User-Facing)
   
 
     
@@ -4854,7 +5647,7 @@
   <span class="md-ellipsis">
     
   
-    0009: Glob - Three-Tier Design
+    009: Backend-Specifics Visibility in Reference
   
 
     
@@ -4872,7 +5665,7 @@
   <span class="md-ellipsis">
     
   
-    0009: Glob - Three-Tier Design
+    009: Backend-Specifics Visibility in Reference
   
 
     
@@ -4898,10 +5691,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#premise" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
+        Premise
       
     </span>
   </a>
@@ -4909,10 +5702,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
+  <a href="#summary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context
+        Summary
       
     </span>
   </a>
@@ -4920,22 +5713,34 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
+  <a href="#findings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision
+        Findings
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
+    <nav class="md-nav" aria-label="Findings">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#tier-1-list_filespattern-simple-name-filtering" class="md-nav__link">
+  <a href="#category-a-interop-methods-missing-the-warning-admonition" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 1: list_files(pattern=…) — simple name filtering
+        Category A — Interop methods missing the warning admonition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category A — Interop methods missing the warning admonition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-1-aiomd-asyncstore-interop-methods-entirely-hidden" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A-1 — aio.md AsyncStore — interop methods entirely hidden
       
     </span>
   </a>
@@ -4943,10 +5748,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#tier-2-storeglobpattern-native-backend-access" class="md-nav__link">
+  <a href="#a-2-aiomd-asyncbackend-no-interop-section-no-admonition" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 2: store.glob(pattern) — native backend access
+        A-2 — aio.md AsyncBackend — no Interop section, no admonition
       
     </span>
   </a>
@@ -4954,10 +5759,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#tier-3-extglobglob_filesstore-pattern-portable-full-glob" class="md-nav__link">
+  <a href="#a-3-backendmd-unwrap-under-lifecycle-to_keynative_path-under-introspection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 3: ext.glob.glob_files(store, pattern) — portable full glob
+        A-3 — backend.md — unwrap under "Lifecycle"; to_key/native_path under "Introspection"
       
     </span>
   </a>
@@ -4965,10 +5770,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#pattern-syntax" class="md-nav__link">
+  <a href="#a-4-proxymd-proxystore-re-exposes-interop-methods-unflagged" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pattern syntax
+        A-4 — proxy.md — ProxyStore re-exposes interop methods unflagged
       
     </span>
   </a>
@@ -4976,10 +5781,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#non-local-backends" class="md-nav__link">
+  <a href="#a-5-backendshttpmd-unwrap-native_path-to_key-render-without-the-warning-admonition" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Non-Local backends
+        A-5 — backends/http.md — unwrap, native_path, to_key render without the warning admonition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-6-sftp-utilsmd-sftp-only-module-no-top-of-page-admonition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A-6 — sftp-utils.md — SFTP-only module, no top-of-page admonition
       
     </span>
   </a>
@@ -4990,12 +5806,261 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#category-b-capability-gated-whole-methods-gate-buried-in-prose" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consequences
+        Category B — Capability-gated whole methods, gate buried in prose
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category B — Capability-gated whole methods, gate buried in prose">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#b-1-storeglob-requires-capabilityglob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-1 — Store.glob requires Capability.GLOB
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-2-storewrite_atomic-and-storeopen_atomic-require-capabilityatomic_write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-2 — Store.write_atomic and Store.open_atomic require Capability.ATOMIC_WRITE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-3-storehead-requires-capabilitymetadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-3 — Store.head requires Capability.METADATA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-4-storeread-read_bytes-read_seekable-require-capabilityread" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-4 — Store.read, read_bytes, read_seekable require Capability.READ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-5-storemove-storecopy-require-move-copy-delete-require-delete-list_-require-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-5 — Store.move / Store.copy require MOVE / COPY; delete* require DELETE; list_* require LIST
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#category-c-capability-gated-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Category C — Capability-gated arguments
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category C — Capability-gated arguments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#c-1-metadata-on-storewrite-write_text-write_atomic-requires-capabilityuser_metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C-1 — metadata= on Store.write, write_text, write_atomic requires Capability.USER_METADATA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-2-max_depth-on-list_files-list_folders-get_folder_info-behaviour-is-backend-conditional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C-2 — max_depth= on list_files / list_folders / get_folder_info: behaviour is backend-conditional
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#category-d-public-fields-whose-valuepresence-is-backend-conditional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Category D — Public fields whose value/presence is backend-conditional
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category D — Public fields whose value/presence is backend-conditional">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d-1-writeresult-every-optional-field-is-backend-conditional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D-1 — WriteResult — every optional field is backend-conditional
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-2-fileinfoetag-fileinfometadata-fileinfoextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D-2 — FileInfo.etag, FileInfo.metadata, FileInfo.extra
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-3-folderinfoextra-folderinfomodified_at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D-3 — FolderInfo.extra, FolderInfo.modified_at
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-4-resolutionplandetails-backendconfigoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D-4 — ResolutionPlan.details, BackendConfig.options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#category-e-whole-classes-modules-that-are-backend-specific-by-nature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Category E — Whole classes / modules that are backend-specific by nature
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category E — Whole classes / modules that are backend-specific by nature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#e-1-docs-srcapisftp-utilsmd-see-a-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-1 — docs-src/api/sftp-utils.md — see A-6
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e-2-docs-srcapibackendsmd-see-a-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2 — docs-src/api/backends/*.md — see A-5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e-3-capability-enum-quality-flags-vs-method-gates-not-visually-separated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-3 — Capability enum — quality flags vs. method gates not visually separated
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-pattern-for-the-follow-up-backlog-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended pattern (for the follow-up backlog item)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#out-of-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Out of scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracking
       
     </span>
   </a>
@@ -5006,799 +6071,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0010-observe-proxy-pattern/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0010: Observe - Proxy Subclass Pattern
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0011-retry-per-backend-native/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0011: Retry - Per-Backend Native Configuration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0012-async-store-backend-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0012: Async Store / Backend API — Hybrid Model
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0013-drop-optional-extension-reexports/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0013: Drop Optional-Extension Re-exports from __init__.py
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0014: Middleware Architecture — Path 1 (ProxyStore + Stream Wrappers)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0015-proxystore-publicly-documented/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0015: Document ProxyStore in the Public API Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0016-seekable-read-three-tier-design/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0016: Seekable Read — Three-Tier Design
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0017-seekable-read-on-store-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0017: Seekable Read on Store API
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0018: SQLAlchemy Backend — Two-Class Architecture with Shared Base
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0019-multi-agent-orchestration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0019: Multi-Agent Orchestration Architecture
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0020-orchestrate-iterative-convergence/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0020: Orchestrate Iterative Convergence Model
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0021-graph-sdk-choice/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0021: Microsoft Graph SDK Choice — httpx + msal
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0022-graph-auth-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0022: Microsoft Graph Auth Model — Dual Flows Behind a Token-Provider Protocol
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0023-async-monitor-polling/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0023: Async Monitor-URL Polling as a Shared Backend-Local Module
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0024-resource-locked-error/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0024: ResourceLocked Error Type
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0025-async-to-sync-backend-adapter/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0025: Async-to-Sync Backend Adapter (AsyncBackendSyncAdapter)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../0026-strict-gate-on-kwarg/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0026: Strict-Gate Pattern for Optional Capability Kwargs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_7" >
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../audits/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Audits
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_5_5_7" id="__nav_5_5_7_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_5_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Audits
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../audits/audit-001-adversarial-review/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    001: Adversarial Review of v0.5.0
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../audits/audit-002-design-compliance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    002: Design & Spec Compliance Review
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../audits/audit-003-documentation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    003: Documentation Quality & Spec Compliance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../audits/audit-004-docs-structural-consistency/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    004: Documentation Structural Consistency
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../audits/audit-005-laziness-memory/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    005: Laziness & Memory Efficiency
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../audits/audit-006-docs-list-completeness/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    006: Documentation List Completeness
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../audits/audit-007-test-behavior-assertions/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    007: Test Behavior Assertions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../audits/audit-008-package-bugs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    008: Package Bugs (User-Facing)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    009: Backend-Specifics Visibility in Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -8654,10 +8926,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#status" class="md-nav__link">
+  <a href="#premise" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status
+        Premise
       
     </span>
   </a>
@@ -8665,10 +8937,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
+  <a href="#summary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context
+        Summary
       
     </span>
   </a>
@@ -8676,22 +8948,34 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
+  <a href="#findings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision
+        Findings
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision">
+    <nav class="md-nav" aria-label="Findings">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#tier-1-list_filespattern-simple-name-filtering" class="md-nav__link">
+  <a href="#category-a-interop-methods-missing-the-warning-admonition" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 1: list_files(pattern=…) — simple name filtering
+        Category A — Interop methods missing the warning admonition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category A — Interop methods missing the warning admonition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-1-aiomd-asyncstore-interop-methods-entirely-hidden" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A-1 — aio.md AsyncStore — interop methods entirely hidden
       
     </span>
   </a>
@@ -8699,10 +8983,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#tier-2-storeglobpattern-native-backend-access" class="md-nav__link">
+  <a href="#a-2-aiomd-asyncbackend-no-interop-section-no-admonition" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 2: store.glob(pattern) — native backend access
+        A-2 — aio.md AsyncBackend — no Interop section, no admonition
       
     </span>
   </a>
@@ -8710,10 +8994,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#tier-3-extglobglob_filesstore-pattern-portable-full-glob" class="md-nav__link">
+  <a href="#a-3-backendmd-unwrap-under-lifecycle-to_keynative_path-under-introspection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tier 3: ext.glob.glob_files(store, pattern) — portable full glob
+        A-3 — backend.md — unwrap under "Lifecycle"; to_key/native_path under "Introspection"
       
     </span>
   </a>
@@ -8721,10 +9005,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#pattern-syntax" class="md-nav__link">
+  <a href="#a-4-proxymd-proxystore-re-exposes-interop-methods-unflagged" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pattern syntax
+        A-4 — proxy.md — ProxyStore re-exposes interop methods unflagged
       
     </span>
   </a>
@@ -8732,10 +9016,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#non-local-backends" class="md-nav__link">
+  <a href="#a-5-backendshttpmd-unwrap-native_path-to_key-render-without-the-warning-admonition" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Non-Local backends
+        A-5 — backends/http.md — unwrap, native_path, to_key render without the warning admonition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-6-sftp-utilsmd-sftp-only-module-no-top-of-page-admonition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A-6 — sftp-utils.md — SFTP-only module, no top-of-page admonition
       
     </span>
   </a>
@@ -8746,12 +9041,261 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#category-b-capability-gated-whole-methods-gate-buried-in-prose" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consequences
+        Category B — Capability-gated whole methods, gate buried in prose
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category B — Capability-gated whole methods, gate buried in prose">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#b-1-storeglob-requires-capabilityglob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-1 — Store.glob requires Capability.GLOB
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-2-storewrite_atomic-and-storeopen_atomic-require-capabilityatomic_write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-2 — Store.write_atomic and Store.open_atomic require Capability.ATOMIC_WRITE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-3-storehead-requires-capabilitymetadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-3 — Store.head requires Capability.METADATA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-4-storeread-read_bytes-read_seekable-require-capabilityread" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-4 — Store.read, read_bytes, read_seekable require Capability.READ
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-5-storemove-storecopy-require-move-copy-delete-require-delete-list_-require-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B-5 — Store.move / Store.copy require MOVE / COPY; delete* require DELETE; list_* require LIST
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#category-c-capability-gated-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Category C — Capability-gated arguments
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category C — Capability-gated arguments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#c-1-metadata-on-storewrite-write_text-write_atomic-requires-capabilityuser_metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C-1 — metadata= on Store.write, write_text, write_atomic requires Capability.USER_METADATA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-2-max_depth-on-list_files-list_folders-get_folder_info-behaviour-is-backend-conditional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C-2 — max_depth= on list_files / list_folders / get_folder_info: behaviour is backend-conditional
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#category-d-public-fields-whose-valuepresence-is-backend-conditional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Category D — Public fields whose value/presence is backend-conditional
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category D — Public fields whose value/presence is backend-conditional">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d-1-writeresult-every-optional-field-is-backend-conditional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D-1 — WriteResult — every optional field is backend-conditional
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-2-fileinfoetag-fileinfometadata-fileinfoextra" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D-2 — FileInfo.etag, FileInfo.metadata, FileInfo.extra
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-3-folderinfoextra-folderinfomodified_at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D-3 — FolderInfo.extra, FolderInfo.modified_at
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-4-resolutionplandetails-backendconfigoptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D-4 — ResolutionPlan.details, BackendConfig.options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#category-e-whole-classes-modules-that-are-backend-specific-by-nature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Category E — Whole classes / modules that are backend-specific by nature
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Category E — Whole classes / modules that are backend-specific by nature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#e-1-docs-srcapisftp-utilsmd-see-a-6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-1 — docs-src/api/sftp-utils.md — see A-6
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e-2-docs-srcapibackendsmd-see-a-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-2 — docs-src/api/backends/*.md — see A-5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e-3-capability-enum-quality-flags-vs-method-gates-not-visually-separated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E-3 — Capability enum — quality flags vs. method gates not visually separated
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-pattern-for-the-follow-up-backlog-item" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended pattern (for the follow-up backlog item)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#out-of-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Out of scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracking
       
     </span>
   </a>
@@ -8775,85 +9319,375 @@
 
 
 
-<h1 id="adr-0009-glob-three-tier-design">ADR-0009: Glob - Three-Tier Design<a class="headerlink" href="#adr-0009-glob-three-tier-design" title="Permanent link">&para;</a></h1>
-<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted</p>
-<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Glob/pattern matching for file listing has been an open design question
-since v0.6.0 (BK-002, ID-007). The original <code>Capability.GLOB</code> was removed
-in AF-002 because four backends claimed GLOB support with no <code>glob()</code>
-method — a ghost capability.</p>
-<p>The core tension: some backends have efficient native pattern matching
-(Local via pathlib, S3 via prefix filtering) while others have no
-server-side glob at all (SFTP, Memory). A single design must serve
-both cases without forcing a lowest-common-denominator approach.</p>
-<p>An initial two-tier design (core capability + extension fallback) was
-considered but rejected in review for three reasons: <code>store.glob()</code> throws
-on most backends (discoverability pit), simple name filtering requires an
-extension, and two entry points create confusion about which to use.</p>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Three tiers of pattern matching, with clear escalation:</p>
-<h3 id="tier-1-list_filespattern-simple-name-filtering">Tier 1: <code>list_files(pattern=…)</code> — simple name filtering<a class="headerlink" href="#tier-1-list_filespattern-simple-name-filtering" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;logs&quot;</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;*.log&quot;</span><span class="p">)</span>
-</code></pre></div>
+<h1 id="audit-009-backend-specifics-visibility-in-reference">Audit 009 — Backend-Specifics Visibility in Reference<a class="headerlink" href="#audit-009-backend-specifics-visibility-in-reference" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-04-21
+<strong>Scope:</strong> All API reference pages under <code>docs-src/api/</code> and the docstrings
+they render from in <code>src/remote_store/</code>. Excludes guides and explanation
+pages — they are surveyed only when the reference is the source.
+<strong>Method:</strong> Walked every reference page section by section, then
+cross-checked each rendered symbol against its source for capability gates,
+backend-specific behaviour, or backend-shaped data. The reference template
+is <code>Store.unwrap</code> (<code>docs-src/api/store.md:211-241</code>): a dedicated section
+(<code>## Interop (Backend-Specific)</code>) opened with a <code>!!! warning</code> admonition.
+The audit asks: <em>for every other place a user can stumble into
+backend-specific behaviour, is the signal as visible as it is for
+<code>unwrap</code>?</em></p>
+<hr />
+<h2 id="premise">Premise<a class="headerlink" href="#premise" title="Permanent link">&para;</a></h2>
+<p>Backend-specifics appear in the reference at five granularities, not just
+methods:</p>
+<table>
+<thead>
+<tr>
+<th>Granularity</th>
+<th>Example</th>
+<th>Visibility today</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Whole method</td>
+<td><code>Store.unwrap</code></td>
+<td>✅ section + warning admonition</td>
+</tr>
+<tr>
+<td>Whole class / module</td>
+<td><code>SFTPUtils</code>, <code>backends/*</code></td>
+<td>❌ inferred from page name only</td>
+</tr>
+<tr>
+<td>Public field / property</td>
+<td><code>WriteResult.etag</code>, <code>FileInfo.extra</code>, <code>ResolutionPlan.details</code></td>
+<td>❌ buried in attribute description</td>
+</tr>
+<tr>
+<td>Method argument</td>
+<td><code>Store.write(metadata=…)</code>, <code>Store.list_files(max_depth=…)</code></td>
+<td>❌ mentioned in prose only</td>
+</tr>
+<tr>
+<td>Capability-gated method as a whole</td>
+<td><code>Store.glob</code>, <code>Store.write_atomic</code>, <code>Store.head</code></td>
+<td>❌ "Requires Capability.X" line in docstring only</td>
+</tr>
+</tbody>
+</table>
+<p>The reader who scans the reference for the same <code>!!! warning</code> styling that
+<code>unwrap</code> carries will not find these. They have to read every docstring
+to discover what couples them to a specific backend or capability.</p>
+<hr />
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Count</th>
+<th>Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A — Interop methods missing the warning admonition (parity with <code>Store.unwrap</code>)</td>
+<td>6</td>
+<td>High</td>
+</tr>
+<tr>
+<td>B — Capability-gated whole methods, gate buried in docstring prose</td>
+<td>5</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>C — Capability-gated arguments, gate buried in argument prose</td>
+<td>2</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>D — Public fields whose value/presence is backend-conditional</td>
+<td>4</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>E — Whole classes / modules that are backend-specific by nature, no top-of-page admonition</td>
+<td>3</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>20</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Pattern: the reference <em>describes</em> backend-specifics in prose almost
+everywhere, but the visual signal that calls out <em>"this is the place to
+slow down"</em> exists in exactly one location. The fix is consistent visual
+flagging (admonitions, badges, dedicated sections) at every granularity
+above.</p>
+<hr />
+<h2 id="findings">Findings<a class="headerlink" href="#findings" title="Permanent link">&para;</a></h2>
+<h3 id="category-a-interop-methods-missing-the-warning-admonition">Category A — Interop methods missing the warning admonition<a class="headerlink" href="#category-a-interop-methods-missing-the-warning-admonition" title="Permanent link">&para;</a></h3>
+<p><code>store.md:211-241</code> groups three backend-coupling methods (<code>unwrap</code>,
+<code>native_path</code>, <code>to_key</code>) under a single <code>!!! warning</code> admonition, then
+documents <code>supports()</code> in the same section with a distinguishing <code>!!!
+note</code> clarifying that <strong><code>supports()</code> is portable</strong> — it works on every
+backend; only the capability-gated methods it guards are backend-
+specific. Category A is about the three-method coupling trio; where
+<code>supports()</code> appears, the fix is to carry over the portable-method note,
+not the backend-specific warning.</p>
+<p><strong>Source-level region tag inconsistency (applies to all findings in
+this category):</strong> both <code>src/remote_store/_store.py:812</code> and
+<code>src/remote_store/aio/_async_store.py:785</code> mark the same block
+<code># region: interop (backend-specific)</code> and include <code>supports()</code> inside
+that block. The source label directly contradicts the <code>store.md:238-241</code>
+portable-method note. Closing any Category A finding entails deciding
+whether to extract <code>supports()</code> from the region tag, or to rename the
+tag (e.g. <code># region: interop</code>). The audit does not prescribe which — it
+flags the inconsistency so the implementer resolves it once, not three
+times.</p>
+<h4 id="a-1-aiomd-asyncstore-interop-methods-entirely-hidden">A-1 — <code>aio.md</code> AsyncStore — interop methods entirely hidden<a class="headerlink" href="#a-1-aiomd-asyncstore-interop-methods-entirely-hidden" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/aio.md:11-13</code>
+<strong>Severity:</strong> High</p>
+<p><code>AsyncStore</code> is rendered with <code>members: false</code>. The interop block at
+<code>src/remote_store/aio/_async_store.py:787-869</code> is not in the rendered
+reference at all. Async users get <em>less</em> visibility than sync users, not
+the same. Two distinct visibility gaps nested in this one finding:</p>
 <ul>
-<li><code>pattern</code> is an <code>fnmatch</code> pattern matched against each file's <strong>name</strong>.</li>
-<li>Applied at the <code>Store</code> level — works with every backend that has <code>LIST</code>.</li>
-<li>No new capability required.</li>
-<li>Covers the most common use case: "give me the CSVs in this folder."</li>
+<li>The <strong>coupling trio</strong> (<code>unwrap</code>, <code>native_path</code>, <code>to_key</code>) needs the
+  same <code>!!! warning "Backend-specific methods"</code> admonition that
+  <code>store.md:211-241</code> carries.</li>
+<li><code>supports()</code> needs the same <code>!!! note</code> clarifying that <em>it</em> is
+  portable — mirroring <code>store.md:238-241</code>. Without this, an implementer
+  working off BK-153's exit criteria might apply the warning to
+  <code>supports()</code> and contradict the sync-Store docs.</li>
 </ul>
-<h3 id="tier-2-storeglobpattern-native-backend-access">Tier 2: <code>store.glob(pattern)</code> — native backend access<a class="headerlink" href="#tier-2-storeglobpattern-native-backend-access" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/*.csv&quot;</span><span class="p">)</span>  <span class="c1"># only if backend supports GLOB</span>
-</code></pre></div>
+<p>The source-level region tag inconsistency noted above must also be
+resolved as part of the fix.</p>
+<h4 id="a-2-aiomd-asyncbackend-no-interop-section-no-admonition">A-2 — <code>aio.md</code> AsyncBackend — no Interop section, no admonition<a class="headerlink" href="#a-2-aiomd-asyncbackend-no-interop-section-no-admonition" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/aio.md:19-20</code>
+<strong>Severity:</strong> High</p>
+<p><code>AsyncBackend</code> renders all members. <code>unwrap</code>, <code>native_path</code>, <code>to_key</code> at
+<code>_async_backend.py:335-402</code> appear in the rendered output ungrouped and
+unflagged. Mirrors A-3 below.</p>
+<h4 id="a-3-backendmd-unwrap-under-lifecycle-to_keynative_path-under-introspection">A-3 — <code>backend.md</code> — <code>unwrap</code> under "Lifecycle"; <code>to_key</code>/<code>native_path</code> under "Introspection"<a class="headerlink" href="#a-3-backendmd-unwrap-under-lifecycle-to_keynative_path-under-introspection" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/backend.md:171-179, 195-198</code>
+<strong>Severity:</strong> High</p>
+<p><code>unwrap</code> is listed next to <code>close()</code> and <code>check_health()</code>. <code>to_key</code> and
+<code>native_path</code> are filed under "Introspection" with the portable
+<code>resolve()</code>. No admonition warns that <code>unwrap</code> returns a backend-native
+client with no stability guarantees from <code>remote-store</code>, or that
+<code>to_key</code>/<code>native_path</code> produce backend-shaped strings.</p>
+<h4 id="a-4-proxymd-proxystore-re-exposes-interop-methods-unflagged">A-4 — <code>proxy.md</code> — <code>ProxyStore</code> re-exposes interop methods unflagged<a class="headerlink" href="#a-4-proxymd-proxystore-re-exposes-interop-methods-unflagged" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/proxy.md:13</code>; source <code>src/remote_store/_proxy.py:237-250</code>
+<strong>Severity:</strong> Medium</p>
+<p><code>ProxyStore</code> redeclares <code>unwrap</code>, <code>native_path</code>, <code>to_key</code>, <code>supports</code> for
+delegation and renders them with default <code>mkdocstrings</code> options. The
+coupling trio (<code>unwrap</code>, <code>native_path</code>, <code>to_key</code>) renders without the
+<code>!!! warning</code> admonition; <code>supports()</code> renders without the portable-
+method note. Same distinction as A-1 applies.</p>
+<h4 id="a-5-backendshttpmd-unwrap-native_path-to_key-render-without-the-warning-admonition">A-5 — <code>backends/http.md</code> — <code>unwrap</code>, <code>native_path</code>, <code>to_key</code> render without the warning admonition<a class="headerlink" href="#a-5-backendshttpmd-unwrap-native_path-to_key-render-without-the-warning-admonition" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/backends/http.md</code> (verified against local
+<code>hatch run docs-build</code> output, 2026-04-21).
+<strong>Severity:</strong> Low</p>
+<p>Empirical check: of the nine concrete-backend reference pages, <strong>only
+<code>http.md</code> renders the interop methods as public members</strong>. The other
+eight pages render only the class-level signature and class docstring,
+because mkdocstrings defaults to <code>inherited_members: false</code> and
+<code>S3Backend</code> / <code>S3PyArrowBackend</code> / <code>SQLBlobBackend</code> / <code>SQLQueryBackend</code>
+inherit their <code>unwrap</code> from intermediate private base classes
+(<code>_S3Base</code>, <code>_SQLAlchemyBaseBackend</code>), while <code>LocalBackend</code>,
+<code>MemoryBackend</code>, <code>SFTPBackend</code>, <code>AzureBackend</code> inherit the base
+<code>Backend.unwrap</code> (a raise) without overriding. None of those overrides
+or inherited methods surface in the rendered reference today.</p>
+<p><code>ReadOnlyHttpBackend</code> is the only concrete backend that subclasses
+<code>Backend</code> directly <em>and</em> defines all its methods on the subclass — so
+its page renders 13 methods including <code>unwrap</code>, <code>native_path</code>, <code>to_key</code>
+without a warning admonition. A reader landing on this page from search
+sees the interop methods mixed in with <code>read()</code>, <code>is_file()</code>, etc., with
+no visual cue that three of them are escape hatches.</p>
+<p><strong>Scope correction:</strong> the earlier draft of this finding named seven
+pages. That was wrong — the visibility gap exists on exactly one page
+(<code>http.md</code>). The corollary question — whether the other eight pages
+<em>should</em> render their interop methods with a warning — is a
+reference-completeness question out of scope for audit-009 (it would
+require enabling <code>inherited_members</code> or restructuring the backend class
+hierarchy). If raised later, track separately.</p>
+<h4 id="a-6-sftp-utilsmd-sftp-only-module-no-top-of-page-admonition">A-6 — <code>sftp-utils.md</code> — SFTP-only module, no top-of-page admonition<a class="headerlink" href="#a-6-sftp-utilsmd-sftp-only-module-no-top-of-page-admonition" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/sftp-utils.md</code>
+<strong>Severity:</strong> Low</p>
+<p><code>SFTPUtils</code>, <code>load_private_key</code>, <code>HostKeyPolicy</code> all live exclusively in
+the SFTP backend. The page title is neutral ("SFTPUtils"); a reader
+landing here from a search result has no admonition saying "using these
+ties your code to the SFTP backend".</p>
+<hr />
+<h3 id="category-b-capability-gated-whole-methods-gate-buried-in-prose">Category B — Capability-gated whole methods, gate buried in prose<a class="headerlink" href="#category-b-capability-gated-whole-methods-gate-buried-in-prose" title="Permanent link">&para;</a></h3>
+<p>These methods raise <code>CapabilityNotSupported</code> when the backend does not
+declare the gating capability. Today the gate lives only inside the
+docstring's <code>Raises:</code> block or a single line near the description. There
+is no <code>!!! note "Requires Capability.X"</code> admonition at the top of the
+method's reference entry.</p>
+<h4 id="b-1-storeglob-requires-capabilityglob">B-1 — <code>Store.glob</code> requires <code>Capability.GLOB</code><a class="headerlink" href="#b-1-storeglob-requires-capabilityglob" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/store.md:105-117</code>; source <code>_store.py:515-533</code>
+<strong>Severity:</strong> Medium</p>
+<p>The docstring contains "Requires <code>Capability.GLOB</code>" inline. The rendered
+reference shows it only as part of the description text. There is a
+<code>!!! note "Ordering and laziness"</code> <em>below</em> the method but no admonition
+<em>above</em> it announcing the capability gate.</p>
+<p>Sibling pages affected: <code>backend.md:125-133</code> (note exists, but only
+about being "non-abstract"), <code>aio.md</code> (AsyncStore.glob hidden by
+<code>members: false</code>).</p>
+<h4 id="b-2-storewrite_atomic-and-storeopen_atomic-require-capabilityatomic_write">B-2 — <code>Store.write_atomic</code> and <code>Store.open_atomic</code> require <code>Capability.ATOMIC_WRITE</code><a class="headerlink" href="#b-2-storewrite_atomic-and-storeopen_atomic-require-capabilityatomic_write" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/store.md:58-71</code>; source <code>_store.py:234-323</code>
+<strong>Severity:</strong> Medium</p>
+<p>Capability gate appears only in the <code>Raises:</code> block. The page-level note
+under <code>write_atomic</code> ("Most backends implement this as temp-file +
+rename") describes mechanism, not the gate. Same pattern on
+<code>backend.md:78-86</code>.</p>
+<h4 id="b-3-storehead-requires-capabilitymetadata">B-3 — <code>Store.head</code> requires <code>Capability.METADATA</code><a class="headerlink" href="#b-3-storehead-requires-capabilitymetadata" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/store.md:145-148</code>; source <code>_store.py:724-756</code>
+<strong>Severity:</strong> Medium</p>
+<p>Gate stated in the docstring's body ("Gated on <code>Capability.METADATA</code>
+only"). No admonition. Adjacent <code>get_file_info</code>/<code>get_folder_info</code> are
+also METADATA-gated (<code>_store.py:655, 694</code>) without admonitions.</p>
+<h4 id="b-4-storeread-read_bytes-read_seekable-require-capabilityread">B-4 — <code>Store.read</code>, <code>read_bytes</code>, <code>read_seekable</code> require <code>Capability.READ</code><a class="headerlink" href="#b-4-storeread-read_bytes-read_seekable-require-capabilityread" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/store.md:24-42</code>; source <code>_store.py:51-119</code>
+<strong>Severity:</strong> Low</p>
+<p>The gate is consistent across the read family but never surfaced visually.
+Most backends declare <code>READ</code>, so users rarely hit it — but read-only
+gate awareness matters when mixing in restricted backends.</p>
+<h4 id="b-5-storemove-storecopy-require-move-copy-delete-require-delete-list_-require-list">B-5 — <code>Store.move</code> / <code>Store.copy</code> require <code>MOVE</code> / <code>COPY</code>; <code>delete*</code> require <code>DELETE</code>; <code>list_*</code> require <code>LIST</code><a class="headerlink" href="#b-5-storemove-storecopy-require-move-copy-delete-require-delete-list_-require-list" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/store.md:76-117, 122-139</code>; source <code>_store.py:329-381, 387-533, 539-599</code>
+<strong>Severity:</strong> Low</p>
+<p>Same pattern. Existing notes under <code>move</code> and <code>copy</code> describe atomicity
+and metadata behaviour but not the capability gate.</p>
+<hr />
+<h3 id="category-c-capability-gated-arguments">Category C — Capability-gated arguments<a class="headerlink" href="#category-c-capability-gated-arguments" title="Permanent link">&para;</a></h3>
+<p>Arguments that change the capability requirement of an otherwise-portable
+method. Visibility today: the gate is one sentence inside the argument's
+description.</p>
+<h4 id="c-1-metadata-on-storewrite-write_text-write_atomic-requires-capabilityuser_metadata">C-1 — <code>metadata=</code> on <code>Store.write</code>, <code>write_text</code>, <code>write_atomic</code> requires <code>Capability.USER_METADATA</code><a class="headerlink" href="#c-1-metadata-on-storewrite-write_text-write_atomic-requires-capabilityuser_metadata" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/store.md:46-71</code>; source <code>_store.py:154-279</code>
+<strong>Severity:</strong> Medium</p>
+<p>The argument is portable when <code>None</code> or <code>{}</code>, and capability-gated
+otherwise. Today the docstring says "Requires <code>Capability.USER_METADATA</code>"
+inside the <code>metadata</code> parameter description; users have to read the
+parameter docs in full to find it. There is no per-argument badge or
+admonition to flag the conditional gate.</p>
+<p>Same on <code>Backend.write</code>/<code>write_atomic</code> (<code>_backend.py:179-231</code>) and the
+async equivalents (<code>aio/_async_store.py</code>).</p>
+<h4 id="c-2-max_depth-on-list_files-list_folders-get_folder_info-behaviour-is-backend-conditional">C-2 — <code>max_depth=</code> on <code>list_files</code> / <code>list_folders</code> / <code>get_folder_info</code>: behaviour is backend-conditional<a class="headerlink" href="#c-2-max_depth-on-list_files-list_folders-get_folder_info-behaviour-is-backend-conditional" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/store.md:88-94, 95-98, 170-173</code>; source <code>_store.py:387-451, 451-491, 659-722</code>
+<strong>Severity:</strong> Low</p>
+<p>The Store-level docstring says the parameter is honoured uniformly, but
+the underlying <code>Backend.list_files</code> docstring (<code>_backend.py:280-300</code>)
+says "backends that support native depth limiting prune traversal early.
+Backends that ignore this parameter still produce correct results — the
+Store applies client-side filtering as a safety net." That backend
+divergence (efficient pruning vs. client-side filter) is a quality
+signal users may want to surface — currently invisible in the reference.</p>
+<hr />
+<h3 id="category-d-public-fields-whose-valuepresence-is-backend-conditional">Category D — Public fields whose value/presence is backend-conditional<a class="headerlink" href="#category-d-public-fields-whose-valuepresence-is-backend-conditional" title="Permanent link">&para;</a></h3>
+<p>Data-class fields documented in <code>models.md</code> and <code>info.md</code>. Reader sees
+attribute names and types in the rendered reference; the
+backend-conditional nature lives in attribute prose.</p>
+<h4 id="d-1-writeresult-every-optional-field-is-backend-conditional">D-1 — <code>WriteResult</code> — every optional field is backend-conditional<a class="headerlink" href="#d-1-writeresult-every-optional-field-is-backend-conditional" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/models.md:11</code>; source <code>_models.py:105-143</code>
+<strong>Severity:</strong> Medium</p>
+<p><code>WriteResult.source</code> is the discriminator (<code>"native"</code> / <code>"basic"</code> /
+<code>"sidecar"</code>) that controls which other fields are reliable. <code>digest</code>,
+<code>etag</code>, <code>version_id</code>, <code>last_modified</code>, <code>metadata</code> are all conditional on
+<code>source</code> and on <code>Capability.WRITE_RESULT_NATIVE</code> /
+<code>Capability.USER_METADATA</code>. The class docstring describes this in
+prose. The rendered reference shows attributes as a flat list of
+<code>Optional[X]</code> types with no visual cue that "if you do not check
+<code>source</code>, only <code>path</code> and <code>size</code> are safe to read."</p>
+<p>This is the single most user-impactful gap — <code>WriteResult</code> is the return
+type of every <code>write*</code> call, so every <code>write</code> user encounters it.</p>
+<h4 id="d-2-fileinfoetag-fileinfometadata-fileinfoextra">D-2 — <code>FileInfo.etag</code>, <code>FileInfo.metadata</code>, <code>FileInfo.extra</code><a class="headerlink" href="#d-2-fileinfoetag-fileinfometadata-fileinfoextra" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/models.md:9</code>; source <code>_models.py:67-93</code>
+<strong>Severity:</strong> Medium</p>
 <ul>
-<li>Capability-gated on <code>Capability.GLOB</code>.</li>
-<li>Like <code>unwrap()</code>: opt-in direct access to a backend-specific feature.</li>
-<li>Only <code>LocalBackend</code> implements it (via <code>pathlib.Path.glob()</code>).</li>
-<li>Users who call this <strong>know</strong> their backend and want native semantics.</li>
+<li><code>etag</code> — "Opaque backend-provided tag for change detection." Whether
+  it is populated and what it means varies per backend.</li>
+<li><code>metadata</code> — populated only when the backend declares <code>USER_METADATA</code>
+  and the file actually has metadata.</li>
+<li><code>extra</code> — explicitly typed and documented as "Backend-specific
+  metadata." A reader sees <code>dict[str, object]</code> without any signal that
+  the keys depend on the backend.</li>
 </ul>
-<h3 id="tier-3-extglobglob_filesstore-pattern-portable-full-glob">Tier 3: <code>ext.glob.glob_files(store, pattern)</code> — portable full glob<a class="headerlink" href="#tier-3-extglobglob_filesstore-pattern-portable-full-glob" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.glob</span><span class="w"> </span><span class="kn">import</span> <span class="n">glob_files</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">glob_files</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;data/**/*.csv&quot;</span><span class="p">)</span>
-</code></pre></div>
+<h4 id="d-3-folderinfoextra-folderinfomodified_at">D-3 — <code>FolderInfo.extra</code>, <code>FolderInfo.modified_at</code><a class="headerlink" href="#d-3-folderinfoextra-folderinfomodified_at" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/models.md:15</code>; source <code>_models.py:169-187</code>
+<strong>Severity:</strong> Low</p>
+<p><code>extra</code> is "Backend-specific metadata." <code>modified_at</code> is <code>Optional</code>
+because some backends do not track folder mtimes. Same visibility gap.</p>
+<h4 id="d-4-resolutionplandetails-backendconfigoptions">D-4 — <code>ResolutionPlan.details</code>, <code>BackendConfig.options</code><a class="headerlink" href="#d-4-resolutionplandetails-backendconfigoptions" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/models.md:17</code> and <code>docs-src/api/config.md:5</code>;
+source <code>_resolution.py:48</code> and <code>_config.py:170</code>
+<strong>Severity:</strong> Low</p>
+<p>Both are explicitly documented as backend-specific in the attribute
+description. No visual flag at the class or attribute level.</p>
+<hr />
+<h3 id="category-e-whole-classes-modules-that-are-backend-specific-by-nature">Category E — Whole classes / modules that are backend-specific by nature<a class="headerlink" href="#category-e-whole-classes-modules-that-are-backend-specific-by-nature" title="Permanent link">&para;</a></h3>
+<h4 id="e-1-docs-srcapisftp-utilsmd-see-a-6">E-1 — <code>docs-src/api/sftp-utils.md</code> — see A-6<a class="headerlink" href="#e-1-docs-srcapisftp-utilsmd-see-a-6" title="Permanent link">&para;</a></h4>
+<h4 id="e-2-docs-srcapibackendsmd-see-a-5">E-2 — <code>docs-src/api/backends/*.md</code> — see A-5<a class="headerlink" href="#e-2-docs-srcapibackendsmd-see-a-5" title="Permanent link">&para;</a></h4>
+<h4 id="e-3-capability-enum-quality-flags-vs-method-gates-not-visually-separated">E-3 — <code>Capability</code> enum — quality flags vs. method gates not visually separated<a class="headerlink" href="#e-3-capability-enum-quality-flags-vs-method-gates-not-visually-separated" title="Permanent link">&para;</a></h4>
+<p><strong>File:</strong> <code>docs-src/api/capabilities.md:3</code>; source <code>_capabilities.py:14-121</code>
+<strong>Severity:</strong> Low</p>
+<p>The class docstring is well-organised by section ("Core I/O",
+"Navigation", …, "Quality flags"). The rendered reference inherits the
+section organisation, but the qualitative distinction — "quality flags do
+not gate any method; they describe behaviour you must opt into checking"
+— is buried mid-paragraph. Users querying <code>supports(SEEKABLE_READ)</code> vs.
+<code>supports(GLOB)</code> may not realise the first is informational while the
+second guards an actual call.</p>
+<hr />
+<h2 id="recommended-pattern-for-the-follow-up-backlog-item">Recommended pattern (for the follow-up backlog item)<a class="headerlink" href="#recommended-pattern-for-the-follow-up-backlog-item" title="Permanent link">&para;</a></h2>
+<p>Apply consistent admonition patterns across the reference. Suggested
+vocabulary (to be confirmed at fix time):</p>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Whole method couples to a specific backend (interop)</td>
+<td><code>!!! warning "Backend-specific method"</code> — the existing <code>Store.unwrap</code> model</td>
+</tr>
+<tr>
+<td>Method requires a capability the backend may not declare</td>
+<td><code>!!! note "Requires</code>Capability.X<code>"</code> directly under the method heading</td>
+</tr>
+<tr>
+<td>Argument flips the method into a capability-gated mode</td>
+<td><code>!!! note "Capability-gated argument"</code> adjacent to the argument table, naming the gate and the no-op condition (e.g. <code>metadata=None</code>)</td>
+</tr>
+<tr>
+<td>Field/attribute is backend-conditional</td>
+<td>Inline marker in the attribute list (e.g. trailing badge) <strong>plus</strong> a class-level admonition explaining the discriminator (notably <code>WriteResult.source</code>)</td>
+</tr>
+<tr>
+<td>Whole class/module is backend-specific</td>
+<td>Top-of-page <code>!!! warning "Backend-specific module"</code> — model after <code>Store.unwrap</code>'s section warning</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="out-of-scope">Out of scope<a class="headerlink" href="#out-of-scope" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Full recursive glob patterns (<code>**</code>, wildcards in directory segments).</li>
-<li>Delegates to <code>store.glob()</code> when GLOB is available, otherwise falls
-  back to <code>list_files</code> + client-side regex matching.</li>
-<li>The recommended API when <code>list_files(pattern=)</code> isn't enough and
-  you want code that works across all backends.</li>
+<li>Guides, examples, and <code>CHANGELOG</code>. This audit is reference-only.</li>
+<li>Renaming, restructuring, or moving symbols. Visibility is the goal,
+  not API shape changes.</li>
+<li>Capability-matrix re-organisation (<code>docs-src/capabilities-matrix.md</code>):
+  it is already a dedicated table and visually distinct.</li>
 </ul>
-<h3 id="pattern-syntax">Pattern syntax<a class="headerlink" href="#pattern-syntax" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>*</code> — any characters except <code>/</code></li>
-<li><code>**</code> — zero or more path segments (recursive)</li>
-<li><code>?</code> — single non-separator character</li>
-<li><code>[abc]</code> — character class</li>
-<li><code>[!abc]</code> — negated character class</li>
-</ul>
-<p><code>list_files(pattern=…)</code> uses stdlib <code>fnmatch</code> (complete, well-tested).
-<code>ext.glob</code> uses a regex converter that supports the full syntax above.</p>
-<h3 id="non-local-backends">Non-Local backends<a class="headerlink" href="#non-local-backends" title="Permanent link">&para;</a></h3>
-<p>S3, S3-PyArrow, SFTP, Azure, and Memory do not declare
-<code>Capability.GLOB</code> in this iteration. They can add native
-glob implementations in future releases (S3 and Azure have
-prefix-optimized listing that could be leveraged).</p>
-<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Pit of success.</strong> The easiest API (<code>list_files(pattern=)</code>) works
-  everywhere. Users only escalate when they need more power.</li>
-<li><strong><code>unwrap</code> analogy holds.</strong> <code>store.glob()</code> is for users who know their
-  backend, same as <code>store.unwrap()</code>.</li>
-<li><strong>Extension has a clear role.</strong> <code>ext.glob.glob_files()</code> is for when
-  <code>list_files(pattern=)</code> isn't enough (recursive patterns, directory
-  wildcards) but you want portable code.</li>
-<li><strong>AF-002 reconciled.</strong> <code>Capability.GLOB</code> is back, but justified:
-  it gates native access, not the only way to filter. <code>list_files(pattern=)</code>
-  needs only <code>LIST</code>.</li>
-<li><strong>Additive change.</strong> <code>pattern</code> parameter on <code>list_files</code> is optional
-  and backward-compatible. No existing API is modified.</li>
-<li><strong>Future work.</strong> S3/Azure can implement prefix-optimized <code>glob()</code> and
-  declare GLOB without changing the contract.</li>
-</ul>
+<hr />
+<h2 id="tracking">Tracking<a class="headerlink" href="#tracking" title="Permanent link">&para;</a></h2>
+<p>Follow-up: see <code>BK-153</code> in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BACKLOG.md</a>. Pairs with
+<code>BK-152</code> (WriteResult/FileInfo consistency in code), which fixes the
+contract this audit's D-1 finding flags as the highest-impact visibility
+gap.</p>
 
 
 
