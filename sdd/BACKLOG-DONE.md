@@ -5,6 +5,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-176 — `SQLBlobBackend.copy(src, src, overwrite=True)` silently destroys data**
+  Mirrored the `src == dst` early-return guard from `move()` into `copy()`:
+  check source exists, then return. Fixes both the data-destruction case
+  (`overwrite=True` deleted the row before `INSERT ... SELECT`) and the
+  spurious `AlreadyExists` case (`overwrite=False`). Both
+  `test_self_copy_preserves_data` and `test_self_copy_no_overwrite_preserves_data`
+  now pass on `sql-blob`; `_NO_SELF_COPY_BACKENDS` removed from tests.
+
 - [x] **BUG-177 — `S3Backend.write` does not surface the auto-CRC32 digest that `get_file_info` returns**
   `write()` called `s3fs.info()` after the upload, which omits checksum
   fields, leaving `WriteResult.digest = None` while `get_file_info()` issued

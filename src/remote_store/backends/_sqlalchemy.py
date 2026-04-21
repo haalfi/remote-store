@@ -680,6 +680,13 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         self._validate_path(src)
         self._validate_path(dst)
 
+        if src == dst:
+            with self._map_errors(src), self._engine.connect() as conn:
+                t = self._table
+                if conn.execute(sa.select(sa.literal(1)).where(t.c.key == src)).first() is None:
+                    raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
+            return
+
         now = datetime.now(timezone.utc).timestamp()
 
         with self._map_errors(src), self._engine.begin() as conn:

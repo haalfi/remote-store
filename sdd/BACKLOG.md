@@ -43,32 +43,6 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-176 — `SQLBlobBackend.copy(src, src, overwrite=True)` silently destroys data** (MEDIUM)
-  `_sqlalchemy.py:673-721`: `copy()` has no `src == dst` early-return guard.
-  The companion `move()` at `_sqlalchemy.py:649-655` does have the guard and
-  behaves correctly. With `overwrite=True` and `src == dst`, `copy()`
-  executes:
-  1. `dst_exists` check passes (line 687 — it is the same row).
-  2. `dst_exists and not overwrite` is false, so execution proceeds.
-  3. `conn.execute(t.delete().where(t.c.key == dst))` deletes the row
-     (line 692).
-  4. The `INSERT ... SELECT` at lines 716-721 selects from the now-deleted
-     row and inserts nothing. The file is silently destroyed.
-  With `overwrite=False` the same pre-state check raises `AlreadyExists`
-  instead of no-op'ing. Both are a spec violation per BE-019 (Dafny
-  contract: `copy(x, x)` is a no-op).
-  **Repro:**
-  ```python
-  b = SQLBlobBackend(url="sqlite:///:memory:")
-  b.write("x.txt", b"data")
-  b.copy("x.txt", "x.txt", overwrite=True)
-  assert b.read_bytes("x.txt") == b"data"  # FAILS — NotFound or empty.
-  ```
-  Fix: mirror the `move()` guard at the top of `copy()` — verify source
-  exists, then return. Currently skipped in `TestMoveCopySelfOperation`
-  (`test_self_copy_preserves_data` and `test_self_copy_no_overwrite_preserves_data`)
-  via `_NO_SELF_COPY_BACKENDS`.
-
 - [ ] **BUG-175 — `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (MEDIUM)
   `_sqlalchemy.py:734-745`: for SQLite dialects, `glob()` uses
   `t.c.key GLOB pattern` as an SQL-side pre-filter, then applies

@@ -42,9 +42,7 @@ _FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-
 # Backends that do not yet handle self-copy/self-move correctly.
 _NO_SELF_OP_BACKENDS = frozenset({"azure", "http"})
 
-# Backends that do not yet handle self-copy (but self-move is fine).
-# sql-blob: copy() lacks the src == dst guard that move() has — see BUG-176.
-_NO_SELF_COPY_BACKENDS = frozenset({"sql-blob"})
+_NO_SELF_COPY_BACKENDS: frozenset[str] = frozenset()
 
 
 def _require(backend: Backend, *caps: Capability) -> None:
