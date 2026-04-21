@@ -404,11 +404,21 @@ class TestStreamingRead:
             stream.fileno()  # type: ignore[union-attr]
 
     @pytest.mark.spec("ASYNC-081")
-    def test_read_after_close_returns_empty(self) -> None:
+    def test_read_after_close_raises_valueerror(self) -> None:
         stream = self.adapter.read("f.txt")
         stream.close()
-        assert stream.read() == b""
-        assert stream.read(5) == b""
+        with pytest.raises(ValueError, match="I/O operation on closed file"):
+            stream.read()
+        with pytest.raises(ValueError, match="I/O operation on closed file"):
+            stream.read(5)
+
+    @pytest.mark.spec("ASYNC-081")
+    def test_readinto_after_close_raises_valueerror(self) -> None:
+        stream = self.adapter.read("f.txt")
+        stream.close()
+        buf = bytearray(8)
+        with pytest.raises(ValueError, match="I/O operation on closed file"):
+            stream.readinto(buf)
 
 
 # ---------------------------------------------------------------------------

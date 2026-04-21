@@ -5,6 +5,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-172 — `_ChunkPullReader.read`/`readinto` return empty on closed stream instead of raising `ValueError`**
+  Added `_closed_on_error` flag to distinguish user-close (raises `ValueError`)
+  from error-close (returns `b""`/`0`, per ASYNC-090 spec). Tests updated.
+
 - [x] **BK-154 — pyarrow 24.x mypy compatibility**
   pyarrow 24.0.0 shipped partial type stubs that surfaced `attr-defined`,
   `name-defined`, and `no-untyped-call` errors under mypy strict mode. Added

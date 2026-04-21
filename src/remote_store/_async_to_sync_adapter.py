@@ -599,6 +599,7 @@ class _ChunkPullReader(io.RawIOBase):
         self._iter = async_iter
         self._buf = b""
         self._eof = False
+        self._closed_on_error = False
 
     # region: read surface
 
@@ -611,6 +612,8 @@ class _ChunkPullReader(io.RawIOBase):
         full buffer should wrap this stream in ``io.BufferedReader``.
         """
         if self.closed:
+            if not self._closed_on_error:
+                raise ValueError("I/O operation on closed file.")
             return 0
         size = len(b)
         if size == 0:
@@ -628,6 +631,8 @@ class _ChunkPullReader(io.RawIOBase):
     def read(self, size: int = -1) -> bytes:
         """Read and return up to *size* bytes, or all remaining if *size* == -1."""
         if self.closed:
+            if not self._closed_on_error:
+                raise ValueError("I/O operation on closed file.")
             return b""
         if size == 0:
             return b""
@@ -684,6 +689,7 @@ class _ChunkPullReader(io.RawIOBase):
         except BaseException:
             # Closed-on-error state: aclose the iterator, then mark done.
             self._eof = True
+            self._closed_on_error = True
             with contextlib.suppress(Exception):
                 self.close()
             raise
