@@ -11067,8 +11067,16 @@ private loop only when that buffer is empty and more bytes are still required.
 <code>seekable()</code> (returns <code>False</code>), and <code>readable()</code> (returns <code>True</code>); <code>seek</code>,
 <code>tell</code>, and <code>fileno</code> are not provided.  <code>close()</code> submits the async
 iterator's <code>aclose()</code> to the loop.
+<strong>Closed-stream reads:</strong> Calling <code>read()</code> or <code>readinto()</code> after the caller
+explicitly invokes <code>close()</code> raises <code>ValueError: I/O operation on closed file.</code>,
+matching the <code>io.IOBase</code> contract.  Streams closed as a side effect of an
+async error or adapter shutdown (see ASYNC-090) instead return <code>b""</code> / <code>0</code>
+from subsequent <code>read()</code> / <code>readinto()</code> calls.  Error-close is sticky: if a
+stream already transitioned to error-closed state, a subsequent caller-invoked
+<code>close()</code> is a no-op per <code>io.IOBase</code> and does not switch the stream to the
+user-closed (<code>ValueError</code>) contract.
 <strong>See also:</strong> <a href="../006-streaming-io/">006-streaming-io.md</a> (SIO-001, SIO-009),
-ASYNC-080.</p>
+ASYNC-080, ASYNC-090.</p>
 <h3 id="async-082-fail-fast-on-running-event-loop">ASYNC-082: Fail-fast on Running Event Loop<a class="headerlink" href="#async-082-fail-fast-on-running-event-loop" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Every blocking sync method checks <code>asyncio.get_running_loop()</code>
 at entry. If a running loop is detected on the calling thread, the method
