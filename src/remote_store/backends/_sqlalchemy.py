@@ -21,7 +21,7 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
-from remote_store._glob import pattern_to_regex
+from remote_store._glob import extract_prefix, pattern_to_regex
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
@@ -745,9 +745,12 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             query = sa.select(*cols)
 
             if self._is_sqlite:
-                # SQLite GLOB for SQL-side narrowing, then regex to enforce
-                # GLOB-014 semantics (* = [^/]*, ? = [^/]).
-                query = query.where(t.c.key.op("GLOB")(pattern))
+                # SQLite GLOB mishandles ** (zero-directory match). Use
+                # extract_prefix + LIKE for narrowing; regex does final filter.
+                prefix = extract_prefix(pattern)
+                if prefix:
+                    escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                    query = query.where(t.c.key.like(escaped + "/%", escape="\\"))
             else:
                 # Other dialects: LIKE for SQL-side narrowing.
                 like_pattern = self._glob_to_like(pattern)

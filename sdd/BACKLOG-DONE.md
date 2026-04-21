@@ -5,6 +5,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-175 — `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite**
+  Replaced the SQLite `GLOB` pre-filter with `extract_prefix` + `LIKE` narrowing
+  (option b). The old `GLOB` operator treated `**` as two independent `*`s and
+  required a literal `/` between them, dropping zero-directory matches. The new
+  path extracts the longest literal prefix and uses `key LIKE 'prefix/%'`; the
+  existing regex handles final filtering. Conformance skip removed.
+
 - [x] **BUG-172 — `_ChunkPullReader.read`/`readinto` return empty on closed stream instead of raising `ValueError`**
   Added `_closed_on_error` flag to distinguish user-close (raises `ValueError`)
   from error-close (returns `b""`/`0`, per ASYNC-090 spec). Tests updated.
