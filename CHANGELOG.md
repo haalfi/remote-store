@@ -13,13 +13,16 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `sql-blob` pending a rewrite of the SQLite GLOB pre-filter in
   `_sqlalchemy.py`. Non-SQLite dialects are unaffected.
 
-- **`SQLBlobBackend.copy(src, src)` silently destroys data** (BUG-176):
-  `copy()` lacks the `src == dst` early-return guard that `move()` has;
-  with `overwrite=True` the single row is deleted before the
-  `INSERT ... SELECT` runs. The two `self_copy` tests in
-  `TestMoveCopySelfOperation` are skipped on `sql-blob` pending a fix.
-
 ### Changed
+
+- **pyarrow 24.x mypy compatibility** (BK-154): pyarrow 24.0.0 shipped partial
+  type stubs that surfaced `attr-defined`, `name-defined`, and `no-untyped-call`
+  errors under mypy strict mode. Added `follow_imports = "skip"` for
+  `pyarrow`/`pyarrow.*` in `pyproject.toml`, restoring pre-24 behaviour where
+  all `pa.*` resolves as `Any`. Removed the now-redundant
+  `# type: ignore[import-untyped]` annotations on pyarrow imports in
+  `ext/arrow.py`, `ext/parquet.py`, `backends/_s3_pyarrow.py`, and
+  `backends/_sqlalchemy.py`.
 
 - **Dafny `MemoryBackend` spec now populates `last_modified`** (ID-152):
   `MemoryBackend.dfy:Write` returned `Option_None()` for `last_modified` by
@@ -34,6 +37,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `_LAST_MODIFIED_XFAIL` is now empty.
 
 ### Fixed
+
+- **`SQLBlobBackend.copy(src, src)` no longer silently destroys data** (BUG-176):
+  `copy()` lacked the `src == dst` early-return guard that `move()` has. With
+  `overwrite=True` the single row was deleted before the `INSERT ... SELECT`
+  ran, destroying the file; with `overwrite=False` the method incorrectly
+  raised `AlreadyExists`. Fixed by mirroring `move()`'s guard at the top of
+  `copy()`: verify source exists, then return immediately. Both
+  `test_self_copy_preserves_data` and `test_self_copy_no_overwrite_preserves_data`
+  now pass on `sql-blob`.
 
 - **`S3Backend.write` now surfaces the auto-CRC32 digest** (BUG-177):
   `write()` previously called `s3fs.info()` after the upload, which omits

@@ -215,6 +215,28 @@ ignore_missing_imports = true
 module = "remote_store.ext.dagster"
 warn_unused_ignores = false
 
+# pyarrow 24.x ships partial type stubs that are still incomplete. Skip pyarrow
+# stubs entirely to avoid attr-defined / name-defined / no-untyped-call churn as
+# the stubs evolve; this restores the pre-24 behaviour where all pa.* is Any.
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.*"]
+follow_imports = "skip"
+
+# The four modules below each carry `# type: ignore[import-untyped]` on their
+# pyarrow import lines.  pyarrow ≤23 has no stubs (the ignore is active);
+# pyarrow ≥24 ships stubs (the ignore becomes unused).  mypy's per-module
+# override is the finest scope available — there is no line-level knob.
+# Accepted tech debt: any *new* unused ignore in these modules would also be
+# silenced.  Mitigated by the small surface area of ext.arrow/parquet and
+# _s3_pyarrow, and by code-review discipline for _sqlalchemy.
+[[tool.mypy.overrides]]
+module = ["remote_store.ext.arrow", "remote_store.ext.parquet", "remote_store.backends._s3_pyarrow"]
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = "remote_store.backends._sqlalchemy"
+warn_unused_ignores = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
