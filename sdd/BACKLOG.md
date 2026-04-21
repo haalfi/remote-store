@@ -123,10 +123,14 @@ Existing items may be more verbose — trim on next touch.
   which lets backends that declare `source="basic"` escape the check even when their
   `get_file_info()` returns richer data than their `write()`.
 
-  **Test change:** add one `test_write_result_consistent_with_file_info` gated on
+  **Test change:** add one `test_write_result_rich_fields_match_file_info` gated on
   `WRITE + METADATA` only: after `write()` / `write_atomic()`, assert
   `result.etag == info.etag`, `result.digest == info.digest`, and
   `result.last_modified == info.modified_at` (when `last_modified is not None`).
+  The new test should carry a single `_RICH_FIELDS_XFAIL` escape-hatch table,
+  consolidating the two separate `_LAST_MODIFIED_XFAIL` and `_DIGEST_XFAIL` tables
+  from the removed tests (both empty today, but the wider gate makes temporary lags
+  more likely during future backend additions).
   Remove the two tests it supersedes:
   - `test_native_file_info_matches_write_result` (covers `etag`+`last_modified`,
     gated on `WRITE_RESULT_NATIVE`) — strict subset of the new test
@@ -134,6 +138,12 @@ Existing items may be more verbose — trim on next touch.
     added in PR #482) — strict subset of the new test
   Keep `test_metadata_round_trips_via_get_file_info` (WR-013 round-trip, different
   spec obligation).
+
+  **Formal layer:** `BackendContract.dfy:413-416` already encodes WR-001a correctly
+  for `WRITE_RESULT_NATIVE` backends; the comment at lines 410-412 explicitly defers
+  "absence of rich-field population" to empirical testing. No Dafny amendment is
+  needed — once violating backends are fixed to declare `WRITE_RESULT_NATIVE`, the
+  existing postcondition binds them automatically.
 
   **Backends that currently fail this test:**
   - `S3PyArrowBackend` (`_s3_pyarrow.py:243`): `write()` returns `source="basic"` with
@@ -146,9 +156,11 @@ Existing items may be more verbose — trim on next touch.
     `modified_at`. Fix: reuse the existing `stat()` result for `last_modified`, set
     `source="native"`, declare `WRITE_RESULT_NATIVE`.
   - `SFTPBackend` (`_sftp.py:367`, `418`): `write()` returns `last_modified=None`;
-    `get_file_info()` returns `modified_at` from `sftp.stat()`. Fix: call `sftp.stat()`
-    after write (extra round-trip), populate `last_modified`, declare
-    `WRITE_RESULT_NATIVE`. Cost: one extra SFTP round-trip per write.
+    `get_file_info()` returns `modified_at` from `sftp.stat()`. The write path already
+    calls `self._sftp.stat()` pre-write at `_sftp.py:346` (for the AlreadyExists
+    check). Fix: add a second `sftp.stat()` call *after* the upload — one new
+    post-write round-trip on top of the existing pre-write one — then populate
+    `last_modified` and declare `WRITE_RESULT_NATIVE`.
   - `SQLAlchemyBackend` (`_sqlalchemy.py:439-450`): `write()` gates `last_modified` on
     `user_metadata` column presence; `get_file_info()` always reads `modified_at` from
     the row when the `modified_at` column exists. Fix: decouple the `last_modified`
