@@ -5,6 +5,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-178 — s3fs lazy init raises "got multiple values for keyword argument 'config'" when `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy` are both supplied**
+  Moved the s3fs kwargs builder into `_S3Base._build_s3fs_kwargs()`. The helper pops
+  `config_kwargs` from the options dict and folds it into `client_kwargs["config"]` as a
+  `botocore.config.Config` *before* the retry-derived `Config` is applied, so
+  `aiobotocore.create_client()` only ever sees one `config=` argument. Retry-policy values
+  win on conflicts. Both `S3Backend._fs` and `S3PyArrowBackend._s3fs` now delegate to the
+  shared builder. `_S3PyArrowBackend._pa_fs` (PyArrow data path) is unaffected.
+
 - [x] **BUG-175 — `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite**
   Replaced the SQLite `GLOB` pre-filter with `extract_prefix` + `LIKE` narrowing
   (option b). The old `GLOB` operator treated `**` as two independent `*`s and

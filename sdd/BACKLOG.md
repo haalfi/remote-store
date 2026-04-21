@@ -43,61 +43,111 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-178 — s3fs lazy init raises "got multiple values for keyword argument 'config'" when `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy` are both supplied** (HIGH)
-  Affects both s3fs-based backends via two near-verbatim copies of the lazy-init body:
-  - `S3Backend._fs` (`_s3.py:307-347`) — retry block at `_s3.py:324-341`, duplicate-config
-    injection at lines 333 (`client_kwargs` acquired from `opts`) and 339/341 (assignment).
-  - `S3PyArrowBackend._s3fs` (`_s3_pyarrow.py:416-457`) — retry block at `_s3_pyarrow.py:434-451`,
-    duplicate-config injection at lines 443 and 449/451.
-
-  `client_options["config_kwargs"]` sits at the **top of `opts`**, not inside
-  `opts["client_kwargs"]`. `s3fs.S3FileSystem` converts the top-level `config_kwargs` dict into
-  a `botocore.config.Config` and passes it as `config=` to
-  `aiobotocore.session.AioSession.create_client()`. When `retry=RetryPolicy(...)` is also
-  supplied, the retry block separately assigns `opts["client_kwargs"]["config"]` — s3fs forwards
-  that too as `config=`, so `create_client()` receives the keyword twice and raises
-  `TypeError: got multiple values for keyword argument 'config'`.  The error surfaces wrapped
-  as a `RemoteStoreError` with the raw aiobotocore message.
-  The existing `existing_config.merge(retry_config)` branch (lines 338-341 in `_s3.py`;
-  448-451 in `_s3_pyarrow.py`) only handles the case where the caller supplied
-  `client_kwargs["config"]` as an already-constructed `Config` object — it does not see the
-  sibling top-level `config_kwargs` dict.
-  **Repro (caller-side, same on both backends):**
+- [ ] **BUG-175 — `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (MEDIUM)
+  `_sqlalchemy.py:734-745`: for SQLite dialects, `glob()` uses
+  `t.c.key GLOB pattern` as an SQL-side pre-filter, then applies
+  `pattern_to_regex` to the rows returned. SQLite's `GLOB` operator treats
+  `**` as two independent `*`s and `/` as a literal separator — it cannot
+  match the zero-directory case that `pattern_to_regex` and the spec
+  (018 § "``**`` matches zero or more path segments") require. Rows that
+  the regex would accept are silently dropped by the SQL filter before
+  the regex runs.
+  **Repro:**
   ```python
-  S3Backend(
-      bucket="mybucket",
-      client_options={"config_kwargs": {"connect_timeout": 10, "retries": {"max_attempts": 3, "mode": "standard"}}},
-      retry=RetryPolicy(max_attempts=3),   # ← triggers the duplicate-config path
-  )
+  b = SQLBlobBackend(url="sqlite:///:memory:")
+  b.write("gr/a.txt", b"a")
+  b.write("gr/sub/b.txt", b"b")
+  # Pattern 'gr/**/*.txt' must match both files per spec 018.
+  assert sorted(str(f.path) for f in b.glob("gr/**/*.txt")) == ["gr/a.txt", "gr/sub/b.txt"]
+  # FAILS — returns only ['gr/sub/b.txt'].
   ```
-  **Workaround:** pass retries only through one path — either keep `config_kwargs` and drop
-  `retry=`, or move all config into `client_options={"client_kwargs": {"config": botocore.config.Config(...)}}` and drop `config_kwargs`.
-  **Fix (land once on the shared base):** `_S3Base` (`_s3_base.py:74`) already declares
-  `_s3fs` as the abstract surface, and the two subclass `__init__`s set the same eight
-  inputs (`_bucket`, `_endpoint_url`, `_key`, `_secret`, `_region_name`, `_tls_ca_bundle`,
-  `_client_options`, `_retry`) — a single base-class helper can build the s3fs kwargs dict
-  for both.  In that helper, before the retry block:
-  1. `cfg_kwargs = opts.pop("config_kwargs", None)` — remove the top-level dict so s3fs does
-     not separately convert it to `config=`.
-  2. If `cfg_kwargs`, construct `caller_config = botocore.config.Config(**cfg_kwargs)` and
-     seed `opts["client_kwargs"]["config"]` with it (merging with any pre-existing
-     `client_kwargs["config"]` using `.merge()`; `Config.merge(other)` lets `other` win, so
-     the caller-supplied object wins on conflicts).
-  3. The existing retry path then merges `retry_config` on top — retry-policy values win on
-     conflicts (e.g. `retries.max_attempts`), the caller's `connect_timeout` / `read_timeout`
-     survive. This matches the docstring expectation that `retry=` overrides per-request
-     retry knobs.
-  Migrate both subclass properties to call the shared helper; the `S3Backend._fs_instance`
-  and `S3PyArrowBackend._s3fs_instance` caches can be consolidated on the base or kept local.
-  Note: `S3PyArrowBackend._pa_fs` (PyArrow data-path property) does not read
-  `self._client_options` and is unaffected.
-
+  Fix candidates: (a) drop the SQLite pre-filter when the pattern contains
+  `**` and rely on the regex alone; (b) follow the S3 `extract_prefix`
+  approach and use the longest non-wildcard prefix as a `LIKE` narrowing,
+  then regex-filter; (c) translate `**/` into a regex-equivalent SQL pattern
+  directly (no obvious SQLite equivalent). Option (b) matches the pattern
+  already used by S3/Azure glob implementations.
+  Currently skipped in the conformance suite (recursive-glob case) pending
+  a fix. Non-SQLite dialects use `LIKE` pre-filtering and are not affected.
 
 
 
 ---
 
 ## Backlog (Prioritized)
+
+- [ ] **BK-155 — Consolidate S3 + S3-PyArrow tests and specs against shared base**
+  Follow-up to BUG-178 (which lifted s3fs kwargs construction into
+  `_S3Base._build_s3fs_kwargs()`). The same duplication sits one layer up in
+  `tests/backends/test_s3.py` (1066 lines) and `test_s3_pyarrow.py` (1046
+  lines), and again in `sdd/specs/008-s3-backend.md` vs
+  `sdd/specs/011-s3-pyarrow-backend.md`. Long-term maintainability: any S3
+  object-model change currently needs three edits (two specs, two test
+  files) with silent drift risk between near-identical spec IDs.
+
+  **Test duplication — two layers:**
+  1. **Already covered by conformance (~900 lines combined).**
+     `tests/backends/conftest.py:235` already parametrizes the `backend`
+     fixture over `s3` *and* `s3-pyarrow`. Roundtrip, listing, metadata,
+     delete, glob, move/copy, `write_atomic`, `close`, error-fidelity, and
+     resolve-default contract are re-asserted in both files against a
+     per-file private fixture (`s3_backend` / `s3pa_backend`) with
+     near-identical bodies. Delete — no shared file needed. Per-test
+     conformance-coverage audit required before removal (some conformance
+     tests skip on capability gates).
+  2. **Genuinely shared S3-object-model behaviour (~220 lines → ~110).**
+     Virtual-folder semantics (no markers, vanish-when-empty),
+     construction validation, `_endpoint_url` normalization,
+     `client_options` non-mutation, shared TLS on `_S3Base`, resolve
+     `bucket`/`object_key`/`endpoint_url` contract, and the two
+     `TestS3PyArrowRetryNonDefaultParams` tests that exercise `_S3Base` via
+     `backend._s3fs`. Extract to a parametrized `test_s3_shared.py`.
+
+  **Stays backend-specific** (kept in original files):
+  - `test_s3.py` (~250 lines): `TestS3ETagAndDigest` (BUG-177 WR-012 guard),
+    permission/unavailable error-string mapping, `AWS_CA_BUNDLE` env var,
+    `unwrap(s3fs)`, `USER_METADATA` SDK passthrough.
+  - `test_s3_pyarrow.py` (~200 lines): PyArrow TLS path,
+    `TestS3PyArrowReadPath` (RFC-0003 readline chunking),
+    `TestPyArrowBinaryIOMethods` adapter unit tests, PyArrow retry debug
+    log, `unwrap(pyarrow)`.
+
+  **Spec duplication:** S3-006↔S3PA-008, S3-007↔S3PA-009, S3-008↔S3PA-010,
+  S3-009↔S3PA-011 (virtual folder); S3-010↔S3PA-013 (atomic write);
+  S3-011/012↔S3PA-016 (delete_folder); S3-013↔S3PA-015 (move);
+  S3-014↔S3PA-014 (copy); S3-015–018↔S3PA-018/019 (errors);
+  S3-019/020↔S3PA-020/021 (close/unwrap); S3-021↔S3PA-022 (client_options);
+  S3-025↔S3PA-023 (endpoint URL); S3-026↔S3PA-026 (config_kwargs + retry).
+  Open question for the picker: extract a new `S3B-NNN` shared spec that
+  both 008 and 011 reference, or slim 011 to a delta-spec that only
+  documents PyArrow-specific content (dual-library arch S3PA-006/007, the
+  PyArrow read path S3PA-012, capability exclusions).
+
+  **Expected saving:** ~1000 lines of test code plus shared-base spec
+  prose; eliminates the need to keep paired spec IDs hand-synchronized.
+
+  **Risks / decisions for the picker:**
+  - `@pytest.mark.spec(...)` on parametrized tests can only carry one ID —
+    use `pytest.param(marks=pytest.mark.spec("..."))` per param to preserve
+    bidirectional traceability, or fold the paired IDs in the same commit.
+  - Category-1 deletion needs per-test verification that conformance
+    actually exercises the same assertion on both `s3` and `s3-pyarrow`
+    paths (capability-gate skips).
+  - Test-ID baselines change (`test_is_folder_simple[s3_backend-…]` →
+    `[s3-…]`); any pinned CI test-name strings need updating.
+  - Post-BUG-178, both backends expose the shared filesystem attribute as
+    `_s3fs` via `_S3Base`; the shared file should use that canonical name
+    (existing `test_s3.py` still accesses `backend._fs` in places).
+
+  **Ripple checks** (per `sdd/CLAUDE-REFERENCE.md`):
+  `tests/backends/test_s3.py`, `test_s3_pyarrow.py`, `test_conformance.py`,
+  `test_conformance_extended.py` (coverage-parity audit);
+  `sdd/specs/008-s3-backend.md`, `sdd/specs/011-s3-pyarrow-backend.md`
+  (shared spec extraction or 011 slim-down); `sdd/traceability.md` if spec
+  IDs move or merge; CHANGELOG under Changed; this file.
+
+  Related: BUG-178 (code-layer dedup — this item is the test-and-spec
+  follow-up).
 
 - [ ] **BK-153 — Address backend-specifics visibility findings from audit-009**
   Follow-up to [audit-009](audits/audit-009-backend-specifics-visibility.md)

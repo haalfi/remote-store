@@ -179,3 +179,7 @@ S3PyArrowBackend(
 - URLs with an existing `http://` or `https://` scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.
 
 **Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.
+
+### S3PA-026: config_kwargs and RetryPolicy Config Merge
+
+**Invariant:** Same as S3-026. `config_kwargs` and `retry=RetryPolicy(...)` do not collide on `aiobotocore.create_client()`. Applies to the s3fs control path only; the PyArrow data path (`_pa_fs`) is unaffected.

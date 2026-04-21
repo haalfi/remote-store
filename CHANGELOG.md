@@ -8,6 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- BUG-178: fix s3fs lazy init raising `got multiple values for keyword argument 'config'` when `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy(...)` are both supplied
 - BUG-175: `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite
 - BUG-172: `_ChunkPullReader.read`/`readinto` return empty on closed stream instead of raising `ValueError`
 
