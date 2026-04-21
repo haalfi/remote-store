@@ -60,9 +60,12 @@ def s3pa_backend(moto_server: str) -> Iterator[Backend]:
     backend.close()
 
 
-# region: Construction (S3PA-001 through S3PA-005)
+# region: Construction (S3PA-002, S3PA-003)
 class TestS3PyArrowConstruction:
-    """S3PA-001 through S3PA-005: construction and identity."""
+    """S3PA-002, S3PA-003: backend-identity strings that do not parametrize.
+    Construction validation, lazy connection, endpoint-URL normalization,
+    credentials-optional, and client_options are covered in
+    tests/backends/test_s3_shared.py alongside the S3 equivalents."""
 
     @pytest.mark.spec("S3PA-002")
     def test_name_is_s3_pyarrow(self, s3pa_backend: Backend) -> None:
@@ -79,130 +82,11 @@ class TestS3PyArrowConstruction:
             else:
                 assert caps.supports(cap), f"Missing capability: {cap.value}"
 
-    @pytest.mark.spec("S3PA-004")
-    def test_lazy_connection(self) -> None:
-        """Construction must not make network calls."""
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        backend = S3PyArrowBackend(
-            bucket="any-bucket",
-            endpoint_url="http://localhost:99999",
-            key="k",
-            secret="s",
-        )
-        assert backend.name == "s3-pyarrow"
-
-    @pytest.mark.spec("S3PA-005")
-    @pytest.mark.parametrize(
-        "bucket",
-        [
-            pytest.param("", id="empty"),
-            pytest.param("   ", id="whitespace"),
-        ],
-    )
-    def test_invalid_bucket_raises(self, bucket: str) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        with pytest.raises(ValueError, match="bucket"):
-            S3PyArrowBackend(bucket=bucket)
-
-    @pytest.mark.spec("S3PA-023")
-    @pytest.mark.parametrize(
-        ("raw", "expected"),
-        [
-            pytest.param(None, None, id="none"),
-            pytest.param("", None, id="empty"),
-            pytest.param("   ", None, id="whitespace"),
-            pytest.param("localhost:9000", "https://localhost:9000", id="bare-host-port"),
-            pytest.param("my-host.example.com:443", "https://my-host.example.com:443", id="fqdn-port"),
-            pytest.param("http://localhost:9000", "http://localhost:9000", id="http-scheme"),
-            pytest.param("https://s3.amazonaws.com", "https://s3.amazonaws.com", id="https-scheme"),
-            pytest.param("  http://x:9000  ", "http://x:9000", id="whitespace-stripped"),
-            pytest.param("HTTP://host:9000", "HTTP://host:9000", id="uppercase-http"),
-            pytest.param("HTTPS://host:9000", "HTTPS://host:9000", id="uppercase-https"),
-        ],
-    )
-    def test_endpoint_url_normalization(self, raw: str | None, expected: str | None) -> None:
-        """Bare host:port is auto-prefixed with https://."""
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        backend = S3PyArrowBackend(bucket="b", key="k", secret="s", endpoint_url=raw)
-        assert backend._endpoint_url == expected
-
-    @pytest.mark.spec("S3PA-022")
-    def test_client_options_accepted(self) -> None:
-        """client_options are accepted without error at construction."""
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        backend = S3PyArrowBackend(
-            bucket="any-bucket",
-            key="k",
-            secret="s",
-            client_options={"connect_timeout": 5, "read_timeout": 10},
-        )
-        assert backend.name == "s3-pyarrow"
-
-    @pytest.mark.spec("S3PA-022")
-    def test_client_options_not_mutated(self) -> None:
-        """client_options nested dicts must not be mutated by lazy init."""
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        opts: dict = {"client_kwargs": {"timeout": 30}}
-        original_inner = dict(opts["client_kwargs"])  # snapshot
-        backend = S3PyArrowBackend(
-            bucket="any-bucket",
-            key="k",
-            secret="s",
-            region_name="us-east-1",
-            client_options=opts,
-        )
-        with patch("s3fs.S3FileSystem"):
-            _ = backend._s3fs
-        assert opts["client_kwargs"] == original_inner
-
-    @pytest.mark.spec("S3PA-001")
-    def test_credentials_optional(self) -> None:
-        """Backend can be constructed without explicit credentials."""
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        backend = S3PyArrowBackend(bucket="any-bucket")
-        assert backend.name == "s3-pyarrow"
-
 
 class TestS3PyArrowTlsCaBundle:
-    """TLS-002, TLS-004, TLS-006, TLS-007: tls_ca_bundle on S3PyArrowBackend."""
-
-    @pytest.mark.spec("TLS-002")
-    def test_tls_ca_bundle_accepted(self, tmp_path: Path) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        cert = tmp_path / "ca.pem"
-        cert.write_text("fake cert")
-        backend = S3PyArrowBackend(bucket="b", key="k", secret="s", tls_ca_bundle=str(cert))
-        assert backend._tls_ca_bundle == str(cert)
-
-    @pytest.mark.spec("TLS-004")
-    def test_tls_ca_bundle_missing_file_raises(self) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        with pytest.raises(ValueError, match="does not exist or is not a file"):
-            S3PyArrowBackend(bucket="b", key="k", secret="s", tls_ca_bundle="/no/such/file.pem")
-
-    @pytest.mark.spec("TLS-004")
-    def test_tls_ca_bundle_directory_raises(self, tmp_path: Path) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        with pytest.raises(ValueError, match="does not exist or is not a file"):
-            S3PyArrowBackend(bucket="b", key="k", secret="s", tls_ca_bundle=str(tmp_path))
-
-    @pytest.mark.spec("TLS-002")
-    def test_tls_ca_bundle_none_default(self) -> None:
-        from remote_store.backends._s3_base import _S3_CA_ENV_VARS
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        with patch.dict("os.environ", {v: "" for v in _S3_CA_ENV_VARS}, clear=False):
-            backend = S3PyArrowBackend(bucket="b", key="k", secret="s")
-        assert backend._tls_ca_bundle is None
+    """TLS-006: pyarrow-specific tls_ca_file_path wiring. The shared s3fs
+    control-path (accepted/missing/directory/default/verify) lives in
+    test_s3_shared.py."""
 
     @pytest.mark.spec("TLS-006")
     def test_tls_ca_bundle_sets_tls_ca_file_path_on_pyarrow(self, tmp_path: Path) -> None:
@@ -248,87 +132,6 @@ class TestS3PyArrowTlsCaBundle:
             # Confirm setdefault was used (value == our bundle, since nothing
             # else provides tls_ca_file_path in the current code path)
             assert call_kwargs["tls_ca_file_path"] == str(cert)
-
-    @pytest.mark.spec("TLS-007")
-    def test_tls_ca_bundle_sets_verify_on_s3fs(self, tmp_path: Path) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        cert = tmp_path / "ca.pem"
-        cert.write_text("fake cert")
-        backend = S3PyArrowBackend(bucket="b", key="k", secret="s", tls_ca_bundle=str(cert))
-        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
-            _ = backend._s3fs
-            call_kwargs = mock_s3fs_cls.call_args[1]
-            assert call_kwargs["client_kwargs"]["verify"] == str(cert)
-
-    @pytest.mark.spec("TLS-007")
-    def test_tls_ca_bundle_does_not_override_explicit_verify(self, tmp_path: Path) -> None:
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        cert = tmp_path / "ca.pem"
-        cert.write_text("fake cert")
-        backend = S3PyArrowBackend(
-            bucket="b",
-            key="k",
-            secret="s",
-            tls_ca_bundle=str(cert),
-            client_options={"client_kwargs": {"verify": "/other/ca.pem"}},
-        )
-        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
-            _ = backend._s3fs
-            call_kwargs = mock_s3fs_cls.call_args[1]
-            assert call_kwargs["client_kwargs"]["verify"] == "/other/ca.pem"
-
-
-# endregion
-
-
-# region: S3 Object Model (S3PA-008 through S3PA-011)
-class TestS3PyArrowFolderSemantics:
-    """S3PA-008 through S3PA-011: virtual folder behavior."""
-
-    @pytest.mark.spec("S3PA-009")
-    @pytest.mark.parametrize(
-        ("setup_path", "folder", "expected"),
-        [
-            pytest.param("data/file.txt", "data", True, id="with_objects"),
-            pytest.param(None, "nonexistent", False, id="empty_prefix"),
-        ],
-    )
-    def test_is_folder_simple(self, s3pa_backend: Backend, setup_path: str | None, folder: str, expected: bool) -> None:
-        if setup_path:
-            s3pa_backend.write(setup_path, b"x")
-        assert s3pa_backend.is_folder(folder) is expected
-
-    @pytest.mark.spec("S3PA-009")
-    def test_is_folder_nested(self, s3pa_backend: Backend) -> None:
-        s3pa_backend.write("a/b/c.txt", b"x")
-        assert s3pa_backend.is_folder("a") is True
-        assert s3pa_backend.is_folder("a/b") is True
-        assert s3pa_backend.is_folder("a/b/c") is False
-
-    @pytest.mark.spec("S3PA-010")
-    def test_write_does_not_create_folder_markers(self, s3pa_backend: Backend) -> None:
-        """Writing a nested file must not create folder marker objects."""
-        s3pa_backend.write("x/y/z.txt", b"data")
-        assert s3pa_backend.is_file("x/y/z.txt") is True
-        assert s3pa_backend.is_file("x/") is False
-        assert s3pa_backend.is_file("x/y/") is False
-
-    @pytest.mark.spec("S3PA-011")
-    def test_folder_vanishes_when_empty(self, s3pa_backend: Backend) -> None:
-        """Deleting last file under a prefix makes folder disappear."""
-        s3pa_backend.write("ephemeral/only.txt", b"x")
-        assert s3pa_backend.is_folder("ephemeral") is True
-        s3pa_backend.delete("ephemeral/only.txt")
-        assert s3pa_backend.is_folder("ephemeral") is False
-
-    @pytest.mark.spec("S3PA-011")
-    def test_folder_persists_with_remaining_files(self, s3pa_backend: Backend) -> None:
-        s3pa_backend.write("keep/a.txt", b"a")
-        s3pa_backend.write("keep/b.txt", b"b")
-        s3pa_backend.delete("keep/a.txt")
-        assert s3pa_backend.is_folder("keep") is True
 
 
 # endregion
@@ -538,30 +341,6 @@ class TestS3PyArrowMetadata:
 # endregion
 
 
-# region: Resolution (RES-052)
-class TestS3PyArrowResolve:
-    """RES-052: S3PyArrowBackend.resolve() returns kind='s3-pyarrow' with bucket, object_key."""
-
-    @pytest.mark.spec("RES-052")
-    def test_details_has_bucket(self, s3pa_backend: Backend) -> None:
-        plan = s3pa_backend.resolve("file.txt")
-        assert "bucket" in plan.details
-
-    @pytest.mark.spec("RES-052")
-    def test_details_has_object_key(self, s3pa_backend: Backend) -> None:
-        plan = s3pa_backend.resolve("dir/file.txt")
-        assert "object_key" in plan.details
-        assert plan.details["object_key"] == "dir/file.txt"
-
-    @pytest.mark.spec("RES-052")
-    def test_details_has_endpoint_url(self, s3pa_backend: Backend) -> None:
-        plan = s3pa_backend.resolve("file.txt")
-        assert "endpoint_url" in plan.details
-
-
-# endregion
-
-
 # region: _PyArrowBinaryIO unit tests (lines 54, 57, 98-99, 102)
 
 
@@ -618,7 +397,9 @@ class TestPyArrowBinaryIOMethods:
 
 
 class TestS3PyArrowRetryNonDefaultParams:
-    """Non-default RetryPolicy triggers debug log and passes max_attempts only (lines 380, 410-426)."""
+    """S3PA-026: non-default RetryPolicy on the PyArrow data path triggers a
+    debug log and passes only ``max_attempts``. The parallel s3fs-control-path
+    assertions (S3-026 + S3PA-026 paired) live in test_s3_shared.py."""
 
     def test_pa_fs_non_default_retry_triggers_debug_log(self, caplog: pytest.LogCaptureFixture) -> None:
         import logging
@@ -642,57 +423,6 @@ class TestS3PyArrowRetryNonDefaultParams:
             _ = backend._pa_fs
             assert mock_retry_cls.call_args.kwargs == {"max_attempts": 5}
         assert any("only max_attempts is used" in rec.message for rec in caplog.records)
-
-    def test_s3fs_non_default_retry_triggers_debug_log(self, caplog: pytest.LogCaptureFixture) -> None:
-        import logging
-        from unittest.mock import MagicMock, patch
-
-        from remote_store._config import RetryPolicy
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        backend = S3PyArrowBackend(
-            bucket="test-bucket",
-            retry=RetryPolicy(max_attempts=3, backoff_base=2.0),  # non-default
-        )
-        import s3fs as _s3fs
-
-        mock_fs = MagicMock(spec=_s3fs.S3FileSystem)
-        with (
-            caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_base"),
-            patch("s3fs.S3FileSystem", return_value=mock_fs),
-            patch("botocore.config.Config") as mock_config_cls,
-        ):
-            mock_config_cls.return_value.merge.return_value = mock_config_cls.return_value
-            _ = backend._s3fs
-            assert mock_config_cls.call_args.kwargs == {
-                "retries": {"max_attempts": 3, "mode": "standard"},
-            }
-        assert any("only max_attempts is used" in rec.message for rec in caplog.records)
-
-    def test_s3fs_retry_with_existing_config_merges(self) -> None:
-        """When client_options already has a config, it is merged with retry config."""
-        from unittest.mock import patch
-
-        import botocore.config
-
-        from remote_store._config import RetryPolicy
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        existing_config = botocore.config.Config(max_pool_connections=20)
-        backend = S3PyArrowBackend(
-            bucket="test-bucket",
-            client_options={"client_kwargs": {"config": existing_config}},
-            retry=RetryPolicy(max_attempts=2),
-        )
-        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
-            _ = backend._s3fs
-        # Verify s3fs was called and inspect the merged config passed through client_kwargs
-        assert mock_s3fs_cls.call_count == 1
-        merged_config = mock_s3fs_cls.call_args.kwargs["client_kwargs"]["config"]
-        assert isinstance(merged_config, botocore.config.Config)
-        # Merged config preserves the original max_pool_connections and adds retries
-        assert merged_config.max_pool_connections == 20
-        assert merged_config.retries == {"max_attempts": 2, "mode": "standard"}
 
 
 # endregion
