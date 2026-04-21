@@ -389,6 +389,28 @@ class TestS3SharedFolderSemantics:
 
 
 # ---------------------------------------------------------------------------
+# Lifecycle (S3-019 ↔ S3PA-020): close() is idempotent. The "callable once"
+# variant is covered by conformance; the second-close behaviour is not.
+# ---------------------------------------------------------------------------
+
+
+_LIVE_PARAMS_CLOSE = [
+    pytest.param(S3_CLS, id="s3", marks=pytest.mark.spec("S3-019")),
+    pytest.param(S3PA_CLS, id="s3-pyarrow", marks=pytest.mark.spec("S3PA-020")),
+]
+
+
+class TestS3SharedLifecycle:
+    """Second close() must not raise."""
+
+    @pytest.mark.parametrize("s3_any_backend", _LIVE_PARAMS_CLOSE, indirect=True)
+    def test_close_idempotent(self, s3_any_backend: Backend) -> None:
+        s3_any_backend.close()
+        result = s3_any_backend.close()
+        assert result is None
+
+
+# ---------------------------------------------------------------------------
 # Resolve details (RES-051 ↔ RES-052)
 # ---------------------------------------------------------------------------
 

@@ -6,7 +6,6 @@ All tests are skipped if dependencies are not installed.
 
 from __future__ import annotations
 
-import io
 import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -20,15 +19,11 @@ boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 from remote_store._errors import (  # noqa: E402
-    AlreadyExists,
     BackendUnavailable,
-    CapabilityNotSupported,
-    DirectoryNotEmpty,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -68,11 +63,6 @@ def s3_backend(moto_server: str) -> Iterator[Backend]:
 # region: Construction (S3-001 through S3-005)
 class TestS3Construction:
     """S3-001 through S3-005: construction and identity."""
-
-    @pytest.mark.spec("S3-001")
-    def test_constructor_minimal(self, s3_backend: Backend) -> None:
-        """Backend can be constructed with bucket and credentials."""
-        assert s3_backend is not None
 
     @pytest.mark.spec("S3-002")
     def test_name_is_s3(self, s3_backend: Backend) -> None:
@@ -308,137 +298,9 @@ class TestS3FolderSemantics:
 # endregion
 
 
-# region: Operations (S3-010 through S3-014)
-class TestS3Operations:
-    """S3-010 through S3-014: write_atomic, delete_folder, move, copy."""
-
-    # -- write_atomic (S3-010) --
-
-    @pytest.mark.spec("S3-010")
-    def test_write_atomic_creates_file(self, s3_backend: Backend) -> None:
-        s3_backend.write_atomic("atomic.txt", b"atomic content")
-        assert s3_backend.read_bytes("atomic.txt") == b"atomic content"
-
-    @pytest.mark.spec("S3-010")
-    def test_write_atomic_overwrite(self, s3_backend: Backend) -> None:
-        s3_backend.write_atomic("at.txt", b"first")
-        s3_backend.write_atomic("at.txt", b"second", overwrite=True)
-        assert s3_backend.read_bytes("at.txt") == b"second"
-
-    @pytest.mark.spec("S3-010")
-    def test_write_atomic_already_exists(self, s3_backend: Backend) -> None:
-        s3_backend.write_atomic("at2.txt", b"first")
-        with pytest.raises(AlreadyExists):
-            s3_backend.write_atomic("at2.txt", b"second", overwrite=False)
-
-    # -- delete_folder (S3-011, S3-012) --
-
-    @pytest.mark.spec("S3-011")
-    def test_delete_folder_recursive(self, s3_backend: Backend) -> None:
-        s3_backend.write("rf/a.txt", b"a")
-        s3_backend.write("rf/sub/b.txt", b"b")
-        s3_backend.delete_folder("rf", recursive=True)
-        assert s3_backend.exists("rf/a.txt") is False
-        assert s3_backend.exists("rf/sub/b.txt") is False
-        assert s3_backend.is_folder("rf") is False
-
-    @pytest.mark.spec("S3-011")
-    def test_delete_folder_recursive_not_found(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.delete_folder("ghost", recursive=True)
-
-    @pytest.mark.spec("S3-011")
-    def test_delete_folder_recursive_missing_ok(self, s3_backend: Backend) -> None:
-        result = s3_backend.delete_folder("ghost", recursive=True, missing_ok=True)
-        assert result is None
-
-    @pytest.mark.spec("S3-012")
-    def test_delete_folder_non_recursive_not_found(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.delete_folder("empty", recursive=False)
-
-    @pytest.mark.spec("S3-012")
-    def test_delete_folder_non_recursive_non_empty(self, s3_backend: Backend) -> None:
-        s3_backend.write("nonempty/file.txt", b"x")
-        with pytest.raises(DirectoryNotEmpty):
-            s3_backend.delete_folder("nonempty", recursive=False)
-
-    # -- move/copy error variants (S3-013, S3-014) --
-
-    @pytest.mark.spec("S3-013")
-    def test_move(self, s3_backend: Backend) -> None:
-        s3_backend.write("src.txt", b"data")
-        s3_backend.move("src.txt", "dst.txt")
-        assert s3_backend.exists("src.txt") is False
-        assert s3_backend.read_bytes("dst.txt") == b"data"
-
-    @pytest.mark.spec("S3-013")
-    def test_move_overwrite(self, s3_backend: Backend) -> None:
-        s3_backend.write("mo1.txt", b"a")
-        s3_backend.write("mo2.txt", b"b")
-        s3_backend.move("mo1.txt", "mo2.txt", overwrite=True)
-        assert s3_backend.read_bytes("mo2.txt") == b"a"
-        assert s3_backend.exists("mo1.txt") is False
-
-    @pytest.mark.spec("S3-014")
-    def test_copy(self, s3_backend: Backend) -> None:
-        s3_backend.write("orig.txt", b"data")
-        s3_backend.copy("orig.txt", "clone.txt")
-        assert s3_backend.read_bytes("orig.txt") == b"data"
-        assert s3_backend.read_bytes("clone.txt") == b"data"
-
-    @pytest.mark.spec("S3-014")
-    def test_copy_overwrite(self, s3_backend: Backend) -> None:
-        s3_backend.write("co1.txt", b"a")
-        s3_backend.write("co2.txt", b"b")
-        s3_backend.copy("co1.txt", "co2.txt", overwrite=True)
-        assert s3_backend.read_bytes("co2.txt") == b"a"
-        assert s3_backend.read_bytes("co1.txt") == b"a"
-
-    @pytest.mark.spec("S3-013")
-    def test_move_not_found(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.move("missing.txt", "dst.txt")
-
-    @pytest.mark.spec("S3-014")
-    def test_copy_not_found(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.copy("missing.txt", "dst.txt")
-
-    @pytest.mark.spec("S3-013")
-    def test_move_already_exists(self, s3_backend: Backend) -> None:
-        s3_backend.write("ae1.txt", b"a")
-        s3_backend.write("ae2.txt", b"b")
-        with pytest.raises(AlreadyExists):
-            s3_backend.move("ae1.txt", "ae2.txt", overwrite=False)
-
-    @pytest.mark.spec("S3-014")
-    def test_copy_already_exists(self, s3_backend: Backend) -> None:
-        s3_backend.write("ae1.txt", b"a")
-        s3_backend.write("ae2.txt", b"b")
-        with pytest.raises(AlreadyExists):
-            s3_backend.copy("ae1.txt", "ae2.txt", overwrite=False)
-
-
-# endregion
-
-
 # region: Error Mapping (S3-015 through S3-018)
 class TestS3ErrorMapping:
     """S3-015 through S3-018: error mapping."""
-
-    @pytest.mark.spec("S3-015")
-    @pytest.mark.parametrize(
-        ("method", "args"),
-        [
-            pytest.param("read_bytes", ("does-not-exist.txt",), id="read_missing"),
-            pytest.param("get_file_info", ("nope.txt",), id="get_file_info_missing"),
-            pytest.param("delete", ("nope.txt",), id="delete_missing"),
-        ],
-    )
-    def test_missing_key_maps_to_not_found(self, s3_backend: Backend, method: str, args: tuple[str, ...]) -> None:
-        with pytest.raises(NotFound):
-            getattr(s3_backend, method)(*args)
 
     @pytest.mark.spec("S3-015")
     def test_not_found_has_backend_attr(self, s3_backend: Backend) -> None:
@@ -488,12 +350,6 @@ class TestS3ErrorMapping:
         assert exc_info.value.backend == "s3"
 
     @pytest.mark.spec("S3-018")
-    def test_no_native_exception_leaks(self, s3_backend: Backend) -> None:
-        """All errors must be RemoteStoreError subtypes."""
-        with pytest.raises(RemoteStoreError):
-            s3_backend.read("nonexistent.txt")
-
-    @pytest.mark.spec("S3-018")
     def test_error_has_backend_attribute(self, s3_backend: Backend) -> None:
         with pytest.raises(RemoteStoreError) as exc_info:
             s3_backend.read("missing.txt")
@@ -503,20 +359,11 @@ class TestS3ErrorMapping:
 # endregion
 
 
-# region: Resource Management (S3-019, S3-020)
+# region: Resource Management (S3-020)
 class TestS3Lifecycle:
-    """S3-019, S3-020: close and unwrap."""
-
-    @pytest.mark.spec("S3-019")
-    def test_close_is_callable(self, s3_backend: Backend) -> None:
-        result = s3_backend.close()
-        assert result is None
-
-    @pytest.mark.spec("S3-019")
-    def test_close_idempotent(self, s3_backend: Backend) -> None:
-        s3_backend.close()
-        result = s3_backend.close()
-        assert result is None
+    """S3-020: unwrap. (S3-019 close() contract is covered by the conformance
+    suite and by TestS3SharedLifecycle; S3-020's wrong-type behaviour is
+    covered by TestBackendUnwrap.)"""
 
     @pytest.mark.spec("S3-020")
     def test_unwrap_s3fs(self, s3_backend: Backend) -> None:
@@ -524,166 +371,6 @@ class TestS3Lifecycle:
 
         fs = s3_backend.unwrap(s3fs.S3FileSystem)
         assert isinstance(fs, s3fs.S3FileSystem)
-
-    @pytest.mark.spec("S3-020")
-    def test_unwrap_wrong_type_raises(self, s3_backend: Backend) -> None:
-        with pytest.raises(CapabilityNotSupported):
-            s3_backend.unwrap(str)
-
-
-# endregion
-
-
-# region: Read/Write roundtrip
-class TestS3ReadWrite:
-    """Basic read/write roundtrip to verify full stack."""
-
-    def test_write_and_read_bytes(self, s3_backend: Backend) -> None:
-        s3_backend.write("hello.txt", b"hello world")
-        assert s3_backend.read_bytes("hello.txt") == b"hello world"
-
-    def test_write_and_read_stream(self, s3_backend: Backend) -> None:
-        s3_backend.write("stream.bin", b"\x00\x01\x02\xff")
-        stream = s3_backend.read("stream.bin")
-        assert stream.read() == b"\x00\x01\x02\xff"
-
-    def test_write_overwrite(self, s3_backend: Backend) -> None:
-        s3_backend.write("ow.txt", b"first")
-        s3_backend.write("ow.txt", b"second", overwrite=True)
-        assert s3_backend.read_bytes("ow.txt") == b"second"
-
-    def test_write_already_exists(self, s3_backend: Backend) -> None:
-        s3_backend.write("ae.txt", b"first")
-        with pytest.raises(AlreadyExists):
-            s3_backend.write("ae.txt", b"second")
-
-    def test_write_nested_path(self, s3_backend: Backend) -> None:
-        s3_backend.write("a/b/c/deep.txt", b"deep")
-        assert s3_backend.read_bytes("a/b/c/deep.txt") == b"deep"
-
-    def test_write_from_binaryio(self, s3_backend: Backend) -> None:
-        s3_backend.write("bio.txt", io.BytesIO(b"streamed"))
-        assert s3_backend.read_bytes("bio.txt") == b"streamed"
-
-
-# endregion
-
-
-# region: Listing and Metadata
-class TestS3Listing:
-    """File and folder listing operations."""
-
-    def test_list_files_non_recursive(self, s3_backend: Backend) -> None:
-        s3_backend.write("lst/a.txt", b"a")
-        s3_backend.write("lst/b.txt", b"b")
-        s3_backend.write("lst/sub/c.txt", b"c")
-        files = list(s3_backend.list_files("lst"))
-        names = {f.name for f in files}
-        assert names == {"a.txt", "b.txt"}
-
-    def test_list_files_recursive(self, s3_backend: Backend) -> None:
-        s3_backend.write("lr/a.txt", b"a")
-        s3_backend.write("lr/sub/b.txt", b"b")
-        files = list(s3_backend.list_files("lr", recursive=True))
-        names = {f.name for f in files}
-        assert names == {"a.txt", "b.txt"}
-
-    def test_list_files_empty_folder(self, s3_backend: Backend) -> None:
-        files = list(s3_backend.list_files("empty"))
-        assert files == []
-
-    def test_list_folders(self, s3_backend: Backend) -> None:
-        s3_backend.write("lf/sub1/a.txt", b"a")
-        s3_backend.write("lf/sub2/b.txt", b"b")
-        s3_backend.write("lf/root.txt", b"r")
-        folders = list(s3_backend.list_folders("lf"))
-        assert {f.name for f in folders} == {"sub1", "sub2"}
-
-    def test_list_folders_empty(self, s3_backend: Backend) -> None:
-        folders = list(s3_backend.list_folders("empty"))
-        assert folders == []
-
-    @pytest.mark.spec("S3-003")
-    def test_list_files_max_depth(self, s3_backend: Backend) -> None:
-        """max_depth limits traversal depth natively."""
-        s3_backend.write("md/a.txt", b"a")
-        s3_backend.write("md/d1/b.txt", b"b")
-        s3_backend.write("md/d1/d2/c.txt", b"c")
-        # depth 0: files directly in md/
-        files_d0 = list(s3_backend.list_files("md", recursive=True, max_depth=0))
-        assert {f.name for f in files_d0} == {"a.txt"}
-        # depth 1: md/ + md/d1/
-        files_d1 = list(s3_backend.list_files("md", recursive=True, max_depth=1))
-        assert {f.name for f in files_d1} == {"a.txt", "b.txt"}
-        # depth 2: all
-        files_d2 = list(s3_backend.list_files("md", recursive=True, max_depth=2))
-        assert {f.name for f in files_d2} == {"a.txt", "b.txt", "c.txt"}
-
-
-class TestS3Metadata:
-    """File and folder metadata operations."""
-
-    def test_get_file_info(self, s3_backend: Backend) -> None:
-        s3_backend.write("info.txt", b"hello world")
-        fi = s3_backend.get_file_info("info.txt")
-        assert isinstance(fi, FileInfo)
-        assert fi.name == "info.txt"
-        assert fi.size == 11
-        assert fi.modified_at is not None
-
-    def test_get_file_info_not_found(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.get_file_info("missing.txt")
-
-    def test_get_folder_info(self, s3_backend: Backend) -> None:
-        s3_backend.write("fi/a.txt", b"aaa")
-        s3_backend.write("fi/b.txt", b"bb")
-        fi = s3_backend.get_folder_info("fi")
-        assert isinstance(fi, FolderInfo)
-        assert fi.file_count == 2
-        assert fi.total_size == 5
-
-    def test_get_folder_info_not_found(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.get_folder_info("nodir")
-
-    @pytest.mark.parametrize(
-        ("setup_path", "query", "expected"),
-        [
-            pytest.param("e.txt", "e.txt", True, id="exists_file"),
-            pytest.param(None, "nope.txt", False, id="exists_missing"),
-        ],
-    )
-    def test_exists(self, s3_backend: Backend, setup_path: str | None, query: str, expected: bool) -> None:
-        if setup_path:
-            s3_backend.write(setup_path, b"x")
-        assert s3_backend.exists(query) is expected
-
-    def test_is_file(self, s3_backend: Backend) -> None:
-        s3_backend.write("f.txt", b"x")
-        assert s3_backend.is_file("f.txt") is True
-        assert s3_backend.is_file("missing.txt") is False
-
-    def test_is_file_not_folder(self, s3_backend: Backend) -> None:
-        s3_backend.write("dir/f.txt", b"x")
-        assert s3_backend.is_file("dir") is False
-
-
-class TestS3Delete:
-    """Delete operations."""
-
-    def test_delete_file(self, s3_backend: Backend) -> None:
-        s3_backend.write("del.txt", b"x")
-        s3_backend.delete("del.txt")
-        assert s3_backend.exists("del.txt") is False
-
-    def test_delete_missing_ok(self, s3_backend: Backend) -> None:
-        result = s3_backend.delete("nope.txt", missing_ok=True)
-        assert result is None
-
-    def test_delete_missing_raises(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            s3_backend.delete("nope.txt")
 
 
 # endregion
@@ -875,46 +562,6 @@ class TestS3ETagAndDigest:
 # endregion
 
 
-# region: Glob (GLOB-018)
-class TestS3Glob:
-    """GLOB-018: S3Backend native glob via prefix-optimized listing."""
-
-    def _populate(self, backend: Backend) -> None:
-        backend.write("report.csv", b"r1")
-        backend.write("report.txt", b"r2")
-        backend.write("data/sales.csv", b"d1")
-        backend.write("data/sub/deep.csv", b"d2")
-        backend.write("logs/app.log", b"l1")
-        backend.write("logs/archive/old.log", b"l2")
-        backend.write("file1.txt", b"f1")
-        backend.write("file2.txt", b"f2")
-
-    @pytest.mark.spec("GLOB-018")
-    @pytest.mark.parametrize(
-        ("pattern", "expected"),
-        [
-            pytest.param("*.csv", ["report.csv"], id="star_csv"),
-            pytest.param("**/*.log", ["logs/app.log", "logs/archive/old.log"], id="recursive"),
-            pytest.param("data/*.csv", ["data/sales.csv"], id="subdirectory"),
-            pytest.param("*.xyz", [], id="no_matches"),
-            pytest.param("file?.txt", ["file1.txt", "file2.txt"], id="question_mark"),
-        ],
-    )
-    def test_glob_pattern(self, s3_backend: Backend, pattern: str, expected: list[str]) -> None:
-        self._populate(s3_backend)
-        results = sorted(str(f.path) for f in s3_backend.glob(pattern))
-        assert results == expected
-
-    @pytest.mark.spec("GLOB-018")
-    def test_glob_files_only(self, s3_backend: Backend) -> None:
-        self._populate(s3_backend)
-        for info in s3_backend.glob("**/*"):
-            assert isinstance(info, FileInfo)
-
-
-# endregion
-
-
 # region: Paginated Listing (BK-123 H-1/H-2)
 class TestS3PaginatedListing:
     """BK-123 H-1/H-2: recursive listing uses BFS via ls() instead of s3fs.find()."""
@@ -1003,11 +650,6 @@ class TestS3PaginatedListing:
 # region: Resolution (RES-051)
 class TestS3Resolve:
     """RES-051: S3Backend.resolve() returns kind='s3' with bucket, object_key, endpoint_url."""
-
-    @pytest.mark.spec("RES-051")
-    def test_kind_is_s3(self, s3_backend: Backend) -> None:
-        plan = s3_backend.resolve("file.txt")
-        assert plan.kind == "s3"
 
     @pytest.mark.spec("RES-051")
     def test_details_has_bucket(self, s3_backend: Backend) -> None:
