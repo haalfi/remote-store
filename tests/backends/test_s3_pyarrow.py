@@ -1006,7 +1006,7 @@ class TestS3PyArrowRetryNonDefaultParams:
 
         mock_fs = MagicMock(spec=_s3fs.S3FileSystem)
         with (
-            caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_pyarrow"),
+            caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_base"),
             patch("s3fs.S3FileSystem", return_value=mock_fs),
             patch("botocore.config.Config") as mock_config_cls,
         ):

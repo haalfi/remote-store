@@ -307,43 +307,9 @@ class S3Backend(_S3Base):
     @property
     def _fs(self) -> Any:
         if self._fs_instance is None:
-            import copy
-
             import s3fs
 
-            opts: dict[str, Any] = copy.deepcopy(self._client_options)
-            if self._endpoint_url is not None:
-                opts["endpoint_url"] = self._endpoint_url
-            if self._key is not None:
-                opts["key"] = self._key
-            if self._secret is not None:
-                opts["secret"] = self._secret
-            if self._region_name is not None:
-                client_kwargs: dict[str, Any] = opts.setdefault("client_kwargs", {})
-                client_kwargs["region_name"] = self._region_name
-            if self._retry is not None:
-                import botocore.config  # type: ignore[import-untyped]
-
-                rp = self._retry
-                if rp.backoff_base != 1.0 or rp.backoff_max != 60.0 or rp.jitter != 1.0 or rp.timeout is not None:
-                    log.debug(
-                        "S3 retry: backoff_base, backoff_max, jitter, timeout are not "
-                        "mappable to botocore; only max_attempts is used",
-                    )
-                client_kwargs = opts.setdefault("client_kwargs", {})
-                existing_config = client_kwargs.get("config")
-                retry_config = botocore.config.Config(
-                    retries={"max_attempts": rp.max_attempts, "mode": "standard"},
-                )
-                if existing_config is not None:
-                    client_kwargs["config"] = existing_config.merge(retry_config)
-                else:
-                    client_kwargs["config"] = retry_config
-            if self._tls_ca_bundle is not None:
-                client_kwargs = opts.setdefault("client_kwargs", {})
-                client_kwargs.setdefault("verify", self._tls_ca_bundle)
-            opts.setdefault("anon", False)
-            self._fs_instance = s3fs.S3FileSystem(**opts)
+            self._fs_instance = s3fs.S3FileSystem(**self._build_s3fs_kwargs())
         return self._fs_instance
 
     # endregion

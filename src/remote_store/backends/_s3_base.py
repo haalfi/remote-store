@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import abc
 import base64
+import logging
 import os
 from collections import deque
 from contextlib import contextmanager
@@ -26,7 +27,10 @@ from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _norma
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from remote_store._config import RetryPolicy
     from remote_store._resolution import ResolutionPlan
+
+log = logging.getLogger(__name__)
 
 
 def _normalize_endpoint_url(url: str | None) -> str | None:
@@ -81,6 +85,12 @@ class _S3Base(Backend):
     # Set by subclass __init__
     _bucket: str
     _endpoint_url: str | None
+    _key: str | None
+    _secret: str | None
+    _region_name: str | None
+    _tls_ca_bundle: str | None
+    _client_options: dict[str, Any]
+    _retry: RetryPolicy | None
 
     # region: abstract property
 
@@ -129,6 +139,65 @@ class _S3Base(Backend):
                 "endpoint_url": _strip_userinfo(self._endpoint_url),
             },
         )
+
+    # endregion
+
+    # region: shared s3fs builder
+
+    def _build_s3fs_kwargs(self) -> dict[str, Any]:
+        """Build kwargs for ``s3fs.S3FileSystem(**kwargs)``.
+
+        Merges ``self._client_options`` with credentials, region, retry, and
+        TLS settings.  Resolves BUG-178: any top-level ``config_kwargs`` entry
+        is folded into ``client_kwargs["config"]`` *before* the retry-derived
+        ``Config`` is applied, so ``aiobotocore.create_client()`` only ever
+        receives one ``config=`` argument.  Retry-policy values win on
+        conflicts.
+        """
+        import copy
+
+        import botocore.config  # type: ignore[import-untyped]
+
+        opts: dict[str, Any] = copy.deepcopy(self._client_options)
+        if self._endpoint_url is not None:
+            opts["endpoint_url"] = self._endpoint_url
+        if self._key is not None:
+            opts["key"] = self._key
+        if self._secret is not None:
+            opts["secret"] = self._secret
+        if self._region_name is not None:
+            client_kwargs: dict[str, Any] = opts.setdefault("client_kwargs", {})
+            client_kwargs["region_name"] = self._region_name
+
+        cfg_kwargs = opts.pop("config_kwargs", None)
+        if cfg_kwargs is not None:
+            client_kwargs = opts.setdefault("client_kwargs", {})
+            caller_config = botocore.config.Config(**cfg_kwargs)
+            existing = client_kwargs.get("config")
+            client_kwargs["config"] = caller_config.merge(existing) if existing is not None else caller_config
+
+        if self._retry is not None:
+            rp = self._retry
+            if rp.backoff_base != 1.0 or rp.backoff_max != 60.0 or rp.jitter != 1.0 or rp.timeout is not None:
+                log.debug(
+                    "%s retry: backoff_base, backoff_max, jitter, timeout are not "
+                    "mappable to botocore; only max_attempts is used",
+                    self.name,
+                )
+            client_kwargs = opts.setdefault("client_kwargs", {})
+            existing_config = client_kwargs.get("config")
+            retry_config = botocore.config.Config(
+                retries={"max_attempts": rp.max_attempts, "mode": "standard"},
+            )
+            client_kwargs["config"] = (
+                existing_config.merge(retry_config) if existing_config is not None else retry_config
+            )
+
+        if self._tls_ca_bundle is not None:
+            client_kwargs = opts.setdefault("client_kwargs", {})
+            client_kwargs.setdefault("verify", self._tls_ca_bundle)
+        opts.setdefault("anon", False)
+        return opts
 
     # endregion
 

@@ -43,55 +43,32 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-178 — s3fs lazy init raises "got multiple values for keyword argument 'config'" when `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy` are both supplied** (HIGH)
-  Affects both s3fs-based backends via two near-verbatim copies of the lazy-init body:
-  - `S3Backend._fs` (`_s3.py:307-347`) — retry block at `_s3.py:324-341`, duplicate-config
-    injection at lines 333 (`client_kwargs` acquired from `opts`) and 339/341 (assignment).
-  - `S3PyArrowBackend._s3fs` (`_s3_pyarrow.py:416-457`) — retry block at `_s3_pyarrow.py:434-451`,
-    duplicate-config injection at lines 443 and 449/451.
-
-  `client_options["config_kwargs"]` sits at the **top of `opts`**, not inside
-  `opts["client_kwargs"]`. `s3fs.S3FileSystem` converts the top-level `config_kwargs` dict into
-  a `botocore.config.Config` and passes it as `config=` to
-  `aiobotocore.session.AioSession.create_client()`. When `retry=RetryPolicy(...)` is also
-  supplied, the retry block separately assigns `opts["client_kwargs"]["config"]` — s3fs forwards
-  that too as `config=`, so `create_client()` receives the keyword twice and raises
-  `TypeError: got multiple values for keyword argument 'config'`.  The error surfaces wrapped
-  as a `RemoteStoreError` with the raw aiobotocore message.
-  The existing `existing_config.merge(retry_config)` branch (lines 338-341 in `_s3.py`;
-  448-451 in `_s3_pyarrow.py`) only handles the case where the caller supplied
-  `client_kwargs["config"]` as an already-constructed `Config` object — it does not see the
-  sibling top-level `config_kwargs` dict.
-  **Repro (caller-side, same on both backends):**
+- [ ] **BUG-175 — `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (MEDIUM)
+  `_sqlalchemy.py:734-745`: for SQLite dialects, `glob()` uses
+  `t.c.key GLOB pattern` as an SQL-side pre-filter, then applies
+  `pattern_to_regex` to the rows returned. SQLite's `GLOB` operator treats
+  `**` as two independent `*`s and `/` as a literal separator — it cannot
+  match the zero-directory case that `pattern_to_regex` and the spec
+  (018 § "``**`` matches zero or more path segments") require. Rows that
+  the regex would accept are silently dropped by the SQL filter before
+  the regex runs.
+  **Repro:**
   ```python
-  S3Backend(
-      bucket="mybucket",
-      client_options={"config_kwargs": {"connect_timeout": 10, "retries": {"max_attempts": 3, "mode": "standard"}}},
-      retry=RetryPolicy(max_attempts=3),   # ← triggers the duplicate-config path
-  )
+  b = SQLBlobBackend(url="sqlite:///:memory:")
+  b.write("gr/a.txt", b"a")
+  b.write("gr/sub/b.txt", b"b")
+  # Pattern 'gr/**/*.txt' must match both files per spec 018.
+  assert sorted(str(f.path) for f in b.glob("gr/**/*.txt")) == ["gr/a.txt", "gr/sub/b.txt"]
+  # FAILS — returns only ['gr/sub/b.txt'].
   ```
-  **Workaround:** pass retries only through one path — either keep `config_kwargs` and drop
-  `retry=`, or move all config into `client_options={"client_kwargs": {"config": botocore.config.Config(...)}}` and drop `config_kwargs`.
-  **Fix (land once on the shared base):** `_S3Base` (`_s3_base.py:74`) already declares
-  `_s3fs` as the abstract surface, and the two subclass `__init__`s set the same eight
-  inputs (`_bucket`, `_endpoint_url`, `_key`, `_secret`, `_region_name`, `_tls_ca_bundle`,
-  `_client_options`, `_retry`) — a single base-class helper can build the s3fs kwargs dict
-  for both.  In that helper, before the retry block:
-  1. `cfg_kwargs = opts.pop("config_kwargs", None)` — remove the top-level dict so s3fs does
-     not separately convert it to `config=`.
-  2. If `cfg_kwargs`, construct `caller_config = botocore.config.Config(**cfg_kwargs)` and
-     seed `opts["client_kwargs"]["config"]` with it (merging with any pre-existing
-     `client_kwargs["config"]` using `.merge()`; `Config.merge(other)` lets `other` win, so
-     the caller-supplied object wins on conflicts).
-  3. The existing retry path then merges `retry_config` on top — retry-policy values win on
-     conflicts (e.g. `retries.max_attempts`), the caller's `connect_timeout` / `read_timeout`
-     survive. This matches the docstring expectation that `retry=` overrides per-request
-     retry knobs.
-  Migrate both subclass properties to call the shared helper; the `S3Backend._fs_instance`
-  and `S3PyArrowBackend._s3fs_instance` caches can be consolidated on the base or kept local.
-  Note: `S3PyArrowBackend._pa_fs` (PyArrow data-path property) does not read
-  `self._client_options` and is unaffected.
-
+  Fix candidates: (a) drop the SQLite pre-filter when the pattern contains
+  `**` and rely on the regex alone; (b) follow the S3 `extract_prefix`
+  approach and use the longest non-wildcard prefix as a `LIKE` narrowing,
+  then regex-filter; (c) translate `**/` into a regex-equivalent SQL pattern
+  directly (no obvious SQLite equivalent). Option (b) matches the pattern
+  already used by S3/Azure glob implementations.
+  Currently skipped in the conformance suite (recursive-glob case) pending
+  a fix. Non-SQLite dialects use `LIKE` pre-filtering and are not affected.
 
 
 

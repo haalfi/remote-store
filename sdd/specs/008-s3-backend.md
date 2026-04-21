@@ -221,6 +221,18 @@ lowercase-normalized in `ContentDigest`).
   always `None` — the extra request is only issued by `get_file_info` and
   `write()`.
 
+### S3-026: config_kwargs and RetryPolicy Config Merge
+
+**Invariant:** When `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy(...)` are both supplied, the two do not collide on the `config=` keyword argument to `aiobotocore.create_client()`.
+
+**Rules:**
+- Any top-level `config_kwargs` dict in `client_options` is converted to a `botocore.config.Config` and placed in `client_kwargs["config"]` before the retry-derived `Config` is applied.
+- If `client_kwargs["config"]` is already set by the caller, `config_kwargs` is merged into it (caller-supplied object wins on conflicts).
+- The retry-derived `Config` is then merged on top; retry-policy values win on conflicts (e.g. `retries.max_attempts`). Caller-supplied fields not overridden by the retry policy (e.g. `connect_timeout`) are preserved.
+- `aiobotocore.create_client()` only ever receives one `config=` argument.
+
+**Scope:** Applies to both `S3Backend` and `S3PyArrowBackend` (both use the `_S3Base._build_s3fs_kwargs()` builder).
+
 ### S3-025: Endpoint URL Normalization
 
 **Invariant:** `endpoint_url` is normalized at construction time so that bare `host:port` values are usable.
