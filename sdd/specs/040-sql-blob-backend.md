@@ -234,7 +234,10 @@ count is 0 and path is not empty string.
 regex to enforce GLOB-014 semantics (`*` = `[^/]*`, `?` = `[^/]`):
 
 1. **SQL narrowing:**
-   - SQLite: native `GLOB` operator (over-matches — `*` and `?` match `/`).
+   - SQLite: `extract_prefix(pattern)` yields the longest literal directory
+     prefix; if non-empty, apply `key LIKE 'prefix/%'` (backslash-escaped,
+     `ESCAPE '\'`). Patterns without a literal prefix (e.g. `*.txt`,
+     `**/*.csv`) skip the SQL filter and scan the full table.
    - Other dialects: convert `*`/`**` → `%`, `?` → `_`, use `LIKE`.
 2. **Client-side regex:** `pattern_to_regex(pattern)` from `_glob.py` filters
    the SQL result set to enforce GLOB-014 semantics, ensuring `*` and `?` do
