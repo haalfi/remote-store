@@ -215,6 +215,24 @@ ignore_missing_imports = true
 module = "remote_store.ext.dagster"
 warn_unused_ignores = false
 
+# pyarrow 24.x ships partial type stubs that are still incomplete. Skip pyarrow
+# stubs entirely to avoid attr-defined / name-defined / no-untyped-call churn as
+# the stubs evolve; this restores the pre-24 behaviour where all pa.* is Any.
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.*"]
+follow_imports = "skip"
+
+# Modules that import pyarrow: with follow_imports=skip, pa.* is Any so the
+# existing # type: ignore[import-untyped] comments become unused — suppress that.
+[[tool.mypy.overrides]]
+module = ["remote_store.ext.arrow", "remote_store.ext.parquet", "remote_store.backends._s3_pyarrow"]
+warn_unused_ignores = false
+
+# _sqlalchemy.py has inline pyarrow imports in SQLQueryResultSerializer.
+[[tool.mypy.overrides]]
+module = "remote_store.backends._sqlalchemy"
+warn_unused_ignores = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
