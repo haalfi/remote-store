@@ -67,6 +67,19 @@ Existing items may be more verbose — trim on next touch.
   merge the retry config on top using the existing `.merge()` path.  Eliminates the duplicate
   `config=` at the aiobotocore call site.
 
+- [ ] **BUG-179 — `S3PyArrowBackend._s3fs` raises "got multiple values for keyword argument 'config'" when `config_kwargs` and `retry=RetryPolicy` are both supplied** (HIGH)
+  `_s3_pyarrow.py:434-451`: the `_s3fs` lazy-init property is a near-verbatim copy of
+  `S3Backend._fs` and carries the identical defect described in BUG-178.  When the caller
+  passes `client_options={"config_kwargs": {...}}` together with `retry=RetryPolicy(...)`,
+  the retry block creates `client_kwargs["config"]` without first canonicalizing the
+  pre-existing `config_kwargs` entry.  s3fs then passes both as `config=` to
+  `aiobotocore.session.AioSession.create_client()`, which raises
+  `TypeError: got multiple values for keyword argument 'config'`.
+  The same workarounds and fix strategy as BUG-178 apply.
+  Note: the `_pa_fs` (PyArrow data-path) property does not use `self._client_options`
+  at all and is unaffected.
+  Related: BUG-178.
+
 - [ ] **BUG-175 — `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (MEDIUM)
   `_sqlalchemy.py:734-745`: for SQLite dialects, `glob()` uses
   `t.c.key GLOB pattern` as an SQL-side pre-filter, then applies
