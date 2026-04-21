@@ -13,6 +13,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `sql-blob` pending a rewrite of the SQLite GLOB pre-filter in
   `_sqlalchemy.py`. Non-SQLite dialects are unaffected.
 
+### Fixed
+
+- BUG-172: `_ChunkPullReader.read`/`readinto` return empty on closed stream instead of raising `ValueError`
+
 ### Changed
 
 - **pyarrow 24.x mypy compatibility** (BK-154): pyarrow 24.0.0 shipped partial

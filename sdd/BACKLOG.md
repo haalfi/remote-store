@@ -119,21 +119,6 @@ Existing items may be more verbose — trim on next touch.
   Currently skipped in the conformance suite (recursive-glob case) pending
   a fix. Non-SQLite dialects use `LIKE` pre-filtering and are not affected.
 
-- [ ] **BUG-172 — `_ChunkPullReader.read`/`readinto` return empty on closed stream instead of raising `ValueError`** (LOW)
-  `_async_to_sync_adapter.py:613-614, 630-631`: both methods early-return
-  `0` / `b""` when `self.closed`. Stdlib `io.IOBase` (which `io.RawIOBase`
-  inherits from) raises `ValueError: I/O operation on closed file.` Callers
-  using stream state checks against the standard contract silently get empty
-  reads instead of the expected exception.
-  **Repro:**
-  ```python
-  stream = adapter.read("path")          # returns _ChunkPullReader
-  stream.close()
-  assert stream.read() == b""            # currently passes
-  # Expected: ValueError("I/O operation on closed file.") — matches io.BytesIO:
-  b = io.BytesIO(b"x"); b.close()
-  b.read()  # raises ValueError
-  ```
 
 
 ---
