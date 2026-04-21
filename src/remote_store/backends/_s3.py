@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import tempfile
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
@@ -36,8 +35,6 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.ATOMIC_MOVE})
-
-log = logging.getLogger(__name__)
 
 
 class S3Backend(_S3Base):

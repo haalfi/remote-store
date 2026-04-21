@@ -111,5 +111,7 @@ class TestConfigKwargsRetryCollision:
             assert isinstance(merged, botocore.config.Config)
             # existing client_kwargs["config"] wins on conflict: 20, not 7
             assert merged.connect_timeout == 20
+            # non-overlapping fields from the existing Config survive the merge
+            assert merged.retries["max_attempts"] == 99
         finally:
             backend.close()
