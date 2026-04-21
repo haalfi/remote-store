@@ -420,6 +420,25 @@ class TestStreamingRead:
         with pytest.raises(ValueError, match="I/O operation on closed file"):
             stream.readinto(buf)
 
+    @pytest.mark.spec("ASYNC-081")
+    def test_close_race_stream_subsequent_read_returns_empty(self) -> None:
+        # Simulate the _pull_chunk RuntimeError close-race: close the adapter's loop
+        # directly (without setting _closed) so _guard() passes but
+        # run_coroutine_threadsafe raises RuntimeError (loop closed). This is the
+        # TOCTOU window described in adapter.close() docstring.
+        adapter, _ = _make_memory_adapter()
+        adapter.write("f.txt", b"data")
+        stream = adapter.read("f.txt")
+        loop = adapter._loop  # internal: no public observable
+        loop.call_soon_threadsafe(loop.stop)
+        adapter._thread.join(timeout=5.0)  # internal: no public observable
+        loop.close()
+        with pytest.raises(RuntimeError, match="AsyncBackendSyncAdapter is closed"):
+            stream.read(1)
+        # _closed_on_error = True: error-close contract returns empty, not ValueError
+        assert stream.read() == b""
+        adapter.close()
+
 
 # ---------------------------------------------------------------------------
 # Mid-stream read failure (ASYNC-090)
@@ -455,6 +474,17 @@ class TestMidStreamReadFailure:
             stream.read(1)
         assert stream.read(1) == b""
         assert stream.read(-1) == b""
+        adapter.close()
+
+    @pytest.mark.spec("ASYNC-090")
+    def test_subsequent_readinto_after_error_returns_zero(self) -> None:
+        double = _RaisingAsyncBackend(read_chunks_before_raise=0)
+        adapter = AsyncBackendSyncAdapter(double)
+        stream = adapter.read("f.txt")
+        with pytest.raises(NotFound):
+            stream.read(1)
+        buf = bytearray(8)
+        assert stream.readinto(buf) == 0
         adapter.close()
 
     @pytest.mark.spec("ASYNC-090")
