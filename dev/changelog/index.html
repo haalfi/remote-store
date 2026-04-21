@@ -11394,6 +11394,7 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>BUG-178: fix s3fs lazy init raising <code>got multiple values for keyword argument 'config'</code> when <code>client_options={"config_kwargs": {...}}</code> and <code>retry=RetryPolicy(...)</code> are both supplied</li>
 <li>BUG-175: <code>SQLBlobBackend.glob</code> drops zero-segment <code>**/</code> matches on SQLite</li>
 <li>BUG-172: <code>_ChunkPullReader.read</code>/<code>readinto</code> return empty on closed stream instead of raising <code>ValueError</code></li>
 </ul>

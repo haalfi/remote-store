@@ -7685,6 +7685,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3-026-config_kwargs-and-retrypolicy-config-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-026: config_kwargs and RetryPolicy Config Merge
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9353,6 +9364,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3-026-config_kwargs-and-retrypolicy-config-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3-026: config_kwargs and RetryPolicy Config Merge
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9535,6 +9557,14 @@ lowercase-normalized in <code>ContentDigest</code>).
 - Bare <code>host:port</code> or hostname → prefixed with <code>https://</code>.
 - URLs with an existing <code>http://</code> or <code>https://</code> scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.</p>
 <p><strong>Postconditions:</strong> After construction, <code>self._endpoint_url</code> always contains a scheme prefix or is <code>None</code>.</p>
+<h3 id="s3-026-config_kwargs-and-retrypolicy-config-merge">S3-026: config_kwargs and RetryPolicy Config Merge<a class="headerlink" href="#s3-026-config_kwargs-and-retrypolicy-config-merge" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> When <code>client_options={"config_kwargs": {...}}</code> and <code>retry=RetryPolicy(...)</code> are both supplied, the two do not collide on the <code>config=</code> keyword argument to <code>aiobotocore.create_client()</code>.</p>
+<p><strong>Rules:</strong>
+- Any top-level <code>config_kwargs</code> dict in <code>client_options</code> is converted to a <code>botocore.config.Config</code> and placed in <code>client_kwargs["config"]</code> before the retry-derived <code>Config</code> is applied.
+- If <code>client_kwargs["config"]</code> is already set by the caller, <code>config_kwargs</code> is merged into it (caller-supplied object wins on conflicts).
+- The retry-derived <code>Config</code> is then merged on top; retry-policy values win on conflicts (e.g. <code>retries.max_attempts</code>). Caller-supplied fields not overridden by the retry policy (e.g. <code>connect_timeout</code>) are preserved.
+- <code>aiobotocore.create_client()</code> only ever receives one <code>config=</code> argument.</p>
+<p><strong>Scope:</strong> Applies to both <code>S3Backend</code> and <code>S3PyArrowBackend</code> (both use the <code>_S3Base._build_s3fs_kwargs()</code> builder).</p>
 
 
 

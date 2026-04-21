@@ -7747,6 +7747,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3pa-026-config_kwargs-and-retrypolicy-config-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PA-026: config_kwargs and RetryPolicy Config Merge
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9309,6 +9320,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#s3pa-026-config_kwargs-and-retrypolicy-config-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PA-026: config_kwargs and RetryPolicy Config Merge
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9465,6 +9487,8 @@
 - Bare <code>host:port</code> or hostname → prefixed with <code>https://</code>.
 - URLs with an existing <code>http://</code> or <code>https://</code> scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.</p>
 <p><strong>Postconditions:</strong> After construction, <code>self._endpoint_url</code> always contains a scheme prefix or is <code>None</code>.</p>
+<h3 id="s3pa-026-config_kwargs-and-retrypolicy-config-merge">S3PA-026: config_kwargs and RetryPolicy Config Merge<a class="headerlink" href="#s3pa-026-config_kwargs-and-retrypolicy-config-merge" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Same as S3-026. <code>config_kwargs</code> and <code>retry=RetryPolicy(...)</code> do not collide on <code>aiobotocore.create_client()</code>. Applies to the s3fs control path only; the PyArrow data path (<code>_pa_fs</code>) is unaffected.</p>
 
 
 
