@@ -4231,17 +4231,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#known-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Known Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#fixed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9980,17 +9969,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#known-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Known Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#fixed" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11414,15 +11392,9 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
-<h3 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><code>SQLBlobBackend.glob</code> drops zero-segment <code>**/</code> matches on SQLite</strong> (BUG-175):
-  the zero-segment half of the recursive <code>test_glob</code> case is skipped on
-  <code>sql-blob</code> pending a rewrite of the SQLite GLOB pre-filter in
-  <code>_sqlalchemy.py</code>. Non-SQLite dialects are unaffected.</li>
-</ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>BUG-175: <code>SQLBlobBackend.glob</code> drops zero-segment <code>**/</code> matches on SQLite</li>
 <li>BUG-172: <code>_ChunkPullReader.read</code>/<code>readinto</code> return empty on closed stream instead of raising <code>ValueError</code></li>
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
