@@ -14,6 +14,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
+- BK-155: consolidate S3 + S3-PyArrow test and spec duplication (in progress)
+
 - **pyarrow 24.x mypy compatibility** (BK-154): pyarrow 24.0.0 shipped partial
   type stubs that surfaced `attr-defined`, `name-defined`, and `no-untyped-call`
   errors under mypy strict mode. Added `follow_imports = "skip"` for

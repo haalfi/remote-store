@@ -866,6 +866,20 @@ class TestBackendGlob:
         _seed(backend, seeds)
         assert sorted(str(f.path) for f in backend.glob(pattern)) == expected
 
+    @pytest.mark.spec("GLOB-004")
+    def test_glob_yields_fileinfo_only(self, backend: Backend) -> None:
+        _require(backend, Capability.GLOB, Capability.WRITE)
+        _seed(
+            backend,
+            {
+                "gf/a.txt": b"a",
+                "gf/sub/b.txt": b"b",
+                "gf/sub/deep/c.txt": b"c",
+            },
+        )
+        for info in backend.glob("gf/**/*"):
+            assert isinstance(info, FileInfo)
+
 
 class TestBackendUnwrap:
     """BE-022: unwrap raises by default."""
