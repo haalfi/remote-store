@@ -42,7 +42,7 @@ class TestConfigKwargsRetryCollision:
         which then collides with the retry-derived client_kwargs["config"], giving
         TypeError('got multiple values for keyword argument ''config''').
         """
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import patch
 
         import botocore.config
 
@@ -61,7 +61,6 @@ class TestConfigKwargsRetryCollision:
         )
         try:
             with patch("s3fs.S3FileSystem") as mock_cls:
-                mock_cls.return_value = MagicMock()
                 _ = backend._s3fs
 
             call_kwargs = mock_cls.call_args.kwargs
