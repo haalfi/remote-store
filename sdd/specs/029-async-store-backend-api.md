@@ -465,8 +465,13 @@ private loop only when that buffer is empty and more bytes are still required.
 `seekable()` (returns `False`), and `readable()` (returns `True`); `seek`,
 `tell`, and `fileno` are not provided.  `close()` submits the async
 iterator's `aclose()` to the loop.
+**Closed-stream reads:** Calling `read()` or `readinto()` after the caller
+explicitly invokes `close()` raises `ValueError: I/O operation on closed file.`,
+matching the `io.IOBase` contract.  Streams closed as a side effect of an
+async error or adapter shutdown (see ASYNC-090) instead return `b""` / `0`
+from subsequent `read()` / `readinto()` calls.
 **See also:** [006-streaming-io.md](006-streaming-io.md) (SIO-001, SIO-009),
-ASYNC-080.
+ASYNC-080, ASYNC-090.
 
 ### ASYNC-082: Fail-fast on Running Event Loop
 

@@ -679,6 +679,7 @@ class _ChunkPullReader(io.RawIOBase):
             # Loop stopped between _guard() and here (close() raced us).
             coro.close()
             self._eof = True
+            self._closed_on_error = True
             self.close()
             raise RuntimeError(_CLOSED_MSG) from None
         try:
