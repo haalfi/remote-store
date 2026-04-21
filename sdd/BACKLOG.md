@@ -43,6 +43,30 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
+- [ ] **BUG-178 — `S3Backend._fs` raises "got multiple values for keyword argument 'config'" when `config_kwargs` and `retry=RetryPolicy` are both supplied** (HIGH)
+  `_s3.py:334-341`: when the caller passes `client_options={"config_kwargs": {...}}` together
+  with `retry=RetryPolicy(...)`, the `_fs` lazy-init creates `client_kwargs["config"]` from
+  the retry policy without checking for a pre-existing `config_kwargs` entry.  `s3fs` converts
+  `config_kwargs` into a `botocore.config.Config` and passes it as `config=` to
+  `aiobotocore.session.AioSession.create_client()`; the retry path also injects a second
+  `config=` via `client_kwargs`, so `create_client()` receives the keyword twice and raises
+  `TypeError: got multiple values for keyword argument 'config'`.  The error surfaces wrapped as
+  a `RemoteStoreError` with the raw aiobotocore message.
+  **Repro (caller-side):**
+  ```python
+  S3Backend(
+      bucket="mybucket",
+      client_options={"config_kwargs": {"connect_timeout": 10, "retries": {"max_attempts": 3, "mode": "standard"}}},
+      retry=RetryPolicy(max_attempts=3),   # ← triggers the duplicate-config path
+  )
+  ```
+  **Workaround:** pass retries only through one path — either keep `config_kwargs` and drop
+  `retry=`, or move all config into `client_options={"client_kwargs": {"config": botocore.config.Config(...)}}` and drop `config_kwargs`.
+  **Fix:** in `_fs`, before applying the retry policy, canonicalize any `config_kwargs` in
+  `opts` into `client_kwargs["config"]` (via `botocore.config.Config(**config_kwargs)`), then
+  merge the retry config on top using the existing `.merge()` path.  Eliminates the duplicate
+  `config=` at the aiobotocore call site.
+
 - [ ] **BUG-175 — `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (MEDIUM)
   `_sqlalchemy.py:734-745`: for SQLite dialects, `glob()` uses
   `t.c.key GLOB pattern` as an SQL-side pre-filter, then applies
