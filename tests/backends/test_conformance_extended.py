@@ -42,8 +42,6 @@ _FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-
 # Backends that do not yet handle self-copy/self-move correctly.
 _NO_SELF_OP_BACKENDS = frozenset({"azure", "http"})
 
-_NO_SELF_COPY_BACKENDS: frozenset[str] = frozenset()
-
 
 def _require(backend: Backend, *caps: Capability) -> None:
     """Skip the test if the backend lacks any of the given capabilities."""
@@ -477,7 +475,7 @@ class TestMoveCopySelfOperation:
     def test_self_copy_preserves_data(self, backend: Backend) -> None:
         """copy(src, src, overwrite=True) must not lose data."""
         _require(backend, Capability.COPY, Capability.WRITE)
-        if backend.name in _NO_SELF_OP_BACKENDS or backend.name in _NO_SELF_COPY_BACKENDS:
+        if backend.name in _NO_SELF_OP_BACKENDS:
             pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
         backend.write("selfcp.txt", b"data")
         backend.copy("selfcp.txt", "selfcp.txt", overwrite=True)
@@ -497,11 +495,20 @@ class TestMoveCopySelfOperation:
     def test_self_copy_no_overwrite_preserves_data(self, backend: Backend) -> None:
         """copy(src, src, overwrite=False) is a no-op — must not raise AlreadyExists."""
         _require(backend, Capability.COPY, Capability.WRITE)
-        if backend.name in _NO_SELF_OP_BACKENDS or backend.name in _NO_SELF_COPY_BACKENDS:
+        if backend.name in _NO_SELF_OP_BACKENDS:
             pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
         backend.write("selfcp2.txt", b"data")
         backend.copy("selfcp2.txt", "selfcp2.txt", overwrite=False)
         assert backend.read_bytes("selfcp2.txt") == b"data"
+
+    @pytest.mark.spec("BE-019")
+    def test_self_copy_missing_raises_not_found(self, backend: Backend) -> None:
+        """copy(src, src) where src does not exist must raise NotFound."""
+        _require(backend, Capability.COPY)
+        if backend.name in _NO_SELF_OP_BACKENDS:
+            pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
+        with pytest.raises(NotFound, match="sc_missing"):
+            backend.copy("sc_missing.txt", "sc_missing.txt")
 
     @pytest.mark.spec("BE-018")
     def test_self_move_no_overwrite_preserves_data(self, backend: Backend) -> None:

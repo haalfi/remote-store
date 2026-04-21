@@ -5,6 +5,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-154 — pyarrow 24.x mypy compatibility**
+  pyarrow 24.0.0 shipped partial type stubs that surfaced `attr-defined`,
+  `name-defined`, and `no-untyped-call` errors under mypy strict mode. Added
+  `follow_imports = "skip"` for `pyarrow`/`pyarrow.*` in `pyproject.toml`;
+  removed `# type: ignore[import-untyped]` from pyarrow imports in
+  `ext/arrow.py`, `ext/parquet.py`, `backends/_s3_pyarrow.py`, and
+  `backends/_sqlalchemy.py`. Included in PR #485 alongside BUG-176.
+
 - [x] **BUG-176 — `SQLBlobBackend.copy(src, src, overwrite=True)` silently destroys data**
   Mirrored the `src == dst` early-return guard from `move()` into `copy()`:
   check source exists, then return. Fixes both the data-destruction case

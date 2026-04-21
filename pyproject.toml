@@ -222,13 +222,17 @@ warn_unused_ignores = false
 module = ["pyarrow", "pyarrow.*"]
 follow_imports = "skip"
 
-# Modules that import pyarrow: with follow_imports=skip, pa.* is Any so the
-# existing # type: ignore[import-untyped] comments become unused — suppress that.
+# The four modules below each carry `# type: ignore[import-untyped]` on their
+# pyarrow import lines.  pyarrow ≤23 has no stubs (the ignore is active);
+# pyarrow ≥24 ships stubs (the ignore becomes unused).  mypy's per-module
+# override is the finest scope available — there is no line-level knob.
+# Accepted tech debt: any *new* unused ignore in these modules would also be
+# silenced.  Mitigated by the small surface area of ext.arrow/parquet and
+# _s3_pyarrow, and by code-review discipline for _sqlalchemy.
 [[tool.mypy.overrides]]
 module = ["remote_store.ext.arrow", "remote_store.ext.parquet", "remote_store.backends._s3_pyarrow"]
 warn_unused_ignores = false
 
-# _sqlalchemy.py has inline pyarrow imports in SQLQueryResultSerializer.
 [[tool.mypy.overrides]]
 module = "remote_store.backends._sqlalchemy"
 warn_unused_ignores = false

@@ -15,6 +15,15 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
+- **pyarrow 24.x mypy compatibility** (BK-154): pyarrow 24.0.0 shipped partial
+  type stubs that surfaced `attr-defined`, `name-defined`, and `no-untyped-call`
+  errors under mypy strict mode. Added `follow_imports = "skip"` for
+  `pyarrow`/`pyarrow.*` in `pyproject.toml`, restoring pre-24 behaviour where
+  all `pa.*` resolves as `Any`. Removed the now-redundant
+  `# type: ignore[import-untyped]` annotations on pyarrow imports in
+  `ext/arrow.py`, `ext/parquet.py`, `backends/_s3_pyarrow.py`, and
+  `backends/_sqlalchemy.py`.
+
 - **Dafny `MemoryBackend` spec now populates `last_modified`** (ID-152):
   `MemoryBackend.dfy:Write` returned `Option_None()` for `last_modified` by
   design, which forced the `dafny-oracle` branch of
