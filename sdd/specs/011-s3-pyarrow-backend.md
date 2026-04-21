@@ -169,10 +169,6 @@ S3PyArrowBackend(
 **Invariant:** Same as S3-021. The `client_options` dict is merged into the s3fs configuration.
 **Postconditions:** `client_options` applies to s3fs only. PyArrow configuration is derived from the explicit constructor parameters.
 
-### S3PA-026: config_kwargs and RetryPolicy Config Merge
-
-**Invariant:** Same as S3-026. `config_kwargs` and `retry=RetryPolicy(...)` do not collide on `aiobotocore.create_client()`. Applies to the s3fs control path only; the PyArrow data path (`_pa_fs`) is unaffected.
-
 ### S3PA-023: Endpoint URL Normalization
 
 **Invariant:** Same as S3-025. `endpoint_url` is normalized at construction time so that bare `host:port` values are usable.
@@ -183,3 +179,7 @@ S3PyArrowBackend(
 - URLs with an existing `http://` or `https://` scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.
 
 **Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.
+
+### S3PA-026: config_kwargs and RetryPolicy Config Merge
+
+**Invariant:** Same as S3-026. `config_kwargs` and `retry=RetryPolicy(...)` do not collide on `aiobotocore.create_client()`. Applies to the s3fs control path only; the PyArrow data path (`_pa_fs`) is unaffected.

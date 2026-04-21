@@ -221,6 +221,17 @@ lowercase-normalized in `ContentDigest`).
   always `None` — the extra request is only issued by `get_file_info` and
   `write()`.
 
+### S3-025: Endpoint URL Normalization
+
+**Invariant:** `endpoint_url` is normalized at construction time so that bare `host:port` values are usable.
+**Rules:**
+- `None` → `None` (unchanged).
+- Empty or whitespace-only → `None`.
+- Bare `host:port` or hostname → prefixed with `https://`.
+- URLs with an existing `http://` or `https://` scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.
+
+**Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.
+
 ### S3-026: config_kwargs and RetryPolicy Config Merge
 
 **Invariant:** When `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy(...)` are both supplied, the two do not collide on the `config=` keyword argument to `aiobotocore.create_client()`.
@@ -232,14 +243,3 @@ lowercase-normalized in `ContentDigest`).
 - `aiobotocore.create_client()` only ever receives one `config=` argument.
 
 **Scope:** Applies to both `S3Backend` and `S3PyArrowBackend` (both use the `_S3Base._build_s3fs_kwargs()` builder).
-
-### S3-025: Endpoint URL Normalization
-
-**Invariant:** `endpoint_url` is normalized at construction time so that bare `host:port` values are usable.
-**Rules:**
-- `None` → `None` (unchanged).
-- Empty or whitespace-only → `None`.
-- Bare `host:port` or hostname → prefixed with `https://`.
-- URLs with an existing `http://` or `https://` scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.
-
-**Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.
