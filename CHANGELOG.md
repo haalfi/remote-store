@@ -14,7 +14,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
-- BK-155: consolidate S3 + S3-PyArrow test and spec duplication (in progress)
+- BK-155: consolidate S3 + S3-PyArrow test and spec duplication. Extracted shared tests to `tests/backends/test_s3_shared.py` (parametrized over both backends with per-param `@pytest.mark.spec` for paired S3-NNN/S3PA-NNN traceability). Removed ~1300 lines of duplicated test bodies from `tests/backends/test_s3.py` and `tests/backends/test_s3_pyarrow.py`. Slimmed `sdd/specs/011-s3-pyarrow-backend.md` to a delta-spec over `sdd/specs/008-s3-backend.md`; only PyArrow-specific invariants (S3PA-002/003/006/007/012/021) retain full bodies. Added a `test_glob_yields_fileinfo_only` conformance test (GLOB-004) to close a coverage gap.
 
 - **pyarrow 24.x mypy compatibility** (BK-154): pyarrow 24.0.0 shipped partial
   type stubs that surfaced `attr-defined`, `name-defined`, and `no-untyped-call`

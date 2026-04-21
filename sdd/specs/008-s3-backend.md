@@ -8,6 +8,11 @@ This is the fsspec-based S3 backend. A future native backend using boto3 + pyarr
 
 **Dependencies:** `s3fs` (optional extra: `pip install "remote-store[s3]"`)
 
+> [Spec 011 (S3-PyArrow Hybrid Backend)](011-s3-pyarrow-backend.md) inherits
+> most invariants from this document and only specifies PyArrow-specific
+> deltas. Edits to shared invariants here propagate to spec 011 automatically
+> via the paired-ID map at the top of 011.
+
 ---
 
 ## Construction

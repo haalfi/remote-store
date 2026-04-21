@@ -8,28 +8,48 @@ This is a drop-in alternative to `S3Backend` with the same constructor signature
 
 **Dependencies:** `s3fs`, `pyarrow` (optional extra: `pip install "remote-store[s3-pyarrow]"`)
 
+> This specification is a **delta** over [spec 008 (S3 Backend)](008-s3-backend.md).
+> Any invariant not restated here follows the paired S3-NNN ID verbatim,
+> substituting the backend name `"s3-pyarrow"` for `"s3"`. Only PyArrow-specific
+> deltas (dual-library architecture, credential translation, the PyArrow read
+> path, dual `unwrap()`, and the dual error-mapping context managers) carry a
+> full body below. Tests reference both IDs per backend via per-parameter
+> `pytest.mark.spec(...)` marks (see `tests/backends/test_s3_shared.py`).
+
+### Paired IDs (delta map)
+
+| This spec (S3PA-NNN)                  | Inherited from 008 (S3-NNN)            |
+|---------------------------------------|----------------------------------------|
+| S3PA-001 Constructor Parameters       | S3-001 (same signature)                |
+| S3PA-004 Lazy Connection              | S3-004                                 |
+| S3PA-005 Construction Validation      | S3-005                                 |
+| S3PA-008 Virtual Folder Semantics     | S3-006                                 |
+| S3PA-009 Folder Detection             | S3-007                                 |
+| S3PA-010 Write Does Not Create Markers | S3-008                                |
+| S3PA-011 Folder Lifecycle             | S3-009                                 |
+| S3PA-013 Write Via PyArrow            | S3-010 (atomic write)                  |
+| S3PA-014 Copy Via PyArrow             | S3-014 (server-side copy)              |
+| S3PA-015 Move Via Hybrid              | S3-013 (copy + delete)                 |
+| S3PA-016 Delete Via s3fs              | S3-011, S3-012                         |
+| S3PA-017 Listing Via s3fs             | (implicit; s3fs control path)          |
+| S3PA-018 Dual Error Context Managers  | S3-015, S3-016, S3-017                 |
+| S3PA-019 No Native Exception Leakage  | S3-018                                 |
+| S3PA-020 close()                      | S3-019                                 |
+| S3PA-022 Client Options Passthrough   | S3-021                                 |
+| S3PA-023 Endpoint URL Normalization   | S3-025                                 |
+| S3PA-026 config_kwargs + RetryPolicy  | S3-026                                 |
+| S3PA-001 Default Credential Chain     | S3-022                                 |
+
+Full-body deltas (unique to S3-PyArrow): **S3PA-002, S3PA-003, S3PA-006,
+S3PA-007, S3PA-012, S3PA-021**.
+
 ---
 
 ## Construction
 
 ### S3PA-001: Constructor Parameters
 
-**Invariant:** `S3PyArrowBackend` is constructed with the same signature as `S3Backend`: a required `bucket` name and optional connection parameters.
-**Signature:**
-```python
-S3PyArrowBackend(
-    bucket: str,
-    *,
-    endpoint_url: str | None = None,
-    key: str | None = None,
-    secret: str | None = None,
-    region_name: str | None = None,
-    tls_ca_bundle: str | None = None,  # see spec 039
-    client_options: dict[str, Any] | None = None,
-    retry: RetryPolicy | None = None,  # see spec 025
-)
-```
-**Postconditions:** The backend stores configuration but does not connect to S3 during construction (see S3PA-004). The `endpoint_url` is normalized per S3PA-023. Constructor arguments are translated to each library's conventions internally.
+See [S3-001](008-s3-backend.md#s3-001-constructor-parameters). Same signature; the class name is `S3PyArrowBackend`. Constructor arguments are translated to each library's conventions internally (S3PA-007). Default credential chain follows [S3-022](008-s3-backend.md#s3-022-default-credential-chain).
 
 ### S3PA-002: Backend Name
 
@@ -38,16 +58,18 @@ S3PyArrowBackend(
 ### S3PA-003: Capability Declaration
 
 **Invariant:** `S3PyArrowBackend` declares capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`. Native glob via prefix-optimized listing (see [018-glob.md](018-glob.md) GLOB-019).
-**Rationale:** Same as S3Backend -- S3 PUT is inherently atomic, move via copy+delete, copy via server-side copy. `GLOB`: native prefix-optimized glob since v0.12.0 (BK-002).
+
+**Delta vs S3-003:** The `WRITE_RESULT_NATIVE` and `USER_METADATA` capabilities are NOT declared, because PyArrow's `open_output_stream()` does not surface native-upload metadata (ETag / checksum / user metadata) the way `s3fs.put` exposes it for the s3fs-only `S3Backend`.
+
+**Rationale:** Same as S3-003 for the declared capabilities. The `ATOMIC_MOVE` capability is not declared (move = copy+delete, so partial failure is observable — see S3PA-015).
 
 ### S3PA-004: Lazy Connection
 
-**Invariant:** No network call occurs during `__init__`. Both the PyArrow and s3fs filesystem instances are created lazily on first use.
-**Rationale:** Same as S3-004.
+See [S3-004](008-s3-backend.md#s3-004-lazy-connection). Applies to both the PyArrow and s3fs filesystem instances: each is created lazily on first use.
 
 ### S3PA-005: Construction Validation
 
-**Invariant:** `bucket` must be a non-empty string. Passing an empty or whitespace-only bucket raises `ValueError` at construction time.
+See [S3-005](008-s3-backend.md#s3-005-construction-validation).
 
 ---
 
@@ -81,19 +103,19 @@ S3PyArrowBackend(
 
 ### S3PA-008: Virtual Folder Semantics
 
-**Invariant:** Same as S3-006. S3 has no native directories; folders are logical constructs from key prefixes.
+See [S3-006](008-s3-backend.md#s3-006-virtual-folder-semantics).
 
 ### S3PA-009: Folder Detection
 
-**Invariant:** Same as S3-007. `is_folder(path)` returns `True` if any objects exist with prefix `{path}/`.
+See [S3-007](008-s3-backend.md#s3-007-folder-detection).
 
 ### S3PA-010: Write Does Not Create Folder Markers
 
-**Invariant:** Same as S3-008. No folder marker objects are created.
+See [S3-008](008-s3-backend.md#s3-008-write-does-not-create-folder-markers).
 
 ### S3PA-011: Folder Lifecycle Tied to Contents
 
-**Invariant:** Same as S3-009. Folders vanish when the last object under a prefix is deleted.
+See [S3-009](008-s3-backend.md#s3-009-folder-lifecycle-tied-to-contents).
 
 ---
 
@@ -102,30 +124,30 @@ S3PyArrowBackend(
 ### S3PA-012: Read Via PyArrow
 
 **Invariant:** `read()` uses `open_input_file()` (seekable `RandomAccessFile`) and returns the stream wrapped in `_ErrorMappingStream` without `BufferedReader`. `read_bytes()` uses `open_input_stream()` and reads all bytes directly. `readline()` uses a chunked scan (`_READLINE_CHUNK`-sized reads) with seek-back for over-read bytes, requiring a seekable stream from `open_input_file`.
+
 **Rationale:** PyArrow's C++ I/O path provides higher throughput than s3fs for large files. Removing the `BufferedReader` eliminates a double-copy per chunk on the streaming read path (RFC-0003). The chunked `readline()` avoids the pathological byte-at-a-time fallback from `RawIOBase`.
+
 **Note:** Unlike other backends which return `io.BufferedReader`, S3-PyArrow returns a raw `_ErrorMappingStream(RawIOBase)`. This means `io.TextIOWrapper(stream)` requires wrapping in `io.BufferedReader` first. The spec (SIO-001 in 008-streaming-io.md) only requires `BinaryIO`, so this is valid, but callers should not assume `BufferedIOBase`.
 
 ### S3PA-013: Write Via PyArrow
 
-**Invariant:** `write()` and `write_atomic()` use `pyarrow.fs.S3FileSystem.open_output_stream()` for data transfer. Existence checks use s3fs.
-**Postconditions:** Same as S3-010 -- S3 PUT is inherently atomic, so `write_atomic` delegates to `write`.
+See [S3-010](008-s3-backend.md#s3-010-atomic-write-via-s3-put). `write()` and `write_atomic()` use `pyarrow.fs.S3FileSystem.open_output_stream()` for data transfer; existence checks go through s3fs.
 
 ### S3PA-014: Copy Via PyArrow
 
-**Invariant:** `copy(src, dst)` uses `pyarrow.fs.S3FileSystem.copy_file()` for server-side copy. Existence checks use s3fs.
+See [S3-014](008-s3-backend.md#s3-014-copy-via-s3-server-side-copy). Uses `pyarrow.fs.S3FileSystem.copy_file()` for the server-side copy; existence checks go through s3fs.
 
 ### S3PA-015: Move Via Hybrid
 
-**Invariant:** `move(src, dst)` uses s3fs for existence checks, PyArrow for the copy step, and s3fs for the delete step.
-**Postconditions:** Same as S3-013 -- not atomic; if copy succeeds but delete fails, both objects exist.
+See [S3-013](008-s3-backend.md#s3-013-move-via-copy-delete). The copy step uses PyArrow; existence checks and the delete step go through s3fs. Not atomic — if copy succeeds but delete fails, both objects exist.
 
 ### S3PA-016: Delete Via s3fs
 
-**Invariant:** `delete()` and `delete_folder()` use s3fs, same as S3Backend.
+See [S3-011](008-s3-backend.md#s3-011-delete_folder-recursive) and [S3-012](008-s3-backend.md#s3-012-delete_folder-non-recursive). `delete()` and `delete_folder()` use s3fs, identical to `S3Backend`.
 
 ### S3PA-017: Listing Via s3fs
 
-**Invariant:** `list_files()`, `list_folders()`, `get_file_info()`, `get_folder_info()` use s3fs, same as S3Backend.
+**Invariant:** `list_files()`, `list_folders()`, `get_file_info()`, `get_folder_info()` use s3fs, identical to `S3Backend`. `get_file_info()` returns a `FileInfo` carrying `etag` and (when the object has a stored checksum) `digest`.
 
 ---
 
@@ -133,15 +155,18 @@ S3PyArrowBackend(
 
 ### S3PA-018: Dual Error Context Managers
 
-**Invariant:** Two error-mapping context managers exist:
-- `_pyarrow_errors(path)`: catches `OSError` / `ArrowInvalid` from PyArrow operations and maps to remote_store errors.
-- `_s3fs_errors(path)`: catches s3fs/botocore exceptions, same mapping as S3Backend.
+See [S3-015](008-s3-backend.md#s3-015-notfound-mapping), [S3-016](008-s3-backend.md#s3-016-permissiondenied-mapping), and [S3-017](008-s3-backend.md#s3-017-backendunavailable-mapping) for the NotFound / PermissionDenied / BackendUnavailable mappings.
+
+**Delta vs S3-015/016/017:** Two context managers handle the two libraries:
+
+- `_pyarrow_errors(path)`: catches `OSError` / `ArrowInvalid` from PyArrow operations and maps to `remote_store` errors.
+- `_s3fs_errors(path)`: catches s3fs/botocore exceptions, same mapping as `S3Backend`.
 
 **Postconditions:** `backend` attribute is set to `"s3-pyarrow"` on all mapped errors.
 
 ### S3PA-019: No Native Exception Leakage
 
-**Invariant:** No PyArrow, s3fs, botocore, or aiobotocore exceptions propagate to callers. All are mapped to `remote_store` error types per BE-021.
+See [S3-018](008-s3-backend.md#s3-018-no-native-exception-leakage). Extended to PyArrow: no PyArrow, s3fs, botocore, or aiobotocore exceptions propagate to callers.
 
 ---
 
@@ -149,16 +174,17 @@ S3PyArrowBackend(
 
 ### S3PA-020: close()
 
-**Invariant:** `close()` releases both the PyArrow and s3fs filesystem instances.
-**Postconditions:** Safe to call multiple times.
+See [S3-019](008-s3-backend.md#s3-019-close). `close()` releases both the PyArrow and s3fs filesystem instances. Safe to call multiple times.
 
 ### S3PA-021: Dual unwrap()
 
 **Invariant:** `unwrap()` supports two type hints:
 - `unwrap(pyarrow.fs.S3FileSystem)` returns the PyArrow filesystem.
 - `unwrap(s3fs.S3FileSystem)` returns the s3fs filesystem.
+
 **Raises:** `CapabilityNotSupported` for any other type hint.
-**Rationale:** Escape hatch for users who need library-specific features.
+
+**Rationale:** Escape hatch for users who need library-specific features. Delta vs S3-020 (which only unwraps to `s3fs.S3FileSystem`).
 
 ---
 
@@ -166,20 +192,12 @@ S3PyArrowBackend(
 
 ### S3PA-022: Client Options Passthrough
 
-**Invariant:** Same as S3-021. The `client_options` dict is merged into the s3fs configuration.
-**Postconditions:** `client_options` applies to s3fs only. PyArrow configuration is derived from the explicit constructor parameters.
+See [S3-021](008-s3-backend.md#s3-021-client-options-passthrough). Applies to s3fs only — PyArrow configuration is derived from the explicit constructor parameters, not from `client_options`.
 
 ### S3PA-023: Endpoint URL Normalization
 
-**Invariant:** Same as S3-025. `endpoint_url` is normalized at construction time so that bare `host:port` values are usable.
-**Rules:**
-- `None` → `None` (unchanged).
-- Empty or whitespace-only → `None`.
-- Bare `host:port` or hostname → prefixed with `https://`.
-- URLs with an existing `http://` or `https://` scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.
-
-**Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.
+See [S3-025](008-s3-backend.md#s3-025-endpoint-url-normalization).
 
 ### S3PA-026: config_kwargs and RetryPolicy Config Merge
 
-**Invariant:** Same as S3-026. `config_kwargs` and `retry=RetryPolicy(...)` do not collide on `aiobotocore.create_client()`. Applies to the s3fs control path only; the PyArrow data path (`_pa_fs`) is unaffected.
+See [S3-026](008-s3-backend.md#s3-026-config_kwargs-and-retrypolicy-config-merge). Applies to the s3fs control path only; the PyArrow data path (`_pa_fs`) is unaffected.
