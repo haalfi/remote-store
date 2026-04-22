@@ -16,6 +16,7 @@ import io
 from typing import TYPE_CHECKING
 
 from remote_store import ContentDigest, RemotePath, WriteResult
+from remote_store._store import _validate_metadata
 from remote_store.ext.streams import ChecksumReader, ChecksumWriter
 
 if TYPE_CHECKING:
@@ -135,6 +136,7 @@ def open_atomic_with_hash(
         CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         AlreadyExists: If *path* exists and *overwrite* is ``False``.
     """
+    _validate_metadata(metadata)
     writer: HashingAtomicWriter | None = None
     if metadata:
         buf = io.BytesIO()

@@ -49,7 +49,7 @@ class RestrictedAsyncBackend:
 
     def __init__(self, backend: AsyncBackend, exclude: set[Capability]) -> None:
         self._inner = backend
-        self._caps = CapabilitySet(set(Capability) - exclude)
+        self._caps = CapabilitySet(set(backend.capabilities) - exclude)
 
     @property
     def capabilities(self) -> CapabilitySet:

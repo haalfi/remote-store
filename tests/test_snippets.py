@@ -68,3 +68,16 @@ class TestWriteIntegritySnippets:
 
         result = demo()
         assert result is None
+
+
+class TestAsyncWriteIntegritySnippets:
+    """Snippets used in the async section of the Write Integrity guide."""
+
+    @pytest.mark.spec("EW-001")
+    def test_async_write_integrity_demo(self) -> None:
+        import asyncio
+
+        from examples.snippets.write_integrity_async import demo
+
+        result = asyncio.run(demo())
+        assert result is None
