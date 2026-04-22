@@ -43,16 +43,6 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-179 — `AsyncBackend.write` / `write_atomic` missing `metadata=` kwarg**
-  `Backend.write` / `write_atomic` (`_backend.py:186,215`) carry
-  `metadata: Mapping[str, str] | None = None` and enforce `Capability.USER_METADATA`.
-  The async counterparts (`aio/_async_backend.py:124,137`) and all concrete async
-  implementations (`AsyncMemoryBackend`, `AsyncAzureBackend`, `SyncBackendAdapter`)
-  lack the parameter entirely — passing it yields `TypeError`, not `CapabilityNotSupported`.
-  Surfaced during PR #492 (BK-153) review.
-  **Fix:** add `metadata=` kwarg to `AsyncBackend.write` / `write_atomic` and all
-  concrete async implementations; wire up the `USER_METADATA` capability check.
-
 ---
 
 ## Backlog (Prioritized)
@@ -276,16 +266,6 @@ Existing items may be more verbose — trim on next touch.
     staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
   - Blocked: waiting for conda-forge reviewer approval. When merged: add
     `conda install -c conda-forge remote-store` to README.
-
-- [~] **ID-013b — Async Store API Phase 3: async extensions**
-  Remainder of ID-013. Phase 1 (core primitives) and Phase 2 (native async
-  backends) shipped — see [BACKLOG-DONE.md](BACKLOG-DONE.md).
-  Spec 029 amended with round 2 §2.4 items + Phase 2 AsyncAzureBackend spec.
-  Async guide updated with native backend docs.
-  - Remaining:
-    - Implementation Phase 3: async extensions. Note: Dagster 1.12.21 has no
-      `AsyncIOManager`; `UPathIOManager.load_partitions_async` is internal only.
-      Blocked until Dagster exposes a public async IO manager interface.
 
 ---
 

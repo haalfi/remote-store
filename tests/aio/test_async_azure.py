@@ -51,7 +51,7 @@ from remote_store._errors import (  # noqa: E402
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderEntry  # noqa: E402
+from remote_store._models import FileInfo, FolderEntry, WriteResult  # noqa: E402
 from remote_store.aio._async_azure import AsyncAzureBackend  # noqa: E402
 from remote_store.backends._azure_common import (  # noqa: E402
     build_azure_retry,
@@ -432,9 +432,7 @@ class TestAsyncAzureReadWrite:
         agen = gen()
         await backend.write("file.txt", agen)
         assert bc.upload_blob.call_count == 1
-        # Pass-through: the exact async generator reached the SDK, and iterating
-        # it yielded the full, ordered payload — no materialization in between.
-        assert bc.upload_blob.call_args[0][0] is agen
+        # Chunks forwarded without buffering — full payload arrives in order.
         assert captured == [b"hello ", b"world"]
 
     @pytest.mark.spec("ASYNC-008")
@@ -472,6 +470,47 @@ class TestAsyncAzureReadWrite:
 
         await backend.write("a/b/c.txt", b"deep")
         assert bc.upload_blob.call_count == 1
+
+    @pytest.mark.spec("WR-010")
+    async def test_write_passes_metadata_to_sdk(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        bc.upload_blob = AsyncMock(return_value={})
+
+        await backend.write("file.txt", b"data", metadata={"k": "v"})
+
+        call_kwargs = bc.upload_blob.call_args[1]
+        assert call_kwargs.get("metadata") == {"k": "v"}
+
+    @pytest.mark.spec("WR-001", "WR-004")
+    async def test_write_returns_write_result_with_native_fields(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+
+        mock_response = {
+            "etag": '"0x8D4BCC2E4835CD0"',
+            "last_modified": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        }
+        bc.upload_blob = AsyncMock(return_value=mock_response)
+
+        result = await backend.write("file.txt", b"hello")
+
+        assert isinstance(result, WriteResult)
+        assert result.source == "native"
+        assert result.etag == "0x8d4bcc2e4835cd0"
+        assert result.last_modified == datetime(2024, 1, 1, tzinfo=timezone.utc)
+        assert result.size == 5
+
+    @pytest.mark.spec("WR-010")
+    async def test_write_atomic_passes_metadata_to_sdk(self) -> None:
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        bc.upload_blob = AsyncMock(return_value={})
+
+        await backend.write_atomic("file.txt", b"data", metadata={"k": "v"})
+
+        call_kwargs = bc.upload_blob.call_args[1]
+        assert call_kwargs.get("metadata") == {"k": "v"}
 
 
 # =============================================================================
@@ -1222,7 +1261,6 @@ class TestAsyncAzureHNSPaths:
         agen = chunk_gen()
         await backend.write_atomic("dir/file.txt", agen)
         tmp_fc.upload_data.assert_awaited_once()
-        assert tmp_fc.upload_data.call_args[0][0] is agen
         assert captured == [b"hello ", b"world"]
         assert tmp_fc.rename_file.call_count == 1
 
@@ -1700,7 +1738,6 @@ class TestAsyncAzureWriteAtomicIterator:
         agen = chunk_gen()
         await backend.write_atomic("file.txt", agen, overwrite=True)
         bc.upload_blob.assert_awaited_once()
-        assert bc.upload_blob.call_args[0][0] is agen
         assert captured == [b"hello ", b"world"]
 
 

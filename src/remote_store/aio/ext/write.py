@@ -1,0 +1,55 @@
+"""Async opt-in hashing write helper (RFC-0011 async parity)."""
+
+from __future__ import annotations
+
+import dataclasses
+import hashlib
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Mapping
+
+    from remote_store import WriteResult
+    from remote_store.aio._async_store import AsyncStore
+
+
+async def write_with_hash(
+    store: AsyncStore,
+    path: str,
+    content: bytes | AsyncIterator[bytes],
+    *,
+    algorithm: str = "sha256",
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult:
+    """Write *content* and return a ``WriteResult`` with ``digest`` populated.
+
+    Hash is computed client-side as data flows to the backend -- zero extra
+    round trips, no buffering for async-iterator input.  ``source`` is
+    preserved from the underlying ``store.write()`` result.
+
+    Args:
+        store: Target async store.
+        path: Destination path.
+        content: ``bytes`` or ``AsyncIterator[bytes]``.
+        algorithm: ``hashlib`` algorithm name.  Default ``"sha256"``.
+        overwrite: Same semantics as ``AsyncStore.write``.
+        metadata: Optional user metadata; subject to ``USER_METADATA`` gate.
+    """
+    from remote_store import ContentDigest
+
+    h = hashlib.new(algorithm)
+
+    if isinstance(content, bytes):
+        h.update(content)
+        result = await store.write(path, content, overwrite=overwrite, metadata=metadata)
+    else:
+
+        async def _hashing_iter(src: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
+            async for chunk in src:
+                h.update(chunk)
+                yield chunk
+
+        result = await store.write(path, _hashing_iter(content), overwrite=overwrite, metadata=metadata)
+
+    return dataclasses.replace(result, digest=ContentDigest(algorithm, h.hexdigest()))

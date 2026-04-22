@@ -15,7 +15,7 @@ import hashlib
 import io
 from typing import TYPE_CHECKING
 
-from remote_store._models import ContentDigest, WriteResult
+from remote_store import ContentDigest, WriteResult
 from remote_store._path import RemotePath
 from remote_store.ext.streams import ChecksumReader, ChecksumWriter
 

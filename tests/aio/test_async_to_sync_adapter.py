@@ -1125,7 +1125,7 @@ class TestWriteAtomicMidBinaryIO:
 
 
 class TestCapabilityMasking:
-    """Adapter strips WRITE_RESULT_NATIVE and USER_METADATA regardless of inner backend."""
+    """Adapter preserves WRITE_RESULT_NATIVE and USER_METADATA from inner backend."""
 
     def _adapter_with_caps(self, caps: set[Capability], caplog: pytest.LogCaptureFixture) -> AsyncBackendSyncAdapter:
         double = _HangingAsyncBackend(capabilities=CapabilitySet(caps))
@@ -1135,14 +1135,14 @@ class TestCapabilityMasking:
         return adapter
 
     @pytest.mark.spec("WR-004")
-    def test_write_result_native_masked_when_inner_declares_it(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_write_result_native_preserved_when_inner_declares_it(self, caplog: pytest.LogCaptureFixture) -> None:
         adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.WRITE_RESULT_NATIVE}, caplog)
-        assert not adapter.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
+        assert adapter.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
 
     @pytest.mark.spec("WR-010")
-    def test_user_metadata_masked_when_inner_declares_it(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_user_metadata_preserved_when_inner_declares_it(self, caplog: pytest.LogCaptureFixture) -> None:
         adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.USER_METADATA}, caplog)
-        assert not adapter.capabilities.supports(Capability.USER_METADATA)
+        assert adapter.capabilities.supports(Capability.USER_METADATA)
 
     def test_other_capabilities_pass_through_unchanged(self, caplog: pytest.LogCaptureFixture) -> None:
         adapter = self._adapter_with_caps({Capability.READ, Capability.WRITE, Capability.COPY}, caplog)
@@ -1167,7 +1167,7 @@ class TestAdapterWriteResult:
         adapter, _ = _make_memory_adapter()
         result = adapter.write("f.txt", b"hello")
         assert isinstance(result, WriteResult)
-        assert result.source == "basic"
+        assert result.source == "native"
         assert result.path == RemotePath("f.txt")
         assert result.size == 5
         adapter.close()
@@ -1197,7 +1197,7 @@ class TestAdapterWriteResult:
         adapter, _ = _make_memory_adapter()
         result = adapter.write_atomic("f.txt", b"data")
         assert isinstance(result, WriteResult)
-        assert result.source == "basic"
+        assert result.source == "native"
         assert result.path == RemotePath("f.txt")
         assert result.size == 4
         adapter.close()
@@ -1220,15 +1220,17 @@ class TestAdapterWriteResult:
         adapter.close()
 
     @pytest.mark.spec("WR-010")
-    def test_write_with_nonempty_metadata_raises_capability_not_supported(self) -> None:
+    def test_write_with_nonempty_metadata_succeeds(self) -> None:
         adapter, _ = _make_memory_adapter()
-        with pytest.raises(CapabilityNotSupported):
-            adapter.write("f.txt", b"x", metadata={"k": "v"})
+        result = adapter.write("f.txt", b"x", metadata={"k": "v"})
+        assert isinstance(result, WriteResult)
+        assert result.metadata == {"k": "v"}
         adapter.close()
 
     @pytest.mark.spec("WR-010")
-    def test_write_atomic_with_nonempty_metadata_raises_capability_not_supported(self) -> None:
+    def test_write_atomic_with_nonempty_metadata_succeeds(self) -> None:
         adapter, _ = _make_memory_adapter()
-        with pytest.raises(CapabilityNotSupported):
-            adapter.write_atomic("f.txt", b"x", metadata={"k": "v"})
+        result = adapter.write_atomic("f.txt", b"x", metadata={"k": "v"})
+        assert isinstance(result, WriteResult)
+        assert result.metadata == {"k": "v"}
         adapter.close()

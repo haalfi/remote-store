@@ -184,14 +184,8 @@ class AsyncBackendSyncAdapter(Backend):
 
         ``SEEKABLE_READ`` is masked off unconditionally — the chunk-pull
         stream this adapter returns is forward-only.
-
-        ``WRITE_RESULT_NATIVE`` and ``USER_METADATA`` are masked off until
-        the async ABC grows a ``metadata=`` parameter (Step 3c).  Without
-        masking, the Store layer would allow non-empty ``metadata=`` through
-        (WR-010 gate passes), but the adapter has no forwarding target and
-        would silently drop the metadata — a WR-012 violation.
         """
-        _MASKED = {Capability.SEEKABLE_READ, Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA}
+        _MASKED = {Capability.SEEKABLE_READ}
         inner = self._async_backend.capabilities
         return CapabilitySet({cap for cap in inner if cap not in _MASKED})
 
@@ -390,30 +384,12 @@ class AsyncBackendSyncAdapter(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        from remote_store._models import WriteResult
-        from remote_store._path import RemotePath
-
-        # USER_METADATA is masked in capabilities() so the Store-layer WR-010
-        # gate rejects non-empty metadata= before reaching here.  Callers that
-        # bypass the Store and call the adapter directly still get a clean error
-        # rather than a silent drop (defense-in-depth, ADR-0026 adapter masking).
-        if metadata:
-            raise CapabilityNotSupported(
-                "AsyncBackendSyncAdapter does not support user metadata (Step 3c pending); "
-                "pass metadata= through a Store instead.",
-                capability="USER_METADATA",
-                backend=self.name,
-            )
         if isinstance(content, (bytes, bytearray, memoryview)):
             raw = bytes(content)
-            self._submit(self._async_backend.write(path, raw, overwrite=overwrite))
-            size = len(raw)
+            return self._submit(self._async_backend.write(path, raw, overwrite=overwrite, metadata=metadata))  # type: ignore[no-any-return]
         else:
-            counter = _CountingBinaryIO(content)
-            async_iter = _binaryio_to_async_iter(counter)  # type: ignore[arg-type]
-            self._submit(self._async_backend.write(path, async_iter, overwrite=overwrite))
-            size = counter.count
-        return WriteResult(path=RemotePath(path), size=size, source="basic")
+            async_iter = _binaryio_to_async_iter(content)
+            return self._submit(self._async_backend.write(path, async_iter, overwrite=overwrite, metadata=metadata))  # type: ignore[no-any-return]
 
     def write_atomic(
         self,
@@ -423,27 +399,14 @@ class AsyncBackendSyncAdapter(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        from remote_store._models import WriteResult
-        from remote_store._path import RemotePath
-
-        # Same defense-in-depth guard as write() above.
-        if metadata:
-            raise CapabilityNotSupported(
-                "AsyncBackendSyncAdapter does not support user metadata (Step 3c pending); "
-                "pass metadata= through a Store instead.",
-                capability="USER_METADATA",
-                backend=self.name,
-            )
         if isinstance(content, (bytes, bytearray, memoryview)):
             raw = bytes(content)
-            self._submit(self._async_backend.write_atomic(path, raw, overwrite=overwrite))
-            size = len(raw)
+            return self._submit(self._async_backend.write_atomic(path, raw, overwrite=overwrite, metadata=metadata))  # type: ignore[no-any-return]
         else:
-            counter = _CountingBinaryIO(content)
-            async_iter = _binaryio_to_async_iter(counter)  # type: ignore[arg-type]
-            self._submit(self._async_backend.write_atomic(path, async_iter, overwrite=overwrite))
-            size = counter.count
-        return WriteResult(path=RemotePath(path), size=size, source="basic")
+            async_iter = _binaryio_to_async_iter(content)
+            return self._submit(  # type: ignore[no-any-return]
+                self._async_backend.write_atomic(path, async_iter, overwrite=overwrite, metadata=metadata)
+            )
 
     # -- open_atomic synthesis (ASYNC-085) ----------------------------------
 
@@ -827,26 +790,6 @@ class _AsyncIteratorBridge:
     def __del__(self) -> None:
         """Best-effort cleanup when GC'd before exhaustion."""
         self._aclose_best_effort()
-
-
-# ---------------------------------------------------------------------------
-# Byte-counting BinaryIO wrapper (write path size tracking)
-# ---------------------------------------------------------------------------
-
-
-class _CountingBinaryIO:
-    """Wraps a BinaryIO and counts bytes read — used to populate WriteResult.size."""
-
-    __slots__ = ("_stream", "count")
-
-    def __init__(self, stream: BinaryIO) -> None:
-        self._stream = stream
-        self.count: int = 0
-
-    def read(self, size: int = -1) -> bytes:
-        chunk = self._stream.read(size)
-        self.count += len(chunk)
-        return chunk
 
 
 # ---------------------------------------------------------------------------

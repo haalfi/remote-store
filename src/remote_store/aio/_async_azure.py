@@ -23,18 +23,20 @@ from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
 from remote_store.backends._azure import _AZURE_BLOCK_SIZE
 from remote_store.backends._azure_common import (
-    azure_path as _azure_path_fn,
-)
-from remote_store.backends._azure_common import (
+    _build_azure_write_result,
     build_azure_retry,
     classify_azure_error,
     props_to_fileinfo,
     validate_azure_params,
 )
+from remote_store.backends._azure_common import (
+    azure_path as _azure_path_fn,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Mapping
 
+    from remote_store._models import WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store.aio._types import AsyncWritableContent
 
@@ -393,13 +395,21 @@ class AsyncAzureBackend(AsyncBackend):
             bc = self._blob_client(path)
             return bytes(await (await bc.download_blob(max_concurrency=self._max_concurrency)).readall())
 
-    async def write(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content to a file.
 
         Args:
             path: Backend-relative key.
             content: Data to write (bytes or async iterator of bytes).
             overwrite: If ``False``, raise if file already exists.
+            metadata: Optional user-defined string metadata.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
@@ -419,9 +429,37 @@ class AsyncAzureBackend(AsyncBackend):
             # BUG-165: pass async iter straight to upload_blob — the SDK streams
             # AsyncIterable[bytes] in bounded memory; materializing would break
             # the streaming promise (SIO-003/ASYNC-021) for large payloads.
-            await bc.upload_blob(content, overwrite=True, max_concurrency=self._max_concurrency)
+            # Size is tracked via a counting passthrough generator for async iter.
+            if isinstance(content, bytes):
+                size = len(content)
+                resp = await bc.upload_blob(
+                    content, overwrite=True, max_concurrency=self._max_concurrency, metadata=metadata or None
+                )
+            else:
+                size_ref = [0]
 
-    async def write_atomic(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+                async def _count_and_pass(src: AsyncWritableContent) -> AsyncIterator[bytes]:
+                    async for chunk in src:  # type: ignore[union-attr]
+                        size_ref[0] += len(chunk)
+                        yield chunk
+
+                resp = await bc.upload_blob(
+                    _count_and_pass(content),
+                    overwrite=True,
+                    max_concurrency=self._max_concurrency,
+                    metadata=metadata or None,
+                )
+                size = size_ref[0]
+            return _build_azure_write_result(path, size, resp if isinstance(resp, dict) else {}, metadata)
+
+    async def write_atomic(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content atomically via temp file + rename.
 
         For non-HNS accounts, direct upload is atomic (PUT semantics).
@@ -431,17 +469,19 @@ class AsyncAzureBackend(AsyncBackend):
             path: Backend-relative key.
             content: Data to write.
             overwrite: If ``False``, raise if file already exists.
+            metadata: Optional user-defined string metadata.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         """
         if not await self._ensure_hns():
             # non-HNS: direct upload is atomic (PUT semantics)
-            await self.write(path, content, overwrite=overwrite)
-            return
+            return await self.write(path, content, overwrite=overwrite, metadata=metadata)
 
         # HNS: write to temp file via DFS, then atomic rename
         from azure.core.exceptions import ResourceNotFoundError
+
+        from remote_store._models import WriteResult
 
         async with self._errors(path):  # pragma: no cover -- HNS only
             bc = self._blob_client(path)
@@ -460,15 +500,38 @@ class AsyncAzureBackend(AsyncBackend):
             tmp_name = f".~tmp.{basename}.{uuid.uuid4().hex[:8]}"
             tmp_path = f"{parent}/{tmp_name}" if parent else tmp_name
 
+            size_ref = [0]
+
+            async def _count_and_pass_hns(src: AsyncWritableContent) -> AsyncIterator[bytes]:
+                if isinstance(src, bytes):
+                    size_ref[0] = len(src)
+                    yield src
+                else:
+                    async for chunk in src:
+                        size_ref[0] += len(chunk)
+                        yield chunk
+
             tmp_fc = self._fs.get_file_client(tmp_path)
             try:
-                await tmp_fc.upload_data(content, overwrite=True, max_concurrency=self._max_concurrency)
+                await tmp_fc.upload_data(
+                    _count_and_pass_hns(content),
+                    overwrite=True,
+                    max_concurrency=self._max_concurrency,
+                    metadata=metadata or None,
+                )
                 new_name = f"{self._container}/{ap}"
                 await tmp_fc.rename_file(new_name)
             except Exception:
                 with contextlib.suppress(Exception):
                     await tmp_fc.delete_file()
                 raise
+
+            return WriteResult(
+                path=RemotePath(path),
+                size=size_ref[0],
+                source="native",
+                metadata=metadata,
+            )
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.

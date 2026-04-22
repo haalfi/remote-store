@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound
-from remote_store._models import FileInfo, FolderEntry
+from remote_store._models import FileInfo, FolderEntry, WriteResult
 from remote_store.aio._async_memory import AsyncMemoryBackend
 
 
@@ -115,6 +115,52 @@ class TestAsyncMemoryReadWrite:
         backend = AsyncMemoryBackend()
         with pytest.raises(InvalidPath, match="must not be empty"):
             await backend.write("", b"data")
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_returns_write_result(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write("f.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.size == 5
+        assert result.source == "native"
+        assert str(result.path) == "f.txt"
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_result_path_is_backend_relative(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write("dir/f.txt", b"x")
+        assert str(result.path) == "dir/f.txt"
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_result_last_modified_populated(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write("f.txt", b"x")
+        assert result.last_modified is not None
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_metadata_returned(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write("f.txt", b"x", metadata={"k": "v"})
+        assert result.metadata == {"k": "v"}
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_metadata_none_when_not_passed(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write("f.txt", b"x")
+        assert result.metadata is None
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_returns_write_result(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write_atomic("f.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.size == 5
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_metadata_returned(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write_atomic("f.txt", b"x", metadata={"a": "b"})
+        assert result.metadata == {"a": "b"}
 
 
 class TestAsyncMemoryDelete:

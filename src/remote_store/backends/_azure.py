@@ -21,18 +21,19 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
-from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
+from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 from remote_store._stream import _ErrorMappingStream
 from remote_store.backends._azure_common import (
-    azure_path as _azure_path_fn,
-)
-from remote_store.backends._azure_common import (
+    _build_azure_write_result,
     build_azure_retry,
     classify_azure_error,
     props_to_fileinfo,
     resolve_credential,
     validate_azure_params,
+)
+from remote_store.backends._azure_common import (
+    azure_path as _azure_path_fn,
 )
 
 if TYPE_CHECKING:
@@ -68,31 +69,6 @@ class _ByteCountingIO:
         chunk = self._stream.read(size)
         self.count += len(chunk)
         return chunk
-
-
-def _build_azure_write_result(
-    path: str,
-    size: int,
-    resp: dict[str, Any],
-    metadata: Mapping[str, str] | None,
-) -> WriteResult:
-    """Build a WriteResult from an Azure SDK upload_blob response dict."""
-    raw_etag = resp.get("etag")
-    etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None
-    last_modified = resp.get("last_modified")
-    version_id = resp.get("version_id") or None
-    md5_bytes = resp.get("content_md5")
-    digest = ContentDigest("md5", md5_bytes.hex()) if isinstance(md5_bytes, (bytes, bytearray)) and md5_bytes else None
-    return WriteResult(
-        path=RemotePath(path),
-        size=size,
-        source="native",
-        etag=etag,
-        last_modified=last_modified,
-        version_id=version_id,
-        digest=digest,
-        metadata=metadata,
-    )
 
 
 class _AzureBinaryIO(io.RawIOBase):
