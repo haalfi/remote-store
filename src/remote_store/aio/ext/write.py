@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from remote_store import WriteResult
     from remote_store.aio import AsyncStore
 
+__all__ = ["write_with_hash"]
+
 
 async def write_with_hash(
     store: AsyncStore,

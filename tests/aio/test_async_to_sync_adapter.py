@@ -1234,3 +1234,19 @@ class TestAdapterWriteResult:
         assert isinstance(result, WriteResult)
         assert result.metadata == {"k": "v"}
         adapter.close()
+
+    @pytest.mark.spec("WR-010")
+    def test_write_binaryio_metadata_forwarded(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write("f.txt", io.BytesIO(b"hello"), metadata={"k": "v"})
+        assert isinstance(result, WriteResult)
+        assert result.metadata == {"k": "v"}
+        adapter.close()
+
+    @pytest.mark.spec("WR-010")
+    def test_write_atomic_binaryio_metadata_forwarded(self) -> None:
+        adapter, _ = _make_memory_adapter()
+        result = adapter.write_atomic("f.txt", io.BytesIO(b"hello"), metadata={"k": "v"})
+        assert isinstance(result, WriteResult)
+        assert result.metadata == {"k": "v"}
+        adapter.close()
