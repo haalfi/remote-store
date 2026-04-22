@@ -14,6 +14,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Changed
 
+- BK-153: Add backend-specifics visibility admonitions to API reference
 - BK-155: Consolidate S3 + S3-PyArrow test and spec duplication
 
 - **pyarrow 24.x mypy compatibility** (BK-154): pyarrow 24.0.0 shipped partial

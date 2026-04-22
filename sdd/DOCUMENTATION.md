@@ -152,11 +152,26 @@ Cross-references replace duplication, but actionable checklists should be co-loc
 | `Store.read` docstring | Streaming guide | `See the [Streaming Guide](../guides/streaming.md)` |
 | `guides/backends/s3.md` | Capabilities matrix | `[Capabilities](../capabilities-matrix.md)` |
 
-## 8. API page building blocks
+## API page building blocks
 
 Reusable structural blocks for `docs-src/api/` pages. `store.md` is the
 canonical example. Apply the appropriate page-type template (see below) and
 compose from these blocks.
+
+### Admonition vocabulary
+
+Three levels, applied consistently across all `docs-src/api/` pages:
+
+| Level | When to use | Title pattern |
+|-------|-------------|---------------|
+| `!!! info` | Pure context — helpful to know, no runtime consequence | Free-form (e.g. "Thread safety", "Ordering and laziness") |
+| `!!! note` | Be aware — raises `CapabilityNotSupported` or behavior varies predictably | `Requires Capability.X` · `Backend-conditional argument: param=` |
+| `!!! warning` | Backend coupling — ties code irrevocably to a specific backend | `Backend-specific methods` (section header only) |
+
+Rules:
+- `Requires Capability.X` and `Backend-conditional argument: param=` are both `!!! note` — both result in predictable `CapabilityNotSupported` when the capability is absent.
+- `!!! warning "Backend-specific methods"` is used only as a section/group header, not on individual methods.
+- Title fragment must be identical for the same pattern across all files (colon, no em dash, backtick-quoted param names).
 
 ### Blocks
 
@@ -168,7 +183,7 @@ sections.
     options:
       members: false
 
-!!! note "Key behavioral fact"
+!!! info "Key behavioral fact"
     One-sentence callout for a fact that callers must know before reading
     any method (e.g. thread safety, context-manager usage, immutability).
 ```
@@ -184,8 +199,8 @@ its own directive so admonitions can be inserted between them.
       show_root_heading: true
       heading_level: 3
 
-!!! note "Backend-specific behavior"
-    Short callout that applies to the method(s) above.
+!!! note "Requires `Capability.X`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ::: remote_store.ClassName.method_two
     options:
@@ -193,15 +208,27 @@ its own directive so admonitions can be inserted between them.
       heading_level: 3
 ```
 
-**Behavioral note** — inline admonition between methods for backend-dependent
-or surprising behavior.
+**Info note** — pure context; helpful to know, no runtime consequence.
 
 ```markdown
-!!! note "Ordering and laziness"
+!!! info "Ordering and laziness"
     Short, concrete statement. One or two sentences max.
 ```
 
-**Warning block** — marks non-portable or backend-specific API surface.
+**Constraint note** — capability gate or argument that changes capability requirements.
+
+```markdown
+!!! note "Requires `Capability.X`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+```
+
+```markdown
+!!! note "Backend-conditional argument: `param=`"
+    Passing `param` raises `CapabilityNotSupported` on backends that do not
+    declare `Capability.X`. Passing `None` or the default is safe on all backends.
+```
+
+**Warning block** — backend coupling: ties code irrevocably to a specific backend.
 
 ```markdown
 !!! warning "Backend-specific methods"
@@ -243,9 +270,9 @@ Verify against actual code before relying on these in production.
 
 | Page type | Required blocks | Optional blocks |
 |---|---|---|
-| **Rich class** (Store, AsyncStore) | Class header, Method sections, See also | Behavioral notes, Warning block, Behavior matrix, Related types |
-| **Protocol / ABC** (Backend) | Class header, Method sections, See also | Behavioral notes |
-| **Support class** (ProxyStore, Registry, Config, Models, RemotePath, Info, SFTPUtils) | Intro prose or class header, `:::` (all members), See also | Behavioral notes |
+| **Rich class** (Store, AsyncStore) | Class header, Method sections, See also | Info notes, Constraint notes, Warning block, Behavior matrix, Related types |
+| **Protocol / ABC** (Backend) | Class header, Method sections, See also | Info notes, Constraint notes |
+| **Support class** (ProxyStore, Registry, Config, Models, RemotePath, Info, SFTPUtils) | Intro prose or class header, `:::` (all members), See also | Info notes, Constraint notes |
 | **Enum / flags** (Capability, CapabilitySet) | `:::` per type, See also | -- |
 | **Error hierarchy** (Errors) | Flat `:::` per error class, See also | -- |
 

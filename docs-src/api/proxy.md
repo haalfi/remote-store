@@ -12,6 +12,15 @@ extensions ([ADR-0015](https://github.com/haalfi/remote-store/blob/master/sdd/ad
 
 ::: remote_store.ProxyStore
 
+## Interop (Backend-Specific)
+
+!!! warning "Backend-specific methods"
+    `unwrap`, `native_path`, and `to_key` delegate directly to the inner
+    Store and expose backend internals. Using them ties your code to a
+    specific backend. `supports()` is portable — it works on all backends.
+    See [Store — Interop](store.md#interop-backend-specific) for the full
+    contract.
+
 ## See also
 
 - [ext.observe](extensions/observe.md) — ObservedStore, built on ProxyStore

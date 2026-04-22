@@ -1,5 +1,9 @@
 # SFTPUtils
 
+!!! warning "Backend-specific module"
+    `SFTPUtils`, `load_private_key`, and `HostKeyPolicy` are exclusive to the
+    SFTP backend. Using them ties your code to `SFTPBackend`.
+
 ::: remote_store.backends.SFTPUtils
     options:
       members: false
