@@ -1358,7 +1358,7 @@ class TestAsyncAzureHNSPaths:
         """overwrite=False raises AlreadyExists when the target file already exists."""
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
-        bc.get_blob_properties = AsyncMock(return_value=MagicMock())
+        bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
         backend._cc_instance.get_blob_client.return_value = bc
 
         with pytest.raises(AlreadyExists):
