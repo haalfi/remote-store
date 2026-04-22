@@ -828,7 +828,7 @@ class TestStreamingConformance:
 
 
 class TestBackendGlob:
-    """GLOB-018/019/020: glob conformance across backends."""
+    """GLOB-004/018/019/020: glob conformance across backends."""
 
     @pytest.mark.spec("GLOB-018")
     @pytest.mark.parametrize(
@@ -877,8 +877,11 @@ class TestBackendGlob:
                 "gf/sub/deep/c.txt": b"c",
             },
         )
-        for info in backend.glob("gf/**/*"):
+        results = list(backend.glob("gf/**/*"))
+        assert len(results) == 3
+        for info in results:
             assert isinstance(info, FileInfo)
+            assert str(info.path).startswith("gf/")
 
 
 class TestBackendUnwrap:

@@ -137,7 +137,7 @@ class TestS3SharedConstruction:
         "backend_cls",
         [
             pytest.param(S3_CLS, id="s3", marks=pytest.mark.spec("S3-022")),
-            pytest.param(S3PA_CLS, id="s3-pyarrow", marks=pytest.mark.spec("S3PA-001")),
+            pytest.param(S3PA_CLS, id="s3-pyarrow", marks=pytest.mark.spec("S3PA-024")),
         ],
     )
     def test_credentials_optional(self, backend_cls: str) -> None:
