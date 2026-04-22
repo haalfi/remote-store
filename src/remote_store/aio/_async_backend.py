@@ -8,11 +8,11 @@ from typing import TYPE_CHECKING, TypeVar
 from remote_store._errors import CapabilityNotSupported
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Mapping
     from types import TracebackType
 
     from remote_store._capabilities import CapabilitySet
-    from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store.aio._types import AsyncWritableContent
 
@@ -121,26 +121,48 @@ class AsyncBackend(abc.ABC):
         """
 
     @abc.abstractmethod
-    async def write(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content to a file.
 
         Args:
             path: Backend-relative key.
             content: Data to write.
             overwrite: If ``False``, raise if file already exists.
+            metadata: Optional user-defined string metadata.
+
+        Returns:
+            A ``WriteResult`` with size, path, and optional native fields.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         """
 
     @abc.abstractmethod
-    async def write_atomic(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write_atomic(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content atomically via temp file + rename.
 
         Args:
             path: Backend-relative key.
             content: Data to write.
             overwrite: If ``False``, raise if file already exists.
+            metadata: Optional user-defined string metadata.
+
+        Returns:
+            A ``WriteResult`` with size, path, and optional native fields.
 
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.

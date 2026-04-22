@@ -27,19 +27,27 @@ from the backend write is preserved (`"native"` or `"basic"`); `digest`
 is set independently of `source` and always represents the
 client-computed hash.
 
+**Async counterpart:** `aio.ext.write.write_with_hash(store: AsyncStore,
+path, content: bytes | AsyncIterator[bytes], *, algorithm="sha256",
+overwrite=False, metadata=None) -> WriteResult` satisfies the same
+invariant. The `content` type differs (`AsyncIterator[bytes]` instead of
+`BinaryIO`); the digest guarantee and `source` preservation are identical.
+
 **Parameter defaults (normative):**
 
 - `algorithm: str = "sha256"` — hash algorithm name accepted by
   `hashlib.new`. Single-algorithm only in v1, matching the existing
   `ChecksumWriter` signature; multi-algorithm multiplex is deferred.
-- `overwrite: bool = False` — same semantics as `Store.write`.
+- `overwrite: bool = False` — same semantics as `Store.write` /
+  `AsyncStore.write`.
 - `metadata: Mapping[str, str] | None = None` — optional user
   metadata; subject to the `USER_METADATA` capability gate (WR-010)
-  applied inside the underlying `store.write()`.
+  applied inside the underlying `store.write()` / `AsyncStore.write()`.
 
 ## EW-002 (was WR-015): write_with_hash Works on Every WRITE Backend
 
-**Invariant:** `ext.write.write_with_hash()` works on every backend
+**Invariant:** `ext.write.write_with_hash()` (sync) and
+`aio.ext.write.write_with_hash()` (async) each work on every backend
 declaring `Capability.WRITE`. The hash is always computed client-side
 regardless of `WRITE_RESULT_NATIVE`. No additional capability beyond
 `WRITE` is required.

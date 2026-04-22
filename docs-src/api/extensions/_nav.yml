@@ -12,4 +12,5 @@
 - ext.streams: streams.md
 - ext.transfer: transfer.md
 - ext.write: write.md
+- aio.ext.write: aio-write.md
 - ext.yaml: yaml.md

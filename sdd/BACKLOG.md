@@ -43,15 +43,17 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-179 — `AsyncBackend.write` / `write_atomic` missing `metadata=` kwarg**
-  `Backend.write` / `write_atomic` (`_backend.py:186,215`) carry
-  `metadata: Mapping[str, str] | None = None` and enforce `Capability.USER_METADATA`.
-  The async counterparts (`aio/_async_backend.py:124,137`) and all concrete async
-  implementations (`AsyncMemoryBackend`, `AsyncAzureBackend`, `SyncBackendAdapter`)
-  lack the parameter entirely — passing it yields `TypeError`, not `CapabilityNotSupported`.
-  Surfaced during PR #492 (BK-153) review.
-  **Fix:** add `metadata=` kwarg to `AsyncBackend.write` / `write_atomic` and all
-  concrete async implementations; wire up the `USER_METADATA` capability check.
+- [ ] **BUG-181 — Verify HNS `write_atomic` WriteResult rich-field parity in integration**
+  `AsyncAzureBackend.write_atomic` on HNS calls `get_file_properties()` on the renamed
+  file client to populate `etag`, `last_modified`, `version_id`, and `digest` (WR-004).
+  The metadata is also set on the temp file before rename, relying on ADLS Gen2 rename
+  preserving user-defined metadata (expected for filesystem-level rename, not a copy).
+  Both code paths are `# pragma: no cover` in CI. When HNS integration tests are added:
+  1. Add `test_write_atomic_hns_returns_native_fields` — assert `etag`, `last_modified`
+     are populated in the returned `WriteResult`.
+  2. Add `test_write_atomic_hns_metadata_preserved` — write with `metadata={"k":"v"}`;
+     assert the key is present in the returned `WriteResult` and on the live file.
+  Spec: WR-004, ASYNC-010.
 
 ---
 
@@ -276,16 +278,6 @@ Existing items may be more verbose — trim on next touch.
     staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
   - Blocked: waiting for conda-forge reviewer approval. When merged: add
     `conda install -c conda-forge remote-store` to README.
-
-- [~] **ID-013b — Async Store API Phase 3: async extensions**
-  Remainder of ID-013. Phase 1 (core primitives) and Phase 2 (native async
-  backends) shipped — see [BACKLOG-DONE.md](BACKLOG-DONE.md).
-  Spec 029 amended with round 2 §2.4 items + Phase 2 AsyncAzureBackend spec.
-  Async guide updated with native backend docs.
-  - Remaining:
-    - Implementation Phase 3: async extensions. Note: Dagster 1.12.21 has no
-      `AsyncIOManager`; `UPathIOManager.load_partitions_async` is internal only.
-      Blocked until Dagster exposes a public async IO manager interface.
 
 ---
 

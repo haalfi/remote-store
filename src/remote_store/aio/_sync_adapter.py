@@ -8,11 +8,11 @@ from typing import TYPE_CHECKING, TypeVar
 from remote_store.aio._async_backend import AsyncBackend
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Mapping
 
     from remote_store._backend import Backend as _SyncBackend
     from remote_store._capabilities import CapabilitySet
-    from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store.aio._types import AsyncWritableContent
 
@@ -148,15 +148,29 @@ class SyncBackendAdapter(AsyncBackend):
 
     # -- Write methods (materialize first) ---------------------------------
 
-    async def write(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content to a file."""
         raw = await _materialize(content)
-        await asyncio.to_thread(self._sync.write, path, raw, overwrite=overwrite)
+        return await asyncio.to_thread(self._sync.write, path, raw, overwrite=overwrite, metadata=metadata)
 
-    async def write_atomic(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write_atomic(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content atomically via temp file + rename."""
         raw = await _materialize(content)
-        await asyncio.to_thread(self._sync.write_atomic, path, raw, overwrite=overwrite)
+        return await asyncio.to_thread(self._sync.write_atomic, path, raw, overwrite=overwrite, metadata=metadata)
 
     # -- Iterator methods (ASYNC-032) --------------------------------------
 

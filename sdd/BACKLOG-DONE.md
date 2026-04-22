@@ -5,6 +5,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-013b — Async Store API Phase 3: async extensions**
+  `AsyncStore.write*()` now returns `WriteResult` and accepts `metadata=`.
+  `AsyncBackend.write` / `write_atomic` ABC updated with `metadata=` kwarg and
+  `WriteResult` return type. `AsyncMemoryBackend`, `AsyncAzureBackend`, and
+  `SyncBackendAdapter` all updated. `AsyncBackendSyncAdapter` unmasked
+  `USER_METADATA` and `WRITE_RESULT_NATIVE` capabilities. New module
+  `aio.ext.write` with `write_with_hash` helper. Resolves BUG-179 as a subset.
+
+- [x] **BUG-179 — `AsyncBackend.write` / `write_atomic` missing `metadata=` kwarg**
+  Fixed as part of ID-013b. All async write methods now accept `metadata=` and
+  enforce `Capability.USER_METADATA` at the `AsyncStore` layer.
+
 - [x] **BUG-180 — ResourceWarning in tests under Python 3.14 (HTTPError not closed)**
   `UrllibTransport._request()` discarded the caught `HTTPError` without calling
   `close()`. On Python 3.14 this emits a `ResourceWarning` during GC, surfaced

@@ -36,6 +36,7 @@ EXTRA_SCRIPTS = [
     EXAMPLES_ROOT / "snippets" / "core_operations.py",
     EXAMPLES_ROOT / "snippets" / "custom_backend_guide.py",
     EXAMPLES_ROOT / "snippets" / "write_integrity.py",
+    EXAMPLES_ROOT / "snippets" / "write_integrity_async.py",
 ]
 
 

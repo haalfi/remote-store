@@ -17,8 +17,9 @@ from remote_store.backends._memory_tree import FileEntry as _FileEntry
 from remote_store.backends._memory_tree import FileSnapshot as _FileSnapshot
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Mapping
 
+    from remote_store._models import WriteResult
     from remote_store.aio._types import AsyncWritableContent
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.GLOB})
@@ -142,18 +143,32 @@ class AsyncMemoryBackend(AsyncBackend):
                 raise NotFound(f"File not found: {path}", path=path, backend="async-memory")
             return bytes(node.data)
 
-    async def write(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content to a file.
 
         Args:
             path: Backend-relative key.
             content: Data to write (bytes or async iterator of bytes).
             overwrite: If ``False``, raise if file already exists.
+            metadata: Optional user-defined string metadata.
+
+        Returns:
+            ``WriteResult`` with ``path``, ``size``, ``last_modified``, and
+            ``source="native"`` populated.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If the path is empty or conflicts with a directory.
         """
+        from remote_store._models import WriteResult
+
         segments = _split_path(path)
         if not segments:
             raise InvalidPath("Path must not be empty for file operations", path=path, backend="async-memory")
@@ -168,6 +183,8 @@ class AsyncMemoryBackend(AsyncBackend):
             raw = bytearray(b"".join(chunks))
 
         async with self._lock:
+            # Capture under the lock so modified_at reflects lock-acquisition order.
+            now = datetime.now(timezone.utc)
             parent = self._ensure_parents(segments)
             leaf = segments[-1]
             existing = parent.children.get(leaf)
@@ -182,26 +199,48 @@ class AsyncMemoryBackend(AsyncBackend):
                 if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend="async-memory")
                 existing.data[:] = raw
-                existing.modified_at = datetime.now(timezone.utc)
+                existing.modified_at = now
+                existing.metadata = dict(metadata) if metadata else None
             else:
                 parent.children[leaf] = _FileEntry(
                     data=raw,
-                    modified_at=datetime.now(timezone.utc),
+                    modified_at=now,
+                    metadata=dict(metadata) if metadata else None,
                 )
                 self._file_count += 1
 
-    async def write_atomic(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+        return WriteResult(
+            path=RemotePath(path),
+            size=len(raw),
+            source="native",
+            last_modified=now,
+            metadata=metadata,
+        )
+
+    async def write_atomic(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         """Write content atomically (same as write for in-memory backend).
 
         Args:
             path: Backend-relative key.
             content: Data to write.
             overwrite: If ``False``, raise if file already exists.
+            metadata: Optional user-defined string metadata.
+
+        Returns:
+            ``WriteResult`` with ``path``, ``size``, ``last_modified``, and
+            ``source="native"`` populated.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         """
-        await self.write(path, content, overwrite=overwrite)
+        return await self.write(path, content, overwrite=overwrite, metadata=metadata)
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.

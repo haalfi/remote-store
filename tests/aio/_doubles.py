@@ -29,9 +29,9 @@ from remote_store._errors import NotFound
 from remote_store.aio._async_backend import AsyncBackend
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Mapping
 
-    from remote_store._models import FileInfo, FolderEntry, FolderInfo
+    from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
     from remote_store.aio._types import AsyncWritableContent
 
 # Default capability set for the doubles: every real ``Capability``
@@ -169,11 +169,27 @@ class _HangingAsyncBackend(AsyncBackend):
         await self._hang()
         return b""  # pragma: no cover
 
-    async def write(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         await self._hang()
+        raise AssertionError("unreachable")  # pragma: no cover
 
-    async def write_atomic(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write_atomic(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         await self._hang()
+        raise AssertionError("unreachable")  # pragma: no cover
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         await self._hang()
@@ -291,11 +307,27 @@ class _RaisingAsyncBackend(AsyncBackend):
         self._raise()
         return b""  # pragma: no cover
 
-    async def write(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         self._raise()
+        raise AssertionError("unreachable")  # pragma: no cover
 
-    async def write_atomic(self, path: str, content: AsyncWritableContent, *, overwrite: bool = False) -> None:
+    async def write_atomic(
+        self,
+        path: str,
+        content: AsyncWritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         self._raise()
+        raise AssertionError("unreachable")  # pragma: no cover
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         self._raise()

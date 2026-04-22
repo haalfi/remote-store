@@ -14,10 +14,12 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import ContentDigest, FileInfo
+from remote_store._models import ContentDigest, FileInfo, WriteResult
 from remote_store._path import RemotePath
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from remote_store._config import RetryPolicy
 
 log = logging.getLogger(__name__)
@@ -195,6 +197,31 @@ def resolve_credential(
                 backend=backend_name,
             ) from None
     return cred
+
+
+def _build_azure_write_result(
+    path: str,
+    size: int,
+    resp: dict[str, Any],
+    metadata: Mapping[str, str] | None,
+) -> WriteResult:
+    """Build a WriteResult from an Azure SDK upload_blob/upload_data response dict."""
+    raw_etag = resp.get("etag")
+    etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None
+    last_modified = resp.get("last_modified")
+    version_id = resp.get("version_id") or None
+    md5_bytes = resp.get("content_md5")
+    digest = ContentDigest("md5", md5_bytes.hex()) if isinstance(md5_bytes, (bytes, bytearray)) and md5_bytes else None
+    return WriteResult(
+        path=RemotePath(path),
+        size=size,
+        source="native",
+        etag=etag,
+        last_modified=last_modified,
+        version_id=version_id,
+        digest=digest,
+        metadata=metadata,
+    )
 
 
 def build_azure_retry(retry: RetryPolicy | None) -> Any | None:

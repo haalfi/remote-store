@@ -11,7 +11,8 @@ if TYPE_CHECKING:
 
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, CapabilityNotSupported, InvalidPath, NotFound
-from remote_store._models import FileInfo, FolderEntry
+from remote_store._models import FileInfo, FolderEntry, WriteResult
+from remote_store._path import RemotePath
 from remote_store.aio import AsyncMemoryBackend, AsyncStore
 from remote_store.backends._memory import MemoryBackend
 
@@ -185,6 +186,32 @@ class TestAsyncStoreWrite:
     async def test_write_creates_intermediate_dirs(self, async_store: AsyncStore) -> None:
         await async_store.write("deep/nested/file.txt", b"deep")
         assert await async_store.read_bytes("deep/nested/file.txt") == b"deep"
+
+    @pytest.mark.spec("ASYNC-008", "WR-001")
+    async def test_write_returns_write_result(self, async_store: AsyncStore) -> None:
+        result = await async_store.write("r.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.size == 5
+
+    @pytest.mark.spec("ASYNC-008", "WR-001", "WR-002")
+    async def test_write_result_path_is_store_relative(self) -> None:
+        backend = AsyncMemoryBackend()
+        store = AsyncStore(backend, root_path="data")
+        result = await store.write("r.txt", b"x")
+        assert str(result.path) == "r.txt"
+        assert "data" not in str(result.path)
+
+    @pytest.mark.spec("ASYNC-052a", "WR-001")
+    async def test_write_text_returns_write_result(self, async_store: AsyncStore) -> None:
+        result = await async_store.write_text("t.txt", "hi")
+        assert isinstance(result, WriteResult)
+        assert result.size == 2
+
+    @pytest.mark.spec("ASYNC-010", "WR-001")
+    async def test_write_atomic_returns_write_result(self, async_store: AsyncStore) -> None:
+        result = await async_store.write_atomic("a.txt", b"hello")
+        assert isinstance(result, WriteResult)
+        assert result.size == 5
 
 
 class TestAsyncStoreDelete:
@@ -650,13 +677,12 @@ class TestAsyncStoreEagerValidation:
         args: tuple[str, ...],
     ) -> None:
         """Calling the method (without iterating) raises immediately."""
-        from tests.conftest import RestrictedBackend
+        from tests.aio.conftest import RestrictedAsyncBackend
 
-        backend = MemoryBackend()
         if method == "glob":
             # glob needs GLOB capability removed to trigger eager error
-            restricted = RestrictedBackend(backend, exclude={Capability.GLOB})
-            store = AsyncStore(restricted, root_path="data")  # type: ignore[arg-type]
+            restricted = RestrictedAsyncBackend(AsyncMemoryBackend(), exclude={Capability.GLOB})
+            store = AsyncStore(restricted, root_path="data")
             with pytest.raises(CapabilityNotSupported, match="is not supported"):
                 store.glob("*.txt")  # no iteration, error raised here
         elif method == "read":
@@ -665,8 +691,8 @@ class TestAsyncStoreEagerValidation:
                 store.read("")  # no iteration, error raised here
         else:
             # list_files, list_folders, iter_children need LIST removed
-            restricted = RestrictedBackend(backend, exclude={Capability.LIST})
-            store = AsyncStore(restricted, root_path="data")  # type: ignore[arg-type]
+            restricted = RestrictedAsyncBackend(AsyncMemoryBackend(), exclude={Capability.LIST})
+            store = AsyncStore(restricted, root_path="data")
             with pytest.raises(CapabilityNotSupported, match="is not supported"):
                 getattr(store, method)(*args)  # no iteration, error raised here
 
@@ -676,11 +702,10 @@ class TestAsyncStoreWriteAtomicCapabilityGate:
 
     @pytest.mark.spec("ASYNC-011")
     async def test_write_atomic_without_capability(self) -> None:
-        from tests.conftest import RestrictedBackend
+        from tests.aio.conftest import RestrictedAsyncBackend
 
-        backend = MemoryBackend()
-        restricted = RestrictedBackend(backend, exclude={Capability.ATOMIC_WRITE})
-        store = AsyncStore(restricted, root_path="")  # type: ignore[arg-type]
+        restricted = RestrictedAsyncBackend(AsyncMemoryBackend(), exclude={Capability.ATOMIC_WRITE})
+        store = AsyncStore(restricted, root_path="")
         with pytest.raises(CapabilityNotSupported, match="atomic_write"):
             await store.write_atomic("file.txt", b"data")
 
@@ -827,24 +852,21 @@ class TestAsyncStoreHead:
             await async_store.head("missing.txt")
 
     async def test_head_requires_metadata_capability(self) -> None:
-        from tests.conftest import RestrictedBackend
+        from tests.aio.conftest import RestrictedAsyncBackend
 
-        backend = MemoryBackend()
-        restricted = RestrictedBackend(backend, exclude={Capability.METADATA})
-        store = AsyncStore(restricted, root_path="data")  # type: ignore[arg-type]
+        restricted = RestrictedAsyncBackend(AsyncMemoryBackend(), exclude={Capability.METADATA})
+        store = AsyncStore(restricted, root_path="data")
         with pytest.raises(CapabilityNotSupported):
             await store.head("f.bin")
 
     async def test_head_path_is_store_relative(self, async_store: AsyncStore) -> None:
-        from remote_store._path import RemotePath
-
         await async_store.write("nested/f.bin", b"xy")
         result = await async_store.head("nested/f.bin")
         assert result.path == RemotePath("nested/f.bin")
 
 
 class TestAsyncStoreMetadataGate:
-    """WR-010/WR-011 async parity: metadata= validation and Phase 3 deferral."""
+    """WR-010/WR-011 async parity: metadata= validation and capability gate."""
 
     @pytest.fixture
     def async_store(self) -> AsyncStore:
@@ -854,18 +876,51 @@ class TestAsyncStoreMetadataGate:
         await async_store.write("f.bin", b"x", metadata={})
         assert await async_store.read_bytes("f.bin") == b"x"
 
-    async def test_write_nonempty_metadata_raises_not_implemented(self, async_store: AsyncStore) -> None:
-        with pytest.raises(NotImplementedError, match="Phase 3"):
-            await async_store.write("f.bin", b"x", metadata={"k": "v"})
+    @pytest.mark.spec("WR-010", "WR-012")
+    @pytest.mark.parametrize(
+        ("method", "content"),
+        [
+            ("write", b"x"),
+            ("write_text", "hello"),
+            ("write_atomic", b"hello"),
+        ],
+        ids=["write", "write_text", "write_atomic"],
+    )
+    async def test_write_nonempty_metadata_succeeds(
+        self, async_store: AsyncStore, method: str, content: bytes | str
+    ) -> None:
+        result = await getattr(async_store, method)("f.bin", content, metadata={"k": "v"})
+        assert isinstance(result, WriteResult)
+        assert result.metadata == {"k": "v"}
 
-    async def test_write_text_nonempty_metadata_raises_not_implemented(self, async_store: AsyncStore) -> None:
-        with pytest.raises(NotImplementedError, match="Phase 3"):
-            await async_store.write_text("f.bin", "hello", metadata={"k": "v"})
-
-    async def test_write_atomic_nonempty_metadata_raises_not_implemented(self, async_store: AsyncStore) -> None:
-        with pytest.raises(NotImplementedError, match="Phase 3"):
-            await async_store.write_atomic("f.bin", b"hello", metadata={"k": "v"})
-
+    @pytest.mark.spec("WR-011")
     async def test_write_invalid_metadata_raises_value_error(self, async_store: AsyncStore) -> None:
         with pytest.raises(ValueError, match="underscore"):
             await async_store.write("f.bin", b"x", metadata={"_bad": "v"})
+
+    @pytest.mark.spec("WR-010")
+    async def test_write_metadata_no_capability_raises(self) -> None:
+        from tests.aio.conftest import RestrictedAsyncBackend
+
+        backend = RestrictedAsyncBackend(AsyncMemoryBackend(), exclude={Capability.USER_METADATA})
+        store = AsyncStore(backend, root_path="data")
+        with pytest.raises(CapabilityNotSupported, match="user_metadata"):
+            await store.write("f.bin", b"x", metadata={"k": "v"})
+
+    @pytest.mark.spec("WR-010", "ASYNC-052a")
+    async def test_write_text_metadata_no_capability_raises(self) -> None:
+        from tests.aio.conftest import RestrictedAsyncBackend
+
+        backend = RestrictedAsyncBackend(AsyncMemoryBackend(), exclude={Capability.USER_METADATA})
+        store = AsyncStore(backend, root_path="data")
+        with pytest.raises(CapabilityNotSupported, match="user_metadata"):
+            await store.write_text("f.bin", "hi", metadata={"k": "v"})
+
+    @pytest.mark.spec("WR-010", "ASYNC-010")
+    async def test_write_atomic_metadata_no_capability_raises(self) -> None:
+        from tests.aio.conftest import RestrictedAsyncBackend
+
+        backend = RestrictedAsyncBackend(AsyncMemoryBackend(), exclude={Capability.USER_METADATA})
+        store = AsyncStore(backend, root_path="data")
+        with pytest.raises(CapabilityNotSupported, match="user_metadata"):
+            await store.write_atomic("f.bin", b"x", metadata={"k": "v"})

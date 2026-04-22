@@ -141,7 +141,7 @@ class AsyncStore:
         *,
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
-    ) -> None:
+    ) -> WriteResult:
         """Write binary content to *path*.  Creates parent folders implicitly.
 
         Args:
@@ -149,14 +149,16 @@ class AsyncStore:
             content: ``bytes`` or async iterator of ``bytes``.
             overwrite: If ``False``, raises ``AlreadyExists`` when
                 *path* exists.
-            metadata: Reserved for Phase 3 — not yet forwarded to the
-                async backend.
+            metadata: Optional user-defined string metadata.
+
+        Returns:
+            ``WriteResult`` with at least ``path`` and ``size`` populated.
 
         Raises:
             ValueError: If *metadata* contains invalid keys or values
                 (see ``Store.write()`` for validation rules).
-            NotImplementedError: If *metadata* is non-empty (Phase 3
-                not yet implemented on ``AsyncStore``).
+            CapabilityNotSupported: If *metadata* is non-empty and the
+                backend lacks ``USER_METADATA``.
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
@@ -164,14 +166,16 @@ class AsyncStore:
         from remote_store._store import _validate_metadata
 
         _validate_metadata(metadata)
-        if metadata:
-            msg = "metadata= is not yet supported on AsyncStore; use the sync Store or wait for Phase 3"
-            raise NotImplementedError(msg)
         _bk = self._backend.name
+        if metadata:
+            self._backend.capabilities.require(Capability.USER_METADATA, backend=_bk)
         log.debug("write path=%r overwrite=%r", path, overwrite, extra={"op": "write", "path": path, "backend": _bk})
         self._backend.capabilities.require(Capability.WRITE, backend=_bk)
-        await self._backend.write(self._require_file_path(path), content, overwrite=overwrite)
+        result = await self._backend.write(
+            self._require_file_path(path), content, overwrite=overwrite, metadata=metadata
+        )
         log.info("write complete path=%r", path, extra={"op": "write", "path": path, "backend": _bk})
+        return self._rebase_write_result(result)
 
     async def write_text(
         self,
@@ -181,7 +185,7 @@ class AsyncStore:
         encoding: str = "utf-8",
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
-    ) -> None:
+    ) -> WriteResult:
         """Write a string to *path*, encoded with the given encoding.
 
         Args:
@@ -190,27 +194,23 @@ class AsyncStore:
             encoding: Text encoding.
             overwrite: If ``False``, raises ``AlreadyExists`` when
                 *path* exists.
-            metadata: Reserved for Phase 3 — not yet forwarded to the
-                async backend.
+            metadata: Optional user-defined string metadata.
 
         Raises:
             ValueError: If *metadata* contains invalid keys or values
                 (see ``Store.write()`` for validation rules).
-            NotImplementedError: If *metadata* is non-empty (Phase 3
-                not yet implemented on ``AsyncStore``).
+            CapabilityNotSupported: If *metadata* is non-empty and the
+                backend lacks ``USER_METADATA``.
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
 
-        Equivalent to
-        ``await write(path, text.encode(encoding), overwrite=overwrite)``.
-        """
-        from remote_store._store import _validate_metadata
+        Returns:
+            ``WriteResult`` with at least ``path`` and ``size`` populated.
 
-        _validate_metadata(metadata)
-        if metadata:
-            msg = "metadata= is not yet supported on AsyncStore; use the sync Store or wait for Phase 3"
-            raise NotImplementedError(msg)
+        Equivalent to
+        ``await write(path, text.encode(encoding), overwrite=overwrite, metadata=metadata)``.
+        """
         log.debug(
             "write_text path=%r encoding=%r overwrite=%r",
             path,
@@ -218,7 +218,7 @@ class AsyncStore:
             overwrite,
             extra={"op": "write_text", "path": path, "backend": self._backend.name},
         )
-        await self.write(path, text.encode(encoding), overwrite=overwrite)
+        return await self.write(path, text.encode(encoding), overwrite=overwrite, metadata=metadata)
 
     async def write_atomic(
         self,
@@ -227,7 +227,7 @@ class AsyncStore:
         *,
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
-    ) -> None:
+    ) -> WriteResult:
         """Write binary content to *path* atomically.
 
         If the write fails or is interrupted, *path* is not left in a
@@ -238,26 +238,27 @@ class AsyncStore:
             content: ``bytes`` or async iterator of ``bytes``.
             overwrite: If ``False``, raises ``AlreadyExists`` when
                 *path* exists.
-            metadata: Reserved for Phase 3 — not yet forwarded to the
-                async backend.
+            metadata: Optional user-defined string metadata.
 
         Raises:
             ValueError: If *metadata* contains invalid keys or values
                 (see ``Store.write()`` for validation rules).
-            NotImplementedError: If *metadata* is non-empty (Phase 3
-                not yet implemented on ``AsyncStore``).
-            CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
+            CapabilityNotSupported: If *metadata* is non-empty and the
+                backend lacks ``USER_METADATA``, or if backend lacks
+                ``ATOMIC_WRITE``.
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
+
+        Returns:
+            ``WriteResult`` with at least ``path`` and ``size`` populated.
         """
         from remote_store._store import _validate_metadata
 
         _validate_metadata(metadata)
-        if metadata:
-            msg = "metadata= is not yet supported on AsyncStore; use the sync Store or wait for Phase 3"
-            raise NotImplementedError(msg)
         _bk = self._backend.name
+        if metadata:
+            self._backend.capabilities.require(Capability.USER_METADATA, backend=_bk)
         log.debug(
             "write_atomic path=%r overwrite=%r",
             path,
@@ -265,8 +266,11 @@ class AsyncStore:
             extra={"op": "write_atomic", "path": path, "backend": _bk},
         )
         self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=_bk)
-        await self._backend.write_atomic(self._require_file_path(path), content, overwrite=overwrite)
+        result = await self._backend.write_atomic(
+            self._require_file_path(path), content, overwrite=overwrite, metadata=metadata
+        )
         log.info("write_atomic complete path=%r", path, extra={"op": "write_atomic", "path": path, "backend": _bk})
+        return self._rebase_write_result(result)
 
     # endregion
 
@@ -962,5 +966,12 @@ class AsyncStore:
             return entry
         new_path = RemotePath.from_backend_path(rel)
         return dataclasses.replace(entry, path=new_path)
+
+    def _rebase_write_result(self, result: WriteResult) -> WriteResult:
+        """Return a copy of *result* with its path rebased to store-relative."""
+        rel = self._strip_root(str(result.path))
+        if rel == str(result.path):
+            return result
+        return dataclasses.replace(result, path=RemotePath(rel))
 
     # endregion

@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-013b: async write layer returns `WriteResult`; `metadata=` supported on `AsyncStore` and all async backends; `aio.ext.write.write_with_hash` added
 - BK-157: Tighten docs site spacing: compact table rows, heading typography, method separators
 - BK-158: Promote all unhandled warnings to errors in pytest (`filterwarnings = error`)
 - BUG-180: Fix `ResourceWarning` in tests under Python 3.14 from unclosed `HTTPError` in `UrllibTransport`

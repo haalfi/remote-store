@@ -220,7 +220,7 @@ class Store:
             InvalidPath: If *path* is empty.
 
         Equivalent to
-        ``write(path, text.encode(encoding), overwrite=overwrite)``.
+        ``write(path, text.encode(encoding), overwrite=overwrite, metadata=metadata)``.
         """
         log.debug(
             "write_text path=%r encoding=%r overwrite=%r",

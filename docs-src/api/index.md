@@ -119,4 +119,5 @@ Complete reference for all public exports of `remote-store`.
 | [ext.streams](extensions/streams.md) | Composable BinaryIO wrappers for progress and checksums |
 | [ext.transfer](extensions/transfer.md) | Upload, download, and cross-store transfer |
 | [ext.write](extensions/write.md) | Write helpers with guaranteed client-side content hashing |
+| [aio.ext.write](extensions/aio-write.md) | Async write helpers with guaranteed client-side content hashing |
 | [ext.yaml](extensions/yaml.md) | YAML config loader (PyYAML / ruamel.yaml) |

@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from remote_store._errors import CapabilityNotSupported
+from remote_store._models import WriteResult
 from remote_store.aio._async_backend import AsyncBackend
 from remote_store.aio._async_memory import AsyncMemoryBackend
 
@@ -102,6 +103,42 @@ class TestAsyncBackendSyncMethods:
         backend = AsyncMemoryBackend()
         with pytest.raises(CapabilityNotSupported, match="does not expose native handle"):
             backend.unwrap(dict)
+
+
+class TestAsyncBackendWriteResult:
+    """ASYNC-008/010: write and write_atomic return WriteResult."""
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_returns_write_result(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write("f.txt", b"hello")
+        assert isinstance(result, WriteResult)
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_result_size(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write("f.txt", b"hello")
+        assert result.size == 5
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_returns_write_result(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write_atomic("f.txt", b"hello")
+        assert isinstance(result, WriteResult)
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_accepts_metadata_kwarg(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write("f.txt", b"x", metadata={"k": "v"})
+        assert isinstance(result, WriteResult)
+        assert result.metadata == {"k": "v"}
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_accepts_metadata_kwarg(self) -> None:
+        backend = AsyncMemoryBackend()
+        result = await backend.write_atomic("f.txt", b"x", metadata={"k": "v"})
+        assert isinstance(result, WriteResult)
+        assert result.metadata == {"k": "v"}
 
 
 class TestAsyncBackendIterChildrenDefault:

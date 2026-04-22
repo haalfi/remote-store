@@ -6,4 +6,6 @@ Client-side hashing helpers for write operations. Guarantees a populated
 
 See the [ext.write spec](https://github.com/haalfi/remote-store/blob/master/sdd/specs/046-ext-write.md) for invariants.
 
+Async counterpart: [`aio.ext.write`](aio-write.md).
+
 ::: remote_store.ext.write
