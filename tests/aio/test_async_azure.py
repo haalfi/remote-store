@@ -1324,7 +1324,12 @@ class TestAsyncAzureHNSPaths:
 
     @pytest.mark.spec("WR-010", "WR-012")
     async def test_write_atomic_hns_metadata_preserved(self) -> None:
-        """HNS write_atomic forwards metadata to upload_data and echoes it in WriteResult."""
+        """HNS write_atomic forwards the metadata kwarg to upload_data on the temp file.
+
+        WriteResult.metadata echoes the caller's mapping by construction (WR-012).
+        Post-rename metadata preservation on the live file is an ADLS Gen2 rename
+        semantics concern and requires HNS integration coverage (see BUG-182).
+        """
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
         bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
