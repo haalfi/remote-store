@@ -9,7 +9,7 @@
 .md-typeset .doc-section-item.field-body p { margin: .1em 0; }
 .md-typeset .doc-section-item.field-body .doc-md-description { margin-top: .1em; }
 
-/* --- API doc spacing --- */
+/* API doc spacing */
 
 /* Table rows (overview tables) */
 .md-typeset table:not([class]) td,

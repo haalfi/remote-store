@@ -5,6 +5,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-157 — Tighten API doc page spacing via custom CSS**
+  Reduced whitespace noise across all API doc pages. Table cell padding halved.
+  Classic typography rule applied to all headings (h1–h6 and mkdocstrings
+  `.doc-heading`): generous `padding-top` above, tight `margin-bottom` below.
+  Compact mkdocstrings section paragraphs (`Parameters:`, `Returns:`, `Raises:`),
+  bullet lists, signature blocks, and `<hr>` dividers. Adjacent-sibling rule
+  cancels double-gap when a prose heading immediately precedes a method block.
+
 - [x] **BK-153 — Address backend-specifics visibility findings from audit-009**
   Added three-tier admonition vocabulary (info/note/warning) to all
   `docs-src/api/` pages: capability-gate notes on all B-series methods,
