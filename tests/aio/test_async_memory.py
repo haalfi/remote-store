@@ -30,6 +30,12 @@ class TestAsyncMemoryBasics:
         for cap in (Capability.READ, Capability.WRITE, Capability.DELETE, Capability.LIST):
             assert backend.capabilities.supports(cap)
 
+    @pytest.mark.spec("WR-010", "ASYNC-008")
+    def test_capabilities_include_write_result_native_and_user_metadata(self) -> None:
+        backend = AsyncMemoryBackend()
+        assert backend.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
+        assert backend.capabilities.supports(Capability.USER_METADATA)
+
     @pytest.mark.spec("ASYNC-003")
     def test_glob_not_supported(self) -> None:
         backend = AsyncMemoryBackend()

@@ -263,16 +263,14 @@ WR-011). This keeps the gate consistent with WR-011's rule that
 | `S3PyArrowBackend`           | no                        |
 | `SFTPBackend`                | no                        |
 | `LocalBackend`               | no                        |
-| `AsyncBackendSyncAdapter`    | no — masked unconditionally (see below) |
+| `AsyncBackendSyncAdapter`    | yes — forwards inner backend (post Phase 3c, ID-013b) |
 
-**Adapter masking.** `AsyncBackendSyncAdapter` strips both `WRITE_RESULT_NATIVE`
-and `USER_METADATA` from the inner async backend's capability set, even when the
-wrapped backend declares them. This is the strict-gate-on-kwarg pattern (ADR-0026)
-applied defensively: without masking, the Store layer's WR-010 gate would pass a
-non-empty `metadata=` through to the adapter, but the adapter's `write*()` methods
-do not forward `metadata=` to the async backend (the async ABC does not yet accept
-it — Step 3c). Masking ensures `CapabilityNotSupported` is raised at the gate
-rather than silently dropping the metadata, preserving the WR-012 echo guarantee.
+**Adapter capability forwarding.** Since Phase 3c (`ID-013b`), `AsyncBackendSyncAdapter`
+forwards both `WRITE_RESULT_NATIVE` and `USER_METADATA` from the inner async backend
+unchanged. Its `write*()` methods now accept and forward `metadata=` to the async
+backend. Only `SEEKABLE_READ` remains masked (the adapter's chunk-pull stream is
+forward-only and does not support seeking). The Store layer's WR-010 gate continues
+to be the primary protection for callers using `Store(AsyncBackendSyncAdapter(...))`.
 
 ## WR-011: metadata Validation
 

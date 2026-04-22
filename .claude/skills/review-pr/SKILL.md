@@ -10,7 +10,7 @@ allowed-tools: Read, Grep, Glob, mcp__github-pat__pull_request_read, mcp__github
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
 
-Your ONLY output is review comments. Nothing else must be created or changed — no files, no code, no commits, no "quick fixes", no cleanup. If you find something broken, describe the problem in a review comment. That is your only job.
+Your only valuable output is review insights. The only artifact you create is comments on the PR. Findings go in a comment — bugs, gaps, deferrals, follow-ups. Anything else is out of scope for a reviewer.
 
 PR number and optional reviewer context are in `$ARGUMENTS`. Parse: first token is the PR number, remainder (if any) is **user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
 
@@ -93,6 +93,6 @@ Then **stop**. Do not wait for feedback or user input.
 - **You are a read-only auditor.** Your only output is review comments. Nothing else.
 - **Post and exit.** Once comments are posted, output your summary and stop. Do not wait for user feedback, offer follow-ups, or suggest fixes.
 - Do not approve, merge, close, or modify the PR.
-- Do not edit files, create commits, or offer to fix issues. If something needs fixing, that is a `/fix-pr` workflow.
+- The only artifact is PR comments. Nothing else.
 - Large diffs: prioritize `src/` → tests → docs. State what you skipped.
 - Only post what a senior engineer would flag.

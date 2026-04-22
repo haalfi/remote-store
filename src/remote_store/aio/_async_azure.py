@@ -411,6 +411,10 @@ class AsyncAzureBackend(AsyncBackend):
             overwrite: If ``False``, raise if file already exists.
             metadata: Optional user-defined string metadata.
 
+        Returns:
+            ``WriteResult`` with native Azure fields (``etag``, ``last_modified``,
+            etc.) populated from the SDK upload response.
+
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         """
@@ -471,6 +475,11 @@ class AsyncAzureBackend(AsyncBackend):
             overwrite: If ``False``, raise if file already exists.
             metadata: Optional user-defined string metadata.
 
+        Returns:
+            ``WriteResult`` with native Azure fields populated from the SDK
+            response (non-HNS) or from ``get_file_properties()`` after rename
+            (HNS).
+
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         """
@@ -480,8 +489,6 @@ class AsyncAzureBackend(AsyncBackend):
 
         # HNS: write to temp file via DFS, then atomic rename
         from azure.core.exceptions import ResourceNotFoundError
-
-        from remote_store._models import WriteResult
 
         async with self._errors(path):  # pragma: no cover -- HNS only
             bc = self._blob_client(path)
@@ -520,18 +527,14 @@ class AsyncAzureBackend(AsyncBackend):
                     metadata=metadata or None,
                 )
                 new_name = f"{self._container}/{ap}"
-                await tmp_fc.rename_file(new_name)
+                final_fc = await tmp_fc.rename_file(new_name)
             except Exception:
                 with contextlib.suppress(Exception):
                     await tmp_fc.delete_file()
                 raise
 
-            return WriteResult(
-                path=RemotePath(path),
-                size=size_ref[0],
-                source="native",
-                metadata=metadata,
-            )
+            props = await final_fc.get_file_properties()
+            return _build_azure_write_result(path, size_ref[0], props, metadata)
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.

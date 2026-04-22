@@ -159,6 +159,10 @@ class AsyncMemoryBackend(AsyncBackend):
             overwrite: If ``False``, raise if file already exists.
             metadata: Optional user-defined string metadata.
 
+        Returns:
+            ``WriteResult`` with ``path``, ``size``, ``last_modified``, and
+            ``source="native"`` populated.
+
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If the path is empty or conflicts with a directory.
@@ -178,8 +182,9 @@ class AsyncMemoryBackend(AsyncBackend):
                 chunks.append(chunk)
             raw = bytearray(b"".join(chunks))
 
-        now = datetime.now(timezone.utc)
         async with self._lock:
+            # Capture under the lock so modified_at reflects lock-acquisition order.
+            now = datetime.now(timezone.utc)
             parent = self._ensure_parents(segments)
             leaf = segments[-1]
             existing = parent.children.get(leaf)
@@ -227,6 +232,10 @@ class AsyncMemoryBackend(AsyncBackend):
             content: Data to write.
             overwrite: If ``False``, raise if file already exists.
             metadata: Optional user-defined string metadata.
+
+        Returns:
+            ``WriteResult`` with ``path``, ``size``, ``last_modified``, and
+            ``source="native"`` populated.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.

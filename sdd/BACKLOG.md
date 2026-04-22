@@ -43,14 +43,17 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-180 — Verify HNS `write_atomic` metadata propagation through `rename_file`**
-  `AsyncAzureBackend.write_atomic` on HNS sets `metadata=` on the **temp** file client
-  before `rename_file`, relying on Azure ADLS Gen2 rename preserving user-defined metadata.
-  This is expected to work (rename is a filesystem-level move, not a copy), but is not tested
-  because the HNS path is `# pragma: no cover` in CI.
-  When HNS integration tests are added, add a `test_write_atomic_hns_metadata_preserved`
-  that writes with `metadata={"k":"v"}`, reads back metadata from the final path, and asserts
-  the key is present.
+- [ ] **BUG-181 — Verify HNS `write_atomic` WriteResult rich-field parity in integration**
+  `AsyncAzureBackend.write_atomic` on HNS calls `get_file_properties()` on the renamed
+  file client to populate `etag`, `last_modified`, `version_id`, and `digest` (WR-004).
+  The metadata is also set on the temp file before rename, relying on ADLS Gen2 rename
+  preserving user-defined metadata (expected for filesystem-level rename, not a copy).
+  Both code paths are `# pragma: no cover` in CI. When HNS integration tests are added:
+  1. Add `test_write_atomic_hns_returns_native_fields` — assert `etag`, `last_modified`
+     are populated in the returned `WriteResult`.
+  2. Add `test_write_atomic_hns_metadata_preserved` — write with `metadata={"k":"v"}`;
+     assert the key is present in the returned `WriteResult` and on the live file.
+  Spec: WR-004, ASYNC-010.
 
 ---
 

@@ -83,10 +83,7 @@ is identical, accepts `bytes` or `AsyncIterator[bytes]`, and hashes inline
 without buffering:
 
 ```python
-from remote_store.aio.ext.write import write_with_hash
-
-result = await write_with_hash(async_store, "report.csv", content)
-print(result.digest.value)  # sha256 hex string
+--8<-- "examples/snippets/write_integrity_async.py:async-write-with-hash"
 ```
 
 ## See also

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 
 import pytest
@@ -21,7 +22,7 @@ def store() -> AsyncStore:
 class TestWriteWithHash:
     """write_with_hash computes a content digest alongside the write."""
 
-    @pytest.mark.spec("WR-006")
+    @pytest.mark.spec("EW-001")
     async def test_write_with_hash_bytes(self, store: AsyncStore) -> None:
         content = b"hello world"
         result = await write_with_hash(store, "f.txt", content)
@@ -30,7 +31,7 @@ class TestWriteWithHash:
         assert result.digest.algorithm == "sha256"
         assert result.digest.value == hashlib.sha256(content).hexdigest()
 
-    @pytest.mark.spec("WR-006")
+    @pytest.mark.spec("EW-001")
     async def test_write_with_hash_async_iter(self, store: AsyncStore) -> None:
         chunks = [b"hello ", b"world"]
 
@@ -43,12 +44,23 @@ class TestWriteWithHash:
         assert result.digest.algorithm == "sha256"
         assert result.digest.value == hashlib.sha256(b"hello world").hexdigest()
 
-    @pytest.mark.spec("WR-004")
-    async def test_write_with_hash_preserves_underlying_source(self, store: AsyncStore) -> None:
+    @pytest.mark.spec("EW-001")
+    async def test_write_with_hash_source_is_native_on_memory(self, store: AsyncStore) -> None:
         result = await write_with_hash(store, "f.txt", b"data")
         assert result.source == "native"
 
-    @pytest.mark.spec("WR-006")
+    @pytest.mark.spec("EW-001")
+    async def test_write_with_hash_preserves_basic_source(self) -> None:
+        class _BasicSourceBackend(AsyncMemoryBackend):
+            async def write(self, path, content, *, overwrite=False, metadata=None):
+                result = await super().write(path, content, overwrite=overwrite, metadata=metadata)
+                return dataclasses.replace(result, source="basic")
+
+        store = AsyncStore(_BasicSourceBackend())
+        result = await write_with_hash(store, "f.txt", b"data")
+        assert result.source == "basic"
+
+    @pytest.mark.spec("EW-001")
     async def test_write_with_hash_custom_algorithm(self, store: AsyncStore) -> None:
         content = b"test"
         result = await write_with_hash(store, "f.txt", content, algorithm="sha512")
@@ -65,9 +77,14 @@ class TestWriteWithHash:
     @pytest.mark.spec("EW-001")
     async def test_write_with_hash_no_user_metadata_raises(self) -> None:
         from remote_store import Capability
-        from tests.conftest import RestrictedBackend
+        from tests.aio.conftest import RestrictedAsyncBackend
 
-        backend = RestrictedBackend(AsyncMemoryBackend(), exclude={Capability.USER_METADATA})  # type: ignore[arg-type]
-        restricted_store = AsyncStore(backend, root_path="data")  # type: ignore[arg-type]
-        with pytest.raises(CapabilityNotSupported):
+        backend = RestrictedAsyncBackend(AsyncMemoryBackend(), exclude={Capability.USER_METADATA})
+        restricted_store = AsyncStore(backend, root_path="data")
+        with pytest.raises(CapabilityNotSupported, match="user_metadata"):
             await write_with_hash(restricted_store, "f.txt", b"x", metadata={"k": "v"})
+
+    @pytest.mark.spec("EW-001")
+    async def test_write_with_hash_bad_algorithm_raises(self, store: AsyncStore) -> None:
+        with pytest.raises(ValueError, match="nonesuch"):
+            await write_with_hash(store, "f.txt", b"x", algorithm="nonesuch")

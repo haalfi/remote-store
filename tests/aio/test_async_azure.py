@@ -1224,6 +1224,9 @@ class TestAsyncAzureHNSPaths:
         backend._cc_instance.get_blob_client.return_value = bc
 
         tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc.get_file_properties = AsyncMock(return_value={})
+        tmp_fc.rename_file.return_value = final_fc
         backend._fs_instance.get_file_client.return_value = tmp_fc
 
         await backend.write_atomic("dir/file.txt", b"content")
@@ -1253,6 +1256,9 @@ class TestAsyncAzureHNSPaths:
                 captured.append(chunk)
 
         tmp_fc.upload_data = AsyncMock(side_effect=_fake_upload)
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc.get_file_properties = AsyncMock(return_value={})
+        tmp_fc.rename_file.return_value = final_fc
 
         async def chunk_gen():  # noqa: ANN202
             yield b"hello "

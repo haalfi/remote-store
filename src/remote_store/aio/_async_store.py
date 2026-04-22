@@ -151,6 +151,9 @@ class AsyncStore:
                 *path* exists.
             metadata: Optional user-defined string metadata.
 
+        Returns:
+            ``WriteResult`` with at least ``path`` and ``size`` populated.
+
         Raises:
             ValueError: If *metadata* contains invalid keys or values
                 (see ``Store.write()`` for validation rules).
@@ -202,6 +205,9 @@ class AsyncStore:
                 ``False``.
             InvalidPath: If *path* is empty.
 
+        Returns:
+            ``WriteResult`` with at least ``path`` and ``size`` populated.
+
         Equivalent to
         ``await write(path, text.encode(encoding), overwrite=overwrite, metadata=metadata)``.
         """
@@ -243,6 +249,9 @@ class AsyncStore:
             AlreadyExists: If the file exists and *overwrite* is
                 ``False``.
             InvalidPath: If *path* is empty.
+
+        Returns:
+            ``WriteResult`` with at least ``path`` and ``size`` populated.
         """
         from remote_store._store import _validate_metadata
 

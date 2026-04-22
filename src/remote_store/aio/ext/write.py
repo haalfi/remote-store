@@ -1,4 +1,11 @@
-"""Async opt-in hashing write helper (RFC-0011 async parity)."""
+"""Async write helpers with client-side content hashing.
+
+Guarantees a populated ``WriteResult.digest`` regardless of whether the
+backend declares ``WRITE_RESULT_NATIVE``. The hash is always computed
+client-side over the bytes as they flow to the backend.
+
+Spec: EW-001..EW-004 in ``sdd/specs/046-ext-write.md``.
+"""
 
 from __future__ import annotations
 

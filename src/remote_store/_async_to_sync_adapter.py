@@ -183,7 +183,10 @@ class AsyncBackendSyncAdapter(Backend):
         """Capabilities with ASYNC-084 translation applied.
 
         ``SEEKABLE_READ`` is masked off unconditionally — the chunk-pull
-        stream this adapter returns is forward-only.
+        stream this adapter returns is forward-only.  ``USER_METADATA``
+        and ``WRITE_RESULT_NATIVE`` are forwarded from the inner async
+        backend unchanged; the ``write*()`` methods now accept and forward
+        ``metadata=`` (Phase 3c complete, ID-013b).
         """
         _MASKED = {Capability.SEEKABLE_READ}
         inner = self._async_backend.capabilities

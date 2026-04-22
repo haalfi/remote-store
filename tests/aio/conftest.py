@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
+from remote_store._capabilities import Capability, CapabilitySet
 from remote_store.aio import AsyncMemoryBackend, AsyncStore, SyncBackendAdapter
 from remote_store.backends._memory import MemoryBackend
+
+if TYPE_CHECKING:
+    from remote_store.aio import AsyncBackend
 
 
 @pytest.fixture(params=["native", "adapted"], ids=["native", "adapted"])
@@ -32,3 +38,26 @@ def native_memory() -> AsyncMemoryBackend:
 def native_store(native_memory: AsyncMemoryBackend) -> AsyncStore:
     """AsyncStore with native AsyncMemoryBackend."""
     return AsyncStore(native_memory, root_path="data")
+
+
+class RestrictedAsyncBackend:
+    """Async backend wrapper that excludes specific capabilities for testing.
+
+    Delegates all methods to the inner ``AsyncBackend`` but overrides the
+    ``capabilities`` property to return a restricted ``CapabilitySet``.
+    """
+
+    def __init__(self, backend: AsyncBackend, exclude: set[Capability]) -> None:
+        self._inner = backend
+        self._caps = CapabilitySet(set(Capability) - exclude)
+
+    @property
+    def capabilities(self) -> CapabilitySet:
+        return self._caps
+
+    @property
+    def name(self) -> str:
+        return self._inner.name
+
+    def __getattr__(self, item: str) -> object:
+        return getattr(self._inner, item)
