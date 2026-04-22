@@ -155,6 +155,11 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! note "Backend-conditional argument: `max_depth=`"
+    Backends with native depth limiting prune traversal early. Backends that do not
+    support it still return correct results — the Store applies client-side filtering
+    as a safety net.
+
 ::: remote_store.aio.AsyncBackend.list_folders
     options:
       show_root_heading: true

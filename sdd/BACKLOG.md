@@ -43,7 +43,15 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-*(none)*
+- [ ] **BUG-179 — `AsyncBackend.write` / `write_atomic` missing `metadata=` kwarg**
+  `Backend.write` / `write_atomic` (`_backend.py:186,215`) carry
+  `metadata: Mapping[str, str] | None = None` and enforce `Capability.USER_METADATA`.
+  The async counterparts (`aio/_async_backend.py:124,137`) and all concrete async
+  implementations (`AsyncMemoryBackend`, `AsyncAzureBackend`, `SyncBackendAdapter`)
+  lack the parameter entirely — passing it yields `TypeError`, not `CapabilityNotSupported`.
+  Surfaced during PR #492 (BK-153) review.
+  **Fix:** add `metadata=` kwarg to `AsyncBackend.write` / `write_atomic` and all
+  concrete async implementations; wire up the `USER_METADATA` capability check.
 
 ---
 
