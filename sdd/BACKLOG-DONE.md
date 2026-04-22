@@ -8,6 +8,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 - [x] **BUG-181 — Verify HNS `write_atomic` WriteResult rich-field parity**
   Added four mock-based tests to `TestAsyncAzureHNSPaths`: rich fields (`etag`,
   `last_modified`, `size`, `source`) populated from `get_file_properties()` response;
+  `version_id` and `digest` confirmed `None` on HNS (ADLS Gen2 `PathProperties` does not
+  surface `content_md5` or `version_id` via `get_file_properties()`);
   `metadata=` forwarded to `upload_data` and echoed in `WriteResult.metadata`; `overwrite=True`
   skips the existence check; `overwrite=False` with existing file raises `AlreadyExists`.
   Removed stale `# pragma: no cover` from the HNS `write_atomic` block.
