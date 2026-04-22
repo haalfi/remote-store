@@ -490,7 +490,7 @@ class AsyncAzureBackend(AsyncBackend):
         # HNS: write to temp file via DFS, then atomic rename
         from azure.core.exceptions import ResourceNotFoundError
 
-        async with self._errors(path):  # pragma: no cover -- HNS only
+        async with self._errors(path):
             bc = self._blob_client(path)
             if not overwrite:
                 try:

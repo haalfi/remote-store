@@ -5,6 +5,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-181 — Verify HNS `write_atomic` WriteResult rich-field parity**
+  Added four mock-based tests to `TestAsyncAzureHNSPaths`: rich fields (`etag`,
+  `last_modified`, `size`, `source`) populated from `get_file_properties()` response;
+  `version_id` and `digest` confirmed `None` on HNS (ADLS Gen2 `PathProperties` does not
+  surface `content_md5` or `version_id` via `get_file_properties()`);
+  `metadata=` kwarg forwarded to the pre-rename `upload_data` call; `WriteResult.metadata`
+  echo is by construction per WR-012 (post-rename preservation on the live file deferred — see BUG-182); `overwrite=True`
+  skips the existence check; `overwrite=False` with existing file raises `AlreadyExists`.
+  Removed stale `# pragma: no cover` from the HNS `write_atomic` block.
+  Spec: WR-004, WR-010, WR-012, ASYNC-010.
+
 - [x] **ID-013b — Async Store API Phase 3: async extensions**
   `AsyncStore.write*()` now returns `WriteResult` and accepts `metadata=`.
   `AsyncBackend.write` / `write_atomic` ABC updated with `metadata=` kwarg and
