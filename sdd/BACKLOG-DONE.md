@@ -5,8 +5,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-- [x] **BK-157 — Tighten API doc page spacing via custom CSS**
-  Reduced whitespace noise across all API doc pages. Table cell padding halved.
+- [x] **BK-157 — Tighten docs site spacing via custom CSS**
+  Reduced whitespace noise across all docs pages. Table cell padding halved.
   Classic typography rule applied to all headings (h1–h6 and mkdocstrings
   `.doc-heading`): generous `padding-top` above, tight `margin-bottom` below.
   Compact mkdocstrings section paragraphs (`Parameters:`, `Returns:`, `Raises:`),

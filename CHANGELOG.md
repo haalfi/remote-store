@@ -6,7 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-157: Tighten API doc page spacing: compact table rows, heading typography, method separators
+- BK-157: Tighten docs site spacing: compact table rows, heading typography, method separators
 
 ### Fixed
 
