@@ -9402,6 +9402,12 @@
 <p><code>S3Backend</code> implements the <code>Backend</code> ABC for S3-compatible object storage (AWS S3, MinIO, etc.) using <code>s3fs</code> internally. It maps the Backend contract onto S3's flat key-value model, bridging the gap between S3's prefix-based "folders" and the filesystem-like interface expected by Store.</p>
 <p>This is the fsspec-based S3 backend. A future native backend using boto3 + pyarrow.fs directly may follow for advanced data engineering workloads.</p>
 <p><strong>Dependencies:</strong> <code>s3fs</code> (optional extra: <code>pip install "remote-store[s3]"</code>)</p>
+<blockquote>
+<p><a href="../011-s3-pyarrow-backend/">Spec 011 (S3-PyArrow Hybrid Backend)</a> inherits
+most invariants from this document and only specifies PyArrow-specific
+deltas. Edits to shared invariants here propagate to spec 011 automatically
+via the paired-ID map at the top of 011.</p>
+</blockquote>
 <hr />
 <h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
 <h3 id="s3-001-constructor-parameters">S3-001: Constructor Parameters<a class="headerlink" href="#s3-001-constructor-parameters" title="Permanent link">&para;</a></h3>

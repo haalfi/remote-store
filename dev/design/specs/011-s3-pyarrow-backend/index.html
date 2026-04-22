@@ -7378,6 +7378,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#paired-ids-delta-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paired IDs (delta map)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -7741,6 +7758,17 @@
     <span class="md-ellipsis">
       
         S3PA-023: Endpoint URL Normalization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3pa-024-default-credential-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PA-024: Default Credential Chain
       
     </span>
   </a>
@@ -8951,6 +8979,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#paired-ids-delta-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paired IDs (delta map)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -9321,6 +9366,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#s3pa-024-default-credential-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3PA-024: Default Credential Chain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#s3pa-026-config_kwargs-and-retrypolicy-config-merge" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9358,34 +9414,118 @@
 <p><code>S3PyArrowBackend</code> implements the <code>Backend</code> ABC for S3-compatible object storage using a hybrid approach: <strong>PyArrow's C++ S3 filesystem</strong> for data-path operations (read, write, copy) and <strong>s3fs</strong> for control-path operations (listing, metadata, deletion). This combines PyArrow's high-throughput C++ I/O with s3fs's mature listing and metadata APIs.</p>
 <p>This is a drop-in alternative to <code>S3Backend</code> with the same constructor signature. Users who need maximum read/write throughput for large files should prefer this backend.</p>
 <p><strong>Dependencies:</strong> <code>s3fs</code>, <code>pyarrow</code> (optional extra: <code>pip install "remote-store[s3-pyarrow]"</code>)</p>
+<blockquote>
+<p>This specification is a <strong>delta</strong> over <a href="../008-s3-backend/">spec 008 (S3 Backend)</a>.
+Any invariant not restated here follows the paired S3-NNN ID verbatim,
+substituting the backend name <code>"s3-pyarrow"</code> for <code>"s3"</code>. Only PyArrow-specific
+deltas (dual-library architecture, credential translation, the PyArrow read
+path, dual <code>unwrap()</code>, and the dual error-mapping context managers) carry a
+full body below. Tests reference both IDs per backend via per-parameter
+<code>pytest.mark.spec(...)</code> marks (see <code>tests/backends/test_s3_shared.py</code>).</p>
+</blockquote>
+<h3 id="paired-ids-delta-map">Paired IDs (delta map)<a class="headerlink" href="#paired-ids-delta-map" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>This spec (S3PA-NNN)</th>
+<th>Inherited from 008 (S3-NNN)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S3PA-001 Constructor Parameters</td>
+<td>S3-001 (same signature)</td>
+</tr>
+<tr>
+<td>S3PA-004 Lazy Connection</td>
+<td>S3-004</td>
+</tr>
+<tr>
+<td>S3PA-005 Construction Validation</td>
+<td>S3-005</td>
+</tr>
+<tr>
+<td>S3PA-008 Virtual Folder Semantics</td>
+<td>S3-006</td>
+</tr>
+<tr>
+<td>S3PA-009 Folder Detection</td>
+<td>S3-007</td>
+</tr>
+<tr>
+<td>S3PA-010 Write Does Not Create Markers</td>
+<td>S3-008</td>
+</tr>
+<tr>
+<td>S3PA-011 Folder Lifecycle</td>
+<td>S3-009</td>
+</tr>
+<tr>
+<td>S3PA-013 Write Via PyArrow</td>
+<td>S3-010 (atomic write)</td>
+</tr>
+<tr>
+<td>S3PA-014 Copy Via PyArrow</td>
+<td>S3-014 (server-side copy)</td>
+</tr>
+<tr>
+<td>S3PA-015 Move Via Hybrid</td>
+<td>S3-013 (copy + delete)</td>
+</tr>
+<tr>
+<td>S3PA-016 Delete Via s3fs</td>
+<td>S3-011, S3-012</td>
+</tr>
+<tr>
+<td>S3PA-017 Listing Via s3fs</td>
+<td>(implicit; s3fs control path)</td>
+</tr>
+<tr>
+<td>S3PA-018 Dual Error Context Managers</td>
+<td>S3-015, S3-016, S3-017</td>
+</tr>
+<tr>
+<td>S3PA-019 No Native Exception Leakage</td>
+<td>S3-018</td>
+</tr>
+<tr>
+<td>S3PA-020 close()</td>
+<td>S3-019</td>
+</tr>
+<tr>
+<td>S3PA-022 Client Options Passthrough</td>
+<td>S3-021</td>
+</tr>
+<tr>
+<td>S3PA-023 Endpoint URL Normalization</td>
+<td>S3-025</td>
+</tr>
+<tr>
+<td>S3PA-024 Default Credential Chain</td>
+<td>S3-022</td>
+</tr>
+<tr>
+<td>S3PA-026 config_kwargs + RetryPolicy</td>
+<td>S3-026</td>
+</tr>
+</tbody>
+</table>
+<p>Full-body deltas (unique to S3-PyArrow): <strong>S3PA-002, S3PA-003, S3PA-006,
+S3PA-007, S3PA-012, S3PA-021</strong>.</p>
 <hr />
 <h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
 <h3 id="s3pa-001-constructor-parameters">S3PA-001: Constructor Parameters<a class="headerlink" href="#s3pa-001-constructor-parameters" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> is constructed with the same signature as <code>S3Backend</code>: a required <code>bucket</code> name and optional connection parameters.
-<strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">S3PyArrowBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">bucket</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">endpoint_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">region_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">tls_ca_bundle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 039</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
-</code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect to S3 during construction (see S3PA-004). The <code>endpoint_url</code> is normalized per S3PA-023. Constructor arguments are translated to each library's conventions internally.</p>
+<p>See <a href="../008-s3-backend/#s3-001-constructor-parameters">S3-001</a>. Same signature; the class name is <code>S3PyArrowBackend</code>. Constructor arguments are translated to each library's conventions internally (S3PA-007). Default credential chain follows <a href="../008-s3-backend/#s3-022-default-credential-chain">S3-022</a>.</p>
 <h3 id="s3pa-002-backend-name">S3PA-002: Backend Name<a class="headerlink" href="#s3pa-002-backend-name" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>name</code> property returns <code>"s3-pyarrow"</code>.</p>
 <h3 id="s3pa-003-capability-declaration">S3PA-003: Capability Declaration<a class="headerlink" href="#s3pa-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-019).
-<strong>Rationale:</strong> Same as S3Backend -- S3 PUT is inherently atomic, move via copy+delete, copy via server-side copy. <code>GLOB</code>: native prefix-optimized glob since v0.12.0 (BK-002).</p>
+<p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-019).</p>
+<p><strong>Delta vs S3-003:</strong> The <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code> capabilities are NOT declared, because PyArrow's <code>open_output_stream()</code> does not surface native-upload metadata (ETag / checksum / user metadata) the way <code>s3fs.put</code> exposes it for the s3fs-only <code>S3Backend</code>.</p>
+<p><strong>Rationale:</strong> Same as S3-003 for the declared capabilities. The <code>ATOMIC_MOVE</code> capability is not declared (move = copy+delete, so partial failure is observable — see S3PA-015).</p>
 <h3 id="s3pa-004-lazy-connection">S3PA-004: Lazy Connection<a class="headerlink" href="#s3pa-004-lazy-connection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. Both the PyArrow and s3fs filesystem instances are created lazily on first use.
-<strong>Rationale:</strong> Same as S3-004.</p>
+<p>See <a href="../008-s3-backend/#s3-004-lazy-connection">S3-004</a>. Applies to both the PyArrow and s3fs filesystem instances: each is created lazily on first use.</p>
 <h3 id="s3pa-005-construction-validation">S3PA-005: Construction Validation<a class="headerlink" href="#s3pa-005-construction-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>bucket</code> must be a non-empty string. Passing an empty or whitespace-only bucket raises <code>ValueError</code> at construction time.</p>
+<p>See <a href="../008-s3-backend/#s3-005-construction-validation">S3-005</a>.</p>
 <hr />
 <h2 id="library-mapping">Library Mapping<a class="headerlink" href="#library-mapping" title="Permanent link">&para;</a></h2>
 <h3 id="s3pa-006-dual-library-architecture">S3PA-006: Dual-Library Architecture<a class="headerlink" href="#s3pa-006-dual-library-architecture" title="Permanent link">&para;</a></h3>
@@ -9429,66 +9569,61 @@
 <hr />
 <h2 id="s3-object-model">S3 Object Model<a class="headerlink" href="#s3-object-model" title="Permanent link">&para;</a></h2>
 <h3 id="s3pa-008-virtual-folder-semantics">S3PA-008: Virtual Folder Semantics<a class="headerlink" href="#s3pa-008-virtual-folder-semantics" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-006. S3 has no native directories; folders are logical constructs from key prefixes.</p>
+<p>See <a href="../008-s3-backend/#s3-006-virtual-folder-semantics">S3-006</a>.</p>
 <h3 id="s3pa-009-folder-detection">S3PA-009: Folder Detection<a class="headerlink" href="#s3pa-009-folder-detection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-007. <code>is_folder(path)</code> returns <code>True</code> if any objects exist with prefix <code>{path}/</code>.</p>
+<p>See <a href="../008-s3-backend/#s3-007-folder-detection">S3-007</a>.</p>
 <h3 id="s3pa-010-write-does-not-create-folder-markers">S3PA-010: Write Does Not Create Folder Markers<a class="headerlink" href="#s3pa-010-write-does-not-create-folder-markers" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-008. No folder marker objects are created.</p>
+<p>See <a href="../008-s3-backend/#s3-008-write-does-not-create-folder-markers">S3-008</a>.</p>
 <h3 id="s3pa-011-folder-lifecycle-tied-to-contents">S3PA-011: Folder Lifecycle Tied to Contents<a class="headerlink" href="#s3pa-011-folder-lifecycle-tied-to-contents" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-009. Folders vanish when the last object under a prefix is deleted.</p>
+<p>See <a href="../008-s3-backend/#s3-009-folder-lifecycle-tied-to-contents">S3-009</a>.</p>
 <hr />
 <h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
 <h3 id="s3pa-012-read-via-pyarrow">S3PA-012: Read Via PyArrow<a class="headerlink" href="#s3pa-012-read-via-pyarrow" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read()</code> uses <code>open_input_file()</code> (seekable <code>RandomAccessFile</code>) and returns the stream wrapped in <code>_ErrorMappingStream</code> without <code>BufferedReader</code>. <code>read_bytes()</code> uses <code>open_input_stream()</code> and reads all bytes directly. <code>readline()</code> uses a chunked scan (<code>_READLINE_CHUNK</code>-sized reads) with seek-back for over-read bytes, requiring a seekable stream from <code>open_input_file</code>.
-<strong>Rationale:</strong> PyArrow's C++ I/O path provides higher throughput than s3fs for large files. Removing the <code>BufferedReader</code> eliminates a double-copy per chunk on the streaming read path (RFC-0003). The chunked <code>readline()</code> avoids the pathological byte-at-a-time fallback from <code>RawIOBase</code>.
-<strong>Note:</strong> Unlike other backends which return <code>io.BufferedReader</code>, S3-PyArrow returns a raw <code>_ErrorMappingStream(RawIOBase)</code>. This means <code>io.TextIOWrapper(stream)</code> requires wrapping in <code>io.BufferedReader</code> first. The spec (SIO-001 in 008-streaming-io.md) only requires <code>BinaryIO</code>, so this is valid, but callers should not assume <code>BufferedIOBase</code>.</p>
+<p><strong>Invariant:</strong> <code>read()</code> uses <code>open_input_file()</code> (seekable <code>RandomAccessFile</code>) and returns the stream wrapped in <code>_ErrorMappingStream</code> without <code>BufferedReader</code>. <code>read_bytes()</code> uses <code>open_input_stream()</code> and reads all bytes directly. <code>readline()</code> uses a chunked scan (<code>_READLINE_CHUNK</code>-sized reads) with seek-back for over-read bytes, requiring a seekable stream from <code>open_input_file</code>.</p>
+<p><strong>Rationale:</strong> PyArrow's C++ I/O path provides higher throughput than s3fs for large files. Removing the <code>BufferedReader</code> eliminates a double-copy per chunk on the streaming read path (RFC-0003). The chunked <code>readline()</code> avoids the pathological byte-at-a-time fallback from <code>RawIOBase</code>.</p>
+<p><strong>Note:</strong> Unlike other backends which return <code>io.BufferedReader</code>, S3-PyArrow returns a raw <code>_ErrorMappingStream(RawIOBase)</code>. This means <code>io.TextIOWrapper(stream)</code> requires wrapping in <code>io.BufferedReader</code> first. The spec (SIO-001 in 008-streaming-io.md) only requires <code>BinaryIO</code>, so this is valid, but callers should not assume <code>BufferedIOBase</code>.</p>
 <h3 id="s3pa-013-write-via-pyarrow">S3PA-013: Write Via PyArrow<a class="headerlink" href="#s3pa-013-write-via-pyarrow" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write()</code> and <code>write_atomic()</code> use <code>pyarrow.fs.S3FileSystem.open_output_stream()</code> for data transfer. Existence checks use s3fs.
-<strong>Postconditions:</strong> Same as S3-010 -- S3 PUT is inherently atomic, so <code>write_atomic</code> delegates to <code>write</code>.</p>
+<p>See <a href="../008-s3-backend/#s3-010-atomic-write-via-s3-put">S3-010</a>. <code>write()</code> and <code>write_atomic()</code> use <code>pyarrow.fs.S3FileSystem.open_output_stream()</code> for data transfer; existence checks go through s3fs.</p>
 <h3 id="s3pa-014-copy-via-pyarrow">S3PA-014: Copy Via PyArrow<a class="headerlink" href="#s3pa-014-copy-via-pyarrow" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>copy(src, dst)</code> uses <code>pyarrow.fs.S3FileSystem.copy_file()</code> for server-side copy. Existence checks use s3fs.</p>
+<p>See <a href="../008-s3-backend/#s3-014-copy-via-s3-server-side-copy">S3-014</a>. Uses <code>pyarrow.fs.S3FileSystem.copy_file()</code> for the server-side copy; existence checks go through s3fs.</p>
 <h3 id="s3pa-015-move-via-hybrid">S3PA-015: Move Via Hybrid<a class="headerlink" href="#s3pa-015-move-via-hybrid" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>move(src, dst)</code> uses s3fs for existence checks, PyArrow for the copy step, and s3fs for the delete step.
-<strong>Postconditions:</strong> Same as S3-013 -- not atomic; if copy succeeds but delete fails, both objects exist.</p>
+<p>See <a href="../008-s3-backend/#s3-013-move-via-copy-delete">S3-013</a>. The copy step uses PyArrow; existence checks and the delete step go through s3fs. Not atomic — if copy succeeds but delete fails, both objects exist.</p>
 <h3 id="s3pa-016-delete-via-s3fs">S3PA-016: Delete Via s3fs<a class="headerlink" href="#s3pa-016-delete-via-s3fs" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete()</code> and <code>delete_folder()</code> use s3fs, same as S3Backend.</p>
+<p>See <a href="../008-s3-backend/#s3-011-delete_folder-recursive">S3-011</a> and <a href="../008-s3-backend/#s3-012-delete_folder-non-recursive">S3-012</a>. <code>delete()</code> and <code>delete_folder()</code> use s3fs, identical to <code>S3Backend</code>.</p>
 <h3 id="s3pa-017-listing-via-s3fs">S3PA-017: Listing Via s3fs<a class="headerlink" href="#s3pa-017-listing-via-s3fs" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>list_files()</code>, <code>list_folders()</code>, <code>get_file_info()</code>, <code>get_folder_info()</code> use s3fs, same as S3Backend.</p>
+<p><strong>Invariant:</strong> <code>list_files()</code>, <code>list_folders()</code>, <code>get_file_info()</code>, <code>get_folder_info()</code> use s3fs, identical to <code>S3Backend</code>. <code>get_file_info()</code> returns a <code>FileInfo</code> carrying <code>etag</code> and (when the object has a stored checksum) <code>digest</code>.</p>
 <hr />
 <h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
 <h3 id="s3pa-018-dual-error-context-managers">S3PA-018: Dual Error Context Managers<a class="headerlink" href="#s3pa-018-dual-error-context-managers" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Two error-mapping context managers exist:
-- <code>_pyarrow_errors(path)</code>: catches <code>OSError</code> / <code>ArrowInvalid</code> from PyArrow operations and maps to remote_store errors.
-- <code>_s3fs_errors(path)</code>: catches s3fs/botocore exceptions, same mapping as S3Backend.</p>
+<p>See <a href="../008-s3-backend/#s3-015-notfound-mapping">S3-015</a>, <a href="../008-s3-backend/#s3-016-permissiondenied-mapping">S3-016</a>, and <a href="../008-s3-backend/#s3-017-backendunavailable-mapping">S3-017</a> for the NotFound / PermissionDenied / BackendUnavailable mappings.</p>
+<p><strong>Delta vs S3-015/016/017:</strong> Two context managers handle the two libraries:</p>
+<ul>
+<li><code>_pyarrow_errors(path)</code>: catches <code>OSError</code> / <code>ArrowInvalid</code> from PyArrow operations and maps to <code>remote_store</code> errors.</li>
+<li><code>_s3fs_errors(path)</code>: catches s3fs/botocore exceptions, same mapping as <code>S3Backend</code>.</li>
+</ul>
 <p><strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"s3-pyarrow"</code> on all mapped errors.</p>
 <h3 id="s3pa-019-no-native-exception-leakage">S3PA-019: No Native Exception Leakage<a class="headerlink" href="#s3pa-019-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No PyArrow, s3fs, botocore, or aiobotocore exceptions propagate to callers. All are mapped to <code>remote_store</code> error types per BE-021.</p>
+<p>See <a href="../008-s3-backend/#s3-018-no-native-exception-leakage">S3-018</a>. Extended to PyArrow: no PyArrow, s3fs, botocore, or aiobotocore exceptions propagate to callers.</p>
 <hr />
 <h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
 <h3 id="s3pa-020-close">S3PA-020: close()<a class="headerlink" href="#s3pa-020-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> releases both the PyArrow and s3fs filesystem instances.
-<strong>Postconditions:</strong> Safe to call multiple times.</p>
+<p>See <a href="../008-s3-backend/#s3-019-close">S3-019</a>. <code>close()</code> releases both the PyArrow and s3fs filesystem instances. Safe to call multiple times.</p>
 <h3 id="s3pa-021-dual-unwrap">S3PA-021: Dual unwrap()<a class="headerlink" href="#s3pa-021-dual-unwrap" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>unwrap()</code> supports two type hints:
 - <code>unwrap(pyarrow.fs.S3FileSystem)</code> returns the PyArrow filesystem.
-- <code>unwrap(s3fs.S3FileSystem)</code> returns the s3fs filesystem.
-<strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.
-<strong>Rationale:</strong> Escape hatch for users who need library-specific features.</p>
+- <code>unwrap(s3fs.S3FileSystem)</code> returns the s3fs filesystem.</p>
+<p><strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.</p>
+<p><strong>Rationale:</strong> Escape hatch for users who need library-specific features. Delta vs S3-020 (which only unwraps to <code>s3fs.S3FileSystem</code>).</p>
 <hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <h3 id="s3pa-022-client-options-passthrough">S3PA-022: Client Options Passthrough<a class="headerlink" href="#s3pa-022-client-options-passthrough" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-021. The <code>client_options</code> dict is merged into the s3fs configuration.
-<strong>Postconditions:</strong> <code>client_options</code> applies to s3fs only. PyArrow configuration is derived from the explicit constructor parameters.</p>
+<p>See <a href="../008-s3-backend/#s3-021-client-options-passthrough">S3-021</a>. Applies to s3fs only — PyArrow configuration is derived from the explicit constructor parameters, not from <code>client_options</code>.</p>
 <h3 id="s3pa-023-endpoint-url-normalization">S3PA-023: Endpoint URL Normalization<a class="headerlink" href="#s3pa-023-endpoint-url-normalization" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-025. <code>endpoint_url</code> is normalized at construction time so that bare <code>host:port</code> values are usable.
-<strong>Rules:</strong>
-- <code>None</code> → <code>None</code> (unchanged).
-- Empty or whitespace-only → <code>None</code>.
-- Bare <code>host:port</code> or hostname → prefixed with <code>https://</code>.
-- URLs with an existing <code>http://</code> or <code>https://</code> scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.</p>
-<p><strong>Postconditions:</strong> After construction, <code>self._endpoint_url</code> always contains a scheme prefix or is <code>None</code>.</p>
+<p>See <a href="../008-s3-backend/#s3-025-endpoint-url-normalization">S3-025</a>.</p>
+<h3 id="s3pa-024-default-credential-chain">S3PA-024: Default Credential Chain<a class="headerlink" href="#s3pa-024-default-credential-chain" title="Permanent link">&para;</a></h3>
+<p>See <a href="../008-s3-backend/#s3-022-default-credential-chain">S3-022</a>.</p>
 <h3 id="s3pa-026-config_kwargs-and-retrypolicy-config-merge">S3PA-026: config_kwargs and RetryPolicy Config Merge<a class="headerlink" href="#s3pa-026-config_kwargs-and-retrypolicy-config-merge" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as S3-026. <code>config_kwargs</code> and <code>retry=RetryPolicy(...)</code> do not collide on <code>aiobotocore.create_client()</code>. Applies to the s3fs control path only; the PyArrow data path (<code>_pa_fs</code>) is unaffected.</p>
+<p>See <a href="../008-s3-backend/#s3-026-config_kwargs-and-retrypolicy-config-merge">S3-026</a>. Applies to the s3fs control path only; the PyArrow data path (<code>_pa_fs</code>) is unaffected.</p>
 
 
 
