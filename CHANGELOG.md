@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-157: Tighten docs site spacing: compact table rows, heading typography, method separators
+
 ### Fixed
 
 - BUG-178: fix s3fs lazy init raising `got multiple values for keyword argument 'config'` when `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy(...)` are both supplied
