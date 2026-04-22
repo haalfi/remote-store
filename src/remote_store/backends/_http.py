@@ -149,8 +149,10 @@ class UrllibTransport:
             resp_headers = {k.lower(): v for k, v in resp.getheaders()}
             return HttpResponse(status=resp.status, headers=resp_headers, body=cast(BinaryIO, resp))  # noqa: TC006
         except urllib.error.HTTPError as exc:
-            resp_headers = {k.lower(): v for k, v in exc.headers.items()} if exc.headers else {}
-            return HttpResponse(status=exc.code, headers=resp_headers, body=cast(BinaryIO, io.BytesIO(b"")))  # noqa: TC006
+            with contextlib.closing(exc):
+                resp_headers = {k.lower(): v for k, v in exc.headers.items()} if exc.headers else {}
+                code = exc.code
+            return HttpResponse(status=code, headers=resp_headers, body=cast(BinaryIO, io.BytesIO(b"")))  # noqa: TC006
         except (urllib.error.URLError, OSError, TimeoutError) as exc:
             raise BackendUnavailable(
                 f"HTTP request failed: {exc}",

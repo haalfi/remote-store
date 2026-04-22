@@ -999,6 +999,34 @@ class TestHttpTransportAutoDetection:
             b.close()
 
 
+class TestUrllibTransportResourceLeak:
+    """Regression: UrllibTransport must close the HTTPError response on non-2xx."""
+
+    @pytest.mark.skipif(
+        __import__("sys").version_info < (3, 14),
+        reason="ResourceWarning from _TemporaryFileCloser.__del__ only emitted on Python 3.14+",
+    )
+    def test_no_resource_warning_on_404(self, httpserver: HTTPServer) -> None:
+        """HTTPError response is explicitly closed — no ResourceWarning on GC.
+
+        Self-contained: sets ResourceWarning → error explicitly and forces a GC
+        cycle, so the test does not depend on the global filterwarnings policy.
+        Only runs on Python 3.14+ where the warning is actually emitted.
+        """
+        import gc
+        import warnings
+
+        httpserver.expect_request("/regrtest/missing.txt").respond_with_data(b"", status=404)
+        transport = UrllibTransport()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ResourceWarning)
+            resp = transport.get(httpserver.url_for("/regrtest/missing.txt"), {}, 5.0)
+            gc.collect()
+
+        assert resp.status == 404
+
+
 def _requests_installed() -> bool:
     try:
         import requests  # noqa: F401

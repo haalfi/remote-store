@@ -5,6 +5,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-180 — ResourceWarning in tests under Python 3.14 (HTTPError not closed)**
+  `UrllibTransport._request()` discarded the caught `HTTPError` without calling
+  `close()`. On Python 3.14 this emits a `ResourceWarning` during GC, surfaced
+  in tests as `PytestUnraisableExceptionWarning`. The fd leak is in the production
+  urllib transport path, but only manifests visibly in the test environment;
+  fixed with `contextlib.closing(exc)` in `_http.py`.
+
+- [x] **BK-158 — Promote unhandled warnings to errors in pytest**
+  Added `filterwarnings = error` to `[tool.pytest.ini_options]`; existing SQLAlchemy
+  suppressors retained with inline justification.
+
 - [x] **BK-157 — Tighten docs site spacing via custom CSS**
   Reduced whitespace noise across all docs pages. Table cell padding halved.
   Classic typography rule applied to all headings (h1–h6 and mkdocstrings
