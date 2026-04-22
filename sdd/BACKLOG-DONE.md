@@ -5,6 +5,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-158 — Promote unhandled warnings to errors in pytest**
+  Added `filterwarnings = error` to `[tool.pytest.ini_options]`; existing SQLAlchemy
+  suppressors retained with inline justification.
+
 - [x] **BK-157 — Tighten docs site spacing via custom CSS**
   Reduced whitespace noise across all docs pages. Table cell padding halved.
   Classic typography rule applied to all headings (h1–h6 and mkdocstrings
