@@ -8,3 +8,86 @@
 .md-typeset .doc-section-item.field-body { margin-bottom: .15em; }
 .md-typeset .doc-section-item.field-body p { margin: .1em 0; }
 .md-typeset .doc-section-item.field-body .doc-md-description { margin-top: .1em; }
+
+/* --- API doc spacing --- */
+
+/* Table rows (overview tables) */
+.md-typeset table:not([class]) td,
+.md-typeset table:not([class]) th {
+  padding-block: .4em;
+}
+
+/* Gap between consecutive method/function blocks */
+.md-typeset .doc-object {
+  margin-top: .3em;
+}
+
+/* Method/class headings — padding-top avoids margin collapse */
+.md-typeset .doc-heading {
+  padding-top: 1em;
+  margin-top: 0;
+  margin-bottom: .15em;
+}
+
+/* Signature code block — no gap between heading and signature */
+.md-typeset .doc-signature {
+  margin-top: 0;
+  margin-bottom: .25em;
+}
+
+/* Doc content wrapper — no top gap between signature and description */
+.md-typeset .doc-contents {
+  padding-top: 0;
+}
+
+/* Classic typography: headings belong to what follows — more space above, less below.
+   Applies to all prose headings; .doc-heading is handled separately above. */
+.md-typeset h1 {
+  margin-bottom: .3em;
+}
+.md-typeset h2:not(.doc-heading) {
+  padding-top: 1.4em;
+  margin-top: 0;
+  margin-bottom: .15em;
+}
+.md-typeset h3:not(.doc-heading),
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  padding-top: 1.1em;
+  margin-top: 0;
+  margin-bottom: .1em;
+}
+
+/* When a prose heading immediately precedes a method block, cancel the method
+   heading's own top padding — the prose heading already provides separation */
+.md-typeset :is(h2, h3):not(.doc-heading) + .doc-object > .doc-heading {
+  padding-top: .2em;
+}
+
+/* Description paragraphs in doc content */
+.md-typeset .doc-contents > p {
+  margin-bottom: .35em;
+}
+
+/* Section heading paragraphs (Parameters:, Returns:, Raises:) */
+.md-typeset .doc-contents > p:has(> span.doc-section-title) {
+  margin-top: .5em;
+  margin-bottom: .1em;
+}
+
+/* Bullet lists under each section */
+.md-typeset .doc-contents > ul {
+  margin-top: .05em;
+  margin-bottom: .35em;
+}
+
+/* Admonitions (note/warning boxes) inside doc content */
+.md-typeset .doc-contents .admonition {
+  margin: .5em 0;
+}
+
+/* --- dividers between method groups */
+.md-typeset hr {
+  margin-block: .4em;
+}
