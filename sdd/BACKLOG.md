@@ -43,6 +43,8 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
+*(none)*
+
 ---
 
 ## Backlog (Prioritized)
