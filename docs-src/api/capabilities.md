@@ -8,7 +8,7 @@
     `USER_METADATA`) guard specific Store or Backend methods — calling a gated
     method on a backend that does not declare the capability raises
     `CapabilityNotSupported`. **Quality flags** (`WRITE_RESULT_NATIVE`,
-    `ATOMIC_MOVE`, `SEEKABLE_READ`, `CONSISTENT_LISTING`, `LAZY_READ`) are
+    `ATOMIC_MOVE`, `SEEKABLE_READ`, `LAZY_READ`) are
     informational only — they describe behaviour the backend provides but do
     not guard any method call. Check the class docstring for the full
     categorisation.

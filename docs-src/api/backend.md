@@ -74,6 +74,10 @@
 
 ## Writing
 
+!!! note "Requires `Capability.WRITE`"
+    `write()` raises `CapabilityNotSupported` on backends that do not declare
+    this capability. Most backends declare it.
+
 ::: remote_store.Backend.write
     options:
       show_root_heading: true

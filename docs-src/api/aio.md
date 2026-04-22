@@ -87,6 +87,10 @@ counterpart.
 
 ### Reading
 
+!!! note "Requires `Capability.READ`"
+    All read methods raise `CapabilityNotSupported` on backends that do not
+    declare this capability. Most backends declare it.
+
 ::: remote_store.aio.AsyncBackend.read
     options:
       show_root_heading: true
@@ -98,6 +102,10 @@ counterpart.
       heading_level: 4
 
 ### Writing
+
+!!! note "Requires `Capability.WRITE`"
+    `write()` raises `CapabilityNotSupported` on backends that do not declare
+    this capability. Most backends declare it.
 
 ::: remote_store.aio.AsyncBackend.write
     options:
@@ -122,6 +130,10 @@ counterpart.
 
 ### Deleting
 
+!!! note "Requires `Capability.DELETE`"
+    All delete methods raise `CapabilityNotSupported` on backends that do not
+    declare this capability.
+
 ::: remote_store.aio.AsyncBackend.delete
     options:
       show_root_heading: true
@@ -133,6 +145,10 @@ counterpart.
       heading_level: 4
 
 ### Listing and Iteration
+
+!!! note "Requires `Capability.LIST`"
+    All listing methods raise `CapabilityNotSupported` on backends that do not
+    declare this capability.
 
 ::: remote_store.aio.AsyncBackend.list_files
     options:
@@ -164,10 +180,16 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.aio.AsyncBackend.get_folder_info
     options:
       show_root_heading: true
       heading_level: 4
+
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ### File Operations
 
@@ -176,10 +198,16 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! note "Requires `Capability.MOVE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.aio.AsyncBackend.copy
     options:
       show_root_heading: true
       heading_level: 4
+
+!!! note "Requires `Capability.COPY`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ### Lifecycle
 
