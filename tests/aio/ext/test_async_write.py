@@ -6,6 +6,7 @@ import hashlib
 
 import pytest
 
+from remote_store import CapabilityNotSupported
 from remote_store._models import WriteResult
 from remote_store.aio._async_memory import AsyncMemoryBackend
 from remote_store.aio._async_store import AsyncStore
@@ -54,3 +55,19 @@ class TestWriteWithHash:
         assert result.digest is not None
         assert result.digest.algorithm == "sha512"
         assert result.digest.value == hashlib.sha512(content).hexdigest()
+
+    @pytest.mark.spec("EW-001")
+    async def test_write_with_hash_metadata_forwarded(self, store: AsyncStore) -> None:
+        result = await write_with_hash(store, "f.txt", b"data", metadata={"k": "v"})
+        assert isinstance(result, WriteResult)
+        assert result.metadata == {"k": "v"}
+
+    @pytest.mark.spec("EW-001")
+    async def test_write_with_hash_no_user_metadata_raises(self) -> None:
+        from remote_store import Capability
+        from tests.conftest import RestrictedBackend
+
+        backend = RestrictedBackend(AsyncMemoryBackend(), exclude={Capability.USER_METADATA})  # type: ignore[arg-type]
+        restricted_store = AsyncStore(backend, root_path="data")  # type: ignore[arg-type]
+        with pytest.raises(CapabilityNotSupported):
+            await write_with_hash(restricted_store, "f.txt", b"x", metadata={"k": "v"})

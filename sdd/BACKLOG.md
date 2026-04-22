@@ -43,6 +43,15 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
+- [ ] **BUG-180 — Verify HNS `write_atomic` metadata propagation through `rename_file`**
+  `AsyncAzureBackend.write_atomic` on HNS sets `metadata=` on the **temp** file client
+  before `rename_file`, relying on Azure ADLS Gen2 rename preserving user-defined metadata.
+  This is expected to work (rename is a filesystem-level move, not a copy), but is not tested
+  because the HNS path is `# pragma: no cover` in CI.
+  When HNS integration tests are added, add a `test_write_atomic_hns_metadata_preserved`
+  that writes with `metadata={"k":"v"}`, reads back metadata from the final path, and asserts
+  the key is present.
+
 ---
 
 ## Backlog (Prioritized)

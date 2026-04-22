@@ -35,6 +35,9 @@ async def write_with_hash(
         algorithm: ``hashlib`` algorithm name.  Default ``"sha256"``.
         overwrite: Same semantics as ``AsyncStore.write``.
         metadata: Optional user metadata; subject to ``USER_METADATA`` gate.
+
+    Returns:
+        ``WriteResult`` with ``digest`` populated from the client-side hash.
     """
     from remote_store import ContentDigest
 

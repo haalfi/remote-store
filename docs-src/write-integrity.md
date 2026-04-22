@@ -8,8 +8,10 @@ content hash. Backends that fully populate these fields declare
 with `path` and `size` only.
 
 When you need a content hash regardless of backend, use the helpers in
-[`ext.write`](api/extensions/write.md). They compute the digest client-side
-as bytes flow through the stream, so the hash is always available.
+[`ext.write`](api/extensions/write.md) (sync) or
+[`aio.ext.write`](api/extensions/aio-write.md) (async). They compute the
+digest client-side as bytes flow through the stream, so the hash is always
+available.
 
 ## write_with_hash
 
@@ -74,9 +76,23 @@ backend without `USER_METADATA` raises `CapabilityNotSupported`. Check
 backend-agnostic code. See the
 [Capabilities Matrix](capabilities-matrix.md) for which backends support it.
 
+## Async usage
+
+For `AsyncStore`, use `write_with_hash` from `aio.ext.write` — the interface
+is identical, accepts `bytes` or `AsyncIterator[bytes]`, and hashes inline
+without buffering:
+
+```python
+from remote_store.aio.ext.write import write_with_hash
+
+result = await write_with_hash(async_store, "report.csv", content)
+print(result.digest.value)  # sha256 hex string
+```
+
 ## See also
 
 - [`ext.write` API reference](api/extensions/write.md)
+- [`aio.ext.write` API reference](api/extensions/aio-write.md)
 - [`WriteResult` and `ContentDigest`](api/models.md#remote_store.WriteResult)
 - [Capabilities Matrix](capabilities-matrix.md) — `WRITE_RESULT_NATIVE` and `USER_METADATA` rows
 - [Concurrency guide](concurrency.md) — atomicity semantics for `write_atomic` and `open_atomic`

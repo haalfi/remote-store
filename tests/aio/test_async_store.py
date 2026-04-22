@@ -906,7 +906,7 @@ class TestAsyncStoreMetadataGate:
     async def test_write_metadata_no_capability_raises(self) -> None:
         from tests.conftest import RestrictedBackend
 
-        backend = RestrictedBackend(AsyncMemoryBackend(), exclude={Capability.USER_METADATA})
-        store = AsyncStore(backend, root_path="data")
+        backend = RestrictedBackend(AsyncMemoryBackend(), exclude={Capability.USER_METADATA})  # type: ignore[arg-type]
+        store = AsyncStore(backend, root_path="data")  # type: ignore[arg-type]
         with pytest.raises(CapabilityNotSupported):
             await store.write("f.bin", b"x", metadata={"k": "v"})

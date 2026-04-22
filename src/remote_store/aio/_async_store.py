@@ -203,7 +203,7 @@ class AsyncStore:
             InvalidPath: If *path* is empty.
 
         Equivalent to
-        ``await write(path, text.encode(encoding), overwrite=overwrite)``.
+        ``await write(path, text.encode(encoding), overwrite=overwrite, metadata=metadata)``.
         """
         log.debug(
             "write_text path=%r encoding=%r overwrite=%r",
