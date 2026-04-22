@@ -57,56 +57,6 @@ Existing items may be more verbose — trim on next touch.
   files, the spec body updated to point to the conformance test instead.
   Requires a pass over each backend spec to update traceability references.
 
-- [ ] **BK-153 — Address backend-specifics visibility findings from audit-009**
-  Follow-up to [audit-009](audits/audit-009-backend-specifics-visibility.md)
-  (2026-04-21). Today, only `Store.unwrap` carries the `!!! warning
-  "Backend-specific methods"` admonition (`docs-src/api/store.md:211-241`).
-  Every other place in the reference where a symbol couples user code to a
-  specific backend or capability — interop methods on `AsyncStore`,
-  `AsyncBackend`, `Backend`, `ProxyStore`, and concrete backends; capability
-  gates on `Store.glob` / `write_atomic` / `head`; the `metadata=` argument
-  on `write*`; backend-conditional fields on `WriteResult`, `FileInfo`,
-  `FolderInfo`, `ResolutionPlan`, `BackendConfig`; the SFTP-only
-  `SFTPUtils` module — describes the coupling in prose only. Users who scan
-  for the same visual signal `unwrap` carries will not find it.
-  **20 findings across 5 categories** (A: 6 interop, B: 5 capability-gated
-  methods, C: 2 capability-gated arguments, D: 4 backend-conditional fields,
-  E: 3 whole-class/module). The audit document includes a recommended
-  pattern table mapping each granularity to an admonition style.
-  **Most user-impactful:** D-1 (`WriteResult` — return type of every write,
-  every optional field is backend-conditional via the `source` discriminator).
-  Pairs naturally with BK-152 (this audit's D-1 documents what BK-152 fixes
-  in code: once write/get_file_info agree, the visibility fix can lean on a
-  consistent contract rather than caveats).
-  **Exit criteria:** every reference symbol where a user could stumble into
-  backend or capability dependence carries a visible admonition (warning or
-  note) — not just a sentence inside a docstring. Apply the recommended
-  pattern in the audit (§ "Recommended pattern") consistently across
-  `docs-src/api/`. Verify by re-walking the reference and confirming each
-  audit finding is closed.
-  **Two cross-cutting tasks called out by audit-009:**
-  1. `supports()` is portable, not backend-specific. The fix for A-1
-     (AsyncStore) must carry the `store.md:238-241` portable-method note
-     across, not the warning admonition — otherwise the async docs would
-     contradict the sync docs. Category-A intro explains this.
-  2. Source-level region tag `# region: interop (backend-specific)` in
-     `_store.py:812` and `_async_store.py:785` includes `supports()`,
-     contradicting the portable-method note. Resolve by extracting
-     `supports()` from the region or renaming the tag
-     (e.g. `# region: interop`). Decide once, apply to both files.
-  **A-5 scope note:** only `backends/http.md` renders interop methods
-  as public members (confirmed against a local docs build). The other
-  eight concrete-backend pages render only the class signature because
-  mkdocstrings defaults to `inherited_members: false`. Widening rendering
-  on those pages is a completeness question out of scope for BK-153 —
-  track separately if raised.
-  **Ripple checks** (per `sdd/CLAUDE-REFERENCE.md`): docstrings in `src/`
-  (admonition syntax may need to be embedded in source for mkdocstrings to
-  render it; alternatively wrapped at the `.md` level via `mkdocstrings`
-  directive scaffolding); `CONTENT-RULES.md` for admonition vocabulary;
-  `sdd/audits/audit-009-backend-specifics-visibility.md` (mark closed in
-  CHANGELOG entry).
-
 - [ ] **BK-152 — Single conformance test for WriteResult/FileInfo consistency + fix violating backends**
   The contract "write a file, then fetch its info — shared fields must agree" has no
   single test and the existing partial coverage is gated on `WRITE_RESULT_NATIVE`,

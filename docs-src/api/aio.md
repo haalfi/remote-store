@@ -16,8 +16,8 @@ counterpart.
 
 !!! warning "Backend-specific methods"
     Methods in this section expose backend internals. Using them ties your
-    code to a specific backend. For portable alternatives, use the methods
-    above.
+    code to a specific backend. For portable alternatives, see
+    [Store](store.md) or the [Async Store Guide](../async.md).
 
 ::: remote_store.aio.AsyncStore.unwrap
     options:
@@ -104,6 +104,10 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! note "Backend-conditional argument: `metadata=`"
+    Passing `metadata` raises `CapabilityNotSupported` on backends that do not
+    declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
+
 ::: remote_store.aio.AsyncBackend.write_atomic
     options:
       show_root_heading: true
@@ -111,6 +115,10 @@ counterpart.
 
 !!! note "Requires `Capability.ATOMIC_WRITE`"
     Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+!!! note "Backend-conditional argument: `metadata=`"
+    Passing `metadata` raises `CapabilityNotSupported` on backends that do not
+    declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
 
 ### Deleting
 

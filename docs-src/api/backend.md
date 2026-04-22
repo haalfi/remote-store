@@ -79,6 +79,10 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Backend-conditional argument: `metadata=`"
+    Passing `metadata` raises `CapabilityNotSupported` on backends that do not
+    declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
+
 ::: remote_store.Backend.write_atomic
     options:
       show_root_heading: true
@@ -86,6 +90,10 @@
 
 !!! note "Requires `Capability.ATOMIC_WRITE`"
     Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+!!! note "Backend-conditional argument: `metadata=`"
+    Passing `metadata` raises `CapabilityNotSupported` on backends that do not
+    declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
 
 ::: remote_store.Backend.open_atomic
     options:
@@ -125,6 +133,11 @@
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Backend-conditional argument: `max_depth=`"
+    Backends with native depth limiting prune traversal early. Backends that do not
+    support it still return correct results — the Store applies client-side filtering
+    as a safety net.
 
 ::: remote_store.Backend.list_folders
     options:

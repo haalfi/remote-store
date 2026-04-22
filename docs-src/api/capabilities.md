@@ -3,14 +3,15 @@
 ::: remote_store.Capability
 
 !!! info "Quality flags vs. method gates"
-    Two kinds of capabilities exist. **Method gates** (`GLOB`, `ATOMIC_WRITE`,
-    `METADATA`, `MOVE`, `COPY`, `DELETE`, `LIST`, `READ`, `WRITE_RESULT_NATIVE`,
+    Two kinds of capabilities exist. **Method gates** (`READ`, `WRITE`,
+    `DELETE`, `LIST`, `GLOB`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`,
     `USER_METADATA`) guard specific Store or Backend methods — calling a gated
     method on a backend that does not declare the capability raises
-    `CapabilityNotSupported`. **Quality flags** (`SEEKABLE_READ`,
-    `CONSISTENT_LISTING`, and similar) are informational only — they describe
-    behaviour the backend provides but do not guard any method call. Check
-    the class docstring for the full categorisation.
+    `CapabilityNotSupported`. **Quality flags** (`WRITE_RESULT_NATIVE`,
+    `ATOMIC_MOVE`, `SEEKABLE_READ`, `CONSISTENT_LISTING`, `LAZY_READ`) are
+    informational only — they describe behaviour the backend provides but do
+    not guard any method call. Check the class docstring for the full
+    categorisation.
 
 ::: remote_store.CapabilitySet
 

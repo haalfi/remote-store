@@ -5,6 +5,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-153 — Address backend-specifics visibility findings from audit-009**
+  Added three-tier admonition vocabulary (info/note/warning) to all
+  `docs-src/api/` pages: capability-gate notes on all B-series methods,
+  backend-conditional argument notes on `metadata=` and `max_depth=`,
+  backend-conditional field notes on `FileInfo`, `WriteResult`, `FolderInfo`,
+  `ResolutionPlan`, and `BackendConfig.options`, interop-section warnings on
+  `Backend`, `AsyncBackend`, `AsyncStore`, `ProxyStore`, `ReadOnlyHttpBackend`,
+  and module warning on `SFTPUtils`. Documented the three-tier vocabulary in
+  `sdd/DOCUMENTATION.md`. Fixed region tag naming in `_store.py` and
+  `_async_store.py`. Closed all 20 findings from audit-009.
+
 - [x] **BK-155 — Consolidate S3 + S3-PyArrow tests and specs against shared base**
   Extracted shared invariants to `tests/backends/test_s3_shared.py`,
   parametrized over both `S3Backend` and `S3PyArrowBackend` with per-param
