@@ -5,10 +5,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-- [x] **BUG-179 — UrllibTransport leaks HTTPError response body on non-2xx**
-  Python 3.14 `_TemporaryFileCloser.__del__` emits `ResourceWarning` when the
-  `HTTPError` caught in `_request()` was not explicitly closed. Fixed by calling
-  `exc.close()` before discarding the exception.
+- [x] **BUG-179 — ResourceWarning in tests under Python 3.14 (HTTPError not closed)**
+  `_request()` discarded the caught `HTTPError` without calling `close()`. On
+  Python 3.14 this emits a `ResourceWarning` during GC, failing tests via
+  `PytestUnraisableExceptionWarning`. Test-env only; fixed with `exc.close()`.
 
 - [x] **BK-158 — Promote unhandled warnings to errors in pytest**
   Added `filterwarnings = error` to `[tool.pytest.ini_options]`; existing SQLAlchemy
