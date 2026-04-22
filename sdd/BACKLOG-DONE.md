@@ -5,7 +5,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-- [x] **BUG-179 — ResourceWarning in tests under Python 3.14 (HTTPError not closed)**
+- [x] **BUG-180 — ResourceWarning in tests under Python 3.14 (HTTPError not closed)**
   `UrllibTransport._request()` discarded the caught `HTTPError` without calling
   `close()`. On Python 3.14 this emits a `ResourceWarning` during GC, surfaced
   in tests as `PytestUnraisableExceptionWarning`. The fd leak is in the production
