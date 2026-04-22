@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://docs.remotestore.dev/dev/api/aio/">
       
       
-        <link rel="prev" href="../backends/sql-query/">
+        <link rel="prev" href="../backend/">
       
       
-        <link rel="next" href="../extensions/">
+        <link rel="next" href="../info/">
       
       
         
@@ -3236,6 +3236,781 @@
                 
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#asyncstore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncStore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncStore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncStore
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" AsyncStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interop-backend-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interop (Backend-Specific)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interop (Backend-Specific)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncStore.unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unwrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncStore.native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;native_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncStore.to_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncStore.supports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;supports
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncbackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncBackend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncBackend
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" AsyncBackend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Identity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;capabilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#existence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Existence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;exists
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.is_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;is_file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.is_folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;is_folder
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reading">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;read
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.read_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;read_bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.write_atomic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write_atomic
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deleting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.delete_folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;delete_folder
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#listing-and-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing and Iteration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Listing and Iteration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.list_files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;list_files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.list_folders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;list_folders
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.iter_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;iter_children
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;glob
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.get_file_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_file_info
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.get_folder_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_folder_info
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;copy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.aclose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;aclose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.check_health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;check_health
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introspection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Introspection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.resolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interop-backend-specific_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interop (Backend-Specific)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interop (Backend-Specific)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unwrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;native_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.to_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_key
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#syncbackendadapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SyncBackendAdapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.aio.SyncBackendAdapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SyncBackendAdapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncbackendsyncadapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncBackendSyncAdapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.AsyncBackendSyncAdapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncBackendSyncAdapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncmemorybackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncMemoryBackend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncMemoryBackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncMemoryBackend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncazurebackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncAzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncAzureBackend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncAzureBackend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncwritablecontent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AsyncWritableContent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncWritableContent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;AsyncWritableContent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
@@ -3306,7 +4081,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3328,14 +4103,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_11">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3599,527 +4374,6 @@
             
           </ul>
         </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Async
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Async
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#asyncstore" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncStore
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncStore" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncStore
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#asyncbackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncBackend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncBackend
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" AsyncBackend">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.capabilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;capabilities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;exists
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.is_file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;is_file
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;is_folder
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;read
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;read_bytes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.write_atomic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write_atomic
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.delete" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;delete
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.delete_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;delete_folder
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.list_files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;list_files
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.list_folders" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;list_folders
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_file_info
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_folder_info
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;move
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.aclose" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;aclose
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.check_health" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;check_health
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;glob
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.iter_children" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;iter_children
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.to_key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_key
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.native_path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;native_path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.resolve" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unwrap
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#syncbackendadapter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SyncBackendAdapter
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.aio.SyncBackendAdapter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SyncBackendAdapter
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#asyncbackendsyncadapter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncBackendSyncAdapter
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.AsyncBackendSyncAdapter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncBackendSyncAdapter
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#asyncmemorybackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncMemoryBackend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncMemoryBackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncMemoryBackend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#asyncazurebackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncAzureBackend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncAzureBackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;AsyncAzureBackend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#asyncwritablecontent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AsyncWritableContent
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncWritableContent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;AsyncWritableContent
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -9012,6 +9266,73 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" AsyncStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interop-backend-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interop (Backend-Specific)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interop (Backend-Specific)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncStore.unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unwrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncStore.native_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;native_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncStore.to_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncStore.supports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;supports
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -9038,6 +9359,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Identity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#remote_store.aio.AsyncBackend.name" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9058,6 +9391,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#existence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Existence">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.aio.AsyncBackend.exists" class="md-nav__link">
@@ -9092,6 +9442,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reading">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#remote_store.aio.AsyncBackend.read" class="md-nav__link">
     <span class="md-ellipsis">
@@ -9113,6 +9480,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.aio.AsyncBackend.write" class="md-nav__link">
@@ -9136,6 +9520,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deleting">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#remote_store.aio.AsyncBackend.delete" class="md-nav__link">
     <span class="md-ellipsis">
@@ -9157,6 +9558,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#listing-and-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing and Iteration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Listing and Iteration">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.aio.AsyncBackend.list_files" class="md-nav__link">
@@ -9181,6 +9599,45 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.iter_children" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;iter_children
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;glob
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#remote_store.aio.AsyncBackend.get_file_info" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9201,6 +9658,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Operations">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#remote_store.aio.AsyncBackend.move" class="md-nav__link">
@@ -9224,6 +9698,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lifecycle">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#remote_store.aio.AsyncBackend.aclose" class="md-nav__link">
     <span class="md-ellipsis">
@@ -9246,33 +9737,56 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
           <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.glob" class="md-nav__link">
+  <a href="#introspection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;glob
+        Introspection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Introspection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.resolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve
       
     </span>
   </a>
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.iter_children" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;iter_children
-      
-    </span>
-  </a>
+      </ul>
+    </nav>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.to_key" class="md-nav__link">
+  <a href="#interop-backend-specific_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_key
+        Interop (Backend-Specific)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interop (Backend-Specific)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.aio.AsyncBackend.unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unwrap
       
     </span>
   </a>
@@ -9291,24 +9805,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.resolve" class="md-nav__link">
+  <a href="#remote_store.aio.AsyncBackend.to_key" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_key
       
     </span>
   </a>
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.AsyncBackend.unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;unwrap
-      
-    </span>
-  </a>
+      </ul>
+    </nav>
   
 </li>
         
@@ -9542,7 +10050,233 @@ auto-wrapped via <code>SyncBackendAdapter</code>.</p>
 
     </div>
 
-</div><hr />
+</div><h3 id="interop-backend-specific">Interop (Backend-Specific)<a class="headerlink" href="#interop-backend-specific" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Backend-specific methods</p>
+<p>Methods in this section expose backend internals. Using them ties your
+code to a specific backend. For portable alternatives, see
+<a href="../store/">Store</a> or the <a href="../../async/">Async Store Guide</a>.</p>
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="remote_store.aio.AsyncStore.unwrap" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">unwrap</span>
+
+
+<a href="#remote_store.aio.AsyncStore.unwrap" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap</span><span class="p">(</span><span class="n">type_hint</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="remote_store.aio._async_store.T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="remote_store.aio._async_store.T">T</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Return the backend's native client object, cast to <em>type_hint</em>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>type_hint</code></b>
+              (<code><span title="type">type</span>[<span title="remote_store.aio._async_store.T">T</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The expected type of the native client
+(e.g. <code>pyarrow.fs.FileSystem</code>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="remote_store.aio._async_store.T">T</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The native client.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the backend cannot provide
+the requested type.</p>
+          </div>
+        </li>
+    </ul>
+        <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">arrow_fs</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">pyarrow</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">FileSystem</span><span class="p">)</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="remote_store.aio.AsyncStore.native_path" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">native_path</span>
+
+
+<a href="#remote_store.aio.AsyncStore.native_path" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">native_path</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Convert a store-relative <em>key</em> to the backend's native path representation.</p>
+<p>Inverse of <code>to_key()</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>key</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Store-relative path.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Backend-native path (e.g. S3 object key, local filesystem path).</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="remote_store.aio.AsyncStore.to_key" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">to_key</span>
+
+
+<a href="#remote_store.aio.AsyncStore.to_key" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_key</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Convert a backend-native <em>path</em> to a store-relative key.</p>
+<p>Inverse of <code>native_path()</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend-native path string.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Store-relative key.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the path does not belong to this store.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="remote_store.aio.AsyncStore.supports" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">supports</span>
+
+
+<a href="#remote_store.aio.AsyncStore.supports" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">supports</span><span class="p">(</span><span class="n">capability</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Capability (remote_store._capabilities.Capability)" href="../capabilities/#remote_store.Capability">Capability</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Check whether the backend supports a given <code>Capability</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>capability</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Capability (remote_store._capabilities.Capability)" href="../capabilities/#remote_store.Capability">Capability</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>A <code>Capability</code> enum member.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="bool">bool</span></code>
+          –
+          <div class="doc-md-description">
+            <p><code>True</code> if the backend declares this capability.</p>
+          </div>
+        </li>
+    </ul>
+        <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">async</span> <span class="k">for</span> <span class="n">fi</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;**/*.csv&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="o">...</span>
+</code></pre></div>
+
+
+    </div>
+
+</div><div class="admonition info">
+<p class="admonition-title">Info</p>
+<p><code>supports()</code> itself is portable — it works on all backends. Only the
+capability-gated methods it guards are backend-specific.</p>
+</div>
+<hr />
 <h2 id="asyncbackend">AsyncBackend<a class="headerlink" href="#asyncbackend" title="Permanent link">&para;</a></h2>
 
 
@@ -9585,11 +10319,29 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 
 
 
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><div class="admonition info">
+<p class="admonition-title">Implementing an async backend</p>
+<p>Subclass <code>AsyncBackend</code> and implement all abstract methods. Map every
+backend-native exception to a <code>remote_store</code> error — native exceptions
+must never leak to callers.</p>
+</div>
+<h3 id="identity">Identity<a class="headerlink" href="#identity" title="Permanent link">&para;</a></h3>
+
+
 <div class="doc doc-object doc-attribute">
 
 
 
-<h3 id="remote_store.aio.AsyncBackend.name" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.name" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">name</span>
 
 
@@ -9598,11 +10350,11 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.name" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.name" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Unique identifier for this backend type (e.g. <code>'local'</code>, <code>'s3'</code>).</p>
 
@@ -9614,7 +10366,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 
 
 
-<h3 id="remote_store.aio.AsyncBackend.capabilities" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.capabilities" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">capabilities</span>
 
 
@@ -9623,25 +10375,23 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.capabilities" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.capabilities" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">capabilities</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CapabilitySet (remote_store._capabilities.CapabilitySet)" href="../capabilities/#remote_store.CapabilitySet">CapabilitySet</a></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Declared capabilities of this backend.</p>
 
     </div>
 
-</div>
-
-
+</div><h3 id="existence">Existence<a class="headerlink" href="#existence" title="Permanent link">&para;</a></h3>
 
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.exists" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.exists" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">exists</span>
 
 
@@ -9650,11 +10400,11 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.exists" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.exists" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Check if a file or folder exists. Never raises <code>NotFound</code>.</p>
 
@@ -9691,7 +10441,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.is_file" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.is_file" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">is_file</span>
 
 
@@ -9700,11 +10450,11 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.is_file" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.is_file" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Return <code>True</code> if <code>path</code> is an existing file.</p>
 
@@ -9741,7 +10491,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.is_folder" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.is_folder" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">is_folder</span>
 
 
@@ -9750,11 +10500,11 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.is_folder" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.is_folder" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_folder</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Return <code>True</code> if <code>path</code> is an existing folder.</p>
 
@@ -9786,12 +10536,18 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 
     </div>
 
+</div><h3 id="reading">Reading<a class="headerlink" href="#reading" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.READ</code></p>
+<p>All read methods raise <code>CapabilityNotSupported</code> on backends that do not
+declare this capability. Most backends declare it.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.read" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.read" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">read</span>
 
 
@@ -9800,11 +10556,11 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.read" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.read" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.AsyncIterator">AsyncIterator</span></span><span class="p">[</span><span class="n"><span title="bytes">bytes</span></span><span class="p">]</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Open a file for reading and return an async iterator of byte chunks.</p>
 
@@ -9853,7 +10609,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.read_bytes" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.read_bytes" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">read_bytes</span>
 
 
@@ -9862,11 +10618,11 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.read_bytes" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.read_bytes" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">read_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bytes">bytes</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Read the full content of a file as bytes.</p>
 
@@ -9910,12 +10666,18 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 
     </div>
 
+</div><h3 id="writing">Writing<a class="headerlink" href="#writing" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.WRITE</code></p>
+<p><code>write()</code> raises <code>CapabilityNotSupported</code> on backends that do not declare
+this capability. Most backends declare it.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.write" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.write" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write</span>
 
 
@@ -9924,7 +10686,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.write" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.write" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write</span><span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">content</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            AsyncWritableContent
@@ -9938,7 +10700,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Write content to a file.</p>
 
@@ -9993,12 +10755,17 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional argument: <code>metadata=</code></p>
+<p>Passing <code>metadata</code> raises <code>CapabilityNotSupported</code> on backends that do not
+declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <code>{}</code> is safe on all backends.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.write_atomic" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.write_atomic" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write_atomic</span>
 
 
@@ -10007,7 +10774,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.write_atomic" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.write_atomic" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_atomic</span><span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">content</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            AsyncWritableContent
@@ -10021,7 +10788,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Write content atomically via temp file + rename.</p>
 
@@ -10083,12 +10850,27 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.ATOMIC_WRITE</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Backend-conditional argument: <code>metadata=</code></p>
+<p>Passing <code>metadata</code> raises <code>CapabilityNotSupported</code> on backends that do not
+declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <code>{}</code> is safe on all backends.</p>
+</div>
+<h3 id="deleting">Deleting<a class="headerlink" href="#deleting" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.DELETE</code></p>
+<p>All delete methods raise <code>CapabilityNotSupported</code> on backends that do not
+declare this capability.</p>
+</div>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.delete" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.delete" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">delete</span>
 
 
@@ -10097,11 +10879,11 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.delete" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.delete" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing_ok</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Delete a file.</p>
 
@@ -10148,7 +10930,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.delete_folder" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.delete_folder" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">delete_folder</span>
 
 
@@ -10157,7 +10939,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.delete_folder" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.delete_folder" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete_folder</span><span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
@@ -10166,7 +10948,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Delete a folder.</p>
 
@@ -10225,12 +11007,18 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
 
     </div>
 
+</div><h3 id="listing-and-iteration">Listing and Iteration<a class="headerlink" href="#listing-and-iteration" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.LIST</code></p>
+<p>All listing methods raise <code>CapabilityNotSupported</code> on backends that do not
+declare this capability.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.list_files" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.list_files" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">list_files</span>
 
 
@@ -10239,7 +11027,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.list_files" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.list_files" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_files</span><span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
@@ -10253,7 +11041,7 @@ exceptions must never leak -- they must be mapped to <code>remote_store</code> e
    (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>List files under <code>path</code>.</p>
 
@@ -10314,12 +11102,18 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional argument: <code>max_depth=</code></p>
+<p>Backends with native depth limiting prune traversal early. Backends that do not
+support it still return correct results — the Store applies client-side filtering
+as a safety net.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.list_folders" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.list_folders" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">list_folders</span>
 
 
@@ -10328,7 +11122,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.list_folders" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.list_folders" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_folders</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.AsyncIterator">AsyncIterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
 
 
@@ -10337,7 +11131,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
    (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>List immediate subfolders under <code>path</code>.</p>
 
@@ -10379,7 +11173,143 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.get_file_info" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.iter_children" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">iter_children</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#remote_store.aio.AsyncBackend.iter_children" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">iter_children</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.AsyncIterator">AsyncIterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Yield both files and folders under <code>path</code> in a single pass.</p>
+<p>Files are yielded as <code>FileInfo</code> objects, folders as
+<code>FolderEntry</code> objects. The default implementation chains
+<code>list_files()</code> and <code>list_folders()</code>. Backends that can fetch
+both in a single I/O call should override this for efficiency.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend-relative folder key, or <code>""</code> for the root.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="collections.abc.AsyncIterator">AsyncIterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a> | <a class="autorefs autorefs-internal" title="            FolderEntry
+
+
+  
+      dataclass
+   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
+          –
+          <div class="doc-md-description">
+            <p>An async iterator of <code>FileInfo</code> (files) and <code>FolderEntry</code> (folders).</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="remote_store.aio.AsyncBackend.glob" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">glob</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#remote_store.aio.AsyncBackend.glob" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.AsyncIterator">AsyncIterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Match files against a glob pattern.</p>
+<p>Non-abstract -- backends with native glob support override this
+and add <code>Capability.GLOB</code> to their capability set.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>pattern</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Glob pattern (e.g., <code>"data/*.csv"</code>, <code>"**/*.txt"</code>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the backend lacks <code>GLOB</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.GLOB</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+</div>
+<h3 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="remote_store.aio.AsyncBackend.get_file_info" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_file_info</span>
 
 
@@ -10388,7 +11318,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.get_file_info" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.get_file_info" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_file_info</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
 
 
@@ -10397,7 +11327,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
    (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Get metadata for a file.</p>
 
@@ -10446,12 +11376,16 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.METADATA</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.get_folder_info" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.get_folder_info" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_folder_info</span>
 
 
@@ -10460,7 +11394,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.get_folder_info" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.get_folder_info" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_folder_info</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            FolderInfo
 
 
@@ -10469,7 +11403,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
    (remote_store._models.FolderInfo)" href="../models/#remote_store.FolderInfo">FolderInfo</a></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Get metadata for a folder.</p>
 
@@ -10518,12 +11452,17 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.METADATA</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
 </div>
+<h3 id="file-operations">File Operations<a class="headerlink" href="#file-operations" title="Permanent link">&para;</a></h3>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.move" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.move" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">move</span>
 
 
@@ -10532,13 +11471,13 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.move" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.move" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">move</span><span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">src</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Move or rename a file.</p>
 
@@ -10595,12 +11534,16 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.MOVE</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.copy" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.copy" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">copy</span>
 
 
@@ -10609,13 +11552,13 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.copy" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.copy" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">copy</span><span class="p">(</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">src</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Copy a file.</p>
 
@@ -10672,12 +11615,17 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.COPY</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
 </div>
+<h3 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h3>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.aclose" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.aclose" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">aclose</span>
 
 
@@ -10685,11 +11633,11 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.aclose" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.aclose" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">aclose</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Release resources. Default is a no-op.</p>
 
@@ -10701,7 +11649,7 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.check_health" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.check_health" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">check_health</span>
 
 
@@ -10709,11 +11657,11 @@ as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#remote_store.aio.AsyncBackend.check_health" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.check_health" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">check_health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Verify the backend is reachable and credentials are valid.</p>
 <p>The default implementation is a no-op (always succeeds). Backends
@@ -10749,243 +11697,17 @@ check using the cheapest possible read-only operation.</p>
 
     </div>
 
-</div>
+</div><h3 id="introspection">Introspection<a class="headerlink" href="#introspection" title="Permanent link">&para;</a></h3>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.glob" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">glob</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#remote_store.aio.AsyncBackend.glob" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.AsyncIterator">AsyncIterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
-
-
-  
-      dataclass
-   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Match files against a glob pattern.</p>
-<p>Non-abstract -- backends with native glob support override this
-and add <code>Capability.GLOB</code> to their capability set.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>pattern</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Glob pattern (e.g., <code>"data/*.csv"</code>, <code>"**/*.txt"</code>).</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            CapabilityNotSupported (remote_store._errors.CapabilityNotSupported)" href="../errors/#remote_store.CapabilityNotSupported">CapabilityNotSupported</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If the backend lacks <code>GLOB</code>.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.AsyncBackend.iter_children" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">iter_children</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#remote_store.aio.AsyncBackend.iter_children" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">iter_children</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.AsyncIterator">AsyncIterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
-
-
-  
-      dataclass
-   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
-
-
-  
-      dataclass
-   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a></span><span class="p">]</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Yield both files and folders under <code>path</code> in a single pass.</p>
-<p>Files are yielded as <code>FileInfo</code> objects, folders as
-<code>FolderEntry</code> objects. The default implementation chains
-<code>list_files()</code> and <code>list_folders()</code>. Backends that can fetch
-both in a single I/O call should override this for efficiency.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>path</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Backend-relative folder key, or <code>""</code> for the root.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="collections.abc.AsyncIterator">AsyncIterator</span>[<a class="autorefs autorefs-internal" title="            FileInfo
-
-
-  
-      dataclass
-   (remote_store._models.FileInfo)" href="../models/#remote_store.FileInfo">FileInfo</a> | <a class="autorefs autorefs-internal" title="            FolderEntry
-
-
-  
-      dataclass
-   (remote_store._models.FolderEntry)" href="../models/#remote_store.FolderEntry">FolderEntry</a>]</code>
-          –
-          <div class="doc-md-description">
-            <p>An async iterator of <code>FileInfo</code> (files) and <code>FolderEntry</code> (folders).</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.AsyncBackend.to_key" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">to_key</span>
-
-
-<a href="#remote_store.aio.AsyncBackend.to_key" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_key</span><span class="p">(</span><span class="n">native_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Convert a backend-native path to a backend-relative key.</p>
-<p>Strips the backend's own root/prefix from the path. The default
-implementation is the identity function -- backends with a native
-root (filesystem path, bucket prefix, base_path) override this.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>native_path</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Absolute or backend-native path string.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="str">str</span></code>
-          –
-          <div class="doc-md-description">
-            <p>Path relative to the backend's root.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.AsyncBackend.native_path" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">native_path</span>
-
-
-<a href="#remote_store.aio.AsyncBackend.native_path" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Convert a backend-relative key to the backend-native path.</p>
-<p>The inverse of <code>to_key()</code>. The default implementation is the
-identity function -- backends with a native root (bucket, base_path)
-override this to prepend their prefix.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>path</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Backend-relative key.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="str">str</span></code>
-          –
-          <div class="doc-md-description">
-            <p>Backend-native path usable with the native handle from <code>unwrap()</code>.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.AsyncBackend.resolve" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.resolve" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">resolve</span>
 
 
-<a href="#remote_store.aio.AsyncBackend.resolve" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.resolve" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            ResolutionPlan
 
 
@@ -10994,7 +11716,7 @@ override this to prepend their prefix.</p>
    (remote_store._resolution.ResolutionPlan)" href="../models/#remote_store.ResolutionPlan">ResolutionPlan</a></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Return a <code>ResolutionPlan</code> describing how <em>path</em> maps to storage.</p>
 <p>Pure introspection -- no I/O is performed.  Backends override this
@@ -11045,20 +11767,27 @@ to populate <code>details</code> with backend-specific context.</p>
 
     </div>
 
+</div><h3 id="interop-backend-specific_1">Interop (Backend-Specific)<a class="headerlink" href="#interop-backend-specific_1" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Backend-specific methods</p>
+<p>Methods in this section expose backend internals. Using them ties your
+code to a specific backend. For portable alternatives, use the methods
+above.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="remote_store.aio.AsyncBackend.unwrap" class="doc doc-heading">
+<h4 id="remote_store.aio.AsyncBackend.unwrap" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">unwrap</span>
 
 
-<a href="#remote_store.aio.AsyncBackend.unwrap" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#remote_store.aio.AsyncBackend.unwrap" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unwrap</span><span class="p">(</span><span class="n">type_hint</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="remote_store.aio._async_backend.T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="remote_store.aio._async_backend.T">T</span></span>
 </code></pre></div>
 
-    <div class="doc doc-contents ">
+    <div class="doc doc-contents first">
 
         <p>Return the native backend handle if it matches the requested type.</p>
 
@@ -11092,9 +11821,97 @@ to populate <code>details</code> with backend-specific context.</p>
 
 </div>
 
+<div class="doc doc-object doc-function">
 
 
-  </div>
+<h4 id="remote_store.aio.AsyncBackend.native_path" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">native_path</span>
+
+
+<a href="#remote_store.aio.AsyncBackend.native_path" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">native_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Convert a backend-relative key to the backend-native path.</p>
+<p>The inverse of <code>to_key()</code>. The default implementation is the
+identity function -- backends with a native root (bucket, base_path)
+override this to prepend their prefix.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Backend-relative key.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Backend-native path usable with the native handle from <code>unwrap()</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="remote_store.aio.AsyncBackend.to_key" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">to_key</span>
+
+
+<a href="#remote_store.aio.AsyncBackend.to_key" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_key</span><span class="p">(</span><span class="n">native_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Convert a backend-native path to a backend-relative key.</p>
+<p>Strips the backend's own root/prefix from the path. The default
+implementation is the identity function -- backends with a native
+root (filesystem path, bucket prefix, base_path) override this.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>native_path</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Absolute or backend-native path string.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Path relative to the backend's root.</p>
+          </div>
+        </li>
+    </ul>
+
 
     </div>
 

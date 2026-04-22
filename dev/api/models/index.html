@@ -3491,6 +3491,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../aio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../info/" class="md-nav__link">
         
   
@@ -3558,7 +3586,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3580,14 +3608,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_11">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3852,34 +3880,6 @@
           </ul>
         </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../aio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Async
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -9492,7 +9492,15 @@ construction.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional fields</p>
+<p><code>etag</code> varies by backend — whether it is populated and what it means
+depends on the backend. <code>metadata</code> requires <code>Capability.USER_METADATA</code>
+and is only present when metadata was stored with the file. <code>extra</code>
+contains backend-specific key/value pairs whose keys depend on the
+backend implementation.</p>
 </div>
+
 
 <div class="doc doc-object doc-class">
 
@@ -9646,7 +9654,18 @@ when the backend's write response omits it.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional fields</p>
+<p>Only <code>path</code> and <code>size</code> are guaranteed to be populated on every write.
+All other fields depend on the <code>source</code> discriminator:</p>
+<ul>
+<li><code>source="native"</code> — rich fields populated; requires <code>Capability.WRITE_RESULT_NATIVE</code>.</li>
+<li><code>source="basic"</code> — only <code>path</code> and <code>size</code> are reliable.</li>
+<li><code>source="sidecar"</code> — fields sourced from a <code>get_file_info()</code> enrichment call.</li>
+</ul>
+<p>Always check <code>source</code> before reading any optional field.</p>
 </div>
+
 
 <div class="doc doc-object doc-class">
 
@@ -9849,7 +9868,12 @@ to avoid redundancy and keep <code>name</code> in sync with <code>path</code>.</
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional fields</p>
+<p><code>extra</code> contains backend-specific metadata. <code>modified_at</code> is <code>None</code> on
+backends that do not track folder modification times.</p>
 </div>
+
 
 <div class="doc doc-object doc-class">
 
@@ -9963,7 +9987,12 @@ runtime.  Values should be JSON-serializable primitives.</p>
 
     </div>
 
-</div><h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional field: <code>details</code></p>
+<p>The <code>details</code> mapping contains backend-specific context. Keys and values
+depend on the backend implementation.</p>
+</div>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../getting-started/">Getting Started</a> — using FileInfo and metadata in Store operations</li>
 <li><a href="../../examples/file-operations/">File Operations example</a> — reading, writing, and inspecting files</li>

@@ -3232,6 +3232,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/aio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/info/" class="md-nav__link">
         
   
@@ -3299,7 +3327,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3321,14 +3349,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_11">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3593,34 +3621,6 @@
           </ul>
         </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api/aio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Async
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -4686,16 +4686,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-api-page-building-blocks" class="md-nav__link">
+  <a href="#api-page-building-blocks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. API page building blocks
+        API page building blocks
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="8. API page building blocks">
+    <nav class="md-nav" aria-label="API page building blocks">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#admonition-vocabulary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admonition vocabulary
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#blocks" class="md-nav__link">
@@ -8896,16 +8907,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-api-page-building-blocks" class="md-nav__link">
+  <a href="#api-page-building-blocks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. API page building blocks
+        API page building blocks
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="8. API page building blocks">
+    <nav class="md-nav" aria-label="API page building blocks">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#admonition-vocabulary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admonition vocabulary
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#blocks" class="md-nav__link">
@@ -9276,10 +9298,42 @@ docstrings, use MkDocs admonition syntax: <code>!!! example</code> with indented
 </tr>
 </tbody>
 </table>
-<h2 id="8-api-page-building-blocks">8. API page building blocks<a class="headerlink" href="#8-api-page-building-blocks" title="Permanent link">&para;</a></h2>
+<h2 id="api-page-building-blocks">API page building blocks<a class="headerlink" href="#api-page-building-blocks" title="Permanent link">&para;</a></h2>
 <p>Reusable structural blocks for <code>docs-src/api/</code> pages. <code>store.md</code> is the
 canonical example. Apply the appropriate page-type template (see below) and
 compose from these blocks.</p>
+<h3 id="admonition-vocabulary">Admonition vocabulary<a class="headerlink" href="#admonition-vocabulary" title="Permanent link">&para;</a></h3>
+<p>Three levels, applied consistently across all <code>docs-src/api/</code> pages:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>When to use</th>
+<th>Title pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>!!! info</code></td>
+<td>Pure context — helpful to know, no runtime consequence</td>
+<td>Free-form (e.g. "Thread safety", "Ordering and laziness")</td>
+</tr>
+<tr>
+<td><code>!!! note</code></td>
+<td>Be aware — raises <code>CapabilityNotSupported</code> or behavior varies predictably</td>
+<td><code>Requires Capability.X</code> · <code>Backend-conditional argument: param=</code></td>
+</tr>
+<tr>
+<td><code>!!! warning</code></td>
+<td>Backend coupling — ties code irrevocably to a specific backend</td>
+<td><code>Backend-specific methods</code> (section header only)</td>
+</tr>
+</tbody>
+</table>
+<p>Rules:
+- <code>Requires Capability.X</code> and <code>Backend-conditional argument: param=</code> are both <code>!!! note</code> — both result in predictable <code>CapabilityNotSupported</code> when the capability is absent.
+- <code>!!! warning "Backend-specific methods"</code> is used only as a section/group header, not on individual methods.
+- Title fragment must be identical for the same pattern across all files (colon, no em dash, backtick-quoted param names).</p>
 <h3 id="blocks">Blocks<a class="headerlink" href="#blocks" title="Permanent link">&para;</a></h3>
 <p><strong>Class header</strong> — renders the class summary only; methods follow in explicit
 sections.</p>
@@ -9287,7 +9341,7 @@ sections.</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    options:
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>      members: false
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>!!! note &quot;Key behavioral fact&quot;
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>!!! info &quot;Key behavioral fact&quot;
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    One-sentence callout for a fact that callers must know before reading
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    any method (e.g. thread safety, context-manager usage, immutability).
 </code></pre></div>
@@ -9300,44 +9354,51 @@ its own directive so admonitions can be inserted between them.</p>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>      show_root_heading: true
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>      heading_level: 3
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>!!! note &quot;Backend-specific behavior&quot;
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    Short callout that applies to the method(s) above.
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>!!! note &quot;Requires <span class="sb">`Capability.X`</span>&quot;
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    Raises <span class="sb">`CapabilityNotSupported`</span> on backends that do not declare this capability.
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>::: remote_store.ClassName.method_two
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    options:
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>      show_root_heading: true
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>      heading_level: 3
 </code></pre></div>
-<p><strong>Behavioral note</strong> — inline admonition between methods for backend-dependent
-or surprising behavior.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>!!! note &quot;Ordering and laziness&quot;
+<p><strong>Info note</strong> — pure context; helpful to know, no runtime consequence.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>!!! info &quot;Ordering and laziness&quot;
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    Short, concrete statement. One or two sentences max.
 </code></pre></div>
-<p><strong>Warning block</strong> — marks non-portable or backend-specific API surface.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>!!! warning &quot;Backend-specific methods&quot;
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    Methods in this section expose backend internals. Using them ties your
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    code to a specific backend. For portable alternatives, use the methods
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    above.
+<p><strong>Constraint note</strong> — capability gate or argument that changes capability requirements.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>!!! note &quot;Requires <span class="sb">`Capability.X`</span>&quot;
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    Raises <span class="sb">`CapabilityNotSupported`</span> on backends that do not declare this capability.
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>!!! note &quot;Backend-conditional argument: <span class="sb">`param=`</span>&quot;
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    Passing <span class="sb">`param`</span> raises <span class="sb">`CapabilityNotSupported`</span> on backends that do not
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    declare <span class="sb">`Capability.X`</span>. Passing <span class="sb">`None`</span> or the default is safe on all backends.
+</code></pre></div>
+<p><strong>Warning block</strong> — backend coupling: ties code irrevocably to a specific backend.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>!!! warning &quot;Backend-specific methods&quot;
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    Methods in this section expose backend internals. Using them ties your
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    code to a specific backend. For portable alternatives, use the methods
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    above.
 </code></pre></div>
 <p><strong>Backend behavior matrix</strong> — cross-backend comparison table; only include
 when behavioral variation is significant enough to warrant a lookup table.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gu">## Backend Behavior Matrix</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>| Behavior | [<span class="nt">Local</span>](<span class="na">../backends/local.md</span>) | [<span class="nt">S3</span>](<span class="na">../backends/s3.md</span>) | ... |
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>|----------|-------------------------------|-------------------------|-----|
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>| Row description | value | value | ... |
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>Verify against actual code before relying on these in production.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gu">## Backend Behavior Matrix</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>| Behavior | [<span class="nt">Local</span>](<span class="na">../backends/local.md</span>) | [<span class="nt">S3</span>](<span class="na">../backends/s3.md</span>) | ... |
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>|----------|-------------------------------|-------------------------|-----|
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>| Row description | value | value | ... |
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>Verify against actual code before relying on these in production.
 </code></pre></div>
 <p><strong>Related types</strong> — inline footer line linking to companion types.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gs">**Related types:**</span> [<span class="sb">`TypeA`</span>](models.md), [<span class="sb">`TypeB`</span>](capabilities.md).
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gs">**Related types:**</span> [<span class="sb">`TypeA`</span>](models.md), [<span class="sb">`TypeB`</span>](capabilities.md).
 </code></pre></div>
 <p><strong>See also</strong> — footer section; every API page requires at least one entry
 (its primary guide or a matching example).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gu">## See also</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">-</span><span class="w"> </span>[<span class="nt">Guide name</span>](<span class="na">../guide-path.md</span>) — one-line description
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">-</span><span class="w"> </span>[<span class="nt">Example name</span>](<span class="na">../examples/example-path.md</span>) — one-line description
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="gu">## See also</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">-</span><span class="w"> </span>[<span class="nt">Guide name</span>](<span class="na">../guide-path.md</span>) — one-line description
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="k">-</span><span class="w"> </span>[<span class="nt">Example name</span>](<span class="na">../examples/example-path.md</span>) — one-line description
 </code></pre></div>
 <h3 id="page-type-templates">Page-type templates<a class="headerlink" href="#page-type-templates" title="Permanent link">&para;</a></h3>
 <table>
@@ -9352,17 +9413,17 @@ when behavioral variation is significant enough to warrant a lookup table.</p>
 <tr>
 <td><strong>Rich class</strong> (Store, AsyncStore)</td>
 <td>Class header, Method sections, See also</td>
-<td>Behavioral notes, Warning block, Behavior matrix, Related types</td>
+<td>Info notes, Constraint notes, Warning block, Behavior matrix, Related types</td>
 </tr>
 <tr>
 <td><strong>Protocol / ABC</strong> (Backend)</td>
 <td>Class header, Method sections, See also</td>
-<td>Behavioral notes</td>
+<td>Info notes, Constraint notes</td>
 </tr>
 <tr>
 <td><strong>Support class</strong> (ProxyStore, Registry, Config, Models, RemotePath, Info, SFTPUtils)</td>
 <td>Intro prose or class header, <code>:::</code> (all members), See also</td>
-<td>Behavioral notes</td>
+<td>Info notes, Constraint notes</td>
 </tr>
 <tr>
 <td><strong>Enum / flags</strong> (Capability, CapabilitySet)</td>

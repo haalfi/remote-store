@@ -3802,6 +3802,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../aio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../info/" class="md-nav__link">
         
   
@@ -3869,7 +3897,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3891,14 +3919,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_11">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4163,34 +4191,6 @@
           </ul>
         </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../aio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Async
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -9673,7 +9673,7 @@ protocol (<code>with Store(...) as s:</code>) which calls <code>close()</code> o
 
     </div>
 
-</div><div class="admonition note">
+</div><div class="admonition info">
 <p class="admonition-title">Root path creation</p>
 <p>The root path does not need to exist before constructing the store.
 <code>write()</code> creates intermediate folders implicitly on all backends:</p>
@@ -9681,13 +9681,18 @@ protocol (<code>with Store(...) as s:</code>) which calls <code>close()</code> o
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;works&quot;</span><span class="p">)</span>  <span class="c1"># folder created automatically</span>
 </code></pre></div>
 </div>
-<div class="admonition note">
+<div class="admonition info">
 <p class="admonition-title">Thread safety</p>
 <p><code>Store</code> is immutable after construction and can be shared across threads.
 Backend thread safety depends on the backend implementation.</p>
 </div>
 <hr />
 <h2 id="reading">Reading<a class="headerlink" href="#reading" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.READ</code></p>
+<p>All read methods raise <code>CapabilityNotSupported</code> on backends that do not
+declare this capability. Most backends declare it.</p>
+</div>
 
 
 <div class="doc doc-object doc-function">
@@ -10121,7 +10126,12 @@ backend lacks <code>USER_METADATA</code>.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional argument: <code>metadata=</code></p>
+<p>Passing <code>metadata</code> raises <code>CapabilityNotSupported</code> on backends that do not
+declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <code>{}</code> is safe on all backends.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -10244,7 +10254,12 @@ backend lacks <code>USER_METADATA</code>.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional argument: <code>metadata=</code></p>
+<p>Passing <code>metadata</code> raises <code>CapabilityNotSupported</code> on backends that do not
+declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <code>{}</code> is safe on all backends.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -10364,7 +10379,16 @@ partial state.</p>
     </div>
 
 </div><div class="admonition note">
-<p class="admonition-title">Note</p>
+<p class="admonition-title">Requires <code>Capability.ATOMIC_WRITE</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Backend-conditional argument: <code>metadata=</code></p>
+<p>Passing <code>metadata</code> raises <code>CapabilityNotSupported</code> on backends that do not
+declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <code>{}</code> is safe on all backends.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <p>Most backends implement this as temp-file + rename. See the
 <a href="#backend-behavior-matrix">Backend Behavior Matrix</a> for details.</p>
 </div>
@@ -10461,8 +10485,17 @@ the partial write is discarded.</p>
 
     </div>
 
-</div><hr />
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.ATOMIC_WRITE</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+</div>
+<hr />
 <h2 id="deleting">Deleting<a class="headerlink" href="#deleting" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.DELETE</code></p>
+<p>All delete methods raise <code>CapabilityNotSupported</code> on backends that do not
+declare this capability.</p>
+</div>
 
 
 <div class="doc doc-object doc-function">
@@ -10620,6 +10653,11 @@ root).</p>
 
 </div><hr />
 <h2 id="listing-and-iteration">Listing and Iteration<a class="headerlink" href="#listing-and-iteration" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.LIST</code></p>
+<p>All listing methods raise <code>CapabilityNotSupported</code> on backends that do not
+declare this capability.</p>
+</div>
 
 
 <div class="doc doc-object doc-function">
@@ -10730,7 +10768,13 @@ subfolders, and so on.  <code>None</code> (default) defers to
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional argument: <code>max_depth=</code></p>
+<p>Backends with native depth limiting prune traversal early. Backends that do not
+support it still return correct results — the Store applies client-side filtering
+as a safety net.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -10811,7 +10855,13 @@ grandchildren, and so on.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Backend-conditional argument: <code>max_depth=</code></p>
+<p>Backends with native depth limiting prune traversal early. Backends that do not
+support it still return correct results — the Store applies client-side filtering
+as a safety net.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -10950,6 +11000,11 @@ Both have <code>.name</code> and <code>.path</code> attributes (satisfying the
     </div>
 
 </div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.GLOB</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.
+Check <code>store.supports(Capability.GLOB)</code> before calling.</p>
+</div>
+<div class="admonition info">
 <p class="admonition-title">Ordering and laziness</p>
 <p><strong>Ordering is backend-defined</strong> and may vary between backends (e.g.
 lexicographic on S3, OS-dependent on local filesystems). Callers must
@@ -11042,6 +11097,10 @@ Memory usage stays bounded for large directories.</p>
     </div>
 
 </div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.MOVE</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+</div>
+<div class="admonition info">
 <p class="admonition-title">Atomicity</p>
 <p>Atomicity is backend-dependent. Local uses <code>os.replace</code> (atomic on same
 filesystem). S3 and Azure use copy-then-delete (not atomic). SFTP
@@ -11130,6 +11189,10 @@ atomicity depends on the server.</p>
     </div>
 
 </div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.COPY</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+</div>
+<div class="admonition info">
 <p class="admonition-title">Metadata preservation</p>
 <p>Metadata preservation is backend-dependent. S3 copies metadata;
 local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
@@ -11221,7 +11284,11 @@ from a write response).</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.METADATA</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -11399,7 +11466,11 @@ as traversal cannot proceed.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.METADATA</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -11488,7 +11559,17 @@ performs a full recursive traversal via the backend.</p>
 
     </div>
 
-</div><hr />
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.METADATA</code></p>
+<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Backend-conditional argument: <code>max_depth=</code></p>
+<p>Backends with native depth limiting prune traversal early. Backends that do not
+support it still return correct results — the Store applies client-side filtering
+as a safety net.</p>
+</div>
+<hr />
 <h2 id="introspection">Introspection<a class="headerlink" href="#introspection" title="Permanent link">&para;</a></h2>
 
 
@@ -11548,8 +11629,8 @@ backend-relative path.</p>
 
     </div>
 
-</div><div class="admonition note">
-<p class="admonition-title">Note</p>
+</div><div class="admonition info">
+<p class="admonition-title">Info</p>
 <p><code>resolve()</code> is a pure introspection method — it performs no I/O and is
 never called implicitly by other Store methods. The returned
 <a href="../models/"><code>ResolutionPlan</code></a> describes how a key maps to its storage
@@ -11908,8 +11989,8 @@ the requested type.</p>
 
     </div>
 
-</div><div class="admonition note">
-<p class="admonition-title">Note</p>
+</div><div class="admonition info">
+<p class="admonition-title">Info</p>
 <p><code>supports()</code> itself is portable — it works on all backends. Only the
 capability-gated methods it guards are backend-specific.</p>
 </div>

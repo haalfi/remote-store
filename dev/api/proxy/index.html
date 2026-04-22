@@ -3142,6 +3142,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#interop-backend-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interop (Backend-Specific)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3336,6 +3347,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../aio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../info/" class="md-nav__link">
         
   
@@ -3403,7 +3442,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3425,14 +3464,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_11" id="__nav_4_1_11_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_12" id="__nav_4_1_12_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_11">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3697,34 +3736,6 @@
           </ul>
         </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../aio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Async
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -8636,6 +8647,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#interop-backend-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interop (Backend-Specific)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8801,7 +8823,16 @@ Subclass it to build your own Store middleware.</p>
 
     </div>
 
-</div><h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+</div><h2 id="interop-backend-specific">Interop (Backend-Specific)<a class="headerlink" href="#interop-backend-specific" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Backend-specific methods</p>
+<p><code>unwrap</code>, <code>native_path</code>, and <code>to_key</code> delegate directly to the inner
+Store and expose backend internals. Using them ties your code to a
+specific backend. <code>supports()</code> is portable — it works on all backends.
+See <a href="../store/#interop-backend-specific">Store — Interop</a> for the full
+contract.</p>
+</div>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../extensions/observe/">ext.observe</a> — ObservedStore, built on ProxyStore</li>
 <li><a href="../extensions/cache/">ext.cache</a> — CachedStore, built on ProxyStore</li>
