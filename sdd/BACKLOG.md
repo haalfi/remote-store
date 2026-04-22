@@ -63,7 +63,6 @@ Existing items may be more verbose — trim on next touch.
   guide at `docs.remotestore.dev/latest/custom-backend-guide/` is not current.
   Identify all stale references, out-of-date code examples, and undocumented
   new capabilities. Deliver: audit report with gaps and affected doc pages.
-  (Fixes are separate items per doc area, if needed.)
 
 - [ ] **BK-156 — Refactor per-backend test files to remove conformance duplication**
   Per-backend test files (`test_s3.py`, `test_s3_pyarrow.py`, `test_sftp.py`,
