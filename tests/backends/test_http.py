@@ -1003,16 +1003,22 @@ class TestUrllibTransportResourceLeak:
     """Regression: UrllibTransport must close the HTTPError response on non-2xx."""
 
     def test_no_resource_warning_on_404(self, httpserver: HTTPServer) -> None:
-        """HTTPError response is explicitly closed — no ResourceWarning on GC (Python 3.14+).
+        """HTTPError response is explicitly closed — no ResourceWarning on GC.
 
-        Before the fix, urllib's HTTPError held an open file descriptor to the response
-        body. Python 3.14 made _TemporaryFileCloser.__del__ emit ResourceWarning when
-        the file was not explicitly closed, which pytest surfaces as a test failure via
-        PytestUnraisableExceptionWarning.
+        Self-contained: sets ResourceWarning → error explicitly and forces a GC
+        cycle, so the test does not depend on the global filterwarnings policy.
         """
+        import gc
+        import warnings
+
         httpserver.expect_request("/regrtest/missing.txt").respond_with_data(b"", status=404)
         transport = UrllibTransport()
-        resp = transport.get(httpserver.url_for("/regrtest/missing.txt"), {}, 5.0)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ResourceWarning)
+            resp = transport.get(httpserver.url_for("/regrtest/missing.txt"), {}, 5.0)
+            gc.collect()
+
         assert resp.status == 404
 
 

@@ -8,7 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - BK-157: Tighten docs site spacing: compact table rows, heading typography, method separators
 - BK-158: Promote all unhandled warnings to errors in pytest (`filterwarnings = error`)
-- BUG-179: fix `ResourceWarning` in tests under Python 3.14 from unclosed `HTTPError` in `UrllibTransport`
+- BUG-179: Fix `ResourceWarning` in tests under Python 3.14 from unclosed `HTTPError` in `UrllibTransport`
 
 ### Fixed
 

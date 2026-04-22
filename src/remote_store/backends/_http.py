@@ -149,9 +149,9 @@ class UrllibTransport:
             resp_headers = {k.lower(): v for k, v in resp.getheaders()}
             return HttpResponse(status=resp.status, headers=resp_headers, body=cast(BinaryIO, resp))  # noqa: TC006
         except urllib.error.HTTPError as exc:
-            resp_headers = {k.lower(): v for k, v in exc.headers.items()} if exc.headers else {}
-            code = exc.code
-            exc.close()  # Python 3.14+ emits ResourceWarning if the response body is not closed
+            with contextlib.closing(exc):
+                resp_headers = {k.lower(): v for k, v in exc.headers.items()} if exc.headers else {}
+                code = exc.code
             return HttpResponse(status=code, headers=resp_headers, body=cast(BinaryIO, io.BytesIO(b"")))  # noqa: TC006
         except (urllib.error.URLError, OSError, TimeoutError) as exc:
             raise BackendUnavailable(
