@@ -4082,6 +4082,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../api/extensions/aio-write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    aio.ext.write
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../api/extensions/yaml/" class="md-nav__link">
         
   
@@ -9366,18 +9394,16 @@ WR-011). This keeps the gate consistent with WR-011's rule that
 </tr>
 <tr>
 <td><code>AsyncBackendSyncAdapter</code></td>
-<td>no — masked unconditionally (see below)</td>
+<td>yes — forwards inner backend (post Phase 3c, ID-013b)</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Adapter masking.</strong> <code>AsyncBackendSyncAdapter</code> strips both <code>WRITE_RESULT_NATIVE</code>
-and <code>USER_METADATA</code> from the inner async backend's capability set, even when the
-wrapped backend declares them. This is the strict-gate-on-kwarg pattern (ADR-0026)
-applied defensively: without masking, the Store layer's WR-010 gate would pass a
-non-empty <code>metadata=</code> through to the adapter, but the adapter's <code>write*()</code> methods
-do not forward <code>metadata=</code> to the async backend (the async ABC does not yet accept
-it — Step 3c). Masking ensures <code>CapabilityNotSupported</code> is raised at the gate
-rather than silently dropping the metadata, preserving the WR-012 echo guarantee.</p>
+<p><strong>Adapter capability forwarding.</strong> Since Phase 3c (<code>ID-013b</code>), <code>AsyncBackendSyncAdapter</code>
+forwards both <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code> from the inner async backend
+unchanged. Its <code>write*()</code> methods now accept and forward <code>metadata=</code> to the async
+backend. Only <code>SEEKABLE_READ</code> remains masked (the adapter's chunk-pull stream is
+forward-only and does not support seeking). The Store layer's WR-010 gate continues
+to be the primary protection for callers using <code>Store(AsyncBackendSyncAdapter(...))</code>.</p>
 <h2 id="wr-011-metadata-validation">WR-011: metadata Validation<a class="headerlink" href="#wr-011-metadata-validation" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>metadata</code> is <code>Mapping[str, str]</code>. Validation is performed at the
 Store layer (one place, not per-backend) <strong>before</strong> the WR-010 capability

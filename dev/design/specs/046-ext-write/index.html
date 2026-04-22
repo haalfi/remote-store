@@ -4082,6 +4082,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../api/extensions/aio-write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    aio.ext.write
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../api/extensions/yaml/" class="md-nav__link">
         
   
@@ -8676,18 +8704,25 @@ streaming hash over the written bytes. The underlying <code>source</code> value
 from the backend write is preserved (<code>"native"</code> or <code>"basic"</code>); <code>digest</code>
 is set independently of <code>source</code> and always represents the
 client-computed hash.</p>
+<p><strong>Async counterpart:</strong> <code>aio.ext.write.write_with_hash(store: AsyncStore,
+path, content: bytes | AsyncIterator[bytes], *, algorithm="sha256",
+overwrite=False, metadata=None) -&gt; WriteResult</code> satisfies the same
+invariant. The <code>content</code> type differs (<code>AsyncIterator[bytes]</code> instead of
+<code>BinaryIO</code>); the digest guarantee and <code>source</code> preservation are identical.</p>
 <p><strong>Parameter defaults (normative):</strong></p>
 <ul>
 <li><code>algorithm: str = "sha256"</code> — hash algorithm name accepted by
   <code>hashlib.new</code>. Single-algorithm only in v1, matching the existing
   <code>ChecksumWriter</code> signature; multi-algorithm multiplex is deferred.</li>
-<li><code>overwrite: bool = False</code> — same semantics as <code>Store.write</code>.</li>
+<li><code>overwrite: bool = False</code> — same semantics as <code>Store.write</code> /
+  <code>AsyncStore.write</code>.</li>
 <li><code>metadata: Mapping[str, str] | None = None</code> — optional user
   metadata; subject to the <code>USER_METADATA</code> capability gate (WR-010)
-  applied inside the underlying <code>store.write()</code>.</li>
+  applied inside the underlying <code>store.write()</code> / <code>AsyncStore.write()</code>.</li>
 </ul>
 <h2 id="ew-002-was-wr-015-write_with_hash-works-on-every-write-backend">EW-002 (was WR-015): write_with_hash Works on Every WRITE Backend<a class="headerlink" href="#ew-002-was-wr-015-write_with_hash-works-on-every-write-backend" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>ext.write.write_with_hash()</code> works on every backend
+<p><strong>Invariant:</strong> <code>ext.write.write_with_hash()</code> (sync) and
+<code>aio.ext.write.write_with_hash()</code> (async) each work on every backend
 declaring <code>Capability.WRITE</code>. The hash is always computed client-side
 regardless of <code>WRITE_RESULT_NATIVE</code>. No additional capability beyond
 <code>WRITE</code> is required.</p>

@@ -16,7 +16,7 @@
         <link rel="prev" href="../transfer/">
       
       
-        <link rel="next" href="../yaml/">
+        <link rel="next" href="../aio-write/">
       
       
         
@@ -4176,6 +4176,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aio-write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    aio.ext.write
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -8673,6 +8701,7 @@
 <code>WriteResult.digest</code> regardless of whether the backend declares
 <code>WRITE_RESULT_NATIVE</code>.</p>
 <p>See the <a href="https://github.com/haalfi/remote-store/blob/master/sdd/specs/046-ext-write.md">ext.write spec</a> for invariants.</p>
+<p>Async counterpart: <a href="../aio-write/"><code>aio.ext.write</code></a>.</p>
 
 
 <div class="doc doc-object doc-module">
@@ -8776,9 +8805,9 @@ successfully.  <code>result</code> is <code>None</code> if the block raised.</p>
 
 <a href="#remote_store.ext.write.write_with_hash" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_with_hash</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">content</span><span class="p">:</span> <span class="n"><span title="remote_store._types.WritableContent">WritableContent</span></span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">content</span><span class="p">:</span> <span class="n"><span title="typing.BinaryIO">BinaryIO</span></span> <span class="o">|</span> <span class="n"><span title="bytes">bytes</span></span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">algorithm</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;sha256&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -8788,7 +8817,7 @@ successfully.  <code>result</code> is <code>None</code> if the block raised.</p>
 
   
       dataclass
-   (remote_store._models.WriteResult)" href="../../models/#remote_store.WriteResult">WriteResult</a></span>
+   (remote_store.WriteResult)" href="../../models/#remote_store.WriteResult">WriteResult</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -8803,7 +8832,7 @@ The hash is always computed client-side regardless of
     <ul>
         <li class="doc-section-item field-body">
             <b><code>store</code></b>
-              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store.Store)" href="../../store/#remote_store.Store">Store</a></code>)
           –
           <div class="doc-md-description">
             <p>The Store to write to.</p>
@@ -8819,7 +8848,7 @@ The hash is always computed client-side regardless of
         </li>
         <li class="doc-section-item field-body">
             <b><code>content</code></b>
-              (<code><span title="remote_store._types.WritableContent">WritableContent</span></code>)
+              (<code><span title="typing.BinaryIO">BinaryIO</span> | <span title="bytes">bytes</span></code>)
           –
           <div class="doc-md-description">
             <p><code>bytes</code> or readable binary stream.</p>
@@ -8866,7 +8895,7 @@ The hash is always computed client-side regardless of
 
   
       dataclass
-   (remote_store._models.WriteResult)" href="../../models/#remote_store.WriteResult">WriteResult</a></code>
+   (remote_store.WriteResult)" href="../../models/#remote_store.WriteResult">WriteResult</a></code>
           –
           <div class="doc-md-description">
             <p><code>WriteResult</code> with <code>digest</code> populated from the client-side hash.</p>
@@ -8888,7 +8917,7 @@ The hash is always computed client-side regardless of
 
 <a href="#remote_store.ext.write.open_atomic_with_hash" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open_atomic_with_hash</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Store (remote_store.Store)" href="../../store/#remote_store.Store">Store</a></span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">algorithm</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;sha256&quot;</span><span class="p">,</span>
@@ -8922,7 +8951,7 @@ for consistency.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>store</code></b>
-              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store._store.Store)" href="../../store/#remote_store.Store">Store</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="            Store (remote_store.Store)" href="../../store/#remote_store.Store">Store</a></code>)
           –
           <div class="doc-md-description">
             <p>The Store to write to.</p>

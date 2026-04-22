@@ -2807,6 +2807,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#async-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4169,6 +4180,34 @@
     
   
     ext.write
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/extensions/aio-write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    aio.ext.write
   
 
     
@@ -8644,6 +8683,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#async-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8682,8 +8732,10 @@ content hash. Backends that fully populate these fields declare
 <code>Capability.WRITE_RESULT_NATIVE</code>; others return a minimal <code>WriteResult</code>
 with <code>path</code> and <code>size</code> only.</p>
 <p>When you need a content hash regardless of backend, use the helpers in
-<a href="../api/extensions/write/"><code>ext.write</code></a>. They compute the digest client-side
-as bytes flow through the stream, so the hash is always available.</p>
+<a href="../api/extensions/write/"><code>ext.write</code></a> (sync) or
+<a href="../api/extensions/aio-write/"><code>aio.ext.write</code></a> (async). They compute the
+digest client-side as bytes flow through the stream, so the hash is always
+available.</p>
 <h2 id="write_with_hash">write_with_hash<a class="headerlink" href="#write_with_hash" title="Permanent link">&para;</a></h2>
 <p>Use <code>write_with_hash</code> when you have the content as <code>bytes</code> or a readable
 binary stream:</p>
@@ -8752,9 +8804,22 @@ backend without <code>USER_METADATA</code> raises <code>CapabilityNotSupported</
 <code>store.supports(Capability.USER_METADATA)</code> before using it in
 backend-agnostic code. See the
 <a href="../capabilities-matrix/">Capabilities Matrix</a> for which backends support it.</p>
+<h2 id="async-usage">Async usage<a class="headerlink" href="#async-usage" title="Permanent link">&para;</a></h2>
+<p>For <code>AsyncStore</code>, use <code>write_with_hash</code> from <code>aio.ext.write</code> — the interface
+is identical, accepts <code>bytes</code> or <code>AsyncIterator[bytes]</code>, and hashes inline
+without buffering:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio.ext.write</span><span class="w"> </span><span class="kn">import</span> <span class="n">write_with_hash</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">store</span> <span class="o">=</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">AsyncMemoryBackend</span><span class="p">())</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">write_with_hash</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col1,col2</span><span class="se">\n</span><span class="s2">1,2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">digest</span><span class="o">.</span><span class="n">algorithm</span><span class="p">)</span>  <span class="c1"># sha256</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">digest</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># hex digest</span>
+</code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../api/extensions/write/"><code>ext.write</code> API reference</a></li>
+<li><a href="../api/extensions/aio-write/"><code>aio.ext.write</code> API reference</a></li>
 <li><a href="../api/models/#remote_store.WriteResult"><code>WriteResult</code> and <code>ContentDigest</code></a></li>
 <li><a href="../capabilities-matrix/">Capabilities Matrix</a> — <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code> rows</li>
 <li><a href="../concurrency/">Concurrency guide</a> — atomicity semantics for <code>write_atomic</code> and <code>open_atomic</code></li>

@@ -4836,6 +4836,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../extensions/aio-write/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    aio.ext.write
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../extensions/yaml/" class="md-nav__link">
         
   
@@ -10697,7 +10725,13 @@ this capability. Most backends declare it.</p>
    (remote_store.aio._types.AsyncWritableContent)" href="#remote_store.aio.AsyncWritableContent">AsyncWritableContent</a></span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -10736,6 +10770,33 @@ this capability. Most backends declare it.</p>
           –
           <div class="doc-md-description">
             <p>If <code>False</code>, raise if file already exists.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>metadata</code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional user-defined string metadata.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p>A <code>WriteResult</code> with size, path, and optional native fields.</p>
           </div>
         </li>
     </ul>
@@ -10785,7 +10846,13 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
    (remote_store.aio._types.AsyncWritableContent)" href="#remote_store.aio.AsyncWritableContent">AsyncWritableContent</a></span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -10824,6 +10891,33 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
           –
           <div class="doc-md-description">
             <p>If <code>False</code>, raise if file already exists.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>metadata</code></b>
+              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional user-defined string metadata.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            WriteResult
+
+
+  
+      dataclass
+   (remote_store._models.WriteResult)" href="../models/#remote_store.WriteResult">WriteResult</a></code>
+          –
+          <div class="doc-md-description">
+            <p>A <code>WriteResult</code> with size, path, and optional native fields.</p>
           </div>
         </li>
     </ul>
@@ -12325,6 +12419,8 @@ uploads and downloads (default <code>1</code> -- sequential).</p>
 <li><a href="../../examples/async-store/">Example: Async Store</a> -- runnable demo script</li>
 <li><a href="../store/">Store</a> -- synchronous counterpart</li>
 <li><a href="../../concurrency/">Concurrency</a> -- thread safety and atomicity semantics</li>
+<li><a href="../extensions/aio-write/">aio.ext.write</a> -- async write helpers with client-side hashing</li>
+<li><a href="../../write-integrity/">Write Integrity guide</a> -- hashing workflows for sync and async</li>
 </ul>
 
 
