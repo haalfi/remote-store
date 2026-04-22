@@ -5,6 +5,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-155 — Consolidate S3 + S3-PyArrow tests and specs against shared base**
+  Extracted shared invariants to `tests/backends/test_s3_shared.py`,
+  parametrized over both `S3Backend` and `S3PyArrowBackend` with per-param
+  `pytest.mark.spec(...)` marks preserving both `S3-NNN` and `S3PA-NNN`
+  traceability. Category-1 duplicates already covered by
+  `test_conformance.py` (ReadWrite, Listing, Metadata, Delete, Operations,
+  generic error mapping, close/unwrap-wrong-type, Glob patterns) were
+  deleted from `test_s3.py` and `test_s3_pyarrow.py`. Category-2
+  genuinely-shared invariants (construction validation, endpoint-URL
+  normalization, `client_options` non-mutation, tls_ca_bundle s3fs-control
+  path, folder semantics, resolve details, BK-123 BFS listing,
+  s3fs-path retry debug log) moved into the shared file. Added a
+  `test_glob_yields_fileinfo_only` conformance test (GLOB-004) to close the
+  one coverage gap. Slimmed `sdd/specs/011-s3-pyarrow-backend.md` to a
+  delta-spec over `sdd/specs/008-s3-backend.md`; only PyArrow-specific
+  invariants (S3PA-002/003/006/007/012/021) retain full bodies.
+  Normalized `backend._fs` → `backend._s3fs` in the two remaining call
+  sites in `test_s3.py`. Net -1300 lines of test code; spec duplication
+  eliminated. Follow-up to BUG-178 (code-layer dedup).
+
 - [x] **BUG-178 — s3fs lazy init raises "got multiple values for keyword argument 'config'" when `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy` are both supplied**
   Moved the s3fs kwargs builder into `_S3Base._build_s3fs_kwargs()`. The helper pops
   `config_kwargs` from the options dict and folds it into `client_kwargs["config"]` as a

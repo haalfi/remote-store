@@ -828,7 +828,7 @@ class TestStreamingConformance:
 
 
 class TestBackendGlob:
-    """GLOB-018/019/020: glob conformance across backends."""
+    """GLOB-004/018/019/020: glob conformance across backends."""
 
     @pytest.mark.spec("GLOB-018")
     @pytest.mark.parametrize(
@@ -865,6 +865,23 @@ class TestBackendGlob:
         _require(backend, Capability.GLOB, Capability.WRITE)
         _seed(backend, seeds)
         assert sorted(str(f.path) for f in backend.glob(pattern)) == expected
+
+    @pytest.mark.spec("GLOB-004")
+    def test_glob_yields_fileinfo_only(self, backend: Backend) -> None:
+        _require(backend, Capability.GLOB, Capability.WRITE)
+        _seed(
+            backend,
+            {
+                "gf/a.txt": b"a",
+                "gf/sub/b.txt": b"b",
+                "gf/sub/deep/c.txt": b"c",
+            },
+        )
+        results = list(backend.glob("gf/**/*"))
+        assert len(results) == 3, f"expected 3 files from gf/**/*, got {len(results)}"
+        for info in results:
+            assert isinstance(info, FileInfo), f"glob returned {type(info).__name__}, expected FileInfo (GLOB-004)"
+            assert str(info.path).startswith("gf/")
 
 
 class TestBackendUnwrap:
