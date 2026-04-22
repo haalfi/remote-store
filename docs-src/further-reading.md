@@ -14,7 +14,7 @@ document-by-document record.
 
 How this documentation is written and kept accurate over time:
 
-- [Documentation Standards](design/documentation-standards.md): structure and placement rules
+- [Documentation Standards](design/documentation.md): structure and placement rules
 - [Content Rules](design/content-rules.md): keeping prose accurate over time
 
 ## Project history
