@@ -49,6 +49,14 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-156 — Refactor per-backend test files to remove conformance duplication**
+  Per-backend test files (`test_s3.py`, `test_s3_pyarrow.py`, `test_sftp.py`,
+  `test_azure.py`, etc.) still contain tests that duplicate what the conformance
+  and extended-conformance suites already cover (e.g. `plan.kind`, category-1
+  operations). These should be deleted and, where specs reference specific test
+  files, the spec body updated to point to the conformance test instead.
+  Requires a pass over each backend spec to update traceability references.
+
 - [ ] **BK-153 — Address backend-specifics visibility findings from audit-009**
   Follow-up to [audit-009](audits/audit-009-backend-specifics-visibility.md)
   (2026-04-21). Today, only `Store.unwrap` carries the `!!! warning

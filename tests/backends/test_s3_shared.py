@@ -436,11 +436,6 @@ class TestS3SharedResolve:
         plan = s3_any_backend.resolve("file.txt")
         assert "endpoint_url" in plan.details
 
-    @pytest.mark.parametrize("s3_any_backend", _LIVE_PARAMS_RESOLVE, indirect=True)
-    def test_kind_is_backend_name(self, s3_any_backend: Backend) -> None:
-        plan = s3_any_backend.resolve("file.txt")
-        assert plan.kind == s3_any_backend.name
-
     @pytest.mark.parametrize(
         "backend_cls",
         [
