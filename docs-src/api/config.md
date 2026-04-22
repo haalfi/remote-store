@@ -4,6 +4,10 @@
 
 ::: remote_store.BackendConfig
 
+!!! note "Backend-conditional field: `options`"
+    The `options` mapping contains backend-specific configuration. Keys and
+    accepted values depend on the backend being configured.
+
 ::: remote_store.RetryPolicy
 
 ::: remote_store.StoreProfile

@@ -782,7 +782,7 @@ class AsyncStore:
 
     # endregion
 
-    # region: interop (backend-specific)
+    # region: interop
 
     def unwrap(self, type_hint: type[T]) -> T:
         """Return the backend's native client object, cast to *type_hint*.

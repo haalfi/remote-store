@@ -4,7 +4,7 @@
     options:
       members: false
 
-!!! note "Implementing a backend"
+!!! info "Implementing a backend"
     Subclass `Backend` and implement all abstract methods. Map every
     backend-native exception to a `remote_store` error — native exceptions
     must never leak to callers.
@@ -46,6 +46,10 @@
 
 ## Reading
 
+!!! note "Requires `Capability.READ`"
+    All read methods raise `CapabilityNotSupported` on backends that do not
+    declare this capability. Most backends declare it.
+
 ::: remote_store.Backend.read
     options:
       show_root_heading: true
@@ -61,7 +65,7 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Default implementation"
+!!! info "Default implementation"
     The default spools the stream into a `SpooledTemporaryFile` (up to 8 MB
     in RAM, beyond that on disk) when the backend stream is not already
     seekable. Override for efficiency when the backend supports range reads.
@@ -80,14 +84,24 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.ATOMIC_WRITE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.Backend.open_atomic
     options:
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.ATOMIC_WRITE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ---
 
 ## Deleting
+
+!!! note "Requires `Capability.DELETE`"
+    All delete methods raise `CapabilityNotSupported` on backends that do not
+    declare this capability.
 
 ::: remote_store.Backend.delete
     options:
@@ -102,6 +116,10 @@
 ---
 
 ## Listing and Iteration
+
+!!! note "Requires `Capability.LIST`"
+    All listing methods raise `CapabilityNotSupported` on backends that do not
+    declare this capability.
 
 ::: remote_store.Backend.list_files
     options:
@@ -118,7 +136,7 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Default implementation"
+!!! info "Default implementation"
     Chains `list_files()` then `list_folders()`. Override when the backend
     can fetch both in a single I/O call.
 
@@ -127,7 +145,10 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Non-abstract"
+!!! note "Requires `Capability.GLOB`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+!!! info "Non-abstract"
     The default raises `CapabilityNotSupported`. Backends that provide native
     glob support override this and declare `Capability.GLOB`.
 
@@ -140,10 +161,16 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.Backend.get_folder_info
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ---
 
@@ -154,26 +181,22 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.MOVE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.Backend.copy
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Requires `Capability.COPY`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ---
 
 ## Introspection
 
 ::: remote_store.Backend.resolve
-    options:
-      show_root_heading: true
-      heading_level: 3
-
-::: remote_store.Backend.to_key
-    options:
-      show_root_heading: true
-      heading_level: 3
-
-::: remote_store.Backend.native_path
     options:
       show_root_heading: true
       heading_level: 3
@@ -192,7 +215,26 @@
       show_root_heading: true
       heading_level: 3
 
+---
+
+## Interop (Backend-Specific)
+
+!!! warning "Backend-specific methods"
+    Methods in this section expose backend internals. Using them ties your
+    code to a specific backend. For portable alternatives, use the methods
+    above.
+
 ::: remote_store.Backend.unwrap
+    options:
+      show_root_heading: true
+      heading_level: 3
+
+::: remote_store.Backend.native_path
+    options:
+      show_root_heading: true
+      heading_level: 3
+
+::: remote_store.Backend.to_key
     options:
       show_root_heading: true
       heading_level: 3

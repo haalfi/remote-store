@@ -4,7 +4,7 @@
     options:
       members: false
 
-!!! note "Root path creation"
+!!! info "Root path creation"
     The root path does not need to exist before constructing the store.
     `write()` creates intermediate folders implicitly on all backends:
 
@@ -13,13 +13,17 @@
     store.write("hello.txt", b"works")  # folder created automatically
     ```
 
-!!! note "Thread safety"
+!!! info "Thread safety"
     `Store` is immutable after construction and can be shared across threads.
     Backend thread safety depends on the backend implementation.
 
 ---
 
 ## Reading
+
+!!! note "Requires `Capability.READ`"
+    All read methods raise `CapabilityNotSupported` on backends that do not
+    declare this capability. Most backends declare it.
 
 ::: remote_store.Store.read
     options:
@@ -50,17 +54,32 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Backend-conditional argument: `metadata=`"
+    Passing `metadata` raises `CapabilityNotSupported` on backends that do not
+    declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
+
 ::: remote_store.Store.write_text
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Backend-conditional argument: `metadata=`"
+    Passing `metadata` raises `CapabilityNotSupported` on backends that do not
+    declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
 
 ::: remote_store.Store.write_atomic
     options:
       show_root_heading: true
       heading_level: 3
 
-!!! note
+!!! note "Requires `Capability.ATOMIC_WRITE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+!!! note "Backend-conditional argument: `metadata=`"
+    Passing `metadata` raises `CapabilityNotSupported` on backends that do not
+    declare `Capability.USER_METADATA`. Passing `None` or `{}` is safe on all backends.
+
+!!! info
     Most backends implement this as temp-file + rename. See the
     [Backend Behavior Matrix](#backend-behavior-matrix) for details.
 
@@ -69,9 +88,16 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.ATOMIC_WRITE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ---
 
 ## Deleting
+
+!!! note "Requires `Capability.DELETE`"
+    All delete methods raise `CapabilityNotSupported` on backends that do not
+    declare this capability.
 
 ::: remote_store.Store.delete
     options:
@@ -87,15 +113,29 @@
 
 ## Listing and Iteration
 
+!!! note "Requires `Capability.LIST`"
+    All listing methods raise `CapabilityNotSupported` on backends that do not
+    declare this capability.
+
 ::: remote_store.Store.list_files
     options:
       show_root_heading: true
       heading_level: 3
 
+!!! note "Backend-conditional argument: `max_depth=`"
+    Backends with native depth limiting prune traversal early. Backends that do not
+    support it still return correct results — the Store applies client-side filtering
+    as a safety net.
+
 ::: remote_store.Store.list_folders
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Backend-conditional argument: `max_depth=`"
+    Backends with native depth limiting prune traversal early. Backends that do not
+    support it still return correct results — the Store applies client-side filtering
+    as a safety net.
 
 ::: remote_store.Store.iter_children
     options:
@@ -107,7 +147,11 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Ordering and laziness"
+!!! note "Requires `Capability.GLOB`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+    Check `store.supports(Capability.GLOB)` before calling.
+
+!!! info "Ordering and laziness"
     **Ordering is backend-defined** and may vary between backends (e.g.
     lexicographic on S3, OS-dependent on local filesystems). Callers must
     not depend on any particular order.
@@ -124,7 +168,10 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Atomicity"
+!!! note "Requires `Capability.MOVE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+!!! info "Atomicity"
     Atomicity is backend-dependent. Local uses `os.replace` (atomic on same
     filesystem). S3 and Azure use copy-then-delete (not atomic). SFTP
     atomicity depends on the server.
@@ -134,7 +181,10 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Metadata preservation"
+!!! note "Requires `Capability.COPY`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+!!! info "Metadata preservation"
     Metadata preservation is backend-dependent. S3 copies metadata;
     local preserves metadata (`copy2`); SFTP does not (stream copy).
 
@@ -146,6 +196,9 @@
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ::: remote_store.Store.exists
     options:
@@ -167,10 +220,21 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.Store.get_folder_info
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+!!! note "Backend-conditional argument: `max_depth=`"
+    Backends with native depth limiting prune traversal early. Backends that do not
+    support it still return correct results — the Store applies client-side filtering
+    as a safety net.
 
 ---
 
@@ -181,7 +245,7 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note
+!!! info
     `resolve()` is a pure introspection method — it performs no I/O and is
     never called implicitly by other Store methods. The returned
     [`ResolutionPlan`](models.md) describes how a key maps to its storage
@@ -235,7 +299,7 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note
+!!! info
     `supports()` itself is portable — it works on all backends. Only the
     capability-gated methods it guards are backend-specific.
 

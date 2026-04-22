@@ -12,11 +12,207 @@ counterpart.
     options:
       members: false
 
+### Interop (Backend-Specific)
+
+!!! warning "Backend-specific methods"
+    Methods in this section expose backend internals. Using them ties your
+    code to a specific backend. For portable alternatives, use the methods
+    above.
+
+::: remote_store.aio.AsyncStore.unwrap
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncStore.native_path
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncStore.to_key
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncStore.supports
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+!!! info
+    `supports()` itself is portable — it works on all backends. Only the
+    capability-gated methods it guards are backend-specific.
+
 ---
 
 ## AsyncBackend
 
 ::: remote_store.aio.AsyncBackend
+    options:
+      members: false
+
+!!! info "Implementing an async backend"
+    Subclass `AsyncBackend` and implement all abstract methods. Map every
+    backend-native exception to a `remote_store` error — native exceptions
+    must never leak to callers.
+
+### Identity
+
+::: remote_store.aio.AsyncBackend.name
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.capabilities
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+### Existence
+
+::: remote_store.aio.AsyncBackend.exists
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.is_file
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.is_folder
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+### Reading
+
+::: remote_store.aio.AsyncBackend.read
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.read_bytes
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+### Writing
+
+::: remote_store.aio.AsyncBackend.write
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.write_atomic
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+!!! note "Requires `Capability.ATOMIC_WRITE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+### Deleting
+
+::: remote_store.aio.AsyncBackend.delete
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.delete_folder
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+### Listing and Iteration
+
+::: remote_store.aio.AsyncBackend.list_files
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.list_folders
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.iter_children
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.glob
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+!!! note "Requires `Capability.GLOB`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+### Metadata
+
+::: remote_store.aio.AsyncBackend.get_file_info
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.get_folder_info
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+### File Operations
+
+::: remote_store.aio.AsyncBackend.move
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.copy
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+### Lifecycle
+
+::: remote_store.aio.AsyncBackend.aclose
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.check_health
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+### Introspection
+
+::: remote_store.aio.AsyncBackend.resolve
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+### Interop (Backend-Specific)
+
+!!! warning "Backend-specific methods"
+    Methods in this section expose backend internals. Using them ties your
+    code to a specific backend. For portable alternatives, use the methods
+    above.
+
+::: remote_store.aio.AsyncBackend.unwrap
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.native_path
+    options:
+      show_root_heading: true
+      heading_level: 4
+
+::: remote_store.aio.AsyncBackend.to_key
+    options:
+      show_root_heading: true
+      heading_level: 4
 
 ---
 
