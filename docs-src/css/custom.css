@@ -61,7 +61,7 @@
 
 /* When a prose heading immediately precedes a method block, cancel the method
    heading's own top padding — the prose heading already provides separation */
-.md-typeset :is(h2, h3):not(.doc-heading) + .doc-object > .doc-heading {
+.md-typeset :is(h1, h2, h3):not(.doc-heading) + .doc-object > .doc-heading {
   padding-top: .2em;
 }
 
