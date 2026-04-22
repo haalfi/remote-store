@@ -57,6 +57,13 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-159 — Audit handwritten docs for v0.23.0+ feature & API changes**
+  Review handwritten documentation (guides, tutorials, examples) for features,
+  APIs, and breaking changes introduced post v0.23.0. Example: custom backend
+  guide at `docs.remotestore.dev/latest/custom-backend-guide/` is not current.
+  Identify all stale references, out-of-date code examples, and undocumented
+  new capabilities. Deliver: audit report with gaps and affected doc pages.
+
 - [ ] **BK-156 — Refactor per-backend test files to remove conformance duplication**
   Per-backend test files (`test_s3.py`, `test_s3_pyarrow.py`, `test_sftp.py`,
   `test_azure.py`, etc.) still contain tests that duplicate what the conformance
