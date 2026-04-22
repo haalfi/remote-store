@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
 
     from remote_store import WriteResult
-    from remote_store.aio._async_store import AsyncStore
+    from remote_store.aio import AsyncStore
 
 
 async def write_with_hash(

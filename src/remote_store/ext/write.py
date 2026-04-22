@@ -15,16 +15,14 @@ import hashlib
 import io
 from typing import TYPE_CHECKING
 
-from remote_store import ContentDigest, WriteResult
-from remote_store._path import RemotePath
+from remote_store import ContentDigest, RemotePath, WriteResult
 from remote_store.ext.streams import ChecksumReader, ChecksumWriter
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
     from typing import BinaryIO
 
-    from remote_store._store import Store
-    from remote_store._types import WritableContent
+    from remote_store import Store
 
 __all__ = [
     "HashingAtomicWriter",
@@ -58,7 +56,7 @@ class HashingAtomicWriter(ChecksumWriter):
 def write_with_hash(
     store: Store,
     path: str,
-    content: WritableContent,
+    content: BinaryIO | bytes,
     *,
     algorithm: str = "sha256",
     overwrite: bool = False,
@@ -139,9 +137,6 @@ def open_atomic_with_hash(
     """
     writer: HashingAtomicWriter | None = None
     if metadata:
-        from remote_store._store import _validate_metadata
-
-        _validate_metadata(metadata)
         buf = io.BytesIO()
         writer = HashingAtomicWriter(buf, algorithm=algorithm)
         yield writer
