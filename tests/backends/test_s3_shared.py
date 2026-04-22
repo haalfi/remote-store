@@ -52,7 +52,7 @@ S3PA_CLS = "remote_store.backends._s3_pyarrow:S3PyArrowBackend"
 
 
 @pytest.fixture
-def s3_any_backend(request: pytest.FixtureRequest, moto_server: str) -> Iterator[Backend]:
+def s3_any_backend(request: pytest.FixtureRequest, moto_server: str | None) -> Iterator[Backend]:
     """Live backend fixture driven by ``@pytest.mark.parametrize(..., indirect=True)``.
 
     The parameter value is a ``module:ClassName`` dotted path. Each test
@@ -435,6 +435,11 @@ class TestS3SharedResolve:
     def test_details_has_endpoint_url(self, s3_any_backend: Backend) -> None:
         plan = s3_any_backend.resolve("file.txt")
         assert "endpoint_url" in plan.details
+
+    @pytest.mark.parametrize("s3_any_backend", _LIVE_PARAMS_RESOLVE, indirect=True)
+    def test_kind_is_backend_name(self, s3_any_backend: Backend) -> None:
+        plan = s3_any_backend.resolve("file.txt")
+        assert plan.kind == s3_any_backend.name
 
     @pytest.mark.parametrize(
         "backend_cls",

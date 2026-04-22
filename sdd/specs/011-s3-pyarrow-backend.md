@@ -37,8 +37,8 @@ This is a drop-in alternative to `S3Backend` with the same constructor signature
 | S3PA-020 close()                      | S3-019                                 |
 | S3PA-022 Client Options Passthrough   | S3-021                                 |
 | S3PA-023 Endpoint URL Normalization   | S3-025                                 |
-| S3PA-026 config_kwargs + RetryPolicy  | S3-026                                 |
 | S3PA-024 Default Credential Chain     | S3-022                                 |
+| S3PA-026 config_kwargs + RetryPolicy  | S3-026                                 |
 
 Full-body deltas (unique to S3-PyArrow): **S3PA-002, S3PA-003, S3PA-006,
 S3PA-007, S3PA-012, S3PA-021**.
@@ -197,6 +197,10 @@ See [S3-021](008-s3-backend.md#s3-021-client-options-passthrough). Applies to s3
 ### S3PA-023: Endpoint URL Normalization
 
 See [S3-025](008-s3-backend.md#s3-025-endpoint-url-normalization).
+
+### S3PA-024: Default Credential Chain
+
+See [S3-022](008-s3-backend.md#s3-022-default-credential-chain).
 
 ### S3PA-026: config_kwargs and RetryPolicy Config Merge
 

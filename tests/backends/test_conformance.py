@@ -878,9 +878,9 @@ class TestBackendGlob:
             },
         )
         results = list(backend.glob("gf/**/*"))
-        assert len(results) == 3
+        assert len(results) == 3, f"expected 3 files from gf/**/*, got {len(results)}"
         for info in results:
-            assert isinstance(info, FileInfo)
+            assert isinstance(info, FileInfo), f"glob returned {type(info).__name__}, expected FileInfo (GLOB-004)"
             assert str(info.path).startswith("gf/")
 
 
