@@ -1286,6 +1286,84 @@ class TestAsyncAzureHNSPaths:
             await backend.write_atomic("dir/file.txt", b"content")
         assert tmp_fc.delete_file.call_count == 1
 
+    @pytest.mark.spec("WR-004")
+    async def test_write_atomic_hns_returns_native_fields(self) -> None:
+        """HNS write_atomic populates etag, last_modified, size, source from get_file_properties."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        props = {"etag": '"abc123"', "last_modified": datetime(2024, 1, 1, tzinfo=timezone.utc)}
+        final_fc.get_file_properties = AsyncMock(return_value=props)
+        tmp_fc.rename_file.return_value = final_fc
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+
+        async def _consume(data, **_kw):  # noqa: ANN001, ANN202
+            async for _ in data:
+                pass
+
+        tmp_fc.upload_data = AsyncMock(side_effect=_consume)
+
+        result = await backend.write_atomic("file.txt", b"content")
+
+        assert isinstance(result, WriteResult)
+        assert result.source == "native"
+        assert result.etag == "abc123"
+        assert result.last_modified == datetime(2024, 1, 1, tzinfo=timezone.utc)
+        assert result.size == 7
+
+    @pytest.mark.spec("WR-010", "WR-012")
+    async def test_write_atomic_hns_metadata_preserved(self) -> None:
+        """HNS write_atomic forwards metadata to upload_data and echoes it in WriteResult."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc.get_file_properties = AsyncMock(return_value={})
+        tmp_fc.rename_file.return_value = final_fc
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+
+        result = await backend.write_atomic("dir/file.txt", b"data", metadata={"k": "v"})
+
+        upload_kwargs = tmp_fc.upload_data.call_args[1]
+        assert upload_kwargs.get("metadata") == {"k": "v"}
+        assert result.metadata == {"k": "v"}
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_hns_overwrite_true_skips_existence_check(self) -> None:
+        """overwrite=True skips the get_blob_properties existence check."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc.get_file_properties = AsyncMock(return_value={})
+        tmp_fc.rename_file.return_value = final_fc
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+
+        await backend.write_atomic("dir/file.txt", b"data", overwrite=True)
+
+        bc.get_blob_properties.assert_not_called()
+        assert tmp_fc.upload_data.call_count == 1
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_hns_overwrite_false_file_exists_raises(self) -> None:
+        """overwrite=False raises AlreadyExists when the target file already exists."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(return_value=MagicMock())
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        with pytest.raises(AlreadyExists):
+            await backend.write_atomic("dir/file.txt", b"data", overwrite=False)
+
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_hns_recursive(self) -> None:
         backend = self._make_hns_backend()

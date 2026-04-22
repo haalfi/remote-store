@@ -43,18 +43,6 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-181 — Verify HNS `write_atomic` WriteResult rich-field parity in integration**
-  `AsyncAzureBackend.write_atomic` on HNS calls `get_file_properties()` on the renamed
-  file client to populate `etag`, `last_modified`, `version_id`, and `digest` (WR-004).
-  The metadata is also set on the temp file before rename, relying on ADLS Gen2 rename
-  preserving user-defined metadata (expected for filesystem-level rename, not a copy).
-  Both code paths are `# pragma: no cover` in CI. When HNS integration tests are added:
-  1. Add `test_write_atomic_hns_returns_native_fields` — assert `etag`, `last_modified`
-     are populated in the returned `WriteResult`.
-  2. Add `test_write_atomic_hns_metadata_preserved` — write with `metadata={"k":"v"}`;
-     assert the key is present in the returned `WriteResult` and on the live file.
-  Spec: WR-004, ASYNC-010.
-
 ---
 
 ## Backlog (Prioritized)
