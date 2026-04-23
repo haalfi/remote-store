@@ -54,6 +54,12 @@ from remote_store.ext.transfer import upload
 from remote_store.ext.write import write_with_hash, open_atomic_with_hash, HashingAtomicWriter
 ```
 
+`aio.ext.write` has no extra dependency but is **not** re-exported from `remote_store` — import it from its module directly:
+
+```python
+from remote_store.aio.ext.write import write_with_hash  # async counterpart to ext.write
+```
+
 Seekable reads are built into the core API via `Store.read_seekable()` —
 no extension import needed.
 

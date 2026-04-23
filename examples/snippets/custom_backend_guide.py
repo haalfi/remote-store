@@ -591,7 +591,14 @@ def _demo_partial_capabilities() -> None:
 
 def _demo_partial_write() -> None:
     # --8<-- [start:partial-write]
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         raise CapabilityNotSupported(
             "HTTP backend is read-only",
             capability="write",

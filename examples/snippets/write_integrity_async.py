@@ -15,10 +15,11 @@ def _async_quick_start() -> None:
     # --8<-- [start:async-quick-start]
     import asyncio
 
-    from remote_store.aio import AsyncMemoryBackend, AsyncStore
+    from remote_store.aio import AsyncStore
+    from remote_store.backends import MemoryBackend
 
     async def main() -> None:
-        async with AsyncStore(AsyncMemoryBackend(), root_path="reports") as store:
+        async with AsyncStore(MemoryBackend(), root_path="reports") as store:
             result = await store.write("summary.txt", b"Q1 results", overwrite=True)
             print(f"wrote {result.size} bytes")
             data = await store.read_bytes("summary.txt")
