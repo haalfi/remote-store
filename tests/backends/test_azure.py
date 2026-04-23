@@ -44,7 +44,7 @@ from remote_store._errors import (  # noqa: E402
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo, WriteResult  # noqa: E402
+from remote_store._models import FileInfo, WriteResult  # noqa: E402
 from remote_store.backends._azure import AzureBackend, _AzureBinaryIO  # noqa: E402
 
 if TYPE_CHECKING:
@@ -941,102 +941,16 @@ class TestAzureMaxConcurrency:
 
 @_needs_azurite
 class TestAzureIntegration:
-    """Integration tests using Azurite emulator."""
-
-    def test_write_and_read_bytes(self, azure_backend: Backend) -> None:
-        azure_backend.write("hello.txt", b"hello world")
-        assert azure_backend.read_bytes("hello.txt") == b"hello world"
-
-    def test_write_and_read_stream(self, azure_backend: Backend) -> None:
-        azure_backend.write("stream.bin", b"\x00\x01\x02\xff")
-        stream = azure_backend.read("stream.bin")
-        data = stream.read()
-        stream.close()
-        assert data == b"\x00\x01\x02\xff"
+    """Azure-specific integration tests using Azurite emulator.
+    Generic create/read/update/delete/list/move/copy operations are covered by the
+    parameterized conformance suite (BE-004 through BE-019)."""
 
     def test_read_stream_not_bytesio(self, azure_backend: Backend) -> None:
+        """read() returns a lazy streaming object, not a materialised BytesIO."""
         azure_backend.write("stream_test.bin", b"hello streaming")
         stream = azure_backend.read("stream_test.bin")
         assert not isinstance(stream, io.BytesIO)
         stream.close()
-
-    def test_write_overwrite(self, azure_backend: Backend) -> None:
-        azure_backend.write("ow.txt", b"first")
-        azure_backend.write("ow.txt", b"second", overwrite=True)
-        assert azure_backend.read_bytes("ow.txt") == b"second"
-
-    def test_write_already_exists(self, azure_backend: Backend) -> None:
-        azure_backend.write("ae.txt", b"first")
-        with pytest.raises(AlreadyExists):
-            azure_backend.write("ae.txt", b"second")
-
-    def test_write_from_binaryio(self, azure_backend: Backend) -> None:
-        azure_backend.write("bio.txt", io.BytesIO(b"streamed"))
-        assert azure_backend.read_bytes("bio.txt") == b"streamed"
-
-    def test_write_nested_path(self, azure_backend: Backend) -> None:
-        azure_backend.write("a/b/c/deep.txt", b"deep")
-        assert azure_backend.read_bytes("a/b/c/deep.txt") == b"deep"
-
-    def test_exists(self, azure_backend: Backend) -> None:
-        assert azure_backend.exists("nope.txt") is False
-        azure_backend.write("e.txt", b"x")
-        assert azure_backend.exists("e.txt") is True
-
-    def test_is_file(self, azure_backend: Backend) -> None:
-        azure_backend.write("f.txt", b"x")
-        assert azure_backend.is_file("f.txt") is True
-        assert azure_backend.is_file("missing.txt") is False
-
-    def test_is_folder(self, azure_backend: Backend) -> None:
-        azure_backend.write("dir/a.txt", b"data")
-        assert azure_backend.is_folder("dir") is True
-        assert azure_backend.is_folder("nope") is False
-
-    def test_delete_file(self, azure_backend: Backend) -> None:
-        azure_backend.write("del.txt", b"x")
-        azure_backend.delete("del.txt")
-        assert azure_backend.exists("del.txt") is False
-
-    def test_delete_missing_ok(self, azure_backend: Backend) -> None:
-        result = azure_backend.delete("nope.txt", missing_ok=True)
-        assert result is None
-
-    def test_delete_missing_raises(self, azure_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            azure_backend.delete("nope.txt")
-
-    def test_delete_folder_recursive(self, azure_backend: Backend) -> None:
-        azure_backend.write("rf/a.txt", b"a")
-        azure_backend.write("rf/sub/b.txt", b"b")
-        azure_backend.delete_folder("rf", recursive=True)
-        assert azure_backend.exists("rf/a.txt") is False
-        assert azure_backend.exists("rf/sub/b.txt") is False
-
-    def test_delete_folder_non_recursive_non_empty(self, azure_backend: Backend) -> None:
-        azure_backend.write("nonempty/file.txt", b"x")
-        with pytest.raises(DirectoryNotEmpty):
-            azure_backend.delete_folder("nonempty", recursive=False)
-
-    def test_list_files_non_recursive(self, azure_backend: Backend) -> None:
-        azure_backend.write("lst/a.txt", b"a")
-        azure_backend.write("lst/b.txt", b"b")
-        azure_backend.write("lst/sub/c.txt", b"c")
-        files = list(azure_backend.list_files("lst"))
-        names = {f.name for f in files}
-        assert "a.txt" in names
-        assert "b.txt" in names
-
-    def test_list_files_recursive(self, azure_backend: Backend) -> None:
-        azure_backend.write("lr/a.txt", b"a")
-        azure_backend.write("lr/sub/b.txt", b"b")
-        files = list(azure_backend.list_files("lr", recursive=True))
-        names = {f.name for f in files}
-        assert names == {"a.txt", "b.txt"}
-
-    def test_list_files_empty(self, azure_backend: Backend) -> None:
-        files = list(azure_backend.list_files("empty"))
-        assert files == []
 
     @pytest.mark.spec("BE-021")
     @pytest.mark.parametrize(
@@ -1056,104 +970,8 @@ class TestAzureIntegration:
         names = {f.name for f in files}
         assert names == expected
 
-    def test_list_folders(self, azure_backend: Backend) -> None:
-        azure_backend.write("lf/sub1/a.txt", b"a")
-        azure_backend.write("lf/sub2/b.txt", b"b")
-        azure_backend.write("lf/root.txt", b"r")
-        folder_names = {f.name for f in azure_backend.list_folders("lf")}
-        assert "sub1" in folder_names
-        assert "sub2" in folder_names
-
-    def test_get_file_info(self, azure_backend: Backend) -> None:
-        azure_backend.write("info.txt", b"hello world")
-        fi = azure_backend.get_file_info("info.txt")
-        assert isinstance(fi, FileInfo)
-        assert fi.name == "info.txt"
-        assert fi.size == 11
-        assert fi.modified_at is not None
-
-    def test_get_file_info_not_found(self, azure_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            azure_backend.get_file_info("missing.txt")
-
-    def test_get_folder_info(self, azure_backend: Backend) -> None:
-        azure_backend.write("fi/a.txt", b"aaa")
-        azure_backend.write("fi/b.txt", b"bb")
-        fi = azure_backend.get_folder_info("fi")
-        assert isinstance(fi, FolderInfo)
-        assert fi.file_count == 2
-        assert fi.total_size == 5
-
-    def test_get_folder_info_not_found(self, azure_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            azure_backend.get_folder_info("nodir")
-
-    def test_move(self, azure_backend: Backend) -> None:
-        azure_backend.write("src.txt", b"data")
-        azure_backend.move("src.txt", "dst.txt")
-        assert azure_backend.exists("src.txt") is False
-        assert azure_backend.read_bytes("dst.txt") == b"data"
-
-    @pytest.mark.parametrize(
-        "op",
-        [
-            pytest.param("move", id="move-not-found"),
-            pytest.param("copy", id="copy-not-found"),
-        ],
-    )
-    def test_op_not_found(self, azure_backend: Backend, op: str) -> None:
-        with pytest.raises(NotFound):
-            getattr(azure_backend, op)("missing.txt", "dst.txt")
-
-    @pytest.mark.parametrize(
-        "op",
-        [
-            pytest.param("move", id="move-already-exists"),
-            pytest.param("copy", id="copy-already-exists"),
-        ],
-    )
-    def test_op_already_exists(self, azure_backend: Backend, op: str) -> None:
-        azure_backend.write("ae1.txt", b"a")
-        azure_backend.write("ae2.txt", b"b")
-        with pytest.raises(AlreadyExists):
-            getattr(azure_backend, op)("ae1.txt", "ae2.txt", overwrite=False)
-
-    def test_move_overwrite(self, azure_backend: Backend) -> None:
-        azure_backend.write("mo1.txt", b"a")
-        azure_backend.write("mo2.txt", b"b")
-        azure_backend.move("mo1.txt", "mo2.txt", overwrite=True)
-        assert azure_backend.read_bytes("mo2.txt") == b"a"
-        assert azure_backend.exists("mo1.txt") is False
-
-    def test_copy_preserves_source(self, azure_backend: Backend) -> None:
-        azure_backend.write("orig.txt", b"data")
-        azure_backend.copy("orig.txt", "clone.txt")
-        assert azure_backend.read_bytes("orig.txt") == b"data"
-        assert azure_backend.read_bytes("clone.txt") == b"data"
-
-    def test_copy_overwrite(self, azure_backend: Backend) -> None:
-        azure_backend.write("co1.txt", b"a")
-        azure_backend.write("co2.txt", b"b")
-        azure_backend.copy("co1.txt", "co2.txt", overwrite=True)
-        assert azure_backend.read_bytes("co2.txt") == b"a"
-
-    def test_write_atomic(self, azure_backend: Backend) -> None:
-        azure_backend.write_atomic("atomic.txt", b"atomic content")
-        assert azure_backend.read_bytes("atomic.txt") == b"atomic content"
-
-    def test_write_atomic_overwrite(self, azure_backend: Backend) -> None:
-        azure_backend.write_atomic("at.txt", b"first")
-        azure_backend.write_atomic("at.txt", b"second", overwrite=True)
-        assert azure_backend.read_bytes("at.txt") == b"second"
-
-    def test_write_atomic_already_exists(self, azure_backend: Backend) -> None:
-        azure_backend.write_atomic("at2.txt", b"first")
-        with pytest.raises(AlreadyExists):
-            azure_backend.write_atomic("at2.txt", b"second", overwrite=False)
-
     @_needs_azurite
     def test_unwrap_filesystem_client(self, azure_backend: Backend) -> None:
-
         fs = azure_backend.unwrap(FileSystemClient)
         assert isinstance(fs, FileSystemClient)
 

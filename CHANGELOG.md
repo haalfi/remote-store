@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-156: Remove conformance-duplicate tests from test_sftp.py, test_azure.py, and test_sqlblob.py; add per-backend spec markers to conformance tests to satisfy sdd/000-process.md Rule 2
 - BK-152 (follow-up): Fix SQLAlchemy last_modified decoupling (WRITE_RESULT_NATIVE when modified_at present without user_metadata); fix Local double-stat; update WR-003/WR-009/S3PA-003 specs; split _LAST_MODIFIED_XFAIL from _RICH_FIELDS_XFAIL in conformance tests
 - BK-152: WriteResult/FileInfo field consistency conformance test (`test_write_result_rich_fields_match_file_info`, gated on `WRITE + METADATA`); fix S3PyArrow, Local, SFTP, SQLAlchemy to populate `last_modified` (and `etag`/`digest` for S3PyArrow) from a post-write query; declare `WRITE_RESULT_NATIVE` for S3PyArrow, Local, SFTP
 - BK-007 (extended): Replace prose `--` with em dash `—` throughout docs, specs, research, SDD files, and `.tmpl` templates; add typography Rule 8 to `sdd/DOCUMENTATION.md`
