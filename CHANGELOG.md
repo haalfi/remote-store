@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-159: Audit handwritten docs for v0.23.0+ gaps — 16 findings across custom-backend guide, async guide, extensions guide, and per-backend guides; report at `sdd/audits/audit-011-docs-v023-gaps.md`
 - BK-160/BK-161: Codify extension import-time private access rule in DESIGN.md § 12; add AST checker to test_ext_contract.py; fix 10 Cat 2 import paths across 10 ext modules; annotate 3 Cat 1 coupling sites
 - Audit-010: Document extension private module import violations against ADR-0008
 - ID-138: Async streaming integrity e2e test (`tests/e2e/test_async_streaming_integrity.py`); 4-hop chain via AsyncAzure + SyncWrapped(Local); SHA-256 per hop + lazy-read chunk assertions; Azurite-optional with 2-hop fallback

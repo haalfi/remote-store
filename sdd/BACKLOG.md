@@ -57,12 +57,7 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-159 — Audit handwritten docs for v0.23.0+ feature & API changes**
-  Review handwritten documentation (guides, tutorials, examples) for features,
-  APIs, and breaking changes introduced post v0.23.0. Example: custom backend
-  guide at `docs.remotestore.dev/latest/custom-backend-guide/` is not current.
-  Identify all stale references, out-of-date code examples, and undocumented
-  new capabilities. Deliver: audit report with gaps and affected doc pages.
+*(none)*
 
 ---
 
