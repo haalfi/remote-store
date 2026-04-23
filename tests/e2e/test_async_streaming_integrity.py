@@ -34,17 +34,19 @@ import random
 import tempfile
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from remote_store.aio._async_memory import AsyncMemoryBackend
 from remote_store.aio._async_store import AsyncStore
 from remote_store.backends._local import LocalBackend
-from tests.e2e.conftest import AZURITE_CONN_STR, _azurite_available
+from tests.e2e.conftest import AZURITE_CONN_STR, AZURITE_HOST, AZURITE_PORT, _port_open
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+
+pytestmark = pytest.mark.os_sensitive
 
 # ---------------------------------------------------------------------------
 # Tunables
@@ -54,6 +56,21 @@ FILE_SIZE_MIN = 7 * 1_048_576  # 7 MiB
 FILE_SIZE_MAX = 14 * 1_048_576  # 14 MiB
 
 PATH = "async-streaming-integrity-test.bin"
+
+
+def _async_azure_available() -> bool:
+    """Return True when ``AsyncAzureBackend`` can be used against Azurite.
+
+    ``AsyncAzureBackend`` depends on ``azure.storage.blob.aio``, not
+    ``azure.storage.filedatalake``.  This check probes the correct package so
+    the Azure hop is not silently skipped in environments that have
+    ``azure-storage-blob`` installed but not ``azure-datalake-storage``.
+    """
+    try:
+        import azure.storage.blob.aio  # noqa: F401
+    except ImportError:
+        return False
+    return _port_open(AZURITE_HOST, AZURITE_PORT)
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +205,7 @@ class TestAsyncStreamingIntegrity:
     async def test_chain_checksum_and_chunking(
         self,
         seeded_payload: tuple[bytes, str, int],
+        record_property: Any,
     ) -> None:
         """Transfer a file through the async chain, verifying SHA-256 and chunking.
 
@@ -218,7 +236,7 @@ class TestAsyncStreamingIntegrity:
         tmp: tempfile.TemporaryDirectory[str] | None = None
 
         try:
-            if _azurite_available():
+            if _async_azure_available():
                 from azure.storage.blob import BlobServiceClient
 
                 from remote_store.aio._async_azure import AsyncAzureBackend
@@ -234,6 +252,9 @@ class TestAsyncStreamingIntegrity:
                     )
                 )
                 mid_store = AsyncStore(backend=AsyncMemoryBackend())
+
+            if azure_store is None:
+                record_property("azure_skipped", "AsyncAzureBackend unavailable — running 2-hop fallback chain")
 
             tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
             # LocalBackend is sync; AsyncStore auto-wraps it via SyncBackendAdapter.
@@ -257,6 +278,7 @@ class TestAsyncStreamingIntegrity:
             lazy_read_ids.add(id(local_store))
 
             order = " -> ".join(name for name, _ in chain)
+            record_property("chain", order)
             print(f"  Chain: {order}")  # noqa: T201
 
             # Seed the file into the first store and verify its integrity.
