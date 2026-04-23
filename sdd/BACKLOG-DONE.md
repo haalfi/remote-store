@@ -60,8 +60,6 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   S3/S3-PyArrow/Local files were already lean or contain specific assertions beyond
   what conformance covers.
 
----
-
 - [x] **BK-152 — Single conformance test for WriteResult/FileInfo consistency + fix violating backends**
   Added `test_write_result_rich_fields_match_file_info` (gated on `WRITE + METADATA`,
   not `WRITE_RESULT_NATIVE`) to `TestWriteResultConformance`; removed the two
