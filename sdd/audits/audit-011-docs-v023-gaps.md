@@ -1,4 +1,4 @@
-# Audit-011: Handwritten Docs — v0.23.0+ Gaps
+# Audit-011: Handwritten Docs, v0.23.0+ Gaps
 
 **Date:** 2026-04-23
 **Scope:** Handwritten guides, tutorials, and example snippets. Auto-generated API reference excluded.
@@ -17,7 +17,7 @@ Key API changes after v0.23.0:
 - New `Store.head()` method (gated on `Capability.METADATA`)
 - New `ext.write` module: `write_with_hash`, `open_atomic_with_hash`, `HashingAtomicWriter`
 - New `aio.ext.write` module: async `write_with_hash`
-- New `AsyncBackendSyncAdapter` (async backend → sync caller)
+- New `AsyncBackendSyncAdapter` (async backend to sync caller)
 
 Files read and compared against the above:
 
@@ -28,10 +28,11 @@ Files read and compared against the above:
 | `guides/async.md` | Major gaps |
 | `guides/async-sync-bridges.md` | Current |
 | `docs-src/write-integrity.md` | Current |
-| `docs-src/capabilities-matrix.md` | Current |
+| `docs-src/capabilities-matrix.md` | Minor gap: table correct, prose summary line 29 contradicts it (see F-11) |
 | `guides/extensions.md` | Major gap |
 | `guides/backends/local.md` | Minor gap |
 | `guides/backends/s3.md` | Minor gap |
+| `guides/backends/s3-pyarrow.md` | Minor gap (see F-17) |
 | `guides/backends/azure.md` | Minor gap |
 | `guides/backends/memory.md` | Current |
 | `guides/health-check.md` | Current |
@@ -39,12 +40,12 @@ Files read and compared against the above:
 | `docs-src/architecture.md` | Current |
 | `examples/snippets/write_integrity.py` | Current |
 | `examples/snippets/write_integrity_async.py` | Current |
-| `examples/snippets/async_sync_bridges.py` | Current (AsyncBackendSyncAdapter covered) |
+| `examples/snippets/async_sync_bridges.py` | Current (`AsyncBackendSyncAdapter` covered) |
 | `examples/getting_started/atomic_writes.py` | Minor gap |
 | `examples/getting_started/file_operations.py` | Minor gap |
 | `examples/getting_started/streaming_io.py` | Minor gap |
 
-Not read: `guides/backends/sftp.md`, `guides/backends/http.md`, `guides/backends/sql-blob.md`, `guides/backends/sql-query.md`, `guides/backends/s3-pyarrow.md`, `guides/backends/index.md`, `guides/choosing-a-backend.md`.
+Not read: `guides/backends/sftp.md`, `guides/backends/http.md`, `guides/backends/sql-blob.md`, `guides/backends/sql-query.md`, `guides/backends/index.md`, `guides/choosing-a-backend.md`.
 
 ---
 
@@ -52,28 +53,30 @@ Not read: `guides/backends/sftp.md`, `guides/backends/http.md`, `guides/backends
 
 | ID | Severity | File | Gap type | Description |
 |----|----------|------|----------|-------------|
-| F-01 | **Critical** | `guides/custom-backend-guide.md:568-569` | Stale | Quick-reference table: `write()` and `write_atomic()` show return `None` — should be `WriteResult` |
-| F-02 | **Critical** | `examples/snippets/custom_backend_guide.py:218,248` | Stale | `write()` and `write_atomic()` annotated `-> None` — should be `-> WriteResult` |
-| F-03 | **Critical** | `examples/snippets/custom_backend_guide.py:218,248` | Stale | `write()` and `write_atomic()` missing `metadata: Mapping[str, str] \| None = None` parameter |
-| F-04 | **Critical** | `guides/custom-backend-guide.md:568` | Stale | Quick-reference table `write()` signature missing `metadata=` parameter |
-| F-05 | **Major** | `guides/custom-backend-guide.md` Step 1 | Missing | `WriteResult` absent from Step 1 import table and snippet; needed to annotate return type |
-| F-06 | **Major** | `guides/custom-backend-guide.md` Step 2 | Missing | `USER_METADATA`, `WRITE_RESULT_NATIVE`, `LAZY_READ` capabilities never mentioned |
-| F-07 | **Major** | `guides/custom-backend-guide.md` Step 7 | Missing | `metadata=` kwarg and `WriteResult` return type absent from Step 7 narrative and snippet |
-| F-08 | **Major** | `guides/async.md` | Missing | No mention of `WriteResult` from async writes; no `metadata=` kwarg; no `aio.ext.write` |
-| F-09 | **Major** | `guides/extensions.md` | Missing | `aio.ext.write` entirely absent from the extensions table |
-| F-10 | **Major** | `guides/extensions.md:34-51` | Missing | `ext.write` imports absent from the "always-available" import example block |
-| F-11 | **Minor** | `guides/backends/local.md:32` | Stale | "All capabilities are supported" — Local lacks `USER_METADATA` per the capabilities matrix |
-| F-12 | **Minor** | `guides/backends/s3.md:94-96` | Missing | No mention that write operations return `WriteResult` with digest (WRITE_RESULT_NATIVE); the digest note is read-only context, write context absent |
-| F-13 | **Minor** | `guides/backends/azure.md:121` | Missing | No mention of `metadata=` kwarg support (`USER_METADATA`) or write-result fields (`WRITE_RESULT_NATIVE`) for Azure write operations |
-| F-14 | **Minor** | `examples/getting_started/atomic_writes.py:25,36` | Stale | `write_atomic()` return discarded — example focused on atomicity but doesn't capture `WriteResult` |
-| F-15 | **Minor** | `examples/getting_started/file_operations.py:24-27`, `streaming_io.py:19,31,45` | Stale | `write()` called without capturing return value — examples treat write as void |
-| F-16 | **Minor** | `guides/async.md` | Missing | No cross-reference to `AsyncBackendSyncAdapter` or `guides/async-sync-bridges.md` for the async→sync direction |
+| F-01 | **Critical** | `guides/custom-backend-guide.md:568-569` | Stale | Quick-reference table: `write()` and `write_atomic()` show return `None`; should be `WriteResult` |
+| F-02 | **Critical** | `examples/snippets/custom_backend_guide.py:218,248` | Stale | `write()` and `write_atomic()` annotated `-> None` (should be `-> WriteResult`) and missing `metadata: Mapping[str, str] \| None = None` parameter |
+| F-03 | **Critical** | `guides/custom-backend-guide.md:568` | Stale | Quick-reference table `write()` signature missing `metadata=` parameter |
+| F-04 | **Major** | `guides/custom-backend-guide.md` Step 1 | Missing | `WriteResult` absent from Step 1 import table and snippet; needed to annotate return type |
+| F-05 | **Major** | `guides/custom-backend-guide.md` Step 2 | Missing | `USER_METADATA`, `WRITE_RESULT_NATIVE`, `LAZY_READ` capabilities never mentioned |
+| F-06 | **Major** | `guides/custom-backend-guide.md` Step 7 | Missing | `metadata=` kwarg and `WriteResult` return type absent from Step 7 narrative and snippet |
+| F-07 | **Major** | `guides/async.md` | Missing | No mention of `WriteResult` from async writes; no `metadata=` kwarg; no `aio.ext.write` |
+| F-08 | **Major** | `guides/extensions.md` | Missing | `aio.ext.write` entirely absent from the extensions table |
+| F-09 | **Major** | `guides/extensions.md:34-51` | Missing | `ext.write` imports absent from the "always-available" import example block |
+| F-10 | **Minor** | `guides/backends/local.md:32` + `docs-src/capabilities-matrix.md:29` | Stale | `local.md` says "All capabilities supported"; matrix prose says "Full support: Local". Both wrong: Local lacks `USER_METADATA` |
+| F-11 | **Minor** | `guides/backends/s3.md:94-96` | Missing | No mention that write operations return `WriteResult` with digest (`WRITE_RESULT_NATIVE`); the digest note is read-only context, write context absent |
+| F-12 | **Minor** | `guides/backends/azure.md:121` | Missing | No mention of `metadata=` kwarg support (`USER_METADATA`) or write-result fields (`WRITE_RESULT_NATIVE`) for Azure write operations |
+| F-13 | **Minor** | `examples/getting_started/atomic_writes.py:25,36` | Stale | `write_atomic()` return discarded; example focused on atomicity but doesn't capture `WriteResult` |
+| F-14 | **Minor** | `examples/getting_started/file_operations.py:24-27`, `streaming_io.py:19,31,45` | Stale | `write()` called without capturing return value; examples treat write as void |
+| F-15 | **Minor** | `guides/async.md` | Missing | No cross-reference to `AsyncBackendSyncAdapter` or `guides/async-sync-bridges.md` for the async-to-sync direction |
+| F-16 | **Minor** | `guides/backends/s3-pyarrow.md:86` | Stale | "Both backends support all capabilities except `ATOMIC_MOVE` and are fully interchangeable" — S3-PyArrow lacks `USER_METADATA` where S3 supports it, so the two are not interchangeable for `metadata=` usage |
+
+**Totals:** 3 Critical, 6 Major, 7 Minor = 16 findings.
 
 ---
 
 ## Findings
 
-### F-01 — `guides/custom-backend-guide.md` Quick-reference table: wrong return types (Critical)
+### F-01: `guides/custom-backend-guide.md` quick-reference table: wrong return types (Critical)
 
 **Location:** `guides/custom-backend-guide.md`, lines 568-569.
 
@@ -89,11 +92,11 @@ def write(...) -> WriteResult: ...
 def write_atomic(...) -> WriteResult: ...
 ```
 
-A developer copying the guide's table would believe the methods return nothing and omit the `WriteResult` from their implementation. The Backend ABC now requires `WriteResult` as the return type for both methods. Any custom backend built from this guide will fail type-checking and may not integrate correctly with `Store.write_result`-dependent callers.
+A developer copying the guide's table would believe the methods return nothing and omit the `WriteResult` from their implementation. The Backend ABC requires `WriteResult` as the return type for both methods. Any custom backend built from this guide will fail type-checking and may not integrate correctly with callers that use the write result.
 
 ---
 
-### F-02 — `examples/snippets/custom_backend_guide.py`: `-> None` annotations (Critical)
+### F-02: `examples/snippets/custom_backend_guide.py`: non-conformant write signatures (Critical)
 
 **Location:** Lines 218, 248.
 
@@ -105,24 +108,17 @@ def write(self, path: str, content: WritableContent, *, overwrite: bool = False)
 def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
 ```
 
-These snippets are the *tested source* embedded verbatim into the guide via `--8<--` includes. Developers who adapt this code create a non-conformant backend that cannot satisfy the Backend ABC's return type constraint.
+Both signatures have two problems in the same location: the return type is `None` instead of `WriteResult`, and the `metadata: Mapping[str, str] | None = None` parameter is absent. These snippets are the *tested source* embedded verbatim into the guide via `--8<--` includes. A developer adapting this code creates a non-conformant backend that fails the Backend ABC's return type constraint and cannot accept `metadata=` even when the backend declares `USER_METADATA`.
 
----
-
-### F-03 — `examples/snippets/custom_backend_guide.py`: `metadata=` kwarg missing (Critical)
-
-**Location:** Lines 218 (`write`) and 248 (`write_atomic`).
-
-Backend ABC (`src/remote_store/_backend.py:186`, `214`):
+Backend ABC (`src/remote_store/_backend.py:186-187`, `214-215`):
 ```python
 metadata: Mapping[str, str] | None = None,
+) -> WriteResult:
 ```
-
-Neither method signature in the snippet includes this parameter. A backend that doesn't accept `metadata=` cannot be called with it even when the `Store` passes it through, causing a `TypeError` at runtime for backends registering `USER_METADATA`.
 
 ---
 
-### F-04 — `guides/custom-backend-guide.md` Quick-reference table: `metadata=` missing (Critical)
+### F-03: `guides/custom-backend-guide.md` quick-reference table: `metadata=` missing (Critical)
 
 **Location:** `guides/custom-backend-guide.md:568`.
 
@@ -131,11 +127,11 @@ Current:
 | `write(path, content, overwrite)` | ...
 ```
 
-Should include `metadata=None` in the signature. Combined with F-01, the entire quick-reference table for write methods is wrong on both the return type and parameter list.
+Should include `metadata=None` in the signature. Combined with F-01, the entire quick-reference row for `write()` is wrong on both the return type and parameter list.
 
 ---
 
-### F-05 — `guides/custom-backend-guide.md` Step 1 imports: `WriteResult` absent (Major)
+### F-04: `guides/custom-backend-guide.md` Step 1 imports: `WriteResult` absent (Major)
 
 **Location:** `guides/custom-backend-guide.md:47-52` (import table), `examples/snippets/custom_backend_guide.py:34-49` (step1-imports snippet).
 
@@ -143,19 +139,19 @@ Should include `metadata=None` in the signature. Combined with F-01, the entire 
 
 ---
 
-### F-06 — `guides/custom-backend-guide.md` Step 2 capabilities: three new capabilities not mentioned (Major)
+### F-05: `guides/custom-backend-guide.md` Step 2 capabilities: three new capabilities not mentioned (Major)
 
 **Location:** `guides/custom-backend-guide.md:55-67` (Step 2 narrative and snippet).
 
 The Step 2 snippet demonstrates a capability set without `USER_METADATA`, `WRITE_RESULT_NATIVE`, or `LAZY_READ`. The narrative never mentions these flags. Developers won't know to consider them when declaring their backend's capabilities:
 
-- `USER_METADATA` gates whether `metadata=` values are stored (a strict gate — passing non-empty metadata to a backend without this capability raises `CapabilityNotSupported`)
-- `WRITE_RESULT_NATIVE` signals that `WriteResult` fields beyond `path`/`size` are populated
-- `LAZY_READ` signals that `read()` fetches lazily (affects caller strategies for large files)
+- `USER_METADATA` is a strict gate: passing non-empty metadata to a backend without this capability raises `CapabilityNotSupported`.
+- `WRITE_RESULT_NATIVE` signals that `WriteResult` fields beyond `path`/`size` are populated.
+- `LAZY_READ` signals that `read()` fetches lazily, which affects caller strategies for large files.
 
 ---
 
-### F-07 — `guides/custom-backend-guide.md` Step 7: write narrative omits `metadata=` and `WriteResult` (Major)
+### F-06: `guides/custom-backend-guide.md` Step 7: write narrative omits `metadata=` and `WriteResult` (Major)
 
 **Location:** `guides/custom-backend-guide.md:142-153`.
 
@@ -167,7 +163,7 @@ It then lists implementation notes. Neither the `metadata=` kwarg nor the `Write
 
 ---
 
-### F-08 — `guides/async.md`: missing `WriteResult`, `metadata=`, and `aio.ext.write` (Major)
+### F-07: `guides/async.md`: missing `WriteResult`, `metadata=`, and `aio.ext.write` (Major)
 
 **Location:** `guides/async.md`, multiple.
 
@@ -181,7 +177,7 @@ Three separate gaps:
 
 ---
 
-### F-09 — `guides/extensions.md`: `aio.ext.write` absent from extensions table (Major)
+### F-08: `guides/extensions.md`: `aio.ext.write` absent from extensions table (Major)
 
 **Location:** `guides/extensions.md`, the extensions table.
 
@@ -189,11 +185,11 @@ The table lists `ext.write` (line 18) but has no entry for `aio.ext.write`. This
 
 ---
 
-### F-10 — `guides/extensions.md`: `ext.write` absent from "always-available" import block (Major)
+### F-09: `guides/extensions.md`: `ext.write` absent from "always-available" import block (Major)
 
 **Location:** `guides/extensions.md:34-51`.
 
-The "always-available" imports section lists `batch_delete`, `glob_files`, `observe`, `upload`, `download`, `cache`, `checksum`, `verify`, `partition_path`, `parse_partition`, `ProgressReader`, `ChecksumReader` — but not `write_with_hash`, `open_atomic_with_hash`, or `HashingAtomicWriter`.
+The "always-available" imports section lists `batch_delete`, `glob_files`, `observe`, `upload`, `download`, `cache`, `checksum`, `verify`, `partition_path`, `parse_partition`, `ProgressReader`, `ChecksumReader`, but not `write_with_hash`, `open_atomic_with_hash`, or `HashingAtomicWriter`.
 
 These three symbols are re-exported from the top-level package:
 ```python
@@ -206,45 +202,44 @@ from remote_store.ext.write import HashingAtomicWriter, open_atomic_with_hash, w
 
 ---
 
-### F-11 — `guides/backends/local.md`: "All capabilities supported" is wrong (Minor)
+### F-10: `guides/backends/local.md` and `docs-src/capabilities-matrix.md`: "full support" claim wrong (Minor)
 
-**Location:** `guides/backends/local.md:32`.
+**Locations:**
+- `guides/backends/local.md:32`: "All capabilities are supported. The local backend is the reference implementation."
+- `docs-src/capabilities-matrix.md:29`: "Full support: Local."
 
-Current:
-> "All capabilities are supported. The local backend is the reference implementation."
-
-Per `docs-src/capabilities-matrix.md:25`, Local has `USER_METADATA = —` (not supported). Passing `metadata={"key": "val"}` to a Local-backed store raises `CapabilityNotSupported`. A user reading only the local guide would believe metadata= is safe to use with Local.
+Both statements are wrong. Per the capabilities matrix table (line 25), Local has `USER_METADATA = —` (not supported). Passing `metadata={"key": "val"}` to a Local-backed store raises `CapabilityNotSupported`. The prose summary inside `capabilities-matrix.md` contradicts the table in the same file. Fixing only `local.md` would leave the contradiction in the matrix document unresolved.
 
 ---
 
-### F-12 — `guides/backends/s3.md`: write-result fields not documented (Minor)
+### F-11: `guides/backends/s3.md`: write-result fields not documented (Minor)
 
 **Location:** `guides/backends/s3.md:88-96`.
 
-The "File Metadata" section notes that `digest` is `Always None` (for `get_file_info()` and `list_files()`). That statement is accurate for read operations. However, S3 now declares `WRITE_RESULT_NATIVE` and populates `WriteResult.digest` with an auto-CRC32 on write operations (BUG-177). The guide has no write-result section, so users are unaware that:
+The "File Metadata" section notes that `digest` is `Always None` for `get_file_info()` and `list_files()`. That statement is accurate for read operations. However, S3 declares `WRITE_RESULT_NATIVE` and populates `WriteResult.digest` with the `ChecksumCRC32` field from the S3 upload response on write operations. The guide has no write-result section, so users are unaware that:
 
-1. `store.write(...)` on S3 now returns a `WriteResult` with `digest`, `etag`, and `last_modified` populated.
-2. S3 supports `USER_METADATA` — `metadata=` in write calls is stored as S3 object metadata.
+1. `store.write(...)` on S3 returns a `WriteResult` with `digest`, `etag`, and `last_modified` populated.
+2. S3 supports `USER_METADATA`: `metadata=` in write calls is stored as S3 object metadata.
 
 The "Capabilities" section (line 236) says "all except `ATOMIC_MOVE`" which is correct per the matrix, but a prose note on write-result behavior would prevent the "always None" note from misleading users who then see a non-None digest in write results.
 
 ---
 
-### F-13 — `guides/backends/azure.md`: no write-result or metadata= documentation (Minor)
+### F-12: `guides/backends/azure.md`: no write-result or metadata= documentation (Minor)
 
 **Location:** `guides/backends/azure.md:121`.
 
-"Capabilities: Supports all capabilities except `SEEKABLE_READ` and `ATOMIC_MOVE`." — correct per matrix. However, nothing in the guide calls out:
+"Capabilities: Supports all capabilities except `SEEKABLE_READ` and `ATOMIC_MOVE`." Correct per matrix. However, nothing in the guide calls out:
 
-- `metadata=` kwarg support (Azure declares `USER_METADATA`)
-- Rich write results (Azure declares `WRITE_RESULT_NATIVE`; `WriteResult.etag`, `last_modified`, `metadata` are populated)
-- HNS-specific `WriteResult.version_id` field (HNS write_atomic result)
+- `metadata=` kwarg support (Azure declares `USER_METADATA`).
+- Rich write results (Azure declares `WRITE_RESULT_NATIVE`; `WriteResult.etag`, `last_modified`, `metadata` are populated).
+- HNS-specific `WriteResult.version_id` field (HNS `write_atomic` result).
 
 The "File Metadata" section (lines 113-119) covers `get_file_info()` fields but omits the write-side counterpart.
 
 ---
 
-### F-14 — `examples/getting_started/atomic_writes.py`: `WriteResult` not captured (Minor)
+### F-13: `examples/getting_started/atomic_writes.py`: `WriteResult` not captured (Minor)
 
 **Location:** Lines 25 and 36.
 
@@ -257,7 +252,7 @@ This example is specifically about write semantics. Not capturing the `WriteResu
 
 ---
 
-### F-15 — `examples/getting_started/file_operations.py`, `streaming_io.py`: void-style writes (Minor)
+### F-14: `examples/getting_started/file_operations.py`, `streaming_io.py`: void-style writes (Minor)
 
 **Location:** `file_operations.py:24-27`, `streaming_io.py:19,31,45`.
 
@@ -267,15 +262,26 @@ store.write("docs/readme.txt", b"First file")  # result discarded
 store.write("streamed.txt", stream)            # result discarded
 ```
 
-These examples are demonstrating other aspects of the Store API, but all write() calls treat the API as if it returns None. Minor because the examples' focus is not write results, but they implicitly model void usage to new users.
+These examples are demonstrating other aspects of the Store API, but all `write()` calls treat the API as if it returns `None`. Minor because the examples' focus is not write results, but they implicitly model void usage to new users.
 
 ---
 
-### F-16 — `guides/async.md`: no reference to `AsyncBackendSyncAdapter` (Minor)
+### F-15: `guides/async.md`: no reference to `AsyncBackendSyncAdapter` (Minor)
 
 **Location:** `guides/async.md:26-28` (adapter section), `164-170` (See also).
 
-The guide explains the sync→async direction (`SyncBackendAdapter`) but has no mention of the async→sync direction (`AsyncBackendSyncAdapter`). A user with an `AsyncAzureBackend` who needs to call it from sync code has no hint that a solution exists in this guide. The `guides/async-sync-bridges.md` guide covers it correctly, but `async.md`'s See also section (line 166) links to `api/aio.md`, not to the bridges guide.
+The guide explains the sync-to-async direction (`SyncBackendAdapter`) but has no mention of the async-to-sync direction (`AsyncBackendSyncAdapter`). A user with an `AsyncAzureBackend` who needs to call it from sync code has no hint that a solution exists. The `guides/async-sync-bridges.md` guide covers it correctly, but `async.md`'s See also section (line 166) links to `api/aio.md` and not to the bridges guide.
+
+---
+
+### F-16: `guides/backends/s3-pyarrow.md`: capability and interchangeability claims wrong (Minor)
+
+**Location:** `guides/backends/s3-pyarrow.md:86`.
+
+Current:
+> "Both backends support all capabilities except `ATOMIC_MOVE` and are fully interchangeable — switch by changing the `type` in your config."
+
+Per the capabilities matrix, S3-PyArrow has `USER_METADATA = —` (not supported) while S3 has `USER_METADATA = Yes`. The "all except `ATOMIC_MOVE`" claim misses `USER_METADATA`, and "fully interchangeable" is wrong for any code that passes `metadata=` to write methods. Switching from `s3` to `s3-pyarrow` would cause `CapabilityNotSupported` at runtime for any caller using the metadata kwarg.
 
 ---
 
@@ -283,28 +289,26 @@ The guide explains the sync→async direction (`SyncBackendAdapter`) but has no 
 
 | File | Reason for checking | Verdict |
 |------|---------------------|---------|
-| `guides/async-sync-bridges.md` | `AsyncBackendSyncAdapter` coverage | Current — decision table and usage examples present |
-| `docs-src/write-integrity.md` | New page for ext.write, head(), metadata= | Current — comprehensive and accurate |
-| `docs-src/capabilities-matrix.md` | Three new capabilities expected | Current — `LAZY_READ`, `WRITE_RESULT_NATIVE`, `USER_METADATA` present with correct per-backend values |
-| `guides/backends/memory.md` | `WRITE_RESULT_NATIVE`, `last_modified` post-BUG-169 | Current — "all except GLOB and LAZY_READ" implicitly includes the new capabilities correctly |
-| `guides/health-check.md` | `Store.head()` mention expected | Current — guide scope is `ping()`; `head()` belongs in write-integrity which covers it |
-| `guides/concurrency.md` | Write atomicity / `None`-return patterns | Current — guide is about move/overwrite semantics, no write return type dependency |
-| `docs-src/architecture.md` | `AsyncBackendSyncAdapter` layer diagram | Current — architecture overview does not need adapter-level detail |
-| `examples/snippets/write_integrity.py` | ext.write correctness | Current — accurate usage of `write_with_hash`, `open_atomic_with_hash`, `store.head()` |
-| `examples/snippets/write_integrity_async.py` | aio.ext.write correctness | Current — accurate usage of `aio.ext.write.write_with_hash` |
-| `examples/snippets/async_sync_bridges.py` | `AsyncBackendSyncAdapter` snippet | Current — uses `AsyncMemoryBackend` and `AsyncBackendSyncAdapter` correctly |
+| `guides/async-sync-bridges.md` | `AsyncBackendSyncAdapter` coverage | Current. Decision table and usage examples present. |
+| `docs-src/write-integrity.md` | New page for ext.write, head(), metadata= | Current. Comprehensive and accurate. |
+| `guides/backends/memory.md` | `WRITE_RESULT_NATIVE`, `last_modified` post-BUG-169 | Current. "All except GLOB and LAZY_READ" implicitly covers the new capabilities correctly. |
+| `guides/health-check.md` | `Store.head()` mention expected | Current. Guide scope is `ping()`; `head()` belongs in write-integrity, which covers it. |
+| `guides/concurrency.md` | Write atomicity and `None`-return patterns | Current. Guide is about move/overwrite semantics, no write return type dependency. |
+| `docs-src/architecture.md` | `AsyncBackendSyncAdapter` layer diagram | Current. Architecture overview does not need adapter-level detail. |
+| `examples/snippets/write_integrity.py` | ext.write correctness | Current. Accurate usage of `write_with_hash`, `open_atomic_with_hash`, `store.head()`. |
+| `examples/snippets/write_integrity_async.py` | aio.ext.write correctness | Current. Accurate usage of `aio.ext.write.write_with_hash`. |
+| `examples/snippets/async_sync_bridges.py` | `AsyncBackendSyncAdapter` snippet | Current. Uses `AsyncMemoryBackend` and `AsyncBackendSyncAdapter` correctly. |
 
 ---
 
 ## Files Not Checked (Out of Scope for This Pass)
 
-- `guides/backends/sftp.md` — check `USER_METADATA`/`WRITE_RESULT_NATIVE` capability notes; SFTP has both as `—`
-- `guides/backends/http.md` — read-only; `WRITE_RESULT_NATIVE` and `USER_METADATA` are `—`; likely fine
-- `guides/backends/sql-blob.md` — conditional `†` for `WRITE_RESULT_NATIVE`/`USER_METADATA`; may need schema note alignment
-- `guides/backends/sql-query.md` — read-only; likely fine
-- `guides/backends/s3-pyarrow.md` — `USER_METADATA = —`, `WRITE_RESULT_NATIVE = Yes`; guide may say "same as S3" incorrectly for metadata= kwarg
-- `guides/backends/index.md` — capability overview; may reference old capability set
-- `guides/choosing-a-backend.md` — capability decision tree; may not include new flags
-- `docs-src/security-model.md` — credential scope; unlikely affected
-- All `examples/backends/` scripts — write() result not expected to be captured in connection demos
-- All `examples/integrations/` scripts — Dagster, PyArrow: indirect write usage
+- `guides/backends/sftp.md`: check `USER_METADATA`/`WRITE_RESULT_NATIVE` capability notes; SFTP has both as `—`.
+- `guides/backends/http.md`: read-only; `WRITE_RESULT_NATIVE` and `USER_METADATA` are `—`; likely fine.
+- `guides/backends/sql-blob.md`: conditional `†` for `WRITE_RESULT_NATIVE`/`USER_METADATA`; may need schema note alignment.
+- `guides/backends/sql-query.md`: read-only; likely fine.
+- `guides/backends/index.md`: capability overview; may reference old capability set.
+- `guides/choosing-a-backend.md`: capability decision tree; may not include new flags.
+- `docs-src/security-model.md`: credential scope; unlikely affected.
+- All `examples/backends/` scripts: write() result not expected to be captured in connection demos.
+- All `examples/integrations/` scripts: Dagster, PyArrow — indirect write usage.
