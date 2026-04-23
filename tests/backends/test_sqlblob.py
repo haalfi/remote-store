@@ -491,6 +491,18 @@ def test_default_schema(backend: SQLBlobBackend) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Move — same-path edge case (no conformance equivalent)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("SQL-BLOB-031")
+def test_move_same_path_missing_source(backend: SQLBlobBackend) -> None:
+    """move(missing, missing) raises NotFound — not a no-op."""
+    with pytest.raises(NotFound):
+        backend.move("missing.txt", "missing.txt")
+
+
+# ---------------------------------------------------------------------------
 # Error mapping
 # ---------------------------------------------------------------------------
 

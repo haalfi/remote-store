@@ -187,6 +187,7 @@ class TestBackendWriteAtomic:
         assert backend.read_bytes("atomic2.txt") == b"second"
 
     @pytest.mark.spec("BE-010")
+    @pytest.mark.spec("SFTP-015")
     def test_write_atomic_already_exists(self, backend: Backend) -> None:
         _require(backend, Capability.ATOMIC_WRITE)
         backend.write_atomic("atomic3.txt", b"first")
@@ -198,6 +199,7 @@ class TestBackendOpenAtomic:
     """SAW-001 through SAW-005: streaming atomic write operations."""
 
     @pytest.mark.spec("SAW-003")
+    @pytest.mark.spec("SQL-BLOB-023")
     def test_open_atomic_creates_file(self, backend: Backend) -> None:
         _require(backend, Capability.ATOMIC_WRITE)
         with backend.open_atomic("oat.txt") as f:
@@ -220,6 +222,7 @@ class TestBackendOpenAtomic:
             pass
 
     @pytest.mark.spec("SAW-004")
+    @pytest.mark.spec("SQL-BLOB-023")
     def test_open_atomic_exception_cleanup(self, backend: Backend) -> None:
         _require(backend, Capability.ATOMIC_WRITE)
         with pytest.raises(RuntimeError, match="boom"), backend.open_atomic("oat_fail.txt") as f:  # noqa: PT012

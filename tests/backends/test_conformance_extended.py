@@ -197,6 +197,7 @@ class TestDeleteFolderErrorFidelity:
         assert True  # explicit: survived without native exception leak
 
     @pytest.mark.spec("BE-013")
+    @pytest.mark.spec("SFTP-016")
     def test_delete_folder_missing_raises_not_found(self, backend: Backend) -> None:
         """!PathExists && !missing_ok ==> NotFound."""
         _require(backend, Capability.DELETE)
