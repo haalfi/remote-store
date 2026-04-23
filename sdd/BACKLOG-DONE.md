@@ -5,6 +5,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-138 — Async streaming integrity e2e test**
+  Added `tests/e2e/test_async_streaming_integrity.py` mirroring the sync e2e
+  test. Chain: `AsyncMemoryBackend` (seed) → `AsyncAzureBackend` (Azurite,
+  native async) → `AsyncMemoryBackend` (native async, mid-chain) →
+  `SyncBackendAdapter(LocalBackend)` (adapter contract) →
+  `AsyncMemoryBackend` (sink). Transfer via manual `async for chunk in store.read()`
+  loop fed into `store.write()` — no `ext.transfer`.
+  Validates: (1) async streaming integrity on native Azure (SHA-256 per hop);
+  (2) native async memory backend as mid-chain writer and reader; (3)
+  `SyncBackendAdapter` streaming read contract (64 KiB chunks from
+  `asyncio.to_thread`). Fallback chain (no Azurite): seed → local-wrapped → sink.
+  `SyncBackendAdapter.write()` materialization is documented as an exemption.
+
 - [x] **ID-153 — Consolidate moto / Azurite fixtures at `tests/conftest.py`**
   Promoted `_free_port`, `moto_server`, `_AZURITE_CONN_STR`, and `azurite_server`
   (plus the `_s3_available`, `_azure_available`, `_azurite_reachable` helpers they

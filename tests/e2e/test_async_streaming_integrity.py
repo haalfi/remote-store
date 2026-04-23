@@ -1,0 +1,300 @@
+"""End-to-end async streaming integrity test.
+
+Proves two properties of the async streaming contract:
+
+1. **Data integrity** -- a randomly-sized file (7--14 MiB) survives each hop
+   of the async chain with identical SHA-256 at every step.
+2. **Chunked streaming** -- hops with a lazy-read source yield multiple chunks
+   (count > 1, max_chunk < file_size).  ``AsyncMemoryBackend`` is non-lazy
+   (yields one chunk) and is exempt from the chunk assertion.
+
+Chain (Azurite reachable):
+    AsyncMemory(seed) -> AsyncAzure -> AsyncMemory(mid) ->
+    SyncWrapped(Local) -> AsyncMemory(sink)
+
+Fallback (no Azurite):
+    AsyncMemory(seed) -> SyncWrapped(Local) -> AsyncMemory(sink)
+
+No ``ext.transfer``.  Transfer is a manual ``async for chunk in store.read()``
+loop fed into ``store.write()``.
+
+``SyncBackendAdapter.write()`` materializes by design (sync backends cannot
+accept ``AsyncIterator[bytes]``) -- write-side chunk assertions are not made.
+Memory measurement (tracemalloc) deferred to a follow-up item.
+
+Requires: ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
+Run with: ``pytest -m integration tests/e2e/test_async_streaming_integrity.py -s``
+"""
+
+from __future__ import annotations
+
+import hashlib
+import random
+import tempfile
+import uuid
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+import pytest
+
+from remote_store.aio._async_memory import AsyncMemoryBackend
+from remote_store.aio._async_store import AsyncStore
+from remote_store.backends._local import LocalBackend
+from tests.e2e.conftest import AZURITE_CONN_STR, _azurite_available
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+# ---------------------------------------------------------------------------
+# Tunables
+# ---------------------------------------------------------------------------
+
+FILE_SIZE_MIN = 7 * 1_048_576  # 7 MiB
+FILE_SIZE_MAX = 14 * 1_048_576  # 14 MiB
+
+PATH = "async-streaming-integrity-test.bin"
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_payload(size: int) -> tuple[bytes, str]:
+    """Generate a deterministic pseudo-random payload of *size* bytes with SHA-256."""
+    rng = random.Random(42)  # noqa: S311 -- deterministic, not security-sensitive
+    data = rng.randbytes(size)
+    return data, hashlib.sha256(data).hexdigest()
+
+
+async def _async_hop(
+    src: AsyncStore,
+    dst: AsyncStore,
+    path: str,
+) -> tuple[list[int], str]:
+    """Transfer *path* from *src* to *dst* via a manual async-for loop.
+
+    Tracks chunk sizes and SHA-256 on the **read side** only.
+
+    Returns:
+        ``(chunk_sizes, sha256_hex)`` measured while reading from *src*.
+    """
+    chunks: list[int] = []
+    hasher = hashlib.sha256()
+
+    async def _track() -> AsyncIterator[bytes]:
+        async for chunk in src.read(path):
+            chunks.append(len(chunk))
+            hasher.update(chunk)
+            yield chunk
+
+    await dst.write(path, _track(), overwrite=True)
+    return chunks, hasher.hexdigest()
+
+
+async def _verify_hash(store: AsyncStore, path: str, expected: str) -> None:
+    """Re-read *path* from *store* and hard-fail on SHA-256 mismatch."""
+    h = hashlib.sha256()
+    async for chunk in store.read(path):
+        h.update(chunk)
+    actual = h.hexdigest()
+    assert actual == expected, f"Checksum mismatch at {store!r}: expected {expected[:16]}..., got {actual[:16]}..."
+
+
+# ---------------------------------------------------------------------------
+# Report
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class HopResult:
+    """Chunk-level measurements collected for one transfer hop."""
+
+    label: str
+    file_size: int
+    chunk_count: int
+    max_chunk: int
+    src_lazy: bool
+
+
+def _emit_report(results: list[HopResult]) -> list[str]:
+    """Print hop summary and return failure messages for contract violations."""
+    print(  # noqa: T201
+        "\n--- Async streaming integrity report ---\n"
+        f"  {'Hop':44s}  {'Chunks':>6s}  {'MaxChunk':>10s}  {'Src':8s}  Status"
+    )
+    failures: list[str] = []
+    for r in results:
+        src_tag = "lazy" if r.src_lazy else "non-lazy"
+        if r.src_lazy:
+            chunked_ok = r.chunk_count > 1 and r.max_chunk < r.file_size
+            status = "OK" if chunked_ok else "FAIL(chunks)"
+        else:
+            chunked_ok = True
+            status = "OK(exempt)"
+        print(  # noqa: T201
+            f"  {r.label:44s}  {r.chunk_count:6d}  {r.max_chunk / 1_048_576:7.2f} MiB  {src_tag:8s}  {status}"
+        )
+        if r.src_lazy and not chunked_ok:
+            failures.append(
+                f"{r.label}: not chunked "
+                f"(count={r.chunk_count}, max={r.max_chunk / 1_048_576:.2f} MiB, "
+                f"file={r.file_size / 1_048_576:.2f} MiB)"
+            )
+    return failures
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def seeded_payload() -> tuple[bytes, str, int]:
+    """Random-sized (7--14 MiB) payload with its SHA-256 hex digest."""
+    rng = random.Random()  # noqa: S311 -- system entropy for size; payload is deterministic
+    size = rng.randint(FILE_SIZE_MIN, FILE_SIZE_MAX)
+    data, digest = _make_payload(size)
+    print(f"\n  Async streaming: file_size={size / 1_048_576:.1f} MiB")  # noqa: T201
+    return data, digest, size
+
+
+# ---------------------------------------------------------------------------
+# Test
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.spec("ID-138")
+class TestAsyncStreamingIntegrity:
+    """Async chain: SHA-256 integrity + lazy-read chunking contract."""
+
+    async def test_chain_checksum_and_chunking(
+        self,
+        seeded_payload: tuple[bytes, str, int],
+    ) -> None:
+        """Transfer a file through the async chain, verifying SHA-256 and chunking.
+
+        Full chain (Azurite reachable):
+            AsyncMemory(seed) -> AsyncAzure -> AsyncMemory(mid) ->
+            SyncWrapped(Local) -> AsyncMemory(sink)
+
+        Fallback (no Azurite):
+            AsyncMemory(seed) -> SyncWrapped(Local) -> AsyncMemory(sink)
+
+        Hops where the source has ``LAZY_READ`` must stream in multiple chunks
+        (count > 1, max_chunk < file_size).  ``AsyncMemoryBackend`` sources are
+        exempt -- they yield the full file as a single chunk by design.
+
+        Hash mismatches fail immediately (data integrity is non-negotiable).
+        ``SyncBackendAdapter.write()`` materializes by design -- no write-side
+        chunk assertions are made.
+        """
+        payload, expected_sha, file_size = seeded_payload
+
+        seed_store = AsyncStore(backend=AsyncMemoryBackend())
+        sink_store = AsyncStore(backend=AsyncMemoryBackend())
+        azure_store: AsyncStore | None = None
+        mid_store: AsyncStore | None = None
+        azure_service = None
+        azure_container: str | None = None
+        local_store: AsyncStore | None = None
+        tmp: tempfile.TemporaryDirectory[str] | None = None
+
+        try:
+            if _azurite_available():
+                from azure.storage.blob import BlobServiceClient
+
+                from remote_store.aio._async_azure import AsyncAzureBackend
+
+                tag = uuid.uuid4().hex[:8]
+                azure_container = f"e2e-async-stream-{tag}"
+                azure_service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
+                azure_service.create_container(azure_container)
+                azure_store = AsyncStore(
+                    backend=AsyncAzureBackend(
+                        container=azure_container,
+                        connection_string=AZURITE_CONN_STR,
+                    )
+                )
+                mid_store = AsyncStore(backend=AsyncMemoryBackend())
+
+            tmp = tempfile.TemporaryDirectory()
+            local_store = AsyncStore(backend=LocalBackend(root=tmp.name))
+
+            # Build ordered chain: seed, [azure, mid,] local, sink
+            chain: list[tuple[str, AsyncStore]] = [("async-memory(seed)", seed_store)]
+            if azure_store is not None and mid_store is not None:
+                chain.append(("async-azure", azure_store))
+                chain.append(("async-memory(mid)", mid_store))
+            chain.append(("sync-wrapped(local)", local_store))
+            chain.append(("async-memory(sink)", sink_store))
+
+            # Stores that actually stream in multiple chunks on read.
+            # AsyncMemoryBackend declares LAZY_READ but yields the full file
+            # as one chunk -- it is excluded.  AsyncAzureBackend and
+            # SyncBackendAdapter(LocalBackend) both produce 64 KiB+ chunks.
+            lazy_read_ids: set[int] = set()
+            if azure_store is not None:
+                lazy_read_ids.add(id(azure_store))
+            lazy_read_ids.add(id(local_store))
+
+            if not lazy_read_ids:
+                pytest.skip("No lazy-read source in chain")
+
+            order = " -> ".join(name for name, _ in chain)
+            print(f"  Chain: {order}")  # noqa: T201
+
+            # Seed the file into the first store and verify its integrity.
+            await seed_store.write(PATH, payload, overwrite=True)
+            await _verify_hash(seed_store, PATH, expected_sha)
+
+            results: list[HopResult] = []
+
+            for i in range(len(chain) - 1):
+                src_name, src_store = chain[i]
+                dst_name, dst_store = chain[i + 1]
+
+                chunk_sizes, hop_sha = await _async_hop(src_store, dst_store, PATH)
+
+                # Hard-fail on data corruption at any hop.
+                assert hop_sha == expected_sha, (
+                    f"Hash mismatch on hop {src_name} -> {dst_name}: "
+                    f"expected {expected_sha[:16]}..., got {hop_sha[:16]}..."
+                )
+                await _verify_hash(dst_store, PATH, expected_sha)
+
+                results.append(
+                    HopResult(
+                        label=f"{src_name} -> {dst_name}",
+                        file_size=file_size,
+                        chunk_count=len(chunk_sizes),
+                        max_chunk=max(chunk_sizes) if chunk_sizes else 0,
+                        src_lazy=id(src_store) in lazy_read_ids,
+                    )
+                )
+
+                # Remove from source once the destination has the data.
+                if src_store is not dst_store:
+                    await src_store.delete(PATH)
+
+            # Final integrity check on the last destination.
+            await _verify_hash(sink_store, PATH, expected_sha)
+
+            failures = _emit_report(results)
+            assert not failures, "Async streaming contract violations:\n" + "\n".join(failures)
+
+        finally:
+            await seed_store.aclose()
+            await sink_store.aclose()
+            if azure_store is not None:
+                await azure_store.aclose()
+            if mid_store is not None:
+                await mid_store.aclose()
+            if local_store is not None:
+                await local_store.aclose()
+            if azure_service is not None and azure_container is not None:
+                azure_service.delete_container(azure_container)
+                azure_service.close()
+            if tmp is not None:
+                tmp.cleanup()

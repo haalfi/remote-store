@@ -151,16 +151,6 @@ Existing items may be more verbose — trim on next touch.
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
-- [ ] **ID-138 — Async streaming integrity e2e test**
-  The e2e streaming test only covers sync backends. Add an async variant
-  using `AsyncAzureBackend` to verify the block-size defaults work for
-  async uploads too. Requires an async `transfer()` equivalent or direct
-  `store.write()` loop.
-  ID-143 covered the bridged-async case via `AsyncBackendSyncAdapter`
-  (sync `transfer()` driving `AsyncAzureBackend` through the bridge — landed).
-  The native `AsyncStore.transfer()` variant remains the residual scope
-  of this item.
-
 ### API Surface Enhancements
 
 
