@@ -49,8 +49,9 @@ construction (see SFTP-004).
 ### SFTP-003: Capability Declaration
 
 **Invariant:** `SFTPBackend` declares capabilities:
-`READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`. Does not declare `GLOB` (no native pattern matching; use `list_files(pattern=…)` or `ext.glob` for client-side fallback).
+`READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `WRITE_RESULT_NATIVE`. Does not declare `GLOB` (no native pattern matching; use `list_files(pattern=…)` or `ext.glob` for client-side fallback).
 **Rationale:**
+- `WRITE_RESULT_NATIVE`: `write()` and `write_atomic()` perform a `sftp.stat()` round-trip after upload/rename to populate `last_modified`.
 - `ATOMIC_WRITE`: Simulated via temp file + rename (see SFTP-014). Orphan temp
   files are possible on connection failure — documented caveat.
 - `MOVE`: Implemented via `posix_rename` with fallback (see SFTP-018).

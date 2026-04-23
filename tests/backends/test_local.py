@@ -48,15 +48,18 @@ class TestLocalBackendIdentity:
 
 
 class TestLocalBackendCapabilities:
-    """Local backend capabilities — all except USER_METADATA and WRITE_RESULT_NATIVE."""
+    """Local backend capabilities — all except USER_METADATA."""
 
     @pytest.mark.spec("WR-004", "WR-010")
-    def test_excludes_write_result_native_and_user_metadata(self, local_backend: LocalBackend) -> None:
-        assert not local_backend.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
+    def test_excludes_user_metadata(self, local_backend: LocalBackend) -> None:
         assert not local_backend.capabilities.supports(Capability.USER_METADATA)
 
+    @pytest.mark.spec("WR-004")
+    def test_declares_write_result_native(self, local_backend: LocalBackend) -> None:
+        assert local_backend.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
+
     def test_supports_all_other_capabilities(self, local_backend: LocalBackend) -> None:
-        excluded = {Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA}
+        excluded = {Capability.USER_METADATA}
         for cap in Capability:
             if cap not in excluded:
                 assert local_backend.capabilities.supports(cap), f"Missing: {cap.name}"

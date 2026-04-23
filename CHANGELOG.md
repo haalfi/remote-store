@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-152: WriteResult/FileInfo field consistency conformance test (`test_write_result_rich_fields_match_file_info`, gated on `WRITE + METADATA`); fix S3PyArrow, Local, SFTP, SQLAlchemy to populate `last_modified` (and `etag`/`digest` for S3PyArrow) from a post-write query; declare `WRITE_RESULT_NATIVE` for S3PyArrow, Local, SFTP
 - BK-007 (extended): Replace prose `--` with em dash `—` throughout docs, specs, research, SDD files, and `.tmpl` templates; add typography Rule 8 to `sdd/DOCUMENTATION.md`
 - BUG-181: HNS `write_atomic` WriteResult rich-field and metadata parity verified with mock tests
 - ID-013b: async write layer returns `WriteResult`; `metadata=` supported on `AsyncStore` and all async backends; `aio.ext.write.write_with_hash` added

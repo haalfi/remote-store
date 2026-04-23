@@ -82,7 +82,7 @@ class TestSFTPConstruction:
     def test_declares_all_capabilities(self, sftp_backend: Backend) -> None:
         caps = sftp_backend.capabilities
         assert isinstance(caps, CapabilitySet)
-        excluded = {Capability.GLOB, Capability.ATOMIC_MOVE, Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA}
+        excluded = {Capability.GLOB, Capability.ATOMIC_MOVE, Capability.USER_METADATA}
         for cap in Capability:
             if cap in excluded:
                 assert not caps.supports(cap), f"SFTP must not declare {cap.value}"

@@ -5,6 +5,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-152 — Single conformance test for WriteResult/FileInfo consistency + fix violating backends**
+  Added `test_write_result_rich_fields_match_file_info` (gated on `WRITE + METADATA`,
+  not `WRITE_RESULT_NATIVE`) to `TestWriteResultConformance`; removed the two
+  narrower superseded tests (`test_native_file_info_matches_write_result`,
+  `test_digest_matches_file_info`) and their xfail tables. Fixed four backends:
+  S3PyArrow (post-upload `head_object` for `etag`/`digest`/`last_modified`),
+  Local (reuse post-write `stat()` for `last_modified`), SFTP (post-upload
+  `sftp.stat()` for `last_modified`), SQLAlchemy (decouple `last_modified` gate
+  from `user_metadata` column). All four now declare `WRITE_RESULT_NATIVE` (except
+  SQLAlchemy legacy schema, which remains `basic` pending etag/digest support).
+  Guard direction flipped to `if info.modified_at is not None` to catch backends
+  that return richer data from `get_file_info()` than from `write()`.
+
 - [x] **BUG-181 — Verify HNS `write_atomic` WriteResult rich-field parity**
   Added four mock-based tests to `TestAsyncAzureHNSPaths`: rich fields (`etag`,
   `last_modified`, `size`, `source`) populated from `get_file_properties()` response;
