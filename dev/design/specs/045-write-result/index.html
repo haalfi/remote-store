@@ -9158,16 +9158,15 @@ The returned path is directly usable as input to other Store methods.</p>
 <p><strong>Invariant:</strong> <code>WriteResult.size</code> equals the byte length of the written content
 on every backend.</p>
 <ul>
-<li>For <code>bytes</code> / <code>str</code> input: <code>size</code> is computed from the payload directly
-  (zero added I/O cost).</li>
-<li>For non-seekable <code>BinaryIO</code> input on backends without <code>WRITE_RESULT_NATIVE</code>:
-  <code>size</code> is obtained by counting bytes as they stream or via a post-write
-  <code>stat()</code> — one local <code>stat</code> on <code>LocalBackend</code>; the paramiko SFTP
-  bytes-transferred counter on <code>SFTPBackend</code>; zero extra round trips in
-  either case.</li>
-<li>For backends with <code>WRITE_RESULT_NATIVE</code> (Azure, S3, Memory, SQLBlob):
-  <code>size</code> is available from the write response or trivially from the in-process
-  data, never requiring an extra round trip.</li>
+<li>For <code>bytes</code> / <code>str</code> input: <code>size</code> is computed from the payload directly.</li>
+<li>For non-seekable <code>BinaryIO</code> input on <code>LocalBackend</code>: the streaming branch
+  derives <code>size</code> from <code>stat().st_size</code> — the same single <code>stat()</code> call that
+  populates <code>last_modified</code>, so size and mtime share one I/O round trip.</li>
+<li>For non-seekable <code>BinaryIO</code> input on <code>SFTPBackend</code>: bytes are counted during
+  upload; a subsequent <code>sftp.stat()</code> populates <code>last_modified</code> only.</li>
+<li>For other <code>WRITE_RESULT_NATIVE</code> backends (Azure, S3, S3-PyArrow, Memory,
+  SQLBlob): <code>size</code> is available from the write response or from in-process
+  data — no extra I/O round trip for size.</li>
 </ul>
 <h2 id="wr-004-source-field-from-write_result_native">WR-004: source Field from WRITE_RESULT_NATIVE<a class="headerlink" href="#wr-004-source-field-from-write_result_native" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> If the backend declares <code>Capability.WRITE_RESULT_NATIVE</code>, every
@@ -9323,19 +9322,19 @@ the capability is declared. The flag advertises which fields in the returned
 </tr>
 <tr>
 <td><code>SQLBlobBackend</code></td>
-<td>yes — when <code>user_metadata</code> column is present; no otherwise (dynamic)</td>
+<td>yes — when <code>modified_at</code> or <code>user_metadata</code> column is present; no otherwise (dynamic)</td>
 </tr>
 <tr>
 <td><code>S3PyArrowBackend</code></td>
-<td>no</td>
+<td>yes</td>
 </tr>
 <tr>
 <td><code>SFTPBackend</code></td>
-<td>no</td>
+<td>yes</td>
 </tr>
 <tr>
 <td><code>LocalBackend</code></td>
-<td>no</td>
+<td>yes</td>
 </tr>
 <tr>
 <td><code>AsyncBackendSyncAdapter</code></td>

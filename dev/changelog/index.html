@@ -11421,6 +11421,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-152 (follow-up): Fix SQLAlchemy last_modified decoupling (WRITE_RESULT_NATIVE when modified_at present without user_metadata); fix Local double-stat; update WR-003/WR-009/S3PA-003 specs; split _LAST_MODIFIED_XFAIL from _RICH_FIELDS_XFAIL in conformance tests</li>
 <li>BK-152: WriteResult/FileInfo field consistency conformance test (<code>test_write_result_rich_fields_match_file_info</code>, gated on <code>WRITE + METADATA</code>); fix S3PyArrow, Local, SFTP, SQLAlchemy to populate <code>last_modified</code> (and <code>etag</code>/<code>digest</code> for S3PyArrow) from a post-write query; declare <code>WRITE_RESULT_NATIVE</code> for S3PyArrow, Local, SFTP</li>
 <li>BK-007 (extended): Replace prose <code>--</code> with em dash <code>—</code> throughout docs, specs, research, SDD files, and <code>.tmpl</code> templates; add typography Rule 8 to <code>sdd/DOCUMENTATION.md</code></li>
 <li>BUG-181: HNS <code>write_atomic</code> WriteResult rich-field and metadata parity verified with mock tests</li>
