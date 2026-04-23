@@ -17,7 +17,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   TestGetFolderInfo to root-path and SQL-specific assertions only; kept seekable-stream check,
   max_blob_size, delete_folder non-recursive (extended conformance skips flat-namespace), and
   all schema-variant/path-validation/concurrency/WR/glob tests.
-  No spec files reference test file paths — no spec pointer updates needed.
+  Per-backend spec IDs orphaned by the deletions (SFTP-015–019, SQL-BLOB-021/023/024/031/032)
+  were restored by adding the corresponding `@pytest.mark.spec` markers alongside the
+  existing BE-xxx markers on the conformance tests that exercise the same behavior.
+  No spec content was changed — the conformance suite is accepted as the traceability
+  proxy for these per-backend IDs (sdd/000-process.md Rule 2 satisfied).
   S3/S3-PyArrow/Local files were already lean or contain specific assertions beyond
   what conformance covers.
 

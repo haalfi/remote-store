@@ -115,6 +115,7 @@ class TestBackendRead:
             assert stream.read() == b"\x00\x01\x02"
 
     @pytest.mark.spec("BE-007")
+    @pytest.mark.spec("SQL-BLOB-021")
     def test_read_bytes(self, backend: Backend) -> None:
         _require(backend, Capability.WRITE)
         backend.write("file.txt", b"content")
@@ -171,12 +172,14 @@ class TestBackendWriteAtomic:
     """BE-010 through BE-011: atomic write operations."""
 
     @pytest.mark.spec("BE-010")
+    @pytest.mark.spec("SQL-BLOB-023")
     def test_write_atomic_creates_file(self, backend: Backend) -> None:
         _require(backend, Capability.ATOMIC_WRITE)
         backend.write_atomic("atomic.txt", b"atomic content")
         assert backend.read_bytes("atomic.txt") == b"atomic content"
 
     @pytest.mark.spec("BE-010")
+    @pytest.mark.spec("SFTP-015")
     def test_write_atomic_overwrite(self, backend: Backend) -> None:
         _require(backend, Capability.ATOMIC_WRITE)
         backend.write_atomic("atomic2.txt", b"first")
@@ -390,6 +393,7 @@ class TestBackendDelete:
     """BE-012 through BE-013: delete operations."""
 
     @pytest.mark.spec("BE-012")
+    @pytest.mark.spec("SQL-BLOB-024")
     def test_delete_removes_file(self, backend: Backend) -> None:
         _require(backend, Capability.DELETE, Capability.WRITE)
         backend.write("del.txt", b"bye")
@@ -407,6 +411,7 @@ class TestBackendDelete:
         assert backend.exists("dir") is False
 
     @pytest.mark.spec("BE-013")
+    @pytest.mark.spec("SFTP-016")
     def test_delete_folder_recursive(self, backend: Backend) -> None:
         _require(backend, Capability.DELETE, Capability.WRITE)
         _seed(backend, {"dir2/a.txt": b"a", "dir2/sub/b.txt": b"b"})
@@ -585,6 +590,8 @@ class TestBackendMoveCopy:
     """BE-018, BE-019: move and copy operations."""
 
     @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("SFTP-018")
+    @pytest.mark.spec("SQL-BLOB-031")
     def test_move(self, backend: Backend) -> None:
         _require(backend, Capability.MOVE, Capability.WRITE)
         backend.write("mv_src.txt", b"data")
@@ -593,6 +600,8 @@ class TestBackendMoveCopy:
         assert backend.read_bytes("mv_dst.txt") == b"data"
 
     @pytest.mark.spec("BE-019")
+    @pytest.mark.spec("SFTP-019")
+    @pytest.mark.spec("SQL-BLOB-032")
     def test_copy(self, backend: Backend) -> None:
         _require(backend, Capability.COPY, Capability.WRITE)
         backend.write("cp_src.txt", b"data")
