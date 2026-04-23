@@ -16,6 +16,7 @@ on top of the core Store API.
 | [`ext.streams`](api/extensions/streams.md) | *(none)* | Composable BinaryIO wrappers for progress and checksums | — | — |
 | [`ext.transfer`](api/extensions/transfer.md) | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](examples/transfer-operations.md) |
 | [`ext.write`](api/extensions/write.md) | *(none)* | Write helpers with guaranteed client-side content hashing | [Guide](write-integrity.md) | — |
+| [`aio.ext.write`](api/extensions/write.md) | *(none)* | Async write helpers with guaranteed client-side content hashing | [Guide](write-integrity.md) | — |
 | [`ext.arrow`](api/extensions/arrow.md) | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](examples/pyarrow-adapter.md) |
 | [`ext.parquet`](api/extensions/parquet.md) | `arrow` | Managed Parquet datasets with manifests and completion markers | [Guide](parquet-datasets.md) | [Example](examples/parquet-dataset.md) |
 | [`ext.otel`](api/extensions/otel.md) | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](examples/otel-tracing.md) |
@@ -36,6 +37,7 @@ from remote_store import cache                   # ext.cache
 from remote_store import checksum, verify       # ext.integrity
 from remote_store import partition_path, parse_partition  # ext.partition
 from remote_store import ProgressReader, ChecksumReader   # ext.streams
+from remote_store import write_with_hash, open_atomic_with_hash, HashingAtomicWriter  # ext.write
 ```
 
 Or import from the extension module directly:
@@ -49,6 +51,7 @@ from remote_store.ext.observe import observe
 from remote_store.ext.partition import partition_path, parse_partition
 from remote_store.ext.streams import ProgressReader, ChecksumReader
 from remote_store.ext.transfer import upload
+from remote_store.ext.write import write_with_hash, open_atomic_with_hash, HashingAtomicWriter
 ```
 
 Seekable reads are built into the core API via `Store.read_seekable()` —
