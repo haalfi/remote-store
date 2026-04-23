@@ -5,6 +5,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-153 — Consolidate moto / Azurite fixtures at `tests/conftest.py`**
+  Promoted `_free_port`, `moto_server`, `_AZURITE_CONN_STR`, and `azurite_server`
+  (plus the `_s3_available`, `_azure_available`, `_azurite_reachable` helpers they
+  need) to `tests/conftest.py`. Removed the duplicate `_moto_endpoint`
+  module-scoped fixture from `test_pbt_write_result.py`; that file now uses the
+  shared session-scope `moto_server`. Eliminated all cross-boundary
+  `from tests.backends.conftest import …` calls.
+
 - [x] **BK-156 — Refactor per-backend test files to remove conformance duplication**
   Deleted ~110 duplicate tests across `test_sftp.py`, `test_azure.py`, and `test_sqlblob.py`.
   SFTP: removed TestSFTPReadWrite, TestSFTPListing, TestSFTPDelete, TestSFTPMoveCopy,

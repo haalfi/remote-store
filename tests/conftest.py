@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import socket
+from typing import TYPE_CHECKING
 
 import pytest
 from hypothesis import HealthCheck, settings
@@ -10,6 +12,87 @@ from hypothesis import HealthCheck, settings
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+# ---------------------------------------------------------------------------
+# Shared availability / reachability helpers (needed by both tests/ and
+# tests/backends/ — live here so neither subtree imports from the other)
+# ---------------------------------------------------------------------------
+
+
+def _free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("", 0))
+        return s.getsockname()[1]
+
+
+def _s3_available() -> bool:
+    try:
+        import moto  # noqa: F401
+        import s3fs  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+def _azure_available() -> bool:
+    try:
+        import azure.storage.blob  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+def _azurite_reachable() -> bool:
+    try:
+        s = socket.create_connection(("127.0.0.1", 10000), timeout=1)
+        s.close()
+        return True
+    except OSError:
+        return False
+
+
+_AZURITE_CONN_STR = (
+    "DefaultEndpointsProtocol=http;"
+    "AccountName=devstoreaccount1;"
+    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
+    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+    "QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;"
+    "TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
+)
+
+
+@pytest.fixture(scope="session")
+def moto_server() -> Iterator[str | None]:
+    """Start a moto HTTP server for the test session.
+
+    Uses server mode instead of mock_aws() to avoid Python 3.13
+    PEP 667 f_locals incompatibility with s3fs/aiobotocore.
+    """
+    if not _s3_available():
+        yield None
+        return
+    from moto.moto_server.threaded_moto_server import ThreadedMotoServer
+
+    port = _free_port()
+    server = ThreadedMotoServer(port=port, verbose=False)
+    server.start()
+    yield f"http://127.0.0.1:{port}"
+    server.stop()
+
+
+@pytest.fixture(scope="session")
+def azurite_server() -> Iterator[str | None]:
+    """Provide Azurite connection string if available."""
+    if not _azure_available() or not _azurite_reachable():
+        yield None
+        return
+    yield _AZURITE_CONN_STR
+
 
 # -- Hypothesis profiles (dev=50, ci=100, nightly=1000) --
 # Activate via HYPOTHESIS_PROFILE env var (e.g. HYPOTHESIS_PROFILE=ci).

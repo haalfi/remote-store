@@ -91,7 +91,7 @@ def _azurite_reachable() -> bool:
 
 
 # Re-use the connection string from conftest
-from tests.backends.conftest import _AZURITE_CONN_STR  # noqa: E402
+from tests.conftest import _AZURITE_CONN_STR  # noqa: E402
 
 
 def _needs_azurite(func_or_class):  # type: ignore[no-untyped-def]

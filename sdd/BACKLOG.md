@@ -136,14 +136,6 @@ Existing items may be more verbose — trim on next touch.
 
 ### Testing & Verification
 
-- [ ] **ID-153 — Consolidate moto / Azurite fixtures at `tests/conftest.py`**
-  `tests/test_pbt_write_result.py::_moto_endpoint` spins up a second
-  `ThreadedMotoServer` alongside the session-scope `moto_server` in
-  `tests/backends/conftest.py` because conftest scope does not cross the
-  `tests/` vs `tests/backends/` boundary. Promote `moto_server`, `_free_port`,
-  and `_AZURITE_CONN_STR` to `tests/conftest.py` so both test trees share one
-  server. Non-blocking — flagged in PR #478 review.
-
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
   ID-147 on 2026-04-19. Per `sdd/formal/README.md` § Authoring rules (3),
