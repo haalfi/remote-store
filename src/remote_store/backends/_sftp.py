@@ -365,9 +365,7 @@ class SFTPBackend(Backend):
                         size += len(chunk)
             post_stat = self._sftp.stat(sftp_path)
         mtime = post_stat.st_mtime
-        last_modified = (
-            datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else datetime.now(tz=timezone.utc)
-        )
+        last_modified = datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else None
         return WriteResult(path=RemotePath(path), size=size, source="native", last_modified=last_modified)
 
     def write_atomic(
@@ -421,9 +419,7 @@ class SFTPBackend(Backend):
                 raise
             post_stat = self._sftp.stat(sftp_path)
         mtime = post_stat.st_mtime
-        last_modified = (
-            datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else datetime.now(tz=timezone.utc)
-        )
+        last_modified = datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else None
         return WriteResult(path=RemotePath(path), size=size, source="native", last_modified=last_modified)
 
     @contextmanager

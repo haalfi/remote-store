@@ -438,7 +438,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         has_meta_col = "user_metadata" in self._optional_columns
         has_mtime_col = "modified_at" in self._optional_columns
-        last_modified = datetime.fromtimestamp(now, tz=timezone.utc) if has_mtime_col else None
+        last_modified = datetime.fromtimestamp(now, tz=timezone.utc) if has_mtime_col and has_meta_col else None
         return WriteResult(
             path=RemotePath(path),
             size=len(raw),
