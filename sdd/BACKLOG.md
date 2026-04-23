@@ -136,6 +136,14 @@ Existing items may be more verbose — trim on next touch.
 
 ### Testing & Verification
 
+- [ ] **ID-154 — Async streaming integrity: `AsyncStore.transfer()` native variant**
+  ID-138 shipped the manual `async for` hop loop. The original item noted a
+  residual scope: an equivalent test that exercises `AsyncStore.transfer()` (the
+  native async transfer helper) as the transfer mechanism, proving the same
+  SHA-256 integrity and chunking contract holds through the higher-level API.
+  - Depends on: ID-138 (done).
+  - Related: ID-138 (BACKLOG-DONE.md).
+
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
   ID-147 on 2026-04-19. Per `sdd/formal/README.md` § Authoring rules (3),
@@ -150,16 +158,6 @@ Existing items may be more verbose — trim on next touch.
   the successor ticket is linked here; if promoted, `verify-tla` joins the
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
-
-- [ ] **ID-138 — Async streaming integrity e2e test**
-  The e2e streaming test only covers sync backends. Add an async variant
-  using `AsyncAzureBackend` to verify the block-size defaults work for
-  async uploads too. Requires an async `transfer()` equivalent or direct
-  `store.write()` loop.
-  ID-143 covered the bridged-async case via `AsyncBackendSyncAdapter`
-  (sync `transfer()` driving `AsyncAzureBackend` through the bridge — landed).
-  The native `AsyncStore.transfer()` variant remains the residual scope
-  of this item.
 
 ### API Surface Enhancements
 
