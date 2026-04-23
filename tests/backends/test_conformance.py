@@ -230,6 +230,10 @@ _WRITE_OPS = [
     pytest.param("write_atomic", Capability.ATOMIC_WRITE, id="write_atomic"),
 ]
 
+# name → (reason, strict).  Add an entry when a WRITE_RESULT_NATIVE backend
+# temporarily returns last_modified=None from write() (e.g. new declaration lag).
+_LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
+
 # name → (reason, strict).  Add an entry when a backend's write path temporarily
 # disagrees with get_file_info() on etag, digest, or last_modified.
 _RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
@@ -309,13 +313,13 @@ class TestWriteResultConformance:
         passes the divergence check but violates the quality obligation
         the capability advertises (spec 045 WR-009, WR-001a).
 
-        Per-backend xfail reasons are in ``_RICH_FIELDS_XFAIL`` (empty
+        Per-backend xfail reasons are in ``_LAST_MODIFIED_XFAIL`` (empty
         by default).  Add an entry only for a temporary lag on a newly
         declaring backend.
         """
         _require(backend, cap, Capability.WRITE_RESULT_NATIVE)
-        if backend.name in _RICH_FIELDS_XFAIL:
-            reason, strict = _RICH_FIELDS_XFAIL[backend.name]
+        if backend.name in _LAST_MODIFIED_XFAIL:
+            reason, strict = _LAST_MODIFIED_XFAIL[backend.name]
             request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
         result = getattr(backend, op)(f"wr/{op}-lm.txt", b"data")
         assert result.last_modified is not None

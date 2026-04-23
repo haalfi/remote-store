@@ -126,7 +126,7 @@ Existing items may be more verbose — trim on next touch.
   - Spec 040 SQL-BLOB-003 (capabilities list) and SQL-BLOB-020 (`read()`).
   - Spec 006 streaming-io — capability semantics already fit.
   - `FEATURES.md` capability matrix.
-  - `tests/test_backend_sqlblob.py:131` asserts LAZY_READ is NOT declared —
+  - `tests/backends/test_sqlblob.py:131` asserts LAZY_READ is NOT declared —
     must split into dialect-conditional assertions.
   - Behavioral test: large blob (e.g. 50 MiB) read in 4 KiB chunks with
     bounded RSS.

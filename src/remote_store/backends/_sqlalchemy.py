@@ -286,16 +286,17 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 "user_metadata",
             }
 
-        # Both USER_METADATA and WRITE_RESULT_NATIVE are declared only when the
-        # backing table has the user_metadata column.  Advertising USER_METADATA
-        # without the column causes silent WR-013 violations (Store gate passes,
-        # data never stored).  WRITE_RESULT_NATIVE is stripped alongside it so
-        # the spec 045 WR-004/WR-010 tables ("dynamic") agree with the code.
+        # USER_METADATA requires the user_metadata column (WR-013 strict gate).
+        # WRITE_RESULT_NATIVE requires modified_at OR user_metadata — either column
+        # lets write() return a non-None last_modified, satisfying WR-004.
         if "user_metadata" in self._optional_columns:
             self._capabilities: CapabilitySet = _ALL_CAPABILITIES
+        elif "modified_at" in self._optional_columns:
+            self._capabilities = CapabilitySet({c for c in _ALL_CAPABILITIES if c not in {Capability.USER_METADATA}})
         else:
-            _legacy_excluded = {Capability.USER_METADATA, Capability.WRITE_RESULT_NATIVE}
-            self._capabilities = CapabilitySet({c for c in _ALL_CAPABILITIES if c not in _legacy_excluded})
+            self._capabilities = CapabilitySet(
+                {c for c in _ALL_CAPABILITIES if c not in {Capability.USER_METADATA, Capability.WRITE_RESULT_NATIVE}}
+            )
 
     # region: properties
 
@@ -438,11 +439,11 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         has_meta_col = "user_metadata" in self._optional_columns
         has_mtime_col = "modified_at" in self._optional_columns
-        last_modified = datetime.fromtimestamp(now, tz=timezone.utc) if has_mtime_col and has_meta_col else None
+        last_modified = datetime.fromtimestamp(now, tz=timezone.utc) if has_mtime_col else None
         return WriteResult(
             path=RemotePath(path),
             size=len(raw),
-            source="native" if has_meta_col else "basic",
+            source="native" if (has_meta_col or has_mtime_col) else "basic",
             last_modified=last_modified,
             metadata=metadata if has_meta_col else None,
         )

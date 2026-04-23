@@ -93,16 +93,15 @@ The returned path is directly usable as input to other Store methods.
 **Invariant:** `WriteResult.size` equals the byte length of the written content
 on every backend.
 
-- For `bytes` / `str` input: `size` is computed from the payload directly
-  (zero added I/O cost).
-- For non-seekable `BinaryIO` input on backends without `WRITE_RESULT_NATIVE`:
-  `size` is obtained by counting bytes as they stream or via a post-write
-  `stat()` — one local `stat` on `LocalBackend`; the paramiko SFTP
-  bytes-transferred counter on `SFTPBackend`; zero extra round trips in
-  either case.
-- For backends with `WRITE_RESULT_NATIVE` (Azure, S3, Memory, SQLBlob):
-  `size` is available from the write response or trivially from the in-process
-  data, never requiring an extra round trip.
+- For `bytes` / `str` input: `size` is computed from the payload directly.
+- For non-seekable `BinaryIO` input on `LocalBackend`: the streaming branch
+  derives `size` from `stat().st_size` — the same single `stat()` call that
+  populates `last_modified`, so size and mtime share one I/O round trip.
+- For non-seekable `BinaryIO` input on `SFTPBackend`: bytes are counted during
+  upload; a subsequent `sftp.stat()` populates `last_modified` only.
+- For other `WRITE_RESULT_NATIVE` backends (Azure, S3, S3-PyArrow, Memory,
+  SQLBlob): `size` is available from the write response or from in-process
+  data — no extra I/O round trip for size.
 
 ## WR-004: source Field from WRITE_RESULT_NATIVE
 
@@ -231,10 +230,10 @@ the capability is declared. The flag advertises which fields in the returned
 | `AzureBackend`               | yes                             |
 | `S3Backend`                  | yes                             |
 | `MemoryBackend`              | yes                             |
-| `SQLBlobBackend`             | yes — when `user_metadata` column is present; no otherwise (dynamic) |
-| `S3PyArrowBackend`           | no                              |
-| `SFTPBackend`                | no                              |
-| `LocalBackend`               | no                              |
+| `SQLBlobBackend`             | yes — when `modified_at` or `user_metadata` column is present; no otherwise (dynamic) |
+| `S3PyArrowBackend`           | yes                             |
+| `SFTPBackend`                | yes                             |
+| `LocalBackend`               | yes                             |
 | `AsyncBackendSyncAdapter`    | no — masked unconditionally regardless of what the inner async backend declares (see WR-010) |
 
 ## WR-010: USER_METADATA Gates the metadata= Kwarg
