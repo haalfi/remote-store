@@ -8871,7 +8871,7 @@
 
 <h1 id="rfc-0009-multi-agent-orchestration-for-complex-tasks">RFC-0009: Multi-Agent Orchestration for Complex Tasks<a class="headerlink" href="#rfc-0009-multi-agent-orchestration-for-complex-tasks" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft — awaiting community feedback</p>
+<p>Superseded by <a href="../../adrs/0020-orchestrate-iterative-convergence/">ADR-0020</a> (via <a href="../../adrs/0019-multi-agent-orchestration/">ADR-0019</a>)</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Introduce a multi-agent orchestration pattern to handle complex, multi-concern tasks (backend implementation, extension development, testing, documentation) in parallel. An orchestrator breaks down the task and delegates to 4 subject matter experts (Store &amp; Backend, Extension, Testing, Documentation), each with mandatory SDD foundation but focused on their domain. Post-implementation ripple-checks and CHANGELOG updates are orchestrator tasks, not separate experts.</p>
 <h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>

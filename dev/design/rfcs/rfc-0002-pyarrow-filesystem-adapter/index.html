@@ -8971,7 +8971,7 @@
 
 <h1 id="rfc-0002-pyarrow-filesystemhandler-adapter">RFC-0002: PyArrow FileSystemHandler Adapter<a class="headerlink" href="#rfc-0002-pyarrow-filesystemhandler-adapter" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft</p>
+<p>Accepted</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Implement a <code>StoreFileSystemHandler</code> in <code>ext/arrow.py</code> that wraps any <code>Store</code>
 into a <code>pyarrow.fs.PyFileSystem</code> via <code>pyarrow.fs.FileSystemHandler</code>. This is
@@ -9039,7 +9039,7 @@ dependency, zero impact on core.</p>
 <h3 id="new-spec-sections">New spec sections<a class="headerlink" href="#new-spec-sections" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Extends <code>003-backend-adapter-contract.md</code> (FileSystemHandler surface)</li>
-<li>New spec <code>013-pyarrow-filesystem-adapter.md</code> (proposed)</li>
+<li>New spec <code>014-pyarrow-filesystem-adapter.md</code> (shipped)</li>
 </ul>
 <h2 id="data-lake-integration-considerations">Data Lake Integration Considerations<a class="headerlink" href="#data-lake-integration-considerations" title="Permanent link">&para;</a></h2>
 <h3 id="delta-lake-atomic-rename">Delta Lake atomic rename<a class="headerlink" href="#delta-lake-atomic-rename" title="Permanent link">&para;</a></h3>
@@ -9071,13 +9071,27 @@ the filesystem they write to.</p>
   integration tests with at least PyArrow read/write operations.</li>
 </ul>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
+<p><em>All questions resolved during implementation.</em></p>
 <ol>
-<li>Should <code>open_output_stream</code> buffer in memory or use a temp file for large
-   writes?</li>
-<li>Should the adapter expose <code>open_input_file</code> (random access) in addition to
-   <code>open_input_stream</code> (sequential)?</li>
-<li>Version constraints on <code>pyarrow</code> — minimum version that supports
-   <code>FileSystemHandler</code>?</li>
+<li>
+<p><strong>Should <code>open_output_stream</code> buffer in memory or use a temp file?</strong>
+   <em>Resolved:</em> <code>SpooledTemporaryFile(max_size=write_spill_threshold)</code> — in-memory
+   up to the threshold (default 64 MB), then transparently spills to a temp file.
+   Avoids unbounded heap growth for large writes without always touching disk.</p>
+</li>
+<li>
+<p><strong>Should the adapter expose <code>open_input_file</code> (random access)?</strong>
+   <em>Resolved:</em> Yes. Implemented with a three-tier design: (1) native PyArrow FS
+   fast path when the backend exposes one via <code>unwrap()</code>; (2) full-file
+   materialization to <code>pa.BufferReader</code> for files ≤ <code>materialization_threshold</code>
+   (default 64 MB); (3) <code>read_seekable()</code> wrapped in <code>pa.PythonFile</code> for large
+   files.</p>
+</li>
+<li>
+<p><strong>Minimum <code>pyarrow</code> version?</strong>
+   <em>Resolved:</em> <code>pyarrow&gt;=12.0.0</code> (pinned in the <code>[arrow]</code> extra in
+   <code>pyproject.toml</code>).</p>
+</li>
 </ol>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>

@@ -9059,7 +9059,7 @@
 
 <h1 id="rfc-0008-parquet-dataset-storage-extension">RFC-0008: Parquet Dataset Storage Extension<a class="headerlink" href="#rfc-0008-parquet-dataset-storage-extension" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft</p>
+<p>Accepted</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Add an <code>ext.parquet</code> module that provides <code>ParquetDatasetStore</code> — a high-level
 abstraction for writing and reading multi-file Parquet datasets with manifest
@@ -9250,7 +9250,7 @@ manifest and multi-part support.</p>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">ds</span><span class="o">.</span><span class="n">write_dataset</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="s2">&quot;orders&quot;</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="s2">&quot;dagster-abc123&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="new-spec-sections-proposed">New spec sections (proposed)<a class="headerlink" href="#new-spec-sections-proposed" title="Permanent link">&para;</a></h3>
-<p>Spec <code>041-ext-parquet.md</code> with IDs:</p>
+<p>Spec <code>042-ext-parquet.md</code> with IDs:</p>
 <ul>
 <li><code>PDS-001</code>: <code>ParquetDatasetStore</code> constructor and defaults</li>
 <li><code>PDS-002</code>: <code>write_dataset</code> — file layout, serialize-then-write-atomic, manifest, <code>_SUCCESS</code></li>
@@ -9337,28 +9337,31 @@ revisited in a future RFC.</p>
   conditions.</li>
 </ul>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
+<p><em>All questions resolved or explicitly deferred during implementation.</em></p>
 <ol>
 <li>
-<p><strong>Should <code>write_dataset</code> support incremental appends?</strong> v1 proposes
-   overwrite semantics (each write replaces the dataset). Append-mode would
-   require manifest merging and complicates the <code>_SUCCESS</code> contract.
-   Recommendation: defer to v2.</p>
+<p><strong>Should <code>write_dataset</code> support incremental appends?</strong>
+   <em>Deferred to a future RFC/spec.</em> v1 is overwrite-only; append semantics
+   require manifest merging and complicate the <code>_SUCCESS</code> contract.</p>
 </li>
 <li>
-<p><strong>Should <code>_SUCCESS</code> contain the manifest hash?</strong> Writing the manifest's
-   content hash into <code>_SUCCESS</code> would let readers detect corruption without
-   parsing the manifest. Trade-off: adds complexity vs marginal safety gain.</p>
+<p><strong>Should <code>_SUCCESS</code> contain the manifest hash?</strong>
+   <em>Deferred.</em> <code>_SUCCESS</code> is written as an empty file in v1. The marginal
+   corruption-detection benefit did not justify the added complexity for this
+   release.</p>
 </li>
 <li>
-<p><strong>Compression parameter scope.</strong> Should compression be set per-dataset
-   (constructor) or per-write (method parameter)? Constructor default with
-   per-write override is the most flexible but increases API surface.</p>
+<p><strong>Compression parameter scope.</strong>
+   <em>Resolved:</em> Constructor-only. <code>compression</code> is set at construction time;
+   <code>write_dataset</code> has no per-call override. This keeps the API surface minimal;
+   callers needing different codecs per dataset construct separate
+   <code>ParquetDatasetStore</code> instances.</p>
 </li>
 <li>
-<p><strong>Relationship to <code>ext.dagster</code> v2.</strong> The deferred <code>DagsterStoreResource</code> /
-   <code>RemoteStoreIOManager</code> (noted in spec 031) could natively integrate
-   <code>ParquetDatasetStore</code>. Should this RFC block on or coordinate with that
-   work?</p>
+<p><strong>Relationship to <code>ext.dagster</code> v2.</strong>
+   <em>Deferred.</em> Not blocking. <code>ParquetDatasetStore</code> ships independently; the
+   <code>DagsterStoreResource</code> / <code>RemoteStoreIOManager</code> integration can reference it
+   when that work resumes.</p>
 </li>
 </ol>
 <p><em>Resolved:</em> <code>delete_dataset</code> is included in the proposal (see above).
