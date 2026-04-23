@@ -29,6 +29,7 @@ Run with: ``pytest -m integration tests/e2e/test_async_streaming_integrity.py -s
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import random
 import tempfile
@@ -38,6 +39,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from remote_store import Capability
 from remote_store.aio._async_memory import AsyncMemoryBackend
 from remote_store.aio._async_store import AsyncStore
 from remote_store.backends._local import LocalBackend
@@ -244,7 +246,7 @@ class TestAsyncStreamingIntegrity:
                 tag = uuid.uuid4().hex[:8]
                 azure_container = f"e2e-async-stream-{tag}"
                 azure_service = BlobServiceClient.from_connection_string(AZURITE_CONN_STR)
-                azure_service.create_container(azure_container)
+                await asyncio.to_thread(azure_service.create_container, azure_container)
                 azure_store = AsyncStore(
                     backend=AsyncAzureBackend(
                         container=azure_container,
@@ -268,14 +270,14 @@ class TestAsyncStreamingIntegrity:
             chain.append(("sync-wrapped(local)", local_store))
             chain.append(("async-memory(sink)", sink_store))
 
-            # Stores that actually stream in multiple chunks on read.
-            # AsyncMemoryBackend declares LAZY_READ but yields the full file
-            # as one chunk -- it is excluded.  AsyncAzureBackend and
-            # SyncBackendAdapter(LocalBackend) both produce 64 KiB+ chunks.
-            lazy_read_ids: set[int] = set()
-            if azure_store is not None:
-                lazy_read_ids.add(id(azure_store))
-            lazy_read_ids.add(id(local_store))
+            # Backends that must stream in multiple chunks on read: all LAZY_READ
+            # declarers except AsyncMemoryBackend, which declares LAZY_READ but
+            # yields the full file as a single chunk (capability vs. behavior diverge).
+            lazy_read_ids = {
+                id(s)
+                for _, s in chain
+                if s.supports(Capability.LAZY_READ) and not isinstance(s._backend, AsyncMemoryBackend)
+            }
 
             order = " -> ".join(name for name, _ in chain)
             record_property("chain", order)
@@ -330,7 +332,7 @@ class TestAsyncStreamingIntegrity:
             if local_store is not None:
                 await local_store.aclose()
             if azure_service is not None and azure_container is not None:
-                azure_service.delete_container(azure_container)
-                azure_service.close()
+                await asyncio.to_thread(azure_service.delete_container, azure_container)
+                await asyncio.to_thread(azure_service.close)
             if tmp is not None:
                 tmp.cleanup()

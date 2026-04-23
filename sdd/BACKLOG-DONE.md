@@ -17,6 +17,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `SyncBackendAdapter` streaming read contract (64 KiB chunks from
   `asyncio.to_thread`). Fallback chain (no Azurite): seed → local-wrapped → sink.
   `SyncBackendAdapter.write()` materialization is documented as an exemption.
+  Residual scope (native `AsyncStore.transfer()` variant) tracked as ID-154.
 
 - [x] **ID-153 — Consolidate moto / Azurite fixtures at `tests/conftest.py`**
   Promoted `_free_port`, `moto_server`, `_AZURITE_CONN_STR`, and `azurite_server`
