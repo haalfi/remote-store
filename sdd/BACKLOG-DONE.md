@@ -6,12 +6,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ---
 
 - [x] **BK-156 — Refactor per-backend test files to remove conformance duplication**
-  Deleted ~85 duplicate tests from `test_sftp.py` (TestSFTPReadWrite, TestSFTPListing,
-  TestSFTPDelete, TestSFTPMoveCopy, TestSFTPDeleteFolder, and 3/4 of TestSFTPAtomicWrite)
-  and `test_azure.py` (gutted TestAzureIntegration from 31 tests to 3 Azure-specific
-  ones). Kept tests that add value beyond conformance: SFTP empty-folder persistence,
-  SFTP temp-file cleanup, Azure lazy-stream assertion, Azure max_depth regression guard,
-  Azure unwrap. No spec files reference test file paths — no spec pointer updates needed.
+  Deleted ~110 duplicate tests across `test_sftp.py`, `test_azure.py`, and `test_sqlblob.py`.
+  SFTP: removed TestSFTPReadWrite, TestSFTPListing, TestSFTPDelete, TestSFTPMoveCopy,
+  TestSFTPDeleteFolder, and 3/4 of TestSFTPAtomicWrite; kept SFTP-specific empty-folder
+  persistence and temp-file cleanup tests.
+  Azure: gutted TestAzureIntegration from 31 tests to 3; kept lazy-stream assertion,
+  max_depth regression guard, and unwrap test.
+  SQLBlob: removed TestMove, TestCopy, test_iter_children, standalone read/write/delete/atomic
+  duplicate functions, and trimmed TestExistence/TestListFiles/TestListFolders/TestGetFileInfo/
+  TestGetFolderInfo to root-path and SQL-specific assertions only; kept seekable-stream check,
+  max_blob_size, delete_folder non-recursive (extended conformance skips flat-namespace), and
+  all schema-variant/path-validation/concurrency/WR/glob tests.
+  No spec files reference test file paths — no spec pointer updates needed.
   S3/S3-PyArrow/Local files were already lean or contain specific assertions beyond
   what conformance covers.
 

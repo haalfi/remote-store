@@ -224,55 +224,14 @@ class TestExistingTable:
 
 @pytest.mark.spec("SQL-BLOB-020")
 def test_read_returns_seekable_stream(backend: SQLBlobBackend) -> None:
+    """SQL-BLOB-020: SQLBlob returns a seekable BytesIO; generic readable-stream
+    contract is covered by the conformance suite (BE-006, SIO-001).
+    """
     backend.write("f.txt", b"data")
     stream = backend.read("f.txt")
     assert stream.seekable()
     assert stream.read() == b"data"
     stream.close()
-
-
-@pytest.mark.spec("SQL-BLOB-021")
-def test_read_bytes_roundtrip(backend: SQLBlobBackend) -> None:
-    backend.write("f.txt", b"hello world")
-    assert backend.read_bytes("f.txt") == b"hello world"
-
-
-@pytest.mark.spec("SQL-BLOB-021")
-def test_read_bytes_not_found(backend: SQLBlobBackend) -> None:
-    with pytest.raises(NotFound):
-        backend.read_bytes("missing.txt")
-
-
-@pytest.mark.spec("SQL-BLOB-020")
-def test_read_not_found(backend: SQLBlobBackend) -> None:
-    with pytest.raises(NotFound):
-        backend.read("missing.txt")
-
-
-@pytest.mark.spec("SQL-BLOB-022")
-def test_write_new_file(backend: SQLBlobBackend) -> None:
-    backend.write("new.txt", b"content")
-    assert backend.read_bytes("new.txt") == b"content"
-
-
-@pytest.mark.spec("SQL-BLOB-022")
-def test_write_overwrite_false_raises(backend: SQLBlobBackend) -> None:
-    backend.write("f.txt", b"first")
-    with pytest.raises(AlreadyExists):
-        backend.write("f.txt", b"second")
-
-
-@pytest.mark.spec("SQL-BLOB-022")
-def test_write_overwrite_true(backend: SQLBlobBackend) -> None:
-    backend.write("f.txt", b"first")
-    backend.write("f.txt", b"second", overwrite=True)
-    assert backend.read_bytes("f.txt") == b"second"
-
-
-@pytest.mark.spec("SQL-BLOB-022")
-def test_write_binaryio(backend: SQLBlobBackend) -> None:
-    backend.write("f.txt", io.BytesIO(b"stream data"))
-    assert backend.read_bytes("f.txt") == b"stream data"
 
 
 @pytest.mark.spec("SQL-BLOB-022")
@@ -288,93 +247,18 @@ def test_write_max_blob_size() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Atomic writes
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.spec("SQL-BLOB-023")
-def test_write_atomic(backend: SQLBlobBackend) -> None:
-    backend.write_atomic("f.txt", b"atomic content")
-    assert backend.read_bytes("f.txt") == b"atomic content"
-
-
-@pytest.mark.spec("SQL-BLOB-023")
-def test_write_atomic_overwrite(backend: SQLBlobBackend) -> None:
-    backend.write_atomic("f.txt", b"first")
-    backend.write_atomic("f.txt", b"second", overwrite=True)
-    assert backend.read_bytes("f.txt") == b"second"
-
-
-@pytest.mark.spec("SQL-BLOB-023")
-def test_open_atomic_success(backend: SQLBlobBackend) -> None:
-    with backend.open_atomic("f.txt") as f:
-        f.write(b"buffered")
-    assert backend.read_bytes("f.txt") == b"buffered"
-
-
-@pytest.mark.spec("SQL-BLOB-023")
-def test_open_atomic_exception_discards(backend: SQLBlobBackend) -> None:
-    with pytest.raises(RuntimeError, match="abort"), backend.open_atomic("f.txt") as f:  # noqa: PT012
-        f.write(b"partial")
-        raise RuntimeError("abort")
-    assert not backend.exists("f.txt")
-
-
-@pytest.mark.spec("SQL-BLOB-023")
-def test_open_atomic_already_exists(backend: SQLBlobBackend) -> None:
-    backend.write("f.txt", b"existing")
-    with pytest.raises(AlreadyExists), backend.open_atomic("f.txt") as f:
-        f.write(b"new")
-
-
-# ---------------------------------------------------------------------------
 # Delete operations
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.spec("SQL-BLOB-024")
-def test_delete(backend: SQLBlobBackend) -> None:
-    backend.write("f.txt", b"data")
-    backend.delete("f.txt")
-    assert not backend.exists("f.txt")
-
-
-@pytest.mark.spec("SQL-BLOB-024")
-def test_delete_not_found(backend: SQLBlobBackend) -> None:
-    with pytest.raises(NotFound):
-        backend.delete("missing.txt")
-
-
-@pytest.mark.spec("SQL-BLOB-024")
-def test_delete_missing_ok(backend: SQLBlobBackend) -> None:
-    result = backend.delete("missing.txt", missing_ok=True)
-    assert result is None
-
-
-@pytest.mark.spec("SQL-BLOB-025")
-def test_delete_folder_recursive(populated: SQLBlobBackend) -> None:
-    populated.delete_folder("a", recursive=True)
-    assert not populated.exists("a/1.txt")
-    assert not populated.exists("a/b/deep.txt")
-    assert populated.exists("c/3.txt")  # Untouched
-
-
 @pytest.mark.spec("SQL-BLOB-025")
 def test_delete_folder_not_recursive_raises(populated: SQLBlobBackend) -> None:
+    """SQL-BLOB-025: flat-namespace delete_folder raises DirectoryNotEmpty when non-recursive.
+    The extended conformance suite skips this check for flat-namespace backends.
+    Generic delete/missing_ok/recursive are covered by the conformance suite (BE-012, BE-013).
+    """
     with pytest.raises(DirectoryNotEmpty):
         populated.delete_folder("a")
-
-
-@pytest.mark.spec("SQL-BLOB-025")
-def test_delete_folder_not_found(backend: SQLBlobBackend) -> None:
-    with pytest.raises(NotFound):
-        backend.delete_folder("nonexistent")
-
-
-@pytest.mark.spec("SQL-BLOB-025")
-def test_delete_folder_missing_ok(backend: SQLBlobBackend) -> None:
-    result = backend.delete_folder("nonexistent", missing_ok=True)
-    assert result is None
 
 
 # ---------------------------------------------------------------------------
@@ -384,35 +268,18 @@ def test_delete_folder_missing_ok(backend: SQLBlobBackend) -> None:
 
 @pytest.mark.spec("SQL-BLOB-026")
 class TestExistence:
-    def test_exists_file(self, populated: SQLBlobBackend) -> None:
-        assert populated.exists("a/1.txt")
-
-    def test_exists_folder(self, populated: SQLBlobBackend) -> None:
-        assert populated.exists("a")
+    """Root-path existence checks for SQLBlob flat namespace.
+    File, folder, and missing-path checks are covered by the conformance suite (BE-004, BE-005).
+    """
 
     def test_exists_root(self, populated: SQLBlobBackend) -> None:
         assert populated.exists("")
 
-    def test_exists_missing(self, backend: SQLBlobBackend) -> None:
-        assert not backend.exists("nope")
-
-    def test_is_file_true(self, populated: SQLBlobBackend) -> None:
-        assert populated.is_file("a/1.txt")
-
-    def test_is_file_false_for_folder(self, populated: SQLBlobBackend) -> None:
-        assert not populated.is_file("a")
-
     def test_is_file_root(self, backend: SQLBlobBackend) -> None:
         assert not backend.is_file("")
 
-    def test_is_folder_true(self, populated: SQLBlobBackend) -> None:
-        assert populated.is_folder("a")
-
     def test_is_folder_root(self, backend: SQLBlobBackend) -> None:
         assert backend.is_folder("")
-
-    def test_is_folder_false_for_file(self, populated: SQLBlobBackend) -> None:
-        assert not populated.is_folder("a/1.txt")
 
 
 # ---------------------------------------------------------------------------
@@ -422,15 +289,10 @@ class TestExistence:
 
 @pytest.mark.spec("SQL-BLOB-027")
 class TestListFiles:
-    def test_list_files_non_recursive(self, populated: SQLBlobBackend) -> None:
-        files = list(populated.list_files("a"))
-        names = {f.name for f in files}
-        assert names == {"1.txt", "2.txt"}
-
-    def test_list_files_recursive(self, populated: SQLBlobBackend) -> None:
-        files = list(populated.list_files("a", recursive=True))
-        names = {f.name for f in files}
-        assert names == {"1.txt", "2.txt", "deep.txt"}
+    """Root-path listing for SQLBlob flat namespace.
+    Non-recursive, recursive, and max_depth listing are covered by the conformance
+    suite (BE-014) and extended conformance.
+    """
 
     def test_list_files_root(self, populated: SQLBlobBackend) -> None:
         files = list(populated.list_files("", recursive=True))
@@ -440,47 +302,21 @@ class TestListFiles:
         files = list(backend.list_files(""))
         assert files == []
 
-    def test_list_files_max_depth(self, populated: SQLBlobBackend) -> None:
-        files = list(populated.list_files("a", max_depth=0))
-        names = {f.name for f in files}
-        assert names == {"1.txt", "2.txt"}
-
-    def test_list_files_max_depth_deep(self, populated: SQLBlobBackend) -> None:
-        files = list(populated.list_files("a", max_depth=1))
-        names = {f.name for f in files}
-        assert names == {"1.txt", "2.txt", "deep.txt"}
-
 
 @pytest.mark.spec("SQL-BLOB-028")
 class TestListFolders:
+    """Root-path and leaf-folder listing for SQLBlob flat namespace.
+    Nested subfolder listing is covered by the conformance suite (BE-015).
+    """
+
     def test_list_folders(self, populated: SQLBlobBackend) -> None:
         folders = list(populated.list_folders(""))
         names = {f.name for f in folders}
         assert names == {"a", "c"}
 
-    def test_list_folders_nested(self, populated: SQLBlobBackend) -> None:
-        folders = list(populated.list_folders("a"))
-        names = {f.name for f in folders}
-        assert names == {"b"}
-
     def test_list_folders_no_subfolders(self, populated: SQLBlobBackend) -> None:
         folders = list(populated.list_folders("c"))
         assert folders == []
-
-
-# ---------------------------------------------------------------------------
-# iter_children
-# ---------------------------------------------------------------------------
-
-
-def test_iter_children(populated: SQLBlobBackend) -> None:
-    from remote_store._models import FileInfo, FolderEntry
-
-    children = list(populated.iter_children("a"))
-    files = [c for c in children if isinstance(c, FileInfo)]
-    folders = [c for c in children if isinstance(c, FolderEntry)]
-    assert {f.name for f in files} == {"1.txt", "2.txt"}
-    assert {f.name for f in folders} == {"b"}
 
 
 # ---------------------------------------------------------------------------
@@ -490,6 +326,10 @@ def test_iter_children(populated: SQLBlobBackend) -> None:
 
 @pytest.mark.spec("SQL-BLOB-029")
 class TestGetFileInfo:
+    """SQL-specific file info checks (path as string, timezone-aware modified_at).
+    NotFound / InvalidPath error fidelity is covered by the conformance suite (BE-016).
+    """
+
     def test_basic(self, populated: SQLBlobBackend) -> None:
         info = populated.get_file_info("a/1.txt")
         assert info.name == "1.txt"
@@ -497,13 +337,13 @@ class TestGetFileInfo:
         assert str(info.path) == "a/1.txt"
         assert info.modified_at.tzinfo is not None
 
-    def test_not_found(self, backend: SQLBlobBackend) -> None:
-        with pytest.raises(NotFound):
-            backend.get_file_info("missing.txt")
-
 
 @pytest.mark.spec("SQL-BLOB-030")
 class TestGetFolderInfo:
+    """SQL-specific folder info checks (modified_at present, root-path aggregates).
+    NotFound / InvalidPath error fidelity is covered by the conformance suite (BE-017).
+    """
+
     def test_basic(self, populated: SQLBlobBackend) -> None:
         info = populated.get_folder_info("a")
         assert info.file_count == 3  # 1.txt, 2.txt, b/deep.txt
@@ -513,75 +353,6 @@ class TestGetFolderInfo:
     def test_root(self, populated: SQLBlobBackend) -> None:
         info = populated.get_folder_info("")
         assert info.file_count == 4
-
-    def test_not_found(self, backend: SQLBlobBackend) -> None:
-        with pytest.raises(NotFound):
-            backend.get_folder_info("nonexistent")
-
-
-# ---------------------------------------------------------------------------
-# Move / Copy
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.spec("SQL-BLOB-031")
-class TestMove:
-    def test_basic(self, backend: SQLBlobBackend) -> None:
-        backend.write("src.txt", b"data")
-        backend.move("src.txt", "dst.txt")
-        assert not backend.exists("src.txt")
-        assert backend.read_bytes("dst.txt") == b"data"
-
-    def test_overwrite(self, backend: SQLBlobBackend) -> None:
-        backend.write("src.txt", b"new")
-        backend.write("dst.txt", b"old")
-        backend.move("src.txt", "dst.txt", overwrite=True)
-        assert backend.read_bytes("dst.txt") == b"new"
-        assert not backend.exists("src.txt")
-
-    def test_no_overwrite_raises(self, backend: SQLBlobBackend) -> None:
-        backend.write("src.txt", b"data")
-        backend.write("dst.txt", b"existing")
-        with pytest.raises(AlreadyExists):
-            backend.move("src.txt", "dst.txt")
-
-    def test_source_not_found(self, backend: SQLBlobBackend) -> None:
-        with pytest.raises(NotFound):
-            backend.move("missing.txt", "dst.txt")
-
-    def test_same_path_noop(self, backend: SQLBlobBackend) -> None:
-        backend.write("f.txt", b"data")
-        backend.move("f.txt", "f.txt")
-        assert backend.read_bytes("f.txt") == b"data"
-
-    def test_same_path_missing_source(self, backend: SQLBlobBackend) -> None:
-        with pytest.raises(NotFound):
-            backend.move("missing.txt", "missing.txt")
-
-
-@pytest.mark.spec("SQL-BLOB-032")
-class TestCopy:
-    def test_basic(self, backend: SQLBlobBackend) -> None:
-        backend.write("src.txt", b"data")
-        backend.copy("src.txt", "dst.txt")
-        assert backend.read_bytes("src.txt") == b"data"
-        assert backend.read_bytes("dst.txt") == b"data"
-
-    def test_overwrite(self, backend: SQLBlobBackend) -> None:
-        backend.write("src.txt", b"new")
-        backend.write("dst.txt", b"old")
-        backend.copy("src.txt", "dst.txt", overwrite=True)
-        assert backend.read_bytes("dst.txt") == b"new"
-
-    def test_no_overwrite_raises(self, backend: SQLBlobBackend) -> None:
-        backend.write("src.txt", b"data")
-        backend.write("dst.txt", b"existing")
-        with pytest.raises(AlreadyExists):
-            backend.copy("src.txt", "dst.txt")
-
-    def test_source_not_found(self, backend: SQLBlobBackend) -> None:
-        with pytest.raises(NotFound):
-            backend.copy("missing.txt", "dst.txt")
 
 
 # ---------------------------------------------------------------------------
