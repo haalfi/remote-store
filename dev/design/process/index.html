@@ -8787,7 +8787,7 @@
 <li><strong>No code without a spec</strong>: every testable contract must have a spec section ID.</li>
 <li><strong>No spec without tests</strong>: every spec section must have at least one test with <code>@pytest.mark.spec("ID")</code>.</li>
 <li><strong>Specs are authoritative</strong>: if code and spec disagree, the code is wrong.</li>
-<li><strong>ADRs are immutable</strong>: supersede, don't edit.</li>
+<li><strong>ADRs are immutable once Accepted</strong>: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.</li>
 <li><strong>IDs are stable</strong>: once assigned, a section ID never changes meaning. Deprecated sections are marked <code>[DEPRECATED]</code>, not removed.</li>
 <li><strong>Workflows</strong>:</li>
 <li><strong>Features</strong>: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.</li>
@@ -8840,7 +8840,7 @@ completion workflow, and section structure. See its "How this file works" header
 <td><strong>ADRs</strong></td>
 <td><code>sdd/adrs/NNNN-&lt;short-title&gt;.md</code></td>
 <td>Decision records — why we chose this approach</td>
-<td>Immutable; superseded by a new ADR, never edited.</td>
+<td>Immutable once status is Accepted. Before acceptance a draft may be refined; after acceptance supersede with a new ADR, never edit.</td>
 </tr>
 <tr>
 <td><strong>RFCs</strong></td>
@@ -8852,13 +8852,13 @@ completion workflow, and section structure. See its "How this file works" header
 <td><strong>Research</strong></td>
 <td><code>sdd/research/research-&lt;topic&gt;.md</code></td>
 <td>Exploration, feasibility analysis, implementation plans</td>
-<td>Archived after the related feature ships; not edited. May include an <code>## Implementation Plan</code> section for tactical build steps.</td>
+<td>Point-in-time snapshot. Should remain as written; only update if a factual error is corrected — all other updates require a new document. Never treat as a living doc.</td>
 </tr>
 <tr>
 <td><strong>Audits</strong></td>
 <td><code>sdd/audits/audit-NNN-&lt;topic&gt;.md</code></td>
 <td>Systematic quality reviews (security, compliance, docs)</td>
-<td>Findings tracked as backlog items. The audit itself is a report, not a proposal.</td>
+<td>Permanent record. Never edited after writing — findings may be actioned via backlog, but the report stays as written.</td>
 </tr>
 </tbody>
 </table>
