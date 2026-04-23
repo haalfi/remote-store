@@ -29,7 +29,6 @@ constants (TESTING.md Rule 11).
 from __future__ import annotations
 
 import io
-import socket
 import uuid
 from typing import TYPE_CHECKING
 
@@ -41,46 +40,12 @@ from remote_store._capabilities import Capability
 from remote_store._models import WriteResult
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
-from tests.backends.conftest import _free_port
+from tests.conftest import _azure_available, _azurite_reachable, _s3_available
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from remote_store._backend import Backend
-
-
-# ---------------------------------------------------------------------------
-# Availability gates
-# ---------------------------------------------------------------------------
-
-
-def _s3_available() -> bool:
-    try:
-        import moto  # noqa: F401
-        import s3fs  # noqa: F401
-    except ImportError:
-        return False
-    return True
-
-
-def _azure_available() -> bool:
-    # The ``azure_backend`` fixture only touches ``azure.storage.blob`` (via
-    # ``BlobServiceClient`` and ``AzureBackend``), so probe that package — not
-    # ``azure.storage.filedatalake``, which is a separate install extra.
-    try:
-        import azure.storage.blob  # noqa: F401
-    except ImportError:
-        return False
-    return True
-
-
-def _azurite_reachable() -> bool:
-    try:
-        s = socket.create_connection(("127.0.0.1", 10000), timeout=1)
-        s.close()
-    except OSError:
-        return False
-    return True
 
 
 # ---------------------------------------------------------------------------
@@ -292,27 +257,10 @@ class TestWriteResultSizeBug168Regime:
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def _moto_endpoint() -> Iterator[str | None]:
-    """Module-scoped moto HTTP server — amortise startup across examples."""
-    if not _s3_available():
-        yield None
-        return
-    from moto.moto_server.threaded_moto_server import ThreadedMotoServer
-
-    port = _free_port()
-    server = ThreadedMotoServer(port=port, verbose=False)
-    server.start()
-    try:
-        yield f"http://127.0.0.1:{port}"
-    finally:
-        server.stop()
-
-
 @pytest.fixture
-def s3_backend(_moto_endpoint: str | None) -> Iterator[Backend]:
-    """Fresh bucket per test function; shared moto server."""
-    if _moto_endpoint is None:
+def s3_backend(moto_server: str | None) -> Iterator[Backend]:
+    """Fresh bucket per test function; shared session moto server."""
+    if moto_server is None:
         pytest.skip("moto/s3fs not installed")
     import boto3
 
@@ -321,7 +269,7 @@ def s3_backend(_moto_endpoint: str | None) -> Iterator[Backend]:
     bucket = f"pbt-{uuid.uuid4().hex[:8]}"
     client = boto3.client(
         "s3",
-        endpoint_url=_moto_endpoint,
+        endpoint_url=moto_server,
         aws_access_key_id="testing",
         aws_secret_access_key="testing",
         region_name="us-east-1",
@@ -332,7 +280,7 @@ def s3_backend(_moto_endpoint: str | None) -> Iterator[Backend]:
         key="testing",
         secret="testing",
         region_name="us-east-1",
-        endpoint_url=_moto_endpoint,
+        endpoint_url=moto_server,
     )
     try:
         yield b
@@ -341,25 +289,24 @@ def s3_backend(_moto_endpoint: str | None) -> Iterator[Backend]:
 
 
 @pytest.fixture
-def azure_backend() -> Iterator[Backend]:
+def azure_backend(azurite_server: str | None) -> Iterator[Backend]:
     """Azurite-backed AzureBackend; skips when Azurite is not reachable."""
-    if not _azure_available() or not _azurite_reachable():
+    if azurite_server is None:
         pytest.skip("azure SDK not installed or Azurite not reachable")
 
     from azure.storage.blob import BlobServiceClient
 
     from remote_store.backends._azure import AzureBackend
-    from tests.backends.conftest import _AZURITE_CONN_STR
 
     container = f"pbt-{uuid.uuid4().hex[:8]}"
-    service = BlobServiceClient.from_connection_string(_AZURITE_CONN_STR)
+    service = BlobServiceClient.from_connection_string(azurite_server)
     try:
         service.create_container(container)
     except Exception:
         service.close()
         raise
 
-    b = AzureBackend(container=container, connection_string=_AZURITE_CONN_STR)
+    b = AzureBackend(container=container, connection_string=azurite_server)
     try:
         yield b
     finally:

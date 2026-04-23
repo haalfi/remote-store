@@ -97,31 +97,6 @@ def _azurite_reachable() -> bool:
         return False
 
 
-def _free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("", 0))
-        return s.getsockname()[1]
-
-
-@pytest.fixture(scope="session")
-def moto_server() -> Iterator[str | None]:
-    """Start a moto HTTP server for the test session.
-
-    Uses server mode instead of mock_aws() to avoid Python 3.13
-    PEP 667 f_locals incompatibility with s3fs/aiobotocore.
-    """
-    if not _s3_available():
-        yield None
-        return
-    from moto.moto_server.threaded_moto_server import ThreadedMotoServer
-
-    port = _free_port()
-    server = ThreadedMotoServer(port=port, verbose=False)
-    server.start()
-    yield f"http://127.0.0.1:{port}"
-    server.stop()
-
-
 @pytest.fixture(scope="session")
 def sftp_server() -> Iterator[tuple[int, str] | None]:
     """Start an in-process SFTP server for the test session."""
@@ -181,24 +156,6 @@ _http_param = pytest.param(
     "http",
     marks=pytest.mark.skipif(not _http_server_available(), reason="pytest-httpserver not installed"),
 )
-
-_AZURITE_CONN_STR = (
-    "DefaultEndpointsProtocol=http;"
-    "AccountName=devstoreaccount1;"
-    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
-    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
-    "QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;"
-    "TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
-)
-
-
-@pytest.fixture(scope="session")
-def azurite_server() -> Iterator[str | None]:
-    """Provide Azurite connection string if available."""
-    if not _azure_available() or not _azurite_reachable():
-        yield None
-        return
-    yield _AZURITE_CONN_STR
 
 
 @pytest.fixture(scope="session")
