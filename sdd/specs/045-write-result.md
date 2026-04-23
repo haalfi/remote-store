@@ -80,8 +80,7 @@ consistent fields. Verified in `MemoryBackend.dfy`. Python backstop in
 (`test_result_is_write_result_with_path_and_size`,
 `test_size_matches_written_bytes_for_streaming_input`,
 `test_native_populates_last_modified`,
-`test_native_file_info_matches_write_result`,
-`test_digest_matches_file_info`). See ID-151.
+`test_write_result_rich_fields_match_file_info`). See ID-151.
 
 ## WR-002: WriteResult.path Is Store-Relative
 

@@ -45,8 +45,7 @@ T = TypeVar("T")
 log = logging.getLogger(__name__)
 
 _SFTP_CAPABILITIES = CapabilitySet(
-    set(Capability)
-    - {Capability.GLOB, Capability.ATOMIC_MOVE, Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA}
+    set(Capability) - {Capability.GLOB, Capability.ATOMIC_MOVE, Capability.USER_METADATA}
 )
 
 # 256 KiB: reduces round-trips on modern SSH servers; paramiko fragments
@@ -364,7 +363,12 @@ class SFTPBackend(Backend):
                             break
                         f.write(chunk)
                         size += len(chunk)
-        return WriteResult(path=RemotePath(path), size=size, source="basic")
+            post_stat = self._sftp.stat(sftp_path)
+        mtime = post_stat.st_mtime
+        last_modified = (
+            datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else datetime.now(tz=timezone.utc)
+        )
+        return WriteResult(path=RemotePath(path), size=size, source="native", last_modified=last_modified)
 
     def write_atomic(
         self,
@@ -415,7 +419,12 @@ class SFTPBackend(Backend):
                 with contextlib.suppress(Exception):
                     self._sftp.remove(tmp_path)
                 raise
-        return WriteResult(path=RemotePath(path), size=size, source="basic")
+            post_stat = self._sftp.stat(sftp_path)
+        mtime = post_stat.st_mtime
+        last_modified = (
+            datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else datetime.now(tz=timezone.utc)
+        )
+        return WriteResult(path=RemotePath(path), size=size, source="native", last_modified=last_modified)
 
     @contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

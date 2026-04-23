@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from remote_store._resolution import ResolutionPlan
     from remote_store._types import WritableContent
 
-_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA})
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.USER_METADATA})
 
 log = logging.getLogger(__name__)
 
@@ -171,11 +171,17 @@ class LocalBackend(Backend):
                 with open(str(full), "wb") as f:
                     shutil.copyfileobj(content, f, _COPY_BUFSIZE)
                 size = full.stat().st_size
+            st = full.stat()
         except IsADirectoryError:
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        return WriteResult(path=RemotePath(path), size=size, source="basic")
+        return WriteResult(
+            path=RemotePath(path),
+            size=size,
+            source="native",
+            last_modified=datetime.fromtimestamp(st.st_mtime, tz=timezone.utc),
+        )
 
     def write_atomic(
         self,
@@ -200,7 +206,8 @@ class LocalBackend(Backend):
                     else:
                         shutil.copyfileobj(content, f, _COPY_BUFSIZE)
                 os.replace(tmp_path, str(full))
-                size = full.stat().st_size
+                st = full.stat()
+                size = st.st_size
             except BaseException:
                 with contextlib.suppress(OSError):
                     if os.path.exists(tmp_path):
@@ -210,7 +217,12 @@ class LocalBackend(Backend):
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
-        return WriteResult(path=RemotePath(path), size=size, source="basic")
+        return WriteResult(
+            path=RemotePath(path),
+            size=size,
+            source="native",
+            last_modified=datetime.fromtimestamp(st.st_mtime, tz=timezone.utc),
+        )
 
     @contextlib.contextmanager
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:

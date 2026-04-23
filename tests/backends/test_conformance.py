@@ -230,15 +230,9 @@ _WRITE_OPS = [
     pytest.param("write_atomic", Capability.ATOMIC_WRITE, id="write_atomic"),
 ]
 
-# reason → (message, strict).  Empty: all declaring backends currently populate
-# last_modified.  Add an entry when a new declaring backend temporarily lags.
-_LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
-
-# reason → (message, strict).  Empty: all declaring backends currently agree
-# on digest between write() and get_file_info().  Add an entry when a new
-# declaring backend's write path is known not to surface a digest that
-# get_file_info() does.
-_DIGEST_XFAIL: dict[str, tuple[str, bool]] = {}
+# name → (reason, strict).  Add an entry when a backend's write path temporarily
+# disagrees with get_file_info() on etag, digest, or last_modified.
+_RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
 
 
 class TestWriteResultConformance:
@@ -315,70 +309,43 @@ class TestWriteResultConformance:
         passes the divergence check but violates the quality obligation
         the capability advertises (spec 045 WR-009, WR-001a).
 
-        Per-backend xfail reasons are in ``_LAST_MODIFIED_XFAIL`` (empty
+        Per-backend xfail reasons are in ``_RICH_FIELDS_XFAIL`` (empty
         by default).  Add an entry only for a temporary lag on a newly
         declaring backend.
         """
         _require(backend, cap, Capability.WRITE_RESULT_NATIVE)
-        if backend.name in _LAST_MODIFIED_XFAIL:
-            reason, strict = _LAST_MODIFIED_XFAIL[backend.name]
+        if backend.name in _RICH_FIELDS_XFAIL:
+            reason, strict = _RICH_FIELDS_XFAIL[backend.name]
             request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
         result = getattr(backend, op)(f"wr/{op}-lm.txt", b"data")
         assert result.last_modified is not None
 
     @pytest.mark.spec("WR-001a")
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
-    def test_native_file_info_matches_write_result(self, backend: Backend, op: str, cap: Capability) -> None:
-        """WR-001a divergence check between WriteResult and FileInfo.
-
-        When ``WRITE_RESULT_NATIVE`` is declared, a subsequent
-        ``get_file_info()`` must return values consistent with the
-        ``WriteResult`` for the fields both paths can populate
-        (``etag`` and ``last_modified`` / ``modified_at``).
-
-        ``digest`` is checked separately by ``test_digest_matches_file_info``,
-        which enforces the full WR-001a consistency contract for that field
-        across all declaring backends.
-        """
-        _require(backend, cap, Capability.WRITE_RESULT_NATIVE, Capability.METADATA)
-        key = f"wr/{op}-fi-match.txt"
-        result = getattr(backend, op)(key, b"data")
-        info = backend.get_file_info(key)
-        assert info.etag == result.etag
-        # Guard: if the write path did not produce a concrete timestamp
-        # (e.g. a future strict=False xfail entry in
-        # ``_LAST_MODIFIED_XFAIL``), skip the round-trip check.
-        if result.last_modified is not None:
-            assert info.modified_at == result.last_modified
-
-    @pytest.mark.spec("WR-001a")
-    @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)
-    def test_digest_matches_file_info(
+    def test_write_result_rich_fields_match_file_info(
         self,
         backend: Backend,
         op: str,
         cap: Capability,
         request: pytest.FixtureRequest,
     ) -> None:
-        """WR-001a digest consistency between WriteResult and FileInfo.
+        """WR-001a consistency contract: write() rich fields must match get_file_info().
 
-        For every WRITE_RESULT_NATIVE + METADATA backend, the digest returned
-        by write() must equal the digest returned by a subsequent
-        get_file_info() on the same key.  Both sides may be None (backends
-        that do not surface a checksum on either path), but they must agree.
-
-        This is the long-lasting contract enforcement for the BUG-177 class
-        of divergence.  The _DIGEST_XFAIL table marks backends where the
-        write path is known not to surface a digest that get_file_info() does.
+        Gated on WRITE + METADATA only (not WRITE_RESULT_NATIVE) so backends
+        that return richer data from get_file_info() than from write() are
+        caught regardless of whether they declare the native capability.
         """
-        _require(backend, cap, Capability.WRITE_RESULT_NATIVE, Capability.METADATA)
-        if backend.name in _DIGEST_XFAIL:
-            reason, strict = _DIGEST_XFAIL[backend.name]
+        _require(backend, cap, Capability.METADATA)
+        if backend.name in _RICH_FIELDS_XFAIL:
+            reason, strict = _RICH_FIELDS_XFAIL[backend.name]
             request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
-        key = f"wr/{op}-digest-match.txt"
-        result = getattr(backend, op)(key, b"digest-check-payload")
+        key = f"wr/{op}-rich-fields-match.txt"
+        result = getattr(backend, op)(key, b"rich-fields-payload")
         info = backend.get_file_info(key)
+        assert result.etag == info.etag
         assert result.digest == info.digest
+        if info.modified_at is not None:
+            assert result.last_modified == info.modified_at
 
     @pytest.mark.spec("WR-012")
     @pytest.mark.parametrize(("op", "cap"), _WRITE_OPS)

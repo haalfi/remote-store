@@ -40,9 +40,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_ALL_CAPABILITIES = CapabilitySet(
-    set(Capability) - {Capability.ATOMIC_MOVE, Capability.WRITE_RESULT_NATIVE, Capability.USER_METADATA}
-)
+_ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.ATOMIC_MOVE, Capability.USER_METADATA})
 
 log = logging.getLogger(__name__)
 
@@ -240,7 +238,22 @@ class S3PyArrowBackend(_S3Base):
                         size += len(chunk)
             finally:
                 out.close()
-        return WriteResult(path=RemotePath(path), size=size, source="basic")
+        with self._s3fs_errors(path):
+            raw = self._s3fs.call_s3(
+                "head_object",
+                Bucket=self._bucket,
+                Key=path,
+                ChecksumMode="ENABLED",
+            )
+        head = self._head_to_fileinfo(raw, path)
+        return WriteResult(
+            path=RemotePath(path),
+            size=size,
+            source="native",
+            etag=head.etag,
+            digest=head.digest,
+            last_modified=head.modified_at,
+        )
 
     def write_atomic(
         self,
