@@ -5,6 +5,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-159 — Audit handwritten docs for v0.23.0+ feature & API changes**
+  Reviewed guides, tutorials, and examples against post-v0.23.0 API changes.
+  16 findings: 3 Critical (custom-backend guide write methods return `None`
+  instead of `WriteResult`, missing `metadata=` kwarg in snippet and reference
+  table), 6 Major (new capabilities and `aio.ext.write` undocumented, `ext.write`
+  imports absent from extensions guide, async guide missing `WriteResult`/
+  `metadata=`/`aio.ext.write`), 7 Minor (local.md and capabilities-matrix.md prose
+  both wrong re `USER_METADATA`; s3-pyarrow.md "fully interchangeable" claim wrong;
+  per-backend write-result docs missing; example write calls treat API as void).
+  Report: `sdd/audits/audit-011-docs-v023-gaps.md`.
+
 - [x] **BK-161 — Enforce public import paths in extensions (checker + fixes + Cat 1 comments)**
   Added `test_no_private_module_imports` AST checker to `test_ext_contract.py` (excluding
   `TYPE_CHECKING` blocks, catching deferred function-body imports). Fixed 10 Cat 2 import
