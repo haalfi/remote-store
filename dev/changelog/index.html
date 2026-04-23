@@ -11421,6 +11421,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>ID-138: Async streaming integrity e2e test (<code>tests/e2e/test_async_streaming_integrity.py</code>); 4-hop chain via AsyncAzure + SyncWrapped(Local); SHA-256 per hop + lazy-read chunk assertions; Azurite-optional with 2-hop fallback</li>
 <li>ID-153: Promote moto_server / azurite_server / _AZURITE_CONN_STR to tests/conftest.py; eliminate duplicate _moto_endpoint fixture and cross-boundary conftest imports</li>
 <li>BK-156: Remove conformance-duplicate tests from test_sftp.py, test_azure.py, and test_sqlblob.py; add per-backend spec markers to conformance tests to satisfy sdd/000-process.md Rule 2</li>
 <li>BK-152 (follow-up): Fix SQLAlchemy last_modified decoupling (WRITE_RESULT_NATIVE when modified_at present without user_metadata); fix Local double-stat; update WR-003/WR-009/S3PA-003 specs; split _LAST_MODIFIED_XFAIL from _RICH_FIELDS_XFAIL in conformance tests</li>
