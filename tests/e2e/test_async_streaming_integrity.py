@@ -5,8 +5,9 @@ Proves two properties of the async streaming contract:
 1. **Data integrity** -- a randomly-sized file (7--14 MiB) survives each hop
    of the async chain with identical SHA-256 at every step.
 2. **Chunked streaming** -- hops with a lazy-read source yield multiple chunks
-   (count > 1, max_chunk < file_size).  ``AsyncMemoryBackend`` is non-lazy
-   (yields one chunk) and is exempt from the chunk assertion.
+   (count > 1, max_chunk < file_size).  ``AsyncMemoryBackend`` is exempt from
+   the chunk assertion because it yields a single chunk by design, despite
+   declaring ``LAZY_READ`` (capability declaration vs. observed behavior diverge).
 
 Chain (Azurite reachable):
     AsyncMemory(seed) -> AsyncAzure -> AsyncMemory(mid) ->
@@ -149,10 +150,25 @@ def _emit_report(results: list[HopResult]) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
+def _test_rng() -> random.Random:
+    """Create a seeded RNG for reproducible test randomness.
+
+    The seed is derived from ``PYTHONHASHSEED`` when set (deterministic CI),
+    otherwise from system entropy.  The seed is printed so failures can be
+    reproduced by setting ``PYTHONHASHSEED`` to the logged value.
+    """
+    import os
+
+    env_seed = os.environ.get("PYTHONHASHSEED")
+    seed = int(env_seed) if env_seed and env_seed.isdigit() else random.randrange(2**32)  # noqa: S311
+    print(f"  Async streaming test seed: {seed} (reproduce with PYTHONHASHSEED={seed})")  # noqa: T201
+    return random.Random(seed)  # noqa: S311
+
+
 @pytest.fixture(scope="module")
 def seeded_payload() -> tuple[bytes, str, int]:
     """Random-sized (7--14 MiB) payload with its SHA-256 hex digest."""
-    rng = random.Random()  # noqa: S311 -- system entropy for size; payload is deterministic
+    rng = _test_rng()
     size = rng.randint(FILE_SIZE_MIN, FILE_SIZE_MAX)
     data, digest = _make_payload(size)
     print(f"\n  Async streaming: file_size={size / 1_048_576:.1f} MiB")  # noqa: T201
@@ -219,7 +235,8 @@ class TestAsyncStreamingIntegrity:
                 )
                 mid_store = AsyncStore(backend=AsyncMemoryBackend())
 
-            tmp = tempfile.TemporaryDirectory()
+            tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+            # LocalBackend is sync; AsyncStore auto-wraps it via SyncBackendAdapter.
             local_store = AsyncStore(backend=LocalBackend(root=tmp.name))
 
             # Build ordered chain: seed, [azure, mid,] local, sink
@@ -238,9 +255,6 @@ class TestAsyncStreamingIntegrity:
             if azure_store is not None:
                 lazy_read_ids.add(id(azure_store))
             lazy_read_ids.add(id(local_store))
-
-            if not lazy_read_ids:
-                pytest.skip("No lazy-read source in chain")
 
             order = " -> ".join(name for name, _ in chain)
             print(f"  Chain: {order}")  # noqa: T201
