@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from remote_store._models import ContentDigest
+from remote_store import ContentDigest
 from remote_store.ext.streams import ChecksumReader
 
 if TYPE_CHECKING:

@@ -28,7 +28,7 @@ except ModuleNotFoundError as _exc:  # pragma: no cover
         "Pydantic is required for the pydantic extension. Install it with: pip install 'remote-store[pydantic]'"
     ) from _exc
 
-from remote_store._config import RegistryConfig
+from remote_store import RegistryConfig
 
 if TYPE_CHECKING:
     from pydantic import BaseModel

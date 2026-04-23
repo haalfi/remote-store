@@ -28,7 +28,7 @@ import time
 from contextvars import ContextVar, Token
 from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
 
-from remote_store._proxy import ProxyStore
+from remote_store import ProxyStore
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping

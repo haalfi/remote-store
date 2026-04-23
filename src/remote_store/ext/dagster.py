@@ -45,7 +45,11 @@ if TYPE_CHECKING:
 
     from remote_store._store import Store
 
-from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
+# private: framework integration requires direct registry access; no public path exists
+from remote_store._registry import (
+    _BACKEND_FACTORIES,
+    _register_builtin_backends,
+)
 
 log = logging.getLogger(__name__)
 
@@ -380,7 +384,7 @@ def _build_store(backend_type: str, backend_options: dict[str, Any], root_path: 
         ValueError: If *backend_type* is not registered, or if the backend
             constructor rejects the supplied options.
     """
-    from remote_store._store import Store
+    from remote_store import Store
 
     _register_builtin_backends()
 

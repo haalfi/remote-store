@@ -5,6 +5,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-161 — Enforce public import paths in extensions (checker + fixes + Cat 1 comments)**
+  Added `test_no_private_module_imports` AST checker to `test_ext_contract.py` (excluding
+  `TYPE_CHECKING` blocks, catching deferred function-body imports). Fixed 10 Cat 2 import
+  paths across 10 modules (`from remote_store._x import Y` → `from remote_store import Y`).
+  Added inline justification comments to 3 Cat 1 sites (`ext/glob.py`, `ext/write.py`,
+  `ext/dagster.py`). Audit-010 also surfaced a previously missed deferred `Store` import
+  in `dagster.py:383`. See BK-160 for the rule codification.
+
+- [x] **BK-160 — Codify extension import-time private access rule in `DESIGN.md`**
+  Added Rule 12 "Extension API contract" to `sdd/DESIGN.md`: MUST use public import
+  path when one exists; SHOULD avoid private module imports with no public path (justify
+  with inline comment). Enforced by `test_no_private_module_imports` (BK-161).
+
 - [x] **ID-138 — Async streaming integrity e2e test**
   Added `tests/e2e/test_async_streaming_integrity.py` mirroring the sync e2e
   test. Chain: `AsyncMemoryBackend` (seed) → `AsyncAzureBackend` (Azurite,

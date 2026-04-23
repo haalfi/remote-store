@@ -25,7 +25,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, TypeVar
 
-from remote_store._errors import CapabilityNotSupported, RemoteStoreError
+from remote_store import CapabilityNotSupported, RemoteStoreError
 
 log = logging.getLogger(__name__)
 

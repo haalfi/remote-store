@@ -16,7 +16,9 @@ import io
 from typing import TYPE_CHECKING
 
 from remote_store import ContentDigest, RemotePath, WriteResult
-from remote_store._store import _validate_metadata
+from remote_store._store import (
+    _validate_metadata,  # private: no public equivalent; ext.write needs this validation helper
+)
 from remote_store.ext.streams import ChecksumReader, ChecksumWriter
 
 if TYPE_CHECKING:

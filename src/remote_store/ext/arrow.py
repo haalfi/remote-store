@@ -28,7 +28,7 @@ except ModuleNotFoundError as _exc:  # pragma: no cover
         "PyArrow is required for the arrow extension. Install it with: pip install 'remote-store[arrow]'"
     ) from _exc
 
-from remote_store._errors import (
+from remote_store import (
     AlreadyExists,
     CapabilityNotSupported,
     InvalidPath,

@@ -157,3 +157,18 @@ class TestRemotePathNormalization:
 Each test method carries a `@pytest.mark.spec("ID")` marker for traceability.
 
 For test **quality** rules (assertions, mocking, coverage), see `sdd/TESTING.md`.
+
+### 12. Extension API contract
+
+Extensions in `remote_store.ext.*` and `remote_store.aio.ext.*` are core-adjacent
+modules, not external consumers. Two tiers apply:
+
+- **MUST:** Use the public import path when one exists. Write
+  `from remote_store import X`, not `from remote_store._module import X`. All
+  symbols in `remote_store.__all__` have a public path.
+- **SHOULD avoid:** Importing from private modules (`remote_store._*`) when no
+  public path exists. When unavoidable due to tight architectural coupling, add
+  an inline comment explaining why no public equivalent exists.
+
+The `test_no_private_module_imports` test in `tests/test_ext_contract.py`
+enforces the MUST tier automatically.
