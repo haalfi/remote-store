@@ -57,7 +57,7 @@ dependency, zero impact on core.
 ### New spec sections
 
 - Extends `003-backend-adapter-contract.md` (FileSystemHandler surface)
-- New spec `013-pyarrow-filesystem-adapter.md` (proposed)
+- New spec `014-pyarrow-filesystem-adapter.md` (shipped)
 
 ## Data Lake Integration Considerations
 
@@ -97,12 +97,23 @@ the filesystem they write to.
 
 ## Open Questions
 
-1. Should `open_output_stream` buffer in memory or use a temp file for large
-   writes?
-2. Should the adapter expose `open_input_file` (random access) in addition to
-   `open_input_stream` (sequential)?
-3. Version constraints on `pyarrow` — minimum version that supports
-   `FileSystemHandler`?
+*All questions resolved during implementation.*
+
+1. **Should `open_output_stream` buffer in memory or use a temp file?**
+   *Resolved:* `SpooledTemporaryFile(max_size=write_spill_threshold)` — in-memory
+   up to the threshold (default 64 MB), then transparently spills to a temp file.
+   Avoids unbounded heap growth for large writes without always touching disk.
+
+2. **Should the adapter expose `open_input_file` (random access)?**
+   *Resolved:* Yes. Implemented with a three-tier design: (1) native PyArrow FS
+   fast path when the backend exposes one via `unwrap()`; (2) full-file
+   materialization to `pa.BufferReader` for files ≤ `materialization_threshold`
+   (default 64 MB); (3) `read_seekable()` wrapped in `pa.PythonFile` for large
+   files.
+
+3. **Minimum `pyarrow` version?**
+   *Resolved:* `pyarrow>=12.0.0` (pinned in the `[arrow]` extra in
+   `pyproject.toml`).
 
 ## References
 

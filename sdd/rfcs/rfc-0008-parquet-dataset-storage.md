@@ -213,7 +213,7 @@ ds.write_dataset(table, "orders", run_id="dagster-abc123")
 
 ### New spec sections (proposed)
 
-Spec `041-ext-parquet.md` with IDs:
+Spec `042-ext-parquet.md` with IDs:
 
 - `PDS-001`: `ParquetDatasetStore` constructor and defaults
 - `PDS-002`: `write_dataset` — file layout, serialize-then-write-atomic, manifest, `_SUCCESS`
@@ -312,23 +312,27 @@ revisited in a future RFC.
 
 ## Open Questions
 
-1. **Should `write_dataset` support incremental appends?** v1 proposes
-   overwrite semantics (each write replaces the dataset). Append-mode would
-   require manifest merging and complicates the `_SUCCESS` contract.
-   Recommendation: defer to v2.
+*All questions resolved or explicitly deferred during implementation.*
 
-2. **Should `_SUCCESS` contain the manifest hash?** Writing the manifest's
-   content hash into `_SUCCESS` would let readers detect corruption without
-   parsing the manifest. Trade-off: adds complexity vs marginal safety gain.
+1. **Should `write_dataset` support incremental appends?**
+   *Deferred to a future RFC/spec.* v1 is overwrite-only; append semantics
+   require manifest merging and complicate the `_SUCCESS` contract.
 
-3. **Compression parameter scope.** Should compression be set per-dataset
-   (constructor) or per-write (method parameter)? Constructor default with
-   per-write override is the most flexible but increases API surface.
+2. **Should `_SUCCESS` contain the manifest hash?**
+   *Deferred.* `_SUCCESS` is written as an empty file in v1. The marginal
+   corruption-detection benefit did not justify the added complexity for this
+   release.
 
-4. **Relationship to `ext.dagster` v2.** The deferred `DagsterStoreResource` /
-   `RemoteStoreIOManager` (noted in spec 031) could natively integrate
-   `ParquetDatasetStore`. Should this RFC block on or coordinate with that
-   work?
+3. **Compression parameter scope.**
+   *Resolved:* Constructor-only. `compression` is set at construction time;
+   `write_dataset` has no per-call override. This keeps the API surface minimal;
+   callers needing different codecs per dataset construct separate
+   `ParquetDatasetStore` instances.
+
+4. **Relationship to `ext.dagster` v2.**
+   *Deferred.* Not blocking. `ParquetDatasetStore` ships independently; the
+   `DagsterStoreResource` / `RemoteStoreIOManager` integration can reference it
+   when that work resumes.
 
 *Resolved:* `delete_dataset` is included in the proposal (see above).
 Overwrite semantics are specified via the `overwrite` parameter.
