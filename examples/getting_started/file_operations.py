@@ -21,11 +21,11 @@ from remote_store import BackendConfig, Capability, Registry, RegistryConfig, St
 def demo(store):
     """Exercise core Store operations (everything except to_key)."""
     # --- Write ---
-    store.write("docs/readme.txt", b"First file")
+    result = store.write("docs/readme.txt", b"First file")
     store.write("docs/changelog.txt", b"v0.1.0 - initial release")
     store.write("data/report.csv", b"col1,col2\n1,2\n3,4")
     store.write("tmp/scratch.txt", b"temporary data")
-    print("Created 4 files.\n")
+    print(f"Created 4 files (e.g. readme.txt: {result.size} bytes).\n")
 
     # --- List files in a folder ---
     print("Files in docs/:")

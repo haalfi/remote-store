@@ -22,8 +22,8 @@ def demo(store):
     results = {}
 
     # --- Basic atomic write ---
-    store.write_atomic("config.json", b'{"version": 1}')
-    print(f"Atomic write: {store.read_bytes('config.json').decode()}")
+    result = store.write_atomic("config.json", b'{"version": 1}')
+    print(f"Atomic write: {store.read_bytes('config.json').decode()} ({result.size} bytes)")
 
     # --- Atomic write refuses to overwrite by default ---
     try:
@@ -33,15 +33,15 @@ def demo(store):
         print(f"\nExpected error: {exc}")
 
     # --- Atomic overwrite ---
-    store.write_atomic("config.json", b'{"version": 2}', overwrite=True)
-    print(f"\nAfter atomic overwrite: {store.read_bytes('config.json').decode()}")
+    result = store.write_atomic("config.json", b'{"version": 2}', overwrite=True)
+    print(f"\nAfter atomic overwrite: {store.read_bytes('config.json').decode()} ({result.size} bytes)")
 
     # --- Regular write also supports overwrite ---
-    store.write("data.txt", b"original")
-    print(f"\nOriginal: {store.read_bytes('data.txt').decode()}")
+    result = store.write("data.txt", b"original")
+    print(f"\nOriginal: {store.read_bytes('data.txt').decode()} ({result.size} bytes)")
 
-    store.write("data.txt", b"updated", overwrite=True)
-    print(f"After overwrite: {store.read_bytes('data.txt').decode()}")
+    result = store.write("data.txt", b"updated", overwrite=True)
+    print(f"After overwrite: {store.read_bytes('data.txt').decode()} ({result.size} bytes)")
 
     # --- Regular write also refuses overwrite by default ---
     try:
