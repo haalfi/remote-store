@@ -57,6 +57,7 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
+
 - [ ] **BK-159 — Audit handwritten docs for v0.23.0+ feature & API changes**
   Review handwritten documentation (guides, tutorials, examples) for features,
   APIs, and breaking changes introduced post v0.23.0. Example: custom backend

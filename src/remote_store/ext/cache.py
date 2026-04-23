@@ -24,8 +24,7 @@ import threading
 import time
 from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, cast, runtime_checkable
 
-from remote_store._models import FileInfo, FolderInfo  # noqa: TCH003 — runtime ref needed for CodeQL
-from remote_store._proxy import ProxyStore
+from remote_store import FileInfo, FolderInfo, ProxyStore  # noqa: TCH003 — runtime ref needed for CodeQL
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping

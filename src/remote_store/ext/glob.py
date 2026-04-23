@@ -23,8 +23,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from remote_store._capabilities import Capability
-from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
+from remote_store import Capability
+from remote_store._glob import (  # private: _glob is the implementation module; ext.glob is its public face
+    extract_prefix,
+    needs_recursive,
+    pattern_to_regex,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

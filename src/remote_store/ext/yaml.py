@@ -29,7 +29,7 @@ if importlib.util.find_spec("yaml") is None and importlib.util.find_spec("ruamel
         "YAML support requires pyyaml or ruamel.yaml. Install with: pip install 'remote-store[yaml]'"
     )
 
-from remote_store._config import RegistryConfig
+from remote_store import RegistryConfig
 
 __all__ = [
     "from_yaml",
@@ -92,7 +92,7 @@ def from_yaml(
         raise TypeError(msg)
 
     if resolve_env_vars:
-        from remote_store._config import resolve_env
+        from remote_store import resolve_env
 
         data = resolve_env(data)
 

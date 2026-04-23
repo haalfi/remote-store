@@ -29,8 +29,7 @@ import json
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from remote_store._capabilities import Capability
-from remote_store._errors import AlreadyExists, CapabilityNotSupported, RemoteStoreError
+from remote_store import AlreadyExists, Capability, CapabilityNotSupported, RemoteStoreError
 
 if TYPE_CHECKING:
     from remote_store._store import Store
