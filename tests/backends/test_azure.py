@@ -77,7 +77,7 @@ def _close_tracked_backends() -> Iterator[None]:
 
 
 # -- Shared Azurite helpers (imported from conftest) -------------------------
-from tests.conftest import _AZURITE_CONN_STR, _azurite_reachable  # noqa: E402
+from tests.conftest import _azurite_reachable  # noqa: E402
 
 
 def _needs_azurite(func_or_class):  # type: ignore[no-untyped-def]
@@ -91,20 +91,20 @@ def _needs_azurite(func_or_class):  # type: ignore[no-untyped-def]
 
 
 @pytest.fixture
-def azure_backend() -> Iterator[Backend]:
+def azure_backend(azurite_server: str | None) -> Iterator[Backend]:
     """Create an AzureBackend against Azurite."""
-    if not _azurite_reachable():
+    if azurite_server is None:
         pytest.skip("Azurite not reachable")
 
     container = f"test-az-{uuid.uuid4().hex[:8]}"
-    service = BlobServiceClient.from_connection_string(_AZURITE_CONN_STR)
+    service = BlobServiceClient.from_connection_string(azurite_server)
     try:
         service.create_container(container)
     except Exception:
         service.close()
         raise
 
-    backend = AzureBackend(container=container, connection_string=_AZURITE_CONN_STR)
+    backend = AzureBackend(container=container, connection_string=azurite_server)
     yield backend
 
     backend.close()

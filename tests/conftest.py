@@ -17,8 +17,13 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 # ---------------------------------------------------------------------------
-# Shared availability / reachability helpers (needed by both tests/ and
-# tests/backends/ — live here so neither subtree imports from the other)
+# Shared availability / reachability helpers
+# Used by fixtures in this file (moto_server, azurite_server) and imported
+# directly by tests/backends/test_azure.py. tests/backends/conftest.py
+# retains its own copies of _s3_available, _azure_available, and
+# _azurite_reachable to stay self-contained — a subdirectory conftest
+# importing from a parent conftest is an upward import that creates the same
+# cross-boundary problem in reverse.
 # ---------------------------------------------------------------------------
 
 
