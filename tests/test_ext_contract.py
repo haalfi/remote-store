@@ -12,7 +12,13 @@ from pathlib import Path
 
 import pytest
 
+import remote_store as _rs
+
 _SRC = Path(__file__).resolve().parent.parent / "src" / "remote_store"
+
+# Public names available via `from remote_store import X` — used by the
+# private-import checker and validated by test_public_api_completeness.
+_PUBLIC_NAMES: frozenset[str] = frozenset(_rs.__all__)
 
 
 def _gather(ext_dir: Path, pkg: str) -> list[tuple[Path, str]]:
@@ -39,14 +45,25 @@ def _is_type_checking_guard(node: ast.If) -> bool:
 
 
 def _collect_type_checking_imports(tree: ast.AST) -> frozenset[int]:
-    """Return id() of every import node nested inside an if TYPE_CHECKING: block."""
+    """Return id() of every import node nested inside an if TYPE_CHECKING: block.
+
+    Walks only node.body (not orelse) so a hypothetical
+    ``if TYPE_CHECKING: ... else: <runtime import>`` does not escape detection.
+    """
     guarded: set[int] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.If) and _is_type_checking_guard(node):
-            for child in ast.walk(node):
-                if isinstance(child, ast.ImportFrom | ast.Import):
-                    guarded.add(id(child))
+            for stmt in node.body:
+                for child in ast.walk(stmt):
+                    if isinstance(child, ast.ImportFrom | ast.Import):
+                        guarded.add(id(child))
     return frozenset(guarded)
+
+
+def test_public_api_completeness() -> None:
+    """Every name in remote_store.__all__ must be accessible as an attribute (DESIGN.md § 12)."""
+    for name in _PUBLIC_NAMES:
+        assert hasattr(_rs, name), f"{name!r} is in remote_store.__all__ but not importable"
 
 
 @pytest.mark.parametrize(("source_path", "module_import"), _ALL_EXT, ids=_MODULE_IDS)
@@ -65,9 +82,6 @@ class TestExtensionContract:
 
     def test_no_private_module_imports(self, source_path: Path, module_import: str) -> None:
         """Extension must not use private import paths for public symbols (DESIGN.md § 12)."""
-        import remote_store as _rs
-
-        public_names: frozenset[str] = frozenset(_rs.__all__)
         tree = ast.parse(source_path.read_text())
         guarded = _collect_type_checking_imports(tree)
         violations: list[str] = []
@@ -77,7 +91,7 @@ class TestExtensionContract:
             if isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 if module.startswith("remote_store._"):
-                    bypassed = [a.name for a in node.names if a.name in public_names]
+                    bypassed = [a.name for a in node.names if a.name in _PUBLIC_NAMES]
                     if bypassed:
                         names = ", ".join(bypassed)
                         violations.append(f"line {node.lineno}: from {module} import {names}")
