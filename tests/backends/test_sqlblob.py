@@ -62,6 +62,23 @@ def minimal_engine() -> Iterator[sa.Engine]:
     engine.dispose()
 
 
+@pytest.fixture
+def mtime_engine() -> Iterator[sa.Engine]:
+    """Engine with a (key, data, modified_at) table — mtime present, no user_metadata."""
+    engine = sa.create_engine("sqlite:///:memory:")
+    metadata = sa.MetaData()
+    sa.Table(
+        "mtime_only",
+        metadata,
+        sa.Column("key", sa.Text, primary_key=True),
+        sa.Column("data", sa.LargeBinary, nullable=False),
+        sa.Column("modified_at", sa.Float, nullable=False),
+    )
+    metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -988,7 +1005,7 @@ class TestSQLBlobWriteResult:
     def test_legacy_schema_without_user_metadata_column_does_not_advertise_user_metadata(
         self, minimal_engine: sa.Engine
     ) -> None:
-        """Legacy table missing user_metadata must not declare USER_METADATA or WRITE_RESULT_NATIVE."""
+        """A table with neither modified_at nor user_metadata must not declare USER_METADATA or WRITE_RESULT_NATIVE."""
         b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
         assert not b.capabilities.supports(Capability.USER_METADATA)
         assert not b.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
@@ -1011,3 +1028,30 @@ class TestSQLBlobWriteResult:
         backend.copy("src.txt", "dst.txt")
         info = backend.get_file_info("dst.txt")
         assert info.metadata == {"env": "test"}
+
+
+class TestMtimeOnlySchema:
+    """SQLBlobBackend with (key, data, modified_at) — no user_metadata column.
+
+    WRITE_RESULT_NATIVE must be declared (modified_at present), USER_METADATA
+    must not be declared (user_metadata absent), and write() must return
+    source='native' with a populated last_modified.
+    """
+
+    @pytest.mark.spec("WR-004")
+    @pytest.mark.spec("WR-013")
+    def test_declares_write_result_native_but_not_user_metadata(self, mtime_engine: sa.Engine) -> None:
+        b = SQLBlobBackend(engine=mtime_engine, table_name="mtime_only", create_table=False)
+        assert b.capabilities.supports(Capability.WRITE_RESULT_NATIVE)
+        assert not b.capabilities.supports(Capability.USER_METADATA)
+        b.close()
+
+    @pytest.mark.spec("WR-004")
+    @pytest.mark.spec("WR-013")
+    def test_write_returns_native_source_and_last_modified(self, mtime_engine: sa.Engine) -> None:
+        b = SQLBlobBackend(engine=mtime_engine, table_name="mtime_only", create_table=False)
+        result = b.write("f.txt", b"payload")
+        assert result.source == "native"
+        assert result.last_modified is not None
+        assert result.metadata is None
+        b.close()

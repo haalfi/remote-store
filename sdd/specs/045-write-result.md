@@ -93,15 +93,15 @@ The returned path is directly usable as input to other Store methods.
 **Invariant:** `WriteResult.size` equals the byte length of the written content
 on every backend.
 
-- For `bytes` / `str` input: `size` is computed from the payload directly
-  (zero added I/O cost).
-- For non-seekable `BinaryIO` input: `size` is obtained by counting bytes as
-  they stream or via a post-write `stat()`.  On `LocalBackend` and `SFTPBackend`
-  the streaming branch calls one `stat()`/`sftp.stat()` after the write closes —
-  the same call that populates `last_modified`, so no extra round trip.
-- For backends with `WRITE_RESULT_NATIVE` (Azure, S3, S3-PyArrow, SFTP, Local,
-  Memory, SQLBlob): `size` is available from the write response or trivially from
-  the in-process data.
+- For `bytes` / `str` input: `size` is computed from the payload directly.
+- For non-seekable `BinaryIO` input on `LocalBackend`: the streaming branch
+  derives `size` from `stat().st_size` — the same single `stat()` call that
+  populates `last_modified`, so size and mtime share one I/O round trip.
+- For non-seekable `BinaryIO` input on `SFTPBackend`: bytes are counted during
+  upload; a subsequent `sftp.stat()` populates `last_modified` only.
+- For other `WRITE_RESULT_NATIVE` backends (Azure, S3, S3-PyArrow, Memory,
+  SQLBlob): `size` is available from the write response or from in-process
+  data — no extra I/O round trip for size.
 
 ## WR-004: source Field from WRITE_RESULT_NATIVE
 
@@ -230,7 +230,7 @@ the capability is declared. The flag advertises which fields in the returned
 | `AzureBackend`               | yes                             |
 | `S3Backend`                  | yes                             |
 | `MemoryBackend`              | yes                             |
-| `SQLBlobBackend`             | yes — when `user_metadata` column is present; no otherwise (dynamic) |
+| `SQLBlobBackend`             | yes — when `modified_at` or `user_metadata` column is present; no otherwise (dynamic) |
 | `S3PyArrowBackend`           | yes                             |
 | `SFTPBackend`                | yes                             |
 | `LocalBackend`               | yes                             |
