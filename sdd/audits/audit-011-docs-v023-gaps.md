@@ -28,11 +28,11 @@ Files read and compared against the above:
 | `guides/async.md` | Major gaps |
 | `guides/async-sync-bridges.md` | Current |
 | `docs-src/write-integrity.md` | Current |
-| `docs-src/capabilities-matrix.md` | Minor gap: table correct, prose summary line 29 contradicts it (see F-11) |
+| `docs-src/capabilities-matrix.md` | Minor gap: table correct, prose summary line 29 contradicts it (see F-10) |
 | `guides/extensions.md` | Major gap |
 | `guides/backends/local.md` | Minor gap |
 | `guides/backends/s3.md` | Minor gap |
-| `guides/backends/s3-pyarrow.md` | Minor gap (see F-17) |
+| `guides/backends/s3-pyarrow.md` | Minor gap (see F-16) |
 | `guides/backends/azure.md` | Minor gap |
 | `guides/backends/memory.md` | Current |
 | `guides/health-check.md` | Current |
@@ -109,6 +109,8 @@ def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool =
 ```
 
 Both signatures have two problems in the same location: the return type is `None` instead of `WriteResult`, and the `metadata: Mapping[str, str] | None = None` parameter is absent. These snippets are the *tested source* embedded verbatim into the guide via `--8<--` includes. A developer adapting this code creates a non-conformant backend that fails the Backend ABC's return type constraint and cannot accept `metadata=` even when the backend declares `USER_METADATA`.
+
+Note on `write_atomic`: the snippet body unconditionally raises `CapabilityNotSupported` because the example backend does not declare `ATOMIC_WRITE`, so `Store` never routes calls there at runtime. The signature must still conform to the ABC: a type-checker flags any `Backend` subclass whose `write_atomic` does not match the declared return type and parameter list, and developers copy-pasting the stub as a starting point for a real implementation will propagate the wrong signature.
 
 Backend ABC (`src/remote_store/_backend.py:186-187`, `214-215`):
 ```python
