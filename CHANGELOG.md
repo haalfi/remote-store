@@ -6,7 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- AF-041: Replace prose `--` with em dash `—` throughout docs, specs, research, and SDD files; add typography rule to `sdd/DOCUMENTATION.md`
+- BK-007 (extended): Replace prose `--` with em dash `—` throughout docs, specs, research, SDD files, and `.tmpl` templates; add typography Rule 8 to `sdd/DOCUMENTATION.md`
 - BUG-181: HNS `write_atomic` WriteResult rich-field and metadata parity verified with mock tests
 - ID-013b: async write layer returns `WriteResult`; `metadata=` supported on `AsyncStore` and all async backends; `aio.ext.write.write_with_hash` added
 - BK-157: Tighten docs site spacing: compact table rows, heading typography, method separators

@@ -1450,11 +1450,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 - [x] **BK-007 — Docs quick fixes: dashes, See also, table booleans, SFTP blockquotes**
   All 20 items from the Audit 004 fix list resolved:
-  AF-041 (`--` → `—` across 33 files), AF-042 (See also unified to Pattern B),
-  AF-043 (table booleans to `Yes` / `—`), AF-044 (SFTP blockquotes → admonitions),
-  AF-046 (extensions table disambiguation), AF-047/048 (Installation stubs),
-  AF-049 (`!!! tip` accepted as intentional). Added `.editorconfig` (UTF-8, LF).
-  Supersedes ID-086 (all T-16 through T-20 resolved here).
+  AF-041 (`--` → `—`; first pass 33 files, second pass extended to 45 files covering
+  sdd/ specs, ADRs, RFCs, research, audits, and `docs-src/design/*.tmpl` templates),
+  AF-042 (See also unified to Pattern B), AF-043 (table booleans to `Yes` / `—`),
+  AF-044 (SFTP blockquotes → admonitions), AF-046 (extensions table disambiguation),
+  AF-047/048 (Installation stubs), AF-049 (`!!! tip` accepted as intentional).
+  Added `.editorconfig` (UTF-8, LF). Supersedes ID-086 (all T-16 through T-20 resolved here).
 
 - [x] **ID-086 — Docs structural harmonization** — superseded by BK-007 above.
 

@@ -124,7 +124,7 @@ The README must contain:
 
 - **Prose dashes:** Use `—` (U+2014) sparingly as a parenthetical aside. Default to periods, colons, or commas. Never use `--` as an em dash substitute in documentation prose.
 - **Table N/A value:** `—` (U+2014) for any "not applicable / not supported / none" cell. Never `--` or `No`.
-- **Preserve `--`:** Only in shell flag syntax inside code blocks, spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax, and `--8<--` snippet includes.
+- **Preserve `--`:** Only in shell flag syntax inside code blocks, spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax, `--8<--` snippet includes, and code/SQL comments inside fenced blocks.
 
 ## Guides
 
