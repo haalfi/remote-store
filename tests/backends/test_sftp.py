@@ -28,13 +28,12 @@ from remote_store._errors import (  # noqa: E402
     AlreadyExists,
     BackendUnavailable,
     CapabilityNotSupported,
-    DirectoryNotEmpty,
     InvalidPath,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderInfo  # noqa: E402
+from remote_store._models import FolderInfo  # noqa: E402
 from remote_store.backends._sftp import (  # noqa: E402
     HostKeyPolicy,
     SFTPBackend,
@@ -175,14 +174,11 @@ class TestSFTPFilesystemModel:
 # endregion
 
 
-# region: Atomic Write (SFTP-014, SFTP-015)
+# region: Atomic Write (SFTP-014)
 class TestSFTPAtomicWrite:
-    """SFTP-014, SFTP-015: simulated atomic write."""
-
-    @pytest.mark.spec("SFTP-014")
-    def test_write_atomic_creates_file(self, sftp_backend: Backend) -> None:
-        sftp_backend.write_atomic("atomic.txt", b"atomic content")
-        assert sftp_backend.read_bytes("atomic.txt") == b"atomic content"
+    """SFTP-014: simulated atomic write — implementation-specific checks.
+    Basic write_atomic create/overwrite/already-exists contract is covered by the
+    conformance suite (BE-010, BE-011)."""
 
     @pytest.mark.spec("SFTP-014")
     def test_write_atomic_no_temp_file_left(self, sftp_backend: Backend) -> None:
@@ -192,121 +188,6 @@ class TestSFTPAtomicWrite:
         files = list(sftp_backend.list_files(""))
         temp_files = [f for f in files if f.name.startswith(".~tmp.")]
         assert temp_files == []
-
-    @pytest.mark.spec("SFTP-015")
-    def test_write_atomic_overwrite(self, sftp_backend: Backend) -> None:
-        sftp_backend.write_atomic("at.txt", b"first")
-        sftp_backend.write_atomic("at.txt", b"second", overwrite=True)
-        assert sftp_backend.read_bytes("at.txt") == b"second"
-
-    @pytest.mark.spec("SFTP-015")
-    def test_write_atomic_already_exists(self, sftp_backend: Backend) -> None:
-        sftp_backend.write_atomic("at2.txt", b"first")
-        with pytest.raises(AlreadyExists):
-            sftp_backend.write_atomic("at2.txt", b"second", overwrite=False)
-
-
-# endregion
-
-
-# region: delete_folder (SFTP-016, SFTP-017)
-class TestSFTPDeleteFolder:
-    """SFTP-016, SFTP-017: delete_folder semantics."""
-
-    @pytest.mark.spec("SFTP-016")
-    def test_delete_folder_recursive(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("rf/a.txt", b"a")
-        sftp_backend.write("rf/sub/b.txt", b"b")
-        sftp_backend.delete_folder("rf", recursive=True)
-        assert sftp_backend.exists("rf/a.txt") is False
-        assert sftp_backend.exists("rf/sub/b.txt") is False
-        assert sftp_backend.is_folder("rf") is False
-
-    @pytest.mark.spec("SFTP-016")
-    def test_delete_folder_recursive_not_found(self, sftp_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            sftp_backend.delete_folder("ghost", recursive=True)
-
-    @pytest.mark.spec("SFTP-016")
-    def test_delete_folder_recursive_missing_ok(self, sftp_backend: Backend) -> None:
-        result = sftp_backend.delete_folder("ghost", recursive=True, missing_ok=True)
-        assert result is None
-
-    @pytest.mark.spec("SFTP-017")
-    def test_delete_folder_non_recursive_not_found(self, sftp_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            sftp_backend.delete_folder("empty", recursive=False)
-
-    @pytest.mark.spec("SFTP-017")
-    def test_delete_folder_non_recursive_non_empty(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("nonempty/file.txt", b"x")
-        with pytest.raises(DirectoryNotEmpty):
-            sftp_backend.delete_folder("nonempty", recursive=False)
-
-
-# endregion
-
-
-# region: Move and Copy (SFTP-018, SFTP-019)
-class TestSFTPMoveCopy:
-    """SFTP-018, SFTP-019: move and copy operations."""
-
-    @pytest.mark.spec("SFTP-018")
-    def test_move(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("src.txt", b"data")
-        sftp_backend.move("src.txt", "dst.txt")
-        assert sftp_backend.exists("src.txt") is False
-        assert sftp_backend.read_bytes("dst.txt") == b"data"
-
-    @pytest.mark.parametrize(
-        ("op", "src_setup", "dst_setup", "kwargs", "expected_error"),
-        [
-            pytest.param("move", False, False, {}, NotFound, id="move-not-found"),
-            pytest.param("move", True, True, {"overwrite": False}, AlreadyExists, id="move-already-exists"),
-            pytest.param("copy", False, False, {}, NotFound, id="copy-not-found"),
-            pytest.param("copy", True, True, {"overwrite": False}, AlreadyExists, id="copy-already-exists"),
-        ],
-    )
-    @pytest.mark.spec("SFTP-018")
-    def test_move_copy_errors(
-        self,
-        sftp_backend: Backend,
-        op: str,
-        src_setup: bool,
-        dst_setup: bool,
-        kwargs: dict[str, object],
-        expected_error: type,
-    ) -> None:
-        src, dst = f"{op}_e_src.txt", f"{op}_e_dst.txt"
-        if src_setup:
-            sftp_backend.write(src, b"a")
-        if dst_setup:
-            sftp_backend.write(dst, b"b")
-        with pytest.raises(expected_error):
-            getattr(sftp_backend, op)(src, dst, **kwargs)
-
-    @pytest.mark.spec("SFTP-018")
-    def test_move_overwrite(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("mo1.txt", b"a")
-        sftp_backend.write("mo2.txt", b"b")
-        sftp_backend.move("mo1.txt", "mo2.txt", overwrite=True)
-        assert sftp_backend.read_bytes("mo2.txt") == b"a"
-        assert sftp_backend.exists("mo1.txt") is False
-
-    @pytest.mark.spec("SFTP-019")
-    def test_copy(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("orig.txt", b"data")
-        sftp_backend.copy("orig.txt", "clone.txt")
-        assert sftp_backend.read_bytes("orig.txt") == b"data"
-        assert sftp_backend.read_bytes("clone.txt") == b"data"
-
-    @pytest.mark.spec("SFTP-019")
-    def test_copy_overwrite(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("co1.txt", b"a")
-        sftp_backend.write("co2.txt", b"b")
-        sftp_backend.copy("co1.txt", "co2.txt", overwrite=True)
-        assert sftp_backend.read_bytes("co2.txt") == b"a"
-        assert sftp_backend.read_bytes("co1.txt") == b"a"
 
 
 # endregion
@@ -623,104 +504,11 @@ class TestSFTPHelpers:
 # endregion
 
 
-# region: Read/Write roundtrip
-class TestSFTPReadWrite:
-    """Basic read/write roundtrip to verify full stack."""
-
-    def test_write_and_read_bytes(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("hello.txt", b"hello world")
-        assert sftp_backend.read_bytes("hello.txt") == b"hello world"
-
-    def test_write_and_read_stream(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("stream.bin", b"\x00\x01\x02\xff")
-        stream = sftp_backend.read("stream.bin")
-        assert stream.read() == b"\x00\x01\x02\xff"
-
-    def test_write_overwrite(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("ow.txt", b"first")
-        sftp_backend.write("ow.txt", b"second", overwrite=True)
-        assert sftp_backend.read_bytes("ow.txt") == b"second"
-
-    def test_write_already_exists(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("ae.txt", b"first")
-        with pytest.raises(AlreadyExists):
-            sftp_backend.write("ae.txt", b"second")
-
-    def test_write_nested_path(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("a/b/c/deep.txt", b"deep")
-        assert sftp_backend.read_bytes("a/b/c/deep.txt") == b"deep"
-
-    def test_write_from_binaryio(self, sftp_backend: Backend) -> None:
-        import io
-
-        sftp_backend.write("bio.txt", io.BytesIO(b"streamed"))
-        assert sftp_backend.read_bytes("bio.txt") == b"streamed"
-
-
-# endregion
-
-
-# region: Listing and Metadata
-class TestSFTPListing:
-    """File and folder listing operations."""
-
-    def test_list_files_non_recursive(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("lst/a.txt", b"a")
-        sftp_backend.write("lst/b.txt", b"b")
-        sftp_backend.write("lst/sub/c.txt", b"c")
-        files = list(sftp_backend.list_files("lst"))
-        names = {f.name for f in files}
-        assert names == {"a.txt", "b.txt"}
-
-    def test_list_files_recursive(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("lr/a.txt", b"a")
-        sftp_backend.write("lr/sub/b.txt", b"b")
-        files = list(sftp_backend.list_files("lr", recursive=True))
-        names = {f.name for f in files}
-        assert names == {"a.txt", "b.txt"}
-
-    def test_list_files_empty_folder(self, sftp_backend: Backend) -> None:
-        files = list(sftp_backend.list_files("empty"))
-        assert files == []
-
-    def test_list_folders(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("lf/sub1/a.txt", b"a")
-        sftp_backend.write("lf/sub2/b.txt", b"b")
-        sftp_backend.write("lf/root.txt", b"r")
-        folders = list(sftp_backend.list_folders("lf"))
-        assert {f.name for f in folders} == {"sub1", "sub2"}
-
-    def test_list_folders_empty(self, sftp_backend: Backend) -> None:
-        folders = list(sftp_backend.list_folders("empty"))
-        assert folders == []
-
-
+# region: Metadata (SFTP-specific)
 class TestSFTPMetadata:
-    """File and folder metadata operations."""
-
-    def test_get_file_info(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("info.txt", b"hello world")
-        fi = sftp_backend.get_file_info("info.txt")
-        assert isinstance(fi, FileInfo)
-        assert fi.name == "info.txt"
-        assert fi.size == 11
-        assert fi.modified_at is not None
-
-    def test_get_file_info_not_found(self, sftp_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            sftp_backend.get_file_info("missing.txt")
-
-    def test_get_folder_info(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("fi/a.txt", b"aaa")
-        sftp_backend.write("fi/b.txt", b"bb")
-        fi = sftp_backend.get_folder_info("fi")
-        assert isinstance(fi, FolderInfo)
-        assert fi.file_count == 2
-        assert fi.total_size == 5
-
-    def test_get_folder_info_not_found(self, sftp_backend: Backend) -> None:
-        with pytest.raises(NotFound):
-            sftp_backend.get_folder_info("nodir")
+    """SFTP-specific metadata behavior.
+    Generic get_file_info/get_folder_info/exists/is_file/is_folder are covered
+    by the conformance suite (BE-004, BE-005, BE-016, BE-017)."""
 
     def test_get_folder_info_empty_folder(self, sftp_backend: Backend) -> None:
         """SFTP has real directories; empty folder should return FolderInfo with file_count=0."""
@@ -731,51 +519,6 @@ class TestSFTPMetadata:
         assert isinstance(fi, FolderInfo)
         assert fi.file_count == 0
         assert fi.total_size == 0
-
-    @pytest.mark.parametrize(
-        ("setup", "path", "method", "expected"),
-        [
-            pytest.param(("e.txt", b"x"), "e.txt", "exists", True, id="exists-file"),
-            pytest.param(None, "nope.txt", "exists", False, id="exists-missing"),
-            pytest.param(("f.txt", b"x"), "f.txt", "is_file", True, id="is-file-true"),
-            pytest.param(None, "missing.txt", "is_file", False, id="is-file-missing"),
-            pytest.param(("dir2/f.txt", b"x"), "dir2", "is_file", False, id="is-file-not-folder"),
-        ],
-    )
-    def test_existence_checks(
-        self,
-        sftp_backend: Backend,
-        setup: tuple[str, bytes] | None,
-        path: str,
-        method: str,
-        expected: bool,
-    ) -> None:
-        if setup:
-            sftp_backend.write(setup[0], setup[1])
-        assert getattr(sftp_backend, method)(path) is expected
-
-
-class TestSFTPDelete:
-    """Delete operations."""
-
-    def test_delete_file(self, sftp_backend: Backend) -> None:
-        sftp_backend.write("del.txt", b"x")
-        sftp_backend.delete("del.txt")
-        assert sftp_backend.exists("del.txt") is False
-
-    @pytest.mark.parametrize(
-        ("missing_ok", "raises"),
-        [
-            pytest.param(True, False, id="missing-ok"),
-            pytest.param(False, True, id="missing-raises"),
-        ],
-    )
-    def test_delete_missing(self, sftp_backend: Backend, missing_ok: bool, raises: bool) -> None:
-        if raises:
-            with pytest.raises(NotFound):
-                sftp_backend.delete("nope.txt", missing_ok=missing_ok)
-        else:
-            sftp_backend.delete("nope.txt", missing_ok=missing_ok)
 
 
 # endregion
