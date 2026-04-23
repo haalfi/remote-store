@@ -11,6 +11,23 @@ import asyncio
 from remote_store.aio import AsyncMemoryBackend, AsyncStore
 
 
+def _async_quick_start() -> None:
+    # --8<-- [start:async-quick-start]
+    import asyncio
+
+    from remote_store.aio import AsyncMemoryBackend, AsyncStore
+
+    async def main() -> None:
+        async with AsyncStore(AsyncMemoryBackend(), root_path="reports") as store:
+            result = await store.write("summary.txt", b"Q1 results", overwrite=True)
+            print(f"wrote {result.size} bytes")
+            data = await store.read_bytes("summary.txt")
+            print(data.decode())
+
+    asyncio.run(main())
+    # --8<-- [end:async-quick-start]
+
+
 async def _async_write_with_hash() -> None:
     # --8<-- [start:async-write-with-hash]
     from remote_store.aio.ext.write import write_with_hash
@@ -48,4 +65,5 @@ async def demo() -> None:
 
 
 if __name__ == "__main__":
+    _async_quick_start()
     asyncio.run(demo())

@@ -7,17 +7,7 @@ same capability model — so existing knowledge transfers directly.
 ## Quick start
 
 ```python
-import asyncio
-from remote_store.aio import AsyncStore
-from remote_store.backends import LocalBackend
-
-async def main():
-    async with AsyncStore(LocalBackend(root="/data"), root_path="reports") as store:
-        await store.write("summary.txt", b"Q1 results", overwrite=True)
-        data = await store.read_bytes("summary.txt")
-        print(data.decode())
-
-asyncio.run(main())
+--8<-- "examples/snippets/write_integrity_async.py:async-quick-start"
 ```
 
 Any sync `Backend` (Local, S3, SFTP, Azure, Memory) is auto-wrapped via
@@ -85,8 +75,8 @@ store = AsyncStore(S3Backend(bucket="uploads", anon=False))
 @app.post("/upload/{filename}")
 async def upload(filename: str, file: UploadFile):
     data = await file.read()
-    await store.write(filename, data, overwrite=True)
-    return {"stored": filename}
+    result = await store.write(filename, data, overwrite=True)
+    return {"stored": filename, "size": result.size}
 
 @app.get("/download/{filename}")
 async def download(filename: str):

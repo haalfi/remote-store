@@ -121,7 +121,8 @@ Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` h
 
 The Azure backend declares `WRITE_RESULT_NATIVE` and `USER_METADATA`. Write operations return
 a [`WriteResult`](../api/models.md) with `etag` and `last_modified` populated from the upload
-response. HNS-enabled accounts additionally populate `version_id` on `write_atomic()`.
+response. When blob versioning is enabled on a non-HNS container, `version_id` is also
+populated from the upload response.
 
 Pass `metadata=` to store custom string key-value pairs as Azure blob metadata.
 
