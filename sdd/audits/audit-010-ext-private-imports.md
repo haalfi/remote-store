@@ -12,7 +12,7 @@
 
 ## Findings
 
-**11 of 16 extension modules have runtime violations** (12 distinct violations). Violations split into two categories with different remediation paths.
+Violations split into two categories with different remediation paths; see tables below.
 
 ### Category 1: Truly private internals — no public API path
 
@@ -40,9 +40,9 @@ Fix is a one-line import path change (`from remote_store._x import Y` → `from 
 | `ext/pydantic.py` | `_config.RegistryConfig` | Public class |
 | `ext/yaml.py` | `_config.RegistryConfig` (line 32); `_config.resolve_env` (line 95, deferred) | Public symbols |
 
-**Compliant:** `aio/ext/write.py`, `ext/otel.py`, `ext/partition.py`, `ext/streams.py`, `ext/transfer.py` (5 modules; 11 + 5 = 16 total).
+**Compliant:** All modules not listed above.
 
-**Test gap:** `test_ext_contract.py::test_no_private_store_access` detects runtime attribute access (e.g., `store._backend`) but not import-time access to private modules. Both violate the same principle.
+**Test gap:** `test_ext_contract.py::test_no_private_store_access` only flags attribute access on variables literally named `store`, `src_store`, or `dst_store` — it misses access on any other Store-typed variable and does not detect import-time access to private modules at all.
 
 ---
 
@@ -60,8 +60,8 @@ Fix is a one-line import path change (`from remote_store._x import Y` → `from 
 1. **Add import-time checker to test suite**  
    Extend `test_ext_contract.py` to flag `from remote_store._*` and `import remote_store._*` via AST analysis. Must exclude `if TYPE_CHECKING:` blocks but must catch function-body deferred imports (`ext/yaml.py` line 95 is the reference case).
 
-2. **Fix Category 2 import paths**  
-   Change `from remote_store._x import Y` to `from remote_store import Y` for all 9 Category 2 modules. Mechanical one-line fix per occurrence; no design decision required.
+2. **Fix Category 2 import paths** *(prerequisite: the import-time rule extension must be adopted — via ADR or DESIGN.md — before executing)*  
+   Change `from remote_store._x import Y` to `from remote_store import Y` for all 9 Category 2 modules. Mechanical one-line fix per occurrence once the rule is formalised.
 
 3. **Resolve Category 1 internals**  
    Three symbols have no public path and each requires a decision:
