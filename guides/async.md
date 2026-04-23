@@ -58,13 +58,7 @@ the written path and size. Backends that declare `WRITE_RESULT_NATIVE` also popu
 `write()` and `write_atomic()` accept `bytes` or `AsyncIterator[bytes]`:
 
 ```python
-async def generate_report():
-    yield b"header\n"
-    yield b"row1\n"
-    yield b"row2\n"
-
-result = await store.write("report.csv", generate_report())
-print(f"wrote {result.size} bytes to {result.path}")
+--8<-- "examples/snippets/write_integrity_async.py:async-iterator-write"
 ```
 
 ## Child stores

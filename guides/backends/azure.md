@@ -123,14 +123,7 @@ The Azure backend declares `WRITE_RESULT_NATIVE` and `USER_METADATA`. Write oper
 a [`WriteResult`](../api/models.md) with `etag` and `last_modified` populated from the upload
 response. HNS-enabled accounts additionally populate `version_id` on `write_atomic()`.
 
-Pass `metadata=` to store custom string key-value pairs as Azure blob metadata:
-
-```python
-# requires Azure credentials
-result = store.write("file.csv", data, metadata={"env": "prod"})
-print(result.etag)          # e.g. "0x8da..."
-print(result.last_modified) # datetime(...)
-```
+Pass `metadata=` to store custom string key-value pairs as Azure blob metadata.
 
 ## Capabilities
 

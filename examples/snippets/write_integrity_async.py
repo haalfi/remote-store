@@ -1,4 +1,4 @@
-"""Async write-integrity snippets -- sourced by docs-src/write-integrity.md.
+"""Async write-integrity snippets — sourced by docs-src/write-integrity.md and guides/async.md.
 
 Named regions are included via pymdownx.snippets ``--8<--`` syntax.
 Run directly (``python examples/snippets/write_integrity_async.py``) to verify.
@@ -26,9 +26,25 @@ async def _async_write_with_hash() -> None:
     assert len(result.digest.value) == 64
 
 
+async def _async_iterator_write() -> None:
+    # --8<-- [start:async-iterator-write]
+    store = AsyncStore(AsyncMemoryBackend())
+
+    async def generate_report():
+        yield b"header\n"
+        yield b"row1\n"
+        yield b"row2\n"
+
+    result = await store.write("report.csv", generate_report())
+    print(f"wrote {result.size} bytes to {result.path}")
+    # --8<-- [end:async-iterator-write]
+    assert result.size == len(b"header\nrow1\nrow2\n")
+
+
 async def demo() -> None:
     """Execute all async write-integrity snippets."""
     await _async_write_with_hash()
+    await _async_iterator_write()
 
 
 if __name__ == "__main__":
