@@ -76,22 +76,8 @@ def _close_tracked_backends() -> Iterator[None]:
             backend.close()
 
 
-# -- Shared Azurite helpers (imported from conftest where possible) -----------
-
-
-def _azurite_reachable() -> bool:
-    import socket
-
-    try:
-        s = socket.create_connection(("127.0.0.1", 10000), timeout=1)
-        s.close()
-        return True
-    except OSError:
-        return False
-
-
-# Re-use the connection string from conftest
-from tests.conftest import _AZURITE_CONN_STR  # noqa: E402
+# -- Shared Azurite helpers (imported from conftest) -------------------------
+from tests.conftest import _AZURITE_CONN_STR, _azurite_reachable  # noqa: E402
 
 
 def _needs_azurite(func_or_class):  # type: ignore[no-untyped-def]

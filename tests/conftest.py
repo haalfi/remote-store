@@ -40,7 +40,7 @@ def _s3_available() -> bool:
 
 def _azure_available() -> bool:
     try:
-        import azure.storage.blob  # noqa: F401
+        import azure.storage.filedatalake  # noqa: F401
 
         return True
     except ImportError:
