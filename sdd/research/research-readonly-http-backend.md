@@ -2,7 +2,7 @@
 
 **Item ID:** ID-082
 **Date:** 2026-03-15
-**Status:** Research complete -- ready for spec consideration
+**Status:** Research complete — ready for spec consideration
 
 ---
 
@@ -10,7 +10,7 @@
 
 Users already use remote-store for storage (local, S3, SFTP, Azure). Sometimes
 another kind of "remote stored thing" enters the picture: files hosted at an
-HTTP URL -- government open data portals, dataset registries, static file
+HTTP URL — government open data portals, dataset registries, static file
 servers, CDN-hosted assets, package archives, etc.
 
 A `ReadOnlyHttpBackend` would treat an HTTP endpoint as just another backend.
@@ -20,7 +20,7 @@ the same composability (`ext.cache`, `ext.transfer`, `ext.observe`,
 
 ### Why a backend, not an extension?
 
-An extension cannot provide `Store.read()` -- it would need to reimplement the
+An extension cannot provide `Store.read()` — it would need to reimplement the
 entire `Store` interface. A backend slots into the existing architecture
 naturally: capability gating, error mapping, registry lifecycle, and all
 extensions work out of the box.
@@ -30,7 +30,7 @@ extensions work out of the box.
 - Core package has **zero runtime dependencies** (`dependencies = []`).
 - HTTP library must be optional (`urllib` from stdlib as baseline, `requests`
   or `httpx` as optional extras).
-- The backend is **read-only** -- write, delete, move, copy operations raise
+- The backend is **read-only** — write, delete, move, copy operations raise
   `CapabilityNotSupported`.
 - Must handle real-world HTTP concerns: redirects, content-type, timeouts,
   auth headers.
@@ -42,19 +42,19 @@ extensions work out of the box.
 | Capability   | Supported | Notes |
 |--------------|:---------:|-------|
 | READ         | Yes       | Core value: `GET` request, return body as stream |
-| WRITE        | --        | Raises `CapabilityNotSupported` |
-| DELETE       | --        | Raises `CapabilityNotSupported` |
-| LIST         | --        | No reliable server-side mechanism (see SS5) |
-| MOVE         | --        | Raises `CapabilityNotSupported` |
-| COPY         | --        | Raises `CapabilityNotSupported` |
-| ATOMIC_WRITE | --        | Raises `CapabilityNotSupported` |
+| WRITE        | —         | Raises `CapabilityNotSupported` |
+| DELETE       | —         | Raises `CapabilityNotSupported` |
+| LIST         | —         | No reliable server-side mechanism (see SS5) |
+| MOVE         | —         | Raises `CapabilityNotSupported` |
+| COPY         | —         | Raises `CapabilityNotSupported` |
+| ATOMIC_WRITE | —         | Raises `CapabilityNotSupported` |
 | METADATA     | Yes       | `HEAD` request -> size, content-type, last-modified, ETag |
-| GLOB         | --        | No server-side pattern matching |
+| GLOB         | —         | No server-side pattern matching |
 
 **Capability set:** `{READ, METADATA}`
 
 This would be the first backend with only 2 capabilities. The capability
-system already handles this -- `Store` gates every operation and raises
+system already handles this — `Store` gates every operation and raises
 `CapabilityNotSupported` with clear context.
 
 ---
@@ -156,7 +156,7 @@ Three implementations: `UrllibTransport`, `RequestsTransport`, `HttpxTransport`.
 - **No connection pooling.** Each request opens a new TCP connection. Fine for
   occasional reads; poor for batch operations. `requests`/`httpx` sessions
   solve this.
-- **No async.** Acceptable -- all existing backends are sync.
+- **No async.** Acceptable — all existing backends are sync.
 - **SSL works.** `urllib.request.urlopen` validates TLS certificates by default
   via `ssl.create_default_context()`. `verify_ssl=False` would use
   `ssl._create_unverified_context()`.
@@ -167,7 +167,7 @@ Three implementations: `UrllibTransport`, `RequestsTransport`, `HttpxTransport`.
 
 ---
 
-## 5. LIST Capability -- Why Not
+## 5. LIST Capability — Why Not
 
 HTTP has no native directory listing. The options considered:
 
@@ -279,11 +279,11 @@ This is the primary value of making it a backend vs. standalone code:
 
 | Extension | Benefit |
 |-----------|---------|
-| `ext.cache` | TTL-based caching of `read()` results -- critical for HTTP, avoids repeated downloads |
-| `ext.transfer` | `download(store, "dataset.csv", local_path)` -- works out of the box |
+| `ext.cache` | TTL-based caching of `read()` results — critical for HTTP, avoids repeated downloads |
+| `ext.transfer` | `download(store, "dataset.csv", local_path)` — works out of the box |
 | `ext.observe` | Instrument HTTP reads with callbacks (timing, logging) |
-| `ext.batch` | `batch_exists(store, paths)` -- check multiple resources |
-| `ext.arrow` | `read_table(store, "data.parquet")` -- read remote Parquet/CSV via PyArrow |
+| `ext.batch` | `batch_exists(store, paths)` — check multiple resources |
+| `ext.arrow` | `read_table(store, "data.parquet")` — read remote Parquet/CSV via PyArrow |
 
 The `ext.cache` composability alone justifies the backend approach over ad-hoc
 HTTP code.
@@ -308,7 +308,7 @@ classes with 69 test methods. Only two capabilities are currently gated:
 ### 10.2 What breaks for a {READ, METADATA} backend
 
 Most test classes set up test data by calling `backend.write()` before
-asserting read behavior. This means even read/metadata tests will fail -- not
+asserting read behavior. This means even read/metadata tests will fail — not
 because the backend can't read, but because the test can't set up fixtures.
 
 **Tests that would need changes:**
@@ -354,7 +354,7 @@ Two-pronged approach:
    need test data. For writable backends, they create it inline. For
    read-only backends, provide a `conftest.py` fixture that pre-seeds the
    HTTP mock server with test files. The conformance test checks
-   `backend.capabilities.supports(Capability.WRITE)` -- if true, write
+   `backend.capabilities.supports(Capability.WRITE)` — if true, write
    inline; if false, assume the fixture pre-seeded the data.
 
 **Estimated effort:** Small. The capability-gating pattern is established.
@@ -396,7 +396,7 @@ exceptions to remote-store errors. It handles imperfect streams gracefully:
 
 **Verdict: `_ErrorMappingStream(http_response, ...)` works directly.**
 
-Do NOT wrap in `io.BufferedReader` -- unlike S3/SFTP backends, the HTTP
+Do NOT wrap in `io.BufferedReader` — unlike S3/SFTP backends, the HTTP
 response is already buffered (`BufferedIOBase`). Double-buffering would be
 wasteful and could cause issues.
 
@@ -433,7 +433,7 @@ close.
 
 **Notes:**
 - `Content-Length` is absent for chunked responses and some CDNs. Using `0` as
-  a fallback is imperfect -- code checking `file_info.size == 0` (e.g.,
+  a fallback is imperfect — code checking `file_info.size == 0` (e.g.,
   skip-empty-file logic, progress bars, `ext.transfer` pre-allocation) would
   misinterpret "unknown" as "zero bytes". Since `FileInfo.size` is `int` (not
   `Optional[int]`), there is no clean sentinel today. The spec should note this
@@ -441,22 +441,22 @@ close.
   `FileInfo` revision.
 - `Last-Modified` is absent on many static file hosts and CDNs. The sentinel
   must be timezone-aware (`datetime.min.replace(tzinfo=timezone.utc)`) because
-  S3 and Azure backends return timezone-aware `modified_at` values -- mixing
+  S3 and Azure backends return timezone-aware `modified_at` values — mixing
   naive and aware datetimes raises `TypeError` in user code (sorting, filtering,
   `ext.transfer` comparisons). Sorting by `modified_at` would still place HTTP
   files at the beginning of any list. `datetime(1970, 1, 1, tzinfo=UTC)` (Unix
   epoch) is a more conventional sentinel but carries the same ambiguity. Like
   `size`, both fields may warrant `Optional` treatment in a future `FileInfo`
   revision.
-- `ETag` maps naturally to `checksum` -- both are opaque identifiers for
+- `ETag` maps naturally to `checksum` — both are opaque identifiers for
   content versioning. Useful for `ext.cache` integration.
 
 ---
 
-## 13. Prior Art -- Build vs. Reuse
+## 13. Prior Art — Build vs. Reuse
 
 The key question is: can we use an existing library instead of writing our own
-HTTP backend? The answer is no -- but the implementation is small enough that
+HTTP backend? The answer is no — but the implementation is small enough that
 this is fine.
 
 ### 13.1 Why not wrap fsspec `HTTPFileSystem`?
@@ -468,7 +468,7 @@ streaming, and even directory listing via HTML parsing.
 - fsspec is a **heavyweight dependency** (pulls in `aiohttp` for HTTP).
   remote-store's core has zero runtime deps.
 - fsspec's `HTTPFileSystem` exposes an `AbstractFileSystem` interface, not
-  our `Backend` interface. Wrapping it would mean adapting every method --
+  our `Backend` interface. Wrapping it would mean adapting every method —
   the wrapper would be roughly the same size as a direct implementation.
 - Its HTML-based directory listing is fragile and not something we'd want.
 - Its Range-based seeking adds complexity we don't need.
@@ -480,13 +480,13 @@ fsspec validates that the concept works, but there's nothing to reuse.
 `smart_open.open("https://...")` gives a streaming reader. But:
 - It's a single `open()` function, not a filesystem abstraction. No
   `exists()`, `get_file_info()`, `check_health()`, or any metadata support.
-- Wrapping it would provide only `read()` -- we'd still implement everything
+- Wrapping it would provide only `read()` — we'd still implement everything
   else ourselves.
 - It requires `requests` as a dependency.
 
 ### 13.3 Why not use requests/httpx directly as the backend?
 
-We do -- that's exactly the transport layer (SS4). The "build" here is the
+We do — that's exactly the transport layer (SS4). The "build" here is the
 thin Backend adapter (~150 lines) that maps HTTP semantics to remote-store's
 interface. The actual HTTP work is delegated to urllib/requests/httpx.
 
@@ -507,7 +507,7 @@ The HTTP backend is a thin adapter over standard HTTP libraries. Estimated:
 - requests/httpx transports: ~50 lines each (optional)
 
 This is much smaller than `MemoryBackend` (~505 lines) and `S3Backend`
-(~440 lines). Not a wheel worth importing -- simpler to build.
+(~440 lines). Not a wheel worth importing — simpler to build.
 
 ---
 
@@ -518,13 +518,13 @@ Tested against representative public endpoints to validate assumptions:
 | Endpoint | Content-Length | Last-Modified | ETag | HEAD | Redirects |
 |----------|:-------------:|:-------------:|:----:|:----:|:---------:|
 | GitHub raw (raw.githubusercontent.com) | Yes | Yes | Yes (weak) | Yes | Yes (1 redirect from github.com) |
-| PyPI simple index (pypi.org) | Yes | -- | Yes | Yes | Yes (http->https) |
-| PyPI package files (files.pythonhosted.org) | Yes | Yes | Yes | Yes | -- |
-| opendata.swiss (lindas API) | Varies | -- | -- | Yes | -- |
-| CDN-hosted static files (typical) | Yes | Yes | Yes | Yes | -- |
+| PyPI simple index (pypi.org) | Yes | — | Yes | Yes | Yes (http->https) |
+| PyPI package files (files.pythonhosted.org) | Yes | Yes | Yes | Yes | — |
+| opendata.swiss (lindas API) | Varies | — | — | Yes | — |
+| CDN-hosted static files (typical) | Yes | Yes | Yes | Yes | — |
 
 **Findings:**
-- `HEAD` is universally supported -- `exists()` and `get_file_info()` are safe.
+- `HEAD` is universally supported — `exists()` and `get_file_info()` are safe.
 - `Content-Length` is present for static files, sometimes missing for API responses.
 - `Last-Modified` is often missing on API endpoints and CDNs.
 - `ETag` is common on static file servers, rare on dynamic APIs.
@@ -544,7 +544,7 @@ Tested against representative public endpoints to validate assumptions:
 | urllib SSL issues on older Python | Low | Low | `ssl.create_default_context()` works on Python 3.10+ |
 
 No showstoppers identified. The urllib streaming concern (P1.4 in the original
-gap analysis) is resolved -- it works.
+gap analysis) is resolved — it works.
 
 ---
 
@@ -562,14 +562,14 @@ gap analysis) is resolved -- it works.
 | HTTP-006 | Error mapping: 401->PermissionDenied, 404->NotFound, 500->BackendUnavailable | ERR-* |
 | HTTP-007 | `native_path()` returns full URL | NPR-003 |
 | HTTP-008 | `to_key()` strips base_url prefix | NPR-003 |
-| HTTP-009 | Path with special characters is URL-encoded | -- |
-| HTTP-010 | Custom headers are sent with every request | -- |
-| HTTP-011 | Redirects are followed (up to limit) | -- |
-| HTTP-012 | Timeout raises BackendUnavailable | -- |
+| HTTP-009 | Path with special characters is URL-encoded | — |
+| HTTP-010 | Custom headers are sent with every request | — |
+| HTTP-011 | Redirects are followed (up to limit) | — |
+| HTTP-012 | Timeout raises BackendUnavailable | — |
 | HTTP-013 | `check_health()` sends HEAD to base_url | BE-020 |
-| HTTP-014 | Write/delete/move/copy raise CapabilityNotSupported | -- |
+| HTTP-014 | Write/delete/move/copy raise CapabilityNotSupported | — |
 | HTTP-015 | `close()` is callable, releases transport | BE-020 |
-| HTTP-016 | Transport auto-detection (urllib/requests/httpx) | -- |
+| HTTP-016 | Transport auto-detection (urllib/requests/httpx) | — |
 | HTTP-017 | `is_folder()` always returns False | BE-005 |
 
 ### 16.2 Conformance suite participation
@@ -618,8 +618,8 @@ Questions from the original draft, now resolved with reasoning:
 
 Use `"http"`. Reasons:
 - Consistent with other backend names (`"local"`, `"s3"`, `"sftp"`, `"azure"`)
-  -- none encode capabilities in the name.
-- A future WebDAV backend would use `"webdav"`, not `"http"` -- different
+  — none encode capabilities in the name.
+- A future WebDAV backend would use `"webdav"`, not `"http"` — different
   protocol, different backend.
 - The capability system communicates what the backend can do; the name
   identifies the protocol.
@@ -651,7 +651,7 @@ Map its fields to urllib/requests/httpx retry mechanisms:
 **Q5. Extra dependency group name?**
 
 `pip install remote-store[httpx]` for httpx, `pip install remote-store[requests]`
-for requests. No `[http]` group -- the baseline (urllib) needs no extra deps.
+for requests. No `[http]` group — the baseline (urllib) needs no extra deps.
 This mirrors how `[arrow]` means "install PyArrow" and `[otel]` means "install
 OpenTelemetry".
 

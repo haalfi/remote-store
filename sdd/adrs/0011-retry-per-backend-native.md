@@ -32,10 +32,10 @@ of SDK retry and is harder to reason about.
 
 Use **Option B (per-backend native configuration)**.
 
-1. Backends own their transport -- retry is a transport concern.
+1. Backends own their transport — retry is a transport concern.
 2. The policy replaces SDK defaults, avoiding retry multiplication.
 3. Minimal API surface: one frozen dataclass, one constructor parameter.
-4. No new core dependencies -- `tenacity` stays in the SFTP `sftp` extra.
+4. No new core dependencies — `tenacity` stays in the SFTP `sftp` extra.
 
 ### RetryPolicy dataclass
 
@@ -64,7 +64,7 @@ Each backend translates the policy into its native retry mechanism:
   `retry_policy` in client options.
 - **S3-PyArrow:** Maps to both PyArrow C++ side (`max_attempts`) and
   s3fs side (same as S3).
-- **Local/Memory:** Do not accept `retry` parameter -- TypeError if
+- **Local/Memory:** Do not accept `retry` parameter — TypeError if
   provided (correct: retry is meaningless for local I/O).
 
 ### BackendConfig integration
@@ -84,7 +84,7 @@ addressed by a future `ext/retry.py` middleware.
 ## Consequences
 
 - Users get a single, discoverable retry knob across all cloud backends.
-- SFTP retry is no longer hardcoded -- users can tune or disable it.
+- SFTP retry is no longer hardcoded — users can tune or disable it.
 - S3/Azure retry is no longer buried in `client_options`.
 - Local/Memory constructors reject `retry` with clear TypeError.
 - Lossy mapping: the dataclass cannot express every SDK-specific knob.

@@ -18,7 +18,7 @@ a database.
 **Dependencies:** `sqlalchemy>=2.0`, `pyarrow>=12.0.0` (optional extra:
 `sql-query`).
 
-**Architecture:** Two-class design with shared base -- see
+**Architecture:** Two-class design with shared base — see
 [ADR-0018](../adrs/0018-sqlalchemy-two-class-architecture.md).
 
 ---
@@ -90,7 +90,7 @@ If the key is not found, `NotFound` is raised. No partial matching, no
 normalization beyond standard path validation.
 
 Resolution precedence (v2 implements level 1 only):
-1. Explicit mapping (`queries` dict) -- highest priority
+1. Explicit mapping (`queries` dict) — highest priority
 2. View-based (deferred)
 3. Convention-based (deferred)
 
@@ -98,7 +98,7 @@ Resolution precedence (v2 implements level 1 only):
 
 **Invariant:** `strict=True` (default) restricts resolution to the explicit
 `queries` dict only. Setting `strict=False` raises `NotImplementedError` in
-v2 -- view-based and convention-based discovery are deferred to a future
+v2 — view-based and convention-based discovery are deferred to a future
 version.
 
 ### SQL-QUERY-012: Format Detection
@@ -136,9 +136,9 @@ row tuples. The `columns` parameter is the column name list.
 
 **Invariant:** The built-in `ArrowSerializer` converts rows + columns to a
 `pyarrow.Table`, then serializes to the requested format:
-- `"parquet"` -- `pyarrow.parquet.write_table()`
-- `"csv"` -- `pyarrow.csv.write_csv()`
-- `"arrow"` / `"ipc"` -- `pyarrow.ipc.RecordBatchFileWriter`
+- `"parquet"` — `pyarrow.parquet.write_table()`
+- `"csv"` — `pyarrow.csv.write_csv()`
+- `"arrow"` / `"ipc"` — `pyarrow.ipc.RecordBatchFileWriter`
 
 An empty result set (zero rows) produces a valid file with schema but no data.
 
@@ -161,7 +161,7 @@ serializes the result, and returns a seekable `BinaryIO`.
 5. Serialize: `self._serializer.serialize(rows, columns, format)`.
 6. Return `BufferedReader(BytesIO(data))`.
 
-An empty result set is valid -- not an error.
+An empty result set is valid — not an error.
 
 ### SQL-QUERY-021: read_bytes()
 
@@ -171,7 +171,7 @@ An empty result set is valid -- not an error.
 
 **Invariant:** Enumerates keys from the key registry (not database tables).
 Filters by prefix matching. Returns `FileInfo` for each matching key with
-`size=0` (sentinel -- size unknown until materialized) and
+`size=0` (sentinel — size unknown until materialized) and
 `modified_at=datetime.min(tzinfo=utc)`.
 
 - Non-recursive: only direct children of the prefix.
@@ -198,7 +198,7 @@ narrowing needed since the key set is in-memory.
 **Invariant:** Returns `FileInfo` with:
 - `path`: the requested key as `RemotePath`
 - `name`: final path component
-- `size`: `0` (sentinel -- unknown until materialized)
+- `size`: `0` (sentinel — unknown until materialized)
 - `modified_at`: `datetime.min.replace(tzinfo=timezone.utc)`
 - `extra`: `{"materialized": False}`
 
@@ -242,13 +242,13 @@ Empty path returns `True` (root).
 **Invariant:** The following methods raise `CapabilityNotSupported` with
 `backend=self.name`:
 
-- `write()` -- capability `"write"`
-- `write_atomic()` -- capability `"atomic_write"`
-- `open_atomic()` -- capability `"atomic_write"`
-- `delete()` -- capability `"delete"`
-- `delete_folder()` -- capability `"delete"`
-- `move()` -- capability `"move"`
-- `copy()` -- capability `"copy"`
+- `write()` — capability `"write"`
+- `write_atomic()` — capability `"atomic_write"`
+- `open_atomic()` — capability `"atomic_write"`
+- `delete()` — capability `"delete"`
+- `delete_folder()` — capability `"delete"`
+- `move()` — capability `"move"`
+- `copy()` — capability `"copy"`
 
 ---
 

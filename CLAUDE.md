@@ -10,7 +10,7 @@ Spec-Driven Development (SDD).
 1. **Ship complete**: a change is finished when everything it touches is consistent: code, tests, docs, CHANGELOG, BACKLOG. Track gaps as `[~]`. For releases, follow the full checklist in `CONTRIBUTING.md` § Release.
 2. **Verify beyond the diff**: search for what references the thing you changed. You MUST read `sdd/CLAUDE-REFERENCE.md` for the ripple-check table before committing changes that touch backends, errors, capabilities, versions, specs, or dependencies.
 3. **Repo describes reality at every commit**: docs, backlog, and CHANGELOG reflect current state, not future intent. Same commit, or mark `[~]`.
-4. **Single source of truth**: Authoritative references live in one place—link to them, don't copy. Examples: ripple-check, CHANGELOG section order, backlog ID format. Copies become stale.
+4. **Single source of truth**: Authoritative references live in one place: link to them, don't copy. Examples: ripple-check, CHANGELOG section order, backlog ID format. Copies become stale.
 5. **Specs are source of truth**: code vs spec conflict: code is wrong. Backlog vs history conflict: backlog is wrong. Fix the less authoritative side.
 6. **Run it, don't just type-check it**: verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
 7. **Be critical, not agreeable**: challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
@@ -55,6 +55,19 @@ Claude-specific shell constraints:
 - **Never commit or push directly to master.** Always create a feature branch.
 - Branch naming: `id-021-store-child`, `fix-streaming-io`, `af-008-credential-masking`, etc.
 - Push the feature branch; the user will create PRs or ask you to.
+
+## Response style
+
+Use em dashes (`—`) sparingly in prose responses. Default to periods, colons,
+or commas. Never use `--` as an em dash substitute anywhere in written output.
+
+In tables, `—` (em dash U+2014) is the standard N/A / none value. Never
+`--` or `No`. See memory `feedback_table_style.md` for the full rule.
+
+Preserve `--` only in: shell end-of-options separators (`git log -- path`),
+spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax
+(`A -- text --> B`), `--8<--` snippet includes, and code/SQL comments inside
+fenced blocks. Table separator rows (`| --- |`) are structural Markdown.
 
 ## Documentation conventions
 

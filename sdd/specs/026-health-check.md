@@ -21,7 +21,7 @@ def ping(self) -> None: ...
 ```
 **Postconditions:**
 - Returns `None` on success (backend is reachable and credentials are valid).
-- Raises on failure -- exception type depends on the failure mode:
+- Raises on failure — exception type depends on the failure mode:
   - `PermissionDenied` for invalid credentials.
   - `NotFound` for missing bucket/container/path.
   - `BackendUnavailable` for network/DNS/timeout errors.

@@ -1,4 +1,4 @@
-# Audit 008 -- Package Bugs (User-Facing)
+# Audit 008 — Package Bugs (User-Facing)
 
 **Date:** 2026-04-02
 **Scope:** All source code under `src/remote_store/` — core store, backends,

@@ -579,7 +579,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   process guide accuracy. Scoped to `sdd/` only. PR #405.
 
 - [x] **ID-135 — E2e streaming integrity test**
-  Proves the streaming contract -- round-robin SHA-256 verification and
+  Proves the streaming contract — round-robin SHA-256 verification and
   `tracemalloc` memory profiling across all backends. PR #403.
 
 - [x] **BK-146 — Eliminate string-literal `cast()` arguments (CodeQL + ruff); add `Capability.LAZY_READ`**
@@ -1765,11 +1765,11 @@ From [adversarial review](audits/audit-001-adversarial-review.md) (v0.5.0),
 - [x] **AF-023 — ObservedStore: proxy overrides lack docstrings** (resolved via config)
 - [x] **AF-024 — CachedStore: proxy overrides lack docstrings** (resolved via config)
 - [x] **AF-025 — CacheBackend protocol: 6 methods undocumented**
-- [x] **AF-026 — 6 guides missing API reference links** (closed -- not a defect)
+- [x] **AF-026 — 6 guides missing API reference links** (closed — not a defect)
 - [x] **AF-027 — `guides/retry.md` missing "See also" section**
 - [x] **AF-028 — `guides/backends/index.md` sparse**
-- [x] **AF-029 — `guides/performance.md` guide-style violations** (closed -- not a defect)
-- [x] **AF-030 — Research nested 3 levels deep in nav** (closed -- not a defect)
+- [x] **AF-029 — `guides/performance.md` guide-style violations** (closed — not a defect)
+- [x] **AF-030 — Research nested 3 levels deep in nav** (closed — not a defect)
 - [x] **AF-031 — `transfer()` missing `:returns:` docstring**
 - [x] **AF-032 — `guides/observe.md` on_write hook table omits `open_atomic`**
 - [x] **AF-033 — `guides/observe.md` on_ping hook row missing**

@@ -106,13 +106,13 @@ delegates to the inner store, following the `ObservedStore` proxy
 pattern (ADR-0010).
 
 **Properties:**
-- `inner: Store` -- read-only property returning the wrapped store.
-- `stats: CacheStats` -- read-only property returning current statistics.
+- `inner: Store` — read-only property returning the wrapped store.
+- `stats: CacheStats` — read-only property returning current statistics.
 
 **Public cache-management methods:**
-- `invalidate(path: str) -> None` -- remove all cached entries for
+- `invalidate(path: str) -> None` — remove all cached entries for
   the given path and its ancestor directories.
-- `clear_cache() -> None` -- remove all cached entries.
+- `clear_cache() -> None` — remove all cached entries.
 
 ### CACHE-005: CacheStats Dataclass
 
@@ -156,7 +156,7 @@ class CacheStats:
   materialize results into a tuple on first call and return
   `iter(cached_tuple)` on cache hits.
 - Only successful results are cached. Exceptions (e.g., `NotFound`) are
-  never cached -- subsequent calls retry the backend.
+  never cached — subsequent calls retry the backend.
 - `read_bytes`: if `max_content_size` is set and `len(result) >
   max_content_size`, the result is returned but not cached.
 - Listing methods (`iter_children`, `list_files`, `list_folders`, `glob`):
@@ -168,12 +168,12 @@ class CacheStats:
 **Invariant:** The following operations always delegate directly to the
 inner store without caching:
 
-- `read(path)` -- returns `BinaryIO` (not serializable/reusable).
-- `read_text(path)` -- delegates to `self.read_bytes()` (uses cached
+- `read(path)` — returns `BinaryIO` (not serializable/reusable).
+- `read_text(path)` — delegates to `self.read_bytes()` (uses cached
   `read_bytes` result). No separate cache key. See RTXT-005.
-- `head(path)` -- always live; sidecar metadata is not cached.
+- `head(path)` — always live; sidecar metadata is not cached.
 - `close()`, `child()`, `to_key()`, `unwrap()`, `native_path()`,
-  `supports()` -- no backend I/O worth caching.
+  `supports()` — no backend I/O worth caching.
 
 ---
 

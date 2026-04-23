@@ -21,21 +21,21 @@ ID-004 (superseded).
 
 **Invariant:** `StoreEvent` is a frozen dataclass with the following fields:
 
-- `operation: str` -- operation name (e.g., `"read"`, `"write"`, `"delete"`,
+- `operation: str` — operation name (e.g., `"read"`, `"write"`, `"delete"`,
   `"copy"`, `"move"`, `"iter_children"`, `"list_files"`, `"list_folders"`, `"glob"`,
   `"get_file_info"`, `"get_folder_info"`, `"head"`, `"exists"`, `"is_file"`,
   `"is_folder"`, `"read_bytes"`, `"read_text"`, `"write_atomic"`, `"write_text"`,
   `"delete_folder"`, `"to_key"`, `"unwrap"`, `"supports"`).
-- `path: str` -- store-relative key (first positional path argument). Empty
+- `path: str` — store-relative key (first positional path argument). Empty
   string for operations that take no path (e.g., `supports`).
-- `backend: str` -- backend name from `store._backend.name`.
-- `started_at: float` -- `time.monotonic()` at method entry.
-- `duration_ms: float` -- elapsed time in milliseconds.
-- `error: Exception | None` -- `None` on success, the exception instance on
+- `backend: str` — backend name from `store._backend.name`.
+- `started_at: float` — `time.monotonic()` at method entry.
+- `duration_ms: float` — elapsed time in milliseconds.
+- `error: Exception | None` — `None` on success, the exception instance on
   failure.
-- `metadata: dict[str, Any]` -- operation-specific extra data (e.g.,
+- `metadata: dict[str, Any]` — operation-specific extra data (e.g.,
   `overwrite`, `recursive`, `dst`, `pattern`, `size`, `missing_ok`).
-- `correlation_id: str | None` -- value from `contextvars.ContextVar`,
+- `correlation_id: str | None` — value from `contextvars.ContextVar`,
   `None` when not set. Allows grouping related events (e.g., a batch
   operation's individual calls).
 
@@ -64,8 +64,8 @@ def observe(
 ```
 
 Where:
-- `OnEvent = Callable[[StoreEvent], None]` -- after-only callback.
-- `AroundHook = Callable[[str, str, str], AbstractContextManager[None]]` --
+- `OnEvent = Callable[[StoreEvent], None]` — after-only callback.
+- `AroundHook = Callable[[str, str, str], AbstractContextManager[None]]` —
   receives `(operation, path, backend)`, returns a context manager that wraps
   the entire operation including hook dispatch.
 
@@ -98,7 +98,7 @@ overrides every public method of `Store`. Each override:
 9. Returns the result from the inner store.
 
 **Properties:**
-- `inner: Store` -- read-only property returning the wrapped store.
+- `inner: Store` — read-only property returning the wrapped store.
 
 **Postconditions:**
 - The proxy never modifies arguments or return values.

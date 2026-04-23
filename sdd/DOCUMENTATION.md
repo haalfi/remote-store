@@ -45,11 +45,11 @@ Format and style rules are in `sdd/DESIGN.md` § 4. This section covers what mkd
 | Symbol | `Args` | `Returns` | `Raises` | Example |
 |---|---|---|---|---|
 | Public method | Yes | Yes | Yes | Yes (short) |
-| Property | -- | Yes (in summary) | If applicable | Optional |
-| Class | Yes (`__init__` params) | -- | -- | Yes |
+| Property | — | Yes (in summary) | If applicable | Optional |
+| Class | Yes (`__init__` params) | — | — | Yes |
 | Function | Yes | Yes | Yes | Yes |
-| Enum | -- | -- | -- | -- |
-| Error class | -- | -- | -- | -- |
+| Enum | — | — | — | — |
+| Error class | — | — | — | — |
 
 Supplementary context that does not fit Args/Returns/Raises goes in a `Notes:` block, not scattered inline or appended to the summary line.
 
@@ -116,9 +116,15 @@ The README must contain:
 ### 7. Research document rules
 
 - Research docs live in `sdd/research/` and are named `research-<topic>.md`.
-- They are not edited after the related feature ships -- they are historical records.
+- They are not edited after the related feature ships — they are historical records.
 - They may be surfaced on the docs site under Explanation > Research.
 - They do not need to follow the docstring or guide quality checklists.
+
+### 8. Typography
+
+- **Prose dashes:** Use `—` (U+2014) sparingly as a parenthetical aside. Default to periods, colons, or commas. Never use `--` as an em dash substitute in documentation prose.
+- **Table N/A value:** `—` (U+2014) for any "not applicable / not supported / none" cell. Never `--` or `No`.
+- **Preserve `--`:** Only in shell flag syntax inside code blocks, spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax, and `--8<--` snippet includes.
 
 ## Guides
 
@@ -273,8 +279,8 @@ Verify against actual code before relying on these in production.
 | **Rich class** (Store, AsyncStore) | Class header, Method sections, See also | Info notes, Constraint notes, Warning block, Behavior matrix, Related types |
 | **Protocol / ABC** (Backend) | Class header, Method sections, See also | Info notes, Constraint notes |
 | **Support class** (ProxyStore, Registry, Config, Models, RemotePath, Info, SFTPUtils) | Intro prose or class header, `:::` (all members), See also | Info notes, Constraint notes |
-| **Enum / flags** (Capability, CapabilitySet) | `:::` per type, See also | -- |
-| **Error hierarchy** (Errors) | Flat `:::` per error class, See also | -- |
+| **Enum / flags** (Capability, CapabilitySet) | `:::` per type, See also | — |
+| **Error hierarchy** (Errors) | Flat `:::` per error class, See also | — |
 
 **Intro prose** (support classes) — one short paragraph before the `:::`
 directive when the class needs orientation that does not fit in the docstring

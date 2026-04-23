@@ -72,10 +72,10 @@ Two styles for structuring large files, each with a distinct purpose.
 | IDE behaviour | Foldable                             | None (purely visual)             |
 | Scope         | Anywhere (class or module level)     | Module level                     |
 
-**Regions** (`# region:` / `# endregion`) -- group related items by concern.
+**Regions** (`# region:` / `# endregion`) — group related items by concern.
 Paired markers that IDEs can fold. Use for items that are not individually
 collapsible as a group (e.g. several methods that together form "read
-operations"). **Never** wrap a single class or function -- those are already
+operations"). **Never** wrap a single class or function — those are already
 collapsible on their own.
 
 ```python
@@ -88,7 +88,7 @@ def read_bytes(self, path: str) -> bytes:
 # endregion
 ```
 
-**Headlines** (box dividers) -- introduce a new section at module level.
+**Headlines** (box dividers) — introduce a new section at module level.
 Single marker (not paired) before a top-level definition or group of
 definitions. Purely visual; no IDE folding behaviour.
 
@@ -102,7 +102,7 @@ def pyarrow_fs(store: Store, ...) -> pafs.PyFileSystem:
 ```
 
 Use headlines in modules with multiple top-level classes or logical sections
-(extensions, tests, benchmarks, scripts). Do not use inside classes -- use
+(extensions, tests, benchmarks, scripts). Do not use inside classes — use
 regions there instead.
 
 ### 6. Method Ordering
@@ -118,7 +118,7 @@ Within a class, methods are ordered by logical grouping:
 
 ### 7. Comments
 
-Minimal, long-term value only. Do not comment *what* the code does -- comment *why* when the reason is non-obvious. No TODO comments without a linked issue.
+Minimal, long-term value only. Do not comment *what* the code does — comment *why* when the reason is non-obvious. No TODO comments without a linked issue.
 
 ### 8. Constants
 
@@ -127,7 +127,7 @@ Minimal, long-term value only. Do not comment *what* the code does -- comment *w
 
 ### 9. `__all__`
 
-Declared only in public-facing `__init__.py` modules. Internal modules (`_errors.py`, etc.) do not need `__all__` -- the underscore prefix signals "internal".
+Declared only in public-facing `__init__.py` modules. Internal modules (`_errors.py`, etc.) do not need `__all__` — the underscore prefix signals "internal".
 
 ### 10. Error Messages
 

@@ -44,7 +44,7 @@ S3Backend(
 
 **Invariant:** `S3Backend` declares capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`. Native glob via prefix-optimized listing (see [018-glob.md](018-glob.md) GLOB-018).
 **Rationale:**
-- `ATOMIC_WRITE`: S3 PUT is inherently atomic -- readers never see partial content (see S3-010).
+- `ATOMIC_WRITE`: S3 PUT is inherently atomic — readers never see partial content (see S3-010).
 - `MOVE`: Implemented via server-side copy + delete (see S3-013).
 - `COPY`: Implemented via S3 server-side copy (see S3-014).
 - `GLOB`: Native prefix-optimized glob since v0.12.0 (BK-002).
@@ -52,7 +52,7 @@ S3Backend(
 ### S3-004: Lazy Connection
 
 **Invariant:** No network call occurs during `__init__`. The s3fs filesystem is created lazily on first operation.
-**Rationale:** Fail-fast at construction is undesirable -- the backend may be created during application wiring before the network is available.
+**Rationale:** Fail-fast at construction is undesirable — the backend may be created during application wiring before the network is available.
 
 ### S3-005: Construction Validation
 
@@ -104,7 +104,7 @@ assert backend.is_folder("dir") is False  # folder vanishes
 
 ### S3-010: Atomic Write Via S3 PUT
 
-**Invariant:** `write_atomic` is implemented identically to `write` -- as a direct S3 PUT.
+**Invariant:** `write_atomic` is implemented identically to `write` — as a direct S3 PUT.
 **Rationale:** S3 PUT is inherently atomic. From a reader's perspective, the object transitions from non-existent (or old content) to new content in a single operation. No partial content is ever visible. The temp-file + rename pattern used by local backends is unnecessary and would add latency (extra PUT + COPY + DELETE).
 **Postconditions:** Satisfies AW-001's postcondition: "No partial content is ever visible."
 
@@ -123,13 +123,13 @@ assert backend.is_folder("dir") is False  # folder vanishes
 ### S3-013: move Via Copy + Delete
 
 **Invariant:** `move(src, dst)` is implemented as server-side copy followed by delete of the source.
-**Postconditions:** Not atomic -- if copy succeeds but delete fails, both objects exist. This is inherent to S3 (no native rename).
+**Postconditions:** Not atomic — if copy succeeds but delete fails, both objects exist. This is inherent to S3 (no native rename).
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
 
 ### S3-014: copy Via S3 Server-Side Copy
 
 **Invariant:** `copy(src, dst)` uses S3 server-side copy (no data passes through the client).
-**Postconditions:** Efficient for large files -- the S3 service handles the copy internally.
+**Postconditions:** Efficient for large files — the S3 service handles the copy internally.
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and `overwrite=False`.
 
 ---

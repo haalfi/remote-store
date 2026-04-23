@@ -2,7 +2,7 @@
 
 ## Overview
 
-This spec defines `resolve()` -- a universal introspection method that makes
+This spec defines `resolve()` — a universal introspection method that makes
 key-to-location resolution explicit and inspectable across all backends.
 `Store.resolve(key)` returns a frozen `ResolutionPlan` dataclass describing
 how a key maps to its storage location, which backend handles it, and
@@ -24,18 +24,18 @@ backend-specific context for debugging, caching, and composition.
 
 Backends resolve keys to bytes through different strategies (filesystem paths,
 S3 objects, URLs, SQL queries, tiered fallthrough). Today this resolution is
-implicit -- callers get bytes but cannot inspect *how* or *where* those bytes
+implicit — callers get bytes but cannot inspect *how* or *where* those bytes
 came from. `native_path()` exposes the resolved location as a string but
 carries no metadata about the resolution strategy, backend identity, or
 backend-specific context.
 
 This creates three practical problems:
 
-1. **Debugging opacity** -- when a read fails or returns unexpected data, there
+1. **Debugging opacity** — when a read fails or returns unexpected data, there
    is no way to ask "which backend handled this key and how?"
-2. **Cache key fragility** -- cache key construction requires ad-hoc assembly
+2. **Cache key fragility** — cache key construction requires ad-hoc assembly
    of identity fields rather than deriving from a canonical resolution result.
-3. **Composition blindness** -- a future `CompositeStore` (ID-121) that
+3. **Composition blindness** — a future `CompositeStore` (ID-121) that
    delegates across tiers has no standard way to report which tier resolved a
    key, which tiers were tried, or why resolution succeeded/failed.
 
@@ -59,16 +59,16 @@ class ResolutionPlan:
 
 **Fields:**
 
-- **`kind`** -- Resolution strategy identifier. Standard values: `"local"`,
+- **`kind`** — Resolution strategy identifier. Standard values: `"local"`,
   `"s3"`, `"s3-pyarrow"`, `"azure"`, `"sftp"`, `"http"`, `"memory"`,
   `"sql-blob"`, `"sql-query"`, `"composite"`. Custom backends use their own
   strings. For simple backends, `kind` equals `Backend.name`.
-- **`backend`** -- Human-readable backend identifier (typically `Backend.name`).
-- **`key`** -- The resolved key (store-relative after `Store.resolve()`,
+- **`backend`** — Human-readable backend identifier (typically `Backend.name`).
+- **`key`** — The resolved key (store-relative after `Store.resolve()`,
   backend-relative after `Backend.resolve()`).
-- **`native_path`** -- The backend-native location string (same as
+- **`native_path`** — The backend-native location string (same as
   `Backend.native_path()` output). Included for convenience.
-- **`details`** -- Backend-specific resolution context. Immutable at runtime:
+- **`details`** — Backend-specific resolution context. Immutable at runtime:
   wrapped in `types.MappingProxyType` via `__post_init__` to prevent accidental
   mutation. Values should be JSON-serializable primitives for
   logging/OTel compatibility.

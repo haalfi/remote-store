@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted -- Phase 1 and Phase 2 implemented in ``remote_store.aio``.
+Accepted — Phase 1 and Phase 2 implemented in ``remote_store.aio``.
 Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ## Overview

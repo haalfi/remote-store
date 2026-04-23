@@ -45,8 +45,8 @@ preserving 1,866 passed tests. Key techniques:
 
 Despite fixes, the **same categories** of bad tests reappear:
 
-1. **Tests with no assertions** -- just call a method, assume "no crash = pass"
-2. **`isinstance` as the only assertion** -- verifies type, not behavior
+1. **Tests with no assertions** — just call a method, assume "no crash = pass"
+2. **`isinstance` as the only assertion** — verifies type, not behavior
 3. **Private attribute access** (`._backends`, `._ttl`, `._owns_backend`)
 4. **Unconstrained mocks** (`MagicMock()` without `spec=`)
 5. **Factory helpers duplicating constructor logic**
@@ -93,15 +93,15 @@ category maps to a proposed rule in section 4.1.
 Vladimir Khorikov (*Unit Testing: Principles, Practices, and Patterns*,
 Manning) defines the key insight:
 
-> Tests should verify **units of behavior** -- something meaningful for the
-> problem domain -- not units of code. The number of classes it takes to
+> Tests should verify **units of behavior** — something meaningful for the
+> problem domain — not units of code. The number of classes it takes to
 > implement that behavior is irrelevant.
 
 His four pillars of a good test:
-1. **Protection against regressions** -- catches real bugs
-2. **Resistance to refactoring** -- doesn't break on harmless changes
-3. **Fast feedback** -- runs quickly
-4. **Maintainability** -- easy to read and change
+1. **Protection against regressions** — catches real bugs
+2. **Resistance to refactoring** — doesn't break on harmless changes
+3. **Fast feedback** — runs quickly
+4. **Maintainability** — easy to read and change
 
 Most of our anti-patterns violate pillar 2 (private attribute access,
 implementation-coupled mocks) or pillar 1 (no assertions, isinstance-only).
@@ -109,7 +109,7 @@ implementation-coupled mocks) or pillar 1 (no assertions, isinstance-only).
 **Important nuance:** Khorikov's "the number of classes is irrelevant"
 applies to *what you test* (a unit of behavior may span classes). It does
 **not** mean the volume of test code is irrelevant. Pillar 4
-(maintainability) directly addresses this -- and our own history proves it.
+(maintainability) directly addresses this — and our own history proves it.
 
 ### 3.2 Test Code Economy: Less Code, Same Coverage, Better Signal
 
@@ -145,9 +145,9 @@ testable without mocks.
 
 Key principles from [hynek.me](https://hynek.me/articles/what-to-mock-in-5-mins/):
 
-1. **Never mock third-party code directly** -- wrap it in your own function,
+1. **Never mock third-party code directly** — wrap it in your own function,
    mock that wrapper
-2. **Keep test code paths close to production** -- an in-process test server
+2. **Keep test code paths close to production** — an in-process test server
    is closer to reality than magically replacing a client with a fake
 3. **Use verified fakes** over unconstrained mocks
 4. **Heavy mocking signals architectural problems**, not testing problems
@@ -172,7 +172,7 @@ need quality metrics alongside quantity metrics.
 
 Hypothesis generates random inputs and checks invariant properties.
 Hillel Wayne's insight: **Contracts + Property-Based Testing = Integration
-Tests** -- define invariants as contracts, let Hypothesis find violations.
+Tests** — define invariants as contracts, let Hypothesis find violations.
 
 Candidate invariants for remote-store: write/read round-trip, path
 normalization idempotency, config serialization round-trip, batch operation
@@ -183,7 +183,7 @@ completeness. Implementation details belong in the PR that adds these tests.
 Mutation testing answers: "If a bug were introduced, would my tests catch it?"
 A mutation testing tool systematically mutates production code and re-runs
 tests. Surviving mutants = potential undetected bugs. Our "no assertion"
-tests would be flagged immediately -- every mutant survives because nothing
+tests would be flagged immediately — every mutant survives because nothing
 checks the output. Too slow for per-PR CI; run on a weekly schedule.
 
 **Tool choice: pytest-gremlins** (v1.5+) selected over mutmut after
@@ -207,7 +207,7 @@ source lines.
 
 Two known gaps (M-14 concurrency, M-17 retry) require specific patterns:
 
-- **Retry testing:** Controlled failure injection -- a deterministic fake
+- **Retry testing:** Controlled failure injection — a deterministic fake
   that fails N times then succeeds. Assert attempt count + final outcome,
   never wall-clock time.
 - **Concurrency testing:** Invariant assertions under contention --
@@ -257,7 +257,7 @@ services that can't be run locally.
 **Rule 7: Maximize behavioral coverage per line of test code.** [review-enforced]
 Parametrize similar tests instead of writing separate methods. Merge
 single-method test classes. Delete tests subsumed by others. Three
-parametrized cases in 10 lines beat three methods in 30 lines -- same
+parametrized cases in 10 lines beat three methods in 30 lines — same
 coverage, one-third the maintenance surface. (See BK-014: -8.6% test
 code, zero coverage loss.) When removing a test, verify via coverage that
 the deleted path is still exercised by remaining tests.
@@ -284,7 +284,7 @@ raises-require-match-for = [
 ```
 
 Key PT rules that catch our recurring issues:
-- **PT011**: `pytest.raises()` too broad (no `match=`) -- prevents lazy
+- **PT011**: `pytest.raises()` too broad (no `match=`) — prevents lazy
   exception checks
 - **PT018**: Composite assertions should use multiple `assert` statements
 - **PT006/PT007**: Consistent parametrize style

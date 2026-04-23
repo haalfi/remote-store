@@ -1,11 +1,11 @@
-# Audit 004 -- Documentation Structural Consistency
+# Audit 004 — Documentation Structural Consistency
 
 **Date:** 2026-03-15
 **Scope:** All files rendered to GH Pages / RTD (`docs-src/`, `guides/`), master branch at commit `526673c` (v0.17.0). Excludes `sdd/` internal docs.
 **Method:** Five parallel AI agents audited the full doc surface for: (1) duplicated content within pages, (2) broken/missing links, (3) style/representation inconsistencies, (4) dash/em-dash handling, (5) table value representations. Human consolidated, spot-checked, and verified against a full `hatch run docs-build` (strict mode, zero warnings).
 **Focus:** Structure, visual consistency, and link integrity. NOT content correctness or accuracy (covered by Audit 003).
 
-**Finding IDs assigned:** AF-041 through AF-050, AF-052. (AF-051 was a false positive -- see below.)
+**Finding IDs assigned:** AF-041 through AF-050, AF-052. (AF-051 was a false positive — see below.)
 
 ---
 
@@ -24,8 +24,8 @@
 
 | Area | Status |
 |------|--------|
-| Duplicated content within pages | Clean -- include-markdown architecture prevents duplication |
-| Links at build time | Clean -- all internal links resolve (`gen_pages.py` + `rewrite-relative-urls=false`) |
+| Duplicated content within pages | Clean — include-markdown architecture prevents duplication |
+| Links at build time | Clean — all internal links resolve (`gen_pages.py` + `rewrite-relative-urls=false`) |
 | Code block language tags | Consistent (`python`, `bash`, `toml`, `text`) |
 | Installation commands | Consistent (`pip install "remote-store[extra]"` with quoted names) |
 | API reference formatting | Consistent (`::: remote_store.Class` autodoc syntax) |
@@ -35,7 +35,7 @@
 
 ## Findings
 
-### AF-041. Mixed dash convention: `--` vs `—` in prose -- *confirmed, Medium*
+### AF-041. Mixed dash convention: `--` vs `—` in prose — *confirmed, Medium*
 
 Six guide files use the Unicode em dash `—` (U+2014) while all `docs-src/` originals and ~15 other guide files use `--` (double hyphen). Both render acceptably, but the inconsistency is visible in source and some renderers leave `--` as two literal hyphens.
 
@@ -54,7 +54,7 @@ All other docs use `--`.
 
 **Decision (2026-03-15):** Standardize on UTF-8 em dash `—` (U+2014). Tested on Windows cp1252 with MkDocs strict build — renders correctly. The earlier mojibake concern (see DEVELOPMENT_STORY.md) was environment-specific and no longer reproduces. `.editorconfig` and `.vscode/settings.json` now enforce `charset = utf-8`.
 
-### AF-042. Two incompatible "See also" formats -- *confirmed, Medium*
+### AF-042. Two incompatible "See also" formats — *confirmed, Medium*
 
 End-of-page cross-reference sections use two incompatible patterns:
 
@@ -64,7 +64,7 @@ End-of-page cross-reference sections use two incompatible patterns:
 
 **Missing entirely** (4 files): `guides/concurrency.md`, `guides/health-check.md`, `guides/performance.md`, `guides/extensions.md`.
 
-### AF-043. Table boolean values: three representations -- *confirmed, Medium*
+### AF-043. Table boolean values: three representations — *confirmed, Medium*
 
 Tables expressing "supported / not supported" use three different styles:
 
@@ -76,19 +76,19 @@ The capabilities matrix and backend capability tables describe the *same data* (
 
 **Project convention** (not yet applied anywhere): `Yes` / `--` (dash), never `Yes` / `No`.
 
-### AF-044. Blockquotes used as admonitions in SFTP guide -- *confirmed, Medium*
+### AF-044. Blockquotes used as admonitions in SFTP guide — *confirmed, Medium*
 
 `guides/backends/sftp.md` lines 127-131 uses three `>` blockquotes for caveats ("Atomic write caveat", "Move fallback", "TOCTOU on `overwrite=False`"). All other behavioral notes in the docs use MkDocs admonitions (`!!! note`, `!!! warning`). The visual difference is jarring because this guide is included into `docs-src/backends/sftp.md` which also renders API admonitions below it.
 
-### AF-045. "See also" link-description dashes mixed -- *confirmed, Low*
+### AF-045. "See also" link-description dashes mixed — *confirmed, Low*
 
 Within Pattern B "See also" sections, `guides/data-lake-patterns.md` (lines 302-307) and `guides/dagster.md` (lines 147-149) use `—` for link descriptions, while all other Pattern B files use `--`. This compounds AF-041.
 
-### AF-046. Extensions table overloads `--` for two meanings -- *confirmed, Low*
+### AF-046. Extensions table overloads `--` for two meanings — *confirmed, Low*
 
 `guides/extensions.md` lines 10-19: the "Extra" column uses `--` to mean "no extra dependency", and the "Guide" / "Example" columns use `--` to mean "not available". Two distinct semantics, same glyph, also collides with the em-dash punctuation convention.
 
-### AF-047. Backend page template drift -- *confirmed, Low*
+### AF-047. Backend page template drift — *confirmed, Low*
 
 Backend guide pages follow a common template but each has drifted:
 - Local and Memory omit `## Installation` (built-in).
@@ -99,26 +99,26 @@ Backend guide pages follow a common template but each has drifted:
 
 Core sections (Installation, Usage, Options, Capabilities, Caveats, See also) should appear in the same order with the same names; extra sections after.
 
-### AF-048. Local backend missing `## Installation` -- *confirmed, Low*
+### AF-048. Local backend missing `## Installation` — *confirmed, Low*
 
-`guides/backends/local.md` has no `## Installation` section. Other built-in backends (`memory.md`) also lack it. Add "Built-in -- no extra dependencies" stub for structural consistency with remote backend pages.
+`guides/backends/local.md` has no `## Installation` section. Other built-in backends (`memory.md`) also lack it. Add "Built-in — no extra dependencies" stub for structural consistency with remote backend pages.
 
-### AF-049. Lone `!!! tip` admonition -- *confirmed, Low*
+### AF-049. Lone `!!! tip` admonition — *confirmed, Low*
 
 `docs-src/api/models.md` line 3 is the only `!!! tip` in the entire documentation. All other admonitions are `!!! note` (8 instances) or `!!! warning` (1 instance).
 
-### AF-050. `memory.md` has unique extra sections -- *confirmed, Low*
+### AF-050. `memory.md` has unique extra sections — *confirmed, Low*
 
-`guides/backends/memory.md` has `## Folder Semantics`, `## Thread Safety`, and `## Testing with MemoryBackend` -- sections no other backend page has. Consider folding into standard sections or accepting as intentional.
+`guides/backends/memory.md` has `## Folder Semantics`, `## Thread Safety`, and `## Testing with MemoryBackend` — sections no other backend page has. Consider folding into standard sections or accepting as intentional.
 
-### AF-051. Orphan page: `rfc-template.md` not in nav -- *false positive*
+### AF-051. Orphan page: `rfc-template.md` not in nav — *false positive*
 
 Initially reported as an orphan page. On review, `rfc-template.md` is intentionally
 published by `scripts/gen_pages.py` (lines 153-155) and linked from `CONTRIBUTING.md`.
 It is excluded from auto-generated nav by `skip_stems={"rfc-template"}` (line 76)
 because it is a reference template, not an actual RFC. **No action needed.**
 
-### AF-052. Code-comment `#` in sftp.md code block -- *verified non-issue, None*
+### AF-052. Code-comment `#` in sftp.md code block — *verified non-issue, None*
 
 `guides/backends/sftp.md` line 96: `# Development / testing` appears inside a ` ```python ` code block. Renders correctly as a Python comment. No action needed.
 
@@ -138,5 +138,5 @@ because it is a reference template, not an actual RFC. **No action needed.**
 | AF-048 | Low | `guides/backends/local.md`, `guides/backends/memory.md` | Missing `## Installation` stub |
 | AF-049 | Low | `docs-src/api/models.md` | Lone `!!! tip` admonition |
 | AF-050 | Low | `guides/backends/memory.md` | Unique extra sections not in other backend pages |
-| AF-051 | -- | -- | False positive (template page, intentionally published) |
+| AF-051 | — | — | False positive (template page, intentionally published) |
 | AF-052 | None | `guides/backends/sftp.md` | Code-comment `#` in code block (non-issue) |

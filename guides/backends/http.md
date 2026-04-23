@@ -1,6 +1,6 @@
 # HTTP Backend (Read-Only)
 
-The HTTP backend reads files from HTTP/HTTPS URLs. Capabilities: `{READ, METADATA, LAZY_READ}` only -- write, delete, list, move, and copy operations are not supported.
+The HTTP backend reads files from HTTP/HTTPS URLs. Capabilities: `{READ, METADATA, LAZY_READ}` only — write, delete, list, move, and copy operations are not supported.
 
 **Primary use cases:** government open data portals, dataset registries, static file servers, CDN-hosted assets, package archives, public APIs serving files.
 
@@ -66,9 +66,9 @@ See the [capabilities matrix](../capabilities-matrix.md) for full details.
 
 The backend auto-detects the best available HTTP library:
 
-1. **httpx** (if installed) -- connection pooling, HTTP/2. Install: `pip install "remote-store[httpx]"`
-2. **requests** (if installed) -- connection pooling, sessions. Install: `pip install "remote-store[requests]"`
-3. **urllib** (always available) -- stdlib, zero dependencies.
+1. **httpx** (if installed) — connection pooling, HTTP/2. Install: `pip install "remote-store[httpx]"`
+2. **requests** (if installed) — connection pooling, sessions. Install: `pip install "remote-store[requests]"`
+3. **urllib** (always available) — stdlib, zero dependencies.
 
 Override with `http_client="urllib"` (or `"requests"`, `"httpx"`).
 
@@ -108,10 +108,10 @@ individual files normally. A failing health check does not necessarily mean
 
 The primary value of making HTTP a backend (vs. standalone code):
 
-- **`ext.cache`** -- TTL-based caching of `read()` results. Avoids repeated downloads.
-- **`ext.transfer`** -- `download(store, "file.csv", local_path)` works out of the box.
-- **`ext.observe`** -- instrument HTTP reads with callbacks (timing, logging).
-- **`ext.batch`** -- `batch_exists(store, paths)` to check multiple resources.
+- **`ext.cache`** — TTL-based caching of `read()` results. Avoids repeated downloads.
+- **`ext.transfer`** — `download(store, "file.csv", local_path)` works out of the box.
+- **`ext.observe`** — instrument HTTP reads with callbacks (timing, logging).
+- **`ext.batch`** — `batch_exists(store, paths)` to check multiple resources.
 
 ## See also
 
