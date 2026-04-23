@@ -83,7 +83,11 @@ PyArrow reads Parquet files through the
 [adapter](../pyarrow-adapter.md), it uses C++ range requests and I/O coalescing
 directly — no Python in the loop.
 
-Both backends support all capabilities except `ATOMIC_MOVE` and are fully interchangeable — switch by changing the `type` in your config.
+Both backends lack `ATOMIC_MOVE`, but they differ on `USER_METADATA`: the regular S3
+backend declares it (write calls accept `metadata=` and store it as S3 object metadata),
+while S3-PyArrow does not. Code that passes `metadata=` to write methods will get
+`CapabilityNotSupported` on the PyArrow backend. For workloads that do not use object
+metadata, switching is safe — change the `type` in your config.
 
 ## Escape Hatch
 

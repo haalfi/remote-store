@@ -117,6 +117,21 @@ Note that non-HNS `move()` (copy + delete) is not atomic and `overwrite=False` h
 | `etag` | `BlobProperties.etag` | Double-quotes stripped; lowercased. |
 | `digest` | `BlobProperties.content_settings.content_md5` | Populated as `ContentDigest("md5", <hex>)` when the blob has a stored Content-MD5; `None` otherwise. |
 
+## Write Results
+
+The Azure backend declares `WRITE_RESULT_NATIVE` and `USER_METADATA`. Write operations return
+a [`WriteResult`](../api/models.md) with `etag` and `last_modified` populated from the upload
+response. HNS-enabled accounts additionally populate `version_id` on `write_atomic()`.
+
+Pass `metadata=` to store custom string key-value pairs as Azure blob metadata:
+
+```python
+# requires Azure credentials
+result = store.write("file.csv", data, metadata={"env": "prod"})
+print(result.etag)          # e.g. "0x8da..."
+print(result.last_modified) # datetime(...)
+```
+
 ## Capabilities
 
 Supports all capabilities except `SEEKABLE_READ` and `ATOMIC_MOVE`.

@@ -29,7 +29,7 @@ with Registry(config) as registry:
 
 ## Capabilities
 
-All capabilities are supported. The local backend is the reference implementation.
+All capabilities are supported except `USER_METADATA` — passing non-empty `metadata=` to a Local-backed store raises `CapabilityNotSupported`. The local backend is otherwise the reference implementation.
 See the [capabilities matrix](../capabilities-matrix.md) for full details.
 
 ## Caveats
