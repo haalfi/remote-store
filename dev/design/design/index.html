@@ -4674,6 +4674,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#12-extension-api-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Extension API contract
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8895,6 +8906,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#12-extension-api-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Extension API contract
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9062,6 +9084,19 @@ regions there instead.</p>
 </code></pre></div>
 <p>Each test method carries a <code>@pytest.mark.spec("ID")</code> marker for traceability.</p>
 <p>For test <strong>quality</strong> rules (assertions, mocking, coverage), see <code>sdd/TESTING.md</code>.</p>
+<h3 id="12-extension-api-contract">12. Extension API contract<a class="headerlink" href="#12-extension-api-contract" title="Permanent link">&para;</a></h3>
+<p>Extensions in <code>remote_store.ext.*</code> and <code>remote_store.aio.ext.*</code> are core-adjacent
+modules, not external consumers. Two tiers apply:</p>
+<ul>
+<li><strong>MUST:</strong> Use the public import path when one exists. Write
+  <code>from remote_store import X</code>, not <code>from remote_store._module import X</code>. All
+  symbols in <code>remote_store.__all__</code> have a public path.</li>
+<li><strong>SHOULD avoid:</strong> Importing from private modules (<code>remote_store._*</code>) when no
+  public path exists. When unavoidable due to tight architectural coupling, add
+  an inline comment explaining why no public equivalent exists.</li>
+</ul>
+<p>The <code>test_no_private_module_imports</code> test in <code>tests/test_ext_contract.py</code>
+enforces the MUST tier automatically.</p>
 
 
 
