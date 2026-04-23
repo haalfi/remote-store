@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- Audit-010: Document extension private module import violations against ADR-0008
 - ID-138: Async streaming integrity e2e test (`tests/e2e/test_async_streaming_integrity.py`); 4-hop chain via AsyncAzure + SyncWrapped(Local); SHA-256 per hop + lazy-read chunk assertions; Azurite-optional with 2-hop fallback
 - ID-153: Promote moto_server / azurite_server / _AZURITE_CONN_STR to tests/conftest.py; eliminate duplicate _moto_endpoint fixture and cross-boundary conftest imports
 - BK-156: Remove conformance-duplicate tests from test_sftp.py, test_azure.py, and test_sqlblob.py; add per-backend spec markers to conformance tests to satisfy sdd/000-process.md Rule 2

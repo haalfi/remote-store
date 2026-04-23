@@ -4,64 +4,74 @@
 **Scope:** All extension modules in `src/remote_store/ext/` and `src/remote_store/aio/ext/`  
 **Rule:** ADR-0008 § "Public API only" — Extensions MUST use only the public `Store` and `Backend` API.
 
+**Interpretation note:** ADR-0008 illustrates the rule with runtime attribute access (`store._backend`). This audit extends the same principle to import-time access to private modules. That extension is not literal ADR text and may warrant a dedicated ADR to formalise.
+
+**TYPE_CHECKING scope:** Imports inside `if TYPE_CHECKING:` blocks have no runtime effect and are out of scope. Only runtime imports — top-level and function-body deferred — are counted as violations.
+
 ---
 
 ## Findings
 
-**11 of 16 extension modules violate the rule by importing from private modules** (`_*` prefixed), resulting in **12 distinct violations**:
+**11 of 16 extension modules have runtime violations** (12 distinct violations). Violations split into two categories with different remediation paths.
 
-| Module | Import | Type | Severity |
-|--------|--------|------|----------|
-| `ext/dagster.py` | `_registry._BACKEND_FACTORIES, _register_builtin_backends` | Private functions | High |
-| `ext/glob.py` | `_glob` (module) | Private module | High |
-| `ext/write.py` | `_store._validate_metadata` | Private function | High |
-| `ext/arrow.py` | `_errors.*` | Private classes | Medium |
-| `ext/batch.py` | `_errors.*` | Private classes | Medium |
-| `ext/cache.py` | `_models.FileInfo, FolderInfo`, `_proxy.ProxyStore` | Private classes | Medium |
-| `ext/glob.py` | `_capabilities.Capability` | Private class | Medium |
-| `ext/integrity.py` | `_models.ContentDigest` | Private class | Medium |
-| `ext/observe.py` | `_proxy.ProxyStore`, `_models.*`, `_resolution.ResolutionPlan` | Private classes | Medium |
-| `ext/parquet.py` | `_capabilities.Capability`, `_errors.*` | Private classes | Medium |
-| `ext/pydantic.py` | `_config.RegistryConfig` | Private class | Medium |
-| `ext/yaml.py` | `_config.RegistryConfig` | Private class | Medium |
+### Category 1: Truly private internals — no public API path
 
-**Compliant:** `aio/ext/write.py`, `ext/streams.py`, `ext/transfer.py`, `ext/partition.py`, `ext/otel.py` (5 modules total: 11 violating + 5 compliant = 16 extensions).
+Fix requires a design decision: expose publicly, refactor, or add a public helper.
 
-**Test gap:** `test_ext_contract.py::test_no_private_store_access` only detects *runtime* attribute access (e.g., `store._backend`), not *import-time* access to private modules. Both violations contradict ADR-0008.
+| Module | Import | Type |
+|--------|--------|------|
+| `ext/dagster.py` | `_registry._BACKEND_FACTORIES, _register_builtin_backends` | Private functions |
+| `ext/glob.py` | `_glob` (module) | Private module |
+| `ext/write.py` | `_store._validate_metadata` | Private function |
+
+### Category 2: Already-public symbols imported via private path
+
+Fix is a one-line import path change (`from remote_store._x import Y` → `from remote_store import Y`). All symbols are already in `remote_store.__all__`.
+
+| Module | Import | Note |
+|--------|--------|------|
+| `ext/arrow.py` | `_errors.*` | Public error classes |
+| `ext/batch.py` | `_errors.*` | Public error classes |
+| `ext/cache.py` | `_models.FileInfo, FolderInfo`; `_proxy.ProxyStore` | Public classes |
+| `ext/glob.py` | `_capabilities.Capability` | Public class |
+| `ext/integrity.py` | `_models.ContentDigest` | Public class |
+| `ext/observe.py` | `_proxy.ProxyStore` | Public class |
+| `ext/parquet.py` | `_capabilities.Capability`; `_errors.*` | Public classes |
+| `ext/pydantic.py` | `_config.RegistryConfig` | Public class |
+| `ext/yaml.py` | `_config.RegistryConfig` (line 32); `_config.resolve_env` (line 95, deferred) | Public symbols |
+
+**Compliant:** `aio/ext/write.py`, `ext/otel.py`, `ext/partition.py`, `ext/streams.py`, `ext/transfer.py` (5 modules; 11 + 5 = 16 total).
+
+**Test gap:** `test_ext_contract.py::test_no_private_store_access` detects runtime attribute access (e.g., `store._backend`) but not import-time access to private modules. Both violate the same principle.
 
 ---
 
 ## Evidence
 
-- ADR-0008 explicitly states: "Extensions MUST use only the public `Store` and `Backend` API. Direct access to private attributes (e.g., `store._backend`) is forbidden."
-- Current test enforces one direction (runtime access) but not the other (imports).
-- Grep and semantic index search confirm 14 distinct private imports across ext modules.
+- ADR-0008 states: "Extensions MUST use only the public `Store` and `Backend` API. Direct access to private attributes (e.g., `store._backend`) is forbidden."
+- All Category 2 symbols are confirmed present in `src/remote_store/__init__.py` `__all__`.
+- `ext/yaml.py` line 95 is a deferred runtime import inside a function body (`resolve_env`), not a `TYPE_CHECKING` guard — the AST checker must handle this case.
+- Grep of `src/remote_store/ext/` for `from remote_store._` with TYPE_CHECKING blocks excluded yields 12 violations across 11 modules.
 
 ---
 
 ## Recommended Actions
 
 1. **Add import-time checker to test suite**  
-   Extend `test_ext_contract.py::test_no_private_store_access` to also detect imports of private modules/functions via AST analysis. Should fail on `from remote_store._*` and `import remote_store._*` (excluding TYPE_CHECKING blocks for type hints). Create backlog item to track enforcement.
+   Extend `test_ext_contract.py` to flag `from remote_store._*` and `import remote_store._*` via AST analysis. Must exclude `if TYPE_CHECKING:` blocks but must catch function-body deferred imports (`ext/yaml.py` line 95 is the reference case).
 
-2. **Re-export violating symbols from public API**  
-   Move the following to `src/remote_store/__init__.py` or a new public module:
-   - `ContentDigest, FileInfo, FolderInfo, FolderEntry, WriteResult` (from `_models`)
-   - `Capability` (from `_capabilities`)
-   - Error classes (from `_errors`)
-   - `RegistryConfig` (from `_config`)
-   - `ProxyStore` (from `_proxy`)
-   - `ResolutionPlan` (from `_resolution`)
-   - `_validate_metadata` → public helper in `_store`
-   - Glob utilities: `extract_prefix, needs_recursive, pattern_to_regex` → public submodule or helpers
-   - Registry internals: `_BACKEND_FACTORIES, _register_builtin_backends` → decide via ADR if part of stable API
+2. **Fix Category 2 import paths**  
+   Change `from remote_store._x import Y` to `from remote_store import Y` for all 9 Category 2 modules. Mechanical one-line fix per occurrence; no design decision required.
 
-3. **Update violating extension modules**  
-   Fix each of the 11 modules to use only public API. Create backlog item to track fixing.
+3. **Resolve Category 1 internals**  
+   Three symbols have no public path and each requires a decision:
+   - `_glob` utilities (`extract_prefix`, `needs_recursive`, `pattern_to_regex`) — expose as public or internalise inside `ext.glob`
+   - `_registry._BACKEND_FACTORIES`, `_register_builtin_backends` — decide via ADR if these are stable API
+   - `_store._validate_metadata` — expose as public helper or remove from extension use
 
 ---
 
 ## Non-Findings
 
-- No extension imports directly from `backends/` or `aio/` modules (good).
-- All extensions already define `__all__` (rule is enforced).
+- No extension imports directly from `backends/` or `aio/` modules.
+- All extensions already define `__all__`.
