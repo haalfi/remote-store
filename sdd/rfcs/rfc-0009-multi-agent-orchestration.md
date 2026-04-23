@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft — awaiting community feedback
+Superseded by [ADR-0020](../adrs/0020-orchestrate-iterative-convergence.md) (via [ADR-0019](../adrs/0019-multi-agent-orchestration.md))
 
 ## Summary
 
