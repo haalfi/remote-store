@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/specs/032-http-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/audits/audit-010-ext-private-imports/">
       
       
-        <link rel="prev" href="../031-ext-dagster/">
+        <link rel="prev" href="../audit-009-backend-specifics-visibility/">
       
       
-        <link rel="next" href="../033-ext-streams/">
+        <link rel="next" href="../../rfcs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>032: HTTP Backend Specification - remote-store</title>
+        <title>010: Audit 010: Extension Private Module Imports - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#http-backend-specification" class="md-skip">
+        <a href="#audit-010-extension-private-module-imports" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              032: HTTP Backend Specification
+              010: Audit 010: Extension Private Module Imports
             
           </span>
         </div>
@@ -5373,6 +5373,8 @@
                 
   
   
+    
+  
   
   
     
@@ -5383,15 +5385,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_7" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../audits/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -5415,7 +5417,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_5_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -5433,7 +5435,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-001-adversarial-review/" class="md-nav__link">
+      <a href="../audit-001-adversarial-review/" class="md-nav__link">
         
   
   
@@ -5461,7 +5463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-002-design-compliance/" class="md-nav__link">
+      <a href="../audit-002-design-compliance/" class="md-nav__link">
         
   
   
@@ -5489,7 +5491,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-003-documentation/" class="md-nav__link">
+      <a href="../audit-003-documentation/" class="md-nav__link">
         
   
   
@@ -5517,7 +5519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-004-docs-structural-consistency/" class="md-nav__link">
+      <a href="../audit-004-docs-structural-consistency/" class="md-nav__link">
         
   
   
@@ -5545,7 +5547,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-005-laziness-memory/" class="md-nav__link">
+      <a href="../audit-005-laziness-memory/" class="md-nav__link">
         
   
   
@@ -5573,7 +5575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-006-docs-list-completeness/" class="md-nav__link">
+      <a href="../audit-006-docs-list-completeness/" class="md-nav__link">
         
   
   
@@ -5601,7 +5603,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-007-test-behavior-assertions/" class="md-nav__link">
+      <a href="../audit-007-test-behavior-assertions/" class="md-nav__link">
         
   
   
@@ -5629,7 +5631,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-008-package-bugs/" class="md-nav__link">
+      <a href="../audit-008-package-bugs/" class="md-nav__link">
         
   
   
@@ -5657,7 +5659,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
+      <a href="../audit-009-backend-specifics-visibility/" class="md-nav__link">
         
   
   
@@ -5682,10 +5684,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../audits/audit-010-ext-private-imports/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    010: Audit 010: Extension Private Module Imports
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -5701,6 +5730,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Findings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Findings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#category-1-truly-private-internals-no-public-api-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Category 1: Truly private internals — no public API path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#category-2-already-public-symbols-imported-via-private-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Category 2: Already-public symbols imported via private path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended Actions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-Findings
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -7024,8 +7145,6 @@
                 
   
   
-    
-  
   
   
     
@@ -7036,15 +7155,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_10" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_10" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -7068,7 +7187,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_10_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_10_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_10">
             <span class="md-nav__icon md-icon"></span>
             
@@ -7086,7 +7205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -7114,7 +7233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -7142,7 +7261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -7170,7 +7289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -7198,7 +7317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -7226,7 +7345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -7254,7 +7373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -7282,7 +7401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -7310,7 +7429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -7338,7 +7457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -7366,7 +7485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -7394,7 +7513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -7422,7 +7541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -7450,7 +7569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -7478,7 +7597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -7506,7 +7625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -7534,7 +7653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -7562,7 +7681,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -7590,7 +7709,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -7618,7 +7737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -7646,7 +7765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -7674,7 +7793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -7702,7 +7821,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -7730,7 +7849,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -7758,7 +7877,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -7786,7 +7905,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -7814,7 +7933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -7842,7 +7961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -7870,7 +7989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -7898,7 +8017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -7926,7 +8045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -7951,37 +8070,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    032: HTTP Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -7997,566 +8089,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-con-001-constructor-parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-CON-001: Constructor Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-con-002-base-url-trailing-slash-normalization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-CON-002: Base URL Trailing-Slash Normalization
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-con-003-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-CON-003: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-con-004-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-CON-004: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#transport-abstraction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Transport Abstraction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Transport Abstraction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-tr-001-transport-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-TR-001: Transport Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-tr-002-transport-auto-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-TR-002: Transport Auto-Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-tr-003-explicit-transport-override" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-TR-003: Explicit Transport Override
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Semantics
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Semantics">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-path-001-url-construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-PATH-001: URL Construction
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-path-002-native_path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-PATH-002: native_path()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-path-003-to_key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-PATH-003: to_key()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-path-004-round-trip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-PATH-004: Round-Trip
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#read-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Read Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Read Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-read-001-readpath-streaming-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-READ-001: read(path) — Streaming Read
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-read-002-read_bytespath-buffered-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-READ-002: read_bytes(path) — Buffered Read
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#existence-checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Existence Checks
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Existence Checks">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-exist-001-existspath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-EXIST-001: exists(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-exist-002-is_filepath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-EXIST-002: is_file(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-exist-003-is_folderpath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-EXIST-003: is_folder(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Metadata
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-meta-001-get_file_infopath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-META-001: get_file_info(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-meta-002-get_folder_infopath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-META-002: get_folder_info(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-meta-003-known-limitations-missing-headers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-META-003: Known Limitations — Missing Headers
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#unsupported-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unsupported Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Unsupported Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-unsup-001-write-delete-list-move-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-UNSUP-001: Write, Delete, List, Move, Copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-err-001-http-status-to-remote-store-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-ERR-001: HTTP Status to Remote-Store Error
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-err-002-connection-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-ERR-002: Connection Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#head-fallback" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HEAD Fallback
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="HEAD Fallback">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-fallback-001-ranged-get-fallback-for-head-blocked-servers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-FALLBACK-001: Ranged GET Fallback for HEAD-Blocked Servers
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#health-check" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Health Check
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Health Check">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-health-001-check_health" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-HEALTH-001: check_health()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Lifecycle
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Lifecycle">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-life-001-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-LIFE-001: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-life-002-unwraptype_hint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-LIFE-002: unwrap(type_hint)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#credential-hygiene" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Credential Hygiene
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Credential Hygiene">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-cred-001-__repr__-masks-secrets" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-CRED-001: __repr__ Masks Secrets
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#retry-policy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Retry Policy
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Retry Policy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-retry-001-retry-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-RETRY-001: Retry Integration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -8569,7 +8101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -8597,7 +8129,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -8625,7 +8157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -8653,7 +8185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -8681,7 +8213,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -8709,7 +8241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -8737,7 +8269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -8765,7 +8297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -8793,7 +8325,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -8821,7 +8353,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -8849,7 +8381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -8877,7 +8409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../044-graph-backend/" class="md-nav__link">
+      <a href="../../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -8905,7 +8437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../045-write-result/" class="md-nav__link">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -8933,7 +8465,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../046-ext-write/" class="md-nav__link">
+      <a href="../../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -9145,33 +8677,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#findings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Findings
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="Findings">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#http-con-001-constructor-parameters" class="md-nav__link">
+  <a href="#category-1-truly-private-internals-no-public-api-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HTTP-CON-001: Constructor Parameters
+        Category 1: Truly private internals — no public API path
       
     </span>
   </a>
@@ -9179,32 +8700,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#http-con-002-base-url-trailing-slash-normalization" class="md-nav__link">
+  <a href="#category-2-already-public-symbols-imported-via-private-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HTTP-CON-002: Base URL Trailing-Slash Normalization
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-con-003-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-CON-003: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-con-004-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-CON-004: Capability Declaration
+        Category 2: Already-public symbols imported via private path
       
     </span>
   </a>
@@ -9217,470 +8716,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#transport-abstraction" class="md-nav__link">
+  <a href="#evidence" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Transport Abstraction
+        Evidence
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Transport Abstraction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-tr-001-transport-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-TR-001: Transport Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-tr-002-transport-auto-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-TR-002: Transport Auto-Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-tr-003-explicit-transport-override" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-TR-003: Explicit Transport Override
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#path-semantics" class="md-nav__link">
+  <a href="#recommended-actions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Path Semantics
+        Recommended Actions
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Path Semantics">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-path-001-url-construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-PATH-001: URL Construction
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-path-002-native_path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-PATH-002: native_path()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-path-003-to_key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-PATH-003: to_key()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-path-004-round-trip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-PATH-004: Round-Trip
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#read-operations" class="md-nav__link">
+  <a href="#non-findings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Read Operations
+        Non-Findings
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Read Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-read-001-readpath-streaming-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-READ-001: read(path) — Streaming Read
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-read-002-read_bytespath-buffered-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-READ-002: read_bytes(path) — Buffered Read
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#existence-checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Existence Checks
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Existence Checks">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-exist-001-existspath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-EXIST-001: exists(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-exist-002-is_filepath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-EXIST-002: is_file(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-exist-003-is_folderpath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-EXIST-003: is_folder(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Metadata
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-meta-001-get_file_infopath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-META-001: get_file_info(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-meta-002-get_folder_infopath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-META-002: get_folder_info(path)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-meta-003-known-limitations-missing-headers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-META-003: Known Limitations — Missing Headers
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#unsupported-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unsupported Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Unsupported Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-unsup-001-write-delete-list-move-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-UNSUP-001: Write, Delete, List, Move, Copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-err-001-http-status-to-remote-store-error" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-ERR-001: HTTP Status to Remote-Store Error
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-err-002-connection-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-ERR-002: Connection Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#head-fallback" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HEAD Fallback
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="HEAD Fallback">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-fallback-001-ranged-get-fallback-for-head-blocked-servers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-FALLBACK-001: Ranged GET Fallback for HEAD-Blocked Servers
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#health-check" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Health Check
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Health Check">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-health-001-check_health" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-HEALTH-001: check_health()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#lifecycle" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Lifecycle
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Lifecycle">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-life-001-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-LIFE-001: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#http-life-002-unwraptype_hint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-LIFE-002: unwrap(type_hint)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#credential-hygiene" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Credential Hygiene
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Credential Hygiene">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-cred-001-__repr__-masks-secrets" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-CRED-001: __repr__ Masks Secrets
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#retry-policy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Retry Policy
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Retry Policy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#http-retry-001-retry-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HTTP-RETRY-001: Retry Integration
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -9701,277 +8765,136 @@
 
 
 
-<h1 id="http-backend-specification">HTTP Backend Specification<a class="headerlink" href="#http-backend-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>ReadOnlyHttpBackend</code> implements the <code>Backend</code> ABC for reading files from
-HTTP/HTTPS URLs. It treats an HTTP endpoint as a read-only file store,
-enabling the same <code>Store</code> interface and extension composability (<code>ext.cache</code>,
-<code>ext.transfer</code>, <code>ext.observe</code>, <code>ext.batch</code>) as other backends.</p>
-<p><strong>Capability set:</strong> <code>{READ, METADATA}</code></p>
-<p><strong>Primary use cases:</strong> government open data portals, dataset registries,
-static file servers, CDN-hosted assets, package archives, public APIs
-serving files.</p>
-<p><strong>Dependencies:</strong> None (stdlib <code>urllib.request</code> as baseline).
-<strong>Optional extras:</strong> <code>pip install "remote-store[requests]"</code> or
-<code>pip install "remote-store[httpx]"</code> for connection pooling and advanced
-features.</p>
+<h1 id="audit-010-extension-private-module-imports">Audit 010: Extension Private Module Imports<a class="headerlink" href="#audit-010-extension-private-module-imports" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-04-23<br />
+<strong>Scope:</strong> All extension modules in <code>src/remote_store/ext/</code> and <code>src/remote_store/aio/ext/</code><br />
+<strong>Rule:</strong> ADR-0008 § "Public API only" — Extensions MUST use only the public <code>Store</code> and <code>Backend</code> API.</p>
+<p><strong>Interpretation note:</strong> ADR-0008 illustrates the rule with runtime attribute access (<code>store._backend</code>). This audit extends the same principle to import-time access to private modules. That extension is not literal ADR text and may warrant a dedicated ADR to formalise.</p>
+<p><strong>TYPE_CHECKING scope:</strong> Imports inside <code>if TYPE_CHECKING:</code> blocks have no runtime effect and are out of scope. Only runtime imports — top-level and function-body deferred — are counted as violations.</p>
 <hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="http-con-001-constructor-parameters">HTTP-CON-001: Constructor Parameters<a class="headerlink" href="#http-con-001-constructor-parameters" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>ReadOnlyHttpBackend</code> is constructed with a required <code>base_url</code>
-and optional configuration parameters.
-<strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ReadOnlyHttpBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">base_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">http_client</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">verify_ssl</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">max_redirects</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
-</code></pre></div>
-<strong>Postconditions:</strong>
-- <code>base_url</code> is normalized to always end with <code>/</code>.
-- Transport is selected based on <code>http_client</code> or auto-detected
-  (httpx -&gt; requests -&gt; urllib).
-- No network call occurs during <code>__init__</code>.</p>
-<h3 id="http-con-002-base-url-trailing-slash-normalization">HTTP-CON-002: Base URL Trailing-Slash Normalization<a class="headerlink" href="#http-con-002-base-url-trailing-slash-normalization" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The constructor appends <code>/</code> to <code>base_url</code> if not already
-present.
-<strong>Rationale:</strong> Avoids the <code>urljoin</code> footgun where
-<code>urljoin("https://example.com/data", "file.csv")</code> replaces the last segment
-instead of appending.</p>
-<h3 id="http-con-003-backend-name">HTTP-CON-003: Backend Name<a class="headerlink" href="#http-con-003-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"http"</code>.</p>
-<h3 id="http-con-004-capability-declaration">HTTP-CON-004: Capability Declaration<a class="headerlink" href="#http-con-004-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>capabilities</code> returns <code>CapabilitySet({Capability.READ,
-Capability.METADATA})</code>.
-<strong>Rationale:</strong> HTTP endpoints are read-only. No reliable server-side
-mechanism exists for LIST, MOVE, COPY, DELETE, or WRITE operations across
-arbitrary HTTP servers.</p>
-<hr />
-<h2 id="transport-abstraction">Transport Abstraction<a class="headerlink" href="#transport-abstraction" title="Permanent link">&para;</a></h2>
-<h3 id="http-tr-001-transport-protocol">HTTP-TR-001: Transport Protocol<a class="headerlink" href="#http-tr-001-transport-protocol" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The backend delegates HTTP operations to an internal transport
-conforming to the <code>HttpTransport</code> protocol:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">HttpTransport</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">head</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HttpResponse</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div>
-The <code>HttpResponse</code> dataclass carries <code>status: int</code>, <code>headers: dict[str, str]</code>,
-and <code>body: BinaryIO</code>.</p>
-<h3 id="http-tr-002-transport-auto-detection">HTTP-TR-002: Transport Auto-Detection<a class="headerlink" href="#http-tr-002-transport-auto-detection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When <code>http_client</code> is <code>None</code>, the backend selects the best
-available transport: httpx (if installed) -&gt; requests (if installed) -&gt; urllib
-(always available).
-<strong>Rationale:</strong> Users get the best available HTTP library without explicit
-configuration. Connection pooling and HTTP/2 are automatic when httpx or
-requests are installed.</p>
-<h3 id="http-tr-003-explicit-transport-override">HTTP-TR-003: Explicit Transport Override<a class="headerlink" href="#http-tr-003-explicit-transport-override" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When <code>http_client</code> is <code>"urllib"</code>, <code>"requests"</code>, or <code>"httpx"</code>,
-the backend uses that transport exclusively. Raises <code>ImportError</code> if the
-requested library is not installed.</p>
-<hr />
-<h2 id="path-semantics">Path Semantics<a class="headerlink" href="#path-semantics" title="Permanent link">&para;</a></h2>
-<h3 id="http-path-001-url-construction">HTTP-PATH-001: URL Construction<a class="headerlink" href="#http-path-001-url-construction" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Request URLs are constructed as
-<code>base_url + urllib.parse.quote(path, safe="/")</code>.
-<strong>Rationale:</strong> Simple concatenation (not <code>urljoin</code>) avoids the trailing-slash
-footgun. <code>quote(path, safe="/")</code> encodes special characters while preserving
-path separators.</p>
-<h3 id="http-path-002-native_path">HTTP-PATH-002: <code>native_path()</code><a class="headerlink" href="#http-path-002-native_path" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>native_path(path)</code> returns the full URL string
-(e.g., <code>"https://data.example.com/datasets/population/2024.csv"</code>).</p>
-<h3 id="http-path-003-to_key">HTTP-PATH-003: <code>to_key()</code><a class="headerlink" href="#http-path-003-to_key" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>to_key(native_path)</code> strips the <code>base_url</code> prefix and returns
-the relative key. If <code>native_path</code> does not start with <code>base_url</code>, it is
-returned unchanged.</p>
-<h3 id="http-path-004-round-trip">HTTP-PATH-004: Round-Trip<a class="headerlink" href="#http-path-004-round-trip" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>to_key(native_path(key)) == key</code> for all valid keys.</p>
-<hr />
-<h2 id="read-operations">Read Operations<a class="headerlink" href="#read-operations" title="Permanent link">&para;</a></h2>
-<h3 id="http-read-001-readpath-streaming-read">HTTP-READ-001: <code>read(path)</code> — Streaming Read<a class="headerlink" href="#http-read-001-readpath-streaming-read" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Sends <code>GET base_url + path</code>. Returns the response body wrapped
-in <code>_ErrorMappingStream</code>. The stream is non-seekable. Raises <code>NotFound</code> for
-404, <code>PermissionDenied</code> for 401/403, <code>BackendUnavailable</code> for transient
-errors.
-<strong>Rationale:</strong> HTTP response streams are inherently non-seekable (SIO-001
-allows this). Wrapping in <code>_ErrorMappingStream</code> maps transport exceptions to
-remote-store errors during stream reads.</p>
-<h3 id="http-read-002-read_bytespath-buffered-read">HTTP-READ-002: <code>read_bytes(path)</code> — Buffered Read<a class="headerlink" href="#http-read-002-read_bytespath-buffered-read" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Sends <code>GET base_url + path</code>. Returns <code>response.body.read()</code> as
-<code>bytes</code>. Same error mapping as <code>read()</code>.</p>
-<hr />
-<h2 id="existence-checks">Existence Checks<a class="headerlink" href="#existence-checks" title="Permanent link">&para;</a></h2>
-<h3 id="http-exist-001-existspath">HTTP-EXIST-001: <code>exists(path)</code><a class="headerlink" href="#http-exist-001-existspath" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Sends <code>HEAD base_url + path</code>. Returns <code>True</code> for HTTP 200,
-<code>False</code> for 404. On 401/403, falls back per HTTP-FALLBACK-001 before raising.
-Other errors raise the mapped exception.</p>
-<h3 id="http-exist-002-is_filepath">HTTP-EXIST-002: <code>is_file(path)</code><a class="headerlink" href="#http-exist-002-is_filepath" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same as <code>exists(path)</code>. HTTP resources are always "files".</p>
-<h3 id="http-exist-003-is_folderpath">HTTP-EXIST-003: <code>is_folder(path)</code><a class="headerlink" href="#http-exist-003-is_folderpath" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Always returns <code>False</code>.
-<strong>Rationale:</strong> HTTP has no folder concept. Without LIST capability, there are
-no known prefixes to check against.</p>
-<hr />
-<h2 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
-<h3 id="http-meta-001-get_file_infopath">HTTP-META-001: <code>get_file_info(path)</code><a class="headerlink" href="#http-meta-001-get_file_infopath" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Sends <code>HEAD base_url + path</code> (falls back per HTTP-FALLBACK-001
-on 401/403). Maps response headers to <code>FileInfo</code>:</p>
+<h2 id="findings">Findings<a class="headerlink" href="#findings" title="Permanent link">&para;</a></h2>
+<p>Violations split into two categories with different remediation paths; see tables below.</p>
+<h3 id="category-1-truly-private-internals-no-public-api-path">Category 1: Truly private internals — no public API path<a class="headerlink" href="#category-1-truly-private-internals-no-public-api-path" title="Permanent link">&para;</a></h3>
+<p>Fix requires a design decision: expose publicly, refactor, or add a public helper.</p>
 <table>
 <thead>
 <tr>
-<th>FileInfo field</th>
-<th>HTTP header</th>
-<th>Fallback when missing</th>
+<th>Module</th>
+<th>Import</th>
+<th>Type</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>path</code></td>
-<td>From request path</td>
-<td>Always available</td>
+<td><code>ext/dagster.py</code></td>
+<td><code>_registry._BACKEND_FACTORIES, _register_builtin_backends</code></td>
+<td>Private functions</td>
 </tr>
 <tr>
-<td><code>name</code></td>
-<td>From path</td>
-<td>Always available</td>
+<td><code>ext/glob.py</code></td>
+<td><code>_glob</code> (module)</td>
+<td>Private module</td>
 </tr>
 <tr>
-<td><code>size</code></td>
-<td><code>Content-Range</code> total, then <code>Content-Length</code></td>
-<td><code>0</code></td>
-</tr>
-<tr>
-<td><code>modified_at</code></td>
-<td><code>Last-Modified</code></td>
-<td><code>datetime.min.replace(tzinfo=timezone.utc)</code></td>
-</tr>
-<tr>
-<td><code>etag</code></td>
-<td><code>ETag</code></td>
-<td><code>None</code></td>
-</tr>
-<tr>
-<td><code>content_type</code></td>
-<td><code>Content-Type</code></td>
-<td><code>None</code></td>
-</tr>
-<tr>
-<td><code>extra</code></td>
-<td>All response headers</td>
-<td><code>{"headers": dict(response.headers)}</code></td>
+<td><code>ext/write.py</code></td>
+<td><code>_store._validate_metadata</code></td>
+<td>Private function</td>
 </tr>
 </tbody>
 </table>
-<p>Raises <code>NotFound</code> for 404.</p>
-<h3 id="http-meta-002-get_folder_infopath">HTTP-META-002: <code>get_folder_info(path)</code><a class="headerlink" href="#http-meta-002-get_folder_infopath" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Always raises <code>NotFound</code>.
-<strong>Rationale:</strong> Consistent with <code>is_folder()</code> returning <code>False</code>. No folder
-metadata can be computed without LIST capability.</p>
-<h3 id="http-meta-003-known-limitations-missing-headers">HTTP-META-003: Known Limitations — Missing Headers<a class="headerlink" href="#http-meta-003-known-limitations-missing-headers" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When <code>Content-Length</code> is absent (chunked transfer, dynamic
-content), <code>size</code> is <code>0</code>. When <code>Last-Modified</code> is absent, <code>modified_at</code> is
-<code>datetime.min</code> (UTC). Both are documented known limitations.
-<strong>Rationale:</strong> <code>FileInfo.size</code> and <code>modified_at</code> are non-optional <code>int</code> and
-<code>datetime</code> respectively. A future <code>FileInfo</code> revision may make these optional.</p>
-<hr />
-<h2 id="unsupported-operations">Unsupported Operations<a class="headerlink" href="#unsupported-operations" title="Permanent link">&para;</a></h2>
-<h3 id="http-unsup-001-write-delete-list-move-copy">HTTP-UNSUP-001: Write, Delete, List, Move, Copy<a class="headerlink" href="#http-unsup-001-write-delete-list-move-copy" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The following methods raise <code>CapabilityNotSupported</code>:
-<code>write()</code>, <code>write_atomic()</code>, <code>open_atomic()</code>, <code>delete()</code>, <code>delete_folder()</code>,
-<code>list_files()</code>, <code>list_folders()</code>, <code>iter_children()</code>, <code>move()</code>, <code>copy()</code>.
-<strong>Rationale:</strong> The backend is read-only. <code>iter_children()</code> overrides the
-default implementation (which calls <code>list_files</code> + <code>list_folders</code>) to raise
-directly, avoiding confusing intermediate errors.</p>
-<hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="http-err-001-http-status-to-remote-store-error">HTTP-ERR-001: HTTP Status to Remote-Store Error<a class="headerlink" href="#http-err-001-http-status-to-remote-store-error" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong></p>
+<h3 id="category-2-already-public-symbols-imported-via-private-path">Category 2: Already-public symbols imported via private path<a class="headerlink" href="#category-2-already-public-symbols-imported-via-private-path" title="Permanent link">&para;</a></h3>
+<p>Fix is a one-line import path change (<code>from remote_store._x import Y</code> → <code>from remote_store import Y</code>). All symbols are already in <code>remote_store.__all__</code>.</p>
 <table>
 <thead>
 <tr>
-<th>HTTP Status</th>
-<th>remote-store Error</th>
+<th>Module</th>
+<th>Import</th>
+<th>Note</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>200, 204</td>
-<td>Success</td>
+<td><code>ext/arrow.py</code></td>
+<td><code>_errors.*</code></td>
+<td>Public error classes</td>
 </tr>
 <tr>
-<td>301, 302, 307, 308</td>
-<td>Follow redirect (up to <code>max_redirects</code> limit)</td>
+<td><code>ext/batch.py</code></td>
+<td><code>_errors.*</code></td>
+<td>Public error classes</td>
 </tr>
 <tr>
-<td>401, 403</td>
-<td><code>PermissionDenied(path=..., backend="http")</code></td>
+<td><code>ext/cache.py</code></td>
+<td><code>_models.FileInfo, FolderInfo</code>; <code>_proxy.ProxyStore</code></td>
+<td>Public classes</td>
 </tr>
 <tr>
-<td>404</td>
-<td><code>NotFound(path=..., backend="http")</code></td>
+<td><code>ext/glob.py</code></td>
+<td><code>_capabilities.Capability</code></td>
+<td>Public class</td>
 </tr>
 <tr>
-<td>408, 429, 500, 502, 503, 504</td>
-<td><code>BackendUnavailable(backend="http")</code></td>
+<td><code>ext/integrity.py</code></td>
+<td><code>_models.ContentDigest</code></td>
+<td>Public class</td>
 </tr>
 <tr>
-<td>Other 4xx/5xx</td>
-<td><code>RemoteStoreError(path=..., backend="http")</code></td>
+<td><code>ext/observe.py</code></td>
+<td><code>_proxy.ProxyStore</code></td>
+<td>Public class</td>
+</tr>
+<tr>
+<td><code>ext/parquet.py</code></td>
+<td><code>_capabilities.Capability</code>; <code>_errors.*</code></td>
+<td>Public classes</td>
+</tr>
+<tr>
+<td><code>ext/pydantic.py</code></td>
+<td><code>_config.RegistryConfig</code></td>
+<td>Public class</td>
+</tr>
+<tr>
+<td><code>ext/yaml.py</code></td>
+<td><code>_config.RegistryConfig</code> (line 32); <code>_config.resolve_env</code> (line 95, deferred)</td>
+<td>Public symbols</td>
 </tr>
 </tbody>
 </table>
-<h3 id="http-err-002-connection-errors">HTTP-ERR-002: Connection Errors<a class="headerlink" href="#http-err-002-connection-errors" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Network-level failures (DNS resolution, connection refused,
-timeout) raise <code>BackendUnavailable</code>.</p>
+<p><strong>Compliant:</strong> All modules not listed above.</p>
+<p><strong>Test gap:</strong> <code>test_ext_contract.py::test_no_private_store_access</code> only flags attribute access on variables literally named <code>store</code>, <code>src_store</code>, or <code>dst_store</code> — it misses access on any other Store-typed variable and does not detect import-time access to private modules at all.</p>
 <hr />
-<h2 id="head-fallback">HEAD Fallback<a class="headerlink" href="#head-fallback" title="Permanent link">&para;</a></h2>
-<h3 id="http-fallback-001-ranged-get-fallback-for-head-blocked-servers">HTTP-FALLBACK-001: Ranged GET Fallback for HEAD-Blocked Servers<a class="headerlink" href="#http-fallback-001-ranged-get-fallback-for-head-blocked-servers" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When <code>HEAD</code> returns 401 or 403, <code>exists()</code>, <code>get_file_info()</code>,
-and <code>check_health()</code> retry with <code>GET</code> + <code>Range: bytes=0-0</code> (single byte).
-If the <code>GET</code> succeeds (2xx) or returns 404, the result is used and the backend
-caches the fact that HEAD is blocked for its remaining lifetime. If <code>GET</code> also
-returns 401/403, the original <code>PermissionDenied</code> (or <code>BackendUnavailable</code> for
-health checks) is raised.</p>
-<p><strong>Rationale:</strong> Some CDN-fronted servers (e.g. Cloudflare) return 403 on HEAD
-while allowing GET. A ranged GET downloads at most 1 byte, making it a cheap
-probe. Caching avoids redundant HEAD requests on subsequent calls.</p>
-<p>For ranged GET responses (HTTP 206), <code>Content-Range</code> total takes precedence
-over <code>Content-Length</code> when building <code>FileInfo.size</code> (the latter reflects the
-byte range, not the full file).</p>
+<h2 id="evidence">Evidence<a class="headerlink" href="#evidence" title="Permanent link">&para;</a></h2>
+<ul>
+<li>ADR-0008 states: "Extensions MUST use only the public <code>Store</code> and <code>Backend</code> API. Direct access to private attributes (e.g., <code>store._backend</code>) is forbidden."</li>
+<li>All Category 2 symbols are confirmed present in <code>src/remote_store/__init__.py</code> <code>__all__</code>.</li>
+<li><code>ext/yaml.py</code> line 95 is a deferred runtime import inside a function body (<code>resolve_env</code>), not a <code>TYPE_CHECKING</code> guard — the AST checker must handle this case.</li>
+<li>Grep of <code>src/remote_store/ext/</code> for <code>from remote_store._</code> with TYPE_CHECKING blocks excluded yields 12 violations across 11 modules.</li>
+</ul>
 <hr />
-<h2 id="health-check">Health Check<a class="headerlink" href="#health-check" title="Permanent link">&para;</a></h2>
-<h3 id="http-health-001-check_health">HTTP-HEALTH-001: <code>check_health()</code><a class="headerlink" href="#http-health-001-check_health" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Sends <code>HEAD base_url</code> (falls back per HTTP-FALLBACK-001 on
-401/403). Raises <code>BackendUnavailable</code> if the request fails (network error or
-non-2xx status).</p>
+<h2 id="recommended-actions">Recommended Actions<a class="headerlink" href="#recommended-actions" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Add import-time checker to test suite</strong><br />
+   Extend <code>test_ext_contract.py</code> to flag <code>from remote_store._*</code> and <code>import remote_store._*</code> via AST analysis. Must exclude <code>if TYPE_CHECKING:</code> blocks but must catch function-body deferred imports (<code>ext/yaml.py</code> line 95 is the reference case).</p>
+</li>
+<li>
+<p><strong>Fix Category 2 import paths</strong> <em>(prerequisite: the import-time rule extension must be adopted — via ADR or DESIGN.md — before executing)</em><br />
+   Change <code>from remote_store._x import Y</code> to <code>from remote_store import Y</code> for all 9 Category 2 modules. Mechanical one-line fix per occurrence once the rule is formalised.</p>
+</li>
+<li>
+<p><strong>Resolve Category 1 internals</strong><br />
+   Three symbols have no public path and each requires a decision:</p>
+</li>
+<li><code>_glob</code> utilities (<code>extract_prefix</code>, <code>needs_recursive</code>, <code>pattern_to_regex</code>) — expose as public or internalise inside <code>ext.glob</code></li>
+<li><code>_registry._BACKEND_FACTORIES</code>, <code>_register_builtin_backends</code> — decide via ADR if these are stable API</li>
+<li><code>_store._validate_metadata</code> — expose as public helper or remove from extension use</li>
+</ol>
 <hr />
-<h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
-<h3 id="http-life-001-close">HTTP-LIFE-001: <code>close()</code><a class="headerlink" href="#http-life-001-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Closes the underlying transport (connection pool for
-requests/httpx, no-op for urllib). Safe to call multiple times.</p>
-<h3 id="http-life-002-unwraptype_hint">HTTP-LIFE-002: <code>unwrap(type_hint)</code><a class="headerlink" href="#http-life-002-unwraptype_hint" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Returns the underlying transport object if <code>type_hint</code> matches
-the transport type (e.g., <code>unwrap(httpx.Client)</code>). Raises
-<code>CapabilityNotSupported</code> otherwise.</p>
-<hr />
-<h2 id="credential-hygiene">Credential Hygiene<a class="headerlink" href="#credential-hygiene" title="Permanent link">&para;</a></h2>
-<h3 id="http-cred-001-__repr__-masks-secrets">HTTP-CRED-001: <code>__repr__</code> Masks Secrets<a class="headerlink" href="#http-cred-001-__repr__-masks-secrets" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>repr()</code> output never includes header values. Header keys are
-shown but values are masked as <code>"***"</code>.
-<strong>Rationale:</strong> AF-008 conformance. Headers commonly contain API keys and auth
-tokens.</p>
-<hr />
-<h2 id="retry-policy">Retry Policy<a class="headerlink" href="#retry-policy" title="Permanent link">&para;</a></h2>
-<h3 id="http-retry-001-retry-integration">HTTP-RETRY-001: Retry Integration<a class="headerlink" href="#http-retry-001-retry-integration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When <code>retry</code> is provided, transient errors (HTTP 429, 500, 502,
-503, 504 and connection errors) are retried according to <code>RetryPolicy</code> fields:
-<code>max_attempts</code>, <code>backoff_base</code>, <code>backoff_max</code>, <code>jitter</code>, <code>timeout</code>. The
-<code>Retry-After</code> header is honoured when present.</p>
+<h2 id="non-findings">Non-Findings<a class="headerlink" href="#non-findings" title="Permanent link">&para;</a></h2>
+<ul>
+<li>No extension imports directly from <code>backends/</code> or <code>aio/</code> modules.</li>
+<li>All extensions already define <code>__all__</code>.</li>
+</ul>
 
 
 
