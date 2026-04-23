@@ -9473,8 +9473,9 @@ construction (see SFTP-004).</p>
 <p><strong>Invariant:</strong> <code>name</code> property returns <code>"sftp"</code>.</p>
 <h3 id="sftp-003-capability-declaration">SFTP-003: Capability Declaration<a class="headerlink" href="#sftp-003-capability-declaration" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>SFTPBackend</code> declares capabilities:
-<code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>. Does not declare <code>GLOB</code> (no native pattern matching; use <code>list_files(pattern=…)</code> or <code>ext.glob</code> for client-side fallback).
+<code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>WRITE_RESULT_NATIVE</code>. Does not declare <code>GLOB</code> (no native pattern matching; use <code>list_files(pattern=…)</code> or <code>ext.glob</code> for client-side fallback).
 <strong>Rationale:</strong>
+- <code>WRITE_RESULT_NATIVE</code>: <code>write()</code> and <code>write_atomic()</code> perform a <code>sftp.stat()</code> round-trip after upload/rename to populate <code>last_modified</code>.
 - <code>ATOMIC_WRITE</code>: Simulated via temp file + rename (see SFTP-014). Orphan temp
   files are possible on connection failure — documented caveat.
 - <code>MOVE</code>: Implemented via <code>posix_rename</code> with fallback (see SFTP-018).

@@ -9149,8 +9149,7 @@ consistent fields. Verified in <code>MemoryBackend.dfy</code>. Python backstop i
 (<code>test_result_is_write_result_with_path_and_size</code>,
 <code>test_size_matches_written_bytes_for_streaming_input</code>,
 <code>test_native_populates_last_modified</code>,
-<code>test_native_file_info_matches_write_result</code>,
-<code>test_digest_matches_file_info</code>). See ID-151.</p>
+<code>test_write_result_rich_fields_match_file_info</code>). See ID-151.</p>
 <h2 id="wr-002-writeresultpath-is-store-relative">WR-002: WriteResult.path Is Store-Relative<a class="headerlink" href="#wr-002-writeresultpath-is-store-relative" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>WriteResult.path</code> is store-relative — <code>root_path</code> is stripped
 exactly as <code>FileInfo.path</code> is stripped by <code>list_files</code> and <code>get_file_info</code>.
