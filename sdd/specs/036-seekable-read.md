@@ -2,7 +2,7 @@
 
 ## Overview
 
-Seekable read provides `Store.read_seekable()` -- a method that always
+Seekable read provides `Store.read_seekable()` — a method that always
 returns a seekable `BinaryIO` stream, backend-optimized for random access.
 Complements `Store.read()` (which returns the backend's natural stream,
 possibly non-seekable). Follows [ADR-0017](../adrs/0017-seekable-read-on-store-api.md),
@@ -55,13 +55,13 @@ original stream is closed after spooling.
 ## SEEK-006: Azure Range Reader Override
 
 **Invariant:** `AzureBackend` overrides `read_seekable()` to return an
-`_AzureRangeReader` -- a seekable `io.RawIOBase` where each `readinto()`
+`_AzureRangeReader` — a seekable `io.RawIOBase` where each `readinto()`
 issues a single HTTP Range request via `download_blob(offset=, length=)`.
 **Postconditions:**
 - No data is downloaded until `read()` is called.
 - `seek()` and `tell()` update position without I/O.
 - Sequential `read()` calls issue one HTTP request per `readinto()` call.
-- The stream is wrapped in `_ErrorMappingStream` (no `BufferedReader` -- its
+- The stream is wrapped in `_ErrorMappingStream` (no `BufferedReader` — its
   seek-invalidation would defeat range reads by turning each
   `PythonFile.read_at()` into a separate HTTP request).
 

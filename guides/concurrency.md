@@ -10,7 +10,7 @@ When you call `store.write(path, data, overwrite=False)`, the backend checks whe
 Thread A: exists("report.csv") -> False
 Thread B: exists("report.csv") -> False    # concurrent check
 Thread A: write("report.csv", data_a)      # succeeds
-Thread B: write("report.csv", data_b)      # also succeeds -- overwrites A's file
+Thread B: write("report.csv", data_b)      # also succeeds — overwrites A's file
 ```
 
 This affects **all backends**. The check-then-act pattern cannot be made race-free without an external coordination mechanism. `overwrite=False` is a convenience guard against accidental overwrites in single-writer scenarios — it is **not** a mutual exclusion mechanism.

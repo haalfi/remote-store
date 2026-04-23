@@ -109,7 +109,7 @@ in backend config sections into a `RetryPolicy` instance.
 - When `retry is None`, uses botocore defaults (5 attempts, legacy mode).
 - When `retry` is provided, overrides botocore retry config.
 - `backoff_base`, `backoff_max`, `jitter`, `timeout` are not directly
-  mappable to botocore -- logged as debug-level info if set.
+  mappable to botocore — logged as debug-level info if set.
 
 ### RET-012: Azure Retry Mapping
 
@@ -123,7 +123,7 @@ in backend config sections into a `RetryPolicy` instance.
 - When `retry is None`, uses Azure SDK defaults.
 - When `retry` is provided, creates an `ExponentialRetry` policy and
   sets it as `retry_policy` in client options.
-- `backoff_max` and `timeout` are not directly mappable -- logged as
+- `backoff_max` and `timeout` are not directly mappable — logged as
   debug-level info if set.
 
 ### RET-013: S3-PyArrow Retry Mapping

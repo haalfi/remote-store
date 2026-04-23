@@ -1,4 +1,4 @@
-# Audit 003 -- Documentation Quality & Spec Compliance
+# Audit 003 — Documentation Quality & Spec Compliance
 
 **Date:** 2026-03-09
 **Scope:** Full documentation site (`docs-src/`, `guides/`, `examples/`, API docstrings) audited against `sdd/DOCUMENTATION.md` spec. Version 0.15.0, commit `62ecb61` (master HEAD at audit time).
@@ -20,7 +20,7 @@
 
 ---
 
-## Goal 1: New User -- Install + Run in <10 min
+## Goal 1: New User — Install + Run in <10 min
 
 **Checked:** README quickstart, `docs-src/getting-started.md`, `examples/quickstart.py`, tutorial notebooks.
 
@@ -35,7 +35,7 @@
 
 ---
 
-## Goal 2: Returning User -- "How do I X?" in One Click
+## Goal 2: Returning User — "How do I X?" in One Click
 
 **Checked:** Nav structure, guide inventory, cross-linking density, example discoverability.
 
@@ -43,37 +43,37 @@
 
 **Strong:** All common tasks (configure backend, read/write files, use extensions) are discoverable in 1-2 clicks from the nav. 21 guides cover the full feature set.
 
-**Weak:** Cross-feature linking is sparse -- batch, transfer, and observe guides don't link to each other despite natural workflows that combine them. 6 guides missing API reference links. 7 example scripts invisible on docs site.
+**Weak:** Cross-feature linking is sparse — batch, transfer, and observe guides don't link to each other despite natural workflows that combine them. 6 guides missing API reference links. 7 example scripts invisible on docs site.
 
 **Findings:**
 
-- AF-022 -- 7 example scripts missing from docs-site nav (Critical)
-- AF-026 -- 6 guides missing API reference links, 4 missing example links
-- AF-027 -- `guides/retry.md` missing "See also" section and cross-links
-- AF-028 -- `guides/backends/index.md` sparse
+- AF-022 — 7 example scripts missing from docs-site nav (Critical)
+- AF-026 — 6 guides missing API reference links, 4 missing example links
+- AF-027 — `guides/retry.md` missing "See also" section and cross-links
+- AF-028 — `guides/backends/index.md` sparse
 
 ---
 
-## Goal 3: Advanced User -- API Lookup Without Source
+## Goal 3: Advanced User — API Lookup Without Source
 
 **Checked:** 17 API reference pages, docstring compliance for Store, Backend, extensions, models, errors.
 
 **Verdict: PASS with gaps (7/10)**
 
-**Strong:** Store (23 methods), Backend ABC (23 methods), all 8 error classes, all config classes, batch/glob/transfer extensions -- all fully documented with params, returns, raises.
+**Strong:** Store (23 methods), Backend ABC (23 methods), all 8 error classes, all config classes, batch/glob/transfer extensions — all fully documented with params, returns, raises.
 
 **Weak:** Proxy classes (`ObservedStore`, `CachedStore`) and the `CacheBackend` protocol have missing or incomplete docstrings.
 
 **Findings:**
 
-- AF-023 -- `ObservedStore`: 24 method overrides, 0 per-method docstrings. Class-level docstring exists ("Proxy Store that fires observation hooks") but is terse -- does not explain delegation pattern or refer users to `Store` for parameter docs. mkdocstrings renders 24 undocumented methods on the API page.
-- AF-024 -- `CachedStore`: same pattern, 20+ method overrides without per-method docstrings
-- AF-025 -- `CacheBackend` protocol: 6 methods (`get`, `set`, `delete`, `clear`, `clear_prefix`, `size`) completely undocumented. Public extension point for custom cache backends.
-- AF-031 -- `transfer()` in `ext/transfer.py` missing `:returns:` docstring (returns `None` but undocumented)
+- AF-023 — `ObservedStore`: 24 method overrides, 0 per-method docstrings. Class-level docstring exists ("Proxy Store that fires observation hooks") but is terse — does not explain delegation pattern or refer users to `Store` for parameter docs. mkdocstrings renders 24 undocumented methods on the API page.
+- AF-024 — `CachedStore`: same pattern, 20+ method overrides without per-method docstrings
+- AF-025 — `CacheBackend` protocol: 6 methods (`get`, `set`, `delete`, `clear`, `clear_prefix`, `size`) completely undocumented. Public extension point for custom cache backends.
+- AF-031 — `transfer()` in `ext/transfer.py` missing `:returns:` docstring (returns `None` but undocumented)
 
 ---
 
-## Goal 4: Contributor -- Design Decisions & Content Placement
+## Goal 4: Contributor — Design Decisions & Content Placement
 
 **Checked:** `CONTRIBUTING.md`, `sdd/CLAUDE-REFERENCE.md`, `sdd/DOCUMENTATION.md` S4 content homes.
 
@@ -85,8 +85,8 @@
 
 **Findings:**
 
-- AF-038 -- `CONTRIBUTING.md` states "9 ADRs" (actual: 11) and "3 RFCs" (actual: 4)
-- AF-039 -- `sdd/CLAUDE-REFERENCE.md` line 77 references `docs/` directory, should be `docs-src/`
+- AF-038 — `CONTRIBUTING.md` states "9 ADRs" (actual: 11) and "3 RFCs" (actual: 4)
+- AF-039 — `sdd/CLAUDE-REFERENCE.md` line 77 references `docs/` directory, should be `docs-src/`
 
 ---
 
@@ -100,13 +100,13 @@ This is the weakest area. Several guides contain import paths to private modules
 
 **Findings:**
 
-- AF-032 -- `guides/observe.md`: `on_write` hook table lists `write`, `write_atomic` but omits `open_atomic` (which triggers `on_write` per `observe.py` line 109)
-- AF-033 -- `guides/observe.md`: `on_ping` hook row missing entirely (the `ping()` method fires `on_ping` per `observe.py` line 107)
-- AF-034 -- `ext/observe.py`: `observe()` function docstring says "Fires after write/write_atomic" for `on_write` param but omits `open_atomic`
-- AF-035 -- `guides/cache.md`: imports from `remote_store.backends._memory` (private module)
-- AF-036 -- `guides/health-check.md`: imports from `remote_store.backends._local` (private module)
-- AF-037 -- `guides/backends/sftp.md`: imports from `remote_store.backends._sftp` (private module, no disclaimer that this is internal API)
-- AF-040 -- `guides/migration.md`: documents v0.15.0-to-v0.16.0 migration for an unreleased version
+- AF-032 — `guides/observe.md`: `on_write` hook table lists `write`, `write_atomic` but omits `open_atomic` (which triggers `on_write` per `observe.py` line 109)
+- AF-033 — `guides/observe.md`: `on_ping` hook row missing entirely (the `ping()` method fires `on_ping` per `observe.py` line 107)
+- AF-034 — `ext/observe.py`: `observe()` function docstring says "Fires after write/write_atomic" for `on_write` param but omits `open_atomic`
+- AF-035 — `guides/cache.md`: imports from `remote_store.backends._memory` (private module)
+- AF-036 — `guides/health-check.md`: imports from `remote_store.backends._local` (private module)
+- AF-037 — `guides/backends/sftp.md`: imports from `remote_store.backends._sftp` (private module, no disclaimer that this is internal API)
+- AF-040 — `guides/migration.md`: documents v0.15.0-to-v0.16.0 migration for an unreleased version
 
 ---
 
@@ -134,8 +134,8 @@ This is the weakest area. Several guides contain import paths to private modules
 
 ### Additional structural findings
 
-- AF-029 -- `guides/performance.md` reads as Explanation, not How-To. Missing API refs, examples, "See also". Consider reclassifying.
-- AF-030 -- Research docs nested 3 levels deep (Explanation > Design > Research) instead of 2. Low impact.
+- AF-029 — `guides/performance.md` reads as Explanation, not How-To. Missing API refs, examples, "See also". Consider reclassifying.
+- AF-030 — Research docs nested 3 levels deep (Explanation > Design > Research) instead of 2. Low impact.
 
 ---
 
@@ -160,9 +160,9 @@ This is the weakest area. Several guides contain import paths to private modules
 | AF-025 | Moderate | 3 | `src/remote_store/ext/cache.py` | CacheBackend protocol: 6 methods undocumented |
 | AF-026 | Moderate | 2 | 6 guides | Missing API reference and example cross-links |
 | AF-027 | Moderate | 2 | `guides/retry.md` | Missing "See also" section and cross-links |
-| AF-028 | Minor | 2 | `guides/backends/index.md` | Sparse -- missing API refs, examples, next steps |
-| AF-029 | Minor | -- | `guides/performance.md` | Guide-style violations; consider reclassifying as Explanation |
-| AF-030 | Minor | -- | `docs-src/_nav.yml` | Research nested 3 levels deep instead of 2 |
+| AF-028 | Minor | 2 | `guides/backends/index.md` | Sparse — missing API refs, examples, next steps |
+| AF-029 | Minor | — | `guides/performance.md` | Guide-style violations; consider reclassifying as Explanation |
+| AF-030 | Minor | — | `docs-src/_nav.yml` | Research nested 3 levels deep instead of 2 |
 | AF-031 | Low | 3 | `src/remote_store/ext/transfer.py` | `transfer()` missing `:returns:` docstring |
 | AF-032 | Medium | 5 | `guides/observe.md` | on_write hook table omits `open_atomic` |
 | AF-033 | Medium | 5 | `guides/observe.md` | on_ping hook row missing entirely |

@@ -75,20 +75,20 @@ defers to — other tools.
 |--------------------------|-----------------|-----------------|-----------------|------------------|------------------------|
 | API surface              | broad           | `open()` only   | pathlib-style   | narrow           | narrow, capability-gated |
 | Backend coverage         | 30+             | S3/GCS/Az/SFTP  | S3/GCS/Az       | S3/GCS/Az        | see [`FEATURES.md`](../../FEATURES.md) |
-| SFTP support             | via sshfs       | Yes             | --              | --               | Yes                    |
+| SFTP support             | via sshfs       | Yes             | —               | —                | Yes                    |
 | Local + in-memory        | Yes             | local fallback  | local mock      | local            | Yes (test-grade)       |
-| List / glob / delete     | Yes             | --              | Yes             | Yes              | Yes                    |
-| Atomic writes            | --              | --              | --              | --               | Yes (capability-gated) |
+| List / glob / delete     | Yes             | —               | Yes             | Yes              | Yes                    |
+| Atomic writes            | —               | —               | —               | —                | Yes (capability-gated) |
 | Core runtime deps        | several         | minimal         | per SDK         | Rust binary      | none                   |
-| Streaming I/O            | Yes             | Yes             | -- (downloads)  | bytes-oriented   | Yes (BinaryIO)         |
-| Native async             | Yes             | --              | --              | Yes              | Yes (`remote_store.aio`) |
-| PyArrow interop          | native          | --              | --              | via obspec       | `ext.arrow`, `ext.parquet` |
-| Observability hooks      | --              | --              | --              | --               | `ext.observe` + OTel   |
+| Streaming I/O            | Yes             | Yes             | — (downloads)   | bytes-oriented   | Yes (BinaryIO)         |
+| Native async             | Yes             | —               | —               | Yes              | Yes (`remote_store.aio`) |
+| PyArrow interop          | native          | —               | —               | via obspec       | `ext.arrow`, `ext.parquet` |
+| Observability hooks      | —               | —               | —               | —                | `ext.observe` + OTel   |
 | Config model             | per-filesystem  | URI-based       | per-client      | per-store kwargs | immutable Registry     |
-| Formal contract          | --              | --              | --              | --               | Dafny-verified, conformance suite |
+| Formal contract          | —               | —               | —               | —                | Dafny-verified, conformance suite |
 | Typing                   | limited         | limited         | good            | strong           | strict mypy            |
 
-Yes / -- (dash) used per repo convention. Method counts and download
+Yes / — (em dash) used per repo convention. Method counts and download
 figures intentionally omitted — those drift faster than this document.
 
 ### Niche, in one sentence

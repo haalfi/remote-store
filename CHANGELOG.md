@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-007 (extended): Replace prose `--` with em dash `—` throughout docs, specs, research, SDD files, and `.tmpl` templates; add typography Rule 8 to `sdd/DOCUMENTATION.md`
 - BUG-181: HNS `write_atomic` WriteResult rich-field and metadata parity verified with mock tests
 - ID-013b: async write layer returns `WriteResult`; `metadata=` supported on `AsyncStore` and all async backends; `aio.ext.write.write_with_hash` added
 - BK-157: Tighten docs site spacing: compact table rows, heading typography, method separators
@@ -685,7 +686,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `AsyncBackend` abstract base class for native async backends.
   `SyncBackendAdapter` wraps any synchronous backend for async use
   (delegates to a thread-pool executor). `AsyncMemoryBackend` for
-  async testing. Phase 1 -- core primitives.
+  async testing. Phase 1 — core primitives.
 - **`AsyncAzureBackend` native async backend** (ID-013 Phase 2): First native
   async backend for `remote_store.aio`. Uses Azure SDK async clients
   (`azure.storage.blob.aio`, `azure.storage.filedatalake.aio`) for true

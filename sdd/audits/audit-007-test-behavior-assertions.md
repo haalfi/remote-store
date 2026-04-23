@@ -1,4 +1,4 @@
-# Audit 007 -- Test Behavior Assertions
+# Audit 007 — Test Behavior Assertions
 
 **Date:** 2026-03-30
 **Scope:** All test files in `tests/` — checked against "Assert behavior, not

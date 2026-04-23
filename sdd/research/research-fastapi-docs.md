@@ -1,6 +1,6 @@
 # Research: FastAPI Documentation & CI/CD Patterns
 
-**Item ID:** (none -- exploratory research)
+**Item ID:** (none — exploratory research)
 **Date:** 2026-03-10
 **Context:** Examining FastAPI docs toolchain for improvements applicable to remote-store.
 

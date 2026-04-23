@@ -11,7 +11,7 @@ direct `read()` method to `_PyArrowBinaryIO`, eliminating two unnecessary memory
 copies per chunk on the streaming read path. This brings streaming `read()`
 performance in line with the legacy S3Store that uses PyArrow C++ directly.
 
-Note: `read_bytes()` is unaffected -- it already uses `open_input_stream` +
+Note: `read_bytes()` is unaffected — it already uses `open_input_stream` +
 `bytes(stream.read())` directly, bypassing `BufferedReader` entirely.
 
 ## Motivation
@@ -24,7 +24,7 @@ localhost) shows overhead on the streaming `read()` path:
 | `streaming_read` | 23.9        | 22.8        | 1.05x | 129 KB / 201 KB |
 | `read_large`     | 8.9         | 10.9        | 0.82x | 978 KB / 1954 KB|
 
-`streaming_read` exercises `Store.read()` with 64 KB chunked reads -- the code
+`streaming_read` exercises `Store.read()` with 64 KB chunked reads — the code
 path this RFC targets. The 1.05x ratio looks close to parity, but the 56% higher
 peak memory (201 KB vs 129 KB) reveals the double-copy overhead. The
 `read_large` row uses `read_bytes()` which bypasses `BufferedReader` entirely, so
@@ -71,7 +71,7 @@ def read(self, size: int = -1) -> bytes:
     return self._pa.read(size)
 ```
 
-Keep `readinto()` for compatibility -- anyone wrapping our stream in their own
+Keep `readinto()` for compatibility — anyone wrapping our stream in their own
 `BufferedReader` still works.
 
 ### 2. Remove `BufferedReader` from `S3PyArrowBackend.read()`
@@ -109,7 +109,7 @@ def read(self, path: str) -> BinaryIO:
 ### 3. Add chunked `readline()` to `_PyArrowBinaryIO`
 
 Without `BufferedReader`, `readline()` falls back to `RawIOBase` default, which
-calls `readinto(1)` in a tight loop -- one call per byte until `\n`. This is
+calls `readinto(1)` in a tight loop — one call per byte until `\n`. This is
 pathologically slow for lines of any length.
 
 Add a `readline()` that reads in blocks (e.g. 8 KB) and scans for `\n`:
@@ -171,14 +171,14 @@ anyone wrapping the stream in `io.TextIOWrapper`.
   Callers relying on `isinstance(stream, io.BufferedReader)` would break, but
   that's not part of the contract (spec SIO-001 only requires `BinaryIO`).
 - **Performance:** Improvement applies to streaming `read()` calls only (the
-  `streaming_read` benchmark path). `read_bytes()` is unaffected -- it already
+  `streaming_read` benchmark path). `read_bytes()` is unaffected — it already
   bypasses `BufferedReader`. Expect reduced per-chunk overhead and lower peak
   memory for chunked streaming reads.
 - **Testing:** Existing tests cover correctness:
-  - `tests/test_stream.py` -- `_ErrorMappingStream` read/readinto paths
-  - `tests/backends/test_conformance.py` -- chunked reads, position tracking
-  - `tests/backends/test_s3_pyarrow.py` -- S3-PyArrow specific tests
-  - `tests/test_transfer.py` -- streaming transfers
+  - `tests/test_stream.py` — `_ErrorMappingStream` read/readinto paths
+  - `tests/backends/test_conformance.py` — chunked reads, position tracking
+  - `tests/backends/test_s3_pyarrow.py` — S3-PyArrow specific tests
+  - `tests/test_transfer.py` — streaming transfers
 
   Additionally, add a structural assertion that `S3PyArrowBackend.read()`
   returns a stream that is NOT wrapped in `BufferedReader`, to prevent
@@ -194,7 +194,7 @@ anyone wrapping the stream in `io.TextIOWrapper`.
    internal buffering. `BufferedReader` may serve a useful purpose there by
    smoothing bursty network reads. Removing it could interact with Paramiko's
    chunking behavior differently than removing it from PyArrow's in-memory
-   `NativeFile.read()`. Out of scope -- requires separate profiling and analysis.
+   `NativeFile.read()`. Out of scope — requires separate profiling and analysis.
 
 ## References
 

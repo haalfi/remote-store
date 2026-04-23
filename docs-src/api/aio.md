@@ -297,9 +297,9 @@ counterpart.
 
 ## See also
 
-- [Async Store Guide](../async.md) -- usage patterns, streaming, FastAPI integration
-- [Example: Async Store](../examples/async-store.md) -- runnable demo script
-- [Store](store.md) -- synchronous counterpart
-- [Concurrency](../concurrency.md) -- thread safety and atomicity semantics
-- [aio.ext.write](extensions/aio-write.md) -- async write helpers with client-side hashing
-- [Write Integrity guide](../write-integrity.md) -- hashing workflows for sync and async
+- [Async Store Guide](../async.md) — usage patterns, streaming, FastAPI integration
+- [Example: Async Store](../examples/async-store.md) — runnable demo script
+- [Store](store.md) — synchronous counterpart
+- [Concurrency](../concurrency.md) — thread safety and atomicity semantics
+- [aio.ext.write](extensions/aio-write.md) — async write helpers with client-side hashing
+- [Write Integrity guide](../write-integrity.md) — hashing workflows for sync and async

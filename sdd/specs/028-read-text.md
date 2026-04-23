@@ -4,7 +4,7 @@
 
 `read_text()` is a Store-level convenience method that reads a file and decodes
 its bytes to a string. Mirrors `pathlib.Path.read_text()` semantics. No backend
-ABC changes -- text decoding is an application-layer concern, not a storage
+ABC changes — text decoding is an application-layer concern, not a storage
 concern.
 
 **Related:** [001-store-api.md](001-store-api.md) (STORE-008),

@@ -4,7 +4,7 @@
 
 `write_text()` is a Store-level convenience method that encodes a string and
 writes it to a file. Mirrors `pathlib.Path.write_text()` semantics. No backend
-ABC changes -- text encoding is an application-layer concern, not a storage
+ABC changes — text encoding is an application-layer concern, not a storage
 concern.
 
 **Related:** [001-store-api.md](001-store-api.md) (STORE-008),
@@ -89,7 +89,7 @@ returned by the wrapped store is injected under
 
 **Invariant:** `CachedStore.write_text()` delegates to the inner store's
 `write_text()` and invalidates the cache for the written path. No separate
-cache method needed -- cache invalidation is inherited from `write()`.
+cache method needed — cache invalidation is inherited from `write()`.
 
 ### WTXT-006: Symmetric with read_text
 

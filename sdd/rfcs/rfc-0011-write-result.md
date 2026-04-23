@@ -59,11 +59,11 @@ they returned:
 | Azure DataLake (HNS)    | `etag`, `last_modified`                                            | yes (`metadata=`)      | client-supplied MD5 surfaced as `digest=ContentDigest("md5", …)` via `ContentSettings`; same storage semantics as Azure Blob |
 | S3 (boto3 `put_object`) | `ETag`, `VersionId`. Single-PUT `ETag` is the MD5 of the body. Multipart `ETag` is `"<md5-of-part-md5s>-<N>"` — **not** a content hash. | yes (`Metadata=`) | opt-in only (`ChecksumAlgorithm`)    |
 | S3 via `s3fs.pipe_file` | same as boto3 — but s3fs **discards** the response                                      | only via raw boto3     | discarded                            |
-| S3 via PyArrow          | nothing — PyArrow output stream eats the PUT response                                   | --                     | --                                   |
-| SFTP (paramiko)         | `SFTPAttributes` from `SFTPClient.put()` / `putfo()` — exposes `st_size`, `st_mtime`, `st_mode`. No etag/version concept in the protocol. | -- | -- |
-| Local                   | nothing — `os.stat` for size + mtime after write                                        | --                     | --                                   |
+| S3 via PyArrow          | nothing — PyArrow output stream eats the PUT response                                   | —                      | —                                    |
+| SFTP (paramiko)         | `SFTPAttributes` from `SFTPClient.put()` / `putfo()` — exposes `st_size`, `st_mtime`, `st_mode`. No etag/version concept in the protocol. | — | — |
+| Local                   | nothing — `os.stat` for size + mtime after write                                        | —                      | —                                    |
 | Memory                  | trivially, we own the storage                                                           | yes                    | trivially                            |
-| HTTP                    | write not supported today                                                               | --                     | --                                   |
+| HTTP                    | write not supported today                                                               | —                      | —                                    |
 | SQLAlchemy BLOB         | rowcount only; we already track `size` and `updated_at`; row version doubles as `version_id` | yes — via a dedicated `user_metadata` JSON column (see SQLBlob storage note below) | client-side only         |
 
 **The free wins.** Azure and S3 hand us `etag` and `version_id` on

@@ -167,7 +167,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | —** |
 | Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: — |
 | SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | `sqlalchemy` | Yes | Yes | Yes |
-| SQL Query (read-only) | `remote-store[sql-query]` | `sqlalchemy` + `pyarrow` | -- | -- | -- |
+| SQL Query (read-only) | `remote-store[sql-query]` | `sqlalchemy` + `pyarrow` | — | — | — |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.

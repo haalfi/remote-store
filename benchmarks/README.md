@@ -46,21 +46,21 @@ hatch run bench-report-comparative
 ## Scenarios
 
 ### Comparative (remote-store vs raw SDK vs fsspec)
-- **Write throughput** -- bytes payloads (1KB, 64KB, 1MB, 10MB, 100MB)
-- **Read throughput** -- bytes payloads
-- **Exists** -- hit and miss
-- **List files** -- flat (50 and 1000 files)
-- **Delete** -- single file
+- **Write throughput** — bytes payloads (1KB, 64KB, 1MB, 10MB, 100MB)
+- **Read throughput** — bytes payloads
+- **Exists** — hit and miss
+- **List files** — flat (50 and 1000 files)
+- **Delete** — single file
 
 ### Remote-store only
-- **TTFB** -- time-to-first-byte (protocol overhead)
-- **Stream write/read** -- BinaryIO interface
-- **Roundtrip** -- write + read
-- **Copy/move** -- single file and across subtrees
-- **Directory scale** -- 200-file hierarchy listing, folder ops
-- **Large file** -- 10MB+ with memory tracking (tracemalloc)
-- **Per-folder stats** -- iterate folders + get_folder_info
-- **Deep hierarchy** -- 5 levels, branching factor 5
+- **TTFB** — time-to-first-byte (protocol overhead)
+- **Stream write/read** — BinaryIO interface
+- **Roundtrip** — write + read
+- **Copy/move** — single file and across subtrees
+- **Directory scale** — 200-file hierarchy listing, folder ops
+- **Large file** — 10MB+ with memory tracking (tracemalloc)
+- **Per-folder stats** — iterate folders + get_folder_info
+- **Deep hierarchy** — 5 levels, branching factor 5
 
 ## Docker vs Cloud
 

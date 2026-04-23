@@ -3,7 +3,7 @@
 **Item ID:** ID-082 (HTTP backend), ID-083 (Dagster extension v2), ID-075
 (Dagster extension v1)
 **Date:** 2026-03-15
-**Status:** Architecture draft -- pending ID-082 implementation
+**Status:** Architecture draft — pending ID-082 implementation
 
 ---
 
@@ -37,7 +37,7 @@ The existing notebook `examples/notebooks/04_data_lake_medallion.ipynb` uses
 - No cross-backend transfer (single MemoryBackend)
 
 A previously considered SFTP approach would have required Docker Compose, SSH
-keys, and a simulated drop-zone -- infrastructure that obscures the library
+keys, and a simulated drop-zone — infrastructure that obscures the library
 features it's supposed to showcase.
 
 ---
@@ -64,13 +64,13 @@ https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/{station}/ogd-smn_{station}_{g
 | `{granularity}` | `t` (10-min), `h` (hourly), `d` (daily), `m` (monthly), `y` (yearly) | `d` for daily |
 
 **Example URLs:**
-- `ber/ogd-smn_ber_d.csv` -- Bern daily measurements
-- `klo/ogd-smn_klo_d.csv` -- Zurich-Kloten daily
-- `lug/ogd-smn_lug_d.csv` -- Lugano daily
+- `ber/ogd-smn_ber_d.csv` — Bern daily measurements
+- `klo/ogd-smn_klo_d.csv` — Zurich-Kloten daily
+- `lug/ogd-smn_lug_d.csv` — Lugano daily
 
 **Metadata files** (at collection root):
-- `ogd-smn_meta_stations.csv` -- station inventory (coordinates, elevation, name)
-- `ogd-smn_meta_parameters.csv` -- parameter codes (what each column means)
+- `ogd-smn_meta_stations.csv` — station inventory (coordinates, elevation, name)
+- `ogd-smn_meta_parameters.csv` — parameter codes (what each column means)
 
 **Format:** Semicolon-delimited CSV (`;`), decimal separator `.`, timestamps in
 UTC. `Content-Length` and `Last-Modified` headers present. Assets cached for 2
@@ -78,14 +78,14 @@ hours server-side (10-second cache for 10-min granularity).
 
 ### 3.2 Why MeteoSwiss
 
-- **Real data, real quirks** -- missing values, station gaps, varying column
+- **Real data, real quirks** — missing values, station gaps, varying column
   sets across granularities. Cleaning is non-trivial.
-- **Static file pattern** -- simple `GET` requests, no API keys, no pagination.
+- **Static file pattern** — simple `GET` requests, no API keys, no pagination.
   Perfect fit for `ReadOnlyHttpBackend`.
-- **Multiple granularities** -- daily vs. monthly vs. yearly naturally maps to
+- **Multiple granularities** — daily vs. monthly vs. yearly naturally maps to
   medallion layers (ingest daily, aggregate to monthly in Silver, derive
   analytics in Gold).
-- **Known dataset** -- MeteoSwiss is referenced in Swiss data engineering
+- **Known dataset** — MeteoSwiss is referenced in Swiss data engineering
   tutorials; familiar to the target audience.
 
 ### 3.3 Future: Additional Sources (Optional)
@@ -100,7 +100,7 @@ These are not required for the initial showcase but could enrich it later:
 LINDAS requires a POST request with a SPARQL query body, which doesn't fit
 `ReadOnlyHttpBackend`'s GET-only model. If needed, a small helper function
 fetches the CSV and writes it to a local Store; the showcase then reads from
-that Store. This is an honest pattern -- not everything is a backend.
+that Store. This is an honest pattern — not everything is a backend.
 
 ---
 
@@ -162,7 +162,7 @@ gold = lake.child("gold")
 1. **`ext.cache` with 1-hour TTL.** MeteoSwiss caches assets server-side for
    2 hours. Our 1-hour client TTL means re-materialization within the hour
    hits the cache, but we still pick up new data within 2 server cycles.
-   This is a real optimization -- not a toy demo.
+   This is a real optimization — not a toy demo.
 
 2. **`ext.otel` wraps the cached store.** Traces show cache hits vs. actual
    HTTP requests, making the caching benefit visible in the OTel dashboard.
@@ -318,7 +318,7 @@ defs = Definitions(
 
 **Note on Bronze assets:** Bronze assets use `ext.transfer` directly (no IO
 manager) because they're raw file ingestion, not DataFrame serialization. This
-is intentional -- it shows both integration patterns.
+is intentional — it shows both integration patterns.
 
 ### 5.4 Why Not Use IO Manager for Bronze?
 
@@ -333,7 +333,7 @@ Silver/Gold demonstrates that both patterns coexist naturally.
 
 ### 6.1 `ReadOnlyHttpBackend` (ID-082)
 
-- Backend with only `{READ, METADATA}` capabilities -- first read-only backend
+- Backend with only `{READ, METADATA}` capabilities — first read-only backend
 - `store.read("ber/ogd-smn_ber_d.csv")` fetches live data from
   `data.geo.admin.ch`
 - `store.exists()` uses HTTP `HEAD`
@@ -345,7 +345,7 @@ Silver/Gold demonstrates that both patterns coexist naturally.
 - Without cache: every Dagster re-materialization re-downloads ~100KB CSVs
 - With cache (1h TTL): first run downloads, subsequent runs within the hour
   hit cache
-- `cached_store.stats` shows hit/miss ratio -- visible in logs
+- `cached_store.stats` shows hit/miss ratio — visible in logs
 - The showcase prints cache stats after Bronze ingestion to make the benefit
   concrete
 
@@ -411,7 +411,7 @@ dagster dev -f definitions.py
 ### 7.1 Why a Separate Directory (Not a Notebook)
 
 - Dagster needs a `Definitions` object in a Python module, not notebook cells
-- The asset graph is the demo -- Dagster's web UI visualizes it
+- The asset graph is the demo — Dagster's web UI visualizes it
 - Users can `dagster dev` and see the full pipeline in their browser
 - The existing notebook (`04_data_lake_medallion.ipynb`) remains as the
   "no Dagster, no network" tutorial
@@ -471,11 +471,11 @@ swap `ConsoleSpanExporter` for `OTLPSpanExporter` pointing at Jaeger/Tempo.
 pip install "remote-store[dagster,arrow,otel]"
 ```
 
-- `[dagster]` -- ext.dagster (IO manager adapter)
-- `[arrow]` -- ext.arrow (PyArrow filesystem bridge) + ParquetSerializer
-- `[otel]` -- ext.otel (OpenTelemetry instrumentation)
+- `[dagster]` — ext.dagster (IO manager adapter)
+- `[arrow]` — ext.arrow (PyArrow filesystem bridge) + ParquetSerializer
+- `[otel]` — ext.otel (OpenTelemetry instrumentation)
 
-No `[httpx]` or `[requests]` extra needed -- the HTTP backend's urllib
+No `[httpx]` or `[requests]` extra needed — the HTTP backend's urllib
 baseline works with zero additional deps.
 
 ---
@@ -503,15 +503,15 @@ baseline works with zero additional deps.
 
 ### 10.3 Implementation Order
 
-1. **Wait for ID-082** -- HTTP backend with urllib transport
-2. **`stores.py`** -- Store construction with full composition chain
-3. **`assets/bronze.py`** -- HTTP → local transfer assets
-4. **`assets/silver.py`** -- CSV → cleaned Parquet transforms
-5. **`assets/gold.py`** -- Aggregation assets
-6. **`definitions.py`** -- Dagster wiring
-7. **`otel_setup.py`** -- Console exporter config
-8. **`README.md`** -- Setup and walkthrough
-9. **Verify end-to-end** -- `dagster dev`, materialize all, check OTel output
+1. **Wait for ID-082** — HTTP backend with urllib transport
+2. **`stores.py`** — Store construction with full composition chain
+3. **`assets/bronze.py`** — HTTP → local transfer assets
+4. **`assets/silver.py`** — CSV → cleaned Parquet transforms
+5. **`assets/gold.py`** — Aggregation assets
+6. **`definitions.py`** — Dagster wiring
+7. **`otel_setup.py`** — Console exporter config
+8. **`README.md`** — Setup and walkthrough
+9. **Verify end-to-end** — `dagster dev`, materialize all, check OTel output
 
 ---
 

@@ -79,6 +79,6 @@ conventions) remains in effect.
   batch_delete, glob_files, observe` etc. continue to work.
 - **Future direction.** If top-level convenience imports are ever wanted back
   without the eager-load cost, Python 3.7+ module-level `__getattr__` in
-  `__init__.py` enables lazy loading -- the symbol appears in the namespace
+  `__init__.py` enables lazy loading — the symbol appears in the namespace
   but the heavy dependency only imports on first access.  This avoids
   re-introducing the `try/except ImportError` pattern.

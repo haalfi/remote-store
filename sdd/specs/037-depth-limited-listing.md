@@ -18,7 +18,7 @@ between the listing root and the file's parent directory:
 - `max_depth=0`: files directly in `path` only (equivalent to `recursive=False`).
 - `max_depth=N` (N > 0): files up to N folder levels below `path`.
 
-When `max_depth` is set, `recursive` is ignored -- depth takes full control of
+When `max_depth` is set, `recursive` is ignored — depth takes full control of
 traversal.
 
 **Validation:** `max_depth < 0` raises `ValueError`.

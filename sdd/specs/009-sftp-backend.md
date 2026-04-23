@@ -52,7 +52,7 @@ construction (see SFTP-004).
 `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`. Does not declare `GLOB` (no native pattern matching; use `list_files(pattern=…)` or `ext.glob` for client-side fallback).
 **Rationale:**
 - `ATOMIC_WRITE`: Simulated via temp file + rename (see SFTP-014). Orphan temp
-  files are possible on connection failure -- documented caveat.
+  files are possible on connection failure — documented caveat.
 - `MOVE`: Implemented via `posix_rename` with fallback (see SFTP-018).
 - `COPY`: Implemented via read + write (no server-side copy in SFTP, see SFTP-019).
 
@@ -60,7 +60,7 @@ construction (see SFTP-004).
 
 **Invariant:** No network call occurs during `__init__`. The SSH/SFTP connection is
 established lazily on first operation.
-**Rationale:** Fail-fast at construction is undesirable -- the backend may be created
+**Rationale:** Fail-fast at construction is undesirable — the backend may be created
 during application wiring before the network is available. Automatic reconnection
 on staleness is also supported (see SFTP-010).
 
@@ -79,7 +79,7 @@ host raises `ValueError` at construction time.
 **Invariant:** `HostKeyPolicy` controls how unknown remote host keys are handled:
 - `STRICT` (default): Reject unknown hosts. Requires host key in known_hosts.
 - `TRUST_ON_FIRST_USE`: Accept and save on first connect, verify on subsequent connects.
-- `AUTO_ADD`: Accept any key. **Development/testing only -- not safe for production.**
+- `AUTO_ADD`: Accept any key. **Development/testing only — not safe for production.**
 
 String values (`"strict"`, `"tofu"`, `"auto"`) passed from TOML/YAML config are
 coerced to the enum in `__init__` via `HostKeyPolicy(value)`. Invalid strings
@@ -156,7 +156,7 @@ SFTP server persist after their contents are deleted.
 **Invariant:** `write_atomic` writes to a temporary file `.~tmp.<name>.<uuid8>` in
 the same directory as the target, then renames to the target via `posix_rename`.
 **Caveat:** If the connection drops between write and rename, the orphan temp file
-remains. This is **simulated** atomicity, not true atomicity -- the capability is
+remains. This is **simulated** atomicity, not true atomicity — the capability is
 declared to enable the write-then-rename pattern, but the caveat must be documented.
 **Postconditions:** On success, the temp file is gone and the target contains the
 new content. On failure, the backend attempts to clean up the temp file.
@@ -188,7 +188,7 @@ to `rename`, and falls back to copy + delete if rename fails entirely.
 ### SFTP-019: Copy Via Read + Write
 
 **Invariant:** `copy(src, dst)` reads the source file and writes it to the destination.
-There is no server-side copy operation in SFTP -- data passes through the client.
+There is no server-side copy operation in SFTP — data passes through the client.
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and
 `overwrite=False`.
 
@@ -261,6 +261,6 @@ the backend persists newly accepted host keys to disk on disconnect.
 - `load_host_keys(path)` is always called so paramiko records the filename internally.
 - `save_host_keys(path)` is called in `_close_clients()` before SSH client closure.
 - On reconnection, keys saved during the previous session are loaded back.
-- Save failures are suppressed -- they must not prevent connection teardown.
+- Save failures are suppressed — they must not prevent connection teardown.
 - Inline keys (`known_host_keys` parameter, config dict, or env var) are never
   persisted to disk.

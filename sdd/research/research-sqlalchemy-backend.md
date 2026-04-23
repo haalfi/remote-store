@@ -447,12 +447,12 @@ lack them.
 | Capability | Supported | Notes |
 |------------|-----------|-------|
 | `READ` | Yes | Execute query, serialize, return bytes |
-| `WRITE` | -- | Query results are read-only |
-| `DELETE` | -- | Cannot delete a query |
+| `WRITE` | — | Query results are read-only |
+| `DELETE` | — | Cannot delete a query |
 | `LIST` | Yes | List registered query keys |
-| `MOVE` | -- | — |
-| `COPY` | -- | — |
-| `ATOMIC_WRITE` | -- | — |
+| `MOVE` | — | — |
+| `COPY` | — | — |
+| `ATOMIC_WRITE` | — | — |
 | `METADATA` | Yes | `size: int \| None` — `None` until query executes. `modified_at` from config. |
 | `GLOB` | Yes | Pattern match against registered keys (not SQL) |
 | `SEEKABLE_READ` | Yes | Serialize to buffer, return seekable `BytesIO` |

@@ -89,7 +89,7 @@ the fallback strategy explicitly in comments.
 
 ### Export rules
 
-> Superseded by ADR-0013 -- optional-dependency extensions are no longer
+> Superseded by ADR-0013 — optional-dependency extensions are no longer
 > re-exported from `remote_store.__init__`. Import them directly from
 > `remote_store.ext.<name>`.
 

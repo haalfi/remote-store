@@ -558,11 +558,11 @@ are generally thread-safe, so our example doesn't need explicit locking.
 
 | Method | Returns | Raises on error |
 |---|---|---|
-| `name` (property) | `str` | -- |
-| `capabilities` (property) | [`CapabilitySet`](api/capabilities.md) | -- |
+| `name` (property) | `str` | — |
+| `capabilities` (property) | [`CapabilitySet`](api/capabilities.md) | — |
 | `exists(path)` | `bool` | Never raises [`NotFound`](api/errors.md) |
-| `is_file(path)` | `bool` | -- |
-| `is_folder(path)` | `bool` | -- |
+| `is_file(path)` | `bool` | — |
+| `is_folder(path)` | `bool` | — |
 | `read(path)` | `BinaryIO` | [`NotFound`](api/errors.md) |
 | `read_bytes(path)` | `bytes` | [`NotFound`](api/errors.md) |
 | `write(path, content, overwrite)` | `None` | [`AlreadyExists`](api/errors.md) |
@@ -570,8 +570,8 @@ are generally thread-safe, so our example doesn't need explicit locking.
 | `open_atomic(path, overwrite)` | `ContextManager[BinaryIO]` | [`AlreadyExists`](api/errors.md), [`CapabilityNotSupported`](api/errors.md) |
 | `delete(path, missing_ok)` | `None` | [`NotFound`](api/errors.md) |
 | `delete_folder(path, recursive, missing_ok)` | `None` | [`NotFound`](api/errors.md), [`DirectoryNotEmpty`](api/errors.md) |
-| `list_files(path, recursive)` | `Iterator[`[`FileInfo`](api/models.md)`]` | -- |
-| `list_folders(path)` | `Iterator[`[`FolderEntry`](api/models.md)`]` | -- |
+| `list_files(path, recursive)` | `Iterator[`[`FileInfo`](api/models.md)`]` | — |
+| `list_folders(path)` | `Iterator[`[`FolderEntry`](api/models.md)`]` | — |
 | `get_file_info(path)` | [`FileInfo`](api/models.md) | [`NotFound`](api/errors.md) |
 | `get_folder_info(path)` | [`FolderInfo`](api/models.md) | [`NotFound`](api/errors.md) |
 | `move(src, dst, overwrite)` | `None` | [`NotFound`](api/errors.md), [`AlreadyExists`](api/errors.md) |
