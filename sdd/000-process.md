@@ -60,10 +60,10 @@ Five document categories live under `sdd/`. Each has a clear purpose and lifecyc
 | Category | Path pattern | Purpose | Lifecycle |
 |----------|-------------|---------|-----------|
 | **Specs** | `sdd/specs/NNN-<topic>.md` | Declarative contracts — what must be true | Lives forever, versioned. IDs are stable and immutable. |
-| **ADRs** | `sdd/adrs/NNNN-<short-title>.md` | Decision records — why we chose this approach | Immutable; superseded by a new ADR, never edited. |
+| **ADRs** | `sdd/adrs/NNNN-<short-title>.md` | Decision records — why we chose this approach | Immutable once status is `ACCEPTED`. Before acceptance a draft may be refined; after acceptance supersede with a new ADR, never edit. |
 | **RFCs** | `sdd/rfcs/rfc-NNNN-<short-title>.md` | Proposals for any significant change (features, refactors, process improvements) | If accepted, graduates to a spec and/or ADR. Kept as historical reference. |
-| **Research** | `sdd/research/research-<topic>.md` | Exploration, feasibility analysis, implementation plans | Archived after the related feature ships; not edited. May include an `## Implementation Plan` section for tactical build steps. |
-| **Audits** | `sdd/audits/audit-NNN-<topic>.md` | Systematic quality reviews (security, compliance, docs) | Findings tracked as backlog items. The audit itself is a report, not a proposal. |
+| **Research** | `sdd/research/research-<topic>.md` | Exploration, feasibility analysis, implementation plans | Point-in-time snapshot. Should remain as written; only update if the finding itself was wrong or the situation has fundamentally changed. Never treat as a living doc. |
+| **Audits** | `sdd/audits/audit-NNN-<topic>.md` | Systematic quality reviews (security, compliance, docs) | Permanent record. Never edited after writing — findings may be actioned via backlog, but the report stays as written. |
 
 **Decision rule:** If you're asking "should we do X?" → research. If you're proposing "let's do X this way" → RFC. If the decision is made → ADR. If it defines a testable contract → spec. If it reviews existing quality → audit.
 
