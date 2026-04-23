@@ -57,7 +57,7 @@ See [S3-001](008-s3-backend.md#s3-001-constructor-parameters). Same signature; t
 
 ### S3PA-003: Capability Declaration
 
-**Invariant:** `S3PyArrowBackend` declares capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`. Native glob via prefix-optimized listing (see [018-glob.md](018-glob.md) GLOB-019).
+**Invariant:** `S3PyArrowBackend` declares capabilities: `READ`, `WRITE`, `DELETE`, `LIST`, `MOVE`, `COPY`, `ATOMIC_WRITE`, `METADATA`, `GLOB`, `WRITE_RESULT_NATIVE`. Native glob via prefix-optimized listing (see [018-glob.md](018-glob.md) GLOB-019).
 
 **Delta vs S3-003:** `USER_METADATA` is NOT declared — PyArrow's `open_output_stream()` does not support per-object user metadata. `WRITE_RESULT_NATIVE` IS declared: after upload, `write()` performs a `head_object(ChecksumMode="ENABLED")` round-trip via s3fs to populate `etag`, `digest`, and `last_modified`.
 

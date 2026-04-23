@@ -167,11 +167,12 @@ class LocalBackend(Backend):
             if isinstance(content, bytes):
                 full.write_bytes(content)
                 size = len(content)
+                st = full.stat()
             else:
                 with open(str(full), "wb") as f:
                     shutil.copyfileobj(content, f, _COPY_BUFSIZE)
-                size = full.stat().st_size
-            st = full.stat()
+                st = full.stat()
+                size = st.st_size
         except IsADirectoryError:
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name) from None
         except PermissionError:
