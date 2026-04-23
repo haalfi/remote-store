@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-162: Fix 16 documentation gaps from Audit-011 (v0.23.0+ API changes): corrected write-method signatures and return types in custom-backend guide and snippet; documented `USER_METADATA`, `WRITE_RESULT_NATIVE`, and `LAZY_READ`; added `aio.ext.write` to extensions table; documented write results and `metadata=` for S3/Azure backends; corrected capability claims for Local and S3-PyArrow; updated example write calls to capture `WriteResult`
 - BK-159: Audit handwritten docs for v0.23.0+ gaps: 16 findings across custom-backend guide, async guide, extensions guide, and per-backend guides; report at `sdd/audits/audit-011-docs-v023-gaps.md`
 - BK-160/BK-161: Codify extension import-time private access rule in DESIGN.md § 12; add AST checker to test_ext_contract.py; fix 10 Cat 2 import paths across 10 ext modules; annotate 3 Cat 1 coupling sites
 - Audit-010: Document extension private module import violations against ADR-0008

@@ -57,7 +57,18 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **BK-162 — Fix 16 documentation gaps from Audit-011 (v0.23.0+)**
+  All 16 findings in `sdd/audits/audit-011-docs-v023-gaps.md`: 3 Critical
+  (custom-backend guide quick-reference table and snippet show wrong return type
+  and missing `metadata=` for `write()`/`write_atomic()`), 6 Major (`WriteResult`
+  and `metadata=` absent from Steps 1/2/7 of custom-backend guide; `aio.ext.write`
+  missing from extensions table and async guide; `ext.write` imports absent from
+  extensions "always-available" block), 7 Minor (local.md and capabilities-matrix.md
+  prose wrong about `USER_METADATA`; s3-pyarrow.md "fully interchangeable" claim
+  wrong; per-backend write-result docs absent for S3/Azure; example write calls
+  treat API as void; async.md missing `AsyncBackendSyncAdapter` cross-reference).
+  Plan: 4 commits — (1) custom-backend guide+snippet, (2) async+extensions guides,
+  (3) backend guides, (4) getting-started examples.
 
 ---
 

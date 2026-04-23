@@ -48,6 +48,7 @@ Every backend starts with these imports. The key types:
 | [`NotFound`](api/errors.md), [`AlreadyExists`](api/errors.md), ... | Normalized error types |
 | [`FileInfo`](api/models.md), [`FolderEntry`](api/models.md), [`FolderInfo`](api/models.md) | Return types for listing and metadata |
 | [`RemotePath`](api/models.md) | Immutable, validated path type |
+| [`WriteResult`](api/models.md) | Return type for `write()` and `write_atomic()`; carries the written path, size, and optional backend-native digest/etag |
 | `WritableContent` | Type alias: `bytes \| BinaryIO` |
 
 ---
@@ -61,6 +62,14 @@ Every backend starts with these imports. The key types:
 **Capabilities gate Store methods.** If you don't declare `ATOMIC_WRITE`, calls
 to `store.write_atomic()` raise `CapabilityNotSupported` automatically — you
 don't need to handle it.
+
+Three capabilities added in v0.23.0 are worth declaring when they apply:
+
+- **`USER_METADATA`** — declare this when your backend stores the `metadata=` mapping passed to `write()` and `write_atomic()`. Without it, `Store` raises `CapabilityNotSupported` if the caller passes non-empty metadata.
+- **`WRITE_RESULT_NATIVE`** — declare this when your backend populates `WriteResult` fields beyond the two mandatory ones (`path` and `size`). See the [WriteResult reference](api/models.md) for the full field list.
+- **`LAZY_READ`** — declare this when `read()` fetches data lazily from the remote source. A `BytesIO` return does not qualify — data is already materialized.
+
+The Redis example declares neither `USER_METADATA` nor `WRITE_RESULT_NATIVE` (it stores raw bytes without a metadata column and returns only `path` and `size` at write time).
 
 Each capability gates specific Store methods. See the
 [Capability reference](api/capabilities.md) for the full list.
@@ -147,6 +156,8 @@ returns the stream as-is.
 **Key patterns:**
 
 - `content` is `bytes | BinaryIO`. Normalize with `content if isinstance(content, bytes) else content.read()`.
+- **Both `write()` and `write_atomic()` accept `metadata: Mapping[str, str] | None = None`.** If your backend declares `USER_METADATA`, persist the mapping alongside the file. If it doesn't, ignore the argument — `Store` rejects non-empty metadata before reaching your implementation.
+- **Both methods must return [`WriteResult`](api/models.md).** Construct it with at minimum `path=RemotePath(path)` and `size=len(raw)`. If your backend can populate richer fields, declare `WRITE_RESULT_NATIVE` and include them. The Redis example returns the two-field minimum.
 - **Write creates parent folders implicitly** — in Redis, there's nothing to create, but filesystem-based backends must `mkdir -p`.
 - Re-raise your own errors (`AlreadyExists`, `InvalidPath`) before the catch-all `RedisError` handler.
 - Even though Store gates `write_atomic()` via capabilities, implement the methods anyway (they're abstract). Raise `CapabilityNotSupported` as a safety net.
@@ -565,8 +576,8 @@ are generally thread-safe, so our example doesn't need explicit locking.
 | `is_folder(path)` | `bool` | — |
 | `read(path)` | `BinaryIO` | [`NotFound`](api/errors.md) |
 | `read_bytes(path)` | `bytes` | [`NotFound`](api/errors.md) |
-| `write(path, content, overwrite)` | `None` | [`AlreadyExists`](api/errors.md) |
-| `write_atomic(path, content, overwrite)` | `None` | [`AlreadyExists`](api/errors.md), [`CapabilityNotSupported`](api/errors.md) |
+| `write(path, content, overwrite, metadata=None)` | [`WriteResult`](api/models.md) | [`AlreadyExists`](api/errors.md) |
+| `write_atomic(path, content, overwrite, metadata=None)` | [`WriteResult`](api/models.md) | [`AlreadyExists`](api/errors.md), [`CapabilityNotSupported`](api/errors.md) |
 | `open_atomic(path, overwrite)` | `ContextManager[BinaryIO]` | [`AlreadyExists`](api/errors.md), [`CapabilityNotSupported`](api/errors.md) |
 | `delete(path, missing_ok)` | `None` | [`NotFound`](api/errors.md) |
 | `delete_folder(path, recursive, missing_ok)` | `None` | [`NotFound`](api/errors.md), [`DirectoryNotEmpty`](api/errors.md) |
