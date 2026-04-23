@@ -8804,10 +8804,10 @@ of SDK retry and is harder to reason about.</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Use <strong>Option B (per-backend native configuration)</strong>.</p>
 <ol>
-<li>Backends own their transport -- retry is a transport concern.</li>
+<li>Backends own their transport — retry is a transport concern.</li>
 <li>The policy replaces SDK defaults, avoiding retry multiplication.</li>
 <li>Minimal API surface: one frozen dataclass, one constructor parameter.</li>
-<li>No new core dependencies -- <code>tenacity</code> stays in the SFTP <code>sftp</code> extra.</li>
+<li>No new core dependencies — <code>tenacity</code> stays in the SFTP <code>sftp</code> extra.</li>
 </ol>
 <h3 id="retrypolicy-dataclass">RetryPolicy dataclass<a class="headerlink" href="#retrypolicy-dataclass" title="Permanent link">&para;</a></h3>
 <p>A frozen dataclass in <code>_config.py</code> with five fields:</p>
@@ -8833,7 +8833,7 @@ of SDK retry and is harder to reason about.</p>
   <code>retry_policy</code> in client options.</li>
 <li><strong>S3-PyArrow:</strong> Maps to both PyArrow C++ side (<code>max_attempts</code>) and
   s3fs side (same as S3).</li>
-<li><strong>Local/Memory:</strong> Do not accept <code>retry</code> parameter -- TypeError if
+<li><strong>Local/Memory:</strong> Do not accept <code>retry</code> parameter — TypeError if
   provided (correct: retry is meaningless for local I/O).</li>
 </ul>
 <h3 id="backendconfig-integration">BackendConfig integration<a class="headerlink" href="#backendconfig-integration" title="Permanent link">&para;</a></h3>
@@ -8849,7 +8849,7 @@ addressed by a future <code>ext/retry.py</code> middleware.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Users get a single, discoverable retry knob across all cloud backends.</li>
-<li>SFTP retry is no longer hardcoded -- users can tune or disable it.</li>
+<li>SFTP retry is no longer hardcoded — users can tune or disable it.</li>
 <li>S3/Azure retry is no longer buried in <code>client_options</code>.</li>
 <li>Local/Memory constructors reject <code>retry</code> with clear TypeError.</li>
 <li>Lossy mapping: the dataclass cannot express every SDK-specific knob.

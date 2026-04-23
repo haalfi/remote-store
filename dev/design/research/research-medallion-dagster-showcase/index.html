@@ -9473,7 +9473,7 @@
 <p><strong>Item ID:</strong> ID-082 (HTTP backend), ID-083 (Dagster extension v2), ID-075
 (Dagster extension v1)
 <strong>Date:</strong> 2026-03-15
-<strong>Status:</strong> Architecture draft -- pending ID-082 implementation</p>
+<strong>Status:</strong> Architecture draft — pending ID-082 implementation</p>
 <hr />
 <h2 id="1-purpose">1. Purpose<a class="headerlink" href="#1-purpose" title="Permanent link">&para;</a></h2>
 <p>A runnable showcase demonstrating remote-store's value proposition through a
@@ -9501,7 +9501,7 @@ library features.</p>
 <li>No cross-backend transfer (single MemoryBackend)</li>
 </ul>
 <p>A previously considered SFTP approach would have required Docker Compose, SSH
-keys, and a simulated drop-zone -- infrastructure that obscures the library
+keys, and a simulated drop-zone — infrastructure that obscures the library
 features it's supposed to showcase.</p>
 <hr />
 <h2 id="3-data-sources">3. Data Sources<a class="headerlink" href="#3-data-sources" title="Permanent link">&para;</a></h2>
@@ -9535,25 +9535,25 @@ Data Infrastructure). URL pattern:</p>
 </tbody>
 </table>
 <p><strong>Example URLs:</strong>
-- <code>ber/ogd-smn_ber_d.csv</code> -- Bern daily measurements
-- <code>klo/ogd-smn_klo_d.csv</code> -- Zurich-Kloten daily
-- <code>lug/ogd-smn_lug_d.csv</code> -- Lugano daily</p>
+- <code>ber/ogd-smn_ber_d.csv</code> — Bern daily measurements
+- <code>klo/ogd-smn_klo_d.csv</code> — Zurich-Kloten daily
+- <code>lug/ogd-smn_lug_d.csv</code> — Lugano daily</p>
 <p><strong>Metadata files</strong> (at collection root):
-- <code>ogd-smn_meta_stations.csv</code> -- station inventory (coordinates, elevation, name)
-- <code>ogd-smn_meta_parameters.csv</code> -- parameter codes (what each column means)</p>
+- <code>ogd-smn_meta_stations.csv</code> — station inventory (coordinates, elevation, name)
+- <code>ogd-smn_meta_parameters.csv</code> — parameter codes (what each column means)</p>
 <p><strong>Format:</strong> Semicolon-delimited CSV (<code>;</code>), decimal separator <code>.</code>, timestamps in
 UTC. <code>Content-Length</code> and <code>Last-Modified</code> headers present. Assets cached for 2
 hours server-side (10-second cache for 10-min granularity).</p>
 <h3 id="32-why-meteoswiss">3.2 Why MeteoSwiss<a class="headerlink" href="#32-why-meteoswiss" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Real data, real quirks</strong> -- missing values, station gaps, varying column
+<li><strong>Real data, real quirks</strong> — missing values, station gaps, varying column
   sets across granularities. Cleaning is non-trivial.</li>
-<li><strong>Static file pattern</strong> -- simple <code>GET</code> requests, no API keys, no pagination.
+<li><strong>Static file pattern</strong> — simple <code>GET</code> requests, no API keys, no pagination.
   Perfect fit for <code>ReadOnlyHttpBackend</code>.</li>
-<li><strong>Multiple granularities</strong> -- daily vs. monthly vs. yearly naturally maps to
+<li><strong>Multiple granularities</strong> — daily vs. monthly vs. yearly naturally maps to
   medallion layers (ingest daily, aggregate to monthly in Silver, derive
   analytics in Gold).</li>
-<li><strong>Known dataset</strong> -- MeteoSwiss is referenced in Swiss data engineering
+<li><strong>Known dataset</strong> — MeteoSwiss is referenced in Swiss data engineering
   tutorials; familiar to the target audience.</li>
 </ul>
 <h3 id="33-future-additional-sources-optional">3.3 Future: Additional Sources (Optional)<a class="headerlink" href="#33-future-additional-sources-optional" title="Permanent link">&para;</a></h3>
@@ -9585,7 +9585,7 @@ hours server-side (10-second cache for 10-min granularity).</p>
 <p>LINDAS requires a POST request with a SPARQL query body, which doesn't fit
 <code>ReadOnlyHttpBackend</code>'s GET-only model. If needed, a small helper function
 fetches the CSV and writes it to a local Store; the showcase then reads from
-that Store. This is an honest pattern -- not everything is a backend.</p>
+that Store. This is an honest pattern — not everything is a backend.</p>
 <hr />
 <h2 id="4-architecture">4. Architecture<a class="headerlink" href="#4-architecture" title="Permanent link">&para;</a></h2>
 <h3 id="41-store-topology">4.1 Store Topology<a class="headerlink" href="#41-store-topology" title="Permanent link">&para;</a></h3>
@@ -9638,7 +9638,7 @@ that Store. This is an honest pattern -- not everything is a backend.</p>
 <p><strong><code>ext.cache</code> with 1-hour TTL.</strong> MeteoSwiss caches assets server-side for
    2 hours. Our 1-hour client TTL means re-materialization within the hour
    hits the cache, but we still pick up new data within 2 server cycles.
-   This is a real optimization -- not a toy demo.</p>
+   This is a real optimization — not a toy demo.</p>
 </li>
 <li>
 <p><strong><code>ext.otel</code> wraps the cached store.</strong> Traces show cache hits vs. actual
@@ -9815,7 +9815,7 @@ monkey-patching. That's the story.</p>
 </code></pre></div>
 <p><strong>Note on Bronze assets:</strong> Bronze assets use <code>ext.transfer</code> directly (no IO
 manager) because they're raw file ingestion, not DataFrame serialization. This
-is intentional -- it shows both integration patterns.</p>
+is intentional — it shows both integration patterns.</p>
 <h3 id="54-why-not-use-io-manager-for-bronze">5.4 Why Not Use IO Manager for Bronze?<a class="headerlink" href="#54-why-not-use-io-manager-for-bronze" title="Permanent link">&para;</a></h3>
 <p>Bronze ingestion is a file-level <code>transfer()</code> (CSV from HTTP to local). The IO
 manager's serialize/deserialize model assumes Python objects, not raw file
@@ -9825,7 +9825,7 @@ Silver/Gold demonstrates that both patterns coexist naturally.</p>
 <h2 id="6-what-each-extension-demonstrates">6. What Each Extension Demonstrates<a class="headerlink" href="#6-what-each-extension-demonstrates" title="Permanent link">&para;</a></h2>
 <h3 id="61-readonlyhttpbackend-id-082">6.1 <code>ReadOnlyHttpBackend</code> (ID-082)<a class="headerlink" href="#61-readonlyhttpbackend-id-082" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Backend with only <code>{READ, METADATA}</code> capabilities -- first read-only backend</li>
+<li>Backend with only <code>{READ, METADATA}</code> capabilities — first read-only backend</li>
 <li><code>store.read("ber/ogd-smn_ber_d.csv")</code> fetches live data from
   <code>data.geo.admin.ch</code></li>
 <li><code>store.exists()</code> uses HTTP <code>HEAD</code></li>
@@ -9837,7 +9837,7 @@ Silver/Gold demonstrates that both patterns coexist naturally.</p>
 <li>Without cache: every Dagster re-materialization re-downloads ~100KB CSVs</li>
 <li>With cache (1h TTL): first run downloads, subsequent runs within the hour
   hit cache</li>
-<li><code>cached_store.stats</code> shows hit/miss ratio -- visible in logs</li>
+<li><code>cached_store.stats</code> shows hit/miss ratio — visible in logs</li>
 <li>The showcase prints cache stats after Bronze ingestion to make the benefit
   concrete</li>
 </ul>
@@ -9896,7 +9896,7 @@ Silver/Gold demonstrates that both patterns coexist naturally.</p>
 <h3 id="71-why-a-separate-directory-not-a-notebook">7.1 Why a Separate Directory (Not a Notebook)<a class="headerlink" href="#71-why-a-separate-directory-not-a-notebook" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Dagster needs a <code>Definitions</code> object in a Python module, not notebook cells</li>
-<li>The asset graph is the demo -- Dagster's web UI visualizes it</li>
+<li>The asset graph is the demo — Dagster's web UI visualizes it</li>
 <li>Users can <code>dagster dev</code> and see the full pipeline in their browser</li>
 <li>The existing notebook (<code>04_data_lake_medallion.ipynb</code>) remains as the
   "no Dagster, no network" tutorial</li>
@@ -9978,11 +9978,11 @@ swap <code>ConsoleSpanExporter</code> for <code>OTLPSpanExporter</code> pointing
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[dagster,arrow,otel]&quot;</span>
 </code></pre></div>
 <ul>
-<li><code>[dagster]</code> -- ext.dagster (IO manager adapter)</li>
-<li><code>[arrow]</code> -- ext.arrow (PyArrow filesystem bridge) + ParquetSerializer</li>
-<li><code>[otel]</code> -- ext.otel (OpenTelemetry instrumentation)</li>
+<li><code>[dagster]</code> — ext.dagster (IO manager adapter)</li>
+<li><code>[arrow]</code> — ext.arrow (PyArrow filesystem bridge) + ParquetSerializer</li>
+<li><code>[otel]</code> — ext.otel (OpenTelemetry instrumentation)</li>
 </ul>
-<p>No <code>[httpx]</code> or <code>[requests]</code> extra needed -- the HTTP backend's urllib
+<p>No <code>[httpx]</code> or <code>[requests]</code> extra needed — the HTTP backend's urllib
 baseline works with zero additional deps.</p>
 <hr />
 <h2 id="10-sequencing-and-prerequisites">10. Sequencing and Prerequisites<a class="headerlink" href="#10-sequencing-and-prerequisites" title="Permanent link">&para;</a></h2>
@@ -10050,15 +10050,15 @@ baseline works with zero additional deps.</p>
 </table>
 <h3 id="103-implementation-order">10.3 Implementation Order<a class="headerlink" href="#103-implementation-order" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Wait for ID-082</strong> -- HTTP backend with urllib transport</li>
-<li><strong><code>stores.py</code></strong> -- Store construction with full composition chain</li>
-<li><strong><code>assets/bronze.py</code></strong> -- HTTP → local transfer assets</li>
-<li><strong><code>assets/silver.py</code></strong> -- CSV → cleaned Parquet transforms</li>
-<li><strong><code>assets/gold.py</code></strong> -- Aggregation assets</li>
-<li><strong><code>definitions.py</code></strong> -- Dagster wiring</li>
-<li><strong><code>otel_setup.py</code></strong> -- Console exporter config</li>
-<li><strong><code>README.md</code></strong> -- Setup and walkthrough</li>
-<li><strong>Verify end-to-end</strong> -- <code>dagster dev</code>, materialize all, check OTel output</li>
+<li><strong>Wait for ID-082</strong> — HTTP backend with urllib transport</li>
+<li><strong><code>stores.py</code></strong> — Store construction with full composition chain</li>
+<li><strong><code>assets/bronze.py</code></strong> — HTTP → local transfer assets</li>
+<li><strong><code>assets/silver.py</code></strong> — CSV → cleaned Parquet transforms</li>
+<li><strong><code>assets/gold.py</code></strong> — Aggregation assets</li>
+<li><strong><code>definitions.py</code></strong> — Dagster wiring</li>
+<li><strong><code>otel_setup.py</code></strong> — Console exporter config</li>
+<li><strong><code>README.md</code></strong> — Setup and walkthrough</li>
+<li><strong>Verify end-to-end</strong> — <code>dagster dev</code>, materialize all, check OTel output</li>
 </ol>
 <hr />
 <h2 id="11-what-the-showcase-proves">11. What the Showcase Proves<a class="headerlink" href="#11-what-the-showcase-proves" title="Permanent link">&para;</a></h2>

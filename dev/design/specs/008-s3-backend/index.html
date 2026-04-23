@@ -9459,13 +9459,13 @@ via the paired-ID map at the top of 011.</p>
 <h3 id="s3-003-capability-declaration">S3-003: Capability Declaration<a class="headerlink" href="#s3-003-capability-declaration" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>S3Backend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-018).
 <strong>Rationale:</strong>
-- <code>ATOMIC_WRITE</code>: S3 PUT is inherently atomic -- readers never see partial content (see S3-010).
+- <code>ATOMIC_WRITE</code>: S3 PUT is inherently atomic — readers never see partial content (see S3-010).
 - <code>MOVE</code>: Implemented via server-side copy + delete (see S3-013).
 - <code>COPY</code>: Implemented via S3 server-side copy (see S3-014).
 - <code>GLOB</code>: Native prefix-optimized glob since v0.12.0 (BK-002).</p>
 <h3 id="s3-004-lazy-connection">S3-004: Lazy Connection<a class="headerlink" href="#s3-004-lazy-connection" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The s3fs filesystem is created lazily on first operation.
-<strong>Rationale:</strong> Fail-fast at construction is undesirable -- the backend may be created during application wiring before the network is available.</p>
+<strong>Rationale:</strong> Fail-fast at construction is undesirable — the backend may be created during application wiring before the network is available.</p>
 <h3 id="s3-005-construction-validation">S3-005: Construction Validation<a class="headerlink" href="#s3-005-construction-validation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>bucket</code> must be a non-empty string. Passing an empty or whitespace-only bucket raises <code>ValueError</code> at construction time.
 <strong>Postconditions:</strong> No network validation of bucket existence at construction time. Invalid bucket names that are syntactically non-empty are caught by S3 on first operation and mapped to the appropriate error.</p>
@@ -9498,7 +9498,7 @@ via the paired-ID map at the top of 011.</p>
 <hr />
 <h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
 <h3 id="s3-010-atomic-write-via-s3-put">S3-010: Atomic Write Via S3 PUT<a class="headerlink" href="#s3-010-atomic-write-via-s3-put" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write_atomic</code> is implemented identically to <code>write</code> -- as a direct S3 PUT.
+<p><strong>Invariant:</strong> <code>write_atomic</code> is implemented identically to <code>write</code> — as a direct S3 PUT.
 <strong>Rationale:</strong> S3 PUT is inherently atomic. From a reader's perspective, the object transitions from non-existent (or old content) to new content in a single operation. No partial content is ever visible. The temp-file + rename pattern used by local backends is unnecessary and would add latency (extra PUT + COPY + DELETE).
 <strong>Postconditions:</strong> Satisfies AW-001's postcondition: "No partial content is ever visible."</p>
 <h3 id="s3-011-delete_folder-recursive">S3-011: delete_folder Recursive<a class="headerlink" href="#s3-011-delete_folder-recursive" title="Permanent link">&para;</a></h3>
@@ -9511,11 +9511,11 @@ via the paired-ID map at the top of 011.</p>
 <strong>Postconditions:</strong> Consistent with local filesystem semantics where <code>rmdir</code> fails on non-empty directories.</p>
 <h3 id="s3-013-move-via-copy-delete">S3-013: move Via Copy + Delete<a class="headerlink" href="#s3-013-move-via-copy-delete" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst)</code> is implemented as server-side copy followed by delete of the source.
-<strong>Postconditions:</strong> Not atomic -- if copy succeeds but delete fails, both objects exist. This is inherent to S3 (no native rename).
+<strong>Postconditions:</strong> Not atomic — if copy succeeds but delete fails, both objects exist. This is inherent to S3 (no native rename).
 <strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
 <h3 id="s3-014-copy-via-s3-server-side-copy">S3-014: copy Via S3 Server-Side Copy<a class="headerlink" href="#s3-014-copy-via-s3-server-side-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>copy(src, dst)</code> uses S3 server-side copy (no data passes through the client).
-<strong>Postconditions:</strong> Efficient for large files -- the S3 service handles the copy internally.
+<strong>Postconditions:</strong> Efficient for large files — the S3 service handles the copy internally.
 <strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
 <hr />
 <h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>

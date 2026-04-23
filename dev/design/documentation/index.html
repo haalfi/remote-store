@@ -4658,6 +4658,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#8-typography" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Typography
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8879,6 +8890,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#8-typography" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Typography
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9100,7 +9122,7 @@
 </tr>
 <tr>
 <td>Property</td>
-<td>--</td>
+<td>—</td>
 <td>Yes (in summary)</td>
 <td>If applicable</td>
 <td>Optional</td>
@@ -9108,8 +9130,8 @@
 <tr>
 <td>Class</td>
 <td>Yes (<code>__init__</code> params)</td>
-<td>--</td>
-<td>--</td>
+<td>—</td>
+<td>—</td>
 <td>Yes</td>
 </tr>
 <tr>
@@ -9121,17 +9143,17 @@
 </tr>
 <tr>
 <td>Enum</td>
-<td>--</td>
-<td>--</td>
-<td>--</td>
-<td>--</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
 </tr>
 <tr>
 <td>Error class</td>
-<td>--</td>
-<td>--</td>
-<td>--</td>
-<td>--</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
 </tr>
 </tbody>
 </table>
@@ -9228,9 +9250,15 @@ docstrings, use MkDocs admonition syntax: <code>!!! example</code> with indented
 <h3 id="7-research-document-rules">7. Research document rules<a class="headerlink" href="#7-research-document-rules" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Research docs live in <code>sdd/research/</code> and are named <code>research-&lt;topic&gt;.md</code>.</li>
-<li>They are not edited after the related feature ships -- they are historical records.</li>
+<li>They are not edited after the related feature ships — they are historical records.</li>
 <li>They may be surfaced on the docs site under Explanation &gt; Research.</li>
 <li>They do not need to follow the docstring or guide quality checklists.</li>
+</ul>
+<h3 id="8-typography">8. Typography<a class="headerlink" href="#8-typography" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Prose dashes:</strong> Use <code>—</code> (U+2014) sparingly as a parenthetical aside. Default to periods, colons, or commas. Never use <code>--</code> as an em dash substitute in documentation prose.</li>
+<li><strong>Table N/A value:</strong> <code>—</code> (U+2014) for any "not applicable / not supported / none" cell. Never <code>--</code> or <code>No</code>.</li>
+<li><strong>Preserve <code>--</code>:</strong> Only in shell flag syntax inside code blocks, spec-ID ranges (<code>BATCH-020 -- BATCH-025</code>), Mermaid edge syntax, <code>--8&lt;--</code> snippet includes, and code/SQL comments inside fenced blocks.</li>
 </ul>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="diataxis-categories">Diataxis categories<a class="headerlink" href="#diataxis-categories" title="Permanent link">&para;</a></h3>
@@ -9456,12 +9484,12 @@ when behavioral variation is significant enough to warrant a lookup table.</p>
 <tr>
 <td><strong>Enum / flags</strong> (Capability, CapabilitySet)</td>
 <td><code>:::</code> per type, See also</td>
-<td>--</td>
+<td>—</td>
 </tr>
 <tr>
 <td><strong>Error hierarchy</strong> (Errors)</td>
 <td>Flat <code>:::</code> per error class, See also</td>
-<td>--</td>
+<td>—</td>
 </tr>
 </tbody>
 </table>

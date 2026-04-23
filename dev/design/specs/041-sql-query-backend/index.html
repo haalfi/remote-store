@@ -9641,7 +9641,7 @@ Store abstraction for downstream consumers who don't need to know the source is
 a database.</p>
 <p><strong>Dependencies:</strong> <code>sqlalchemy&gt;=2.0</code>, <code>pyarrow&gt;=12.0.0</code> (optional extra:
 <code>sql-query</code>).</p>
-<p><strong>Architecture:</strong> Two-class design with shared base -- see
+<p><strong>Architecture:</strong> Two-class design with shared base — see
 <a href="../../adrs/0018-sqlalchemy-two-class-architecture/">ADR-0018</a>.</p>
 <hr />
 <h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
@@ -9691,13 +9691,13 @@ clear error message directing users to install <code>remote-store[sql-query]</co
 If the key is not found, <code>NotFound</code> is raised. No partial matching, no
 normalization beyond standard path validation.</p>
 <p>Resolution precedence (v2 implements level 1 only):
-1. Explicit mapping (<code>queries</code> dict) -- highest priority
+1. Explicit mapping (<code>queries</code> dict) — highest priority
 2. View-based (deferred)
 3. Convention-based (deferred)</p>
 <h3 id="sql-query-011-strict-mode">SQL-QUERY-011: Strict Mode<a class="headerlink" href="#sql-query-011-strict-mode" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>strict=True</code> (default) restricts resolution to the explicit
 <code>queries</code> dict only. Setting <code>strict=False</code> raises <code>NotImplementedError</code> in
-v2 -- view-based and convention-based discovery are deferred to a future
+v2 — view-based and convention-based discovery are deferred to a future
 version.</p>
 <h3 id="sql-query-012-format-detection">SQL-QUERY-012: Format Detection<a class="headerlink" href="#sql-query-012-format-detection" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The serialization format is determined by the key's file
@@ -9740,9 +9740,9 @@ row tuples. The <code>columns</code> parameter is the column name list.</p>
 <h3 id="sql-query-014-arrowserializer">SQL-QUERY-014: ArrowSerializer<a class="headerlink" href="#sql-query-014-arrowserializer" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The built-in <code>ArrowSerializer</code> converts rows + columns to a
 <code>pyarrow.Table</code>, then serializes to the requested format:
-- <code>"parquet"</code> -- <code>pyarrow.parquet.write_table()</code>
-- <code>"csv"</code> -- <code>pyarrow.csv.write_csv()</code>
-- <code>"arrow"</code> / <code>"ipc"</code> -- <code>pyarrow.ipc.RecordBatchFileWriter</code></p>
+- <code>"parquet"</code> — <code>pyarrow.parquet.write_table()</code>
+- <code>"csv"</code> — <code>pyarrow.csv.write_csv()</code>
+- <code>"arrow"</code> / <code>"ipc"</code> — <code>pyarrow.ipc.RecordBatchFileWriter</code></p>
 <p>An empty result set (zero rows) produces a valid file with schema but no data.</p>
 <p>Unsupported format strings raise <code>ValueError</code>.</p>
 <hr />
@@ -9757,13 +9757,13 @@ serializes the result, and returns a seekable <code>BinaryIO</code>.</p>
 4. Execute SQL: <code>connection.execute(sa.text(sql))</code> within <code>_map_errors()</code>.
 5. Serialize: <code>self._serializer.serialize(rows, columns, format)</code>.
 6. Return <code>BufferedReader(BytesIO(data))</code>.</p>
-<p>An empty result set is valid -- not an error.</p>
+<p>An empty result set is valid — not an error.</p>
 <h3 id="sql-query-021-read_bytes">SQL-QUERY-021: read_bytes()<a class="headerlink" href="#sql-query-021-read_bytes" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Same pipeline as <code>read()</code>, returns raw <code>bytes</code>.</p>
 <h3 id="sql-query-030-list_files">SQL-QUERY-030: list_files()<a class="headerlink" href="#sql-query-030-list_files" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Enumerates keys from the key registry (not database tables).
 Filters by prefix matching. Returns <code>FileInfo</code> for each matching key with
-<code>size=0</code> (sentinel -- size unknown until materialized) and
+<code>size=0</code> (sentinel — size unknown until materialized) and
 <code>modified_at=datetime.min(tzinfo=utc)</code>.</p>
 <ul>
 <li>Non-recursive: only direct children of the prefix.</li>
@@ -9783,7 +9783,7 @@ narrowing needed since the key set is in-memory.</p>
 <p><strong>Invariant:</strong> Returns <code>FileInfo</code> with:
 - <code>path</code>: the requested key as <code>RemotePath</code>
 - <code>name</code>: final path component
-- <code>size</code>: <code>0</code> (sentinel -- unknown until materialized)
+- <code>size</code>: <code>0</code> (sentinel — unknown until materialized)
 - <code>modified_at</code>: <code>datetime.min.replace(tzinfo=timezone.utc)</code>
 - <code>extra</code>: <code>{"materialized": False}</code></p>
 <p>Raises <code>NotFound</code> if the key is not in the registry.</p>
@@ -9811,13 +9811,13 @@ Empty path returns <code>True</code> (root).</p>
 <p><strong>Invariant:</strong> The following methods raise <code>CapabilityNotSupported</code> with
 <code>backend=self.name</code>:</p>
 <ul>
-<li><code>write()</code> -- capability <code>"write"</code></li>
-<li><code>write_atomic()</code> -- capability <code>"atomic_write"</code></li>
-<li><code>open_atomic()</code> -- capability <code>"atomic_write"</code></li>
-<li><code>delete()</code> -- capability <code>"delete"</code></li>
-<li><code>delete_folder()</code> -- capability <code>"delete"</code></li>
-<li><code>move()</code> -- capability <code>"move"</code></li>
-<li><code>copy()</code> -- capability <code>"copy"</code></li>
+<li><code>write()</code> — capability <code>"write"</code></li>
+<li><code>write_atomic()</code> — capability <code>"atomic_write"</code></li>
+<li><code>open_atomic()</code> — capability <code>"atomic_write"</code></li>
+<li><code>delete()</code> — capability <code>"delete"</code></li>
+<li><code>delete_folder()</code> — capability <code>"delete"</code></li>
+<li><code>move()</code> — capability <code>"move"</code></li>
+<li><code>copy()</code> — capability <code>"copy"</code></li>
 </ul>
 <hr />
 <h2 id="engine-connection">Engine &amp; Connection<a class="headerlink" href="#engine-connection" title="Permanent link">&para;</a></h2>

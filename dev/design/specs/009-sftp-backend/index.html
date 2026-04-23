@@ -9476,13 +9476,13 @@ construction (see SFTP-004).</p>
 <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>. Does not declare <code>GLOB</code> (no native pattern matching; use <code>list_files(pattern=…)</code> or <code>ext.glob</code> for client-side fallback).
 <strong>Rationale:</strong>
 - <code>ATOMIC_WRITE</code>: Simulated via temp file + rename (see SFTP-014). Orphan temp
-  files are possible on connection failure -- documented caveat.
+  files are possible on connection failure — documented caveat.
 - <code>MOVE</code>: Implemented via <code>posix_rename</code> with fallback (see SFTP-018).
 - <code>COPY</code>: Implemented via read + write (no server-side copy in SFTP, see SFTP-019).</p>
 <h3 id="sftp-004-lazy-connection">SFTP-004: Lazy Connection<a class="headerlink" href="#sftp-004-lazy-connection" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The SSH/SFTP connection is
 established lazily on first operation.
-<strong>Rationale:</strong> Fail-fast at construction is undesirable -- the backend may be created
+<strong>Rationale:</strong> Fail-fast at construction is undesirable — the backend may be created
 during application wiring before the network is available. Automatic reconnection
 on staleness is also supported (see SFTP-010).</p>
 <h3 id="sftp-005-construction-validation">SFTP-005: Construction Validation<a class="headerlink" href="#sftp-005-construction-validation" title="Permanent link">&para;</a></h3>
@@ -9495,7 +9495,7 @@ host raises <code>ValueError</code> at construction time.
 <p><strong>Invariant:</strong> <code>HostKeyPolicy</code> controls how unknown remote host keys are handled:
 - <code>STRICT</code> (default): Reject unknown hosts. Requires host key in known_hosts.
 - <code>TRUST_ON_FIRST_USE</code>: Accept and save on first connect, verify on subsequent connects.
-- <code>AUTO_ADD</code>: Accept any key. <strong>Development/testing only -- not safe for production.</strong></p>
+- <code>AUTO_ADD</code>: Accept any key. <strong>Development/testing only — not safe for production.</strong></p>
 <p>String values (<code>"strict"</code>, <code>"tofu"</code>, <code>"auto"</code>) passed from TOML/YAML config are
 coerced to the enum in <code>__init__</code> via <code>HostKeyPolicy(value)</code>. Invalid strings
 raise <code>ValueError</code>. See <a href="../020-credential-hygiene/">020-credential-hygiene.md</a>
@@ -9550,7 +9550,7 @@ SFTP server persist after their contents are deleted.
 <p><strong>Invariant:</strong> <code>write_atomic</code> writes to a temporary file <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> in
 the same directory as the target, then renames to the target via <code>posix_rename</code>.
 <strong>Caveat:</strong> If the connection drops between write and rename, the orphan temp file
-remains. This is <strong>simulated</strong> atomicity, not true atomicity -- the capability is
+remains. This is <strong>simulated</strong> atomicity, not true atomicity — the capability is
 declared to enable the write-then-rename pattern, but the caveat must be documented.
 <strong>Postconditions:</strong> On success, the temp file is gone and the target contains the
 new content. On failure, the backend attempts to clean up the temp file.</p>
@@ -9572,7 +9572,7 @@ to <code>rename</code>, and falls back to copy + delete if rename fails entirely
 <code>overwrite=False</code>.</p>
 <h3 id="sftp-019-copy-via-read-write">SFTP-019: Copy Via Read + Write<a class="headerlink" href="#sftp-019-copy-via-read-write" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>copy(src, dst)</code> reads the source file and writes it to the destination.
-There is no server-side copy operation in SFTP -- data passes through the client.
+There is no server-side copy operation in SFTP — data passes through the client.
 <strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and
 <code>overwrite=False</code>.</p>
 <hr />
@@ -9622,7 +9622,7 @@ the backend persists newly accepted host keys to disk on disconnect.</p>
 <li><code>load_host_keys(path)</code> is always called so paramiko records the filename internally.</li>
 <li><code>save_host_keys(path)</code> is called in <code>_close_clients()</code> before SSH client closure.</li>
 <li>On reconnection, keys saved during the previous session are loaded back.</li>
-<li>Save failures are suppressed -- they must not prevent connection teardown.</li>
+<li>Save failures are suppressed — they must not prevent connection teardown.</li>
 <li>Inline keys (<code>known_host_keys</code> parameter, config dict, or env var) are never
   persisted to disk.</li>
 </ul>

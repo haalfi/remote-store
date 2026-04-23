@@ -5565,7 +5565,7 @@
   <a href="#goal-1-new-user-install-run-in-10-min" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Goal 1: New User -- Install + Run in &lt;10 min
+        Goal 1: New User — Install + Run in &lt;10 min
       
     </span>
   </a>
@@ -5576,7 +5576,7 @@
   <a href="#goal-2-returning-user-how-do-i-x-in-one-click" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Goal 2: Returning User -- "How do I X?" in One Click
+        Goal 2: Returning User — "How do I X?" in One Click
       
     </span>
   </a>
@@ -5587,7 +5587,7 @@
   <a href="#goal-3-advanced-user-api-lookup-without-source" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Goal 3: Advanced User -- API Lookup Without Source
+        Goal 3: Advanced User — API Lookup Without Source
       
     </span>
   </a>
@@ -5598,7 +5598,7 @@
   <a href="#goal-4-contributor-design-decisions-content-placement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Goal 4: Contributor -- Design Decisions &amp; Content Placement
+        Goal 4: Contributor — Design Decisions &amp; Content Placement
       
     </span>
   </a>
@@ -8718,7 +8718,7 @@
   <a href="#goal-1-new-user-install-run-in-10-min" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Goal 1: New User -- Install + Run in &lt;10 min
+        Goal 1: New User — Install + Run in &lt;10 min
       
     </span>
   </a>
@@ -8729,7 +8729,7 @@
   <a href="#goal-2-returning-user-how-do-i-x-in-one-click" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Goal 2: Returning User -- "How do I X?" in One Click
+        Goal 2: Returning User — "How do I X?" in One Click
       
     </span>
   </a>
@@ -8740,7 +8740,7 @@
   <a href="#goal-3-advanced-user-api-lookup-without-source" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Goal 3: Advanced User -- API Lookup Without Source
+        Goal 3: Advanced User — API Lookup Without Source
       
     </span>
   </a>
@@ -8751,7 +8751,7 @@
   <a href="#goal-4-contributor-design-decisions-content-placement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Goal 4: Contributor -- Design Decisions &amp; Content Placement
+        Goal 4: Contributor — Design Decisions &amp; Content Placement
       
     </span>
   </a>
@@ -8847,7 +8847,7 @@
 
 
 
-<h1 id="audit-003-documentation-quality-spec-compliance">Audit 003 -- Documentation Quality &amp; Spec Compliance<a class="headerlink" href="#audit-003-documentation-quality-spec-compliance" title="Permanent link">&para;</a></h1>
+<h1 id="audit-003-documentation-quality-spec-compliance">Audit 003 — Documentation Quality &amp; Spec Compliance<a class="headerlink" href="#audit-003-documentation-quality-spec-compliance" title="Permanent link">&para;</a></h1>
 <p><strong>Date:</strong> 2026-03-09
 <strong>Scope:</strong> Full documentation site (<code>docs-src/</code>, <code>guides/</code>, <code>examples/</code>, API docstrings) audited against <code>sdd/DOCUMENTATION.md</code> spec. Version 0.15.0, commit <code>62ecb61</code> (master HEAD at audit time).
 <strong>Method:</strong> Built docs locally with <code>hatch run docs-build</code>. Systematic cross-reference of every section in <code>sdd/DOCUMENTATION.md</code> (S1-S13) against actual site structure, content, and source files. Assessed against the 5 Documentation Goals from S1.</p>
@@ -8897,7 +8897,7 @@
 </tbody>
 </table>
 <hr />
-<h2 id="goal-1-new-user-install-run-in-10-min">Goal 1: New User -- Install + Run in &lt;10 min<a class="headerlink" href="#goal-1-new-user-install-run-in-10-min" title="Permanent link">&para;</a></h2>
+<h2 id="goal-1-new-user-install-run-in-10-min">Goal 1: New User — Install + Run in &lt;10 min<a class="headerlink" href="#goal-1-new-user-install-run-in-10-min" title="Permanent link">&para;</a></h2>
 <p><strong>Checked:</strong> README quickstart, <code>docs-src/getting-started.md</code>, <code>examples/quickstart.py</code>, tutorial notebooks.</p>
 <p><strong>Verdict: PASS (9/10)</strong></p>
 <ul>
@@ -8908,41 +8908,41 @@
 </ul>
 <p><strong>No new findings.</strong></p>
 <hr />
-<h2 id="goal-2-returning-user-how-do-i-x-in-one-click">Goal 2: Returning User -- "How do I X?" in One Click<a class="headerlink" href="#goal-2-returning-user-how-do-i-x-in-one-click" title="Permanent link">&para;</a></h2>
+<h2 id="goal-2-returning-user-how-do-i-x-in-one-click">Goal 2: Returning User — "How do I X?" in One Click<a class="headerlink" href="#goal-2-returning-user-how-do-i-x-in-one-click" title="Permanent link">&para;</a></h2>
 <p><strong>Checked:</strong> Nav structure, guide inventory, cross-linking density, example discoverability.</p>
 <p><strong>Verdict: PASS (8/10)</strong></p>
 <p><strong>Strong:</strong> All common tasks (configure backend, read/write files, use extensions) are discoverable in 1-2 clicks from the nav. 21 guides cover the full feature set.</p>
-<p><strong>Weak:</strong> Cross-feature linking is sparse -- batch, transfer, and observe guides don't link to each other despite natural workflows that combine them. 6 guides missing API reference links. 7 example scripts invisible on docs site.</p>
+<p><strong>Weak:</strong> Cross-feature linking is sparse — batch, transfer, and observe guides don't link to each other despite natural workflows that combine them. 6 guides missing API reference links. 7 example scripts invisible on docs site.</p>
 <p><strong>Findings:</strong></p>
 <ul>
-<li>AF-022 -- 7 example scripts missing from docs-site nav (Critical)</li>
-<li>AF-026 -- 6 guides missing API reference links, 4 missing example links</li>
-<li>AF-027 -- <code>guides/retry.md</code> missing "See also" section and cross-links</li>
-<li>AF-028 -- <code>guides/backends/index.md</code> sparse</li>
+<li>AF-022 — 7 example scripts missing from docs-site nav (Critical)</li>
+<li>AF-026 — 6 guides missing API reference links, 4 missing example links</li>
+<li>AF-027 — <code>guides/retry.md</code> missing "See also" section and cross-links</li>
+<li>AF-028 — <code>guides/backends/index.md</code> sparse</li>
 </ul>
 <hr />
-<h2 id="goal-3-advanced-user-api-lookup-without-source">Goal 3: Advanced User -- API Lookup Without Source<a class="headerlink" href="#goal-3-advanced-user-api-lookup-without-source" title="Permanent link">&para;</a></h2>
+<h2 id="goal-3-advanced-user-api-lookup-without-source">Goal 3: Advanced User — API Lookup Without Source<a class="headerlink" href="#goal-3-advanced-user-api-lookup-without-source" title="Permanent link">&para;</a></h2>
 <p><strong>Checked:</strong> 17 API reference pages, docstring compliance for Store, Backend, extensions, models, errors.</p>
 <p><strong>Verdict: PASS with gaps (7/10)</strong></p>
-<p><strong>Strong:</strong> Store (23 methods), Backend ABC (23 methods), all 8 error classes, all config classes, batch/glob/transfer extensions -- all fully documented with params, returns, raises.</p>
+<p><strong>Strong:</strong> Store (23 methods), Backend ABC (23 methods), all 8 error classes, all config classes, batch/glob/transfer extensions — all fully documented with params, returns, raises.</p>
 <p><strong>Weak:</strong> Proxy classes (<code>ObservedStore</code>, <code>CachedStore</code>) and the <code>CacheBackend</code> protocol have missing or incomplete docstrings.</p>
 <p><strong>Findings:</strong></p>
 <ul>
-<li>AF-023 -- <code>ObservedStore</code>: 24 method overrides, 0 per-method docstrings. Class-level docstring exists ("Proxy Store that fires observation hooks") but is terse -- does not explain delegation pattern or refer users to <code>Store</code> for parameter docs. mkdocstrings renders 24 undocumented methods on the API page.</li>
-<li>AF-024 -- <code>CachedStore</code>: same pattern, 20+ method overrides without per-method docstrings</li>
-<li>AF-025 -- <code>CacheBackend</code> protocol: 6 methods (<code>get</code>, <code>set</code>, <code>delete</code>, <code>clear</code>, <code>clear_prefix</code>, <code>size</code>) completely undocumented. Public extension point for custom cache backends.</li>
-<li>AF-031 -- <code>transfer()</code> in <code>ext/transfer.py</code> missing <code>:returns:</code> docstring (returns <code>None</code> but undocumented)</li>
+<li>AF-023 — <code>ObservedStore</code>: 24 method overrides, 0 per-method docstrings. Class-level docstring exists ("Proxy Store that fires observation hooks") but is terse — does not explain delegation pattern or refer users to <code>Store</code> for parameter docs. mkdocstrings renders 24 undocumented methods on the API page.</li>
+<li>AF-024 — <code>CachedStore</code>: same pattern, 20+ method overrides without per-method docstrings</li>
+<li>AF-025 — <code>CacheBackend</code> protocol: 6 methods (<code>get</code>, <code>set</code>, <code>delete</code>, <code>clear</code>, <code>clear_prefix</code>, <code>size</code>) completely undocumented. Public extension point for custom cache backends.</li>
+<li>AF-031 — <code>transfer()</code> in <code>ext/transfer.py</code> missing <code>:returns:</code> docstring (returns <code>None</code> but undocumented)</li>
 </ul>
 <hr />
-<h2 id="goal-4-contributor-design-decisions-content-placement">Goal 4: Contributor -- Design Decisions &amp; Content Placement<a class="headerlink" href="#goal-4-contributor-design-decisions-content-placement" title="Permanent link">&para;</a></h2>
+<h2 id="goal-4-contributor-design-decisions-content-placement">Goal 4: Contributor — Design Decisions &amp; Content Placement<a class="headerlink" href="#goal-4-contributor-design-decisions-content-placement" title="Permanent link">&para;</a></h2>
 <p><strong>Checked:</strong> <code>CONTRIBUTING.md</code>, <code>sdd/CLAUDE-REFERENCE.md</code>, <code>sdd/DOCUMENTATION.md</code> S4 content homes.</p>
 <p><strong>Verdict: PASS with staleness (7/10)</strong></p>
 <p><strong>Strong:</strong> DOCUMENTATION.md is comprehensive (S1-S13), content homes are clear, ADR/RFC process well documented.</p>
 <p><strong>Weak:</strong> Stale counts and wrong paths create confusion for new contributors.</p>
 <p><strong>Findings:</strong></p>
 <ul>
-<li>AF-038 -- <code>CONTRIBUTING.md</code> states "9 ADRs" (actual: 11) and "3 RFCs" (actual: 4)</li>
-<li>AF-039 -- <code>sdd/CLAUDE-REFERENCE.md</code> line 77 references <code>docs/</code> directory, should be <code>docs-src/</code></li>
+<li>AF-038 — <code>CONTRIBUTING.md</code> states "9 ADRs" (actual: 11) and "3 RFCs" (actual: 4)</li>
+<li>AF-039 — <code>sdd/CLAUDE-REFERENCE.md</code> line 77 references <code>docs/</code> directory, should be <code>docs-src/</code></li>
 </ul>
 <hr />
 <h2 id="goal-5-accuracy-at-every-commit">Goal 5: Accuracy at Every Commit<a class="headerlink" href="#goal-5-accuracy-at-every-commit" title="Permanent link">&para;</a></h2>
@@ -8951,13 +8951,13 @@
 <p>This is the weakest area. Several guides contain import paths to private modules, the observe guide's hook table is incomplete, and <code>migration.md</code> documents an unreleased version.</p>
 <p><strong>Findings:</strong></p>
 <ul>
-<li>AF-032 -- <code>guides/observe.md</code>: <code>on_write</code> hook table lists <code>write</code>, <code>write_atomic</code> but omits <code>open_atomic</code> (which triggers <code>on_write</code> per <code>observe.py</code> line 109)</li>
-<li>AF-033 -- <code>guides/observe.md</code>: <code>on_ping</code> hook row missing entirely (the <code>ping()</code> method fires <code>on_ping</code> per <code>observe.py</code> line 107)</li>
-<li>AF-034 -- <code>ext/observe.py</code>: <code>observe()</code> function docstring says "Fires after write/write_atomic" for <code>on_write</code> param but omits <code>open_atomic</code></li>
-<li>AF-035 -- <code>guides/cache.md</code>: imports from <code>remote_store.backends._memory</code> (private module)</li>
-<li>AF-036 -- <code>guides/health-check.md</code>: imports from <code>remote_store.backends._local</code> (private module)</li>
-<li>AF-037 -- <code>guides/backends/sftp.md</code>: imports from <code>remote_store.backends._sftp</code> (private module, no disclaimer that this is internal API)</li>
-<li>AF-040 -- <code>guides/migration.md</code>: documents v0.15.0-to-v0.16.0 migration for an unreleased version</li>
+<li>AF-032 — <code>guides/observe.md</code>: <code>on_write</code> hook table lists <code>write</code>, <code>write_atomic</code> but omits <code>open_atomic</code> (which triggers <code>on_write</code> per <code>observe.py</code> line 109)</li>
+<li>AF-033 — <code>guides/observe.md</code>: <code>on_ping</code> hook row missing entirely (the <code>ping()</code> method fires <code>on_ping</code> per <code>observe.py</code> line 107)</li>
+<li>AF-034 — <code>ext/observe.py</code>: <code>observe()</code> function docstring says "Fires after write/write_atomic" for <code>on_write</code> param but omits <code>open_atomic</code></li>
+<li>AF-035 — <code>guides/cache.md</code>: imports from <code>remote_store.backends._memory</code> (private module)</li>
+<li>AF-036 — <code>guides/health-check.md</code>: imports from <code>remote_store.backends._local</code> (private module)</li>
+<li>AF-037 — <code>guides/backends/sftp.md</code>: imports from <code>remote_store.backends._sftp</code> (private module, no disclaimer that this is internal API)</li>
+<li>AF-040 — <code>guides/migration.md</code>: documents v0.15.0-to-v0.16.0 migration for an unreleased version</li>
 </ul>
 <hr />
 <h2 id="structural-checks-retained-from-initial-audit">Structural Checks (retained from initial audit)<a class="headerlink" href="#structural-checks-retained-from-initial-audit" title="Permanent link">&para;</a></h2>
@@ -9050,8 +9050,8 @@
 </table>
 <h3 id="additional-structural-findings">Additional structural findings<a class="headerlink" href="#additional-structural-findings" title="Permanent link">&para;</a></h3>
 <ul>
-<li>AF-029 -- <code>guides/performance.md</code> reads as Explanation, not How-To. Missing API refs, examples, "See also". Consider reclassifying.</li>
-<li>AF-030 -- Research docs nested 3 levels deep (Explanation &gt; Design &gt; Research) instead of 2. Low impact.</li>
+<li>AF-029 — <code>guides/performance.md</code> reads as Explanation, not How-To. Missing API refs, examples, "See also". Consider reclassifying.</li>
+<li>AF-030 — Research docs nested 3 levels deep (Explanation &gt; Design &gt; Research) instead of 2. Low impact.</li>
 </ul>
 <hr />
 <h2 id="not-applicable-out-of-scope">Not Applicable / Out of Scope<a class="headerlink" href="#not-applicable-out-of-scope" title="Permanent link">&para;</a></h2>
@@ -9141,19 +9141,19 @@
 <td>Minor</td>
 <td>2</td>
 <td><code>guides/backends/index.md</code></td>
-<td>Sparse -- missing API refs, examples, next steps</td>
+<td>Sparse — missing API refs, examples, next steps</td>
 </tr>
 <tr>
 <td>AF-029</td>
 <td>Minor</td>
-<td>--</td>
+<td>—</td>
 <td><code>guides/performance.md</code></td>
 <td>Guide-style violations; consider reclassifying as Explanation</td>
 </tr>
 <tr>
 <td>AF-030</td>
 <td>Minor</td>
-<td>--</td>
+<td>—</td>
 <td><code>docs-src/_nav.yml</code></td>
 <td>Research nested 3 levels deep instead of 2</td>
 </tr>

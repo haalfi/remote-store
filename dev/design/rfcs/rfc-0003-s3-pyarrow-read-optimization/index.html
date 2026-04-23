@@ -8955,7 +8955,7 @@
 direct <code>read()</code> method to <code>_PyArrowBinaryIO</code>, eliminating two unnecessary memory
 copies per chunk on the streaming read path. This brings streaming <code>read()</code>
 performance in line with the legacy S3Store that uses PyArrow C++ directly.</p>
-<p>Note: <code>read_bytes()</code> is unaffected -- it already uses <code>open_input_stream</code> +
+<p>Note: <code>read_bytes()</code> is unaffected — it already uses <code>open_input_stream</code> +
 <code>bytes(stream.read())</code> directly, bypassing <code>BufferedReader</code> entirely.</p>
 <h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
 <p>Benchmark data (<code>legacy/benchmark_s3.py</code>, 15 iterations, 3 warmup, MinIO on
@@ -8987,7 +8987,7 @@ localhost) shows overhead on the streaming <code>read()</code> path:</p>
 </tr>
 </tbody>
 </table>
-<p><code>streaming_read</code> exercises <code>Store.read()</code> with 64 KB chunked reads -- the code
+<p><code>streaming_read</code> exercises <code>Store.read()</code> with 64 KB chunked reads — the code
 path this RFC targets. The 1.05x ratio looks close to parity, but the 56% higher
 peak memory (201 KB vs 129 KB) reveals the double-copy overhead. The
 <code>read_large</code> row uses <code>read_bytes()</code> which bypasses <code>BufferedReader</code> entirely, so
@@ -9021,7 +9021,7 @@ wrapper, reads go straight from PyArrow C++ to the caller. PyArrow's
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pa</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pa</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
 </code></pre></div>
-<p>Keep <code>readinto()</code> for compatibility -- anyone wrapping our stream in their own
+<p>Keep <code>readinto()</code> for compatibility — anyone wrapping our stream in their own
 <code>BufferedReader</code> still works.</p>
 <h3 id="2-remove-bufferedreader-from-s3pyarrowbackendread">2. Remove <code>BufferedReader</code> from <code>S3PyArrowBackend.read()</code><a class="headerlink" href="#2-remove-bufferedreader-from-s3pyarrowbackendread" title="Permanent link">&para;</a></h3>
 <p>Before:</p>
@@ -9050,7 +9050,7 @@ wrapper, reads go straight from PyArrow C++ to the caller. PyArrow's
 </ul>
 <h3 id="3-add-chunked-readline-to-_pyarrowbinaryio">3. Add chunked <code>readline()</code> to <code>_PyArrowBinaryIO</code><a class="headerlink" href="#3-add-chunked-readline-to-_pyarrowbinaryio" title="Permanent link">&para;</a></h3>
 <p>Without <code>BufferedReader</code>, <code>readline()</code> falls back to <code>RawIOBase</code> default, which
-calls <code>readinto(1)</code> in a tight loop -- one call per byte until <code>\n</code>. This is
+calls <code>readinto(1)</code> in a tight loop — one call per byte until <code>\n</code>. This is
 pathologically slow for lines of any length.</p>
 <p>Add a <code>readline()</code> that reads in blocks (e.g. 8 KB) and scans for <code>\n</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># src/remote_store/backends/_s3_pyarrow.py, class _PyArrowBinaryIO</span>
@@ -9111,14 +9111,14 @@ anyone wrapping the stream in <code>io.TextIOWrapper</code>.</p>
   Callers relying on <code>isinstance(stream, io.BufferedReader)</code> would break, but
   that's not part of the contract (spec SIO-001 only requires <code>BinaryIO</code>).</li>
 <li><strong>Performance:</strong> Improvement applies to streaming <code>read()</code> calls only (the
-  <code>streaming_read</code> benchmark path). <code>read_bytes()</code> is unaffected -- it already
+  <code>streaming_read</code> benchmark path). <code>read_bytes()</code> is unaffected — it already
   bypasses <code>BufferedReader</code>. Expect reduced per-chunk overhead and lower peak
   memory for chunked streaming reads.</li>
 <li><strong>Testing:</strong> Existing tests cover correctness:</li>
-<li><code>tests/test_stream.py</code> -- <code>_ErrorMappingStream</code> read/readinto paths</li>
-<li><code>tests/backends/test_conformance.py</code> -- chunked reads, position tracking</li>
-<li><code>tests/backends/test_s3_pyarrow.py</code> -- S3-PyArrow specific tests</li>
-<li><code>tests/test_transfer.py</code> -- streaming transfers</li>
+<li><code>tests/test_stream.py</code> — <code>_ErrorMappingStream</code> read/readinto paths</li>
+<li><code>tests/backends/test_conformance.py</code> — chunked reads, position tracking</li>
+<li><code>tests/backends/test_s3_pyarrow.py</code> — S3-PyArrow specific tests</li>
+<li><code>tests/test_transfer.py</code> — streaming transfers</li>
 </ul>
 <p>Additionally, add a structural assertion that <code>S3PyArrowBackend.read()</code>
   returns a stream that is NOT wrapped in <code>BufferedReader</code>, to prevent
@@ -9133,7 +9133,7 @@ anyone wrapping the stream in <code>io.TextIOWrapper</code>.</p>
    internal buffering. <code>BufferedReader</code> may serve a useful purpose there by
    smoothing bursty network reads. Removing it could interact with Paramiko's
    chunking behavior differently than removing it from PyArrow's in-memory
-   <code>NativeFile.read()</code>. Out of scope -- requires separate profiling and analysis.</li>
+   <code>NativeFile.read()</code>. Out of scope — requires separate profiling and analysis.</li>
 </ol>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>

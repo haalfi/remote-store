@@ -9020,7 +9020,7 @@ traffic"), liveness probes (Kubernetes), and connection validation.</p>
 </code></pre></div>
 <strong>Postconditions:</strong>
 - Returns <code>None</code> on success (backend is reachable and credentials are valid).
-- Raises on failure -- exception type depends on the failure mode:
+- Raises on failure — exception type depends on the failure mode:
   - <code>PermissionDenied</code> for invalid credentials.
   - <code>NotFound</code> for missing bucket/container/path.
   - <code>BackendUnavailable</code> for network/DNS/timeout errors.

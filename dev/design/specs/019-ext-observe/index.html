@@ -9323,21 +9323,21 @@ ID-004 (superseded).</p>
 <h3 id="obs-001-storeevent-dataclass">OBS-001: StoreEvent Dataclass<a class="headerlink" href="#obs-001-storeevent-dataclass" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>StoreEvent</code> is a frozen dataclass with the following fields:</p>
 <ul>
-<li><code>operation: str</code> -- operation name (e.g., <code>"read"</code>, <code>"write"</code>, <code>"delete"</code>,
+<li><code>operation: str</code> — operation name (e.g., <code>"read"</code>, <code>"write"</code>, <code>"delete"</code>,
   <code>"copy"</code>, <code>"move"</code>, <code>"iter_children"</code>, <code>"list_files"</code>, <code>"list_folders"</code>, <code>"glob"</code>,
   <code>"get_file_info"</code>, <code>"get_folder_info"</code>, <code>"head"</code>, <code>"exists"</code>, <code>"is_file"</code>,
   <code>"is_folder"</code>, <code>"read_bytes"</code>, <code>"read_text"</code>, <code>"write_atomic"</code>, <code>"write_text"</code>,
   <code>"delete_folder"</code>, <code>"to_key"</code>, <code>"unwrap"</code>, <code>"supports"</code>).</li>
-<li><code>path: str</code> -- store-relative key (first positional path argument). Empty
+<li><code>path: str</code> — store-relative key (first positional path argument). Empty
   string for operations that take no path (e.g., <code>supports</code>).</li>
-<li><code>backend: str</code> -- backend name from <code>store._backend.name</code>.</li>
-<li><code>started_at: float</code> -- <code>time.monotonic()</code> at method entry.</li>
-<li><code>duration_ms: float</code> -- elapsed time in milliseconds.</li>
-<li><code>error: Exception | None</code> -- <code>None</code> on success, the exception instance on
+<li><code>backend: str</code> — backend name from <code>store._backend.name</code>.</li>
+<li><code>started_at: float</code> — <code>time.monotonic()</code> at method entry.</li>
+<li><code>duration_ms: float</code> — elapsed time in milliseconds.</li>
+<li><code>error: Exception | None</code> — <code>None</code> on success, the exception instance on
   failure.</li>
-<li><code>metadata: dict[str, Any]</code> -- operation-specific extra data (e.g.,
+<li><code>metadata: dict[str, Any]</code> — operation-specific extra data (e.g.,
   <code>overwrite</code>, <code>recursive</code>, <code>dst</code>, <code>pattern</code>, <code>size</code>, <code>missing_ok</code>).</li>
-<li><code>correlation_id: str | None</code> -- value from <code>contextvars.ContextVar</code>,
+<li><code>correlation_id: str | None</code> — value from <code>contextvars.ContextVar</code>,
   <code>None</code> when not set. Allows grouping related events (e.g., a batch
   operation's individual calls).</li>
 </ul>
@@ -9360,8 +9360,8 @@ ID-004 (superseded).</p>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ObservedStore</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div>
 <p>Where:
-- <code>OnEvent = Callable[[StoreEvent], None]</code> -- after-only callback.
-- <code>AroundHook = Callable[[str, str, str], AbstractContextManager[None]]</code> --
+- <code>OnEvent = Callable[[StoreEvent], None]</code> — after-only callback.
+- <code>AroundHook = Callable[[str, str, str], AbstractContextManager[None]]</code> —
   receives <code>(operation, path, backend)</code>, returns a context manager that wraps
   the entire operation including hook dispatch.</p>
 <p><strong>Postconditions:</strong>
@@ -9388,7 +9388,7 @@ overrides every public method of <code>Store</code>. Each override:</p>
 <li>Returns the result from the inner store.</li>
 </ol>
 <p><strong>Properties:</strong>
-- <code>inner: Store</code> -- read-only property returning the wrapped store.</p>
+- <code>inner: Store</code> — read-only property returning the wrapped store.</p>
 <p><strong>Postconditions:</strong>
 - The proxy never modifies arguments or return values.
 - After-hook exceptions (<code>on_&lt;op&gt;</code>, <code>on_any</code>, <code>on_error</code>) are suppressed

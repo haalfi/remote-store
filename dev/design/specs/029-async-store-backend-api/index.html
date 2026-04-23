@@ -10801,7 +10801,7 @@
 
 <h1 id="async-store-and-backend-api-specification">Async Store and Backend API Specification<a class="headerlink" href="#async-store-and-backend-api-specification" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Accepted -- Phase 1 and Phase 2 implemented in <code>remote_store.aio</code>.
+<p>Accepted — Phase 1 and Phase 2 implemented in <code>remote_store.aio</code>.
 Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p><code>AsyncBackend</code> and <code>AsyncStore</code> are the async equivalents of <code>Backend</code> (<a href="../003-backend-adapter-contract/">003</a>) and <code>Store</code> (<a href="../001-store-api/">001</a>). <code>SyncBackendAdapter</code> bridges sync backends into the async world via <code>asyncio.to_thread()</code>. <code>AsyncBackendSyncAdapter</code> is the inverse bridge — it exposes an <code>AsyncBackend</code> as a sync <code>Backend</code> via a private event loop on a dedicated background thread (see <a href="../../adrs/0025-async-to-sync-backend-adapter/">ADR-0025</a>). Phase 2 adds <code>AsyncAzureBackend</code> — the first native async backend. See <a href="../../adrs/0012-async-store-backend-api/">ADR-0012</a> for design rationale.</p>

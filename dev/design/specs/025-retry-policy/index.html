@@ -9143,7 +9143,7 @@ in backend config sections into a <code>RetryPolicy</code> instance.
 - When <code>retry is None</code>, uses botocore defaults (5 attempts, legacy mode).
 - When <code>retry</code> is provided, overrides botocore retry config.
 - <code>backoff_base</code>, <code>backoff_max</code>, <code>jitter</code>, <code>timeout</code> are not directly
-  mappable to botocore -- logged as debug-level info if set.</p>
+  mappable to botocore — logged as debug-level info if set.</p>
 <h3 id="ret-012-azure-retry-mapping">RET-012: Azure Retry Mapping<a class="headerlink" href="#ret-012-azure-retry-mapping" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>AzureBackend</code> accepts <code>retry: RetryPolicy | None = None</code>.
 <strong>Mapping:</strong>
@@ -9155,7 +9155,7 @@ in backend config sections into a <code>RetryPolicy</code> instance.
 - When <code>retry is None</code>, uses Azure SDK defaults.
 - When <code>retry</code> is provided, creates an <code>ExponentialRetry</code> policy and
   sets it as <code>retry_policy</code> in client options.
-- <code>backoff_max</code> and <code>timeout</code> are not directly mappable -- logged as
+- <code>backoff_max</code> and <code>timeout</code> are not directly mappable — logged as
   debug-level info if set.</p>
 <h3 id="ret-013-s3-pyarrow-retry-mapping">RET-013: S3-PyArrow Retry Mapping<a class="headerlink" href="#ret-013-s3-pyarrow-retry-mapping" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>S3PyArrowBackend</code> accepts <code>retry: RetryPolicy | None = None</code>.

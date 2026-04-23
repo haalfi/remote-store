@@ -8812,7 +8812,7 @@ following the three-tier pattern (capability + passthrough + extension
 fallback). This worked for the initial use case: user code that needs a
 seekable stream and doesn't care how it gets one.</p>
 <p>However, the Azure PyArrow optimization work (ID-102) revealed a gap.
-Azure's <code>read()</code> returns a forward-only chunk iterator -- efficient for
+Azure's <code>read()</code> returns a forward-only chunk iterator — efficient for
 sequential reads but unusable for PyArrow's <code>PythonFile.read_at()</code> which
 needs <code>seek()</code> + <code>read()</code> for Parquet column pruning. The range-reader
 approach (<code>download_blob(offset=, length=)</code>) is ideal for random access
@@ -8820,10 +8820,10 @@ but catastrophic for sequential reads (~1,280 HTTP requests for a 10 MB
 file vs ~1-2 with chunked streaming).</p>
 <p>This creates a tension that <code>ext.seekable</code> cannot resolve:</p>
 <ul>
-<li><strong>Sequential callers</strong> need the current chunked <code>read()</code> -- efficient,
+<li><strong>Sequential callers</strong> need the current chunked <code>read()</code> — efficient,
   forward-only, minimal HTTP requests.</li>
 <li><strong>Analytical callers</strong> (PyArrow, Dagster IO) need a seekable handle
-  optimized for sparse random access -- each seek + read maps to one
+  optimized for sparse random access — each seek + read maps to one
   HTTP Range request.</li>
 </ul>
 <p><code>ext.seekable.seekable_read()</code> handles non-seekable backends by spooling
@@ -8842,7 +8842,7 @@ already seekable, returns it directly. Otherwise, spools into a
 <code>SpooledTemporaryFile</code> (same logic as the removed <code>ext.seekable</code>).</p>
 <p>Backends MAY override to provide an optimized implementation:</p>
 <ul>
-<li><strong>AzureBackend</strong>: returns <code>_AzureRangeReader</code> -- a seekable
+<li><strong>AzureBackend</strong>: returns <code>_AzureRangeReader</code> — a seekable
   <code>io.RawIOBase</code> where each <code>readinto()</code> issues a single HTTP Range
   request via <code>download_blob(offset=, length=)</code>.</li>
 <li><strong>HttpBackend</strong>: could implement HTTP Range in the future (not in
@@ -8850,14 +8850,14 @@ already seekable, returns it directly. Otherwise, spools into a
 </ul>
 <h3 id="storeread_seekablepath-binaryio"><code>Store.read_seekable(path) -&gt; BinaryIO</code><a class="headerlink" href="#storeread_seekablepath-binaryio" title="Permanent link">&para;</a></h3>
 <p>Delegates to <code>backend.read_seekable()</code> with path resolution, capability
-checks, and logging -- same pattern as <code>Store.read()</code>.</p>
+checks, and logging — same pattern as <code>Store.read()</code>.</p>
 <h3 id="arrow-integration">Arrow integration<a class="headerlink" href="#arrow-integration" title="Permanent link">&para;</a></h3>
 <p><code>StoreFileSystemHandler.open_input_file()</code> calls <code>store.read_seekable()</code>
 instead of <code>store.read()</code> for the Tier 3 path. This gives PyArrow a
 seekable, random-access-optimized handle on all backends without
 materializing the full file.</p>
 <h3 id="removal-of-extseekable">Removal of <code>ext.seekable</code><a class="headerlink" href="#removal-of-extseekable" title="Permanent link">&para;</a></h3>
-<p><code>ext.seekable.seekable_read()</code> is removed (never released -- introduced
+<p><code>ext.seekable.seekable_read()</code> is removed (never released — introduced
 after v0.19.0 in ID-100). Its functionality is subsumed by
 <code>Store.read_seekable()</code>. The <code>SEEKABLE_READ</code> capability shifts meaning:
 it now indicates that <code>read_seekable()</code> is zero-overhead (no spooling
@@ -8874,12 +8874,12 @@ needed, the backend natively returns seekable streams).</p>
   PyArrow's own <code>FileSystem</code> API.</li>
 <li><strong>Enables backend-specific optimization.</strong> Azure can return a range
   reader; HTTP could follow. No backend is forced to implement anything
-  new -- the default spooling fallback handles it.</li>
+  new — the default spooling fallback handles it.</li>
 <li><strong>Consuming abstractions benefit automatically.</strong> PyArrow and Dagster
   get optimal seekable streams without needing to call extension
   functions or know about backend internals.</li>
 <li><strong><code>SEEKABLE_READ</code> capability preserved.</strong> Meaning shifts from "read()
-  returns seekable" to "read_seekable() is zero-overhead" -- still
+  returns seekable" to "read_seekable() is zero-overhead" — still
   useful for callers who want to branch at setup time.</li>
 <li><strong>One extension removed</strong> (<code>ext.seekable</code>). Net surface area change is
   roughly neutral: one Store method added, one extension module removed.</li>

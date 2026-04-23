@@ -8819,7 +8819,7 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p><code>write_text()</code> is a Store-level convenience method that encodes a string and
 writes it to a file. Mirrors <code>pathlib.Path.write_text()</code> semantics. No backend
-ABC changes -- text encoding is an application-layer concern, not a storage
+ABC changes — text encoding is an application-layer concern, not a storage
 concern.</p>
 <p><strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (STORE-008),
 <a href="../019-ext-observe/">019-ext-observe.md</a> (OBS-003a),
@@ -8882,7 +8882,7 @@ returned by the wrapped store is injected under
 <h3 id="wtxt-005-extcache">WTXT-005: ext.cache<a class="headerlink" href="#wtxt-005-extcache" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>CachedStore.write_text()</code> delegates to the inner store's
 <code>write_text()</code> and invalidates the cache for the written path. No separate
-cache method needed -- cache invalidation is inherited from <code>write()</code>.</p>
+cache method needed — cache invalidation is inherited from <code>write()</code>.</p>
 <h3 id="wtxt-006-symmetric-with-read_text">WTXT-006: Symmetric with read_text<a class="headerlink" href="#wtxt-006-symmetric-with-read_text" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_text()</code> and <code>read_text()</code> form a symmetric pair.
 Writing with encoding E and reading with the same encoding E returns the

@@ -9255,12 +9255,12 @@ overrides every public method. It bypasses <code>Store.__init__</code> and
 delegates to the inner store, following the <code>ObservedStore</code> proxy
 pattern (ADR-0010).</p>
 <p><strong>Properties:</strong>
-- <code>inner: Store</code> -- read-only property returning the wrapped store.
-- <code>stats: CacheStats</code> -- read-only property returning current statistics.</p>
+- <code>inner: Store</code> — read-only property returning the wrapped store.
+- <code>stats: CacheStats</code> — read-only property returning current statistics.</p>
 <p><strong>Public cache-management methods:</strong>
-- <code>invalidate(path: str) -&gt; None</code> -- remove all cached entries for
+- <code>invalidate(path: str) -&gt; None</code> — remove all cached entries for
   the given path and its ancestor directories.
-- <code>clear_cache() -&gt; None</code> -- remove all cached entries.</p>
+- <code>clear_cache() -&gt; None</code> — remove all cached entries.</p>
 <h3 id="cache-005-cachestats-dataclass">CACHE-005: CacheStats Dataclass<a class="headerlink" href="#cache-005-cachestats-dataclass" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>CacheStats</code> is a frozen dataclass:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -9344,7 +9344,7 @@ pattern (ADR-0010).</p>
   materialize results into a tuple on first call and return
   <code>iter(cached_tuple)</code> on cache hits.
 - Only successful results are cached. Exceptions (e.g., <code>NotFound</code>) are
-  never cached -- subsequent calls retry the backend.
+  never cached — subsequent calls retry the backend.
 - <code>read_bytes</code>: if <code>max_content_size</code> is set and <code>len(result) &gt;
   max_content_size</code>, the result is returned but not cached.
 - Listing methods (<code>iter_children</code>, <code>list_files</code>, <code>list_folders</code>, <code>glob</code>):
@@ -9354,12 +9354,12 @@ pattern (ADR-0010).</p>
 <p><strong>Invariant:</strong> The following operations always delegate directly to the
 inner store without caching:</p>
 <ul>
-<li><code>read(path)</code> -- returns <code>BinaryIO</code> (not serializable/reusable).</li>
-<li><code>read_text(path)</code> -- delegates to <code>self.read_bytes()</code> (uses cached
+<li><code>read(path)</code> — returns <code>BinaryIO</code> (not serializable/reusable).</li>
+<li><code>read_text(path)</code> — delegates to <code>self.read_bytes()</code> (uses cached
   <code>read_bytes</code> result). No separate cache key. See RTXT-005.</li>
-<li><code>head(path)</code> -- always live; sidecar metadata is not cached.</li>
+<li><code>head(path)</code> — always live; sidecar metadata is not cached.</li>
 <li><code>close()</code>, <code>child()</code>, <code>to_key()</code>, <code>unwrap()</code>, <code>native_path()</code>,
-  <code>supports()</code> -- no backend I/O worth caching.</li>
+  <code>supports()</code> — no backend I/O worth caching.</li>
 </ul>
 <hr />
 <h2 id="invalidation">Invalidation<a class="headerlink" href="#invalidation" title="Permanent link">&para;</a></h2>

@@ -8755,7 +8755,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Thread A: exists(&quot;report.csv&quot;) -&gt; False
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Thread B: exists(&quot;report.csv&quot;) -&gt; False    # concurrent check
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Thread A: write(&quot;report.csv&quot;, data_a)      # succeeds
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Thread B: write(&quot;report.csv&quot;, data_b)      # also succeeds -- overwrites A&#39;s file
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Thread B: write(&quot;report.csv&quot;, data_b)      # also succeeds — overwrites A&#39;s file
 </code></pre></div>
 <p>This affects <strong>all backends</strong>. The check-then-act pattern cannot be made race-free without an external coordination mechanism. <code>overwrite=False</code> is a convenience guard against accidental overwrites in single-writer scenarios — it is <strong>not</strong> a mutual exclusion mechanism.</p>
 <h3 id="mitigations">Mitigations<a class="headerlink" href="#mitigations" title="Permanent link">&para;</a></h3>

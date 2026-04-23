@@ -11421,6 +11421,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-007 (extended): Replace prose <code>--</code> with em dash <code>—</code> throughout docs, specs, research, SDD files, and <code>.tmpl</code> templates; add typography Rule 8 to <code>sdd/DOCUMENTATION.md</code></li>
 <li>BUG-181: HNS <code>write_atomic</code> WriteResult rich-field and metadata parity verified with mock tests</li>
 <li>ID-013b: async write layer returns <code>WriteResult</code>; <code>metadata=</code> supported on <code>AsyncStore</code> and all async backends; <code>aio.ext.write.write_with_hash</code> added</li>
 <li>BK-157: Tighten docs site spacing: compact table rows, heading typography, method separators</li>
@@ -12155,7 +12156,7 @@
   <code>AsyncBackend</code> abstract base class for native async backends.
   <code>SyncBackendAdapter</code> wraps any synchronous backend for async use
   (delegates to a thread-pool executor). <code>AsyncMemoryBackend</code> for
-  async testing. Phase 1 -- core primitives.</li>
+  async testing. Phase 1 — core primitives.</li>
 <li><strong><code>AsyncAzureBackend</code> native async backend</strong> (ID-013 Phase 2): First native
   async backend for <code>remote_store.aio</code>. Uses Azure SDK async clients
   (<code>azure.storage.blob.aio</code>, <code>azure.storage.filedatalake.aio</code>) for true

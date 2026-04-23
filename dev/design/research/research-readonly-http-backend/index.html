@@ -6948,7 +6948,7 @@
   <a href="#5-list-capability-why-not" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. LIST Capability -- Why Not
+        5. LIST Capability — Why Not
       
     </span>
   </a>
@@ -7164,12 +7164,12 @@
   <a href="#13-prior-art-build-vs-reuse" class="md-nav__link">
     <span class="md-ellipsis">
       
-        13. Prior Art -- Build vs. Reuse
+        13. Prior Art — Build vs. Reuse
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="13. Prior Art -- Build vs. Reuse">
+    <nav class="md-nav" aria-label="13. Prior Art — Build vs. Reuse">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -9378,7 +9378,7 @@
   <a href="#5-list-capability-why-not" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. LIST Capability -- Why Not
+        5. LIST Capability — Why Not
       
     </span>
   </a>
@@ -9594,12 +9594,12 @@
   <a href="#13-prior-art-build-vs-reuse" class="md-nav__link">
     <span class="md-ellipsis">
       
-        13. Prior Art -- Build vs. Reuse
+        13. Prior Art — Build vs. Reuse
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="13. Prior Art -- Build vs. Reuse">
+    <nav class="md-nav" aria-label="13. Prior Art — Build vs. Reuse">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -9848,19 +9848,19 @@
 <h1 id="research-read-only-http-backend">Research: Read-Only HTTP Backend<a class="headerlink" href="#research-read-only-http-backend" title="Permanent link">&para;</a></h1>
 <p><strong>Item ID:</strong> ID-082
 <strong>Date:</strong> 2026-03-15
-<strong>Status:</strong> Research complete -- ready for spec consideration</p>
+<strong>Status:</strong> Research complete — ready for spec consideration</p>
 <hr />
 <h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
 <p>Users already use remote-store for storage (local, S3, SFTP, Azure). Sometimes
 another kind of "remote stored thing" enters the picture: files hosted at an
-HTTP URL -- government open data portals, dataset registries, static file
+HTTP URL — government open data portals, dataset registries, static file
 servers, CDN-hosted assets, package archives, etc.</p>
 <p>A <code>ReadOnlyHttpBackend</code> would treat an HTTP endpoint as just another backend.
 Files behind a URL become accessible through the same <code>Store</code> interface, with
 the same composability (<code>ext.cache</code>, <code>ext.transfer</code>, <code>ext.observe</code>,
 <code>ext.batch</code>) that users already rely on for other backends.</p>
 <h3 id="why-a-backend-not-an-extension">Why a backend, not an extension?<a class="headerlink" href="#why-a-backend-not-an-extension" title="Permanent link">&para;</a></h3>
-<p>An extension cannot provide <code>Store.read()</code> -- it would need to reimplement the
+<p>An extension cannot provide <code>Store.read()</code> — it would need to reimplement the
 entire <code>Store</code> interface. A backend slots into the existing architecture
 naturally: capability gating, error mapping, registry lifecycle, and all
 extensions work out of the box.</p>
@@ -9869,7 +9869,7 @@ extensions work out of the box.</p>
 <li>Core package has <strong>zero runtime dependencies</strong> (<code>dependencies = []</code>).</li>
 <li>HTTP library must be optional (<code>urllib</code> from stdlib as baseline, <code>requests</code>
   or <code>httpx</code> as optional extras).</li>
-<li>The backend is <strong>read-only</strong> -- write, delete, move, copy operations raise
+<li>The backend is <strong>read-only</strong> — write, delete, move, copy operations raise
   <code>CapabilityNotSupported</code>.</li>
 <li>Must handle real-world HTTP concerns: redirects, content-type, timeouts,
   auth headers.</li>
@@ -9892,32 +9892,32 @@ extensions work out of the box.</p>
 </tr>
 <tr>
 <td>WRITE</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td>Raises <code>CapabilityNotSupported</code></td>
 </tr>
 <tr>
 <td>DELETE</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td>Raises <code>CapabilityNotSupported</code></td>
 </tr>
 <tr>
 <td>LIST</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td>No reliable server-side mechanism (see SS5)</td>
 </tr>
 <tr>
 <td>MOVE</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td>Raises <code>CapabilityNotSupported</code></td>
 </tr>
 <tr>
 <td>COPY</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td>Raises <code>CapabilityNotSupported</code></td>
 </tr>
 <tr>
 <td>ATOMIC_WRITE</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td>Raises <code>CapabilityNotSupported</code></td>
 </tr>
 <tr>
@@ -9927,14 +9927,14 @@ extensions work out of the box.</p>
 </tr>
 <tr>
 <td>GLOB</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td>No server-side pattern matching</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Capability set:</strong> <code>{READ, METADATA}</code></p>
 <p>This would be the first backend with only 2 capabilities. The capability
-system already handles this -- <code>Store</code> gates every operation and raises
+system already handles this — <code>Store</code> gates every operation and raises
 <code>CapabilityNotSupported</code> with clear context.</p>
 <hr />
 <h2 id="3-path-semantics">3. Path Semantics<a class="headerlink" href="#3-path-semantics" title="Permanent link">&para;</a></h2>
@@ -10041,7 +10041,7 @@ than three backends.</p>
 <li><strong>No connection pooling.</strong> Each request opens a new TCP connection. Fine for
   occasional reads; poor for batch operations. <code>requests</code>/<code>httpx</code> sessions
   solve this.</li>
-<li><strong>No async.</strong> Acceptable -- all existing backends are sync.</li>
+<li><strong>No async.</strong> Acceptable — all existing backends are sync.</li>
 <li><strong>SSL works.</strong> <code>urllib.request.urlopen</code> validates TLS certificates by default
   via <code>ssl.create_default_context()</code>. <code>verify_ssl=False</code> would use
   <code>ssl._create_unverified_context()</code>.</li>
@@ -10051,7 +10051,7 @@ than three backends.</p>
   for details.</li>
 </ul>
 <hr />
-<h2 id="5-list-capability-why-not">5. LIST Capability -- Why Not<a class="headerlink" href="#5-list-capability-why-not" title="Permanent link">&para;</a></h2>
+<h2 id="5-list-capability-why-not">5. LIST Capability — Why Not<a class="headerlink" href="#5-list-capability-why-not" title="Permanent link">&para;</a></h2>
 <p>HTTP has no native directory listing. The options considered:</p>
 <table>
 <thead>
@@ -10316,11 +10316,11 @@ discover paths, then <code>store.read()</code> each one. If demand justifies it,
 <tbody>
 <tr>
 <td><code>ext.cache</code></td>
-<td>TTL-based caching of <code>read()</code> results -- critical for HTTP, avoids repeated downloads</td>
+<td>TTL-based caching of <code>read()</code> results — critical for HTTP, avoids repeated downloads</td>
 </tr>
 <tr>
 <td><code>ext.transfer</code></td>
-<td><code>download(store, "dataset.csv", local_path)</code> -- works out of the box</td>
+<td><code>download(store, "dataset.csv", local_path)</code> — works out of the box</td>
 </tr>
 <tr>
 <td><code>ext.observe</code></td>
@@ -10328,11 +10328,11 @@ discover paths, then <code>store.read()</code> each one. If demand justifies it,
 </tr>
 <tr>
 <td><code>ext.batch</code></td>
-<td><code>batch_exists(store, paths)</code> -- check multiple resources</td>
+<td><code>batch_exists(store, paths)</code> — check multiple resources</td>
 </tr>
 <tr>
 <td><code>ext.arrow</code></td>
-<td><code>read_table(store, "data.parquet")</code> -- read remote Parquet/CSV via PyArrow</td>
+<td><code>read_table(store, "data.parquet")</code> — read remote Parquet/CSV via PyArrow</td>
 </tr>
 </tbody>
 </table>
@@ -10372,7 +10372,7 @@ classes with 69 test methods. Only two capabilities are currently gated:</p>
 </table>
 <h3 id="102-what-breaks-for-a-read-metadata-backend">10.2 What breaks for a {READ, METADATA} backend<a class="headerlink" href="#102-what-breaks-for-a-read-metadata-backend" title="Permanent link">&para;</a></h3>
 <p>Most test classes set up test data by calling <code>backend.write()</code> before
-asserting read behavior. This means even read/metadata tests will fail -- not
+asserting read behavior. This means even read/metadata tests will fail — not
 because the backend can't read, but because the test can't set up fixtures.</p>
 <p><strong>Tests that would need changes:</strong></p>
 <table>
@@ -10500,7 +10500,7 @@ because the backend can't read, but because the test can't set up fixtures.</p>
    need test data. For writable backends, they create it inline. For
    read-only backends, provide a <code>conftest.py</code> fixture that pre-seeds the
    HTTP mock server with test files. The conformance test checks
-   <code>backend.capabilities.supports(Capability.WRITE)</code> -- if true, write
+   <code>backend.capabilities.supports(Capability.WRITE)</code> — if true, write
    inline; if false, assume the fixture pre-seeded the data.</p>
 </li>
 </ol>
@@ -10532,7 +10532,7 @@ exceptions to remote-store errors. It handles imperfect streams gracefully:
 - <code>tell()</code> returning <code>None</code> -&gt; returns <code>0</code>
 - <code>close()</code> exceptions -&gt; suppressed</p>
 <p><strong>Verdict: <code>_ErrorMappingStream(http_response, ...)</code> works directly.</strong></p>
-<p>Do NOT wrap in <code>io.BufferedReader</code> -- unlike S3/SFTP backends, the HTTP
+<p>Do NOT wrap in <code>io.BufferedReader</code> — unlike S3/SFTP backends, the HTTP
 response is already buffered (<code>BufferedIOBase</code>). Double-buffering would be
 wasteful and could cause issues.</p>
 <p>Return pattern:
@@ -10597,7 +10597,7 @@ close.</p>
 </table>
 <p><strong>Notes:</strong>
 - <code>Content-Length</code> is absent for chunked responses and some CDNs. Using <code>0</code> as
-  a fallback is imperfect -- code checking <code>file_info.size == 0</code> (e.g.,
+  a fallback is imperfect — code checking <code>file_info.size == 0</code> (e.g.,
   skip-empty-file logic, progress bars, <code>ext.transfer</code> pre-allocation) would
   misinterpret "unknown" as "zero bytes". Since <code>FileInfo.size</code> is <code>int</code> (not
   <code>Optional[int]</code>), there is no clean sentinel today. The spec should note this
@@ -10605,19 +10605,19 @@ close.</p>
   <code>FileInfo</code> revision.
 - <code>Last-Modified</code> is absent on many static file hosts and CDNs. The sentinel
   must be timezone-aware (<code>datetime.min.replace(tzinfo=timezone.utc)</code>) because
-  S3 and Azure backends return timezone-aware <code>modified_at</code> values -- mixing
+  S3 and Azure backends return timezone-aware <code>modified_at</code> values — mixing
   naive and aware datetimes raises <code>TypeError</code> in user code (sorting, filtering,
   <code>ext.transfer</code> comparisons). Sorting by <code>modified_at</code> would still place HTTP
   files at the beginning of any list. <code>datetime(1970, 1, 1, tzinfo=UTC)</code> (Unix
   epoch) is a more conventional sentinel but carries the same ambiguity. Like
   <code>size</code>, both fields may warrant <code>Optional</code> treatment in a future <code>FileInfo</code>
   revision.
-- <code>ETag</code> maps naturally to <code>checksum</code> -- both are opaque identifiers for
+- <code>ETag</code> maps naturally to <code>checksum</code> — both are opaque identifiers for
   content versioning. Useful for <code>ext.cache</code> integration.</p>
 <hr />
-<h2 id="13-prior-art-build-vs-reuse">13. Prior Art -- Build vs. Reuse<a class="headerlink" href="#13-prior-art-build-vs-reuse" title="Permanent link">&para;</a></h2>
+<h2 id="13-prior-art-build-vs-reuse">13. Prior Art — Build vs. Reuse<a class="headerlink" href="#13-prior-art-build-vs-reuse" title="Permanent link">&para;</a></h2>
 <p>The key question is: can we use an existing library instead of writing our own
-HTTP backend? The answer is no -- but the implementation is small enough that
+HTTP backend? The answer is no — but the implementation is small enough that
 this is fine.</p>
 <h3 id="131-why-not-wrap-fsspec-httpfilesystem">13.1 Why not wrap fsspec <code>HTTPFileSystem</code>?<a class="headerlink" href="#131-why-not-wrap-fsspec-httpfilesystem" title="Permanent link">&para;</a></h3>
 <p>fsspec's HTTP support is the closest match. It provides read-only HTTP access,
@@ -10626,7 +10626,7 @@ streaming, and even directory listing via HTML parsing.</p>
 - fsspec is a <strong>heavyweight dependency</strong> (pulls in <code>aiohttp</code> for HTTP).
   remote-store's core has zero runtime deps.
 - fsspec's <code>HTTPFileSystem</code> exposes an <code>AbstractFileSystem</code> interface, not
-  our <code>Backend</code> interface. Wrapping it would mean adapting every method --
+  our <code>Backend</code> interface. Wrapping it would mean adapting every method —
   the wrapper would be roughly the same size as a direct implementation.
 - Its HTML-based directory listing is fragile and not something we'd want.
 - Its Range-based seeking adds complexity we don't need.</p>
@@ -10635,11 +10635,11 @@ streaming, and even directory listing via HTML parsing.</p>
 <p><code>smart_open.open("https://...")</code> gives a streaming reader. But:
 - It's a single <code>open()</code> function, not a filesystem abstraction. No
   <code>exists()</code>, <code>get_file_info()</code>, <code>check_health()</code>, or any metadata support.
-- Wrapping it would provide only <code>read()</code> -- we'd still implement everything
+- Wrapping it would provide only <code>read()</code> — we'd still implement everything
   else ourselves.
 - It requires <code>requests</code> as a dependency.</p>
 <h3 id="133-why-not-use-requestshttpx-directly-as-the-backend">13.3 Why not use requests/httpx directly as the backend?<a class="headerlink" href="#133-why-not-use-requestshttpx-directly-as-the-backend" title="Permanent link">&para;</a></h3>
-<p>We do -- that's exactly the transport layer (SS4). The "build" here is the
+<p>We do — that's exactly the transport layer (SS4). The "build" here is the
 thin Backend adapter (~150 lines) that maps HTTP semantics to remote-store's
 interface. The actual HTTP work is delegated to urllib/requests/httpx.</p>
 <h3 id="134-what-we-learn-from-prior-art">13.4 What we learn from prior art<a class="headerlink" href="#134-what-we-learn-from-prior-art" title="Permanent link">&para;</a></h3>
@@ -10675,7 +10675,7 @@ interface. The actual HTTP work is delegated to urllib/requests/httpx.</p>
 - Transport protocol + urllib impl: ~80 lines
 - requests/httpx transports: ~50 lines each (optional)</p>
 <p>This is much smaller than <code>MemoryBackend</code> (~505 lines) and <code>S3Backend</code>
-(~440 lines). Not a wheel worth importing -- simpler to build.</p>
+(~440 lines). Not a wheel worth importing — simpler to build.</p>
 <hr />
 <h2 id="14-real-world-http-endpoint-behavior">14. Real-World HTTP Endpoint Behavior<a class="headerlink" href="#14-real-world-http-endpoint-behavior" title="Permanent link">&para;</a></h2>
 <p>Tested against representative public endpoints to validate assumptions:</p>
@@ -10702,7 +10702,7 @@ interface. The actual HTTP work is delegated to urllib/requests/httpx.</p>
 <tr>
 <td>PyPI simple index (pypi.org)</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes (http-&gt;https)</td>
@@ -10713,15 +10713,15 @@ interface. The actual HTTP work is delegated to urllib/requests/httpx.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td>opendata.swiss (lindas API)</td>
 <td style="text-align: center;">Varies</td>
-<td style="text-align: center;">--</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td>CDN-hosted static files (typical)</td>
@@ -10729,12 +10729,12 @@ interface. The actual HTTP work is delegated to urllib/requests/httpx.</p>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
-<td style="text-align: center;">--</td>
+<td style="text-align: center;">—</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Findings:</strong>
-- <code>HEAD</code> is universally supported -- <code>exists()</code> and <code>get_file_info()</code> are safe.
+- <code>HEAD</code> is universally supported — <code>exists()</code> and <code>get_file_info()</code> are safe.
 - <code>Content-Length</code> is present for static files, sometimes missing for API responses.
 - <code>Last-Modified</code> is often missing on API endpoints and CDNs.
 - <code>ETag</code> is common on static file servers, rare on dynamic APIs.
@@ -10790,7 +10790,7 @@ interface. The actual HTTP work is delegated to urllib/requests/httpx.</p>
 </tbody>
 </table>
 <p>No showstoppers identified. The urllib streaming concern (P1.4 in the original
-gap analysis) is resolved -- it works.</p>
+gap analysis) is resolved — it works.</p>
 <hr />
 <h2 id="16-testing-strategy">16. Testing Strategy<a class="headerlink" href="#16-testing-strategy" title="Permanent link">&para;</a></h2>
 <h3 id="161-backend-specific-tests-testsbackendstest_httppy">16.1 Backend-specific tests (<code>tests/backends/test_http.py</code>)<a class="headerlink" href="#161-backend-specific-tests-testsbackendstest_httppy" title="Permanent link">&para;</a></h3>
@@ -10846,22 +10846,22 @@ gap analysis) is resolved -- it works.</p>
 <tr>
 <td>HTTP-009</td>
 <td>Path with special characters is URL-encoded</td>
-<td>--</td>
+<td>—</td>
 </tr>
 <tr>
 <td>HTTP-010</td>
 <td>Custom headers are sent with every request</td>
-<td>--</td>
+<td>—</td>
 </tr>
 <tr>
 <td>HTTP-011</td>
 <td>Redirects are followed (up to limit)</td>
-<td>--</td>
+<td>—</td>
 </tr>
 <tr>
 <td>HTTP-012</td>
 <td>Timeout raises BackendUnavailable</td>
-<td>--</td>
+<td>—</td>
 </tr>
 <tr>
 <td>HTTP-013</td>
@@ -10871,7 +10871,7 @@ gap analysis) is resolved -- it works.</p>
 <tr>
 <td>HTTP-014</td>
 <td>Write/delete/move/copy raise CapabilityNotSupported</td>
-<td>--</td>
+<td>—</td>
 </tr>
 <tr>
 <td>HTTP-015</td>
@@ -10881,7 +10881,7 @@ gap analysis) is resolved -- it works.</p>
 <tr>
 <td>HTTP-016</td>
 <td>Transport auto-detection (urllib/requests/httpx)</td>
-<td>--</td>
+<td>—</td>
 </tr>
 <tr>
 <td>HTTP-017</td>
@@ -10978,8 +10978,8 @@ server in fixtures. Pre-seed with test files for read/metadata tests.</p>
 <p><strong>Q1. Backend name: <code>"http"</code> or <code>"http-readonly"</code> or <code>"web"</code>?</strong></p>
 <p>Use <code>"http"</code>. Reasons:
 - Consistent with other backend names (<code>"local"</code>, <code>"s3"</code>, <code>"sftp"</code>, <code>"azure"</code>)
-  -- none encode capabilities in the name.
-- A future WebDAV backend would use <code>"webdav"</code>, not <code>"http"</code> -- different
+  — none encode capabilities in the name.
+- A future WebDAV backend would use <code>"webdav"</code>, not <code>"http"</code> — different
   protocol, different backend.
 - The capability system communicates what the backend can do; the name
   identifies the protocol.</p>
@@ -11003,7 +11003,7 @@ Map its fields to urllib/requests/httpx retry mechanisms:
   config, mapping <code>RetryPolicy</code> fields to native parameters.</p>
 <p><strong>Q5. Extra dependency group name?</strong></p>
 <p><code>pip install remote-store[httpx]</code> for httpx, <code>pip install remote-store[requests]</code>
-for requests. No <code>[http]</code> group -- the baseline (urllib) needs no extra deps.
+for requests. No <code>[http]</code> group — the baseline (urllib) needs no extra deps.
 This mirrors how <code>[arrow]</code> means "install PyArrow" and <code>[otel]</code> means "install
 OpenTelemetry".</p>
 <p><strong>Q6. Conformance suite changes?</strong></p>

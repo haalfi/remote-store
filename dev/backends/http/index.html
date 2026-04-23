@@ -9169,7 +9169,7 @@
 
 
 <h1 id="http-backend-read-only">HTTP Backend (Read-Only)<a class="headerlink" href="#http-backend-read-only" title="Permanent link">&para;</a></h1>
-<p>The HTTP backend reads files from HTTP/HTTPS URLs. Capabilities: <code>{READ, METADATA, LAZY_READ}</code> only -- write, delete, list, move, and copy operations are not supported.</p>
+<p>The HTTP backend reads files from HTTP/HTTPS URLs. Capabilities: <code>{READ, METADATA, LAZY_READ}</code> only — write, delete, list, move, and copy operations are not supported.</p>
 <p><strong>Primary use cases:</strong> government open data portals, dataset registries, static file servers, CDN-hosted assets, package archives, public APIs serving files.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
@@ -9267,9 +9267,9 @@ See the <a href="../../capabilities-matrix/">capabilities matrix</a> for full de
 <h2 id="http-library">HTTP Library<a class="headerlink" href="#http-library" title="Permanent link">&para;</a></h2>
 <p>The backend auto-detects the best available HTTP library:</p>
 <ol>
-<li><strong>httpx</strong> (if installed) -- connection pooling, HTTP/2. Install: <code>pip install "remote-store[httpx]"</code></li>
-<li><strong>requests</strong> (if installed) -- connection pooling, sessions. Install: <code>pip install "remote-store[requests]"</code></li>
-<li><strong>urllib</strong> (always available) -- stdlib, zero dependencies.</li>
+<li><strong>httpx</strong> (if installed) — connection pooling, HTTP/2. Install: <code>pip install "remote-store[httpx]"</code></li>
+<li><strong>requests</strong> (if installed) — connection pooling, sessions. Install: <code>pip install "remote-store[requests]"</code></li>
+<li><strong>urllib</strong> (always available) — stdlib, zero dependencies.</li>
 </ol>
 <p>Override with <code>http_client="urllib"</code> (or <code>"requests"</code>, <code>"httpx"</code>).</p>
 <h2 id="folder-semantics">Folder Semantics<a class="headerlink" href="#folder-semantics" title="Permanent link">&para;</a></h2>
@@ -9327,10 +9327,10 @@ individual files normally. A failing health check does not necessarily mean
 <h2 id="composability">Composability<a class="headerlink" href="#composability" title="Permanent link">&para;</a></h2>
 <p>The primary value of making HTTP a backend (vs. standalone code):</p>
 <ul>
-<li><strong><code>ext.cache</code></strong> -- TTL-based caching of <code>read()</code> results. Avoids repeated downloads.</li>
-<li><strong><code>ext.transfer</code></strong> -- <code>download(store, "file.csv", local_path)</code> works out of the box.</li>
-<li><strong><code>ext.observe</code></strong> -- instrument HTTP reads with callbacks (timing, logging).</li>
-<li><strong><code>ext.batch</code></strong> -- <code>batch_exists(store, paths)</code> to check multiple resources.</li>
+<li><strong><code>ext.cache</code></strong> — TTL-based caching of <code>read()</code> results. Avoids repeated downloads.</li>
+<li><strong><code>ext.transfer</code></strong> — <code>download(store, "file.csv", local_path)</code> works out of the box.</li>
+<li><strong><code>ext.observe</code></strong> — instrument HTTP reads with callbacks (timing, logging).</li>
+<li><strong><code>ext.batch</code></strong> — <code>batch_exists(store, paths)</code> to check multiple resources.</li>
 </ul>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

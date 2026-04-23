@@ -8881,7 +8881,7 @@
 
 <h1 id="seekable-read-specification">Seekable Read Specification<a class="headerlink" href="#seekable-read-specification" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>Seekable read provides <code>Store.read_seekable()</code> -- a method that always
+<p>Seekable read provides <code>Store.read_seekable()</code> — a method that always
 returns a seekable <code>BinaryIO</code> stream, backend-optimized for random access.
 Complements <code>Store.read()</code> (which returns the backend's natural stream,
 possibly non-seekable). Follows <a href="../../adrs/0017-seekable-read-on-store-api/">ADR-0017</a>,
@@ -8921,13 +8921,13 @@ on disk.
 original stream is closed after spooling.</p>
 <h2 id="seek-006-azure-range-reader-override">SEEK-006: Azure Range Reader Override<a class="headerlink" href="#seek-006-azure-range-reader-override" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>AzureBackend</code> overrides <code>read_seekable()</code> to return an
-<code>_AzureRangeReader</code> -- a seekable <code>io.RawIOBase</code> where each <code>readinto()</code>
+<code>_AzureRangeReader</code> — a seekable <code>io.RawIOBase</code> where each <code>readinto()</code>
 issues a single HTTP Range request via <code>download_blob(offset=, length=)</code>.
 <strong>Postconditions:</strong>
 - No data is downloaded until <code>read()</code> is called.
 - <code>seek()</code> and <code>tell()</code> update position without I/O.
 - Sequential <code>read()</code> calls issue one HTTP request per <code>readinto()</code> call.
-- The stream is wrapped in <code>_ErrorMappingStream</code> (no <code>BufferedReader</code> -- its
+- The stream is wrapped in <code>_ErrorMappingStream</code> (no <code>BufferedReader</code> — its
   seek-invalidation would defeat range reads by turning each
   <code>PythonFile.read_at()</code> into a separate HTTP request).</p>
 <h2 id="seek-007-azure-read-unchanged">SEEK-007: Azure <code>read()</code> Unchanged<a class="headerlink" href="#seek-007-azure-read-unchanged" title="Permanent link">&para;</a></h2>
