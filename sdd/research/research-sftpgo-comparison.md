@@ -10,7 +10,7 @@ table and what design ideas are worth carrying back.
 ## 1. What SFTPGo Is
 
 [SFTPGo](https://github.com/drakkan/sftpgo) (Go, AGPL-3.0 + commercial) is a
-**standalone file-transfer server/daemon** — roughly 27 k GitHub stars, actively
+**standalone file-transfer server/daemon** — ~27 k GitHub stars as of this writing, actively
 maintained. It sits in front of multiple storage backends and exposes them to
 end users via standard protocols: SFTP/SCP, FTPS, HTTP/S, and WebDAV. A REST
 API provides programmatic control; a web admin UI and web client handle human
@@ -106,9 +106,7 @@ runtime deps) do not translate to a Go network daemon — most cells would be
 
 The right place is a sentence in the **"What it is not"** section:
 
-> Not a file-transfer server — if you need external clients (SFTP partners,
-> browser users) to access your storage via SFTP, FTPS, or WebDAV, look at
-> [SFTPGo](https://github.com/drakkan/sftpgo).
+> Not a file-transfer server (no SFTP/FTP/WebDAV service — see [SFTPGo](https://github.com/drakkan/sftpgo))
 
 This correctly frames the decision (different problem, not competing) without
 distorting the Python-library comparison.
