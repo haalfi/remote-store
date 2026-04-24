@@ -25,6 +25,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   — the backend was correct.
   Related: MEM-DS-006, MEM-014 (`sdd/specs/013-memory-backend.md`); BK-139 P4.
 
+- [x] **BK-163 — Share duplicate S3/S3PA tests via parametrized test_s3_shared.py**
+  Moved 5 tests with identical/near-identical bodies from `test_s3.py` and
+  `test_s3_pyarrow.py` into new shared classes in `test_s3_shared.py`:
+  `TestS3SharedErrorMapping` (S3-015/S3PA-018, S3-018/S3PA-019),
+  `TestS3SharedUnwrap` (S3-020/S3PA-021), and `TestS3SharedETagAndDigest`
+  (S3-023/S3PA-017, S3-024/S3PA-017). Removed now-empty `TestS3Lifecycle`,
+  `TestS3PyArrowErrorMapping`, and `TestS3PyArrowMetadata` classes.
+
 - [x] **BK-162 — Fix 16 documentation gaps from Audit-011 (v0.23.0+)**
   Fixed all 16 findings from `sdd/audits/audit-011-docs-v023-gaps.md` across 4 commits:
   (1) custom-backend guide + snippet: corrected `write()`/`write_atomic()` return types,
