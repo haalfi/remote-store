@@ -26,9 +26,7 @@ at runtime before calling an operation.
 
 † `WRITE_RESULT_NATIVE` and `USER_METADATA` are declared by `SQLBlobBackend` only when the backing table includes a `user_metadata` column (see the SQLBlob guide for schema requirements). Legacy tables without this column do not declare either capability.
 
-**Full support:** Local.
-
-**Near-full:** S3 and S3-PyArrow lack `ATOMIC_MOVE` (copy-then-delete
+**Near-full:** Local lacks `USER_METADATA` — passing non-empty `metadata=` raises `CapabilityNotSupported`. S3 and S3-PyArrow lack `ATOMIC_MOVE` (copy-then-delete
 semantics). SQLBlob lacks `LAZY_READ` — the entire blob is loaded into memory
 before a stream is returned. Writes also materialize the full stream before
 the SQL INSERT/UPDATE because BLOB columns require complete data.

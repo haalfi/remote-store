@@ -16,8 +16,8 @@ def demo(store):
     # --- Write from a BytesIO stream ---
     data = b"line1\nline2\nline3\nline4\nline5\n"
     stream = io.BytesIO(data)
-    store.write("streamed.txt", stream)
-    print("Wrote file from BytesIO stream.")
+    result = store.write("streamed.txt", stream)
+    print(f"Wrote {result.size} bytes from BytesIO stream.")
 
     # --- Read as a stream ---
     with store.read("streamed.txt") as reader:
@@ -28,7 +28,7 @@ def demo(store):
 
     # --- Chunked processing ---
     large_data = b"X" * 10_000
-    store.write("large.bin", large_data)
+    result = store.write("large.bin", large_data)
 
     with store.read("large.bin") as reader:
         total = 0
@@ -39,11 +39,11 @@ def demo(store):
                 break
             total += len(chunk)
             chunk_count += 1
-    print(f"\nRead large.bin in {chunk_count} chunk(s), {total} bytes total.")
+    print(f"\nRead large.bin in {chunk_count} chunk(s), {total}/{result.size} bytes total.")
 
     # --- Write bytes directly ---
-    store.write("direct.txt", b"Written as raw bytes")
-    print(f"\nDirect write: {store.read_bytes('direct.txt').decode()}")
+    result = store.write("direct.txt", b"Written as raw bytes")
+    print(f"\nDirect write ({result.size} bytes): {store.read_bytes('direct.txt').decode()}")
 
 
 if __name__ == "__main__":

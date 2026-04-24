@@ -7,17 +7,7 @@ same capability model — so existing knowledge transfers directly.
 ## Quick start
 
 ```python
-import asyncio
-from remote_store.aio import AsyncStore
-from remote_store.backends import LocalBackend
-
-async def main():
-    async with AsyncStore(LocalBackend(root="/data"), root_path="reports") as store:
-        await store.write("summary.txt", b"Q1 results", overwrite=True)
-        data = await store.read_bytes("summary.txt")
-        print(data.decode())
-
-asyncio.run(main())
+--8<-- "examples/snippets/write_integrity_async.py:async-quick-start"
 ```
 
 Any sync `Backend` (Local, S3, SFTP, Azure, Memory) is auto-wrapped via
@@ -45,17 +35,20 @@ into memory in a single call:
 text = await store.read_text("config.yaml")
 ```
 
+## Write results and metadata
+
+`write()` and `write_atomic()` return a [`WriteResult`](api/models.md) carrying at minimum
+the written path and size. Backends that declare `WRITE_RESULT_NATIVE` also populate
+`digest`, `etag`, and `last_modified` from the upload response. Both methods accept an optional
+`metadata=` keyword argument (a `Mapping[str, str]`) for backends that declare
+`USER_METADATA`; others raise `CapabilityNotSupported` if non-empty metadata is passed.
+
 ## Writing with async iterators
 
 `write()` and `write_atomic()` accept `bytes` or `AsyncIterator[bytes]`:
 
 ```python
-async def generate_report():
-    yield b"header\n"
-    yield b"row1\n"
-    yield b"row2\n"
-
-await store.write("report.csv", generate_report())
+--8<-- "examples/snippets/write_integrity_async.py:async-iterator-write"
 ```
 
 ## Child stores
@@ -82,8 +75,8 @@ store = AsyncStore(S3Backend(bucket="uploads", anon=False))
 @app.post("/upload/{filename}")
 async def upload(filename: str, file: UploadFile):
     data = await file.read()
-    await store.write(filename, data, overwrite=True)
-    return {"stored": filename}
+    result = await store.write(filename, data, overwrite=True)
+    return {"stored": filename, "size": result.size}
 
 @app.get("/download/{filename}")
 async def download(filename: str):
@@ -161,9 +154,18 @@ calls `aclose()` on exit.
   without materialisation.
 - **`asyncio` only** — trio and anyio are not supported.
 
+## Async write helpers
+
+`remote_store.aio.ext.write` provides `write_with_hash` for async stores: it streams the
+content through a client-side hash, writes it, and returns a `WriteResult` with `digest`
+populated regardless of whether the backend declares `WRITE_RESULT_NATIVE`. This is the
+async counterpart of `remote_store.ext.write.write_with_hash`. See the
+[Write Integrity](write-integrity.md) guide for usage examples and the full async API.
+
 ## See also
 
 - [API reference](api/aio.md) — `AsyncStore`, `AsyncBackend`, `AsyncAzureBackend`, `SyncBackendAdapter`
+- [Async-Sync Bridges](async-sync-bridges.md) — `AsyncBackendSyncAdapter` for calling an async backend from sync code
 - [Azure Backend](backends/azure.md) — sync Azure backend configuration and usage
 - [Health Check](health-check.md) — `ping()` and `check_health()` details
 - [Concurrency](concurrency.md) — thread safety, atomicity, and `overwrite=False` semantics

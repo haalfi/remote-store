@@ -5,6 +5,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-162 — Fix 16 documentation gaps from Audit-011 (v0.23.0+)**
+  Fixed all 16 findings from `sdd/audits/audit-011-docs-v023-gaps.md` across 4 commits:
+  (1) custom-backend guide + snippet: corrected `write()`/`write_atomic()` return types,
+  added `metadata=` kwarg, `WriteResult` import, and new capability descriptions
+  (USER_METADATA, WRITE_RESULT_NATIVE, LAZY_READ); (2) async.md: added Write Results
+  section, `aio.ext.write` prose, and Async-Sync Bridges cross-reference; extensions.md:
+  added `aio.ext.write` table row and `ext.write` imports to always-available block;
+  (3) capabilities-matrix.md and local.md: corrected USER_METADATA claim for Local;
+  s3.md and azure.md: added Write Results sections documenting WRITE_RESULT_NATIVE and
+  USER_METADATA; s3-pyarrow.md: fixed "fully interchangeable" claim; (4) getting-started
+  examples: all write calls now capture and use the returned `WriteResult`.
+
 - [x] **BK-159 — Audit handwritten docs for v0.23.0+ feature & API changes**
   Reviewed guides, tutorials, and examples against post-v0.23.0 API changes.
   16 findings: 3 Critical (custom-backend guide write methods return `None`

@@ -46,10 +46,11 @@ from remote_store import (
     NotFound,
     PermissionDenied,
     RemotePath,
+    WriteResult,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
     from contextlib import AbstractContextManager
 
     from remote_store._types import WritableContent
@@ -215,7 +216,14 @@ class RedisBackend(Backend):
     # -- Step 7: Writing ---------------------------------------------------
 
     # --8<-- [start:step7-writing]
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         if not path or path == ".":
             raise InvalidPath(
                 "Path must not be empty for file operations",
@@ -245,7 +253,16 @@ class RedisBackend(Backend):
         except redis.RedisError as exc:
             self._map_error(exc, path)
 
-    def write_atomic(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+        return WriteResult(path=RemotePath(path), size=len(raw))
+
+    def write_atomic(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         # Redis HSET is already atomic, but we didn't declare ATOMIC_WRITE.
         # Store will reject this call before it reaches us.
         # If you want to support it, declare the capability and implement here.
@@ -574,7 +591,14 @@ def _demo_partial_capabilities() -> None:
 
 def _demo_partial_write() -> None:
     # --8<-- [start:partial-write]
-    def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
+    def write(
+        self,
+        path: str,
+        content: WritableContent,
+        *,
+        overwrite: bool = False,
+        metadata: Mapping[str, str] | None = None,
+    ) -> WriteResult:
         raise CapabilityNotSupported(
             "HTTP backend is read-only",
             capability="write",
