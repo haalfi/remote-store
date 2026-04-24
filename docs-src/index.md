@@ -9,7 +9,7 @@ A Store is a logical folder.
 Where files live is configuration.
 
 remote-store provides a single interface for file storage across local
-filesystems, S3, SFTP, Azure, and more — using the libraries you would choose
+filesystems, S3, SFTP, Azure, and more, using the libraries you would choose
 yourself.
 
 ---
@@ -72,7 +72,7 @@ store.write_text("file.txt", "hello")
 print(store.read_text("file.txt"))  # same API, different backend
 ```
 
-Narrow scope with `child()` — all paths inside are relative to the new root:
+Narrow scope with `child()`; all paths inside are relative to the new root:
 
 ```python
 --8<-- "examples/snippets/homepage.py:child-scoping"
@@ -92,7 +92,7 @@ Extras like `[s3]` or `[sftp]` bring in only the backend you need.
 ### Proven libraries underneath
 
 Established libraries like `s3fs`, `paramiko`, and the Azure SDK do the
-real work — remote-store adapts, they execute.
+real work: remote-store adapts, they execute.
 Backends delegate to the packages you'd pick yourself.
 
 ### Backend-native when possible
@@ -107,7 +107,7 @@ natively, remote-store uses that. Where not, a portable fallback steps in.
 ### Extensions sit beside, not around
 
 Extensions like caching, observability, batch operations, and PyArrow
-integration — import what you need from `remote_store.ext`.
+integration: import what you need from `remote_store.ext`.
 Your Store code doesn't change.
 
 ---
@@ -148,8 +148,8 @@ See [Getting Started](getting-started.md) for a complete walkthrough.
 
 ## Where to go next
 
-- **[Getting Started](getting-started.md)** — install, tutorial, and runnable examples
-- **Guides** — [Backends](backends/index.md) · [Extensions](extensions.md) · [Choosing a Backend](choosing-a-backend.md) · [and more](data-lake-patterns.md)
-- **Reference** — [API](api/index.md) · [Capabilities Matrix](capabilities-matrix.md) · [Changelog](changelog.md)
-- **Explanation** — [Architecture](architecture.md) · [Performance](performance.md) · [Concurrency](concurrency.md)
+- **[Getting Started](getting-started.md):** install, tutorial, and runnable examples
+- **Guides:** [Backends](backends/index.md) · [Extensions](extensions.md) · [Choosing a Backend](choosing-a-backend.md) · [and more](data-lake-patterns.md)
+- **Reference:** [API](api/index.md) · [Capabilities Matrix](capabilities-matrix.md) · [Changelog](changelog.md)
+- **Explanation:** [Architecture](architecture.md) · [Performance](performance.md) · [Concurrency](concurrency.md)
 - **[Further Reading](further-reading.md)**

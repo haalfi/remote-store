@@ -96,7 +96,7 @@ with Registry(config) as registry:
 
 Switch from local to S3 by changing the config file. The application code stays the same:
 
-**Dev — local filesystem:**
+**Dev (local filesystem):**
 
 ```toml
 [backends.main]
@@ -108,7 +108,7 @@ backend = "main"
 root_path = "reports"
 ```
 
-**Production — S3:**
+**Production (S3):**
 
 ```toml
 [backends.main]
@@ -132,28 +132,28 @@ Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Crede
 
 ## Who this is for
 
-- **Platform and internal tooling teams** — provide one stable storage interface across environments
-- **Data engineering teams** — pipelines that run against local storage, S3, or SFTP depending on the environment
-- **Teams that include citizen developers** — analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
+- **Platform and internal tooling teams:** provide one stable storage interface across environments
+- **Data engineering teams:** pipelines that run against local storage, S3, or SFTP depending on the environment
+- **Teams that include citizen developers:** analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files
 - **Anyone tired of writing storage wrappers in every project**
 
 ## What you get
 
 - **One interface, many backends:** local filesystem, S3, SFTP, Azure, in-memory, and more
-- **Folder-scoped stores:** each Store is rooted at a folder — compose layouts with multiple stores or narrow scope with `child()`
+- **Folder-scoped stores:** each Store is rooted at a folder; compose layouts with multiple stores or narrow scope with `child()`
 - **Swap backends via config:** move between environments without changing code
 - **Streaming by default:** large files just work without blowing up memory
 - **Atomic writes where supported:** safer updates for file-producing workflows
 - **Async support:** `remote_store.aio` provides `AsyncStore` with coroutine methods; wrap any sync backend with `SyncBackendAdapter`
 - **Established libraries underneath:** `s3fs`, `paramiko`, etc. do the real work
 
-Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integrations for PyArrow, OpenTelemetry, and more.
+Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integrations for PyArrow, OpenTelemetry, and more. See [features](https://github.com/haalfi/remote-store/blob/master/FEATURES.md) for the full list.
 
 ## What it is not
 
 - Not a query engine (no SQL, no predicate pushdown)
 - Not a table format (no Delta Lake log, no Iceberg manifests)
-- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `pyarrow`, etc. — the libraries you'd pick anyway)
+- Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `pyarrow`, etc., the libraries you'd pick anyway)
 - Not a file-transfer server (no SFTP/FTP/WebDAV service such as [SFTPGo](https://github.com/drakkan/sftpgo))
 
 ## Supported Backends
@@ -163,17 +163,17 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 | Local filesystem | *(built-in)* | stdlib | Yes | Yes | Yes* |
 | Memory (in-process) | *(built-in)* | — | Yes | — | Yes |
 | HTTP/HTTPS (read-only) | *(built-in)* | stdlib | — | — | — |
-| Amazon S3 / MinIO | `remote-store[s3]` | `s3fs` | Yes | Yes | — (copy+delete) |
-| S3 (PyArrow) | `remote-store[s3-pyarrow]` | `pyarrow` + `s3fs` | Yes | Yes | — (copy+delete) |
-| SFTP / SSH | `remote-store[sftp]` | `paramiko` | Yes | — | —** |
-| Azure Blob / ADLS | `remote-store[azure]` | `azure-storage-file-datalake` | Yes | Yes | HNS: Yes / non-HNS: — |
-| SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | `sqlalchemy` | Yes | Yes | Yes |
-| SQL Query (read-only) | `remote-store[sql-query]` | `sqlalchemy` + `pyarrow` | — | — | — |
+| Amazon S3 / MinIO | `remote-store[s3]` | [`s3fs`](https://pypi.org/project/s3fs/) | Yes | Yes | — (copy+delete) |
+| S3 (PyArrow) | `remote-store[s3-pyarrow]` | [`pyarrow`](https://pypi.org/project/pyarrow/) + [`s3fs`](https://pypi.org/project/s3fs/) | Yes | Yes | — (copy+delete) |
+| SFTP / SSH | `remote-store[sftp]` | [`paramiko`](https://pypi.org/project/paramiko/) | Yes | — | —** |
+| Azure Blob / ADLS | `remote-store[azure]` | [`azure-storage-file-datalake`](https://pypi.org/project/azure-storage-file-datalake/) | Yes | Yes | HNS: Yes / non-HNS: — |
+| SQL Blob (SQLite, PostgreSQL, ...) | `remote-store[sql]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) | Yes | Yes | Yes |
+| SQL Query (read-only) | `remote-store[sql-query]` | [`sqlalchemy`](https://pypi.org/project/SQLAlchemy/) + [`pyarrow`](https://pypi.org/project/pyarrow/) | — | — | — |
 
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.
 
-All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available on all backends via `Store.read_seekable()`. See the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/) and [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
+All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available on all backends via `Store.read_seekable()`. See [features](https://github.com/haalfi/remote-store/blob/master/FEATURES.md), the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/), and the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
 
 ## Store API
 
@@ -209,11 +209,11 @@ Per-operation overhead is small relative to network round-trip time for most wor
 
 ## Extensions
 
-The core library handles storage operations. Extensions add optional capabilities on top — e.g. PyArrow integration, observability, caching, or bulk operations. All live in `remote_store.ext`; import only what you need.
+The core library handles storage operations. Extensions add optional capabilities on top: PyArrow integration, observability, caching, or bulk operations. All live in `remote_store.ext`; import only what you need.
 
 | Extension | Extra | What it does |
 |-----------|-------|-------------|
-| PyArrow adapter | `remote-store[arrow]` | Use any Store as a `pyarrow.fs.FileSystem` — works with Parquet, Pandas, Polars, DuckDB |
+| PyArrow adapter | `remote-store[arrow]` | Use any Store as a `pyarrow.fs.FileSystem`; works with Parquet, Pandas, Polars, DuckDB |
 | Parquet datasets | `remote-store[arrow]` | Managed Parquet datasets with manifests, `_SUCCESS` markers, and multi-part layouts |
 | Batch operations | *(none)* | Bulk delete, copy, and exists with error aggregation |
 | Transfer operations | *(none)* | Upload, download, and cross-store transfer with progress |
@@ -222,7 +222,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Caching middleware | *(none)* | TTL-based read cache with automatic invalidation on mutations |
 | Stream wrappers | *(none)* | Composable BinaryIO wrappers for progress tracking and checksums |
 | Integrity helpers | *(none)* | Checksum computation and verification over Store's public API |
-| Write helpers | *(none)* | Client-side content hashing for write operations — works on any backend |
+| Write helpers | *(none)* | Client-side content hashing for write operations, compatible with any backend |
 | Dagster IO manager | `remote-store[dagster]` | IOManager adapter + config-driven Store resource for Dagster pipelines |
 
 Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.
@@ -234,11 +234,11 @@ Storage behavior must be predictable and correct. We verify this across multiple
 - **Spec-driven development:** behavior specifications are the source of truth; tests link directly to them. *Prevents feature drift.*
 - **Extensive unit tests:** high coverage across all backends, focused on behavior. *Catches integration issues early.*
 - **Design by Contract:** pre/post conditions and invariants catch incorrect usage early. *Fails fast on misuse.*
-- **Property-based testing:** randomized input generation surfaces edge cases no hand-written test would find. *Finds blind spots.*
-- **Formal verification:** critical paths are proven correct in Dafny before implementation. *Eliminates logic errors.*
-- **Mutation testing:** gremlins modify the code; if they survive the tests, the tests have gaps. *Exposes weak test coverage.*
+- **Property-based testing:** randomized input generation via [Hypothesis](https://hypothesis.readthedocs.io/) surfaces edge cases no hand-written test would find. *Finds blind spots.*
+- **Formal verification:** critical paths are proven correct in [Dafny](https://dafny.org/) before implementation. *Eliminates logic errors.*
+- **Mutation testing:** [gremlins](https://pypi.org/project/pytest-gremlins/) modify the code; if they survive the tests, the tests have gaps. *Exposes weak test coverage.*
 - **Benchmarks:** performance tracked per operation and backend. *Provides baseline for optimization.*
-- **Examples and snippets:** runnable code in `examples/` and notebooks; docs are tested against actual behavior. *Keeps examples real.*
+- **Examples and snippets:** runnable code in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) and [notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks); docs are tested against actual behavior. *Keeps examples real.*
 
 ## Learn more
 
@@ -252,7 +252,7 @@ To explore `remote-store` beyond the Quick Start:
 
 There are several excellent Python libraries for file I/O across backends. Here is where `remote-store` sits:
 
-| | fsspec | smart_open | cloudpathlib | obstore | **remote-store** |
+| | [fsspec](https://pypi.org/project/fsspec/) | [smart_open](https://pypi.org/project/smart-open/) | [cloudpathlib](https://pypi.org/project/cloudpathlib/) | [obstore](https://pypi.org/project/obstore/) | **remote-store** |
 |---|---|---|---|---|---|
 | API surface | many methods | `open()` only | pathlib-style | ~10 methods | full Store API |
 | Backends | many filesystems | S3, GCS, Az, SFTP | S3, GCS, Azure | S3, GCS, Azure | Local, S3, SFTP, Az, Memory |
@@ -270,11 +270,11 @@ There are several excellent Python libraries for file I/O across backends. Here 
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/haalfi/remote-store/blob/master/CONTRIBUTING.md) for the spec-driven development workflow, code style, and how to add new backends.
+See [contributing](https://github.com/haalfi/remote-store/blob/master/CONTRIBUTING.md) for the spec-driven development workflow, code style, and how to add new backends.
 
 ## Security
 
-To report a vulnerability, please use [GitHub Security Advisories](https://github.com/haalfi/remote-store/security/advisories/new) instead of opening a public issue. See [SECURITY.md](https://github.com/haalfi/remote-store/blob/master/SECURITY.md) for details.
+To report a vulnerability, please use [GitHub Security Advisories](https://github.com/haalfi/remote-store/security/advisories/new) instead of opening a public issue. See [security](https://github.com/haalfi/remote-store/blob/master/SECURITY.md) for details.
 
 ## License
 
