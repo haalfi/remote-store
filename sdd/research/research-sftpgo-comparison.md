@@ -10,7 +10,7 @@ table and what design ideas are worth carrying back.
 ## 1. What SFTPGo Is
 
 [SFTPGo](https://github.com/drakkan/sftpgo) (Go, AGPL-3.0 + commercial) is a
-**standalone file-transfer server/daemon** — ~27 k GitHub stars as of this writing, actively
+**standalone file-transfer server/daemon** — ~12 k GitHub stars as of this writing, actively
 maintained. It sits in front of multiple storage backends and exposes them to
 end users via standard protocols: SFTP/SCP, FTPS, HTTP/S, and WebDAV. A REST
 API provides programmatic control; a web admin UI and web client handle human
