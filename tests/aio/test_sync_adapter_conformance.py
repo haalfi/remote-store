@@ -33,22 +33,13 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-# The ``local`` param is intentionally NOT marked ``os_sensitive``, even
-# though it exercises real-filesystem I/O (ripple-check rule in
-# ``sdd/CLAUDE-REFERENCE.md``). Reason: marking it surfaces a latent
-# pytest-asyncio 1.3 ↔ ``AsyncBackendSyncAdapter`` interaction --
-# ``pytest -m os_sensitive`` then selects both this file's ``async def``
-# tests and ``tests/test_snippets.py::TestAsyncSyncBridgesSnippets`` (which
-# instantiates an internal event loop via ``AsyncBackendSyncAdapter``), and
-# the combination leaks ``_UnixSelectorEventLoop`` + self-pipe sockets at
-# session teardown. ``filterwarnings = error`` (BK-158) then promotes the
-# ``ResourceWarning`` to a CI failure on the cross-platform Windows job.
-# The bug is not in this file -- the existing ``tests/aio/test_sync_adapter.py``
-# reproduces it identically when run alongside the snippet -- but it only
-# surfaces when the ``os_sensitive`` selection first selects a
-# pytest-asyncio async test. Tracked as ID-158 for investigation and fix.
-# Coverage: the Linux ``test`` matrix (py3.10-3.14) runs both params.
-@pytest.fixture(params=["memory", "local"], ids=["adapter-memory", "adapter-local"])
+@pytest.fixture(
+    params=[
+        "memory",
+        pytest.param("local", marks=pytest.mark.os_sensitive),
+    ],
+    ids=["adapter-memory", "adapter-local"],
+)
 def adapted_backend(request: pytest.FixtureRequest, tmp_path: Path) -> SyncBackendAdapter:
     """``SyncBackendAdapter`` wrapping either ``MemoryBackend`` or ``LocalBackend``."""
     if request.param == "memory":

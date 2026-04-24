@@ -99,6 +99,42 @@ def azurite_server() -> Iterator[str | None]:
     yield _AZURITE_CONN_STR
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _close_leaked_event_loops() -> Iterator[None]:
+    """Close any phantom event loops leaked by pytest-asyncio at session teardown.
+
+    pytest-asyncio 1.3 on Python 3.11 calls ``asyncio.get_event_loop()`` when
+    setting up each async test.  Python 3.11 auto-creates a new loop when none
+    is set (backward-compat behaviour) and stores it in the thread-local policy.
+    pytest-asyncio saves this phantom loop as ``old_loop`` and restores it as
+    the policy default after every async test's teardown.  When a subsequent
+    sync test calls ``asyncio.run()`` the phantom loop is orphaned: asyncio.run
+    replaces the policy default and then sets it to ``None`` without closing the
+    old one.  The loop's internal cyclic reference (``_read_from_self`` bound
+    method ↔ Handle) keeps it alive as cyclic garbage until the GC runs at
+    session teardown, where ``BaseEventLoop.__del__`` emits ``ResourceWarning``.
+    pytest turns that into ``PytestUnraisableExceptionWarning``; with
+    ``filterwarnings = error`` the session fails even though every test passed.
+
+    Closing all unclosed, non-running event loops here — before pytest's
+    ``gc_collect_harder()`` runs — prevents the warning.  Session fixtures
+    finalise before ``config._ensure_unconfigure()`` (which hosts
+    ``gc_collect_harder()``), so the timing guarantee holds.
+
+    Ref: ID-158.
+    """
+    import asyncio
+    import gc
+
+    yield
+    for obj in gc.get_objects():
+        try:
+            if isinstance(obj, asyncio.AbstractEventLoop) and not obj.is_running() and not obj.is_closed():
+                obj.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
 # -- Hypothesis profiles (dev=50, ci=100, nightly=1000) --
 # Activate via HYPOTHESIS_PROFILE env var (e.g. HYPOTHESIS_PROFILE=ci).
 settings.register_profile("dev", max_examples=50)
