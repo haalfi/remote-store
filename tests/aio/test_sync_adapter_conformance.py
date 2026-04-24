@@ -18,6 +18,7 @@ Spec: ASYNC-030 through ASYNC-035 (``sdd/specs/029-async-store-backend-api.md``)
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import TYPE_CHECKING
 
 import pytest
@@ -68,8 +69,13 @@ class TestAdapterStreamingRead:
     @pytest.mark.spec("ASYNC-033")
     async def test_read_closes_stream_on_early_break(self, adapted_backend: SyncBackendAdapter) -> None:
         await adapted_backend.write("big.bin", b"y" * (250 * 1024))
-        async for _ in adapted_backend.read("big.bin"):
-            break  # finally-block in adapter.read must close the sync stream
+        # ``async for`` does not call ``aclose`` on ``break`` -- use
+        # ``contextlib.aclosing`` for deterministic cleanup. Without it,
+        # the sync file handle stays open until GC, which on Windows
+        # blocks the subsequent ``delete`` with PermissionError.
+        async with contextlib.aclosing(adapted_backend.read("big.bin")) as stream:
+            async for _ in stream:
+                break  # finally-block in adapter.read must close the sync stream
         # Backend is reusable after early-break -- delete proves no lingering handle
         await adapted_backend.delete("big.bin")
         assert await adapted_backend.exists("big.bin") is False
