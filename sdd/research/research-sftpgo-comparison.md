@@ -106,7 +106,7 @@ runtime deps) do not translate to a Go network daemon — most cells would be
 
 The right place is a sentence in the **"What it is not"** section:
 
-> Not a file-transfer server (no SFTP/FTP/WebDAV service — see [SFTPGo](https://github.com/drakkan/sftpgo))
+> Not a file-transfer server (no SFTP/FTP/WebDAV service such as [SFTPGo](https://github.com/drakkan/sftpgo))
 
 This correctly frames the decision (different problem, not competing) without
 distorting the Python-library comparison.
