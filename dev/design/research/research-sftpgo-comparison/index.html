@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/rfcs/rfc-0005-code-deduplication/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/design/research/research-sftpgo-comparison/">
       
       
-        <link rel="prev" href="../rfc-0004-streaming-atomic-writes/">
+        <link rel="prev" href="../research-seekable-read/">
       
       
-        <link rel="next" href="../rfc-0006-naming-inconsistencies/">
+        <link rel="next" href="../research-sqlalchemy-backend/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>0005: Code Deduplication Analysis - remote-store</title>
+        <title>SFTPGo — Comparison and Design Insights - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#code-deduplication-analysis" class="md-skip">
+        <a href="#research-sftpgo-comparison-and-design-insights" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              0005: Code Deduplication Analysis
+              SFTPGo — Comparison and Design Insights
             
           </span>
         </div>
@@ -5746,8 +5746,6 @@
                 
   
   
-    
-  
   
   
     
@@ -5758,15 +5756,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_8" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_8" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../rfcs/" class="md-nav__link ">
               
   
   
@@ -5790,7 +5788,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_8_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_8_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -5808,7 +5806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -5836,7 +5834,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -5864,7 +5862,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -5892,7 +5890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -5900,6 +5898,969 @@
     
   
     0004: RFC-0004: Streaming Atomic Writes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005: Code Deduplication Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006: Naming Inconsistency Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007: Documentation Cross-Link Rules & Compliance Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008: RFC-0008: Parquet Dataset Storage Extension
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009: RFC-0009: Multi-Agent Orchestration for Complex Tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0010-graph-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010: RFC-0010: Microsoft Graph Backend (OneDrive, SharePoint, Teams Files)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0011-write-result/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011: RFC-0011: WriteResult — Native Write Metadata and Opt-In Hashing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_9" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5_9" id="__nav_5_5_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-async-store-api-round2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research Round 2: Async Store API vs Current Feature Surface (ID-013)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-async-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Async Store / Backend API (ID-013)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure PyArrow Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-backend-contract-completeness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend Contract Completeness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark Suite v2 — User-Decision Framing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-bug-prevention-beyond-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bug Prevention Beyond Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-dagster-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster Extension (ext.dagster, ID-075)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Depth-Limited Listing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-doc-content-longevity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation Content Longevity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-090 — Docs Landing Page
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-example-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example Testing Across Language Ecosystems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FastAPI Documentation & CI/CD Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Discoverability for Agents and Humans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Google-Style Docstring Migration & Zensical Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend Health Check (store.ping() / backend.check_health())
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-id-147-obs003-decomposition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OBS-003 Hand Decomposition (ID-147)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-id-147-tla-augmentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TLA+ Spec Augmentation (ID-147)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-id-147b-tla-poc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TLA+ PoC — WriteResult Spec Consistency (ID-147b)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging, Monitoring & Tracing for remote-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture: Medallion + Dagster Showcase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-openrouter-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenRouter.ai Integration for Claude Code Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read-Only HTTP Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    `resolve()` Specification Proposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy Configuration (ID-010)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-seekable-read/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seekable Read
   
 
     
@@ -5936,7 +6897,7 @@
   <span class="md-ellipsis">
     
   
-    0005: Code Deduplication Analysis
+    SFTPGo — Comparison and Design Insights
   
 
     
@@ -5954,7 +6915,7 @@
   <span class="md-ellipsis">
     
   
-    0005: Code Deduplication Analysis
+    SFTPGo — Comparison and Design Insights
   
 
     
@@ -5980,10 +6941,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#motivation" class="md-nav__link">
+  <a href="#1-what-sftpgo-is" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Motivation
+        1. What SFTPGo Is
       
     </span>
   </a>
@@ -5991,22 +6952,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-s3-backend-twins-highest-value" class="md-nav__link">
+  <a href="#2-fundamental-category-difference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. S3 backend twins (highest value)
+        2. Fundamental Category Difference
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. S3 backend twins (highest value)">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-design-insights-worth-carrying-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Design Insights Worth Carrying Back
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Design Insights Worth Carrying Back">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1a-identical-methods-copy-paste-verbatim" class="md-nav__link">
+  <a href="#31-unified-folder-structure-across-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1a. Identical methods — copy-paste verbatim
+        3.1 Unified Folder Structure Across Backends
       
     </span>
   </a>
@@ -6014,10 +6986,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1b-near-identical-methods" class="md-nav__link">
+  <a href="#32-richer-hook-taxonomy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1b. Near-identical methods
+        3.2 Richer Hook Taxonomy
       
     </span>
   </a>
@@ -6025,10 +6997,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#proposed-extraction-_s3_basepy" class="md-nav__link">
+  <a href="#33-transparent-encryption-at-rest" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Proposed extraction: _s3_base.py
+        3.3 Transparent Encryption at Rest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-per-path-quota-and-permission-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Per-Path Quota and Permission Layers
       
     </span>
   </a>
@@ -6041,300 +7024,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-cross-backend-error-boilerplate" class="md-nav__link">
+  <a href="#4-readme-comparison-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Cross-backend error boilerplate
+        4. README Comparison Table
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="2. Cross-backend error boilerplate">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#2a-error-factory-helpers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2a. Error factory helpers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2b-classify_by_message-fallback-not-primary-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2b. classify_by_message() — fallback, not primary path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2c-shared-listing-error-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2c. Shared listing-error context manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-fileinfo-construction-helpers" class="md-nav__link">
+  <a href="#5-references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. FileInfo construction helpers
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. FileInfo construction helpers">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proposed-extraction-backends_fileinfopy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Proposed extraction: backends/_fileinfo.py
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-stream-wrapper-boilerplate-extstreamspy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Stream wrapper boilerplate (ext/streams.py)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Stream wrapper boilerplate (ext/streams.py)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proposed-extraction-_streamwrapper-base" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Proposed extraction: _StreamWrapper base
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-batch-operation-executor-extbatchpy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Batch operation executor (ext/batch.py)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Batch operation executor (ext/batch.py)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proposed-extraction-generic-_run_batch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Proposed extraction: generic _run_batch()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-optional-dependency-import-guards" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Optional-dependency import guards
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Optional-dependency import guards">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#outcome-_require_extra-dropped" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Outcome: _require_extra() dropped
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-deprecated-alias-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Deprecated alias pattern
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="7. Deprecated alias pattern">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proposed-extraction-_deprecated_alias-decorator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Proposed extraction: _deprecated_alias() decorator
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-store-movecopy-duplication" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Store move/copy duplication
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="8. Store move/copy duplication">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#assessment-not-worth-extracting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Assessment: not worth extracting
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#prioritized-implementation-plan" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prioritized implementation plan
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Prioritized implementation plan">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phasing-rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phasing rationale
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#test-impact" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Test impact
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backward-compatibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backward compatibility
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#spec-impact" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Spec impact
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-this-proposal-does-not-cover" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What this proposal does NOT cover
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-requested" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision requested
+        5. References
       
     </span>
   </a>
@@ -6357,968 +7061,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rfc-0006-naming-inconsistencies/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0006: Naming Inconsistency Analysis
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rfc-0007-doc-cross-links/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0007: Documentation Cross-Link Rules & Compliance Audit
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rfc-0008-parquet-dataset-storage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0008: RFC-0008: Parquet Dataset Storage Extension
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rfc-0009-multi-agent-orchestration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0009: RFC-0009: Multi-Agent Orchestration for Complex Tasks
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rfc-0010-graph-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0010: RFC-0010: Microsoft Graph Backend (OneDrive, SharePoint, Teams Files)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../rfc-0011-write-result/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0011: RFC-0011: WriteResult — Native Write Metadata and Opt-In Hashing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_9" >
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Research
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_5_5_9" id="__nav_5_5_9_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_5_9">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Research
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-async-store-api-round2/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Research Round 2: Async Store API vs Current Feature Surface (ID-013)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Async Store / Backend API (ID-013)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Azure PyArrow Optimization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-backend-contract-completeness/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend Contract Completeness
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Benchmark Suite v2 — User-Decision Framing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Bug Prevention Beyond Testing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Dagster Extension (ext.dagster, ID-075)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Depth-Limited Listing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-doc-content-longevity/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Documentation Content Longevity
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ID-090 — Docs Landing Page
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Example Testing Across Language Ecosystems
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FastAPI Documentation & CI/CD Patterns
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-feature-discoverability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Discoverability for Agents and Humans
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Google-Style Docstring Migration & Zensical Evaluation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend Health Check (store.ping() / backend.check_health())
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147-obs003-decomposition/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OBS-003 Hand Decomposition (ID-147)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147-tla-augmentation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TLA+ Spec Augmentation (ID-147)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147b-tla-poc/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TLA+ PoC — WriteResult Spec Consistency (ID-147b)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Logging, Monitoring & Tracing for remote-store
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Architecture: Medallion + Dagster Showcase
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-openrouter-integration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OpenRouter.ai Integration for Claude Code Workflow
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Read-Only HTTP Backend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    `resolve()` Specification Proposal
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy Configuration (ID-010)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable Read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-sftpgo-comparison/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SFTPGo — Comparison and Design Insights
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -7346,7 +7089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -7374,7 +7117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -7402,7 +7145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -7430,7 +7173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -7458,7 +7201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -9023,10 +8766,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#motivation" class="md-nav__link">
+  <a href="#1-what-sftpgo-is" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Motivation
+        1. What SFTPGo Is
       
     </span>
   </a>
@@ -9034,22 +8777,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-s3-backend-twins-highest-value" class="md-nav__link">
+  <a href="#2-fundamental-category-difference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. S3 backend twins (highest value)
+        2. Fundamental Category Difference
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. S3 backend twins (highest value)">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-design-insights-worth-carrying-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Design Insights Worth Carrying Back
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Design Insights Worth Carrying Back">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1a-identical-methods-copy-paste-verbatim" class="md-nav__link">
+  <a href="#31-unified-folder-structure-across-backends" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1a. Identical methods — copy-paste verbatim
+        3.1 Unified Folder Structure Across Backends
       
     </span>
   </a>
@@ -9057,10 +8811,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1b-near-identical-methods" class="md-nav__link">
+  <a href="#32-richer-hook-taxonomy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1b. Near-identical methods
+        3.2 Richer Hook Taxonomy
       
     </span>
   </a>
@@ -9068,10 +8822,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#proposed-extraction-_s3_basepy" class="md-nav__link">
+  <a href="#33-transparent-encryption-at-rest" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Proposed extraction: _s3_base.py
+        3.3 Transparent Encryption at Rest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-per-path-quota-and-permission-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Per-Path Quota and Permission Layers
       
     </span>
   </a>
@@ -9084,300 +8849,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-cross-backend-error-boilerplate" class="md-nav__link">
+  <a href="#4-readme-comparison-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Cross-backend error boilerplate
+        4. README Comparison Table
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="2. Cross-backend error boilerplate">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#2a-error-factory-helpers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2a. Error factory helpers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2b-classify_by_message-fallback-not-primary-path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2b. classify_by_message() — fallback, not primary path
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2c-shared-listing-error-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2c. Shared listing-error context manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-fileinfo-construction-helpers" class="md-nav__link">
+  <a href="#5-references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. FileInfo construction helpers
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. FileInfo construction helpers">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proposed-extraction-backends_fileinfopy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Proposed extraction: backends/_fileinfo.py
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-stream-wrapper-boilerplate-extstreamspy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Stream wrapper boilerplate (ext/streams.py)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Stream wrapper boilerplate (ext/streams.py)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proposed-extraction-_streamwrapper-base" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Proposed extraction: _StreamWrapper base
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-batch-operation-executor-extbatchpy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Batch operation executor (ext/batch.py)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Batch operation executor (ext/batch.py)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proposed-extraction-generic-_run_batch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Proposed extraction: generic _run_batch()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-optional-dependency-import-guards" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Optional-dependency import guards
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Optional-dependency import guards">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#outcome-_require_extra-dropped" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Outcome: _require_extra() dropped
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-deprecated-alias-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Deprecated alias pattern
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="7. Deprecated alias pattern">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proposed-extraction-_deprecated_alias-decorator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Proposed extraction: _deprecated_alias() decorator
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-store-movecopy-duplication" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Store move/copy duplication
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="8. Store move/copy duplication">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#assessment-not-worth-extracting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Assessment: not worth extracting
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#prioritized-implementation-plan" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prioritized implementation plan
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Prioritized implementation plan">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phasing-rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phasing rationale
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#test-impact" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Test impact
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#backward-compatibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backward compatibility
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#spec-impact" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Spec impact
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-this-proposal-does-not-cover" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What this proposal does NOT cover
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-requested" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision requested
+        5. References
       
     </span>
   </a>
@@ -9401,535 +8887,142 @@
 
 
 
-<h1 id="code-deduplication-analysis">Code Deduplication Analysis<a class="headerlink" href="#code-deduplication-analysis" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-03-19
-<strong>Status:</strong> Accepted (Phases 1–4 implemented via BK-011, BK-012)</p>
+<h1 id="research-sftpgo-comparison-and-design-insights">Research: SFTPGo — Comparison and Design Insights<a class="headerlink" href="#research-sftpgo-comparison-and-design-insights" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-04-24
+<strong>Context:</strong> External project survey. Not tied to a backlog item.
+Prompted by the question of whether SFTPGo belongs in the README comparison
+table and what design ideas are worth carrying back.</p>
 <hr />
-<h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
-<p>With v0.18.0 shipped (ProxyStore, ext.streams, ext.integrity), the
-codebase has matured enough that structural duplication is now the
-dominant maintenance risk.  Six backends (1,092 lines across the two S3 backends) and
-14 extensions share patterns that were copy-pasted and drifted
-independently.  This proposal catalogues the duplication, groups it by
-extraction strategy, and proposes a phased plan.</p>
+<h2 id="1-what-sftpgo-is">1. What SFTPGo Is<a class="headerlink" href="#1-what-sftpgo-is" title="Permanent link">&para;</a></h2>
+<p><a href="https://github.com/drakkan/sftpgo">SFTPGo</a> (Go, AGPL-3.0 + commercial) is a
+<strong>standalone file-transfer server/daemon</strong> — ~12 k GitHub stars as of this writing, actively
+maintained. It sits in front of multiple storage backends and exposes them to
+end users via standard protocols: SFTP/SCP, FTPS, HTTP/S, and WebDAV. A REST
+API provides programmatic control; a web admin UI and web client handle human
+access.</p>
+<p>Supported storage backends: local filesystem (plain and encrypted), S3-compatible
+(AWS, MinIO, DigitalOcean Spaces, …), Google Cloud Storage, Azure Blob, and
+remote SFTP servers.</p>
+<p>Key architectural concepts:</p>
+<ul>
+<li><strong>Users &amp; Groups</strong> — individual accounts with per-user protocol restrictions
+  and quota limits; groups simplify bulk administration.</li>
+<li><strong>Virtual folders</strong> — storage-agnostic mount points that map any backend to
+  a user-visible path; a single user can have <code>/docs</code> on S3 and <code>/archive</code> on
+  Azure simultaneously.</li>
+<li><strong>Data providers</strong> — pluggable persistence for configuration state (MySQL,
+  PostgreSQL, CockroachDB, SQLite, memory); enables multi-instance deployments
+  with a shared database.</li>
+<li><strong>Event manager</strong> — comprehensive hook system with synchronous pre-hooks
+  (blocking) and asynchronous post-hooks firing webhooks or external programs.</li>
+</ul>
 <hr />
-<h2 id="1-s3-backend-twins-highest-value">1. S3 backend twins (highest value)<a class="headerlink" href="#1-s3-backend-twins-highest-value" title="Permanent link">&para;</a></h2>
-<p><code>_s3.py</code> (502 lines) and <code>_s3_pyarrow.py</code> (590 lines) share an s3fs
-code path for <strong>all listing, metadata, and error handling</strong> — the
-PyArrow backend only diverges for read/write I/O and copy (which route
-through <code>pyarrow.fs</code>).</p>
-<h3 id="1a-identical-methods-copy-paste-verbatim">1a. Identical methods — copy-paste verbatim<a class="headerlink" href="#1a-identical-methods-copy-paste-verbatim" title="Permanent link">&para;</a></h3>
+<h2 id="2-fundamental-category-difference">2. Fundamental Category Difference<a class="headerlink" href="#2-fundamental-category-difference" title="Permanent link">&para;</a></h2>
+<p>SFTPGo and remote-store occupy different categories:</p>
 <table>
 <thead>
 <tr>
-<th>Method</th>
-<th><code>_s3.py</code> lines</th>
-<th><code>_s3_pyarrow.py</code> lines</th>
-<th>Diff</th>
+<th>Dimension</th>
+<th>SFTPGo</th>
+<th>remote-store</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>list_files()</code></td>
-<td>192--214</td>
-<td>263--285</td>
-<td><code>self._fs</code> vs <code>self._s3fs</code></td>
+<td>Kind</td>
+<td>Network daemon</td>
+<td>In-process Python library</td>
 </tr>
 <tr>
-<td><code>list_folders()</code></td>
-<td>216--232</td>
-<td>287--303</td>
-<td>same</td>
+<td>Client access</td>
+<td>SFTP, FTP, HTTP, WebDAV</td>
+<td>Python API only</td>
 </tr>
 <tr>
-<td><code>iter_children()</code></td>
-<td>234--253</td>
-<td>305--324</td>
-<td>same</td>
+<td>Multi-tenancy</td>
+<td>Native (per-user quotas, ACLs)</td>
+<td>Application must implement</td>
 </tr>
 <tr>
-<td><code>glob()</code></td>
-<td>255--263</td>
-<td>326--334</td>
-<td>same</td>
+<td>Auth</td>
+<td>Built-in (MFA, LDAP, AD, SSH keys)</td>
+<td>Delegated to application</td>
 </tr>
 <tr>
-<td><code>get_folder_info()</code> stats loop</td>
-<td>286--306</td>
-<td>352--372</td>
-<td>pragma comments</td>
+<td>Language</td>
+<td>Go</td>
+<td>Python</td>
 </tr>
 <tr>
-<td><code>_classify_error()</code></td>
-<td>414--423</td>
-<td>561--570</td>
-<td>pragma; identical logic</td>
+<td>Deployment</td>
+<td>Run as service, Docker, k8s</td>
+<td><code>pip install</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>~155 duplicated lines</strong> in truly identical methods.</p>
-<h3 id="1b-near-identical-methods">1b. Near-identical methods<a class="headerlink" href="#1b-near-identical-methods" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Method</th>
-<th>Difference</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>_info_to_fileinfo()</code></td>
-<td><strong>Functional divergence:</strong> S3Backend extracts ETag (21 lines); S3PyArrowBackend omits it entirely (17 lines).  The mixin cannot own this method without parameterizing ETag extraction — see design note below.</td>
-</tr>
-<tr>
-<td><code>_errors()</code> / <code>_s3fs_errors()</code></td>
-<td>Identical body.  PyArrow adds a second <code>_pyarrow_errors()</code> for the OSError branch.</td>
-</tr>
-<tr>
-<td><code>move()</code> / <code>copy()</code></td>
-<td>Identical existence checks; PyArrow splits error context around <code>_pa_fs.copy_file()</code>.</td>
-</tr>
-<tr>
-<td><code>_s3_path()</code></td>
-<td>Verbatim identical.</td>
-</tr>
-<tr>
-<td><code>delete_folder()</code></td>
-<td>Same non-empty check via <code>self._s3fs.ls()</code>.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="proposed-extraction-_s3_basepy">Proposed extraction: <code>_s3_base.py</code><a class="headerlink" href="#proposed-extraction-_s3_basepy" title="Permanent link">&para;</a></h3>
-<p>A private base class <strong><code>_S3Base</code></strong> (not a mixin — it carries state
-via the abstract property) that owns:</p>
+<p>They are <strong>not mutually exclusive</strong>: a team could run SFTPGo to handle protocol
+clients (external parties, SFTP partners) while using remote-store internally
+for application-layer storage operations against the same S3 bucket.</p>
+<hr />
+<h2 id="3-design-insights-worth-carrying-back">3. Design Insights Worth Carrying Back<a class="headerlink" href="#3-design-insights-worth-carrying-back" title="Permanent link">&para;</a></h2>
+<h3 id="31-unified-folder-structure-across-backends">3.1 Unified Folder Structure Across Backends<a class="headerlink" href="#31-unified-folder-structure-across-backends" title="Permanent link">&para;</a></h3>
+<p>SFTPGo's virtual-folder model mounts distinct backends at explicit path prefixes:
+<code>/docs</code> → S3, <code>/archive</code> → Azure. Each prefix maps to exactly one backend; there
+is no fallthrough.</p>
+<p><strong>ID-121 CompositeStore</strong> is a different concept: it presents a <em>single unified
+folder structure</em> where all tiers share the same key space. Reads fall through
+tiers in order (hot → warm → archive) until the key is found; writes go to the
+primary tier only. An optional <code>match=</code> pattern can dispatch paths to specific
+tiers, but the default is deterministic fallthrough — the caller sees one store
+and never knows which tier answered.</p>
+<p>The SFTPGo model is therefore not a close analog: path-prefix mounting is a
+layout decision (different subtrees live on different backends), while
+CompositeStore is a resolution strategy (the same key may exist on any tier,
+and priority determines which one wins). There is no current remote-store
+counterpart to SFTPGo's path-prefix mounting — that remains a possible future
+direction if demand materialises.</p>
+<h3 id="32-richer-hook-taxonomy">3.2 Richer Hook Taxonomy<a class="headerlink" href="#32-richer-hook-taxonomy" title="Permanent link">&para;</a></h3>
+<p>SFTPGo distinguishes a fine-grained set of events:
+<code>pre_upload</code>, <code>post_upload</code>, <code>post_download</code>, <code>post_delete</code>, <code>post_rename</code>,
+<code>pre_login</code>, <code>post_login</code>, <code>post_connect</code>, <code>post_disconnect</code>, <code>data_retention</code>,
+<code>check_password</code>, <code>external_auth</code>, <code>keyboard_interactive</code>, <code>startup</code>.</p>
+<p>Pre-<em> hooks run synchronously (blocking); post-</em> hooks run asynchronously. Our
+<code>ext.observe</code> fires a single <code>on_operation</code> callback with an operation enum. If
+we ever formalize the observability contract beyond the current ad-hoc callback,
+SFTPGo's taxonomy is a practical reference for the event vocabulary.</p>
+<h3 id="33-transparent-encryption-at-rest">3.3 Transparent Encryption at Rest<a class="headerlink" href="#33-transparent-encryption-at-rest" title="Permanent link">&para;</a></h3>
+<p>SFTPGo supports an encrypted local-filesystem variant (AES-256-GCM, key from
+env or secret manager) as a first-class backend. remote-store has no analog.
+A wrapping backend that encrypts/decrypts transparently — independent of the
+underlying storage — could be a useful extension, particularly for local or
+SQL backends where the storage layer itself provides no encryption.</p>
+<h3 id="34-per-path-quota-and-permission-layers">3.4 Per-Path Quota and Permission Layers<a class="headerlink" href="#34-per-path-quota-and-permission-layers" title="Permanent link">&para;</a></h3>
+<p>SFTPGo enforces per-directory quotas and permission overrides at the
+storage-service layer, not in application code. This is a natural fit for a
+multi-tenant server. For remote-store, equivalent policy would live in
+application code or in a future middleware layer — no immediate action, but
+worth flagging if a policy/middleware item is ever designed.</p>
+<hr />
+<h2 id="4-readme-comparison-table">4. README Comparison Table<a class="headerlink" href="#4-readme-comparison-table" title="Permanent link">&para;</a></h2>
+<p>SFTPGo does <strong>not</strong> belong in the existing comparison table. Every entry in
+that table (<code>fsspec</code>, <code>smart_open</code>, <code>cloudpathlib</code>, <code>obstore</code>) is a Python
+in-process library. The table dimensions (API surface, streaming I/O, async,
+runtime deps) do not translate to a Go network daemon — most cells would be
+<code>—</code> with footnotes, which would mislead a reader choosing a Python library.</p>
+<p>The right place is a sentence in the <strong>"What it is not"</strong> section:</p>
+<blockquote>
+<p>Not a file-transfer server (no SFTP/FTP/WebDAV service such as <a href="https://github.com/drakkan/sftpgo">SFTPGo</a>)</p>
+</blockquote>
+<p>This correctly frames the decision (different problem, not competing) without
+distorting the Python-library comparison.</p>
+<hr />
+<h2 id="5-references">5. References<a class="headerlink" href="#5-references" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>_s3_path()</code>, <code>to_key()</code>, <code>native_path()</code></li>
-<li><code>list_files()</code>, <code>list_folders()</code>, <code>iter_children()</code>, <code>glob()</code></li>
-<li><code>get_folder_info()</code> stats-accumulation loop</li>
-<li><code>_classify_error()</code></li>
-<li><code>_s3fs_errors()</code> context manager</li>
+<li><a href="https://github.com/drakkan/sftpgo">https://github.com/drakkan/sftpgo</a></li>
+<li><a href="https://docs.sftpgo.com/">https://docs.sftpgo.com/</a></li>
+<li>ID-121 — CompositeStore (research complete)</li>
+<li><code>ext.observe</code> — <code>remote_store/ext/observe.py</code></li>
 </ul>
-<p><strong>Property contract:</strong> The base defines an abstract property that both
-backends must implement:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">_S3Base</span><span class="p">(</span><span class="n">Backend</span><span class="p">):</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="nd">@abstractmethod</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_s3fs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">s3fs</span><span class="o">.</span><span class="n">S3FileSystem</span><span class="p">:</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the s3fs filesystem instance.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="o">...</span>
-</code></pre></div>
-<p><code>S3Backend</code> adds a one-line property alias (<code>_s3fs = property(lambda
-self: self._fs)</code>).  <code>S3PyArrowBackend</code> already uses <code>_s3fs</code>
-internally — no change needed.</p>
-<p><strong><code>_info_to_fileinfo()</code> design:</strong> The base class provides the common
-path/size/datetime logic.  ETag extraction is handled by an overridable
-hook:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># In _S3Base</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">_info_to_fileinfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileInfo</span><span class="p">:</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">_name_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">size</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;size&quot;</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Size&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">0</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">modified</span> <span class="o">=</span> <span class="n">_normalize_modified</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;LastModified&quot;</span><span class="p">,</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;last_modified&quot;</span><span class="p">)))</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">etag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_etag</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>  <span class="c1"># overridable</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="k">return</span> <span class="n">FileInfo</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">RemotePath</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">),</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                    <span class="n">modified_at</span><span class="o">=</span><span class="n">modified</span><span class="p">,</span> <span class="n">etag</span><span class="o">=</span><span class="n">etag</span><span class="p">)</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">_extract_etag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Override to suppress or customize ETag extraction.</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">    The base class defaults to extracting ETag because that&#39;s the</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">    common case (S3Backend + any future s3fs-based backend).</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">    S3PyArrowBackend overrides to return None because PyArrow&#39;s</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">    read path doesn&#39;t use s3fs metadata.</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">raw</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ETag&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;etag&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="k">return</span> <span class="n">_clean_etag</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="c1"># S3PyArrowBackend overrides:</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">_extract_etag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>    <span class="k">return</span> <span class="kc">None</span>
-</code></pre></div>
-<p>Both backends inherit the base class and provide only their divergent
-pieces:</p>
-<table>
-<thead>
-<tr>
-<th><code>S3Backend</code> keeps</th>
-<th><code>S3PyArrowBackend</code> keeps</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>_s3fs</code> property alias (one-liner)</td>
-<td><code>_s3fs</code> + <code>_pa_fs</code> properties</td>
-</tr>
-<tr>
-<td><code>read()</code>, <code>write()</code> via s3fs</td>
-<td><code>read()</code>, <code>write()</code> via PyArrow</td>
-</tr>
-<tr>
-<td><code>move()</code>, <code>copy()</code> single error ctx</td>
-<td><code>move()</code>, <code>copy()</code> split error ctx</td>
-</tr>
-<tr>
-<td>—</td>
-<td><code>_pyarrow_errors()</code></td>
-</tr>
-<tr>
-<td><code>_head_to_fileinfo()</code>, digest helpers</td>
-<td><code>_extract_etag()</code> override (returns None)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Estimated savings:</strong> ~130 net lines removed (gross ~150, plus ~20
-lines for the base class itself), single maintenance point for listing
-logic, error classification, and FileInfo construction.</p>
-<p><strong>Backward compatibility:</strong> The MRO of both backends changes (new base
-class inserted).  <code>isinstance(backend, S3Backend)</code> still works.
-<code>type(backend).__mro__</code> gains <code>_S3Base</code> — low risk, but worth noting
-for anyone doing MRO introspection.</p>
-<p><strong>Test impact:</strong> Both S3 test suites have independent fixture setups
-(moto mocking).  The conformance suite covers all public operations,
-so the mixin extraction is guarded by existing tests.  No test
-restructuring is expected — both test modules continue to
-instantiate their concrete backend class.</p>
-<p><strong>Spec impact:</strong> No spec references internal backend method names
-(<code>_classify_error</code>, <code>_info_to_fileinfo</code>, etc.).  Specs reference
-public <code>Store</code> operations and capability names only.</p>
-<hr />
-<h2 id="2-cross-backend-error-boilerplate">2. Cross-backend error boilerplate<a class="headerlink" href="#2-cross-backend-error-boilerplate" title="Permanent link">&para;</a></h2>
-<p>Every backend implements the same four-layer exception cascade:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">yield</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">except</span> <span class="n">RemoteStoreError</span><span class="p">:</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">raise</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">except</span> <span class="ne">PermissionError</span><span class="p">:</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">raise</span> <span class="n">PermissionDenied</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="k">raise</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classify_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
-</code></pre></div>
-<p>And every <code>_classify_error()</code> does string-matching on the exception
-message for <code>"404"</code>, <code>"403"</code>, <code>"connect"</code>, etc.</p>
-<h3 id="2a-error-factory-helpers">2a. Error factory helpers<a class="headerlink" href="#2a-error-factory-helpers" title="Permanent link">&para;</a></h3>
-<p>Add to <code>_errors.py</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">not_found</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NotFound</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">return</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">permission_denied</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PermissionDenied</span><span class="p">:</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">return</span> <span class="n">PermissionDenied</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Permission denied: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="2b-classify_by_message-fallback-not-primary-path">2b. <code>classify_by_message()</code> — fallback, not primary path<a class="headerlink" href="#2b-classify_by_message-fallback-not-primary-path" title="Permanent link">&para;</a></h3>
-<p>The string-matching heuristic (<code>"404"</code>, <code>"403"</code>, etc.) is a code smell
-being promoted to shared infrastructure.  Design it as a <strong>fallback</strong>
-that backends can override with structured classification:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">classify_by_message</span><span class="p">(</span><span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemoteStoreError</span><span class="p">:</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Heuristic fallback classifier.  Backends with structured SDK</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="sd">    errors (e.g. botocore ClientError.response[&#39;Error&#39;][&#39;Code&#39;])</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="sd">    should classify those first and only call this for unrecognised</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="sd">    exceptions.&quot;&quot;&quot;</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">msg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="k">if</span> <span class="s2">&quot;404&quot;</span> <span class="ow">in</span> <span class="n">msg</span> <span class="ow">or</span> <span class="s2">&quot;not found&quot;</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="k">return</span> <span class="n">not_found</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="p">)</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="k">if</span> <span class="s2">&quot;403&quot;</span> <span class="ow">in</span> <span class="n">msg</span> <span class="ow">or</span> <span class="s2">&quot;access denied&quot;</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>        <span class="k">return</span> <span class="n">permission_denied</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="p">)</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">kw</span> <span class="ow">in</span> <span class="n">msg</span> <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;endpoint&quot;</span><span class="p">,</span> <span class="s2">&quot;connect&quot;</span><span class="p">,</span> <span class="s2">&quot;timeout&quot;</span><span class="p">,</span> <span class="s2">&quot;dns&quot;</span><span class="p">)):</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>        <span class="k">return</span> <span class="n">BackendUnavailable</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="k">return</span> <span class="n">RemoteStoreError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
-</code></pre></div>
-<p>Backends retain their own <code>_classify_error()</code> methods, which dispatch
-on SDK-specific exception types first (e.g., <code>botocore ClientError</code>
-error codes, Azure <code>HttpResponseError.status_code</code>, paramiko exception
-classes) and fall through to <code>classify_by_message()</code> only for
-unrecognised exceptions.  This makes the shared helper a safety net,
-not the canonical classification strategy.</p>
-<h3 id="2c-shared-listing-error-context-manager">2c. Shared listing-error context manager<a class="headerlink" href="#2c-shared-listing-error-context-manager" title="Permanent link">&para;</a></h3>
-<p>A generic <code>listing_errors()</code> context manager in the backend package
-that handles the "missing folder returns empty iterator" convention:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nd">@contextmanager</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">listing_errors</span><span class="p">(</span><span class="n">classifier</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="k">yield</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="k">except</span> <span class="n">RemoteStoreError</span><span class="p">:</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="k">raise</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="k">return</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="k">except</span> <span class="ne">PermissionError</span><span class="p">:</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>        <span class="k">raise</span> <span class="n">permission_denied</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>        <span class="k">raise</span> <span class="n">classifier</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
-</code></pre></div>
-<p><strong>Estimated savings:</strong> ~70 net lines across 5 writable backends
-(gross ~80, minus ~10 for the shared module), and a single place to
-add new exception mappings.</p>
-<hr />
-<h2 id="3-fileinfo-construction-helpers">3. FileInfo construction helpers<a class="headerlink" href="#3-fileinfo-construction-helpers" title="Permanent link">&para;</a></h2>
-<p>Five methods across four backends contain the same datetime/name/etag
-normalization:</p>
-<table>
-<thead>
-<tr>
-<th>Backend</th>
-<th>Method</th>
-<th>Lines</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>_s3.py</code></td>
-<td><code>_info_to_fileinfo()</code></td>
-<td>425--445</td>
-</tr>
-<tr>
-<td><code>_s3.py</code></td>
-<td><code>_head_to_fileinfo()</code></td>
-<td>455--480</td>
-</tr>
-<tr>
-<td><code>_s3_pyarrow.py</code></td>
-<td><code>_info_to_fileinfo()</code></td>
-<td>572--588</td>
-</tr>
-<tr>
-<td><code>_azure.py</code></td>
-<td><code>_props_to_fileinfo()</code></td>
-<td>764--791</td>
-</tr>
-<tr>
-<td><code>_http.py</code></td>
-<td>response-to-FileInfo</td>
-<td>546--580</td>
-</tr>
-</tbody>
-</table>
-<p>Common sub-patterns:</p>
-<ul>
-<li><strong>Name from path:</strong> <code>path.rsplit("/", 1)[-1] if "/" in path else path</code> —
-  appears 6+ times.</li>
-<li><strong>Timezone normalization:</strong> parse string, add UTC if naive, fallback to
-  <code>now(UTC)</code> — appears 5 times.</li>
-<li><strong>ETag cleaning:</strong> <code>raw.strip('"').lower()</code> — appears 3 times.</li>
-</ul>
-<h3 id="proposed-extraction-backends_fileinfopy">Proposed extraction: <code>backends/_fileinfo.py</code><a class="headerlink" href="#proposed-extraction-backends_fileinfopy" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_name_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">path</span> <span class="k">else</span> <span class="n">path</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">_normalize_modified</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="n">value</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="k">return</span> <span class="n">value</span> <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">_clean_etag</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="k">return</span> <span class="n">raw</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
-</code></pre></div>
-<p><strong>Estimated savings:</strong> ~40 net lines, plus elimination of the
-copy-paste drift risk (e.g., <code>_s3_pyarrow</code> already dropped ETag
-silently).</p>
-<hr />
-<h2 id="4-stream-wrapper-boilerplate-extstreamspy">4. Stream wrapper boilerplate (<code>ext/streams.py</code>)<a class="headerlink" href="#4-stream-wrapper-boilerplate-extstreamspy" title="Permanent link">&para;</a></h2>
-<p>All four stream classes (<code>ProgressReader</code>, <code>ProgressWriter</code>,
-<code>ChecksumReader</code>, <code>ChecksumWriter</code>) repeat identical:</p>
-<ul>
-<li><code>close()</code> — 3 lines x 4 = 12 lines</li>
-<li><code>__enter__</code> / <code>__exit__</code> — 9 lines x 4 = 36 lines</li>
-<li><code>__getattr__</code> — 2 lines x 4 = 8 lines</li>
-</ul>
-<p><strong>56 lines of pure boilerplate.</strong></p>
-<h3 id="proposed-extraction-_streamwrapper-base">Proposed extraction: <code>_StreamWrapper</code> base<a class="headerlink" href="#proposed-extraction-_streamwrapper-base" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">_StreamWrapper</span><span class="p">:</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Base for composable BinaryIO wrappers.&quot;&quot;&quot;</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">_inner</span><span class="p">:</span> <span class="n">BinaryIO</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>        <span class="k">return</span> <span class="bp">self</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">exc</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inner</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-</code></pre></div>
-<p>Each subclass provides only its data-path methods (<code>read</code>, <code>write</code>,
-<code>readline</code>, <code>hexdigest</code>, etc.).</p>
-<p><strong>Estimated savings:</strong> ~35 net lines (gross ~40, minus ~5 for the base
-class).  Also makes adding new wrappers trivial (e.g., a <code>TeeReader</code>
-or <code>ThrottleWriter</code>).</p>
-<hr />
-<h2 id="5-batch-operation-executor-extbatchpy">5. Batch operation executor (<code>ext/batch.py</code>)<a class="headerlink" href="#5-batch-operation-executor-extbatchpy" title="Permanent link">&para;</a></h2>
-<p><code>batch_delete()</code> and <code>batch_copy()</code> each implement both sequential and
-concurrent paths with identical:</p>
-<ul>
-<li>Error collection into <code>succeeded</code> / <code>failed</code> dicts</li>
-<li><code>CapabilityNotSupported</code> re-raise</li>
-<li><code>ThreadPoolExecutor</code> lifecycle</li>
-<li>Logging of results</li>
-</ul>
-<p>~160 lines of near-identical scaffolding.</p>
-<h3 id="proposed-extraction-generic-_run_batch">Proposed extraction: generic <code>_run_batch()</code><a class="headerlink" href="#proposed-extraction-generic-_run_batch" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_run_batch</span><span class="p">(</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">items</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="kc">None</span><span class="p">],</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">max_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">stop_on_error</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BatchResult</span><span class="p">:</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="o">...</span>
-</code></pre></div>
-<p>Each batch function reduces to validation + one call to <code>_run_batch()</code>.</p>
-<p><strong>Estimated savings:</strong> ~65 net lines (gross ~80, minus ~15 for the
-generic function).</p>
-<hr />
-<h2 id="6-optional-dependency-import-guards">6. Optional-dependency import guards<a class="headerlink" href="#6-optional-dependency-import-guards" title="Permanent link">&para;</a></h2>
-<p>Five extensions repeat the same try/except pattern:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">some_package</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">except</span> <span class="ne">ModuleNotFoundError</span> <span class="k">as</span> <span class="n">_exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="k">raise</span> <span class="ne">ModuleNotFoundError</span><span class="p">(</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="s2">&quot;... is required ... Install with: pip install &#39;remote-store[...]&#39;&quot;</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">_exc</span>
-</code></pre></div>
-<p>Three of the five sites import specific names (<code>from pydantic import
-SecretStr</code>, <code>from dagster import IOManager</code>), not just the module
-itself.</p>
-<h3 id="outcome-_require_extra-dropped">Outcome: <code>_require_extra()</code> dropped<a class="headerlink" href="#outcome-_require_extra-dropped" title="Permanent link">&para;</a></h3>
-<p>The void-guard approach triggers ruff E402 (module-level import not at
-top of file) for all subsequent imports after the function call.
-Suppressing E402 across multiple lines is noisier than the original
-try/except.  <strong>Import guards remain as-is.</strong></p>
-<hr />
-<h2 id="7-deprecated-alias-pattern">7. Deprecated alias pattern<a class="headerlink" href="#7-deprecated-alias-pattern" title="Permanent link">&para;</a></h2>
-<p>Three extensions (<code>pydantic.py</code>, <code>dagster.py</code>, <code>cache.py</code>) have
-identical deprecation wrappers from BK-010.</p>
-<h3 id="proposed-extraction-_deprecated_alias-decorator">Proposed extraction: <code>_deprecated_alias()</code> decorator<a class="headerlink" href="#proposed-extraction-_deprecated_alias-decorator" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_deprecated_alias</span><span class="p">(</span><span class="n">old_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">new_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">T</span><span class="p">]:</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">new_fn</span><span class="p">)</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">old_name</span><span class="si">}</span><span class="s2">() is deprecated, use </span><span class="si">{</span><span class="n">new_fn</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">() instead&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>            <span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="p">)</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        <span class="k">return</span> <span class="n">new_fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">wrapper</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">old_name</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="k">return</span> <span class="n">wrapper</span>
-</code></pre></div>
-<p><strong>Location:</strong> <code>ext/_helpers.py</code> (alongside <code>_require_extra()</code>).</p>
-<p><strong>Estimated savings:</strong> ~25 net lines across 3 files.  Also makes
-future renames zero-effort.</p>
-<hr />
-<h2 id="8-store-movecopy-duplication">8. <code>Store</code> move/copy duplication<a class="headerlink" href="#8-store-movecopy-duplication" title="Permanent link">&para;</a></h2>
-<p><code>Store.move()</code> (lines 394--423) and <code>Store.copy()</code> (lines 425--454)
-share identical logic: capability check, path validation,
-same-path short-circuit, delegation, logging.  Only the method name
-and log string differ.</p>
-<h3 id="assessment-not-worth-extracting">Assessment: not worth extracting<a class="headerlink" href="#assessment-not-worth-extracting" title="Permanent link">&para;</a></h3>
-<p>The two methods are 30 lines each, adjacent, and readable.  A generic
-<code>_path_operation()</code> helper would save ~15 lines but add indirection.
-<strong>Leave as-is</strong> unless a third path-to-path operation appears.</p>
-<hr />
-<h2 id="prioritized-implementation-plan">Prioritized implementation plan<a class="headerlink" href="#prioritized-implementation-plan" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Phase</th>
-<th>Scope</th>
-<th>Net savings</th>
-<th>Risk</th>
-<th>Backlog ID</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>1</strong></td>
-<td>S3 base class + error factories + FileInfo helpers</td>
-<td>~240 lines</td>
-<td>Medium — MRO change, abstract property contract</td>
-<td>BK-011 (done, PR #242)</td>
-</tr>
-<tr>
-<td><strong>2</strong></td>
-<td><code>_StreamWrapper</code> base</td>
-<td>~35 lines</td>
-<td>Low</td>
-<td>BK-012 (done, PR #243)</td>
-</tr>
-<tr>
-<td><strong>3</strong></td>
-<td><code>_run_batch()</code> generic executor</td>
-<td>~65 lines</td>
-<td>Low — tests already comprehensive</td>
-<td>BK-012 (done, PR #243)</td>
-</tr>
-<tr>
-<td><strong>4</strong></td>
-<td><code>ext/_helpers.py</code>: <code>_deprecated_alias()</code></td>
-<td>~25 lines</td>
-<td>Low</td>
-<td>BK-012 (done, PR #243)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Total estimated net reduction: ~385 lines</strong> (~6.4% of the 6,031
-lines in the analysed files).  Gross reduction ~455 lines, offset by
-~70 lines for the new shared modules.</p>
-<h3 id="phasing-rationale">Phasing rationale<a class="headerlink" href="#phasing-rationale" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Phase 1</strong> bundles the tightly coupled pieces: the S3 base class
-  needs the error factories (Phase 2 originally) and FileInfo helpers
-  (Phase 3 originally).  One PR, one review cycle.  The diff will be
-  large (~5 backend files, 2--3 new modules), so structure it as
-  stacked commits for reviewability: (1) <code>_fileinfo.py</code> helpers,
-  (2) error factories in <code>_errors.py</code>, (3) <code>_S3Base</code> extraction.</li>
-<li><strong>Phases 2--4</strong> are independent leaves; batch into a single second
-  PR.</li>
-</ul>
-<h3 id="test-impact">Test impact<a class="headerlink" href="#test-impact" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Phase 1 (S3 base):</strong> Both S3 test suites instantiate their
-  concrete backend class over moto fixtures.  The conformance suite
-  covers all public operations, so the extraction is guarded by
-  existing tests.  No fixture restructuring expected.</li>
-<li><strong>Phases 2--4:</strong> Pure internal refactors with full test coverage.
-  No new test files needed.</li>
-</ul>
-<h3 id="backward-compatibility">Backward compatibility<a class="headerlink" href="#backward-compatibility" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Phase 1:</strong> Both S3 backends gain <code>_S3Base</code> in their MRO.
-  <code>isinstance()</code> checks still pass.  No public API change.</li>
-<li><strong>Phases 2--4:</strong> Internal only.  No public API surface affected.</li>
-</ul>
-<h3 id="spec-impact">Spec impact<a class="headerlink" href="#spec-impact" title="Permanent link">&para;</a></h3>
-<p>No specs reference internal backend method names (<code>_classify_error</code>,
-<code>_info_to_fileinfo</code>, <code>_s3fs_errors</code>, etc.).  Specs reference public
-<code>Store</code> operations and capability names only.  No spec updates needed.</p>
-<h3 id="what-this-proposal-does-not-cover">What this proposal does NOT cover<a class="headerlink" href="#what-this-proposal-does-not-cover" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>ProxyStore override boilerplate</strong> in <code>observe.py</code> / <code>cache.py</code>:
-  both override ~9 identical method signatures with different wrapping
-  logic.  A mixin or code-gen approach could help, but the semantic
-  difference (timing hooks vs cache lookup) makes a shared abstraction
-  fragile.  Revisit after the async API work (ID-013) settles the
-  method surface.</li>
-<li><strong><code>Store</code> logging boilerplate</strong> (29 structured log calls): a
-  <code>_log_op()</code> helper could eliminate repetition, but the current
-  approach is explicit and grep-friendly.  Not worth the indirection.</li>
-</ul>
-<hr />
-<h2 id="decision-requested">Decision requested<a class="headerlink" href="#decision-requested" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Phase 1 bundles S3 base + error factories + FileInfo helpers into
-   one PR.  Phases 2--4 as separate PRs, or batch them?</li>
-<li>Naming: <code>_s3_base.py</code> for the base class module.  Agreed?</li>
-<li>Confirmed: <code>_require_extra()</code> and <code>_deprecated_alias()</code> go in
-   <code>ext/_helpers.py</code>.</li>
-</ol>
 
 
 
