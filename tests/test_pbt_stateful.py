@@ -7,6 +7,8 @@ a simple Python dict at every step.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from hypothesis import strategies as st
 from hypothesis.stateful import RuleBasedStateMachine, rule
@@ -28,66 +30,71 @@ _path = st.lists(_segment, min_size=1, max_size=3).map("/".join)
 _content = st.binary(min_size=0, max_size=100)
 
 
-def _implicit_dirs(files: dict[str, bytes]) -> set[str]:
-    """Return the set of implicit directory paths from existing files."""
-    dirs: set[str] = set()
-    for path in files:
-        parts = path.split("/")
-        for i in range(1, len(parts)):
-            dirs.add("/".join(parts[:i]))
-    return dirs
-
-
-def _can_write(path: str, files: dict[str, bytes]) -> bool:
-    """Return True if *path* can be written without a file/directory conflict."""
-    if path in _implicit_dirs(files):
-        return False
+def _ancestors(path: str) -> list[str]:
+    """Ancestor directory paths of *path* (``"a/b/c"`` → ``["a", "a/b"]``)."""
     parts = path.split("/")
-    return all("/".join(parts[:i]) not in files for i in range(1, len(parts)))
+    return ["/".join(parts[:i]) for i in range(1, len(parts))]
+
+
+def _can_write(path: str, files: dict[str, bytes], dirs: set[str]) -> bool:
+    """Return True if *path* can be written without a file/directory conflict."""
+    if path in dirs:
+        return False
+    return all(a not in files for a in _ancestors(path))
 
 
 class BackendModel(RuleBasedStateMachine):
-    """MemoryBackend must behave like a simple dict[str, bytes]."""
+    """MemoryBackend must behave like a dict[str, bytes] + explicit dirs set.
+
+    Live directory nodes are tracked separately from the file map because
+    ``MemoryBackend.delete()`` does not auto-prune ancestor ``_DirNode`` entries
+    (spec MEM-DS-006): an empty directory persists until ``delete_folder()``.
+    Deriving dirs from the live file map would forget that and diverge from the
+    backend on a ``write('a/b') → delete('a/b') → write('a')`` sequence
+    (BUG-183).
+    """
 
     def __init__(self) -> None:
         super().__init__()
         self.backend = MemoryBackend()
         self.model: dict[str, bytes] = {}
+        self.dirs: set[str] = set()
 
     @rule(path=_path, data=_content)
     def write_new(self, path: str, data: bytes) -> None:
         """Write to a path that should not exist yet."""
-        if path in self.model or not _can_write(path, self.model):
+        if path in self.model or not _can_write(path, self.model, self.dirs):
             return  # skip — conflict
         self.backend.write(path, data)
         self.model[path] = data
+        self.dirs.update(_ancestors(path))
 
     @rule(path=_path, data=_content)
     def write_overwrite(self, path: str, data: bytes) -> None:
         """Write with overwrite=True (creates or overwrites)."""
-        if not _can_write(path, self.model) and path not in self.model:
+        if path not in self.model and not _can_write(path, self.model, self.dirs):
             return  # skip — directory/file conflict
-        if path in self.model or _can_write(path, self.model):
-            self.backend.write(path, data, overwrite=True)
-            self.model[path] = data
+        self.backend.write(path, data, overwrite=True)
+        self.model[path] = data
+        self.dirs.update(_ancestors(path))
 
     @rule(path=_path)
     def read_bytes(self, path: str) -> None:
         """read_bytes must match the model."""
-        if path in _implicit_dirs(self.model):
+        if path in self.dirs:
             return  # skip — reading a directory raises InvalidPath, not NotFound
         if path in self.model:
             result = self.backend.read_bytes(path)
             assert result == self.model[path], f"Content mismatch for {path!r}"
         else:
-            with pytest.raises(remote_store._errors.NotFound, match=__import__("re").escape(path)):
+            with pytest.raises(remote_store._errors.NotFound, match=re.escape(path)):
                 self.backend.read_bytes(path)
 
     @rule(path=_path)
     def exists(self, path: str) -> None:
-        """exists returns True for files AND implicit directories."""
+        """exists returns True for files AND live directories."""
         is_file = path in self.model
-        is_dir = path in _implicit_dirs(self.model)
+        is_dir = path in self.dirs
         assert self.backend.exists(path) == (is_file or is_dir)
 
     @rule(path=_path)
@@ -97,7 +104,11 @@ class BackendModel(RuleBasedStateMachine):
 
     @rule(path=_path)
     def delete(self, path: str) -> None:
-        """Delete a file that exists in the model."""
+        """Delete a file that exists in the model.
+
+        Per MEM-DS-006, ``delete()`` does not prune ancestor dir nodes, so
+        ``self.dirs`` is left untouched here.
+        """
         if path in self.model:
             self.backend.delete(path)
             del self.model[path]
@@ -105,7 +116,7 @@ class BackendModel(RuleBasedStateMachine):
     @rule(path=_path)
     def delete_missing_ok(self, path: str) -> None:
         """Delete with missing_ok=True never raises."""
-        if path in _implicit_dirs(self.model):
+        if path in self.dirs:
             return  # skip — deleting a directory path is a different operation
         self.backend.delete(path, missing_ok=True)
         self.model.pop(path, None)
@@ -126,3 +137,27 @@ class BackendModel(RuleBasedStateMachine):
 TestBackendModel = BackendModel.TestCase
 TestBackendModel.__module__ = __name__
 TestBackendModel = pytest.mark.pbt(TestBackendModel)
+
+
+@pytest.mark.pbt
+def test_bug183_empty_dir_persists_after_file_delete() -> None:
+    """Regression: model must track empty dir nodes left by ``delete()``.
+
+    Before BUG-183, the model derived implicit dirs from the live file map, so
+    after ``write('0/0') → delete('0/0')`` the dir node ``'0'`` vanished from
+    the model while the backend retained it (spec MEM-DS-006). The next
+    ``write_new('0')`` then tripped the backend's file/dir conflict check and
+    escaped the rule guard as ``InvalidPath``. The fix tracks dirs in a
+    separate set that ``delete()`` deliberately does not touch.
+    """
+    m = BackendModel()
+    m.write_new(path="0/0", data=b"")
+    m.delete(path="0/0")
+
+    assert m.backend.is_folder("0"), "backend should retain the empty dir node"
+    assert "0" in m.dirs, "model should retain the empty dir node"
+
+    # Must be skipped by the rule guard, not reach the backend and raise.
+    m.write_new(path="0", data=b"")
+    assert "0" not in m.model
+    assert not m.backend.is_file("0")
