@@ -43,21 +43,36 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-183 — `MemoryBackend` retains ghost directory after last file deleted**
-  Hypothesis (`test_pbt_stateful.py::TestBackendModel`) found a consistent
-  reproduction: write `0/0`, delete `0/0`, then any of write/read/delete/exists
-  on `0` fails or returns wrong results because the parent directory entry `0`
-  is never cleaned up after its last child is removed.
-  Repro:
+- [ ] **BUG-183 — PBT model in `test_pbt_stateful.py` does not track empty directory nodes**
+  Hypothesis (`test_pbt_stateful.py::TestBackendModel`) flags the sequence
+  write `0/0` → delete `0/0` → write/read/exists on `0` as failures. The
+  defect is in `BackendModel`, not in `MemoryBackend`.
+
+  `BackendModel` derives `_implicit_dirs` by scanning the current live-file
+  dict (lines 31–38). After `delete('0/0')`, no files remain under `0`, so
+  the model concludes `0` does not exist and `_can_write('0', {})` returns
+  True. The backend, however, still holds a `_DirNode('0')` — the specified
+  behavior per MEM-DS-006 ("`delete()` does not auto-prune parent `_DirNode`;
+  the empty folder persists until explicitly removed via `delete_folder()`").
+  `LocalBackend.delete()` behaves identically (`Path.unlink()`, no ancestor
+  traversal). The backend is correct; the model is not.
+
+  Fix: update `BackendModel` to track directory nodes as a separate set, not
+  derived from the file dict. `write_new(path)` adds all ancestor dirs to the
+  set; `delete(path)` removes the file but leaves ancestor dirs (matching
+  MEM-DS-006); `delete_folder(path)` removes the dir entry. The `_can_write`,
+  `exists`, `read_bytes`, and `delete_missing_ok` rules must then consult this
+  set rather than inferring dirs from live files.
+
+  Repro (Hypothesis-minimised):
   ```
   state.write_new(path='0/0', data=b'')
   state.delete(path='0/0')
-  state.write_new(path='0', data=b'')  # raises InvalidPath: '0' exists as a directory
+  state.write_new(path='0', data=b'')  # model thinks OK, backend raises InvalidPath
   ```
-  Root cause in `src/remote_store/backends/_memory.py`: `delete()` removes the
-  file key but does not prune empty ancestor directories from the directory
-  index. Fix: after deleting a file, walk its ancestor paths and remove any
-  directory entries that have no remaining children.
+  Spec refs: MEM-DS-006, MEM-016 (`sdd/specs/013-memory-backend.md`);
+  `guides/backends/memory.md:55`.
+  No change to `_memory.py` or any spec — the backend is correct.
 
 - [ ] **BUG-182 — (Candidate) Verify HNS `write_atomic` metadata survives rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
