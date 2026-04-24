@@ -8911,7 +8911,7 @@
 <p>A Store is a logical folder.
 Where files live is configuration.</p>
 <p>remote-store provides a single interface for file storage across local
-filesystems, S3, SFTP, Azure, and more — using the libraries you would choose
+filesystems, S3, SFTP, Azure, and more, using the libraries you would choose
 yourself.</p>
 <hr />
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
@@ -8966,7 +8966,7 @@ yourself.</p>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">store</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;hello&quot;</span><span class="p">)</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">))</span>  <span class="c1"># same API, different backend</span>
 </code></pre></div>
-<p>Narrow scope with <code>child()</code> — all paths inside are relative to the new root:</p>
+<p>Narrow scope with <code>child()</code>; all paths inside are relative to the new root:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">sub</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">child</span><span class="p">(</span><span class="s2">&quot;reports/2024&quot;</span><span class="p">)</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">sub</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;summary.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span>
 </code></pre></div>
@@ -8978,7 +8978,7 @@ yourself.</p>
 Extras like <code>[s3]</code> or <code>[sftp]</code> bring in only the backend you need.</p>
 <h3 id="proven-libraries-underneath">Proven libraries underneath<a class="headerlink" href="#proven-libraries-underneath" title="Permanent link">&para;</a></h3>
 <p>Established libraries like <code>s3fs</code>, <code>paramiko</code>, and the Azure SDK do the
-real work — remote-store adapts, they execute.
+real work: remote-store adapts, they execute.
 Backends delegate to the packages you'd pick yourself.</p>
 <h3 id="backend-native-when-possible">Backend-native when possible<a class="headerlink" href="#backend-native-when-possible" title="Permanent link">&para;</a></h3>
 <p><code>glob()</code> and atomic writes work everywhere. Where the backend supports them
@@ -8990,7 +8990,7 @@ natively, remote-store uses that. Where not, a portable fallback steps in.</p>
 </code></pre></div>
 <h3 id="extensions-sit-beside-not-around">Extensions sit beside, not around<a class="headerlink" href="#extensions-sit-beside-not-around" title="Permanent link">&para;</a></h3>
 <p>Extensions like caching, observability, batch operations, and PyArrow
-integration — import what you need from <code>remote_store.ext</code>.
+integration: import what you need from <code>remote_store.ext</code>.
 Your Store code doesn't change.</p>
 <hr />
 <h2 id="bring-your-own">Bring your own<a class="headerlink" href="#bring-your-own" title="Permanent link">&para;</a></h2>
@@ -9022,10 +9022,10 @@ extension. The hooks are public.</p>
 <hr />
 <h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="getting-started/">Getting Started</a></strong> — install, tutorial, and runnable examples</li>
-<li><strong>Guides</strong> — <a href="backends/">Backends</a> · <a href="extensions/">Extensions</a> · <a href="choosing-a-backend/">Choosing a Backend</a> · <a href="data-lake-patterns/">and more</a></li>
-<li><strong>Reference</strong> — <a href="api/">API</a> · <a href="capabilities-matrix/">Capabilities Matrix</a> · <a href="changelog/">Changelog</a></li>
-<li><strong>Explanation</strong> — <a href="architecture/">Architecture</a> · <a href="performance/">Performance</a> · <a href="concurrency/">Concurrency</a></li>
+<li><strong><a href="getting-started/">Getting Started</a>:</strong> install, tutorial, and runnable examples</li>
+<li><strong>Guides:</strong> <a href="backends/">Backends</a> · <a href="extensions/">Extensions</a> · <a href="choosing-a-backend/">Choosing a Backend</a> · <a href="data-lake-patterns/">and more</a></li>
+<li><strong>Reference:</strong> <a href="api/">API</a> · <a href="capabilities-matrix/">Capabilities Matrix</a> · <a href="changelog/">Changelog</a></li>
+<li><strong>Explanation:</strong> <a href="architecture/">Architecture</a> · <a href="performance/">Performance</a> · <a href="concurrency/">Concurrency</a></li>
 <li><strong><a href="further-reading/">Further Reading</a></strong></li>
 </ul>
 

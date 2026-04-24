@@ -8998,7 +8998,7 @@ use a Registry with declarative config:</p>
 </code></pre></div>
 <h3 id="same-code-different-environment">Same code, different environment<a class="headerlink" href="#same-code-different-environment" title="Permanent link">&para;</a></h3>
 <p>Switch from local to S3 by changing the config file. The application code stays the same:</p>
-<p><strong>Dev — local filesystem:</strong></p>
+<p><strong>Dev (local filesystem):</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">[backends.main]</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;local&quot;</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;/tmp/data&quot;</span><span class="w"> </span><span class="p">}</span>
@@ -9007,7 +9007,7 @@ use a Registry with declarative config:</p>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;main&quot;</span>
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;reports&quot;</span>
 </code></pre></div>
-<p><strong>Production — S3:</strong></p>
+<p><strong>Production (S3):</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[backends.main]</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3&quot;</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">bucket</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;analytics-data&quot;</span><span class="w"> </span><span class="p">}</span>
@@ -9025,27 +9025,27 @@ use a Registry with declarative config:</p>
 <p>Configuration supports TOML, YAML, Pydantic BaseSettings, and plain dicts. Credentials are automatically masked in <code>repr()</code>/<code>str()</code> to prevent leakage in logs.</p>
 <h2 id="who-this-is-for">Who this is for<a class="headerlink" href="#who-this-is-for" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Platform and internal tooling teams</strong> — provide one stable storage interface across environments</li>
-<li><strong>Data engineering teams</strong> — pipelines that run against local storage, S3, or SFTP depending on the environment</li>
-<li><strong>Teams that include citizen developers</strong> — analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files</li>
+<li><strong>Platform and internal tooling teams:</strong> provide one stable storage interface across environments</li>
+<li><strong>Data engineering teams:</strong> pipelines that run against local storage, S3, or SFTP depending on the environment</li>
+<li><strong>Teams that include citizen developers:</strong> analysts and domain experts who write Python shouldn't need to learn cloud SDKs just to read and write files</li>
 <li><strong>Anyone tired of writing storage wrappers in every project</strong></li>
 </ul>
 <h2 id="what-you-get">What you get<a class="headerlink" href="#what-you-get" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>One interface, many backends:</strong> local filesystem, S3, SFTP, Azure, in-memory, and more</li>
-<li><strong>Folder-scoped stores:</strong> each Store is rooted at a folder — compose layouts with multiple stores or narrow scope with <code>child()</code></li>
+<li><strong>Folder-scoped stores:</strong> each Store is rooted at a folder; compose layouts with multiple stores or narrow scope with <code>child()</code></li>
 <li><strong>Swap backends via config:</strong> move between environments without changing code</li>
 <li><strong>Streaming by default:</strong> large files just work without blowing up memory</li>
 <li><strong>Atomic writes where supported:</strong> safer updates for file-producing workflows</li>
 <li><strong>Async support:</strong> <code>remote_store.aio</code> provides <code>AsyncStore</code> with coroutine methods; wrap any sync backend with <code>SyncBackendAdapter</code></li>
 <li><strong>Established libraries underneath:</strong> <code>s3fs</code>, <code>paramiko</code>, etc. do the real work</li>
 </ul>
-<p>Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integrations for PyArrow, OpenTelemetry, and more.</p>
+<p>Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integrations for PyArrow, OpenTelemetry, and more. See <a href="https://github.com/haalfi/remote-store/blob/master/FEATURES.md">features</a> for the full list.</p>
 <h2 id="what-it-is-not">What it is not<a class="headerlink" href="#what-it-is-not" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Not a query engine (no SQL, no predicate pushdown)</li>
 <li>Not a table format (no Delta Lake log, no Iceberg manifests)</li>
-<li>Not a filesystem reimplementation (delegates to <code>s3fs</code>, <code>paramiko</code>, <code>pyarrow</code>, etc. — the libraries you'd pick anyway)</li>
+<li>Not a filesystem reimplementation (delegates to <code>s3fs</code>, <code>paramiko</code>, <code>pyarrow</code>, etc., the libraries you'd pick anyway)</li>
 <li>Not a file-transfer server (no SFTP/FTP/WebDAV service such as <a href="https://github.com/drakkan/sftpgo">SFTPGo</a>)</li>
 </ul>
 <h2 id="supported-backends">Supported Backends<a class="headerlink" href="#supported-backends" title="Permanent link">&para;</a></h2>
@@ -9088,7 +9088,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>Amazon S3 / MinIO</td>
 <td><code>remote-store[s3]</code></td>
-<td><code>s3fs</code></td>
+<td><a href="https://pypi.org/project/s3fs/"><code>s3fs</code></a></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">— (copy+delete)</td>
@@ -9096,7 +9096,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>S3 (PyArrow)</td>
 <td><code>remote-store[s3-pyarrow]</code></td>
-<td><code>pyarrow</code> + <code>s3fs</code></td>
+<td><a href="https://pypi.org/project/pyarrow/"><code>pyarrow</code></a> + <a href="https://pypi.org/project/s3fs/"><code>s3fs</code></a></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">— (copy+delete)</td>
@@ -9104,7 +9104,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>SFTP / SSH</td>
 <td><code>remote-store[sftp]</code></td>
-<td><code>paramiko</code></td>
+<td><a href="https://pypi.org/project/paramiko/"><code>paramiko</code></a></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—**</td>
@@ -9112,7 +9112,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>Azure Blob / ADLS</td>
 <td><code>remote-store[azure]</code></td>
-<td><code>azure-storage-file-datalake</code></td>
+<td><a href="https://pypi.org/project/azure-storage-file-datalake/"><code>azure-storage-file-datalake</code></a></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">HNS: Yes / non-HNS: —</td>
@@ -9120,7 +9120,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>SQL Blob (SQLite, PostgreSQL, ...)</td>
 <td><code>remote-store[sql]</code></td>
-<td><code>sqlalchemy</code></td>
+<td><a href="https://pypi.org/project/SQLAlchemy/"><code>sqlalchemy</code></a></td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
 <td style="text-align: center;">Yes</td>
@@ -9128,7 +9128,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>SQL Query (read-only)</td>
 <td><code>remote-store[sql-query]</code></td>
-<td><code>sqlalchemy</code> + <code>pyarrow</code></td>
+<td><a href="https://pypi.org/project/SQLAlchemy/"><code>sqlalchemy</code></a> + <a href="https://pypi.org/project/pyarrow/"><code>pyarrow</code></a></td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
@@ -9137,7 +9137,7 @@ use a Registry with declarative config:</p>
 </table>
 <p>* Same-filesystem only; cross-filesystem falls back to copy+delete.
 ** Attempts <code>posix_rename</code> (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so <code>ATOMIC_MOVE</code> is not declared.</p>
-<p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only — it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback <code>ext.glob.glob_files()</code> works with any <code>LIST</code>-capable backend. Seekable reads are available on all backends via <code>Store.read_seekable()</code>. See the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a> and <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
+<p>All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback <code>ext.glob.glob_files()</code> works with any <code>LIST</code>-capable backend. Seekable reads are available on all backends via <code>Store.read_seekable()</code>. See <a href="https://github.com/haalfi/remote-store/blob/master/FEATURES.md">features</a>, the <a href="https://docs.remotestore.dev/stable/capabilities-matrix/">capabilities matrix</a>, and the <a href="https://docs.remotestore.dev/stable/concurrency/">concurrency guide</a> for full details.</p>
 <h2 id="store-api">Store API<a class="headerlink" href="#store-api" title="Permanent link">&para;</a></h2>
 <p>The Store provides methods across read/write, browsing, management, and utility. Key highlights:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → str</span>
@@ -9164,7 +9164,7 @@ use a Registry with declarative config:</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <p>Per-operation overhead is small relative to network round-trip time for most workloads. S3 listing is significantly faster via s3fs connection caching. See the <a href="https://docs.remotestore.dev/stable/performance/">performance guide</a> for full comparative benchmarks, methodology, and per-operation breakdowns.</p>
 <h2 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h2>
-<p>The core library handles storage operations. Extensions add optional capabilities on top — e.g. PyArrow integration, observability, caching, or bulk operations. All live in <code>remote_store.ext</code>; import only what you need.</p>
+<p>The core library handles storage operations. Extensions add optional capabilities on top: PyArrow integration, observability, caching, or bulk operations. All live in <code>remote_store.ext</code>; import only what you need.</p>
 <table>
 <thead>
 <tr>
@@ -9177,7 +9177,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>PyArrow adapter</td>
 <td><code>remote-store[arrow]</code></td>
-<td>Use any Store as a <code>pyarrow.fs.FileSystem</code> — works with Parquet, Pandas, Polars, DuckDB</td>
+<td>Use any Store as a <code>pyarrow.fs.FileSystem</code>; works with Parquet, Pandas, Polars, DuckDB</td>
 </tr>
 <tr>
 <td>Parquet datasets</td>
@@ -9222,7 +9222,7 @@ use a Registry with declarative config:</p>
 <tr>
 <td>Write helpers</td>
 <td><em>(none)</em></td>
-<td>Client-side content hashing for write operations — works on any backend</td>
+<td>Client-side content hashing for write operations, compatible with any backend</td>
 </tr>
 <tr>
 <td>Dagster IO manager</td>
@@ -9238,11 +9238,11 @@ use a Registry with declarative config:</p>
 <li><strong>Spec-driven development:</strong> behavior specifications are the source of truth; tests link directly to them. <em>Prevents feature drift.</em></li>
 <li><strong>Extensive unit tests:</strong> high coverage across all backends, focused on behavior. <em>Catches integration issues early.</em></li>
 <li><strong>Design by Contract:</strong> pre/post conditions and invariants catch incorrect usage early. <em>Fails fast on misuse.</em></li>
-<li><strong>Property-based testing:</strong> randomized input generation surfaces edge cases no hand-written test would find. <em>Finds blind spots.</em></li>
-<li><strong>Formal verification:</strong> critical paths are proven correct in Dafny before implementation. <em>Eliminates logic errors.</em></li>
-<li><strong>Mutation testing:</strong> gremlins modify the code; if they survive the tests, the tests have gaps. <em>Exposes weak test coverage.</em></li>
+<li><strong>Property-based testing:</strong> randomized input generation via <a href="https://hypothesis.readthedocs.io/">Hypothesis</a> surfaces edge cases no hand-written test would find. <em>Finds blind spots.</em></li>
+<li><strong>Formal verification:</strong> critical paths are proven correct in <a href="https://dafny.org/">Dafny</a> before implementation. <em>Eliminates logic errors.</em></li>
+<li><strong>Mutation testing:</strong> <a href="https://pypi.org/project/pytest-gremlins/">gremlins</a> modify the code; if they survive the tests, the tests have gaps. <em>Exposes weak test coverage.</em></li>
 <li><strong>Benchmarks:</strong> performance tracked per operation and backend. <em>Provides baseline for optimization.</em></li>
-<li><strong>Examples and snippets:</strong> runnable code in <code>examples/</code> and notebooks; docs are tested against actual behavior. <em>Keeps examples real.</em></li>
+<li><strong>Examples and snippets:</strong> runnable code in <a href="https://github.com/haalfi/remote-store/tree/master/examples"><code>examples/</code></a> and <a href="https://github.com/haalfi/remote-store/tree/master/examples/notebooks">notebooks</a>; docs are tested against actual behavior. <em>Keeps examples real.</em></li>
 </ul>
 <h2 id="learn-more">Learn more<a class="headerlink" href="#learn-more" title="Permanent link">&para;</a></h2>
 <p>To explore <code>remote-store</code> beyond the Quick Start:</p>
@@ -9257,10 +9257,10 @@ use a Registry with declarative config:</p>
 <thead>
 <tr>
 <th></th>
-<th>fsspec</th>
-<th>smart_open</th>
-<th>cloudpathlib</th>
-<th>obstore</th>
+<th><a href="https://pypi.org/project/fsspec/">fsspec</a></th>
+<th><a href="https://pypi.org/project/smart-open/">smart_open</a></th>
+<th><a href="https://pypi.org/project/cloudpathlib/">cloudpathlib</a></th>
+<th><a href="https://pypi.org/project/obstore/">obstore</a></th>
 <th><strong>remote-store</strong></th>
 </tr>
 </thead>
