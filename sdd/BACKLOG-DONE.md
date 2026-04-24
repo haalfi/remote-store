@@ -14,7 +14,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   sync-only (`read_seekable`, `open_atomic`, `close`) and async-only
   (`aclose`) allowlists. Prevents the sync side from growing features the
   async side silently lacks.
-  (2) `test_async_cancellation.py` (10 tests) — verifies invariants under
+  (2) `test_async_cancellation.py` (9 tests) — verifies invariants under
   `asyncio.CancelledError`: a cancelled `write`/`write_atomic` leaves no
   partial file; a cancelled overwrite preserves original content; a cancelled
   read does not mutate state; `read`/`list_files` async generators close

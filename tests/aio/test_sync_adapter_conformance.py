@@ -96,8 +96,11 @@ class TestAdapterStreamingRead:
             async for _ in adapted_backend.read("missing.bin"):
                 pass
 
-    @pytest.mark.spec("ASYNC-033")
+    @pytest.mark.spec("ASYNC-031")
     async def test_read_bytes_not_found_propagates(self, adapted_backend: SyncBackendAdapter) -> None:
+        # read_bytes is a single-shot ``await asyncio.to_thread(...)`` (thread
+        # delegation, ASYNC-031) -- not the chunked streaming-read bridge of
+        # ASYNC-033.
         with pytest.raises(NotFound, match="not found"):
             await adapted_backend.read_bytes("missing.bin")
 

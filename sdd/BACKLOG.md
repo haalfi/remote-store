@@ -152,8 +152,9 @@ Existing items may be more verbose — trim on next touch.
     an autouse teardown only moves the warning earlier (mid-test), not away.
   - Scope: (1) reproduce in a minimal non-pytest harness to isolate
     whether the root cause is in pytest-asyncio, `AsyncBackendSyncAdapter`, or
-    the snippet; (2) fix at the lowest appropriate layer; (3) re-enable
-    `os_sensitive` marker on `tests/aio/test_sync_adapter_conformance.py::_LOCAL_PARAM`
+    the snippet; (2) fix at the lowest appropriate layer; (3) restore the
+    `os_sensitive` marker on the `adapter-local` param of the
+    `adapted_backend` fixture in `tests/aio/test_sync_adapter_conformance.py`
     so cross-platform CI runs the LocalBackend-via-adapter conformance.
   - Related: BK-158 (warnings-as-errors), BK-164 (the conformance file).
 

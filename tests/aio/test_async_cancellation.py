@@ -95,7 +95,20 @@ class TestWriteCancellation:
 
 
 class TestReadCancellation:
-    """Read async generators close cleanly on early-break.
+    """Early-break from a ``read()`` async iterator does not raise.
+
+    ``AsyncMemoryBackend.read`` releases its internal lock **before** the
+    first ``yield`` (the ``async with self._lock:`` block exits after the
+    byte snapshot is taken), so an early-break cannot leave the lock held.
+    The meaningful invariant a caller relies on for backends that **do**
+    hold resources across the yield (e.g. ``SyncBackendAdapter``'s
+    ``finally: stream.close()``) is covered by
+    ``tests/aio/test_sync_adapter_conformance.py::test_read_closes_stream_on_early_break``.
+
+    What this test asserts for ``AsyncMemoryBackend``:
+    - the first yielded chunk equals the full file content
+    - breaking from the ``async for`` does not raise
+    - a subsequent ``read_bytes`` call still returns the correct content
 
     (A test for ``read_bytes`` cancellation was removed: ``AsyncMemoryBackend``
     holds its internal lock only during the point-in-time commit in
@@ -103,8 +116,7 @@ class TestReadCancellation:
     before the task has run cancels before any line executes — trivially
     non-mutating. Cancelling under true lock contention would require
     touching private state to hold the lock, which violates the testing
-    conventions. The early-break test below covers the meaningful invariant:
-    the async generator's ``aclose`` path releases the lock cleanly.)
+    conventions.)
     """
 
     async def test_read_iterator_closes_cleanly_on_early_break(self, backend: AsyncMemoryBackend) -> None:
@@ -112,9 +124,11 @@ class TestReadCancellation:
         collected = bytearray()
         async for chunk in backend.read("f.txt"):
             collected.extend(chunk)
-            break  # async generator __aexit__ must run without raising
+            break
         assert bytes(collected) == b"payload"
-        # Backend must still be functional (lock released).
+        # Smoke check that the backend is still usable; the lock is released
+        # *before* the yield in AsyncMemoryBackend, so this would pass even
+        # if the generator were never closed.
         assert await backend.read_bytes("f.txt") == b"payload"
 
 
