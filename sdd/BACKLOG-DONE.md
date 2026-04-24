@@ -23,7 +23,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `test_delete_folder_rule_prunes_dirs_and_descendants` lock the minimised
   sequence and the pruning invariant. No change to `_memory.py` or any spec
   — the backend was correct.
-  Related: MEM-DS-006, MEM-016 (`sdd/specs/013-memory-backend.md`); BK-139 P4.
+  Related: MEM-DS-006, MEM-014 (`sdd/specs/013-memory-backend.md`); BK-139 P4.
 
 - [x] **BK-162 — Fix 16 documentation gaps from Audit-011 (v0.23.0+)**
   Fixed all 16 findings from `sdd/audits/audit-011-docs-v023-gaps.md` across 4 commits:
