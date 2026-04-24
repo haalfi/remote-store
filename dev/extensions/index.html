@@ -8895,6 +8895,13 @@ on top of the core Store API.</p>
 <td>—</td>
 </tr>
 <tr>
+<td><a href="../api/extensions/aio-write/"><code>aio.ext.write</code></a></td>
+<td><em>(none)</em></td>
+<td>Async write helpers with guaranteed client-side content hashing</td>
+<td><a href="../write-integrity/">Guide</a></td>
+<td>—</td>
+</tr>
+<tr>
 <td><a href="../api/extensions/arrow/"><code>ext.arrow</code></a></td>
 <td><code>arrow</code></td>
 <td>PyArrow FileSystem adapter</td>
@@ -8947,6 +8954,7 @@ are re-exported from the top-level package for convenience:</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">checksum</span><span class="p">,</span> <span class="n">verify</span>       <span class="c1"># ext.integrity</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">partition_path</span><span class="p">,</span> <span class="n">parse_partition</span>  <span class="c1"># ext.partition</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressReader</span><span class="p">,</span> <span class="n">ChecksumReader</span>   <span class="c1"># ext.streams</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">write_with_hash</span><span class="p">,</span> <span class="n">open_atomic_with_hash</span><span class="p">,</span> <span class="n">HashingAtomicWriter</span>  <span class="c1"># ext.write</span>
 </code></pre></div>
 <p>Or import from the extension module directly:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.batch</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_delete</span>
@@ -8957,6 +8965,10 @@ are re-exported from the top-level package for convenience:</p>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.partition</span><span class="w"> </span><span class="kn">import</span> <span class="n">partition_path</span><span class="p">,</span> <span class="n">parse_partition</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.streams</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressReader</span><span class="p">,</span> <span class="n">ChecksumReader</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.transfer</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.write</span><span class="w"> </span><span class="kn">import</span> <span class="n">write_with_hash</span><span class="p">,</span> <span class="n">open_atomic_with_hash</span><span class="p">,</span> <span class="n">HashingAtomicWriter</span>
+</code></pre></div>
+<p><code>aio.ext.write</code> has no extra dependency but is <strong>not</strong> re-exported from <code>remote_store</code> — import it from its module directly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio.ext.write</span><span class="w"> </span><span class="kn">import</span> <span class="n">write_with_hash</span>  <span class="c1"># async counterpart to ext.write</span>
 </code></pre></div>
 <p>Seekable reads are built into the core API via <code>Store.read_seekable()</code> —
 no extension import needed.</p>
@@ -8964,19 +8976,19 @@ no extension import needed.</p>
 <p><code>ext.arrow</code> and <code>ext.parquet</code> require PyArrow, <code>ext.otel</code> requires the
 OpenTelemetry API, <code>ext.pydantic</code> requires Pydantic v2, and <code>ext.dagster</code>
 requires Dagster.  Install the relevant extra first:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span><span class="w">     </span><span class="c1"># PyArrow filesystem adapter + parquet datasets</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[otel]&quot;</span><span class="w">      </span><span class="c1"># OpenTelemetry tracing and metrics</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[pydantic]&quot;</span><span class="w">  </span><span class="c1"># Pydantic BaseSettings adapter</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[yaml]&quot;</span><span class="w">      </span><span class="c1"># YAML config file loader</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[dagster]&quot;</span><span class="w">   </span><span class="c1"># Dagster IO Manager adapter</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[arrow]&quot;</span><span class="w">     </span><span class="c1"># PyArrow filesystem adapter + parquet datasets</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[otel]&quot;</span><span class="w">      </span><span class="c1"># OpenTelemetry tracing and metrics</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[pydantic]&quot;</span><span class="w">  </span><span class="c1"># Pydantic BaseSettings adapter</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[yaml]&quot;</span><span class="w">      </span><span class="c1"># YAML config file loader</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[dagster]&quot;</span><span class="w">   </span><span class="c1"># Dagster IO Manager adapter</span>
 </code></pre></div>
 <p>Then import from the extension module directly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.parquet</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParquetDatasetStore</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_pydantic</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_yaml</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">dagster_io_manager</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.arrow</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyarrow_fs</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.parquet</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParquetDatasetStore</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.otel</span><span class="w"> </span><span class="kn">import</span> <span class="n">otel_hooks</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_pydantic</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_yaml</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">dagster_io_manager</span>
 </code></pre></div>
 <p>If the required dependency is not installed, importing the extension
 module raises a <code>ModuleNotFoundError</code> with installation instructions.</p>

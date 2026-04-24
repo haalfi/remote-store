@@ -2362,6 +2362,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#write-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write Results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#capabilities" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8902,6 +8913,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#write-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write Results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#capabilities" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9217,6 +9239,13 @@
 </tr>
 </tbody>
 </table>
+<h2 id="write-results">Write Results<a class="headerlink" href="#write-results" title="Permanent link">&para;</a></h2>
+<p>The Azure backend declares <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code>. Write operations return
+a <a href="../../api/models/"><code>WriteResult</code></a> with <code>etag</code> and <code>last_modified</code> populated from the upload
+response. <code>digest</code> is populated as <code>ContentDigest("md5", &lt;hex&gt;)</code> when Azure echoes back
+<code>Content-MD5</code> in the upload response, and <code>None</code> otherwise. When blob versioning is enabled
+on a non-HNS container, <code>version_id</code> is also populated from the upload response.</p>
+<p>Pass <code>metadata=</code> to store custom string key-value pairs as Azure blob metadata.</p>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <p>Supports all capabilities except <code>SEEKABLE_READ</code> and <code>ATOMIC_MOVE</code>.
 See the <a href="../../capabilities-matrix/">capabilities matrix</a> for full details.</p>

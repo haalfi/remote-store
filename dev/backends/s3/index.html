@@ -2250,6 +2250,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#write-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write Results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#listing-strategies-and-performance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8879,6 +8890,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#write-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write Results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#listing-strategies-and-performance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9183,6 +9205,13 @@ immediately if the file does not exist.</p>
 </tr>
 </tbody>
 </table>
+<h2 id="write-results">Write Results<a class="headerlink" href="#write-results" title="Permanent link">&para;</a></h2>
+<p>The S3 backend declares <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code>. Write operations return
+a <a href="../../api/models/"><code>WriteResult</code></a> with <code>digest</code>, <code>etag</code>, and <code>last_modified</code> populated
+from the upload response — contrast with reads, where <code>digest</code> is always <code>None</code> (see the
+File Metadata table above).</p>
+<p>Pass <code>metadata=</code> to store custom string key-value pairs as S3 object metadata. They
+round-trip through <code>get_file_info()</code> in <code>FileInfo.metadata</code>.</p>
 <h2 id="listing-strategies-and-performance">Listing Strategies and Performance<a class="headerlink" href="#listing-strategies-and-performance" title="Permanent link">&para;</a></h2>
 <p>S3 listing behavior differs sharply between shallow and recursive traversals. Understanding these trade-offs is critical for large buckets.</p>
 <h3 id="shallow-listing-non-recursive">Shallow Listing (Non-Recursive)<a class="headerlink" href="#shallow-listing-non-recursive" title="Permanent link">&para;</a></h3>

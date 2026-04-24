@@ -2729,6 +2729,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#write-results-and-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write results and metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#writing-with-async-iterators" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2816,6 +2827,17 @@
     <span class="md-ellipsis">
       
         Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#async-write-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async write helpers
       
     </span>
   </a>
@@ -8778,6 +8800,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#write-results-and-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write results and metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#writing-with-async-iterators" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8872,6 +8905,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#async-write-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async write helpers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8908,16 +8952,18 @@ async API mirrors the synchronous <code>Store</code> — same methods, same erro
 same capability model — so existing knowledge transfers directly.</p>
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncStore</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;/data&quot;</span><span class="p">),</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;reports&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;summary.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;Q1 results&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;summary.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncStore</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryBackend</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">MemoryBackend</span><span class="p">(),</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;reports&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;summary.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;Q1 results&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;wrote </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> bytes&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;summary.txt&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
 <p>Any sync <code>Backend</code> (Local, S3, SFTP, Azure, Memory) is auto-wrapped via
 <code>SyncBackendAdapter</code>, which delegates each call to the default executor
@@ -8935,14 +8981,23 @@ because Python has no standard async file-like protocol. Consume it with
 into memory in a single call:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">text</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;config.yaml&quot;</span><span class="p">)</span>
 </code></pre></div>
+<h2 id="write-results-and-metadata">Write results and metadata<a class="headerlink" href="#write-results-and-metadata" title="Permanent link">&para;</a></h2>
+<p><code>write()</code> and <code>write_atomic()</code> return a <a href="../api/models/"><code>WriteResult</code></a> carrying at minimum
+the written path and size. Backends that declare <code>WRITE_RESULT_NATIVE</code> also populate
+<code>digest</code>, <code>etag</code>, and <code>last_modified</code> from the upload response. Both methods accept an optional
+<code>metadata=</code> keyword argument (a <code>Mapping[str, str]</code>) for backends that declare
+<code>USER_METADATA</code>; others raise <code>CapabilityNotSupported</code> if non-empty metadata is passed.</p>
 <h2 id="writing-with-async-iterators">Writing with async iterators<a class="headerlink" href="#writing-with-async-iterators" title="Permanent link">&para;</a></h2>
 <p><code>write()</code> and <code>write_atomic()</code> accept <code>bytes</code> or <code>AsyncIterator[bytes]</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_report</span><span class="p">():</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">yield</span> <span class="sa">b</span><span class="s2">&quot;header</span><span class="se">\n</span><span class="s2">&quot;</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="k">yield</span> <span class="sa">b</span><span class="s2">&quot;row1</span><span class="se">\n</span><span class="s2">&quot;</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">yield</span> <span class="sa">b</span><span class="s2">&quot;row2</span><span class="se">\n</span><span class="s2">&quot;</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="n">generate_report</span><span class="p">())</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">AsyncStore</span><span class="p">(</span><span class="n">AsyncMemoryBackend</span><span class="p">())</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_report</span><span class="p">():</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">yield</span> <span class="sa">b</span><span class="s2">&quot;header</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">yield</span> <span class="sa">b</span><span class="s2">&quot;row1</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="k">yield</span> <span class="sa">b</span><span class="s2">&quot;row2</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="n">generate_report</span><span class="p">())</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;wrote </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> bytes to </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="child-stores">Child stores<a class="headerlink" href="#child-stores" title="Permanent link">&para;</a></h2>
 <p><code>child()</code> is synchronous (no I/O) and returns a new <code>AsyncStore</code> scoped
@@ -8962,8 +9017,8 @@ to a subfolder. The child shares the parent's backend:</p>
 <a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/upload/</span><span class="si">{filename}</span><span class="s2">&quot;</span><span class="p">)</span>
 <a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">upload</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">UploadFile</span><span class="p">):</span>
 <a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;stored&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">}</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;stored&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">size</span><span class="p">}</span>
 <a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
 <a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/download/</span><span class="si">{filename}</span><span class="s2">&quot;</span><span class="p">)</span>
 <a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">download</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
@@ -9020,9 +9075,16 @@ calls <code>aclose()</code> on exit.</p>
   without materialisation.</li>
 <li><strong><code>asyncio</code> only</strong> — trio and anyio are not supported.</li>
 </ul>
+<h2 id="async-write-helpers">Async write helpers<a class="headerlink" href="#async-write-helpers" title="Permanent link">&para;</a></h2>
+<p><code>remote_store.aio.ext.write</code> provides <code>write_with_hash</code> for async stores: it streams the
+content through a client-side hash, writes it, and returns a <code>WriteResult</code> with <code>digest</code>
+populated regardless of whether the backend declares <code>WRITE_RESULT_NATIVE</code>. This is the
+async counterpart of <code>remote_store.ext.write.write_with_hash</code>. See the
+<a href="../write-integrity/">Write Integrity</a> guide for usage examples and the full async API.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../api/aio/">API reference</a> — <code>AsyncStore</code>, <code>AsyncBackend</code>, <code>AsyncAzureBackend</code>, <code>SyncBackendAdapter</code></li>
+<li><a href="../async-sync-bridges/">Async-Sync Bridges</a> — <code>AsyncBackendSyncAdapter</code> for calling an async backend from sync code</li>
 <li><a href="../backends/azure/">Azure Backend</a> — sync Azure backend configuration and usage</li>
 <li><a href="../health-check/">Health Check</a> — <code>ping()</code> and <code>check_health()</code> details</li>
 <li><a href="../concurrency/">Concurrency</a> — thread safety, atomicity, and <code>overwrite=False</code> semantics</li>

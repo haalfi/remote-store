@@ -8907,8 +8907,7 @@ at runtime before calling an operation.</p>
 </tbody>
 </table>
 <p>† <code>WRITE_RESULT_NATIVE</code> and <code>USER_METADATA</code> are declared by <code>SQLBlobBackend</code> only when the backing table includes a <code>user_metadata</code> column (see the SQLBlob guide for schema requirements). Legacy tables without this column do not declare either capability.</p>
-<p><strong>Full support:</strong> Local.</p>
-<p><strong>Near-full:</strong> S3 and S3-PyArrow lack <code>ATOMIC_MOVE</code> (copy-then-delete
+<p><strong>Near-full:</strong> Local lacks <code>USER_METADATA</code> — passing non-empty <code>metadata=</code> raises <code>CapabilityNotSupported</code>. S3 and S3-PyArrow lack <code>ATOMIC_MOVE</code> (copy-then-delete
 semantics). SQLBlob lacks <code>LAZY_READ</code> — the entire blob is loaded into memory
 before a stream is returned. Writes also materialize the full stream before
 the SQL INSERT/UPDATE because BLOB columns require complete data.</p>

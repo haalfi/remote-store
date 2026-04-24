@@ -8894,7 +8894,7 @@
 </tbody>
 </table>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
-<p>All capabilities are supported. The local backend is the reference implementation.
+<p>All capabilities are supported except <code>USER_METADATA</code> — passing non-empty <code>metadata=</code> to a Local-backed store raises <code>CapabilityNotSupported</code>. The local backend is otherwise the reference implementation.
 See the <a href="../../capabilities-matrix/">capabilities matrix</a> for full details.</p>
 <h2 id="caveats">Caveats<a class="headerlink" href="#caveats" title="Permanent link">&para;</a></h2>
 <ul>

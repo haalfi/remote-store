@@ -9618,13 +9618,14 @@ and scoping. You implement the raw operations; <code>Store</code> handles the po
 <a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="n">NotFound</span><span class="p">,</span>
 <a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="n">PermissionDenied</span><span class="p">,</span>
 <a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="n">RemotePath</span><span class="p">,</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="p">)</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractContextManager</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store._types</span><span class="w"> </span><span class="kn">import</span> <span class="n">WritableContent</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="n">WriteResult</span><span class="p">,</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="p">)</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractContextManager</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store._types</span><span class="w"> </span><span class="kn">import</span> <span class="n">WritableContent</span>
 </code></pre></div>
 <p>Every backend starts with these imports. The key types:</p>
 <table>
@@ -9656,6 +9657,10 @@ and scoping. You implement the raw operations; <code>Store</code> handles the po
 <td>Immutable, validated path type</td>
 </tr>
 <tr>
+<td><a href="../api/models/"><code>WriteResult</code></a></td>
+<td>Return type for <code>write()</code> and <code>write_atomic()</code>; carries the written path, size, and optional backend-native digest/etag</td>
+</tr>
+<tr>
 <td><code>WritableContent</code></td>
 <td>Type alias: <code>bytes \| BinaryIO</code></td>
 </tr>
@@ -9680,6 +9685,13 @@ and scoping. You implement the raw operations; <code>Store</code> handles the po
 <p><strong>Capabilities gate Store methods.</strong> If you don't declare <code>ATOMIC_WRITE</code>, calls
 to <code>store.write_atomic()</code> raise <code>CapabilityNotSupported</code> automatically — you
 don't need to handle it.</p>
+<p>Three capabilities added in v0.23.0 are worth declaring when they apply:</p>
+<ul>
+<li><strong><code>USER_METADATA</code></strong> — declare this when your backend stores the <code>metadata=</code> mapping passed to <code>write()</code> and <code>write_atomic()</code>. Without it, <code>Store</code> raises <code>CapabilityNotSupported</code> if the caller passes non-empty metadata.</li>
+<li><strong><code>WRITE_RESULT_NATIVE</code></strong> — declare this when your backend populates <code>WriteResult</code> fields beyond the two mandatory ones (<code>path</code> and <code>size</code>). See the <a href="../api/models/">WriteResult reference</a> for the full field list.</li>
+<li><strong><code>LAZY_READ</code></strong> — declare this when <code>read()</code> fetches data lazily from the remote source. A <code>BytesIO</code> return does not qualify — data is already materialized.</li>
+</ul>
+<p>The Redis example declares neither <code>USER_METADATA</code> nor <code>WRITE_RESULT_NATIVE</code> (it stores raw bytes without a metadata column and returns only <code>path</code> and <code>size</code> at write time).</p>
 <p>Each capability gates specific Store methods. See the
 <a href="../api/capabilities/">Capability reference</a> for the full list.</p>
 <hr />
@@ -9824,58 +9836,76 @@ traceback for debugging.</p>
 returns the stream as-is.</p>
 <hr />
 <h2 id="step-7-writing">Step 7: Writing<a class="headerlink" href="#step-7-writing" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">WritableContent</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span> <span class="ow">or</span> <span class="n">path</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>        <span class="k">raise</span> <span class="n">InvalidPath</span><span class="p">(</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>            <span class="s2">&quot;Path must not be empty for file operations&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>            <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>            <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="p">)</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">raw</span> <span class="o">=</span> <span class="n">content</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="n">content</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">path</span><span class="p">)):</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>            <span class="k">raise</span> <span class="n">AlreadyExists</span><span class="p">(</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>                <span class="sa">f</span><span class="s2">&quot;File already exists: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>                <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
-<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>            <span class="p">)</span>
-<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span>
-<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
-<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>            <span class="n">mapping</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>                <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="p">,</span>
-<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>                <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)),</span>
-<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>                <span class="s2">&quot;modified_at&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
-<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>            <span class="p">},</span>
-<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>        <span class="p">)</span>
-<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>    <span class="k">except</span> <span class="p">(</span><span class="n">AlreadyExists</span><span class="p">,</span> <span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>        <span class="k">raise</span>  <span class="c1"># Don&#39;t re-map our own errors</span>
-<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>
-<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="k">def</span><span class="w"> </span><span class="nf">write_atomic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">WritableContent</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a>    <span class="c1"># Redis HSET is already atomic, but we didn&#39;t declare ATOMIC_WRITE.</span>
-<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>    <span class="c1"># Store will reject this call before it reaches us.</span>
-<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>    <span class="c1"># If you want to support it, declare the capability and implement here.</span>
-<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a>    <span class="k">raise</span> <span class="n">CapabilityNotSupported</span><span class="p">(</span>
-<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a>        <span class="s2">&quot;Redis backend does not support atomic writes&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>        <span class="n">capability</span><span class="o">=</span><span class="s2">&quot;atomic_write&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a>        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a>    <span class="p">)</span>
-<a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a>
-<a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a><span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
-<a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a><span class="k">def</span><span class="w"> </span><span class="nf">open_atomic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">BinaryIO</span><span class="p">]:</span>
-<a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a>    <span class="k">raise</span> <span class="n">CapabilityNotSupported</span><span class="p">(</span>
-<a id="__codelineno-7-44" name="__codelineno-7-44" href="#__codelineno-7-44"></a>        <span class="s2">&quot;Redis backend does not support atomic writes&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-45" name="__codelineno-7-45" href="#__codelineno-7-45"></a>        <span class="n">capability</span><span class="o">=</span><span class="s2">&quot;atomic_write&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-46" name="__codelineno-7-46" href="#__codelineno-7-46"></a>        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-7-47" name="__codelineno-7-47" href="#__codelineno-7-47"></a>    <span class="p">)</span>
-<a id="__codelineno-7-48" name="__codelineno-7-48" href="#__codelineno-7-48"></a>    <span class="k">yield</span>  <span class="c1"># Unreachable, but satisfies the generator contract</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">content</span><span class="p">:</span> <span class="n">WritableContent</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WriteResult</span><span class="p">:</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span> <span class="ow">or</span> <span class="n">path</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>        <span class="k">raise</span> <span class="n">InvalidPath</span><span class="p">(</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>            <span class="s2">&quot;Path must not be empty for file operations&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>            <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>            <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>        <span class="p">)</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>    <span class="n">raw</span> <span class="o">=</span> <span class="n">content</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="n">content</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">path</span><span class="p">)):</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>            <span class="k">raise</span> <span class="n">AlreadyExists</span><span class="p">(</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>                <span class="sa">f</span><span class="s2">&quot;File already exists: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>                <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>            <span class="p">)</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>            <span class="n">mapping</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>                <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="p">,</span>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>                <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">)),</span>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>                <span class="s2">&quot;modified_at&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a>            <span class="p">},</span>
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a>        <span class="p">)</span>
+<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>    <span class="k">except</span> <span class="p">(</span><span class="n">AlreadyExists</span><span class="p">,</span> <span class="n">InvalidPath</span><span class="p">):</span>
+<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>        <span class="k">raise</span>  <span class="c1"># Don&#39;t re-map our own errors</span>
+<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>
+<a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a>    <span class="k">return</span> <span class="n">WriteResult</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">RemotePath</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span>
+<a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a>
+<a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a><span class="k">def</span><span class="w"> </span><span class="nf">write_atomic</span><span class="p">(</span>
+<a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a>    <span class="n">content</span><span class="p">:</span> <span class="n">WritableContent</span><span class="p">,</span>
+<a id="__codelineno-7-44" name="__codelineno-7-44" href="#__codelineno-7-44"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-7-45" name="__codelineno-7-45" href="#__codelineno-7-45"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-7-46" name="__codelineno-7-46" href="#__codelineno-7-46"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-7-47" name="__codelineno-7-47" href="#__codelineno-7-47"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WriteResult</span><span class="p">:</span>
+<a id="__codelineno-7-48" name="__codelineno-7-48" href="#__codelineno-7-48"></a>    <span class="c1"># Redis HSET is already atomic, but we didn&#39;t declare ATOMIC_WRITE.</span>
+<a id="__codelineno-7-49" name="__codelineno-7-49" href="#__codelineno-7-49"></a>    <span class="c1"># Store will reject this call before it reaches us.</span>
+<a id="__codelineno-7-50" name="__codelineno-7-50" href="#__codelineno-7-50"></a>    <span class="c1"># If you want to support it, declare the capability and implement here.</span>
+<a id="__codelineno-7-51" name="__codelineno-7-51" href="#__codelineno-7-51"></a>    <span class="k">raise</span> <span class="n">CapabilityNotSupported</span><span class="p">(</span>
+<a id="__codelineno-7-52" name="__codelineno-7-52" href="#__codelineno-7-52"></a>        <span class="s2">&quot;Redis backend does not support atomic writes&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-53" name="__codelineno-7-53" href="#__codelineno-7-53"></a>        <span class="n">capability</span><span class="o">=</span><span class="s2">&quot;atomic_write&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-54" name="__codelineno-7-54" href="#__codelineno-7-54"></a>        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-7-55" name="__codelineno-7-55" href="#__codelineno-7-55"></a>    <span class="p">)</span>
+<a id="__codelineno-7-56" name="__codelineno-7-56" href="#__codelineno-7-56"></a>
+<a id="__codelineno-7-57" name="__codelineno-7-57" href="#__codelineno-7-57"></a><span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+<a id="__codelineno-7-58" name="__codelineno-7-58" href="#__codelineno-7-58"></a><span class="k">def</span><span class="w"> </span><span class="nf">open_atomic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">BinaryIO</span><span class="p">]:</span>
+<a id="__codelineno-7-59" name="__codelineno-7-59" href="#__codelineno-7-59"></a>    <span class="k">raise</span> <span class="n">CapabilityNotSupported</span><span class="p">(</span>
+<a id="__codelineno-7-60" name="__codelineno-7-60" href="#__codelineno-7-60"></a>        <span class="s2">&quot;Redis backend does not support atomic writes&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-61" name="__codelineno-7-61" href="#__codelineno-7-61"></a>        <span class="n">capability</span><span class="o">=</span><span class="s2">&quot;atomic_write&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-62" name="__codelineno-7-62" href="#__codelineno-7-62"></a>        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-7-63" name="__codelineno-7-63" href="#__codelineno-7-63"></a>    <span class="p">)</span>
+<a id="__codelineno-7-64" name="__codelineno-7-64" href="#__codelineno-7-64"></a>    <span class="k">yield</span>  <span class="c1"># Unreachable, but satisfies the generator contract</span>
 </code></pre></div>
 <p><strong>Key patterns:</strong></p>
 <ul>
 <li><code>content</code> is <code>bytes | BinaryIO</code>. Normalize with <code>content if isinstance(content, bytes) else content.read()</code>.</li>
+<li><strong>Both <code>write()</code> and <code>write_atomic()</code> accept <code>metadata: Mapping[str, str] | None = None</code>.</strong> If your backend declares <code>USER_METADATA</code>, persist the mapping alongside the file. If it doesn't, ignore the argument — <code>Store</code> rejects non-empty metadata before reaching your implementation.</li>
+<li><strong>Both methods must return <a href="../api/models/"><code>WriteResult</code></a>.</strong> Construct it with at minimum <code>path=RemotePath(path)</code> and <code>size=len(raw)</code>. If your backend can populate richer fields, declare <code>WRITE_RESULT_NATIVE</code> and include them. The Redis example returns the two-field minimum.</li>
 <li><strong>Write creates parent folders implicitly</strong> — in Redis, there's nothing to create, but filesystem-based backends must <code>mkdir -p</code>.</li>
 <li>Re-raise your own errors (<code>AlreadyExists</code>, <code>InvalidPath</code>) before the catch-all <code>RedisError</code> handler.</li>
 <li>Even though Store gates <code>write_atomic()</code> via capabilities, implement the methods anyway (they're abstract). Raise <code>CapabilityNotSupported</code> as a safety net.</li>
@@ -10208,12 +10238,19 @@ is read-only:</p>
 raises <code>CapabilityNotSupported</code> before your backend code runs. You still need
 to implement the abstract methods (Python requires it), but they can raise
 <code>CapabilityNotSupported</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">WritableContent</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="k">raise</span> <span class="n">CapabilityNotSupported</span><span class="p">(</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>        <span class="s2">&quot;HTTP backend is read-only&quot;</span><span class="p">,</span>
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>        <span class="n">capability</span><span class="o">=</span><span class="s2">&quot;write&quot;</span><span class="p">,</span>
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>    <span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="n">content</span><span class="p">:</span> <span class="n">WritableContent</span><span class="p">,</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WriteResult</span><span class="p">:</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>    <span class="k">raise</span> <span class="n">CapabilityNotSupported</span><span class="p">(</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>        <span class="s2">&quot;HTTP backend is read-only&quot;</span><span class="p">,</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>        <span class="n">capability</span><span class="o">=</span><span class="s2">&quot;write&quot;</span><span class="p">,</span>
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>        <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>    <span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="error-mapping-checklist">Error mapping checklist<a class="headerlink" href="#error-mapping-checklist" title="Permanent link">&para;</a></h2>
@@ -10597,13 +10634,13 @@ are generally thread-safe, so our example doesn't need explicit locking.</p>
 <td><a href="../api/errors/"><code>NotFound</code></a></td>
 </tr>
 <tr>
-<td><code>write(path, content, overwrite)</code></td>
-<td><code>None</code></td>
+<td><code>write(path, content, overwrite, metadata=None)</code></td>
+<td><a href="../api/models/"><code>WriteResult</code></a></td>
 <td><a href="../api/errors/"><code>AlreadyExists</code></a></td>
 </tr>
 <tr>
-<td><code>write_atomic(path, content, overwrite)</code></td>
-<td><code>None</code></td>
+<td><code>write_atomic(path, content, overwrite, metadata=None)</code></td>
+<td><a href="../api/models/"><code>WriteResult</code></a></td>
 <td><a href="../api/errors/"><code>AlreadyExists</code></a>, <a href="../api/errors/"><code>CapabilityNotSupported</code></a></td>
 </tr>
 <tr>
