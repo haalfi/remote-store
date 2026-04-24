@@ -5,6 +5,35 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BK-164 — Close high-value async test-coverage gaps**
+  Three new files under `tests/aio/` targeting async-specific concerns absent
+  from the existing suite:
+  (1) `test_async_drift.py` (53 tests) — API parity guard: asserts every public
+  `Store`/`Backend` method has a matching `AsyncStore`/`AsyncBackend` method
+  with identical parameter names, kinds, and defaults, modulo explicit
+  sync-only (`read_seekable`, `open_atomic`, `close`) and async-only
+  (`aclose`) allowlists. Prevents the sync side from growing features the
+  async side silently lacks.
+  (2) `test_async_cancellation.py` (10 tests) — verifies invariants under
+  `asyncio.CancelledError`: a cancelled `write`/`write_atomic` leaves no
+  partial file; a cancelled overwrite preserves original content; a cancelled
+  read does not mutate state; `read`/`list_files` async generators close
+  cleanly on early-break; the backend lock is released so subsequent ops
+  succeed. Uses explicit `asyncio.Event` synchronisation (no sleeps) for
+  deterministic cancellation points.
+  (3) `test_sync_adapter_conformance.py` (42 tests) — parametrises conformance
+  checks across `SyncBackendAdapter(MemoryBackend())` and
+  `SyncBackendAdapter(LocalBackend(tmp_path))`. Exercises adapter code paths
+  that the existing memory-only adapter tests don't hit: 64 KiB streaming-read
+  loop at `_sync_adapter.py:137-147` with 250 KiB payloads, `_materialize()`
+  drain of async iterators, sync-iterator→async-iterator bridging for
+  `list_files`/`list_folders`/`iter_children`, error passthrough (`NotFound`,
+  `AlreadyExists`) across the executor boundary, and concurrent `to_thread`
+  dispatch under `asyncio.gather`.
+  Scope deliberately excludes async extensions (batch/transfer/cache/observe)
+  which are feature gaps, not test gaps — those modules have no async
+  implementation yet.
+
 - [x] **BUG-183 — PBT model in `test_pbt_stateful.py` tracks empty dir nodes**
   `BackendModel` derived implicit dirs by scanning the live-file map. After
   `write('0/0') → delete('0/0')` the model forgot the `_DirNode('0')` that
