@@ -154,6 +154,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 - Not a query engine (no SQL, no predicate pushdown)
 - Not a table format (no Delta Lake log, no Iceberg manifests)
 - Not a filesystem reimplementation (delegates to `s3fs`, `paramiko`, `pyarrow`, etc. — the libraries you'd pick anyway)
+- Not a file-transfer server — if external clients (SFTP partners, browser users) need to access your storage via SFTP, FTPS, or WebDAV, look at [SFTPGo](https://github.com/drakkan/sftpgo)
 
 ## Supported Backends
 
