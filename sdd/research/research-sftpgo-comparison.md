@@ -56,15 +56,25 @@ for application-layer storage operations against the same S3 bucket.
 
 ## 3. Design Insights Worth Carrying Back
 
-### 3.1 Path-Namespace Composition Across Backends
+### 3.1 Unified Folder Structure Across Backends
 
-SFTPGo's virtual-folder model lets a single user see multiple backends under a
-unified path tree (`/docs` → S3, `/archive` → Azure). This is structurally
-similar to the CompositeStore idea in **ID-121**, but orthogonal: CompositeStore
-stacks backends on the *same* path for fallthrough reads, whereas SFTPGo mounts
-them at *different* paths. A future `NamespaceStore` or mount-map concept could
-fill that gap — one path prefix dispatches to one child store, another prefix to
-another. Not a blocker for ID-121, but worth noting as a follow-on direction.
+SFTPGo's virtual-folder model mounts distinct backends at explicit path prefixes:
+`/docs` → S3, `/archive` → Azure. Each prefix maps to exactly one backend; there
+is no fallthrough.
+
+**ID-121 CompositeStore** is a different concept: it presents a *single unified
+folder structure* where all tiers share the same key space. Reads fall through
+tiers in order (hot → warm → archive) until the key is found; writes go to the
+primary tier only. An optional `match=` pattern can dispatch paths to specific
+tiers, but the default is deterministic fallthrough — the caller sees one store
+and never knows which tier answered.
+
+The SFTPGo model is therefore not a close analog: path-prefix mounting is a
+layout decision (different subtrees live on different backends), while
+CompositeStore is a resolution strategy (the same key may exist on any tier,
+and priority determines which one wins). There is no current remote-store
+counterpart to SFTPGo's path-prefix mounting — that remains a possible future
+direction if demand materialises.
 
 ### 3.2 Richer Hook Taxonomy
 
