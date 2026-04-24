@@ -238,7 +238,7 @@ Storage behavior must be predictable and correct. We verify this across multiple
 - **Formal verification:** critical paths are proven correct in [Dafny](https://dafny.org/) before implementation. *Eliminates logic errors.*
 - **Mutation testing:** [gremlins](https://pypi.org/project/pytest-gremlins/) modify the code; if they survive the tests, the tests have gaps. *Exposes weak test coverage.*
 - **Benchmarks:** performance tracked per operation and backend. *Provides baseline for optimization.*
-- **Examples and snippets:** runnable code in `examples/` and notebooks; docs are tested against actual behavior. *Keeps examples real.*
+- **Examples and snippets:** runnable code in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) and [notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks); docs are tested against actual behavior. *Keeps examples real.*
 
 ## Learn more
 
