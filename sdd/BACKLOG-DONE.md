@@ -12,12 +12,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (`delete()` does not auto-prune parent dirs). The next `write_new('0')`
   passed the model's conflict guard and reached the backend, which raised
   `InvalidPath`. Fix tracks live dirs in a separate `self.dirs` set on
-  `BackendModel`: writes add all ancestors, `delete()` deliberately leaves
-  them, and the `_can_write` / `exists` / `read_bytes` / `delete_missing_ok`
-  rules consult `self.dirs` instead of re-deriving from files. Deterministic
-  regression test `test_bug183_empty_dir_persists_after_file_delete` replays
-  the Hypothesis-minimised sequence. No change to `_memory.py` or any spec —
-  the backend was correct.
+  `BackendModel`: writes add all ancestors; `delete()` deliberately leaves
+  them; a new `delete_folder` rule calls `backend.delete_folder(recursive=True)`
+  and prunes the target path plus all descendants from both `self.dirs` and
+  `self.model`, so the dir set is now the sole mutator-symmetric state (no
+  monotonic growth). The `_can_write` / `exists` / `read_bytes` /
+  `delete_missing_ok` rules consult `self.dirs` instead of re-deriving from
+  files. Deterministic regressions
+  `test_bug183_empty_dir_persists_after_file_delete` and
+  `test_delete_folder_rule_prunes_dirs_and_descendants` lock the minimised
+  sequence and the pruning invariant. No change to `_memory.py` or any spec
+  — the backend was correct.
   Related: MEM-DS-006, MEM-016 (`sdd/specs/013-memory-backend.md`); BK-139 P4.
 
 - [x] **BK-162 — Fix 16 documentation gaps from Audit-011 (v0.23.0+)**

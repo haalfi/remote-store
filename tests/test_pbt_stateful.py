@@ -51,7 +51,8 @@ class BackendModel(RuleBasedStateMachine):
     (spec MEM-DS-006): an empty directory persists until ``delete_folder()``.
     Deriving dirs from the live file map would forget that and diverge from the
     backend on a ``write('a/b') → delete('a/b') → write('a')`` sequence
-    (BUG-183).
+    (BUG-183). The ``delete_folder`` rule is the only place where entries
+    leave ``self.dirs``.
     """
 
     def __init__(self) -> None:
@@ -122,6 +123,21 @@ class BackendModel(RuleBasedStateMachine):
         self.model.pop(path, None)
 
     @rule(path=_path)
+    def delete_folder(self, path: str) -> None:
+        """Recursively delete a live directory.
+
+        Complements ``delete()`` so ``self.dirs`` can actually shrink; otherwise
+        the model would grow monotonically and the ``_can_write`` guard would
+        fire false negatives after any folder removal.
+        """
+        if path not in self.dirs:
+            return  # skip — not a live directory in our model
+        self.backend.delete_folder(path, recursive=True)
+        prefix = path + "/"
+        self.dirs = {d for d in self.dirs if d != path and not d.startswith(prefix)}
+        self.model = {k: v for k, v in self.model.items() if not k.startswith(prefix)}
+
+    @rule(path=_path)
     def list_files_flat(self, path: str) -> None:
         """Non-recursive list_files for a prefix must match the model."""
         prefix = path + "/"
@@ -159,5 +175,35 @@ def test_bug183_empty_dir_persists_after_file_delete() -> None:
 
     # Must be skipped by the rule guard, not reach the backend and raise.
     m.write_new(path="0", data=b"")
+    # Asserting "0" in m.dirs after the call proves the guard fired because the
+    # dir node persisted, not for an unrelated reason (e.g. a spurious file hit).
+    assert "0" in m.dirs
     assert "0" not in m.model
     assert not m.backend.is_file("0")
+
+
+@pytest.mark.pbt
+def test_delete_folder_rule_prunes_dirs_and_descendants() -> None:
+    """Regression: ``delete_folder`` rule must shrink ``self.dirs``.
+
+    Without a ``delete_folder`` rule, ``self.dirs`` could only grow (writes add
+    ancestors; ``delete()`` leaves them intact). That would desynchronise the
+    model from the backend after any backend-side folder removal and produce
+    false-negative ``_can_write`` skips for paths under a removed prefix.
+    """
+    m = BackendModel()
+    m.write_new(path="a/b/c", data=b"x")
+    assert m.dirs == {"a", "a/b"}
+    assert m.model == {"a/b/c": b"x"}
+
+    m.delete_folder(path="a")
+    # Backend tree is empty; model mirrors it.
+    assert not m.backend.exists("a")
+    assert m.dirs == set()
+    assert m.model == {}
+
+    # A previously-blocked write at the removed prefix must now pass the guard
+    # and reach the backend, with the model and backend agreeing on the result.
+    m.write_new(path="a", data=b"y")
+    assert m.model == {"a": b"y"}
+    assert m.backend.read_bytes("a") == b"y"

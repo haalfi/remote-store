@@ -6,7 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-183: `test_pbt_stateful.py::BackendModel` now tracks live directory nodes in a separate set instead of deriving them from the file map; fixes the Hypothesis-minimised `write('0/0') → delete('0/0') → write('0')` sequence where the model forgot the empty `_DirNode` that `MemoryBackend` retains per MEM-DS-006 and let the rule call through to the backend
+- BUG-183: `test_pbt_stateful.py::BackendModel` now tracks live directory nodes in a separate set instead of deriving them from the file map, and adds a `delete_folder` rule that prunes the target and its descendants from the model; fixes the Hypothesis-minimised `write('0/0') → delete('0/0') → write('0')` sequence where the model forgot the empty `_DirNode` that `MemoryBackend` retains per MEM-DS-006 and let the rule call through to the backend
 - BK-162: Fix 16 documentation gaps from Audit-011 (v0.23.0+ API changes): corrected write-method signatures and return types in custom-backend guide and snippet; documented `USER_METADATA`, `WRITE_RESULT_NATIVE`, and `LAZY_READ`; added `aio.ext.write` to extensions table; documented write results and `metadata=` for S3/Azure backends; corrected capability claims for Local and S3-PyArrow; updated example write calls to capture `WriteResult`
 - BK-159: Audit handwritten docs for v0.23.0+ gaps: 16 findings across custom-backend guide, async guide, extensions guide, and per-backend guides; report at `sdd/audits/audit-011-docs-v023-gaps.md`
 - BK-160/BK-161: Codify extension import-time private access rule in DESIGN.md § 12; add AST checker to test_ext_contract.py; fix 10 Cat 2 import paths across 10 ext modules; annotate 3 Cat 1 coupling sites
