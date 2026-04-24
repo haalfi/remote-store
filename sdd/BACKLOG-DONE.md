@@ -5,6 +5,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-183 — PBT model in `test_pbt_stateful.py` tracks empty dir nodes**
+  `BackendModel` derived implicit dirs by scanning the live-file map. After
+  `write('0/0') → delete('0/0')` the model forgot the `_DirNode('0')` that
+  `MemoryBackend` deliberately retains per MEM-DS-006
+  (`delete()` does not auto-prune parent dirs). The next `write_new('0')`
+  passed the model's conflict guard and reached the backend, which raised
+  `InvalidPath`. Fix tracks live dirs in a separate `self.dirs` set on
+  `BackendModel`: writes add all ancestors; `delete()` deliberately leaves
+  them; a new `delete_folder` rule calls `backend.delete_folder(recursive=True)`
+  and prunes the target path plus all descendants from both `self.dirs` and
+  `self.model`, so the dir set is now the sole mutator-symmetric state (no
+  monotonic growth). The `_can_write` / `exists` / `read_bytes` /
+  `delete_missing_ok` rules consult `self.dirs` instead of re-deriving from
+  files. Deterministic regressions
+  `test_bug183_empty_dir_persists_after_file_delete` and
+  `test_delete_folder_rule_prunes_dirs_and_descendants` lock the minimised
+  sequence and the pruning invariant. No change to `_memory.py` or any spec
+  — the backend was correct.
+  Related: MEM-DS-006, MEM-014 (`sdd/specs/013-memory-backend.md`); BK-139 P4.
+
 - [x] **BK-162 — Fix 16 documentation gaps from Audit-011 (v0.23.0+)**
   Fixed all 16 findings from `sdd/audits/audit-011-docs-v023-gaps.md` across 4 commits:
   (1) custom-backend guide + snippet: corrected `write()`/`write_atomic()` return types,
