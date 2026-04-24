@@ -43,6 +43,22 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
+- [ ] **BUG-183 — `MemoryBackend` retains ghost directory after last file deleted**
+  Hypothesis (`test_pbt_stateful.py::TestBackendModel`) found a consistent
+  reproduction: write `0/0`, delete `0/0`, then any of write/read/delete/exists
+  on `0` fails or returns wrong results because the parent directory entry `0`
+  is never cleaned up after its last child is removed.
+  Repro:
+  ```
+  state.write_new(path='0/0', data=b'')
+  state.delete(path='0/0')
+  state.write_new(path='0', data=b'')  # raises InvalidPath: '0' exists as a directory
+  ```
+  Root cause in `src/remote_store/backends/_memory.py`: `delete()` removes the
+  file key but does not prune empty ancestor directories from the directory
+  index. Fix: after deleting a file, walk its ancestor paths and remove any
+  directory entries that have no remaining children.
+
 - [ ] **BUG-182 — (Candidate) Verify HNS `write_atomic` metadata survives rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
   forwarded to `upload_data` on the temp file and that `WriteResult.metadata` echoes the
