@@ -95,15 +95,17 @@ class TestWriteCancellation:
 
 
 class TestReadCancellation:
-    """A cancelled read does not mutate state and the iterator closes cleanly."""
+    """Read async generators close cleanly on early-break.
 
-    async def test_cancel_read_task_does_not_mutate_file(self, backend: AsyncMemoryBackend) -> None:
-        await backend.write("f.txt", b"payload")
-        task = asyncio.create_task(backend.read_bytes("f.txt"))
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await task
-        assert await backend.read_bytes("f.txt") == b"payload"
+    (A test for ``read_bytes`` cancellation was removed: ``AsyncMemoryBackend``
+    holds its internal lock only during the point-in-time commit in
+    ``read_bytes``, with no stall-worthy ``await`` in between. ``task.cancel()``
+    before the task has run cancels before any line executes — trivially
+    non-mutating. Cancelling under true lock contention would require
+    touching private state to hold the lock, which violates the testing
+    conventions. The early-break test below covers the meaningful invariant:
+    the async generator's ``aclose`` path releases the lock cleanly.)
+    """
 
     async def test_read_iterator_closes_cleanly_on_early_break(self, backend: AsyncMemoryBackend) -> None:
         await backend.write("f.txt", b"payload")
@@ -136,13 +138,14 @@ class TestListCancellation:
         for i in range(5):
             await backend.write(f"f{i}.txt", b"x")
         started = asyncio.Event()
+        release = asyncio.Event()  # never set; CancelledError is the only exit
 
         async def consumer() -> int:
             count = 0
             async for _ in backend.list_files(""):
                 count += 1
                 started.set()
-                await asyncio.sleep(1)  # cancellation point
+                await release.wait()  # deterministic cancellation point
             return count
 
         task = asyncio.create_task(consumer())

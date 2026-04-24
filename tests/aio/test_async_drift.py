@@ -60,8 +60,13 @@ def _public_methods(cls: type) -> dict[str, inspect.Signature]:
     return out
 
 
-def _param_shape(sig: inspect.Signature) -> list[tuple[str, inspect._ParameterKind, Any]]:
-    """Reduce a signature to (name, kind, default) tuples (skip annotations and return)."""
+def _param_shape(sig: inspect.Signature) -> list[tuple[str, Any, Any]]:
+    """Reduce a signature to (name, kind, default) tuples (skip annotations and return).
+
+    ``kind`` is typed as ``Any`` to avoid naming the private ``inspect._ParameterKind``
+    enum; equality on the values still works via the public ``inspect.Parameter.kind``
+    attribute. Testing rule: never depend on CPython private names.
+    """
     return [(p.name, p.kind, p.default) for p in sig.parameters.values()]
 
 

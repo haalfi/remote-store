@@ -32,7 +32,15 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-@pytest.fixture(params=["memory", "local"], ids=["adapter-memory", "adapter-local"])
+# Mark the ``local`` param ``os_sensitive`` (real filesystem, ``os.replace``,
+# ``tempfile``-backed atomic writes). Mirrors the sync conformance pattern in
+# ``tests/backends/conftest.py``. The ``memory`` param stays OS-agnostic so
+# the fast path runs on every matrix.
+_MEMORY_PARAM = pytest.param("memory", id="adapter-memory")
+_LOCAL_PARAM = pytest.param("local", id="adapter-local", marks=pytest.mark.os_sensitive)
+
+
+@pytest.fixture(params=[_MEMORY_PARAM, _LOCAL_PARAM])
 def adapted_backend(request: pytest.FixtureRequest, tmp_path: Path) -> SyncBackendAdapter:
     """``SyncBackendAdapter`` wrapping either ``MemoryBackend`` or ``LocalBackend``."""
     if request.param == "memory":
@@ -66,11 +74,16 @@ class TestAdapterStreamingRead:
         await adapted_backend.delete("big.bin")
         assert await adapted_backend.exists("big.bin") is False
 
+    @pytest.mark.spec("ASYNC-033")
     async def test_read_not_found_propagates(self, adapted_backend: SyncBackendAdapter) -> None:
+        # NotFound is raised during the initial ``asyncio.to_thread(sync.read, ...)``
+        # call (before the first ``yield``), not inside the loop body. The
+        # ``pass`` below is never reached for the not-found case.
         with pytest.raises(NotFound, match="not found"):
             async for _ in adapted_backend.read("missing.bin"):
                 pass
 
+    @pytest.mark.spec("ASYNC-033")
     async def test_read_bytes_not_found_propagates(self, adapted_backend: SyncBackendAdapter) -> None:
         with pytest.raises(NotFound, match="not found"):
             await adapted_backend.read_bytes("missing.bin")
@@ -86,6 +99,7 @@ async def _chunks(*parts: bytes) -> AsyncIterator[bytes]:
         yield part
 
 
+@pytest.mark.spec("ASYNC-036")
 class TestAdapterWriteMaterialisation:
     """``write`` / ``write_atomic`` drain an async iterator before the sync call."""
 
@@ -117,6 +131,7 @@ class TestAdapterWriteMaterialisation:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.spec("ASYNC-032")
 class TestAdapterListing:
     """Iterator adapters collect the sync iterator then re-yield asynchronously."""
 
@@ -151,7 +166,10 @@ class TestAdapterListing:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.spec("ASYNC-031")
 class TestAdapterMoveCopyDelete:
+    """Blocking calls delegated to ``asyncio.to_thread`` (move/copy/delete)."""
+
     async def test_move(self, adapted_backend: SyncBackendAdapter) -> None:
         await adapted_backend.write("src.txt", b"data")
         await adapted_backend.move("src.txt", "dst.txt")
@@ -187,6 +205,7 @@ class TestAdapterMoveCopyDelete:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.spec("ASYNC-031", "ASYNC-055")
 class TestAdapterConcurrency:
     """``asyncio.to_thread`` dispatch under concurrent operations."""
 
