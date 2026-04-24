@@ -20,10 +20,6 @@ pytest.importorskip("pyarrow", reason="pyarrow not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
-from remote_store._errors import (  # noqa: E402
-    NotFound,
-    RemoteStoreError,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -240,29 +236,10 @@ class TestS3PyArrowReadPath:
 # endregion
 
 
-# region: Error Mapping (S3PA-018, S3PA-019)
-class TestS3PyArrowErrorMapping:
-    """S3PA-018, S3PA-019: error mapping."""
-
-    @pytest.mark.spec("S3PA-018")
-    def test_not_found_has_backend_attr(self, s3pa_backend: Backend) -> None:
-        with pytest.raises(NotFound) as exc_info:
-            s3pa_backend.read_bytes("does-not-exist.txt")
-        assert exc_info.value.backend == "s3-pyarrow"
-
-    @pytest.mark.spec("S3PA-019")
-    def test_error_has_backend_attribute(self, s3pa_backend: Backend) -> None:
-        with pytest.raises(RemoteStoreError) as exc_info:
-            s3pa_backend.read("missing.txt")
-        assert exc_info.value.backend == "s3-pyarrow"
-
-
-# endregion
-
-
 # region: Resource Management (S3PA-021)
 class TestS3PyArrowLifecycle:
-    """S3PA-021: dual unwrap (pyarrow + s3fs). Close semantics live in
+    """S3PA-021: PyArrow-specific unwrap. s3fs unwrap (S3PA-021) is covered by
+    TestS3SharedUnwrap in test_s3_shared.py. Close semantics live in
     conformance + TestS3SharedLifecycle; wrong-type unwrap is covered by
     TestBackendUnwrap."""
 
@@ -272,70 +249,6 @@ class TestS3PyArrowLifecycle:
 
         fs = s3pa_backend.unwrap(PyArrowS3)
         assert isinstance(fs, PyArrowS3)
-
-    @pytest.mark.spec("S3PA-021")
-    def test_unwrap_s3fs(self, s3pa_backend: Backend) -> None:
-        import s3fs
-
-        fs = s3pa_backend.unwrap(s3fs.S3FileSystem)
-        assert isinstance(fs, s3fs.S3FileSystem)
-
-
-# endregion
-
-
-# region: Metadata (S3PA-017: ETag/digest)
-class TestS3PyArrowMetadata:
-    """S3PA-017: get_file_info returns ETag and digest. The generic
-    get_file_info / exists / is_file paths are covered by conformance."""
-
-    @pytest.mark.spec("S3PA-017")
-    def test_get_file_info_has_etag(self, s3pa_backend: Backend) -> None:
-        """get_file_info must return ETag, same as S3Backend (S3PA-017)."""
-        s3pa_backend.write("etag.txt", b"hello")
-        fi = s3pa_backend.get_file_info("etag.txt")
-        assert fi.etag is not None
-        assert isinstance(fi.etag, str)
-        assert '"' not in fi.etag
-        assert fi.etag == fi.etag.lower()
-
-    @pytest.mark.spec("S3PA-017")
-    def test_get_file_info_has_digest(self, s3pa_backend: Backend, moto_server: str) -> None:
-        """get_file_info must return digest when object has checksum (S3PA-017)."""
-        import base64
-        import hashlib
-
-        import boto3
-
-        from remote_store._models import ContentDigest
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-        content = b"hello checksum"
-        expected_hex = hashlib.sha256(content).hexdigest()
-        b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
-
-        backend = s3pa_backend
-        assert isinstance(backend, S3PyArrowBackend)
-        raw_client = boto3.client(
-            "s3",
-            endpoint_url=moto_server,
-            aws_access_key_id="testing",
-            aws_secret_access_key="testing",
-            region_name=REGION,
-        )
-        raw_client.put_object(
-            Bucket=backend._bucket,
-            Key="sha256_file.txt",
-            Body=content,
-            ChecksumAlgorithm="SHA256",
-            ChecksumSHA256=b64,
-        )
-
-        fi = backend.get_file_info("sha256_file.txt")
-        assert fi.digest is not None
-        assert isinstance(fi.digest, ContentDigest)
-        assert fi.digest.algorithm == "sha256"
-        assert fi.digest.value == expected_hex
 
 
 # endregion

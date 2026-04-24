@@ -18,12 +18,7 @@ pytest.importorskip("s3fs", reason="s3fs not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
-from remote_store._errors import (  # noqa: E402
-    BackendUnavailable,
-    NotFound,
-    PermissionDenied,
-    RemoteStoreError,
-)
+from remote_store._errors import BackendUnavailable, PermissionDenied  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -101,15 +96,11 @@ class TestS3TlsCaBundle:
 # endregion
 
 
-# region: Error Mapping (S3-015 through S3-018)
+# region: Error Mapping (S3-016, S3-017)
 class TestS3ErrorMapping:
-    """S3-015 through S3-018: error mapping."""
-
-    @pytest.mark.spec("S3-015")
-    def test_not_found_has_backend_attr(self, s3_backend: Backend) -> None:
-        with pytest.raises(NotFound) as exc_info:
-            s3_backend.read_bytes("does-not-exist.txt")
-        assert exc_info.value.backend == "s3"
+    """S3-016, S3-017: PermissionDenied and BackendUnavailable mapping.
+    S3-015 (NotFound.backend) and S3-018 (RemoteStoreError.backend) are
+    covered by TestS3SharedErrorMapping in test_s3_shared.py."""
 
     @pytest.mark.spec("S3-016")
     @pytest.mark.parametrize(
@@ -152,45 +143,15 @@ class TestS3ErrorMapping:
             s3_backend.read_bytes("file.txt")
         assert exc_info.value.backend == "s3"
 
-    @pytest.mark.spec("S3-018")
-    def test_error_has_backend_attribute(self, s3_backend: Backend) -> None:
-        with pytest.raises(RemoteStoreError) as exc_info:
-            s3_backend.read("missing.txt")
-        assert exc_info.value.backend == "s3"
-
-
-# endregion
-
-
-# region: Resource Management (S3-020)
-class TestS3Lifecycle:
-    """S3-020: unwrap. (S3-019 close() contract is covered by the conformance
-    suite and by TestS3SharedLifecycle; S3-020's wrong-type behaviour is
-    covered by TestBackendUnwrap.)"""
-
-    @pytest.mark.spec("S3-020")
-    def test_unwrap_s3fs(self, s3_backend: Backend) -> None:
-        import s3fs
-
-        fs = s3_backend.unwrap(s3fs.S3FileSystem)
-        assert isinstance(fs, s3fs.S3FileSystem)
-
 
 # endregion
 
 
 # region: ETag and Digest (S3-023, S3-024)
 class TestS3ETagAndDigest:
-    """S3-023, S3-024: ETag and ContentDigest in FileInfo."""
-
-    @pytest.mark.spec("S3-023")
-    def test_get_file_info_has_etag(self, s3_backend: Backend) -> None:
-        s3_backend.write("etag.txt", b"hello")
-        fi = s3_backend.get_file_info("etag.txt")
-        assert fi.etag is not None
-        assert isinstance(fi.etag, str)
-        assert '"' not in fi.etag
-        assert fi.etag == fi.etag.lower()
+    """S3-023, S3-024: ETag and ContentDigest in FileInfo.
+    test_get_file_info_has_etag (S3-023) and test_get_file_info_has_digest_sha256
+    (S3-024) are covered by TestS3SharedETagAndDigest in test_s3_shared.py."""
 
     @pytest.mark.spec("S3-023")
     def test_list_files_has_etag(self, s3_backend: Backend) -> None:
@@ -261,44 +222,6 @@ class TestS3ETagAndDigest:
         info_dict.setdefault("name", "bucket/file.txt")
         fi = backend._info_to_fileinfo(info_dict, "file.txt")
         assert fi.etag == expected_etag
-
-    @pytest.mark.spec("S3-024")
-    def test_get_file_info_digest_sha256(self, s3_backend: Backend, moto_server: str) -> None:
-        """get_file_info returns ContentDigest when object uploaded with SHA256."""
-        import base64
-        import hashlib
-
-        import boto3
-
-        from remote_store._models import ContentDigest
-        from remote_store.backends._s3 import S3Backend
-
-        content = b"hello checksum"
-        expected_hex = hashlib.sha256(content).hexdigest()
-        b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
-
-        backend = s3_backend
-        assert isinstance(backend, S3Backend)
-        raw_client = boto3.client(
-            "s3",
-            endpoint_url=moto_server,
-            aws_access_key_id="testing",
-            aws_secret_access_key="testing",
-            region_name=REGION,
-        )
-        raw_client.put_object(
-            Bucket=backend._bucket,
-            Key="sha256_file.txt",
-            Body=content,
-            ChecksumAlgorithm="SHA256",
-            ChecksumSHA256=b64,
-        )
-
-        fi = backend.get_file_info("sha256_file.txt")
-        assert fi.digest is not None
-        assert isinstance(fi.digest, ContentDigest)
-        assert fi.digest.algorithm == "sha256"
-        assert fi.digest.value == expected_hex
 
     @pytest.mark.spec("S3-024")
     def test_digest_from_head_response_no_algorithm(self) -> None:

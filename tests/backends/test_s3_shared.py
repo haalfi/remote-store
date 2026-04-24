@@ -7,6 +7,10 @@ Covers:
 - S3-004/005/021/022/025 and S3PA-004/005/022/023 (construction)
 - TLS-001/002/004/005/007 (tls_ca_bundle, shared s3fs control path)
 - S3-007/008/009 and S3PA-009/010/011 (virtual folder semantics)
+- S3-015/S3PA-018, S3-018/S3PA-019 (error mapping: backend attribute)
+- S3-019/S3PA-020, S3-020/S3PA-021 (lifecycle: close + unwrap s3fs)
+- S3-023/S3PA-017 (ETag in get_file_info)
+- S3-024/S3PA-017 (SHA-256 digest in get_file_info)
 - RES-051/052 (resolve details)
 - BK-123 (paginated listing via _S3Base BFS)
 - S3-026/S3PA-026 (retry debug log; s3fs control path only)
@@ -27,6 +31,7 @@ import pytest
 pytest.importorskip("moto", reason="moto not installed")
 pytest.importorskip("s3fs", reason="s3fs not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
+
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -595,3 +600,128 @@ class TestS3SharedRetryNonDefaultParams:
         assert isinstance(merged_config, botocore.config.Config)
         assert merged_config.max_pool_connections == 20
         assert merged_config.retries == {"max_attempts": 2, "mode": "standard"}
+
+
+# ---------------------------------------------------------------------------
+# Error mapping (S3-015/S3PA-018, S3-018/S3PA-019): backend attribute on
+# NotFound and RemoteStoreError. PermissionDenied and BackendUnavailable
+# mapping are S3-specific (S3-016, S3-017) and stay in test_s3.py.
+# ---------------------------------------------------------------------------
+
+
+_LIVE_PARAMS_NOT_FOUND = [
+    pytest.param(S3_CLS, id="s3", marks=pytest.mark.spec("S3-015")),
+    pytest.param(S3PA_CLS, id="s3-pyarrow", marks=pytest.mark.spec("S3PA-018")),
+]
+
+_LIVE_PARAMS_ERROR_ATTR = [
+    pytest.param(S3_CLS, id="s3", marks=pytest.mark.spec("S3-018")),
+    pytest.param(S3PA_CLS, id="s3-pyarrow", marks=pytest.mark.spec("S3PA-019")),
+]
+
+
+class TestS3SharedErrorMapping:
+    """S3-015/S3PA-018, S3-018/S3PA-019: backend attribute on exceptions."""
+
+    @pytest.mark.parametrize("s3_any_backend", _LIVE_PARAMS_NOT_FOUND, indirect=True)
+    def test_not_found_has_backend_attr(self, s3_any_backend: Backend) -> None:
+        from remote_store._errors import NotFound
+
+        with pytest.raises(NotFound) as exc_info:
+            s3_any_backend.read_bytes("does-not-exist.txt")
+        assert exc_info.value.backend == s3_any_backend.name
+
+    @pytest.mark.parametrize("s3_any_backend", _LIVE_PARAMS_ERROR_ATTR, indirect=True)
+    def test_error_has_backend_attribute(self, s3_any_backend: Backend) -> None:
+        from remote_store._errors import RemoteStoreError
+
+        with pytest.raises(RemoteStoreError) as exc_info:
+            s3_any_backend.read("missing.txt")
+        assert exc_info.value.backend == s3_any_backend.name
+
+
+# ---------------------------------------------------------------------------
+# Lifecycle (S3-020 ↔ S3PA-021): unwrap(s3fs.S3FileSystem). Close idempotency
+# (S3-019 ↔ S3PA-020) is in TestS3SharedLifecycle above.
+# ---------------------------------------------------------------------------
+
+
+_LIVE_PARAMS_UNWRAP_S3FS = [
+    pytest.param(S3_CLS, id="s3", marks=pytest.mark.spec("S3-020")),
+    pytest.param(S3PA_CLS, id="s3-pyarrow", marks=pytest.mark.spec("S3PA-021")),
+]
+
+
+class TestS3SharedUnwrap:
+    """S3-020/S3PA-021: both backends expose s3fs.S3FileSystem via unwrap()."""
+
+    @pytest.mark.parametrize("s3_any_backend", _LIVE_PARAMS_UNWRAP_S3FS, indirect=True)
+    def test_unwrap_s3fs(self, s3_any_backend: Backend) -> None:
+        import s3fs
+
+        fs = s3_any_backend.unwrap(s3fs.S3FileSystem)
+        assert isinstance(fs, s3fs.S3FileSystem)
+
+
+# ---------------------------------------------------------------------------
+# ETag and digest (S3-023/S3PA-017, S3-024/S3PA-017): get_file_info returns
+# ETag and SHA-256 ContentDigest. S3-specific digest paths (CRC32,
+# _digest_from_head_response unit tests, list_files digest) stay in
+# test_s3.py.
+# ---------------------------------------------------------------------------
+
+
+_LIVE_PARAMS_ETAG = [
+    pytest.param(S3_CLS, id="s3", marks=pytest.mark.spec("S3-023")),
+    pytest.param(S3PA_CLS, id="s3-pyarrow", marks=pytest.mark.spec("S3PA-017")),
+]
+
+_LIVE_PARAMS_DIGEST_SHA256 = [
+    pytest.param(S3_CLS, id="s3", marks=pytest.mark.spec("S3-024")),
+    pytest.param(S3PA_CLS, id="s3-pyarrow", marks=pytest.mark.spec("S3PA-017")),
+]
+
+
+class TestS3SharedETagAndDigest:
+    """S3-023/S3PA-017, S3-024/S3PA-017: ETag and ContentDigest in FileInfo."""
+
+    @pytest.mark.parametrize("s3_any_backend", _LIVE_PARAMS_ETAG, indirect=True)
+    def test_get_file_info_has_etag(self, s3_any_backend: Backend) -> None:
+        s3_any_backend.write("etag.txt", b"hello")
+        fi = s3_any_backend.get_file_info("etag.txt")
+        assert fi.etag is not None
+        assert isinstance(fi.etag, str)
+        assert '"' not in fi.etag
+        assert fi.etag == fi.etag.lower()
+
+    @pytest.mark.parametrize("s3_any_backend", _LIVE_PARAMS_DIGEST_SHA256, indirect=True)
+    def test_get_file_info_has_digest_sha256(self, s3_any_backend: Backend, moto_server: str) -> None:
+        import base64
+        import hashlib
+
+        from remote_store._models import ContentDigest
+
+        content = b"hello checksum"
+        expected_hex = hashlib.sha256(content).hexdigest()
+        b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
+
+        raw_client = boto3.client(
+            "s3",
+            endpoint_url=moto_server,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name=REGION,
+        )
+        raw_client.put_object(
+            Bucket=s3_any_backend._bucket,
+            Key="sha256_file.txt",
+            Body=content,
+            ChecksumAlgorithm="SHA256",
+            ChecksumSHA256=b64,
+        )
+
+        fi = s3_any_backend.get_file_info("sha256_file.txt")
+        assert fi.digest is not None
+        assert isinstance(fi.digest, ContentDigest)
+        assert fi.digest.algorithm == "sha256"
+        assert fi.digest.value == expected_hex
