@@ -170,49 +170,44 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! note "Requires `Capability.GLOB`"
+    `glob()` raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.aio.AsyncBackend.glob
     options:
       show_root_heading: true
       heading_level: 4
 
-!!! note "Requires `Capability.GLOB`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-
 ### Metadata
+
+!!! note "Requires `Capability.METADATA`"
+    Both methods raise `CapabilityNotSupported` on backends that do not declare this capability.
 
 ::: remote_store.aio.AsyncBackend.get_file_info
     options:
       show_root_heading: true
       heading_level: 4
 
-!!! note "Requires `Capability.METADATA`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-
 ::: remote_store.aio.AsyncBackend.get_folder_info
     options:
       show_root_heading: true
       heading_level: 4
 
-!!! note "Requires `Capability.METADATA`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-
 ### File Operations
+
+!!! note "Requires `Capability.MOVE` / `Capability.COPY`"
+    `move()` requires `Capability.MOVE`; `copy()` requires `Capability.COPY`.
+    Each raises `CapabilityNotSupported` on backends that do not declare the respective capability.
 
 ::: remote_store.aio.AsyncBackend.move
     options:
       show_root_heading: true
       heading_level: 4
 
-!!! note "Requires `Capability.MOVE`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-
 ::: remote_store.aio.AsyncBackend.copy
     options:
       show_root_heading: true
       heading_level: 4
-
-!!! note "Requires `Capability.COPY`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ### Lifecycle
 
