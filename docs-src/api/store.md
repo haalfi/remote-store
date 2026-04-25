@@ -49,6 +49,11 @@
 
 ## Writing
 
+!!! note "Requires `Capability.WRITE`"
+    `write()` and `write_text()` raise `CapabilityNotSupported` on backends that do not
+    declare this capability. Most backends declare it.
+    `write_atomic()` and `open_atomic()` additionally require `Capability.ATOMIC_WRITE`.
+
 ::: remote_store.Store.write
     options:
       show_root_heading: true
@@ -142,14 +147,14 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.GLOB`"
+    `glob()` raises `CapabilityNotSupported` on backends that do not declare this capability.
+    Check `store.supports(Capability.GLOB)` before calling.
+
 ::: remote_store.Store.glob
     options:
       show_root_heading: true
       heading_level: 3
-
-!!! note "Requires `Capability.GLOB`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-    Check `store.supports(Capability.GLOB)` before calling.
 
 !!! info "Ordering and laziness"
     **Ordering is backend-defined** and may vary between backends (e.g.
@@ -163,13 +168,14 @@
 
 ## File Operations
 
+!!! note "Requires `Capability.MOVE` / `Capability.COPY`"
+    `move()` requires `Capability.MOVE`; `copy()` requires `Capability.COPY`.
+    Each raises `CapabilityNotSupported` on backends that do not declare the respective capability.
+
 ::: remote_store.Store.move
     options:
       show_root_heading: true
       heading_level: 3
-
-!!! note "Requires `Capability.MOVE`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 !!! info "Atomicity"
     Atomicity is backend-dependent. Local uses `os.replace` (atomic on same
@@ -181,9 +187,6 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Requires `Capability.COPY`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-
 !!! info "Metadata preservation"
     Metadata preservation is backend-dependent. S3 copies metadata;
     local preserves metadata (`copy2`); SFTP does not (stream copy).
@@ -192,13 +195,15 @@
 
 ## Metadata
 
+!!! note "Partially requires `Capability.METADATA`"
+    `head()`, `get_file_info()`, and `get_folder_info()` raise `CapabilityNotSupported`
+    on backends that do not declare this capability.
+    `exists()`, `is_file()`, and `is_folder()` are always available.
+
 ::: remote_store.Store.head
     options:
       show_root_heading: true
       heading_level: 3
-
-!!! note "Requires `Capability.METADATA`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ::: remote_store.Store.exists
     options:
@@ -220,16 +225,10 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Requires `Capability.METADATA`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-
 ::: remote_store.Store.get_folder_info
     options:
       show_root_heading: true
       heading_level: 3
-
-!!! note "Requires `Capability.METADATA`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 !!! note "Backend-conditional argument: `max_depth=`"
     Backends with native depth limiting prune traversal early. Backends that do not
