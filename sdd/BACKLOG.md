@@ -131,33 +131,6 @@ Existing items may be more verbose — trim on next touch.
 
 ### Testing & Verification
 
-- [ ] **ID-158 — pytest-asyncio ↔ `AsyncBackendSyncAdapter` event-loop leak**
-  `pytest -m os_sensitive` selecting any pytest-asyncio `async def` test plus
-  `tests/test_snippets.py::TestAsyncSyncBridgesSnippets` (runs the
-  `async_sync_bridges` snippet, which uses `AsyncBackendSyncAdapter`)
-  triggers three `ResourceWarning`s at session teardown: two unclosed
-  self-pipe sockets and one `_UnixSelectorEventLoop running=False closed=False`.
-  `filterwarnings = error` (BK-158) then fails the run. Reproduces locally
-  on Python 3.11 and on CI Python 3.13 Windows.
-  - Evidence: reproduces with the existing (non-`os_sensitive`)
-    `tests/aio/test_sync_adapter.py::TestSyncAdapterIO::test_*` + the snippet,
-    so the bug is pre-existing; masked on master because no
-    `os_sensitive`-marked async tests select in the cross-platform CI job
-    (BK-164's conformance file would have exposed it via the `adapter-local`
-    param marker — that marker is currently held off pending this fix).
-  - Suspect surface: pytest-asyncio 1.3 in `auto` mode leaving the
-    thread-local default loop set to a stale loop after test teardown, so the
-    snippet's synchronous `AsyncMemoryBackend()` → `asyncio.Lock()` binds to a
-    loop that nothing closes. Confirmed that `asyncio.set_event_loop(None)` in
-    an autouse teardown only moves the warning earlier (mid-test), not away.
-  - Scope: (1) reproduce in a minimal non-pytest harness to isolate
-    whether the root cause is in pytest-asyncio, `AsyncBackendSyncAdapter`, or
-    the snippet; (2) fix at the lowest appropriate layer; (3) restore the
-    `os_sensitive` marker on the `adapter-local` param of the
-    `adapted_backend` fixture in `tests/aio/test_sync_adapter_conformance.py`
-    so cross-platform CI runs the LocalBackend-via-adapter conformance.
-  - Related: BK-158 (warnings-as-errors), BK-164 (the conformance file).
-
 - [ ] **ID-157 — Live Azurite integration suite for `AsyncAzureBackend`**
   `tests/aio/test_async_azure.py` is mocked-only. The sync `tests/backends/test_azure.py`
   runs against a live Azurite container (`docker-compose` infra, `_azurite_reachable()`

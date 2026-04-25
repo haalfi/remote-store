@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-158: Fix pytest-asyncio phantom event-loop ResourceWarning
+
 - BK-164: Close high-value async test-coverage gaps — add `tests/aio/test_async_drift.py` (53 tests, Store/Backend↔AsyncStore/AsyncBackend API parity guard), `tests/aio/test_async_cancellation.py` (9 tests, invariants under `asyncio.CancelledError` for write/read/list), and `tests/aio/test_sync_adapter_conformance.py` (42 tests, `SyncBackendAdapter` parametrised across `MemoryBackend` and `LocalBackend` to exercise the 64 KiB streaming-read loop, `_materialize()` async-iterator drain, sync→async iterator bridging, and `asyncio.gather` dispatch)
 - Research SFTPGo: add SFTPGo pointer to README "What it is not" section
 - BUG-183: `test_pbt_stateful.py::BackendModel` now tracks live directory nodes in a separate set instead of deriving them from the file map, and adds a `delete_folder` rule that prunes the target and its descendants from the model; fixes the Hypothesis-minimised `write('0/0') → delete('0/0') → write('0')` sequence where the model forgot the empty `_DirNode` that `MemoryBackend` retains per MEM-DS-006 and let the rule call through to the backend

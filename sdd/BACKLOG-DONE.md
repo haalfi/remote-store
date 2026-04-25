@@ -183,6 +183,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   urllib transport path, but only manifests visibly in the test environment;
   fixed with `contextlib.closing(exc)` in `_http.py`.
 
+- [x] **ID-158 — pytest-asyncio ↔ `AsyncBackendSyncAdapter` event-loop leak**
+  Root cause: pytest-asyncio 1.3 calls `asyncio.get_event_loop()` when setting up
+  each async test; Python 3.11 auto-creates a new loop when none is set and stores it
+  in the thread-local policy. pytest-asyncio saves it as `old_loop` and restores it as
+  the policy default after teardown. A subsequent sync test calling `asyncio.run()`
+  orphans it: `asyncio.run` replaces the policy default and sets it to `None` without
+  closing the old loop. The loop's internal cyclic reference (`_read_from_self` bound
+  method ↔ Handle) keeps it alive until `gc.collect()` at session teardown, where
+  `BaseEventLoop.__del__` emits `ResourceWarning` (promoted to error by BK-158).
+  Fix: session-scoped autouse fixture `_close_leaked_event_loops` in
+  `tests/conftest.py` closes all unclosed non-running event loops before pytest's
+  `gc_collect_harder()` runs (session fixtures finalise before
+  `config._ensure_unconfigure()`). Also restored the `os_sensitive` marker on the
+  `adapter-local` param of `adapted_backend` in
+  `tests/aio/test_sync_adapter_conformance.py` (unblocked by this fix).
+  Regression test: `TestCloseSemantics::test_loop_closed_after_close` in
+  `tests/aio/test_async_to_sync_adapter.py`.
+
 - [x] **BK-158 — Promote unhandled warnings to errors in pytest**
   Added `filterwarnings = error` to `[tool.pytest.ini_options]`; existing SQLAlchemy
   suppressors retained with inline justification.

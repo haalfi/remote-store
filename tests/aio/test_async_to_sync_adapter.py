@@ -871,6 +871,15 @@ class TestCloseSemantics:
         assert not adapter._loop.is_running()  # internal: no public observable for loop state
 
     @pytest.mark.spec("ASYNC-088")
+    def test_loop_closed_after_close(self) -> None:
+        # Regression for ID-158: the private loop must be *closed* (self-pipe
+        # sockets released), not merely stopped.  A stopped-but-not-closed loop
+        # emits ResourceWarning when the GC collects it.
+        adapter, _ = _make_adapter()
+        adapter.close()
+        assert adapter._loop.is_closed()  # internal: no public observable for loop state
+
+    @pytest.mark.spec("ASYNC-088")
     def test_thread_joined_after_close(self) -> None:
         adapter, _ = _make_adapter()
         adapter.close()
