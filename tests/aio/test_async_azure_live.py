@@ -182,9 +182,14 @@ class TestAsyncAzureLiveStreaming:
 
             assert b"".join(chunks) == payload
             assert len(chunks) > 1, f"Expected multi-chunk download; got {len(chunks)} chunks"
-            # No chunk should contain the whole payload.
-            assert all(len(c) <= len(payload) for c in chunks)
-            assert max(len(c) for c in chunks) < len(payload)
+            # The largest chunk must not exceed the configured download chunk
+            # size. This is the assertion that actually defends the chunking
+            # claim: if ``client_options`` ever stops reaching the downloader,
+            # the SDK falls back to its 32 MiB default and a single-chunk
+            # download covers the whole payload.
+            assert max(len(c) for c in chunks) <= chunk_size, (
+                f"Largest chunk {max(len(c) for c in chunks)} exceeds configured {chunk_size}"
+            )
         finally:
             # Nested finallys so a failure in any one cleanup step does not
             # suppress the rest (mirrors the async_azure_backend fixture).
@@ -240,14 +245,19 @@ class TestAsyncAzureLiveMetadata:
         assert fi.metadata.get("env") == "stage"
 
     @pytest.mark.spec("WR-012")
+    @pytest.mark.spec("WR-013")
     async def test_write_no_metadata_yields_empty_or_none_user_metadata(
         self,
         async_azure_backend: AsyncAzureBackend,
     ) -> None:
-        """A write with ``metadata=None`` produces no user metadata on the file."""
-        await async_azure_backend.write("no_meta.txt", b"data")
+        """No ``metadata=`` means ``WriteResult.metadata is None`` (WR-012) and
+        ``FileInfo.metadata`` round-trips empty/None (WR-013)."""
+        wr = await async_azure_backend.write("no_meta.txt", b"data")
+        # WR-012: WriteResult.metadata is None when caller passed no metadata.
+        assert wr.metadata is None
         fi = await async_azure_backend.get_file_info("no_meta.txt")
-        # Backend strips internal ``hdi_isfolder`` and returns ``None`` if nothing left.
+        # WR-013: round-trip yields no user metadata. Backend strips internal
+        # ``hdi_isfolder`` and returns ``None`` if nothing else remains.
         assert not fi.metadata
 
 
@@ -308,49 +318,54 @@ class TestAsyncAzureLiveErrorMapping:
         with pytest.raises(AlreadyExists, match="dup_atomic"):
             await async_azure_backend.write_atomic("dup_atomic.txt", b"second")
 
-    @pytest.mark.spec("ASYNC-024")
     async def test_if_match_precondition_failure_maps_to_remote_store_error(
         self,
         async_azure_backend: AsyncAzureBackend,
         azurite_server: str | None,
     ) -> None:
-        """If-Match precondition failure (HTTP 412) is mapped via ``classify_azure_error``.
+        """A real wire 412 (If-Match precondition failure) is classified by ``classify_azure_error``.
 
-        The public ``AsyncAzureBackend`` API does not expose ``if_match``,
-        so we construct an independent async ``BlobClient`` from the same
-        connection string to drive the precondition through the real wire
-        path. The test then asserts that the resulting
-        ``HttpResponseError`` flows through the same classifier the
-        backend's ``_errors()`` async context manager uses, producing a
-        ``RemoteStoreError`` carrying the backend name. This guards the
-        end-to-end mapping that mock tests cannot exercise (mocks fabricate
-        the ``status_code`` rather than the SDK setting it from the wire).
+        Wire-level coverage of the pure ``classify_azure_error`` function on
+        a 412 produced by the real Azure SDK over the network — the path
+        mocks cannot reproduce because they fabricate ``status_code`` rather
+        than letting the SDK set it from the response. Because the public
+        ``AsyncAzureBackend`` API does not expose ``if_match``, the test
+        drives the precondition through an independent async ``BlobClient``
+        constructed from the same connection string. **This is not coverage
+        of ASYNC-024**: the backend's ``_errors()`` context manager is not
+        entered here. ASYNC-024 is exercised by the sibling 404/409 tests
+        in this class. The raw, unstripped ETag from the seed write's
+        ``get_blob_properties()`` is used to avoid a subtle real-Azure
+        brittleness — ``FileInfo.etag`` is lower-cased by
+        ``props_to_fileinfo`` so re-quoting it can fail to match the
+        original wire form on case-sensitive servers.
         """
         if azurite_server is None:
             pytest.skip("Azurite not reachable")
         from azure.storage.blob.aio import BlobClient as AsyncBlobClient
 
-        # Seed a blob and capture its ETag.
-        await async_azure_backend.write("preset.txt", b"v1", overwrite=True)
-        info_v1 = await async_azure_backend.get_file_info("preset.txt")
-        # Overwrite to invalidate v1's ETag.
-        await async_azure_backend.write("preset.txt", b"v2", overwrite=True)
-        # Now attempt an upload with If-Match keyed to the stale v1 ETag.
         # Use the public ResolutionPlan to discover the container name
         # rather than reaching for a private attribute.
         container = async_azure_backend.resolve("preset.txt").details["container"]
         bc = AsyncBlobClient.from_connection_string(azurite_server, container_name=container, blob_name="preset.txt")
-        # Azurite expects the ETag re-quoted on the wire; the public ETag is
-        # stripped + lower-cased so we re-wrap it.
-        stale_etag = f'"{info_v1.etag}"' if info_v1.etag else None
-        assert stale_etag is not None
         try:
+            # Seed a blob via the public async API, then capture the raw
+            # (unstripped, original-case) ETag from get_blob_properties so
+            # the If-Match value matches the wire form exactly.
+            await async_azure_backend.write("preset.txt", b"v1", overwrite=True)
+            v1_props = await bc.get_blob_properties()
+            stale_etag = v1_props.etag
+            assert isinstance(stale_etag, str), f"Expected str ETag from SDK, got {type(stale_etag).__name__}"
+            assert stale_etag.startswith('"'), f"Expected raw quoted ETag from SDK, got {stale_etag!r}"
+            assert stale_etag.endswith('"'), f"Expected raw quoted ETag from SDK, got {stale_etag!r}"
+            # Overwrite to invalidate v1's ETag.
+            await async_azure_backend.write("preset.txt", b"v2", overwrite=True)
             with pytest.raises((HttpResponseError, ResourceModifiedError)) as exc_info:
                 await bc.upload_blob(b"v3", overwrite=True, if_match=stale_etag)
         finally:
             await bc.close()
-        # Same classifier the backend uses must produce a RemoteStoreError
-        # whose backend identity is ``async-azure``.
+        # The pure classifier the backend would use on this wire response
+        # must produce a RemoteStoreError with backend identity preserved.
         mapped = classify_azure_error(exc_info.value, "preset.txt", async_azure_backend.name)
         assert isinstance(mapped, RemoteStoreError)
         assert mapped.backend == "async-azure"
