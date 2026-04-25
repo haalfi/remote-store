@@ -317,11 +317,6 @@ relying on these in production.
 | Native `glob()` | Yes | Yes | Yes | — | Yes | — | — | Yes (SQL GLOB/LIKE) | Yes (in-memory) |
 | `list_files()` ordering | OS-dependent | Lexicographic | Lexicographic | OS-dependent | Lexicographic | Insertion order | — | DB-dependent | Lexicographic |
 
-**Related types:** `WritableContent = BinaryIO | bytes`,
-[`FileInfo`](models.md), [`FolderInfo`](models.md),
-[`ResolutionPlan`](models.md), [`RemotePath`](models.md),
-[`Capability`](capabilities.md).
-
 ## See also
 
 - [Getting Started](../getting-started.md) — step-by-step guide to reading and writing files
