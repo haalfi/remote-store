@@ -6,7 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- ID-157: Live Azurite integration suite for `AsyncAzureBackend` (`tests/aio/test_async_azure_live.py`); covers read/write/write_atomic, multi-chunk streaming download, USER_METADATA round-trip, and live error mapping (NotFound / AlreadyExists / 412 If-Match precondition) against the real async Blob SDK; standalone fixture (per-test container) reusing `azurite_server` and `_AZURITE_CONN_STR` from `tests/conftest.py`
+- ID-157: Live Azurite integration suite for `AsyncAzureBackend` (`tests/aio/test_async_azure_live.py`)
 - ID-158: Fix pytest-asyncio phantom event-loop ResourceWarning
 
 - BK-164: Close high-value async test-coverage gaps — add `tests/aio/test_async_drift.py` (53 tests, Store/Backend↔AsyncStore/AsyncBackend API parity guard), `tests/aio/test_async_cancellation.py` (9 tests, invariants under `asyncio.CancelledError` for write/read/list), and `tests/aio/test_sync_adapter_conformance.py` (42 tests, `SyncBackendAdapter` parametrised across `MemoryBackend` and `LocalBackend` to exercise the 64 KiB streaming-read loop, `_materialize()` async-iterator drain, sync→async iterator bridging, and `asyncio.gather` dispatch)

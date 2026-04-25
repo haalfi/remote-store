@@ -79,9 +79,16 @@ async def async_azure_backend(azurite_server: str | None) -> AsyncIterator[Async
     try:
         yield backend
     finally:
-        await backend.aclose()
-        service.delete_container(container)
-        service.close()
+        # Nested finallys so a failure in any one cleanup step does not
+        # suppress the rest. Without this, an exception from aclose() or
+        # delete_container() would leak the sync BlobServiceClient.
+        try:
+            await backend.aclose()
+        finally:
+            try:
+                service.delete_container(container)
+            finally:
+                service.close()
 
 
 # ---------------------------------------------------------------------------
@@ -94,13 +101,13 @@ class TestAsyncAzureLiveRoundTrip:
 
     async def test_write_then_read_bytes(self, async_azure_backend: AsyncAzureBackend) -> None:
         result = await async_azure_backend.write("rt.txt", b"hello async")
-        assert isinstance(result, WriteResult)
+        assert result.size == len(b"hello async")
         assert await async_azure_backend.read_bytes("rt.txt") == b"hello async"
 
     async def test_write_atomic_then_read_bytes(self, async_azure_backend: AsyncAzureBackend) -> None:
         # Non-HNS: write_atomic delegates to write (PUT is atomic).
         result = await async_azure_backend.write_atomic("atomic.txt", b"atomic-payload")
-        assert isinstance(result, WriteResult)
+        assert result.size == len(b"atomic-payload")
         assert await async_azure_backend.read_bytes("atomic.txt") == b"atomic-payload"
 
     async def test_write_etag_non_empty_and_normalised(self, async_azure_backend: AsyncAzureBackend) -> None:
@@ -179,9 +186,15 @@ class TestAsyncAzureLiveStreaming:
             assert all(len(c) <= len(payload) for c in chunks)
             assert max(len(c) for c in chunks) < len(payload)
         finally:
-            await backend.aclose()
-            service.delete_container(container)
-            service.close()
+            # Nested finallys so a failure in any one cleanup step does not
+            # suppress the rest (mirrors the async_azure_backend fixture).
+            try:
+                await backend.aclose()
+            finally:
+                try:
+                    service.delete_container(container)
+                finally:
+                    service.close()
 
     async def test_read_bytes_full_payload(self, async_azure_backend: AsyncAzureBackend) -> None:
         """``read_bytes`` returns the full payload regardless of chunking."""
@@ -244,25 +257,39 @@ class TestAsyncAzureLiveMetadata:
 
 
 class TestAsyncAzureLiveErrorMapping:
-    """Real 404 / 409 / 412 responses should map to remote_store error types."""
+    """Real 404 / 409 / 412 responses should map to remote_store error types.
 
+    Spec: ASYNC-024 (async backend error mapping). 404 ↦ NotFound (ERR-002),
+    409 ↦ AlreadyExists (ERR-003), 412 ↦ ``RemoteStoreError`` (no specific
+    subtype declared today; see ``classify_azure_error``).
+    """
+
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ERR-002")
     async def test_read_bytes_missing_raises_not_found(self, async_azure_backend: AsyncAzureBackend) -> None:
         with pytest.raises(NotFound, match="ghost"):
             await async_azure_backend.read_bytes(f"ghost-{uuid.uuid4().hex}.txt")
 
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ERR-002")
     async def test_get_file_info_missing_raises_not_found(self, async_azure_backend: AsyncAzureBackend) -> None:
         with pytest.raises(NotFound, match="ghost"):
             await async_azure_backend.get_file_info(f"ghost-{uuid.uuid4().hex}.txt")
 
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ERR-002")
     async def test_delete_missing_raises_not_found(self, async_azure_backend: AsyncAzureBackend) -> None:
         with pytest.raises(NotFound, match="ghost"):
             await async_azure_backend.delete(f"ghost-{uuid.uuid4().hex}.txt")
 
+    @pytest.mark.spec("ASYNC-024")
     async def test_delete_missing_ok_swallows_not_found(self, async_azure_backend: AsyncAzureBackend) -> None:
         path = f"ghost-{uuid.uuid4().hex}.txt"
         await async_azure_backend.delete(path, missing_ok=True)
         assert await async_azure_backend.exists(path) is False
 
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ERR-003")
     async def test_write_overwrite_false_raises_already_exists(
         self,
         async_azure_backend: AsyncAzureBackend,
@@ -271,6 +298,8 @@ class TestAsyncAzureLiveErrorMapping:
         with pytest.raises(AlreadyExists, match="dup"):
             await async_azure_backend.write("dup.txt", b"second")
 
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ERR-003")
     async def test_write_atomic_overwrite_false_raises_already_exists(
         self,
         async_azure_backend: AsyncAzureBackend,
@@ -279,34 +308,47 @@ class TestAsyncAzureLiveErrorMapping:
         with pytest.raises(AlreadyExists, match="dup_atomic"):
             await async_azure_backend.write_atomic("dup_atomic.txt", b"second")
 
+    @pytest.mark.spec("ASYNC-024")
     async def test_if_match_precondition_failure_maps_to_remote_store_error(
         self,
         async_azure_backend: AsyncAzureBackend,
+        azurite_server: str | None,
     ) -> None:
         """If-Match precondition failure (HTTP 412) is mapped via ``classify_azure_error``.
 
-        The public ``AsyncAzureBackend`` API does not expose ``if_match`` so
-        we drive the precondition through the underlying ``BlobClient`` to
-        reach the real wire path. The test then asserts that the resulting
+        The public ``AsyncAzureBackend`` API does not expose ``if_match``,
+        so we construct an independent async ``BlobClient`` from the same
+        connection string to drive the precondition through the real wire
+        path. The test then asserts that the resulting
         ``HttpResponseError`` flows through the same classifier the
-        ``_errors()`` async context manager uses, producing a
+        backend's ``_errors()`` async context manager uses, producing a
         ``RemoteStoreError`` carrying the backend name. This guards the
         end-to-end mapping that mock tests cannot exercise (mocks fabricate
         the ``status_code`` rather than the SDK setting it from the wire).
         """
+        if azurite_server is None:
+            pytest.skip("Azurite not reachable")
+        from azure.storage.blob.aio import BlobClient as AsyncBlobClient
+
         # Seed a blob and capture its ETag.
         await async_azure_backend.write("preset.txt", b"v1", overwrite=True)
         info_v1 = await async_azure_backend.get_file_info("preset.txt")
         # Overwrite to invalidate v1's ETag.
         await async_azure_backend.write("preset.txt", b"v2", overwrite=True)
         # Now attempt an upload with If-Match keyed to the stale v1 ETag.
-        bc = async_azure_backend._blob_client("preset.txt")
+        # Use the public ResolutionPlan to discover the container name
+        # rather than reaching for a private attribute.
+        container = async_azure_backend.resolve("preset.txt").details["container"]
+        bc = AsyncBlobClient.from_connection_string(azurite_server, container_name=container, blob_name="preset.txt")
         # Azurite expects the ETag re-quoted on the wire; the public ETag is
         # stripped + lower-cased so we re-wrap it.
         stale_etag = f'"{info_v1.etag}"' if info_v1.etag else None
         assert stale_etag is not None
-        with pytest.raises((HttpResponseError, ResourceModifiedError)) as exc_info:
-            await bc.upload_blob(b"v3", overwrite=True, if_match=stale_etag)
+        try:
+            with pytest.raises((HttpResponseError, ResourceModifiedError)) as exc_info:
+                await bc.upload_blob(b"v3", overwrite=True, if_match=stale_etag)
+        finally:
+            await bc.close()
         # Same classifier the backend uses must produce a RemoteStoreError
         # whose backend identity is ``async-azure``.
         mapped = classify_azure_error(exc_info.value, "preset.txt", async_azure_backend.name)
