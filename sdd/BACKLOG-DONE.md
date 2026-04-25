@@ -5,6 +5,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-157 — Live Azurite integration suite for `AsyncAzureBackend`**
+  Added `tests/aio/test_async_azure_live.py` (17 tests + 1 conditional HNS
+  test) running against a live Azurite container, gated on
+  `_azurite_reachable()` from `tests/conftest.py`. Covers what the
+  mock-only `tests/aio/test_async_azure.py` cannot: real ETag / `last_modified`
+  propagation through `_build_azure_write_result`, multi-chunk download
+  via `download_blob().chunks()` (forced with a per-test backend setting
+  `max_single_get_size` / `max_chunk_get_size` to 256 KiB so the test
+  stays fast), USER_METADATA round-trip via `get_file_info`, and live
+  404 / 409 / 412 wire responses mapped through `classify_azure_error`.
+  The 412 If-Match precondition test drives the underlying async
+  `BlobClient` directly (the public API does not expose `if_match`),
+  asserting that the resulting `HttpResponseError` flows through the same
+  classifier the backend's `_errors()` async context manager uses.
+  Stand-alone fixture (per-test container) rather than parametrised with
+  the sync `tests/backends/test_azure.py`: async needs `aclose()` and
+  async generators, so structural convergence with the sync bodies wasn't
+  clean. Container provisioning reuses the sync `BlobServiceClient` via
+  `azurite_server` to avoid spinning up an event loop just to create a
+  container. HNS class is gated on `_ensure_hns()` and skips against
+  Azurite (no HNS emulation); ready to activate against a live ADLS Gen2
+  account.
+
 - [x] **BK-164 — Close high-value async test-coverage gaps**
   Three new files under `tests/aio/` targeting async-specific concerns absent
   from the existing suite:
