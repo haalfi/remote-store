@@ -119,7 +119,13 @@ def _close_leaked_event_loops() -> Iterator[None]:
     Closing all unclosed, non-running event loops here — before pytest's
     ``gc_collect_harder()`` runs — prevents the warning.  Session fixtures
     finalise before ``config._ensure_unconfigure()`` (which hosts
-    ``gc_collect_harder()``), so the timing guarantee holds.
+    ``gc_collect_harder()``), so the timing guarantee holds.  The sweep is
+    intentionally broad: at session teardown, any unclosed non-running loop is
+    garbage regardless of origin.  Regression coverage for this fixture is
+    whole-suite: the combination of ``tests/aio/test_sync_adapter.py`` async
+    tests followed by ``tests/test_snippets.py::TestAsyncSyncBridgesSnippets``
+    (a sync test that calls ``asyncio.run()``) reproduces the leak on Python
+    3.11 without this fixture.
 
     Ref: ID-158.
     """

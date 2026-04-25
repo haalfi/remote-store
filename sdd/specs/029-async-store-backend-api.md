@@ -584,6 +584,8 @@ following drain order:
 2. Wait for in-flight tasks (including the `aclose()` submission) to drain.
 3. Call `loop.call_soon_threadsafe(loop.stop)`.
 4. Join the daemon thread with the supplied bound.
+5. Close the private event loop (`loop.close()`), releasing its self-pipe
+   sockets.  After `close()` returns, `loop.is_closed()` is `True`.
 
 If the timeout expires before the thread joins, the adapter logs one
 record at `WARNING` level with message stem
