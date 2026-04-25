@@ -259,7 +259,9 @@ class TestAsyncAzureLiveErrorMapping:
             await async_azure_backend.delete(f"ghost-{uuid.uuid4().hex}.txt")
 
     async def test_delete_missing_ok_swallows_not_found(self, async_azure_backend: AsyncAzureBackend) -> None:
-        await async_azure_backend.delete(f"ghost-{uuid.uuid4().hex}.txt", missing_ok=True)
+        path = f"ghost-{uuid.uuid4().hex}.txt"
+        await async_azure_backend.delete(path, missing_ok=True)
+        assert await async_azure_backend.exists(path) is False
 
     async def test_write_overwrite_false_raises_already_exists(
         self,
