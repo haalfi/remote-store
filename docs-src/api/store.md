@@ -30,6 +30,10 @@
       show_root_heading: true
       heading_level: 3
 
+!!! info "Quality flag: `Capability.LAZY_READ`"
+    When declared, data is fetched lazily — partial reads avoid loading the whole
+    file. Without it, the backend may buffer content before returning the stream.
+
 ::: remote_store.Store.read_bytes
     options:
       show_root_heading: true
@@ -39,6 +43,10 @@
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! info "Quality flag: `Capability.SEEKABLE_READ`"
+    When declared, the stream is natively seekable. Without it, the Store spools
+    the entire content to memory first to satisfy the seekable contract.
 
 ::: remote_store.Store.read_text
     options:
@@ -53,6 +61,11 @@
     `write()` and `write_text()` raise `CapabilityNotSupported` on backends that do not
     declare this capability. Most backends declare it.
     `write_atomic()` and `open_atomic()` additionally require `Capability.ATOMIC_WRITE`.
+
+!!! info "Quality flag: `Capability.WRITE_RESULT_NATIVE`"
+    When declared, the returned `WriteResult` fields (`etag`, `version_id`,
+    `last_modified`, `digest`) are populated from the backend's write response.
+    Without it, only locally computable fields are set.
 
 ::: remote_store.Store.write
     options:
@@ -181,6 +194,7 @@
     Atomicity is backend-dependent. Local uses `os.replace` (atomic on same
     filesystem). S3 and Azure use copy-then-delete (not atomic). SFTP
     atomicity depends on the server.
+    Check `store.supports(Capability.ATOMIC_MOVE)` to query this at runtime.
 
 ::: remote_store.Store.copy
     options:

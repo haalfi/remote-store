@@ -96,6 +96,10 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! info "Quality flag: `Capability.LAZY_READ`"
+    When declared, data is fetched lazily — partial reads avoid loading the whole
+    file. Without it, the backend may buffer content before returning the stream.
+
 ::: remote_store.aio.AsyncBackend.read_bytes
     options:
       show_root_heading: true
@@ -106,6 +110,12 @@ counterpart.
 !!! note "Requires `Capability.WRITE`"
     `write()` raises `CapabilityNotSupported` on backends that do not declare
     this capability. Most backends declare it.
+    `write_atomic()` additionally requires `Capability.ATOMIC_WRITE`.
+
+!!! info "Quality flag: `Capability.WRITE_RESULT_NATIVE`"
+    When declared, the returned `WriteResult` fields (`etag`, `version_id`,
+    `last_modified`, `digest`) are populated from the backend's write response.
+    Without it, only locally computable fields are set.
 
 ::: remote_store.aio.AsyncBackend.write
     options:
@@ -203,6 +213,10 @@ counterpart.
     options:
       show_root_heading: true
       heading_level: 4
+
+!!! info "Quality flag: `Capability.ATOMIC_MOVE`"
+    When declared, `move()` is guaranteed atomic under concurrent access.
+    Check `backend.capabilities().supports(Capability.ATOMIC_MOVE)` to query at runtime.
 
 ::: remote_store.aio.AsyncBackend.copy
     options:
