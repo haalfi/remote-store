@@ -131,25 +131,6 @@ Existing items may be more verbose — trim on next touch.
 
 ### Testing & Verification
 
-- [ ] **ID-157 — Live Azurite integration suite for `AsyncAzureBackend`**
-  `tests/aio/test_async_azure.py` is mocked-only. The sync `tests/backends/test_azure.py`
-  runs against a live Azurite container (`docker-compose` infra, `_azurite_reachable()`
-  fixture) and catches real Azure SDK behaviour: header casing, streaming chunk
-  boundaries on `download_blob`, error mapping for actual 404 / 409 / 412
-  responses, ETag and `last_modified` propagation. Mocks cover signatures, not
-  semantics. Add a parallel `test_async_azure_live.py` that reuses
-  `azurite_server` from `tests/conftest.py` and exercises the real native-async
-  Azure SDK path in `_async_azure.py`.
-  - Scope: read/write/write_atomic, streaming read with multi-chunk download,
-    metadata roundtrip (USER_METADATA), error mapping (NotFound / AlreadyExists
-    / If-Match preconditions), HNS vs flat namespace if both reachable.
-  - Reuse: existing `tests/backends/test_azure.py` test bodies as templates;
-    `_AZURITE_CONN_STR` and container-create/cleanup helpers from
-    `tests/conftest.py` (per ID-153).
-  - Open question: should this share infrastructure with sync via a
-    `live_azure` parametrised fixture, or stand alone? Sharing reduces drift
-    but requires async/sync test bodies to converge structurally.
-
 - [ ] **ID-156 — Adapter conformance across S3 / SFTP / Azurite**
   `tests/aio/test_sync_adapter_conformance.py` (BK-164) parametrises
   `SyncBackendAdapter` over `MemoryBackend` and `LocalBackend`. Extend to
