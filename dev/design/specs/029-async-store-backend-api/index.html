@@ -11283,6 +11283,8 @@ following drain order:</p>
 <li>Wait for in-flight tasks (including the <code>aclose()</code> submission) to drain.</li>
 <li>Call <code>loop.call_soon_threadsafe(loop.stop)</code>.</li>
 <li>Join the daemon thread with the supplied bound.</li>
+<li>Close the private event loop (<code>loop.close()</code>), releasing its self-pipe
+   sockets.  After <code>close()</code> returns, <code>loop.is_closed()</code> is <code>True</code>.</li>
 </ol>
 <p>If the timeout expires before the thread joins, the adapter logs one
 record at <code>WARNING</code> level with message stem
