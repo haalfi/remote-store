@@ -19,22 +19,25 @@ Container setup/teardown reuses the **sync** ``BlobServiceClient`` (via
 ``azurite_server`` from ``tests/conftest.py``) which avoids spinning up an
 async event loop just to provision a container.
 
-Azurite is non-HNS; the HNS code path skips at runtime via the same
-``_ensure_hns()`` used by the backend. If a future fixture provides a live
-HNS account it can be added by a sibling class gated on a separate marker.
+Azurite does not emulate Hierarchical Namespace; the HNS test class is
+gated on the ``RS_TEST_LIVE_HNS=1`` env var so it activates only against a
+real ADLS Gen2 account and never asserts on Azurite responses.
 """
 
 from __future__ import annotations
 
+import os
 import uuid
-from typing import TYPE_CHECKING
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-datalake not installed")
 
-from azure.core.exceptions import HttpResponseError, ResourceModifiedError  # noqa: E402
+from azure.core.exceptions import HttpResponseError  # noqa: E402
 from azure.storage.blob import BlobServiceClient  # noqa: E402
+from azure.storage.blob.aio import BlobClient as AsyncBlobClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, NotFound, RemoteStoreError  # noqa: E402
 from remote_store._models import WriteResult  # noqa: E402
@@ -60,28 +63,36 @@ pytestmark = [
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture
-async def async_azure_backend(azurite_server: str | None) -> AsyncIterator[AsyncAzureBackend]:
-    """Per-test ``AsyncAzureBackend`` against a fresh Azurite container."""
-    if azurite_server is None:
-        pytest.skip("Azurite not reachable")
+@asynccontextmanager
+async def _provision_async_backend(
+    azurite_server: str,
+    *,
+    client_options: dict[str, Any] | None = None,
+) -> AsyncIterator[AsyncAzureBackend]:
+    """Provision a fresh Azurite container + ``AsyncAzureBackend``.
 
+    Centralises the per-test cleanup so the fixture and bespoke tests that
+    need custom ``client_options`` (e.g. the streaming chunk-size test) do
+    not duplicate the nested-finally teardown. If any cleanup step fails,
+    the rest still run.
+    """
     container = f"test-az-aio-{uuid.uuid4().hex[:8]}"
-    # Sync client for setup/teardown — avoids an event loop just to create a container.
+    # Sync client for setup/teardown — avoids spinning up an event loop
+    # just to create a container.
     service = BlobServiceClient.from_connection_string(azurite_server)
     try:
         service.create_container(container)
     except Exception:
         service.close()
         raise
-
-    backend = AsyncAzureBackend(container=container, connection_string=azurite_server)
+    backend = AsyncAzureBackend(
+        container=container,
+        connection_string=azurite_server,
+        client_options=client_options,
+    )
     try:
         yield backend
     finally:
-        # Nested finallys so a failure in any one cleanup step does not
-        # suppress the rest. Without this, an exception from aclose() or
-        # delete_container() would leak the sync BlobServiceClient.
         try:
             await backend.aclose()
         finally:
@@ -91,25 +102,48 @@ async def async_azure_backend(azurite_server: str | None) -> AsyncIterator[Async
                 service.close()
 
 
+@pytest.fixture
+async def async_azure_backend(azurite_server: str | None) -> AsyncIterator[AsyncAzureBackend]:
+    """Per-test ``AsyncAzureBackend`` against a fresh Azurite container.
+
+    The module-level ``skipif(not _azurite_reachable())`` and
+    ``pytest.importorskip`` together guarantee that ``azurite_server`` is
+    a non-None connection string whenever this fixture runs.
+    """
+    assert azurite_server is not None  # noqa: S101 — type-narrowing under the module-level skip
+    async with _provision_async_backend(azurite_server) as backend:
+        yield backend
+
+
 # ---------------------------------------------------------------------------
 # Read / write round-trip
 # ---------------------------------------------------------------------------
 
 
 class TestAsyncAzureLiveRoundTrip:
-    """Real SDK round-trips through the public async API."""
+    """Real SDK round-trips through the public async API.
 
+    Spec: AZ-021 (``read_bytes()``), AZ-022 (``write()``), AZ-014 (atomic
+    write), AZ-023 (``get_file_info()``), AZ-034 (ETag and Content-MD5),
+    WR-001a (WriteResult fields).
+    """
+
+    @pytest.mark.spec("AZ-022")
+    @pytest.mark.spec("AZ-021")
     async def test_write_then_read_bytes(self, async_azure_backend: AsyncAzureBackend) -> None:
         result = await async_azure_backend.write("rt.txt", b"hello async")
         assert result.size == len(b"hello async")
         assert await async_azure_backend.read_bytes("rt.txt") == b"hello async"
 
+    @pytest.mark.spec("AZ-014")
     async def test_write_atomic_then_read_bytes(self, async_azure_backend: AsyncAzureBackend) -> None:
         # Non-HNS: write_atomic delegates to write (PUT is atomic).
         result = await async_azure_backend.write_atomic("atomic.txt", b"atomic-payload")
         assert result.size == len(b"atomic-payload")
         assert await async_azure_backend.read_bytes("atomic.txt") == b"atomic-payload"
 
+    @pytest.mark.spec("AZ-022")
+    @pytest.mark.spec("WR-001a")
     async def test_write_etag_non_empty_and_normalised(self, async_azure_backend: AsyncAzureBackend) -> None:
         """ETag from real SDK upload response is stripped and lower-cased."""
         result = await async_azure_backend.write("et.txt", b"data")
@@ -118,11 +152,15 @@ class TestAsyncAzureLiveRoundTrip:
         assert '"' not in result.etag
         assert result.etag == result.etag.lower()
 
+    @pytest.mark.spec("AZ-022")
+    @pytest.mark.spec("WR-001a")
     async def test_write_last_modified_populated(self, async_azure_backend: AsyncAzureBackend) -> None:
         result = await async_azure_backend.write("lm.txt", b"data")
         assert result.last_modified is not None
         assert result.last_modified.tzinfo is not None
 
+    @pytest.mark.spec("AZ-023")
+    @pytest.mark.spec("AZ-034")
     async def test_get_file_info_etag_matches_write(self, async_azure_backend: AsyncAzureBackend) -> None:
         """``WriteResult.etag`` and ``FileInfo.etag`` agree for the same file."""
         wr = await async_azure_backend.write("etmatch.txt", b"data")
@@ -137,8 +175,13 @@ class TestAsyncAzureLiveRoundTrip:
 
 
 class TestAsyncAzureLiveStreaming:
-    """Real ``download_blob().chunks()`` should yield multiple chunks for large blobs."""
+    """Real ``download_blob().chunks()`` should yield multiple chunks for large blobs.
 
+    Spec: AZ-020 (``read()``), SIO-001 (Streaming Reads).
+    """
+
+    @pytest.mark.spec("AZ-020")
+    @pytest.mark.spec("SIO-001")
     async def test_read_streams_multiple_chunks(self, azurite_server: str | None) -> None:
         """``download_blob().chunks()`` yields > 1 chunk when the payload exceeds the chunk size.
 
@@ -152,27 +195,12 @@ class TestAsyncAzureLiveStreaming:
         downloader actually chunks, and the async generator forwards
         every chunk.
         """
-        if azurite_server is None:
-            pytest.skip("Azurite not reachable")
-
+        assert azurite_server is not None  # noqa: S101 — type-narrowing under the module-level skip
         chunk_size = 256 * 1024
-        container = f"test-az-aio-stream-{uuid.uuid4().hex[:8]}"
-        service = BlobServiceClient.from_connection_string(azurite_server)
-        try:
-            service.create_container(container)
-        except Exception:
-            service.close()
-            raise
-
-        backend = AsyncAzureBackend(
-            container=container,
-            connection_string=azurite_server,
-            client_options={
-                "max_single_get_size": chunk_size,
-                "max_chunk_get_size": chunk_size,
-            },
-        )
-        try:
+        async with _provision_async_backend(
+            azurite_server,
+            client_options={"max_single_get_size": chunk_size, "max_chunk_get_size": chunk_size},
+        ) as backend:
             payload = b"x" * (chunk_size * 4 + 1024)  # 4 chunks + tail
             await backend.write("stream.bin", payload)
 
@@ -190,17 +218,8 @@ class TestAsyncAzureLiveStreaming:
             assert max(len(c) for c in chunks) <= chunk_size, (
                 f"Largest chunk {max(len(c) for c in chunks)} exceeds configured {chunk_size}"
             )
-        finally:
-            # Nested finallys so a failure in any one cleanup step does not
-            # suppress the rest (mirrors the async_azure_backend fixture).
-            try:
-                await backend.aclose()
-            finally:
-                try:
-                    service.delete_container(container)
-                finally:
-                    service.close()
 
+    @pytest.mark.spec("AZ-021")
     async def test_read_bytes_full_payload(self, async_azure_backend: AsyncAzureBackend) -> None:
         """``read_bytes`` returns the full payload regardless of chunking."""
         payload = b"y" * (2 * 1024 * 1024)  # 2 MiB
@@ -282,6 +301,22 @@ class TestAsyncAzureLiveErrorMapping:
 
     @pytest.mark.spec("ASYNC-024")
     @pytest.mark.spec("ERR-002")
+    async def test_read_iter_missing_raises_not_found(self, async_azure_backend: AsyncAzureBackend) -> None:
+        """``read()`` async generator on a missing key raises ``NotFound``.
+
+        ``read()`` uses a bare try/except wrapping ``classify_azure_error``
+        directly (see ``_async_azure.py:read``) — wire-distinct from the
+        ``_errors()`` async context manager covered by ``read_bytes`` /
+        ``get_file_info`` / ``delete``. Without this test, a regression in
+        the streaming-iterator's classifier branch would slip past the
+        mock suite (which can't reach the real SDK 404 path).
+        """
+        with pytest.raises(NotFound, match="ghost"):
+            async for _ in async_azure_backend.read(f"ghost-{uuid.uuid4().hex}.txt"):
+                pass
+
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ERR-002")
     async def test_get_file_info_missing_raises_not_found(self, async_azure_backend: AsyncAzureBackend) -> None:
         with pytest.raises(NotFound, match="ghost"):
             await async_azure_backend.get_file_info(f"ghost-{uuid.uuid4().hex}.txt")
@@ -340,9 +375,7 @@ class TestAsyncAzureLiveErrorMapping:
         ``props_to_fileinfo`` so re-quoting it can fail to match the
         original wire form on case-sensitive servers.
         """
-        if azurite_server is None:
-            pytest.skip("Azurite not reachable")
-        from azure.storage.blob.aio import BlobClient as AsyncBlobClient
+        assert azurite_server is not None  # noqa: S101 — type-narrowing under the module-level skip
 
         # Use the public ResolutionPlan to discover the container name
         # rather than reaching for a private attribute.
@@ -360,7 +393,9 @@ class TestAsyncAzureLiveErrorMapping:
             assert stale_etag.endswith('"'), f"Expected raw quoted ETag from SDK, got {stale_etag!r}"
             # Overwrite to invalidate v1's ETag.
             await async_azure_backend.write("preset.txt", b"v2", overwrite=True)
-            with pytest.raises((HttpResponseError, ResourceModifiedError)) as exc_info:
+            # ResourceModifiedError ⊂ HttpResponseError; the precision check
+            # is the status_code assertion below, so the base class suffices.
+            with pytest.raises(HttpResponseError) as exc_info:
                 await bc.upload_blob(b"v3", overwrite=True, if_match=stale_etag)
         finally:
             await bc.close()
@@ -377,17 +412,24 @@ class TestAsyncAzureLiveErrorMapping:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(
+    os.environ.get("RS_TEST_LIVE_HNS") != "1",
+    reason="HNS test requires real ADLS Gen2; set RS_TEST_LIVE_HNS=1 to enable",
+)
 class TestAsyncAzureLiveHNS:
-    """HNS-specific behaviour, only exercised when the live account has HNS enabled.
+    """HNS-specific behaviour, only exercised against a real ADLS Gen2 account.
 
-    Azurite does not currently emulate Hierarchical Namespace, so these tests
-    skip on the standard CI infrastructure. They serve as the entry point for
-    a future live HNS fixture without forcing the rest of the suite to skip.
+    Spec: AZ-014 (Atomic Write — HNS rename path).
+
+    Azurite does not currently emulate Hierarchical Namespace. The class is
+    gated on the ``RS_TEST_LIVE_HNS=1`` env var so it activates only against
+    a real ADLS Gen2 fixture (an env-var gate rather than a private-method
+    probe satisfies TESTING.md Rule 8: renaming ``_ensure_hns`` must not
+    break the test).
     """
 
+    @pytest.mark.spec("AZ-014")
     async def test_write_atomic_hns_round_trip(self, async_azure_backend: AsyncAzureBackend) -> None:
-        if not await async_azure_backend._ensure_hns():
-            pytest.skip("Live account does not have HNS enabled")
         # Reachable only against a real ADLS Gen2 account; provides regression
         # surface for the temp-file + rename path in write_atomic.
         result = await async_azure_backend.write_atomic("hns/dir/file.txt", b"hns-payload")
