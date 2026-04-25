@@ -82,6 +82,7 @@ _SHARED_BACKEND = sorted(set(_BACKEND_SYNC) & set(_BACKEND_ASYNC))
 class TestStoreAsyncStoreDrift:
     """AsyncStore keeps method-set parity with Store modulo the allowlist."""
 
+    @pytest.mark.spec("ASYNC-046")
     def test_every_sync_method_has_async_counterpart(self) -> None:
         missing = (set(_STORE_SYNC) - set(_STORE_ASYNC)) - _STORE_SYNC_ONLY
         assert not missing, (
@@ -90,6 +91,7 @@ class TestStoreAsyncStoreDrift:
             f"justification): {sorted(missing)}"
         )
 
+    @pytest.mark.spec("ASYNC-046")
     def test_every_async_method_has_sync_counterpart(self) -> None:
         extra = (set(_STORE_ASYNC) - set(_STORE_SYNC)) - _STORE_ASYNC_ONLY
         assert not extra, (
@@ -98,6 +100,7 @@ class TestStoreAsyncStoreDrift:
             f"justification): {sorted(extra)}"
         )
 
+    @pytest.mark.spec("ASYNC-046")
     @pytest.mark.parametrize("method", _SHARED_STORE)
     def test_shared_method_parameters_match(self, method: str) -> None:
         sync_shape = _param_shape(_STORE_SYNC[method])
@@ -110,6 +113,7 @@ class TestStoreAsyncStoreDrift:
 class TestBackendAsyncBackendDrift:
     """AsyncBackend keeps method-set parity with Backend modulo the allowlist."""
 
+    @pytest.mark.spec("ASYNC-001")
     def test_every_sync_method_has_async_counterpart(self) -> None:
         missing = (set(_BACKEND_SYNC) - set(_BACKEND_ASYNC)) - _BACKEND_SYNC_ONLY
         assert not missing, (
@@ -118,6 +122,7 @@ class TestBackendAsyncBackendDrift:
             f"justification): {sorted(missing)}"
         )
 
+    @pytest.mark.spec("ASYNC-001")
     def test_every_async_method_has_sync_counterpart(self) -> None:
         extra = (set(_BACKEND_ASYNC) - set(_BACKEND_SYNC)) - _BACKEND_ASYNC_ONLY
         assert not extra, (
@@ -126,6 +131,7 @@ class TestBackendAsyncBackendDrift:
             f"justification): {sorted(extra)}"
         )
 
+    @pytest.mark.spec("ASYNC-001")
     @pytest.mark.parametrize("method", _SHARED_BACKEND)
     def test_shared_method_parameters_match(self, method: str) -> None:
         sync_shape = _param_shape(_BACKEND_SYNC[method])
