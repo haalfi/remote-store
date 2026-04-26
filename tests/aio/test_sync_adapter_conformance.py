@@ -35,11 +35,55 @@ from remote_store._errors import AlreadyExists, NotFound
 from remote_store.aio._sync_adapter import SyncBackendAdapter
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
-from tests.conftest import _azure_available, _azurite_reachable, _s3_available, _sftp_available
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
     from pathlib import Path
+
+
+# ---------------------------------------------------------------------------
+# Availability helpers — local copies; upward import from tests.conftest
+# is not allowed (subdirectory modules must stay self-contained).
+# ---------------------------------------------------------------------------
+
+
+def _s3_available() -> bool:
+    try:
+        import moto  # noqa: F401
+        import s3fs  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+def _sftp_available() -> bool:
+    try:
+        import paramiko  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+def _azure_available() -> bool:
+    try:
+        import azure.storage.filedatalake  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+def _azurite_reachable() -> bool:
+    import socket
+
+    try:
+        s = socket.create_connection(("127.0.0.1", 10000), timeout=1)
+        s.close()
+        return True
+    except OSError:
+        return False
 
 
 @pytest.fixture(
@@ -92,7 +136,7 @@ class TestAdapterStreamingRead:
         # NotFound is raised during the initial ``asyncio.to_thread(sync.read, ...)``
         # call (before the first ``yield``), not inside the loop body. The
         # ``pass`` below is never reached for the not-found case.
-        with pytest.raises(NotFound, match="not found"):
+        with pytest.raises(NotFound, match="missing.bin"):
             async for _ in adapted_backend.read("missing.bin"):
                 pass
 
@@ -101,7 +145,7 @@ class TestAdapterStreamingRead:
         # read_bytes is a single-shot ``await asyncio.to_thread(...)`` (thread
         # delegation, ASYNC-031) -- not the chunked streaming-read bridge of
         # ASYNC-033.
-        with pytest.raises(NotFound, match="not found"):
+        with pytest.raises(NotFound, match="missing.bin"):
             await adapted_backend.read_bytes("missing.bin")
 
 
@@ -312,11 +356,19 @@ def live_adapted_backend(
             yield SyncBackendAdapter(b)
         finally:
             b.close()
+            try:
+                objs = client.list_objects_v2(Bucket=bucket).get("Contents", [])
+                if objs:
+                    client.delete_objects(Bucket=bucket, Delete={"Objects": [{"Key": o["Key"]} for o in objs]})
+                client.delete_bucket(Bucket=bucket)
+            except Exception:  # noqa: BLE001
+                pass
     elif request.param == "sftp":
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 
         assert sftp_server is not None  # noqa: S101
         port, _host_key_entry = sftp_server
+        # AUTO_ADD skips host-key verification — in-process server, no security concern.
         base_path = f"/adapter_{uuid.uuid4().hex[:8]}"
         b = SFTPBackend(
             host="127.0.0.1",
@@ -412,6 +464,13 @@ def live_adapted_backend_concurrent(
             yield SyncBackendAdapter(b)
         finally:
             b.close()
+            try:
+                objs = client.list_objects_v2(Bucket=bucket).get("Contents", [])
+                if objs:
+                    client.delete_objects(Bucket=bucket, Delete={"Objects": [{"Key": o["Key"]} for o in objs]})
+                client.delete_bucket(Bucket=bucket)
+            except Exception:  # noqa: BLE001
+                pass
     elif request.param == "azure":
         from azure.storage.blob import BlobServiceClient
 
