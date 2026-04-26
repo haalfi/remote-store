@@ -5,6 +5,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-156 — Adapter conformance across S3 / SFTP / Azurite**
+  Extended `tests/aio/test_sync_adapter_conformance.py` with a separate
+  `live_adapted_backend` fixture (S3/moto, SFTP/in-process server,
+  Azure/Azurite) and five `@pytest.mark.integration` test classes that
+  mirror the existing Memory/Local suite. Each class covers streaming reads,
+  write materialisation, listing, move/copy/delete, and concurrency —
+  exercising the `asyncio.to_thread` bridges against real network I/O,
+  connection pools, and SDK-level retries that Memory/Local cannot reach.
+  The fast path (<1 s) is preserved: `adapted_backend` (Memory/Local) is
+  unchanged, and the live classes only run when explicitly selected via
+  `-m integration`. `sftp_server` was moved from `tests/backends/conftest.py`
+  to root `tests/conftest.py` so it is accessible to `tests/aio/` modules
+  without duplicating the fixture.
+
 - [x] **ID-157 — Live Azurite integration suite for `AsyncAzureBackend`**
   Added `tests/aio/test_async_azure_live.py` (17 tests + 1 conditional HNS
   test) running against a live Azurite container, gated on

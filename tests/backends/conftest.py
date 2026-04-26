@@ -97,34 +97,6 @@ def _azurite_reachable() -> bool:
         return False
 
 
-@pytest.fixture(scope="session")
-def sftp_server() -> Iterator[tuple[int, str] | None]:
-    """Start an in-process SFTP server for the test session."""
-    if not _sftp_available():
-        yield None
-        return
-
-    from tests.backends.sftp_server import start_sftp_server, stop_sftp_server
-
-    tmpdir = tempfile.mkdtemp(prefix="sftp_test_")
-
-    thread, port, host_key, stop_event, server_socket = start_sftp_server(root=tmpdir, host="127.0.0.1")
-
-    # Build a known_hosts entry for the test server
-    key_type = host_key.get_name()
-    key_b64 = host_key.get_base64()
-    host_key_entry = f"[127.0.0.1]:{port} {key_type} {key_b64}"
-
-    yield port, host_key_entry
-
-    stop_sftp_server(thread, stop_event, server_socket)
-
-    # Clean up temp directory
-    import shutil
-
-    shutil.rmtree(tmpdir, ignore_errors=True)
-
-
 _s3_param = pytest.param(
     "s3",
     marks=pytest.mark.skipif(not _s3_available(), reason="moto/s3fs not installed"),

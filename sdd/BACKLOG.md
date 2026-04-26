@@ -131,24 +131,6 @@ Existing items may be more verbose — trim on next touch.
 
 ### Testing & Verification
 
-- [ ] **ID-156 — Adapter conformance across S3 / SFTP / Azurite**
-  `tests/aio/test_sync_adapter_conformance.py` (BK-164) parametrises
-  `SyncBackendAdapter` over `MemoryBackend` and `LocalBackend`. Extend to
-  `S3Backend` (moto), `SFTPBackend` (in-process server fixture), and
-  `AzureBackend` (Azurite). Each substrate exercises different blocking
-  patterns through `asyncio.to_thread`: S3 has network I/O and pagination,
-  SFTP has connection pools and SSH handshake, Azure has SDK-level retries.
-  Bugs in the adapter's executor offload (lost exceptions, unbounded thread
-  growth, `aclose` not propagating to `_sync.close`) won't show against
-  Memory/Local.
-  - Reuse: backend factories from `tests/backends/conftest.py` (`moto_server`,
-    `sftp_server`, `azurite_server`).
-  - Open question: parametrise the existing `adapted_backend` fixture, or
-    add a separate `live_adapted_backend` fixture so the fast path
-    (Memory/Local) stays default and the slow path opts in via a marker.
-    Recommend the latter — current file runs in <1 s; adding network backends
-    multiplies that by 10×.
-
 - [ ] **ID-155 — Async stateful PBT (`tests/aio/test_async_pbt_stateful.py`)**
   No property-based tests exist for the async API. The sync side has three
   (`test_pbt_stateful.py`, `test_pbt_properties.py`, `test_pbt_write_result.py`)

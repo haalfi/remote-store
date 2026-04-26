@@ -168,6 +168,15 @@ class SFTPBackend(Backend):
     a delete.  Because atomicity cannot be guaranteed across all servers,
     ``ATOMIC_MOVE`` is not declared.
 
+    Warning:
+        **Not thread-safe for concurrent access.** This backend maintains a
+        single SSH/SFTP connection (paramiko ``SFTPClient``), which is not
+        safe to call from multiple threads simultaneously. Concurrent calls
+        via :class:`~remote_store.aio.SyncBackendAdapter` and
+        ``asyncio.gather`` will race on the shared socket and may hang or
+        corrupt responses. Create one ``SFTPBackend`` instance per thread if
+        you need parallel operations.
+
     Args:
         host: SFTP server hostname (required, non-empty).
         port: SSH port (default: 22).

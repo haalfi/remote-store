@@ -18,12 +18,13 @@ if TYPE_CHECKING:
 
 # ---------------------------------------------------------------------------
 # Shared availability / reachability helpers
-# Used by fixtures in this file (moto_server, azurite_server) and imported
-# directly by tests/backends/test_azure.py. tests/backends/conftest.py
-# retains its own copies of _s3_available, _azure_available, and
-# _azurite_reachable to stay self-contained — a subdirectory conftest
-# importing from a parent conftest is an upward import that creates the same
-# cross-boundary problem in reverse.
+# Used by fixtures in this file (moto_server, azurite_server, sftp_server)
+# and imported directly by tests/backends/test_azure.py and
+# tests/aio/test_sync_adapter_conformance.py. tests/backends/conftest.py
+# retains its own copies of _s3_available, _azure_available,
+# _azurite_reachable, and _sftp_available to stay self-contained — a
+# subdirectory conftest importing from a parent conftest is an upward import
+# that creates the same cross-boundary problem in reverse.
 # ---------------------------------------------------------------------------
 
 
@@ -46,6 +47,15 @@ def _s3_available() -> bool:
 def _azure_available() -> bool:
     try:
         import azure.storage.filedatalake  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+def _sftp_available() -> bool:
+    try:
+        import paramiko  # noqa: F401
 
         return True
     except ImportError:
@@ -97,6 +107,31 @@ def azurite_server() -> Iterator[str | None]:
         yield None
         return
     yield _AZURITE_CONN_STR
+
+
+@pytest.fixture(scope="session")
+def sftp_server() -> Iterator[tuple[int, str] | None]:
+    """Start an in-process SFTP server for the test session."""
+    if not _sftp_available():
+        yield None
+        return
+
+    import shutil
+    import tempfile
+
+    from tests.backends.sftp_server import start_sftp_server, stop_sftp_server
+
+    tmpdir = tempfile.mkdtemp(prefix="sftp_test_")
+    thread, port, host_key, stop_event, server_socket = start_sftp_server(root=tmpdir, host="127.0.0.1")
+
+    key_type = host_key.get_name()
+    key_b64 = host_key.get_base64()
+    host_key_entry = f"[127.0.0.1]:{port} {key_type} {key_b64}"
+
+    yield port, host_key_entry
+
+    stop_sftp_server(thread, stop_event, server_socket)
+    shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 @pytest.fixture(autouse=True, scope="session")
