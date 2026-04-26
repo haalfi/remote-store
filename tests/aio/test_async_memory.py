@@ -192,12 +192,19 @@ class TestAsyncMemoryDelete:
         assert result is None
 
     @pytest.mark.spec("ASYNC-012")
-    async def test_delete_on_directory_missing_ok_still_raises(self) -> None:
+    async def test_delete_on_directory_raises_invalid_path(self) -> None:
         backend = AsyncMemoryBackend()
         await backend.write("ddir/file.txt", b"x")
         with pytest.raises(InvalidPath, match="ddir"):
-            await backend.delete("ddir", missing_ok=True)
-        assert await backend.exists("ddir/file.txt"), "child silently deleted"
+            await backend.delete("ddir")
+
+    @pytest.mark.spec("ASYNC-012")
+    async def test_delete_on_directory_missing_ok_still_raises(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("ddir2/file.txt", b"x")
+        with pytest.raises(InvalidPath, match="ddir2"):
+            await backend.delete("ddir2", missing_ok=True)
+        assert await backend.exists("ddir2/file.txt"), "child silently deleted"
 
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_recursive(self) -> None:

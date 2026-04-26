@@ -48,6 +48,8 @@ def async_backend(request: pytest.FixtureRequest, tmp_path: Path) -> AsyncBacken
     return SyncBackendAdapter(LocalBackend(root=str(tmp_path)))
 
 
+pytestmark = pytest.mark.extended_conformance
+
 # ---------------------------------------------------------------------------
 # Delete error fidelity — directory-path type check (ASYNC-012 / BE-012)
 # ---------------------------------------------------------------------------

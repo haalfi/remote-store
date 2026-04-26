@@ -251,7 +251,8 @@ class AsyncMemoryBackend(AsyncBackend):
 
         Raises:
             NotFound: If the file is missing and ``missing_ok`` is ``False``.
-            InvalidPath: If the path is empty.
+            InvalidPath: If the path is empty, or if ``path`` names a directory
+                (regardless of ``missing_ok``).
         """
         segments = _split_path(path)
         if not segments:
