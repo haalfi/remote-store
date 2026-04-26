@@ -5,6 +5,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **BUG-184 — `AsyncMemoryBackend.delete(dir_path, missing_ok=True)` silently returns; sync `MemoryBackend` raises `InvalidPath`**
+  Lock-step divergence between the two backends on the same call: when
+  `path` exists as a directory and `missing_ok=True`, `MemoryBackend.delete`
+  raises `InvalidPath("Not a file: ...")` while `AsyncMemoryBackend.delete`
+  treated the `_DirNode` like a missing key and silently returned
+  (`_async_memory.py:268-271`). Fixed by inserting the `isinstance(existing,
+  _DirNode)` guard before the `missing_ok` branch, mirroring `_memory.py:204-205`.
+  Spec ASYNC-012 tightened to pin the directory-path outcome (cross-link to
+  BE-012). PBT guard in `_do_delete_missing_ok` removed so Hypothesis now
+  exercises the directory-path case.
+
 - [x] **ID-155 — Async stateful PBT (`tests/aio/test_async_pbt_stateful.py`)**
   Hypothesis `RuleBasedStateMachine` driving `AsyncMemoryBackend` (native)
   and `SyncBackendAdapter(MemoryBackend())` (adapted) in lock-step against a

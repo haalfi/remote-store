@@ -265,6 +265,8 @@ class AsyncMemoryBackend(AsyncBackend):
                 return
             leaf = segments[-1]
             existing = parent.children.get(leaf)
+            if isinstance(existing, _DirNode):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend="async-memory")
             if not isinstance(existing, _FileEntry):
                 if not missing_ok:
                     raise NotFound(f"File not found: {path}", path=path, backend="async-memory")

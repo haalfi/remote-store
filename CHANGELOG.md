@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-184: `AsyncMemoryBackend.delete(dir_path, missing_ok=True)` now raises `InvalidPath`, matching sync `MemoryBackend` and `BE-012`; `ASYNC-012` spec tightened; PBT guard removed
+
 - ID-155: Async stateful PBT (`tests/aio/test_async_pbt_stateful.py`) — Hypothesis `RuleBasedStateMachine` driving `AsyncMemoryBackend` and `SyncBackendAdapter(MemoryBackend())` in lock-step against a shared dict model
 - ID-156: Extend `SyncBackendAdapter` conformance to live backends — add `live_adapted_backend` fixture (S3/moto, SFTP/in-process, Azure/Azurite) and five `@pytest.mark.integration` test classes mirroring the Memory/Local suite; move `sftp_server` session fixture to root `tests/conftest.py` so all test modules can access it
 - ID-157: Live Azurite integration suite for `AsyncAzureBackend` (`tests/aio/test_async_azure_live.py`)
