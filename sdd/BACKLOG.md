@@ -74,10 +74,13 @@ Existing items may be more verbose — trim on next touch.
   2. GitHub PR against `upstash/context7` referencing the repo URL plus
      `https://docs.remotestore.dev`.
 
-  Once indexed, Context7 surfaces `src/remote_store/`, `docs-src/`, `examples/`,
-  `FEATURES.md`, and `README.md` to LLM clients. Close this item when the
-  library appears under `/haalfi/remote-store` (or whatever slug Context7
-  assigns) and a query against it returns content.
+  Once indexed, Context7 surfaces `src/remote_store/`, `guides/`, `examples/`,
+  `FEATURES.md`, `README.md`, and `migration.md` to LLM clients. (`docs-src/`
+  is the mkdocs build source — `include-markdown` stubs and `:::` directives;
+  `guides/` is the canonical prose. Rendered docs are reachable via the
+  `documentation` URL field at <https://docs.remotestore.dev>.) Close this
+  item when the library appears under `/haalfi/remote-store` (or whatever
+  slug Context7 assigns) and a query against it returns content.
 
   No code change — the `context7.json` configuration is already in place.
 
