@@ -86,7 +86,7 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [ ] ReadTheDocs: https://docs.remotestore.dev/ correct version
 - [ ] Conda recipe: get sha256 from `https://pypi.org/pypi/remote-store/X.Y.Z/json`
       (`.info.digests.sha256` of the `.tar.gz`), update `packaging/conda-forge/recipe.yaml`
-      locally and commit to master. Then update `../sandbox/staged-recipes` branch
-      `add-remote-store` via local clone (not the GitHub API — API commits are unverified)
-      and post a bump comment on conda-forge/staged-recipes PR #32401.
+      via a branch and PR. Then update `haalfi/staged-recipes` branch `add-remote-store`
+      via a local clone (not the GitHub API — API commits are unverified) and post a bump
+      comment on conda-forge/staged-recipes PR #32401.
 - [ ] Conda-forge feedstock: verify bot PR if applicable
