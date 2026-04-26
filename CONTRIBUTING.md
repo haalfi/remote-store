@@ -257,7 +257,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### How to bump
 
-Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). It modifies `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` in-place without committing or tagging (configured in `pyproject.toml`). The release checklist below handles the commit and tag lifecycle.
+Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). It modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` in-place without committing or tagging. The release checklist below handles the commit and tag lifecycle.
 
 Quick reference for the command syntax:
 
