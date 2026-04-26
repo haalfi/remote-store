@@ -179,6 +179,8 @@ class AsyncBackend(abc.ABC):
 
         Raises:
             NotFound: If the file is missing and ``missing_ok`` is ``False``.
+            InvalidPath: If the path is empty, or if ``path`` names a directory
+                (regardless of ``missing_ok``).
         """
 
     @abc.abstractmethod

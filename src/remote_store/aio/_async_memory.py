@@ -251,7 +251,8 @@ class AsyncMemoryBackend(AsyncBackend):
 
         Raises:
             NotFound: If the file is missing and ``missing_ok`` is ``False``.
-            InvalidPath: If the path is empty.
+            InvalidPath: If the path is empty, or if ``path`` names a directory
+                (regardless of ``missing_ok``).
         """
         segments = _split_path(path)
         if not segments:
@@ -265,6 +266,8 @@ class AsyncMemoryBackend(AsyncBackend):
                 return
             leaf = segments[-1]
             existing = parent.children.get(leaf)
+            if isinstance(existing, _DirNode):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend="async-memory")
             if not isinstance(existing, _FileEntry):
                 if not missing_ok:
                     raise NotFound(f"File not found: {path}", path=path, backend="async-memory")

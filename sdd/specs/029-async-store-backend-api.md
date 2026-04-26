@@ -76,7 +76,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-012: delete()
 
 **Invariant:** `async def delete(path, *, missing_ok=False)` removes a file.
-**Raises:** `NotFound` if the file is missing and `missing_ok=False`.
+**Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory, regardless of `missing_ok` — see [BE-012](003-backend-adapter-contract.md).
 **See also:** [BE-012](003-backend-adapter-contract.md).
 
 ### ASYNC-013: delete_folder()

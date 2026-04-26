@@ -181,12 +181,13 @@ class AsyncBackendModel(RuleBasedStateMachine):
         del self.model[path]
 
     def _do_delete_missing_ok(self, path: str) -> None:
-        # Skip directory paths: this is a known lock-step divergence (BUG-184)
-        # — MemoryBackend.delete(dir_path, missing_ok=True) raises InvalidPath
-        # while AsyncMemoryBackend.delete(dir_path, missing_ok=True) silently
-        # returns. Once BUG-184 is fixed and the spec pins the outcome, drop
-        # this guard so Hypothesis exercises the directory-path case.
         if path in self.dirs:
+            # Both backends raise InvalidPath for a directory path regardless of
+            # missing_ok (ASYNC-012 / BE-012). Drive both and verify.
+            with pytest.raises(remote_store._errors.InvalidPath):
+                self._run(self.native.delete(path, missing_ok=True))
+            with pytest.raises(remote_store._errors.InvalidPath):
+                self._run(self.adapted.delete(path, missing_ok=True))
             return
         self._run(self.native.delete(path, missing_ok=True))
         self._run(self.adapted.delete(path, missing_ok=True))

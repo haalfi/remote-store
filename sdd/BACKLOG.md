@@ -43,24 +43,6 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-- [ ] **BUG-184 — `AsyncMemoryBackend.delete(dir_path, missing_ok=True)` silently returns; sync `MemoryBackend` raises `InvalidPath`**
-  Lock-step divergence between the two backends on the same call: when
-  `path` exists as a directory and `missing_ok=True`, `MemoryBackend.delete`
-  raises `InvalidPath("Not a file: ...")` (sync, `_memory.py:204-205`),
-  while `AsyncMemoryBackend.delete` treats the `_DirNode` like a missing
-  key and silently returns (`_async_memory.py:268-271`). Spec ASYNC-012 /
-  BE-012 only define the file-missing path; neither dictates the
-  directory-path outcome. The sync behaviour is the more defensible
-  contract: `missing_ok` means "tolerate a missing file", not "tolerate
-  any non-file". The async impl should match.
-  - Test impact: `tests/aio/test_async_pbt_stateful.py::_do_delete_missing_ok`
-    currently guards with `if path in self.dirs: return` to keep the suite
-    green. Once fixed, drop the guard so Hypothesis exercises the
-    directory-path case.
-  - Spec follow-up: tighten ASYNC-012 / BE-012 to pin the outcome
-    explicitly (raise `InvalidPath` on a directory path regardless of
-    `missing_ok`).
-
 - [ ] **BUG-182 — (Candidate) Verify HNS `write_atomic` metadata survives rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
   forwarded to `upload_data` on the temp file and that `WriteResult.metadata` echoes the
