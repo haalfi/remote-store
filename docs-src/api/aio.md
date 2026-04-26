@@ -1,5 +1,12 @@
 # Async API
 
+<!-- Capability admonition placement rules (applies to this file and store.md):
+     - Section-level (capability applies to ALL methods in the section):
+       place the admonition directly after the section heading, before the first ::: directive.
+     - Method-level (capability applies to ONE method only):
+       place the admonition after that method's ::: directive block (end of method section).
+-->
+
 The `remote_store.aio` module provides native `async`/`await` support
 for store operations. See [Store](store.md) for the synchronous
 counterpart.
@@ -96,6 +103,10 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! info "Quality flag: `Capability.LAZY_READ`"
+    When declared, data is fetched lazily — partial reads avoid loading the whole
+    file. Without it, the backend may buffer content before returning the stream.
+
 ::: remote_store.aio.AsyncBackend.read_bytes
     options:
       show_root_heading: true
@@ -106,6 +117,12 @@ counterpart.
 !!! note "Requires `Capability.WRITE`"
     `write()` raises `CapabilityNotSupported` on backends that do not declare
     this capability. Most backends declare it.
+    `write_atomic()` additionally requires `Capability.ATOMIC_WRITE`.
+
+!!! info "Quality flag: `Capability.WRITE_RESULT_NATIVE`"
+    When declared, the returned `WriteResult` fields (`etag`, `version_id`,
+    `last_modified`, `digest`) are populated from the backend's write response.
+    Without it, only locally computable fields are set.
 
 ::: remote_store.aio.AsyncBackend.write
     options:
@@ -170,15 +187,20 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! note "Requires `Capability.GLOB`"
+    `glob()` raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.aio.AsyncBackend.glob
     options:
       show_root_heading: true
       heading_level: 4
 
-!!! note "Requires `Capability.GLOB`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-
 ### Metadata
+
+!!! note "Requires `Capability.METADATA`"
+    `get_file_info()` requires `Capability.METADATA`.
+    `get_folder_info()` requires `Capability.METADATA` without `max_depth`,
+    or `Capability.LIST` when `max_depth` is set.
 
 ::: remote_store.aio.AsyncBackend.get_file_info
     options:
@@ -193,10 +215,15 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
-!!! note "Requires `Capability.METADATA`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+!!! note "Capability depends on `max_depth`"
+    Without `max_depth`: requires `Capability.METADATA`.
+    With `max_depth` set: requires `Capability.LIST` — works on backends that lack `METADATA`.
 
 ### File Operations
+
+!!! note "Requires `Capability.MOVE` / `Capability.COPY`"
+    `move()` requires `Capability.MOVE`; `copy()` requires `Capability.COPY`.
+    Each raises `CapabilityNotSupported` on backends that do not declare the respective capability.
 
 ::: remote_store.aio.AsyncBackend.move
     options:
@@ -205,6 +232,10 @@ counterpart.
 
 !!! note "Requires `Capability.MOVE`"
     Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
+!!! info "Quality flag: `Capability.ATOMIC_MOVE`"
+    When declared, `move()` is guaranteed atomic under concurrent access.
+    Check `store.supports(Capability.ATOMIC_MOVE)` to query at runtime.
 
 ::: remote_store.aio.AsyncBackend.copy
     options:

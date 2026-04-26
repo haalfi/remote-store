@@ -1,5 +1,12 @@
 # Store
 
+<!-- Capability admonition placement rules (applies to this file and aio.md):
+     - Section-level (capability applies to ALL methods in the section):
+       place the admonition directly after the section heading, before the first ::: directive.
+     - Method-level (capability applies to ONE method only):
+       place the admonition after that method's ::: directive block (end of method section).
+-->
+
 ::: remote_store.Store
     options:
       members: false
@@ -30,6 +37,10 @@
       show_root_heading: true
       heading_level: 3
 
+!!! info "Quality flag: `Capability.LAZY_READ`"
+    When declared, data is fetched lazily — partial reads avoid loading the whole
+    file. Without it, the backend may buffer content before returning the stream.
+
 ::: remote_store.Store.read_bytes
     options:
       show_root_heading: true
@@ -40,6 +51,12 @@
       show_root_heading: true
       heading_level: 3
 
+!!! info "Quality flag: `Capability.SEEKABLE_READ`"
+    When declared, the stream is natively seekable. Without it, the Store falls
+    back to a `SpooledTemporaryFile` (RAM-first, spilling to disk beyond the
+    threshold). Backends may provide a more efficient implementation — for
+    example, Azure issues HTTP Range requests instead of spooling.
+
 ::: remote_store.Store.read_text
     options:
       show_root_heading: true
@@ -48,6 +65,16 @@
 ---
 
 ## Writing
+
+!!! note "Requires `Capability.WRITE`"
+    `write()` and `write_text()` raise `CapabilityNotSupported` on backends that do not
+    declare this capability. Most backends declare it.
+    `write_atomic()` and `open_atomic()` additionally require `Capability.ATOMIC_WRITE`.
+
+!!! info "Quality flag: `Capability.WRITE_RESULT_NATIVE`"
+    When declared, the returned `WriteResult` fields (`etag`, `version_id`,
+    `last_modified`, `digest`) are populated from the backend's write response.
+    Without it, only locally computable fields are set.
 
 ::: remote_store.Store.write
     options:
@@ -142,14 +169,14 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.GLOB`"
+    `glob()` raises `CapabilityNotSupported` on backends that do not declare this capability.
+    Check `store.supports(Capability.GLOB)` before calling.
+
 ::: remote_store.Store.glob
     options:
       show_root_heading: true
       heading_level: 3
-
-!!! note "Requires `Capability.GLOB`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
-    Check `store.supports(Capability.GLOB)` before calling.
 
 !!! info "Ordering and laziness"
     **Ordering is backend-defined** and may vary between backends (e.g.
@@ -163,6 +190,10 @@
 
 ## File Operations
 
+!!! note "Requires `Capability.MOVE` / `Capability.COPY`"
+    `move()` requires `Capability.MOVE`; `copy()` requires `Capability.COPY`.
+    Each raises `CapabilityNotSupported` on backends that do not declare the respective capability.
+
 ::: remote_store.Store.move
     options:
       show_root_heading: true
@@ -175,6 +206,7 @@
     Atomicity is backend-dependent. Local uses `os.replace` (atomic on same
     filesystem). S3 and Azure use copy-then-delete (not atomic). SFTP
     atomicity depends on the server.
+    Check `store.supports(Capability.ATOMIC_MOVE)` to query this at runtime.
 
 ::: remote_store.Store.copy
     options:
@@ -191,6 +223,12 @@
 ---
 
 ## Metadata
+
+!!! note "Partially requires `Capability.METADATA`"
+    `head()` and `get_file_info()` require `Capability.METADATA`.
+    `get_folder_info()` requires `Capability.METADATA` without `max_depth`,
+    or `Capability.LIST` when `max_depth` is set.
+    `exists()`, `is_file()`, and `is_folder()` are always available.
 
 ::: remote_store.Store.head
     options:
@@ -228,8 +266,9 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Requires `Capability.METADATA`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+!!! note "Capability depends on `max_depth`"
+    Without `max_depth`: requires `Capability.METADATA`.
+    With `max_depth` set: requires `Capability.LIST` — works on backends that lack `METADATA`.
 
 !!! note "Backend-conditional argument: `max_depth=`"
     Backends with native depth limiting prune traversal early. Backends that do not
@@ -317,11 +356,6 @@ relying on these in production.
 | `write_atomic()` mechanism | temp+rename | Direct PUT (atomic) | Direct PUT (atomic) | temp+rename | Direct PUT or temp+rename | Direct (atomic) | — | Direct (atomic) | — |
 | Native `glob()` | Yes | Yes | Yes | — | Yes | — | — | Yes (SQL GLOB/LIKE) | Yes (in-memory) |
 | `list_files()` ordering | OS-dependent | Lexicographic | Lexicographic | OS-dependent | Lexicographic | Insertion order | — | DB-dependent | Lexicographic |
-
-**Related types:** `WritableContent = BinaryIO | bytes`,
-[`FileInfo`](models.md), [`FolderInfo`](models.md),
-[`ResolutionPlan`](models.md), [`RemotePath`](models.md),
-[`Capability`](capabilities.md).
 
 ## See also
 
