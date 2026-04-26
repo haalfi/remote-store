@@ -1,11 +1,10 @@
 {
-  "description": "Write file storage code once. Run it against local files, S3, SFTP, or Azure. Python library with a unified Store API, swappable backends, and capability-gated methods.",
-  "website": "https://docs.remotestore.dev",
-  "documentation": "https://docs.remotestore.dev",
-  "github": "https://github.com/haalfi/remote-store",
+  "$schema": "https://context7.com/schema/context7.json",
   "url": "https://context7.com/haalfi/remote-store",
   "public_key": "pk_RLXTOPnD0ztmnjMEWuqDN",
-  "includes": [
+  "projectTitle": "remote-store",
+  "description": "Write file storage code once. Run it against local files, S3, SFTP, or Azure. Python library with a unified Store API, swappable backends, and capability-gated methods.",
+  "folders": [
     "src/remote_store/",
     "guides/",
     "examples/",
@@ -13,21 +12,19 @@
     "README.md",
     "migration.md"
   ],
-  "exclude": {
-    "folders": [
-      "tests/",
-      "benchmarks/",
-      "sdd/",
-      "docs-src/",
-      ".github/",
-      ".claude/"
-    ],
-    "files": [
-      "pyproject.toml",
-      "CHANGELOG.md",
-      "LICENSE"
-    ]
-  },
+  "excludeFolders": [
+    "tests/",
+    "benchmarks/",
+    "sdd/",
+    "docs-src/",
+    ".github/",
+    ".claude/"
+  ],
+  "excludeFiles": [
+    "pyproject.toml",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "rules": [
     "Use Store.read(path) for streaming reads, Store.write(path, content) for streaming writes (returns WriteResult), and Store.list_files(path) for directory listings.",
     "Backends declare capabilities (LAZY_READ, ATOMIC_WRITE, ATOMIC_MOVE, METADATA, GLOB, ...). Query with store.supports(Capability.X); see FEATURES.md for the full matrix.",
