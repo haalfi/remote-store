@@ -36,12 +36,12 @@
   "rules": [
     "Use Store.read(path) for streaming reads, Store.write(path, content) for streaming writes (returns WriteResult), and Store.list_files(path) for directory listings.",
     "Backends declare capabilities (LAZY_READ, ATOMIC_WRITE, ATOMIC_MOVE, METADATA, GLOB, ...). Query with store.supports(Capability.X); see FEATURES.md for the full matrix.",
-    "Install optional backends via pip extras: remote-store[s3], [s3-pyarrow], [sftp], [azure], [sql], [sql-query], [arrow], [dagster].",
+    "Install optional backends and extensions via pip extras. Backends: remote-store[s3], [s3-pyarrow], [sftp], [azure], [sql], [sql-query]. Extensions: [arrow] (PyArrow + Parquet), [otel] (tracing), [pydantic], [yaml], [dagster].",
     "For async workloads, import AsyncStore from remote_store.aio. Wrap any sync backend with SyncBackendAdapter to expose it through the async interface.",
     "Built-in backends: LocalBackend, MemoryBackend, ReadOnlyHttpBackend, S3Backend, S3PyArrowBackend, SFTPBackend, AzureBackend, SQLBlobBackend, SQLQueryBackend.",
     "Streaming reads: with store.read(path) as f: data = f.read(). Atomic writes: with store.open_atomic(path) as f: f.write(...). The destination appears only after the block exits cleanly.",
     "Errors are typed in remote_store.errors (NotFound, AlreadyExists, BackendUnavailable, CapabilityNotSupported, etc.); backends never leak SDK-native exceptions.",
     "Configuration loads from TOML, YAML, dict, or Pydantic models via Registry; ${ENV_VAR} placeholders are resolved and credentials are wrapped in Secret automatically.",
-    "Extensions live under remote_store.ext: PyArrow filesystem adapter, Parquet datasets, batch ops, transfer ops, retry/backoff, OpenTelemetry, caching, glob fallback, integrity helpers, Dagster IO manager."
+    "Extensions live under remote_store.ext (always available): batch, cache, glob (portable fallback), integrity, observe (event hooks), partition, streams, transfer, write (client-side hashing). Optional via extras: arrow (PyArrow filesystem + Parquet datasets), otel (OpenTelemetry tracing), pydantic, yaml, dagster (IO manager)."
   ]
 }
