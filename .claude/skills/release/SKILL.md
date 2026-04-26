@@ -41,7 +41,7 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [ ] Tagline consistent: pyproject.toml = README = docs-src/index.md = mkdocs.yml = CITATION.cff
 - [ ] Keywords consistent: pyproject.toml = CITATION.cff
 - [ ] Conda recipe: `context.version` in `packaging/conda-forge/recipe.yaml` → X.Y.Z
-- [ ] `bump-my-version bump patch|minor|major` (modifies pyproject.toml, __init__.py, CITATION.cff, FEATURES.md — does NOT commit or tag)
+- [ ] `bump-my-version bump patch|minor|major` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag)
 - [ ] `git diff`, stage changed files, commit as `Release vX.Y.Z`
 
 ## Phase 3: Validate

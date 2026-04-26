@@ -307,8 +307,8 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
-- [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`, `FEATURES.md`)
-- [ ] Review and commit: `git diff` to verify, then `git add pyproject.toml src/remote_store/__init__.py CITATION.cff FEATURES.md CHANGELOG.md packaging/conda-forge/recipe.yaml && git commit -m "Release vX.Y.Z"`
+- [ ] `bump-my-version bump patch|minor|major` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag)
+- [ ] Review and commit: `git diff` to verify, then stage the bump-my-version-modified files (see `[[tool.bumpversion.files]]` in `pyproject.toml`) plus `CHANGELOG.md` and `packaging/conda-forge/recipe.yaml`, and commit as `Release vX.Y.Z`
 
 #### Phase 3: Validate
 
