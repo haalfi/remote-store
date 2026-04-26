@@ -276,9 +276,9 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - **New Store method / cross-reference validation**: see the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
 - **Pre-PR validation**: run `hatch run all`, verify CHANGELOG and BACKLOG are updated, then check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
 
-### Release
+## Release
 
-#### Phase 0: Pre-flight
+### Phase 0: Pre-flight
 
 - [ ] Master is clean: `git status` shows no uncommitted changes
 - [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
@@ -287,7 +287,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
 - [ ] Decide bump level (patch / minor / major) per the table above
 
-#### Phase 1: Content freeze
+### Phase 1: Content freeze
 
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**)
 - [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time (release skill Phase 1)
@@ -299,7 +299,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Guides: new/changed backend guides are accurate
 - [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
 
-#### Phase 2: Version bump (on a release branch)
+### Phase 2: Version bump (on a release branch)
 
 - [ ] Create release branch: `git checkout -b release-vX.Y.Z`
 - [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
@@ -310,7 +310,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] `bump-my-version bump patch|minor|major` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag)
 - [ ] Review and commit: `git diff` to verify, then stage the bump-my-version-modified files (see `[[tool.bumpversion.files]]` in `pyproject.toml`) plus `CHANGELOG.md` and `packaging/conda-forge/recipe.yaml`, and commit as `Release vX.Y.Z`
 
-#### Phase 3: Validate
+### Phase 3: Validate
 
 - [ ] `hatch run all` passes (lint + format-check + typecheck + test-cov + examples)
 - [ ] `mkdocs build --strict` passes
@@ -318,7 +318,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
 - [ ] Conda recipe: version in `packaging/conda-forge/recipe.yaml` matches release version
 
-#### Phase 4: Ship
+### Phase 4: Ship
 
 _Automated by skill agent (`/release`). User role: review and merge PR only._
 
@@ -332,7 +332,7 @@ _Automated by skill agent (`/release`). User role: review and merge PR only._
 
 _Release template: title = version, description = "What's Changed" header with condensed sections (Added, Fixed, Internal), two links (CHANGELOG.md + git version diff). See `.claude/skills/release/SKILL.md` § Phase 4 for full template._
 
-#### Phase 5: Post-release verification
+### Phase 5: Post-release verification
 
 - [ ] PyPI: `pip install remote-store==X.Y.Z` in a fresh venv, verify version and README renders on pypi.org
 - [ ] GitHub Pages: check version switcher shows new version as "latest"
