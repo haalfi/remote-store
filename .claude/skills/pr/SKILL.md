@@ -30,15 +30,10 @@ See CLAUDE.md § GitHub operations for the full priority chain.
 3. **Gather context:** `git log master..HEAD --oneline` and `git diff master...HEAD`
    to understand all changes (not just the latest commit).
 
-4. **Draft PR:** Title (<70 chars) + body. Body format:
-
-   ```
-   ## Summary
-   <1-3 bullet points>
-
-   ## Test plan
-   - [ ] ...
-   ```
+4. **Draft PR:** Title (<70 chars) + body. Read `.github/PULL_REQUEST_TEMPLATE.md`
+   and fill each section from gathered context: summary bullets from commits,
+   check the appropriate Type of change box, link any related issues, fill the
+   Checklist. The template is the authoritative body shape.
 
 5. **Create PR** using `create_pull_request`:
    - `owner: "haalfi"`, `repo: "remote-store"`
