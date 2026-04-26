@@ -21,8 +21,10 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [ ] CHANGELOG `[Unreleased]` condensed — expand stubs into prose; one entry per
       user-facing concept (multiple IDs for the same feature → one paragraph;
       pre-release bugs on new-in-this-release code → fold into Added or drop)
-- [ ] `FEATURES.md` updated for this release: version, backends, extensions,
-      capabilities, extras — this is the only time FEATURES.md is edited
+- [ ] `FEATURES.md` updated for this release: backends, extensions,
+      capabilities, extras — this is the only time FEATURES.md is edited.
+      **Do NOT change the version header** (`# Features — remote-store vOLD`);
+      `bump-my-version` updates it in Phase 2.
 - [ ] `sdd/BACKLOG-DONE.md`: shipping items moved, marked `[x]` with version
 - [ ] README: backends table, installation extras, API table, badges current
 - [ ] Specs vs code: `pytest -m spec` as proxy
@@ -38,7 +40,7 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [ ] Tagline consistent: pyproject.toml = README = docs-src/index.md = mkdocs.yml = CITATION.cff
 - [ ] Keywords consistent: pyproject.toml = CITATION.cff
 - [ ] Conda recipe: `context.version` in `packaging/conda-forge/recipe.yaml` → X.Y.Z
-- [ ] `bump-my-version bump patch|minor|major` (modifies pyproject.toml, __init__.py, CITATION.cff — does NOT commit or tag)
+- [ ] `bump-my-version bump patch|minor|major` (modifies pyproject.toml, __init__.py, CITATION.cff, FEATURES.md — does NOT commit or tag)
 - [ ] `git diff`, stage changed files, commit as `Release vX.Y.Z`
 
 ## Phase 3: Validate
@@ -81,5 +83,9 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [ ] PyPI: `pip install remote-store==X.Y.Z` in fresh venv
 - [ ] GitHub Pages: version switcher shows new version
 - [ ] ReadTheDocs: https://docs.remotestore.dev/ correct version
-- [ ] Conda recipe: update sha256 from PyPI, commit via branch+PR
+- [ ] Conda recipe: get sha256 from `https://pypi.org/pypi/remote-store/X.Y.Z/json`
+      (`.info.digests.sha256` of the `.tar.gz`), update `packaging/conda-forge/recipe.yaml`
+      locally and commit to master. Then update `../sandbox/staged-recipes` branch
+      `add-remote-store` via local clone (not the GitHub API — API commits are unverified)
+      and post a bump comment on conda-forge/staged-recipes PR #32401.
 - [ ] Conda-forge feedstock: verify bot PR if applicable
