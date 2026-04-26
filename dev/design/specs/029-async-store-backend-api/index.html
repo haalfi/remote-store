@@ -10931,7 +10931,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-011</a>.</p>
 <h3 id="async-012-delete">ASYNC-012: delete()<a class="headerlink" href="#async-012-delete" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def delete(path, *, missing_ok=False)</code> removes a file.
-<strong>Raises:</strong> <code>NotFound</code> if the file is missing and <code>missing_ok=False</code>.
+<strong>Raises:</strong> <code>NotFound</code> if the file is missing and <code>missing_ok=False</code>. <code>InvalidPath</code> if <code>path</code> names a directory, regardless of <code>missing_ok</code> — see <a href="../003-backend-adapter-contract/">BE-012</a>.
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-012</a>.</p>
 <h3 id="async-013-delete_folder">ASYNC-013: delete_folder()<a class="headerlink" href="#async-013-delete_folder" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def delete_folder(path, *, recursive=False, missing_ok=False)</code> removes a folder.
