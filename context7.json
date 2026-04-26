@@ -5,6 +5,7 @@
   "github": "https://github.com/haalfi/remote-store",
   "includes": [
     "src/remote_store/",
+    "guides/",
     "docs-src/",
     "examples/",
     "FEATURES.md",
@@ -39,7 +40,7 @@
     "For async workloads, import AsyncStore from remote_store.aio. Wrap any sync backend with SyncBackendAdapter to expose it through the async interface.",
     "Built-in backends: LocalBackend, MemoryBackend, ReadOnlyHttpBackend, S3Backend, S3PyArrowBackend, SFTPBackend, AzureBackend, SQLBlobBackend, SQLQueryBackend.",
     "Streaming reads: with store.read(path) as f: data = f.read(). Atomic writes: with store.open_atomic(path) as f: f.write(...). The destination appears only after the block exits cleanly.",
-    "Errors are typed in remote_store.errors (FileNotFoundError, BackendUnavailable, CapabilityNotSupported, etc.); backends never leak SDK-native exceptions.",
+    "Errors are typed in remote_store.errors (NotFound, AlreadyExists, BackendUnavailable, CapabilityNotSupported, etc.); backends never leak SDK-native exceptions.",
     "Configuration loads from TOML, YAML, dict, or Pydantic models via Registry; ${ENV_VAR} placeholders are resolved and credentials are wrapped in Secret automatically.",
     "Extensions live under remote_store.ext: PyArrow filesystem adapter, Parquet datasets, batch ops, transfer ops, retry/backoff, OpenTelemetry, caching, glob fallback, integrity helpers, Dagster IO manager."
   ]
