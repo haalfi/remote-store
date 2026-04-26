@@ -43,6 +43,24 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
+- [ ] **BUG-184 — `AsyncMemoryBackend.delete(dir_path, missing_ok=True)` silently returns; sync `MemoryBackend` raises `InvalidPath`**
+  Lock-step divergence between the two backends on the same call: when
+  `path` exists as a directory and `missing_ok=True`, `MemoryBackend.delete`
+  raises `InvalidPath("Not a file: ...")` (sync, `_memory.py:204-205`),
+  while `AsyncMemoryBackend.delete` treats the `_DirNode` like a missing
+  key and silently returns (`_async_memory.py:268-271`). Spec ASYNC-012 /
+  BE-012 only define the file-missing path; neither dictates the
+  directory-path outcome. The sync behaviour is the more defensible
+  contract: `missing_ok` means "tolerate a missing file", not "tolerate
+  any non-file". The async impl should match.
+  - Test impact: `tests/aio/test_async_pbt_stateful.py::_do_delete_missing_ok`
+    currently guards with `if path in self.dirs: return` to keep the suite
+    green. Once fixed, drop the guard so Hypothesis exercises the
+    directory-path case.
+  - Spec follow-up: tighten ASYNC-012 / BE-012 to pin the outcome
+    explicitly (raise `InvalidPath` on a directory path regardless of
+    `missing_ok`).
+
 - [ ] **BUG-182 — (Candidate) Verify HNS `write_atomic` metadata survives rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
   forwarded to `upload_data` on the temp file and that `WriteResult.metadata` echoes the
@@ -130,25 +148,6 @@ Existing items may be more verbose — trim on next touch.
   **reads** only — writes remain eager).
 
 ### Testing & Verification
-
-- [ ] **ID-155 — Async stateful PBT (`tests/aio/test_async_pbt_stateful.py`)**
-  No property-based tests exist for the async API. The sync side has three
-  (`test_pbt_stateful.py`, `test_pbt_properties.py`, `test_pbt_write_result.py`)
-  and they have caught real bugs (BUG-183 was a Hypothesis-minimised sequence).
-  An async stateful suite would target async-specific failure modes that
-  example-based tests can't enumerate: ordering bugs under concurrent rules,
-  invariant violations after cancelled mutations, races between `delete_folder`
-  and in-flight writes.
-  - Approach: `RuleBasedStateMachine` with rules for write / overwrite /
-    delete / move / copy / list, run via `hypothesis-pytest-asyncio` or by
-    driving the state machine through `asyncio.run` in a `@given` test (see
-    Hypothesis docs § "Stateful testing with asyncio").
-  - Targets: `AsyncMemoryBackend` (native) plus
-    `SyncBackendAdapter(MemoryBackend())` to compare invariant adherence
-    across the two implementations of the same contract.
-  - Constraint: `requires-python = ">=3.10"` (`pyproject.toml`) — verify the
-    Hypothesis async-stateful API supports 3.10. If 3.11+ only, add a
-    runtime-skip for older.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
