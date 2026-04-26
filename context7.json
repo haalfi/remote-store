@@ -3,6 +3,8 @@
   "website": "https://docs.remotestore.dev",
   "documentation": "https://docs.remotestore.dev",
   "github": "https://github.com/haalfi/remote-store",
+  "url": "https://context7.com/haalfi/remote-store",
+  "public_key": "pk_RLXTOPnD0ztmnjMEWuqDN",
   "includes": [
     "src/remote_store/",
     "guides/",
