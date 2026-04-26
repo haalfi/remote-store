@@ -121,7 +121,13 @@ class SyncBackendAdapter(AsyncBackend):
         await asyncio.to_thread(self._sync.copy, src, dst, overwrite=overwrite)
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
-        """Delete a file."""
+        """Delete a file.
+
+        Raises:
+            NotFound: If the file is missing and ``missing_ok`` is ``False``.
+            InvalidPath: If the path is empty, or if ``path`` names a directory
+                (regardless of ``missing_ok``).
+        """
         await asyncio.to_thread(self._sync.delete, path, missing_ok=missing_ok)
 
     async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
