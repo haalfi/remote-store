@@ -308,8 +308,10 @@ def live_adapted_backend(
             region_name="us-east-1",
             endpoint_url=moto_server,
         )
-        yield SyncBackendAdapter(b)
-        b.close()
+        try:
+            yield SyncBackendAdapter(b)
+        finally:
+            b.close()
     elif request.param == "sftp":
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 
@@ -325,8 +327,10 @@ def live_adapted_backend(
             host_key_policy=HostKeyPolicy.AUTO_ADD,
             connect_kwargs={"allow_agent": False, "look_for_keys": False},
         )
-        yield SyncBackendAdapter(b)
-        b.close()
+        try:
+            yield SyncBackendAdapter(b)
+        finally:
+            b.close()
     elif request.param == "azure":
         from azure.storage.blob import BlobServiceClient
 
@@ -404,8 +408,10 @@ def live_adapted_backend_concurrent(
             region_name="us-east-1",
             endpoint_url=moto_server,
         )
-        yield SyncBackendAdapter(b)
-        b.close()
+        try:
+            yield SyncBackendAdapter(b)
+        finally:
+            b.close()
     elif request.param == "azure":
         from azure.storage.blob import BlobServiceClient
 

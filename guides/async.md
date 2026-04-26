@@ -152,6 +152,11 @@ calls `aclose()` on exit.
   (`list_files`, `list_folders`, `glob`). For very large directories this
   may use more memory than the sync API. Native async backends stream
   without materialisation.
+- **`SyncBackendAdapter` + `SFTPBackend` is not safe for concurrent use.**
+  Paramiko's `SFTPClient` is not thread-safe; concurrent `asyncio.gather`
+  calls against a single `SFTPBackend` instance race on the shared socket
+  and may hang. Create one `SFTPBackend` per thread, or use a native async
+  SFTP library. See [SFTP backend guide](backends/sftp.md#connection-behaviour).
 - **`asyncio` only** — trio and anyio are not supported.
 
 ## Async write helpers
