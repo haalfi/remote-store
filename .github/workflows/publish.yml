@@ -40,6 +40,9 @@ jobs:
         with:
           packages-dir: dist/
 
+  # Publish the release coverage badge to Codecov. Runs after PyPI publish so
+  # the badge always reflects the shipped version. Azurite provides the Azure
+  # backend needed for full coverage (e2e tests are excluded from regular CI).
   coverage:
     needs: publish
     runs-on: ubuntu-latest
