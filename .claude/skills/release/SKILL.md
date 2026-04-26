@@ -23,7 +23,8 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
       pre-release bugs on new-in-this-release code → fold into Added or drop)
 - [ ] `FEATURES.md` updated for this release: backends, extensions,
       capabilities, extras — this is the only time FEATURES.md is edited.
-      **Do NOT change the version header** (`# Features — remote-store vOLD`);
+      **Do NOT change the version header** (`# Features — remote-store vX.Y.Z`
+      where `X.Y.Z` is the *current* version, not the new one);
       `bump-my-version` updates it in Phase 2.
 - [ ] `sdd/BACKLOG-DONE.md`: shipping items moved, marked `[x]` with version
 - [ ] README: backends table, installation extras, API table, badges current

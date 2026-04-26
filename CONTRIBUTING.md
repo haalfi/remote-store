@@ -292,7 +292,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**)
 - [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time (release skill Phase 1)
 - [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here, marked `[x]` with version (e.g. `(v0.8.0)`)
-- [ ] FEATURES.md updated for this release: version, backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited
+- [ ] FEATURES.md updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; `bump-my-version` handles it in Phase 2)
 - [ ] README.md: backends table, installation extras, API table, badges are current
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
 - [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed
@@ -307,8 +307,8 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
-- [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`)
-- [ ] Review and commit: `git diff` to verify, then `git add pyproject.toml src/remote_store/__init__.py CITATION.cff CHANGELOG.md packaging/conda-forge/recipe.yaml && git commit -m "Release vX.Y.Z"`
+- [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`, `FEATURES.md`)
+- [ ] Review and commit: `git diff` to verify, then `git add pyproject.toml src/remote_store/__init__.py CITATION.cff FEATURES.md CHANGELOG.md packaging/conda-forge/recipe.yaml && git commit -m "Release vX.Y.Z"`
 
 #### Phase 3: Validate
 
@@ -338,6 +338,6 @@ _Release template: title = version, description = "What's Changed" header with c
 - [ ] GitHub Pages: check version switcher shows new version as "latest"
 - [ ] ReadTheDocs: check https://docs.remotestore.dev/stable/ shows the new version (RTD automation rule activates tag-based builds; `stable` is the default version)
 - [ ] Conda recipe: fetch sha256 from PyPI (`curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"`) and update `source.sha256` in `packaging/conda-forge/recipe.yaml`
-- [ ] Commit recipe sha256 update via a branch and PR (branch protection requires PRs even for metadata-only changes)
+- [ ] Commit recipe sha256 update directly to master (metadata-only change; no PR needed)
 - [ ] Conda-forge: if feedstock exists, verify bot opened a version-bump PR
 - [ ] Announce if applicable (tracking issues, users)
