@@ -1,5 +1,12 @@
 # Async API
 
+<!-- Capability admonition placement rules (applies to this file and store.md):
+     - Section-level (capability applies to ALL methods in the section):
+       place the admonition directly after the section heading, before the first ::: directive.
+     - Method-level (capability applies to ONE method only):
+       place the admonition after that method's ::: directive block (end of method section).
+-->
+
 The `remote_store.aio` module provides native `async`/`await` support
 for store operations. See [Store](store.md) for the synchronous
 counterpart.

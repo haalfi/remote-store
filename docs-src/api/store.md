@@ -1,5 +1,12 @@
 # Store
 
+<!-- Capability admonition placement rules (applies to this file and aio.md):
+     - Section-level (capability applies to ALL methods in the section):
+       place the admonition directly after the section heading, before the first ::: directive.
+     - Method-level (capability applies to ONE method only):
+       place the admonition after that method's ::: directive block (end of method section).
+-->
+
 ::: remote_store.Store
     options:
       members: false
