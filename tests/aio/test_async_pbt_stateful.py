@@ -63,7 +63,6 @@ def _can_write(path: str, files: dict[str, bytes], dirs: set[str]) -> bool:
     return all(a not in files for a in _ancestors(path))
 
 
-@pytest.mark.spec("ASYNC-001", "ASYNC-008", "ASYNC-012", "ASYNC-013", "ASYNC-018", "ASYNC-019", "ASYNC-030")
 class AsyncBackendModel(RuleBasedStateMachine):
     """Both async backends must behave like a dict[str, bytes] + explicit dirs.
 
@@ -82,9 +81,15 @@ class AsyncBackendModel(RuleBasedStateMachine):
         self.dirs: set[str] = set()
 
     def teardown(self) -> None:
+        # Each backend closed independently — a raise from native.aclose()
+        # must not skip adapted.aclose() (and vice versa); filterwarnings=error
+        # promotes any leaked-resource warning from a skipped close to a hard
+        # failure and would shadow the original error.
         try:
-            self.loop.run_until_complete(self.native.aclose())
-            self.loop.run_until_complete(self.adapted.aclose())
+            try:
+                self.loop.run_until_complete(self.native.aclose())
+            finally:
+                self.loop.run_until_complete(self.adapted.aclose())
         finally:
             self.loop.close()
 
@@ -240,8 +245,10 @@ class AsyncBackendModel(RuleBasedStateMachine):
             except remote_store._errors.NotFound:
                 return set()
 
-        assert self._run(_list(self.native)) == expected
-        assert self._run(_list(self.adapted)) == expected
+        native_actual = self._run(_list(self.native))
+        adapted_actual = self._run(_list(self.adapted))
+        assert native_actual == expected, f"native list_files({path!r}): {native_actual} != {expected}"
+        assert adapted_actual == expected, f"adapted list_files({path!r}): {adapted_actual} != {expected}"
 
     @invariant()
     def backends_agree_on_existing_files(self) -> None:
@@ -251,10 +258,29 @@ class AsyncBackendModel(RuleBasedStateMachine):
             assert self._run(self.adapted.read_bytes(path)) == expected
 
 
-# Hypothesis discovers and runs this automatically.
+# Hypothesis discovers and runs this automatically. Markers are applied to
+# the dynamically generated ``TestCase`` (not to ``AsyncBackendModel``) — the
+# TestCase does not subclass the state machine, so a marker on the state
+# machine would be silently dropped by pytest's collection.
 TestAsyncBackendModel = AsyncBackendModel.TestCase
 TestAsyncBackendModel.__module__ = __name__
 TestAsyncBackendModel = pytest.mark.pbt(TestAsyncBackendModel)
+TestAsyncBackendModel = pytest.mark.spec(
+    "ASYNC-001",
+    "ASYNC-004",
+    "ASYNC-005",
+    "ASYNC-006",
+    "ASYNC-007",
+    "ASYNC-008",
+    "ASYNC-010",
+    "ASYNC-012",
+    "ASYNC-013",
+    "ASYNC-014",
+    "ASYNC-018",
+    "ASYNC-019",
+    "ASYNC-020",
+    "ASYNC-030",
+)(TestAsyncBackendModel)
 
 
 @pytest.mark.pbt
