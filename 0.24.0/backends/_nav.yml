@@ -1,0 +1,9 @@
+- Local: local.md
+- Memory: memory.md
+- HTTP: http.md
+- S3: s3.md
+- S3-PyArrow: s3-pyarrow.md
+- SFTP: sftp.md
+- Azure: azure.md
+- SQL Blob: sql-blob.md
+- SQL Query: sql-query.md
