@@ -9077,6 +9077,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-35-streaming-hardening-and-documentation-systems-v0230" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 35: Streaming Hardening and Documentation Systems (v0.23.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-36-writeresult-async-bridges-and-the-audit-flywheel-v0240" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 36: WriteResult, Async Bridges, and the Audit Flywheel (v0.24.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9648,6 +9670,28 @@
     <span class="md-ellipsis">
       
         Phase 34: Security Hardening (v0.22.1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-35-streaming-hardening-and-documentation-systems-v0230" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 35: Streaming Hardening and Documentation Systems (v0.23.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-36-writeresult-async-bridges-and-the-audit-flywheel-v0240" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 36: WriteResult, Async Bridges, and the Audit Flywheel (v0.24.0)
       
     </span>
   </a>
@@ -10257,6 +10301,17 @@
 <p><strong>Static analysis caught real issues.</strong> Enabling the CodeQL <code>security-and-quality</code> query suite (BK-142) surfaced 31 findings. Most were code style (unused imports, <code>...</code> no-ops in Protocol stubs), but a handful were genuine: SFTP <code>known_hosts</code> was created with <code>0o644</code> instead of <code>0o600</code>, making it world-readable; <code>__del__</code> cleanup logic was complex enough to risk exceptions swallowing errors; <code>ProxyStore</code> skipped <code>super().__init__()</code>; empty <code>except/pass</code> blocks swallowed exceptions silently. All 31 were resolved in BK-143.</p>
 <p><strong>The ruff/CodeQL interaction was non-obvious.</strong> A follow-up pass fixed a subtle interplay: ruff's <code>TCH003</code> rule moves <code>BinaryIO</code> to a <code>TYPE_CHECKING</code> block and <code>TC006</code> auto-quotes <code>cast(BinaryIO, x)</code> → <code>cast("BinaryIO", x)</code>. Both transformations make <code>BinaryIO</code> appear unused to CodeQL at runtime. Fix: suppress both rules so the symbol stays as a live runtime import directly referenced by <code>cast()</code>.</p>
 <p><strong>Patch releases keep the codebase trustworthy.</strong> Not every release adds features. v0.22.1 demonstrates that security findings from static analysis are worth a PyPI publish — users running automated vulnerability scans should see clean results.</p>
+<h3 id="phase-35-streaming-hardening-and-documentation-systems-v0230">Phase 35: Streaming Hardening and Documentation Systems (v0.23.0)<a class="headerlink" href="#phase-35-streaming-hardening-and-documentation-systems-v0230" title="Permanent link">&para;</a></h3>
+<p>v0.23.0 fixed a deep-seated streaming problem that had been latent since the Azure backend was first written, then invested heavily in preventing the same class of problem from appearing in documentation.</p>
+<p><strong>Azure was silently buffering entire files.</strong> <code>AzureBackend.write()</code> called <code>upload_blob()</code> after reading the full stream into a single <code>bytes</code> buffer (BUG-161). For large files this was an OOM waiting to happen, and it violated the streaming contract the library promised. The fix introduced staged-block upload with a configurable <code>max_block_size</code> default — the same pattern the Azure SDK recommends for production workloads. The companion <code>BUG-162</code> fix standardized the copy-layer buffer to 256 KiB across all backends: the Windows default of 1 MiB was causing the end-to-end pipe tests to show two simultaneous live chunks rather than one.</p>
+<p><strong><code>Capability.LAZY_READ</code> made streaming quality queryable.</strong> The distinction between "fetches data on demand" (S3, SFTP, Azure, Local, HTTP) and "loads the file before returning a stream" (Memory, SQLBlob, SQLQuery) had always been true but was invisible to callers. Adding <code>LAZY_READ</code> as a quality flag made it explicit — <code>store.supports(Capability.LAZY_READ)</code> is now a first-class check, not documentation archaeology. The Dafny formal layer was extended in parallel to verify the <code>GetFolderInfo</code> aggregate postcondition (<code>file_count == |ChildFiles(fs, path)|</code>, <code>total_size == SumSizes(…)</code>) — the first spec item that required ghost set tracking and a bespoke induction lemma.</p>
+<p><strong>Documentation content rules codified a practice that was already working.</strong> The project had been pulling code examples from <code>examples/snippets/</code> rather than writing them inline for several releases. BK-148 wrote that down as <code>sdd/CONTENT-RULES.md</code> — six rules about longevity: no exhaustive enumerations, no pseudo-precise counts, no copy-paste of things that have a single source of truth. BK-149 applied those rules retroactively to the existing guides, removing stale counts and replacing hardcoded lists with shape descriptions. The lesson: good practices need to be rule-codified before they can be enforced, not after.</p>
+<h3 id="phase-36-writeresult-async-bridges-and-the-audit-flywheel-v0240">Phase 36: WriteResult, Async Bridges, and the Audit Flywheel (v0.24.0)<a class="headerlink" href="#phase-36-writeresult-async-bridges-and-the-audit-flywheel-v0240" title="Permanent link">&para;</a></h3>
+<p>v0.24.0 was the largest API surface addition since the async layer in v0.21.0. It completed the write story — every write operation now returns structured metadata — and finished the two-direction async bridge needed to unblock future backend work.</p>
+<p><strong>WriteResult closed the "write is a void" gap.</strong> Before v0.24.0, callers who needed the etag, digest, or modified timestamp of what they had just written had to perform a separate <code>get_file_info()</code> round trip. <code>WriteResult</code> collapsed that: <code>write()</code>, <code>write_atomic()</code>, and their <code>open_atomic</code> counterpart all return a frozen dataclass with <code>path</code>, <code>size</code>, <code>source</code>, <code>digest</code>, <code>etag</code>, <code>version_id</code>, <code>last_modified</code>, and <code>metadata</code>. Two new capability flags accompanied it: <code>WRITE_RESULT_NATIVE</code> signals that rich fields come from the backend's write response (no extra round trip); <code>USER_METADATA</code> gates the <code>metadata=</code> kwarg so callers know whether attached key/value pairs will be persisted. <code>Store.head()</code> rounded out the feature: metadata retrieval without a content read. The Dafny <code>BackendContract.dfy</code> was widened in parallel to encode <code>WriteResult</code> postconditions as machine-verified obligations — the formal layer kept pace with the API.</p>
+<p><strong><code>AsyncBackendSyncAdapter</code> completed the bridge picture.</strong> <code>SyncBackendAdapter</code> (v0.21.0) let sync backends be used from async code via <code>asyncio.to_thread</code>. The missing direction — using an async backend from sync code — now has <code>AsyncBackendSyncAdapter</code>: a public class that runs the async backend on a private daemon-thread event loop. The design required solving non-trivial problems: streaming reads across the thread boundary (<code>_ChunkPullReader</code> as <code>io.RawIOBase</code>), <code>open_atomic</code> synthesis from <code>write_atomic</code>, capability translation (masking <code>SEEKABLE_READ</code>, forwarding the rest), a fail-fast guard for callers already on an event loop, and a best-effort GC-path cleanup via <code>__del__</code>. The resulting spec block (ASYNC-080…093) was the most detailed in the codebase.</p>
+<p><strong>The audit flywheel accelerated.</strong> The project ran two overlapping audit cycles during this release. Audit-009 (backend-specifics visibility) produced 20 findings; BK-153 resolved them all by adding a three-tier admonition vocabulary to the API reference. Audit-011 (v0.23.0+ doc gaps) found 16 gaps introduced since the last release — new API surface (WriteResult, metadata=, aio.ext.write) that hadn't made it into the guides. BK-162 resolved all 16. The pattern that emerged: audit → findings → BK item → resolution within the same release cycle. At this cadence, documentation debt doesn't compound.</p>
+<p><strong>TLA+ moved from PoC to a live layer.</strong> The TLA+ work from v0.22.0's research phase (ID-147b) produced <code>Observer.tla</code> — six invariants covering the observer dispatch protocol (OBS-003 step 6/7 outcome routing). The formal layer now has two distinct tools: Dafny for per-operation contracts, TLA+ for cross-layer protocol properties. A non-blocking <code>verify-tla</code> CI job runs the TLC model checker on every push, with a revisit cadence (ID-150) to decide whether to promote it to a gate once a real regression is caught.</p>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
 <p>If you want to try this approach on your own project:</p>
 <ol>
