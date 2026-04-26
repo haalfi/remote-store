@@ -191,7 +191,9 @@ counterpart.
 ### Metadata
 
 !!! note "Requires `Capability.METADATA`"
-    Both methods raise `CapabilityNotSupported` on backends that do not declare this capability.
+    `get_file_info()` requires `Capability.METADATA`.
+    `get_folder_info()` requires `Capability.METADATA` without `max_depth`,
+    or `Capability.LIST` when `max_depth` is set.
 
 ::: remote_store.aio.AsyncBackend.get_file_info
     options:
@@ -206,8 +208,9 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
-!!! note "Requires `Capability.METADATA`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+!!! note "Capability depends on `max_depth`"
+    Without `max_depth`: requires `Capability.METADATA`.
+    With `max_depth` set: requires `Capability.LIST` — works on backends that lack `METADATA`.
 
 ### File Operations
 

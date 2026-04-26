@@ -218,8 +218,9 @@
 ## Metadata
 
 !!! note "Partially requires `Capability.METADATA`"
-    `head()`, `get_file_info()`, and `get_folder_info()` raise `CapabilityNotSupported`
-    on backends that do not declare this capability.
+    `head()` and `get_file_info()` require `Capability.METADATA`.
+    `get_folder_info()` requires `Capability.METADATA` without `max_depth`,
+    or `Capability.LIST` when `max_depth` is set.
     `exists()`, `is_file()`, and `is_folder()` are always available.
 
 ::: remote_store.Store.head
@@ -258,8 +259,9 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Requires `Capability.METADATA`"
-    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+!!! note "Capability depends on `max_depth`"
+    Without `max_depth`: requires `Capability.METADATA`.
+    With `max_depth` set: requires `Capability.LIST` — works on backends that lack `METADATA`.
 
 !!! note "Backend-conditional argument: `max_depth=`"
     Backends with native depth limiting prune traversal early. Backends that do not
