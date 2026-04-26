@@ -6,6 +6,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-160: Add `context7.json` for Context7 library indexing.
+
 ## [0.24.0] - 2026-04-26
 
 ### Added
