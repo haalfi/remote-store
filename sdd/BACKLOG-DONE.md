@@ -5,6 +5,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## v0.24.0
+
 - [x] **BUG-184 — `AsyncMemoryBackend.delete(dir_path, missing_ok=True)` silently returns; sync `MemoryBackend` raises `InvalidPath`**
   Lock-step divergence between the two backends on the same call: when
   `path` exists as a directory and `missing_ok=True`, `MemoryBackend.delete`
@@ -717,6 +719,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   do not re-trigger workflows.) Removed now-unused `pages` and `id-token` permissions
   from `docs.yml`.
   PR #424.
+
+## v0.23.0
 
 - [x] **BK-150 — Design index and Further Reading reshape**
   Fixed the mixed-mode / overlap state left after PR #418. `design/` now

@@ -6,183 +6,31 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-184: `AsyncMemoryBackend.delete(dir_path, missing_ok=True)` now raises `InvalidPath`, matching sync `MemoryBackend` and `BE-012`; `ASYNC-012` spec tightened; PBT guard removed
-
-- ID-155: Async stateful PBT (`tests/aio/test_async_pbt_stateful.py`) — Hypothesis `RuleBasedStateMachine` driving `AsyncMemoryBackend` and `SyncBackendAdapter(MemoryBackend())` in lock-step against a shared dict model
-- ID-156: Extend `SyncBackendAdapter` conformance to live backends — add `live_adapted_backend` fixture (S3/moto, SFTP/in-process, Azure/Azurite) and five `@pytest.mark.integration` test classes mirroring the Memory/Local suite; move `sftp_server` session fixture to root `tests/conftest.py` so all test modules can access it
-- ID-157: Live Azurite integration suite for `AsyncAzureBackend` (`tests/aio/test_async_azure_live.py`)
-- ID-158: Fix pytest-asyncio phantom event-loop ResourceWarning
-
-- BK-164: Close high-value async test-coverage gaps — add `tests/aio/test_async_drift.py` (53 tests, Store/Backend↔AsyncStore/AsyncBackend API parity guard), `tests/aio/test_async_cancellation.py` (9 tests, invariants under `asyncio.CancelledError` for write/read/list), and `tests/aio/test_sync_adapter_conformance.py` (42 tests, `SyncBackendAdapter` parametrised across `MemoryBackend` and `LocalBackend` to exercise the 64 KiB streaming-read loop, `_materialize()` async-iterator drain, sync→async iterator bridging, and `asyncio.gather` dispatch)
-- Research SFTPGo: add SFTPGo pointer to README "What it is not" section
-- BUG-183: `test_pbt_stateful.py::BackendModel` now tracks live directory nodes in a separate set instead of deriving them from the file map, and adds a `delete_folder` rule that prunes the target and its descendants from the model; fixes the Hypothesis-minimised `write('0/0') → delete('0/0') → write('0')` sequence where the model forgot the empty `_DirNode` that `MemoryBackend` retains per MEM-DS-006 and let the rule call through to the backend
-- BK-163: Share 5 duplicate S3/S3PA tests via parametrized test_s3_shared.py: move test_get_file_info_has_etag (S3-023/S3PA-017), test_unwrap_s3fs (S3-020/S3PA-021), test_not_found_has_backend_attr (S3-015/S3PA-018), test_error_has_backend_attribute (S3-018/S3PA-019), and test_get_file_info_has_digest_sha256 (S3-024/S3PA-017) into TestS3SharedETagAndDigest, TestS3SharedUnwrap, and TestS3SharedErrorMapping; remove now-empty TestS3Lifecycle, TestS3PyArrowErrorMapping, and TestS3PyArrowMetadata classes
-- BK-162: Fix 16 documentation gaps from Audit-011 (v0.23.0+ API changes): corrected write-method signatures and return types in custom-backend guide and snippet; documented `USER_METADATA`, `WRITE_RESULT_NATIVE`, and `LAZY_READ`; added `aio.ext.write` to extensions table; documented write results and `metadata=` for S3/Azure backends; corrected capability claims for Local and S3-PyArrow; updated example write calls to capture `WriteResult`
-- BK-159: Audit handwritten docs for v0.23.0+ gaps: 16 findings across custom-backend guide, async guide, extensions guide, and per-backend guides; report at `sdd/audits/audit-011-docs-v023-gaps.md`
-- BK-160/BK-161: Codify extension import-time private access rule in DESIGN.md § 12; add AST checker to test_ext_contract.py; fix 10 Cat 2 import paths across 10 ext modules; annotate 3 Cat 1 coupling sites
-- Audit-010: Document extension private module import violations against ADR-0008
-- ID-138: Async streaming integrity e2e test (`tests/e2e/test_async_streaming_integrity.py`); 4-hop chain via AsyncAzure + SyncWrapped(Local); SHA-256 per hop + lazy-read chunk assertions; Azurite-optional with 2-hop fallback
-- ID-153: Promote moto_server / azurite_server / _AZURITE_CONN_STR to tests/conftest.py; eliminate duplicate _moto_endpoint fixture and cross-boundary conftest imports
-- BK-156: Remove conformance-duplicate tests from test_sftp.py, test_azure.py, and test_sqlblob.py; add per-backend spec markers to conformance tests to satisfy sdd/000-process.md Rule 2
-- BK-152 (follow-up): Fix SQLAlchemy last_modified decoupling (WRITE_RESULT_NATIVE when modified_at present without user_metadata); fix Local double-stat; update WR-003/WR-009/S3PA-003 specs; split _LAST_MODIFIED_XFAIL from _RICH_FIELDS_XFAIL in conformance tests
-- BK-152: WriteResult/FileInfo field consistency conformance test (`test_write_result_rich_fields_match_file_info`, gated on `WRITE + METADATA`); fix S3PyArrow, Local, SFTP, SQLAlchemy to populate `last_modified` (and `etag`/`digest` for S3PyArrow) from a post-write query; declare `WRITE_RESULT_NATIVE` for S3PyArrow, Local, SFTP
-- BK-007 (extended): Replace prose `--` with em dash `—` throughout docs, specs, research, SDD files, and `.tmpl` templates; add typography Rule 8 to `sdd/DOCUMENTATION.md`
-- BUG-181: HNS `write_atomic` WriteResult rich-field and metadata parity verified with mock tests
-- ID-013b: async write layer returns `WriteResult`; `metadata=` supported on `AsyncStore` and all async backends; `aio.ext.write.write_with_hash` added
-- BK-157: Tighten docs site spacing: compact table rows, heading typography, method separators
-- BK-158: Promote all unhandled warnings to errors in pytest (`filterwarnings = error`)
-- BUG-180: Fix `ResourceWarning` in tests under Python 3.14 from unclosed `HTTPError` in `UrllibTransport`
-
-### Fixed
-
-- BUG-178: fix s3fs lazy init raising `got multiple values for keyword argument 'config'` when `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy(...)` are both supplied
-- BUG-175: `SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite
-- BUG-172: `_ChunkPullReader.read`/`readinto` return empty on closed stream instead of raising `ValueError`
-
-### Changed
-
-- BK-153: Add backend-specifics visibility admonitions to API reference
-- BK-155: Consolidate S3 + S3-PyArrow test and spec duplication
-
-- **pyarrow 24.x mypy compatibility** (BK-154): pyarrow 24.0.0 shipped partial
-  type stubs that surfaced `attr-defined`, `name-defined`, and `no-untyped-call`
-  errors under mypy strict mode. Added `follow_imports = "skip"` for
-  `pyarrow`/`pyarrow.*` in `pyproject.toml`, restoring pre-24 behaviour where
-  all `pa.*` resolves as `Any`. Removed the now-redundant
-  `# type: ignore[import-untyped]` annotations on pyarrow imports in
-  `ext/arrow.py`, `ext/parquet.py`, `backends/_s3_pyarrow.py`, and
-  `backends/_sqlalchemy.py`.
-
-- **Dafny `MemoryBackend` spec now populates `last_modified`** (ID-152):
-  `MemoryBackend.dfy:Write` returned `Option_None()` for `last_modified` by
-  design, which forced the `dafny-oracle` branch of
-  `test_native_populates_last_modified` to carry `strict=False` and never
-  self-flip after BUG-169. With BUG-169 landed, the spec now returns a
-  capability-conditional timestamp witness (`Some(0)` under
-  `CapWriteResultNative`, `None` otherwise) for both `FileInfo.last_modified`
-  and `WriteResult.last_modified`; the oracle adapter lifts it to a Python
-  UTC datetime. `MemoryBackendMinimal` (no `CapWriteResultNative`) is
-  unchanged. Generated runtime regenerated via `scripts/dafny_translate.sh`.
-  `_LAST_MODIFIED_XFAIL` is now empty.
-
-### Fixed
-
-- **`SQLBlobBackend.copy(src, src)` no longer silently destroys data** (BUG-176):
-  `copy()` lacked the `src == dst` early-return guard that `move()` has. With
-  `overwrite=True` the single row was deleted before the `INSERT ... SELECT`
-  ran, destroying the file; with `overwrite=False` the method incorrectly
-  raised `AlreadyExists`. Fixed by mirroring `move()`'s guard at the top of
-  `copy()`: verify source exists, then return immediately. Both
-  `test_self_copy_preserves_data` and `test_self_copy_no_overwrite_preserves_data`
-  now pass on `sql-blob`.
-
-- **`S3Backend.write` now surfaces the auto-CRC32 digest** (BUG-177):
-  `write()` previously called `s3fs.info()` after the upload, which omits
-  checksum fields, leaving `WriteResult.digest` as `None` while a subsequent
-  `get_file_info()` returned `ContentDigest('crc32', …)` — a WR-001a
-  divergence. Fixed by replacing the `s3fs.info()` call with a direct
-  `head_object(..., ChecksumMode="ENABLED")` (the same call `get_file_info`
-  uses), so `write()` and `get_file_info()` now agree on `digest`. New
-  conformance test `test_digest_matches_file_info` enforces this invariant
-  across all `WRITE_RESULT_NATIVE` backends.
-
-- **Azure HNS `write_atomic` leaks `WriteResult`-construction failures as
-  write failures** (BUG-173): after a successful `tmp_fc.rename_file()`
-  commit, `dst_fc.get_file_properties()` was called to populate
-  `etag`/`last_modified`; a failure there (eventual consistency, network
-  blip, permissions) propagated as a write failure even though the data
-  was already at the destination. Callers that retried saw
-  `AlreadyExists` (with `overwrite=False`) or silently double-wrote. Fix
-  wraps the post-rename `get_file_properties` in a try/except, logs a
-  warning, and returns a native-source `WriteResult` with rich fields
-  left unset. Covered by new mock regression test
-  `TestAzureHNSPaths.test_write_atomic_hns_swallows_post_rename_read_failure`.
-
-- **`SQLBlobBackend.write` omits `last_modified` from `WriteResult` under
-  `WRITE_RESULT_NATIVE`** (BUG-170): `_sqlalchemy.py:write` advertised
-  `WRITE_RESULT_NATIVE` when the `user_metadata` column was present but
-  returned `WriteResult(last_modified=None, ...)` while the `now` timestamp
-  was being written to the DB — a WR-001a rich-field obligation violation.
-  Fix derives the WriteResult's `last_modified` from the same
-  float → datetime round-trip that `get_file_info` already uses
-  (`datetime.fromtimestamp(now, tz=timezone.utc)`), gated on both
-  `user_metadata` and `modified_at` column presence. The `"sql-blob"`
-  entry in `_LAST_MODIFIED_XFAIL` flipped from strict-xfail to pass and
-  was removed.
-
-- **`MemoryBackend.write` omits `last_modified` from `WriteResult` under
-  `WRITE_RESULT_NATIVE`** (BUG-169): `_memory.py:write` declared
-  `WRITE_RESULT_NATIVE` but returned `WriteResult(last_modified=None, ...)`
-  while the in-memory node's `modified_at` was populated — a violation of
-  the WR-001a rich-field obligation on a declaring backend. Fix captures a
-  single `now = datetime.now(timezone.utc)` under the lock and reuses it for
-  both `_FileEntry.modified_at` (new and update paths) and
-  `WriteResult.last_modified`, so `result.last_modified == info.modified_at`
-  on a subsequent `get_file_info`. The `"memory"` entry in the
-  `_LAST_MODIFIED_XFAIL` registry used by
-  `TestWriteResultConformance.test_native_populates_last_modified` flipped
-  from strict-xfail to pass and was removed.
-
-- **`LocalBackend.write_atomic` reports stale `WriteResult.size` for streaming
-  input** (BUG-168): `_local.py:197-203` called `os.path.getsize(tmp_path)`
-  *inside* the `with os.fdopen(fd, "wb") as f:` block, before the
-  `BufferedWriter` had flushed. For `BinaryIO` content whose tail was still
-  buffered, the returned `size` was truncated to the last-flushed offset while
-  the file on disk was correct. Fix moves the `size` capture after the `with`
-  block closes and after `os.replace`, using `full.stat().st_size` (matching
-  the pattern already used by the non-atomic `write()` branch). Caught by
-  `TestWriteResultConformance.test_size_matches_written_bytes_for_streaming_input`
-  under ID-151 Part 3 on Python 3.14, where the default `BufferedWriter`
-  block size is large enough to hold a 100 KiB payload unflushed.
-
-- **`test_streaming_integrity` SFTP→Azure pipe-threshold flake** (BUG-174):
-  `PIPE_THRESHOLD` raised 1.5 MiB → 2.25 MiB. Root cause is a tracemalloc
-  attribution artifact — Azure SDK's staged-block uploader holds two 1 MiB
-  chunks live simultaneously when the source is wrapped in
-  `io.BufferedReader`; revised ceiling reflects that two-chunk hold plus
-  ~12 % headroom. No production-code change.
-
-- **`_AsyncIteratorBridge.__del__` CodeQL warning** (`py/overly-complex-delete`):
-  extracted cleanup logic into `_aclose_best_effort()`; `__del__` now delegates
-  to it, keeping the finaliser trivial.
-
-- **`AsyncBackendSyncAdapter` orphan-coroutine leaks** (BUG-166, BUG-167):
-  coroutines built before `run_coroutine_threadsafe` were discarded unawaited
-  on fail-fast paths, emitting `RuntimeWarning`. All six sites now call
-  `coro.close()` on every error path. Companion cleanup eliminates 80
-  `ResourceWarning`s via autouse aclose fixtures and rewrites
-  `test_close_owned_engine` to assert pool identity (TESTING.md Rule 12).
-
-- **`AsyncAzureBackend.write` streaming** (BUG-165): `write` and
-  `write_atomic` materialized any `AsyncIterable[bytes]` payload into a
-  single `bytes` buffer before calling `upload_blob` / `upload_data`,
-  holding the entire file in memory and breaking the streaming contract
-  (SIO-003, ASYNC-021). The async iterator is now passed through — the
-  Azure SDK accepts `AsyncIterable[bytes]` directly and streams it in
-  bounded memory. Caught by the e2e streaming-integrity chain on the
-  `sftp -> azure-bridged` hop.
-
-- **Docs pages deployment on release tags** (BUG-164): `pages` job moved to a
-  dedicated `gh-pages-deploy.yml` workflow triggered by `workflow_run` on `Docs`
-  completion. Eliminates the `github-pages` environment protection rule failure
-  when `docs.yml` ran in a tag ref context on release events. (`GITHUB_TOKEN`
-  pushes do not re-trigger workflows, so a `push: gh-pages` trigger would
-  never fire from mike.)
+## [0.24.0] - 2026-04-26
 
 ### Added
 
-- **`WriteResult`, `Store.head()`, and `ext.write` hashing helpers** (ID-146, ID-148):
-  `Store.write*()` now returns a `WriteResult` frozen dataclass (`path`, `size`,
-  `source`, `digest`, `etag`, `version_id`, `last_modified`, `metadata`).
-  `Store.head(path)` retrieves file metadata as a `WriteResult` (requires
-  `Capability.METADATA`). `metadata=` kwarg on write methods is gated by
-  `Capability.USER_METADATA`; `Capability.WRITE_RESULT_NATIVE` signals backends
-  that populate rich fields from the write response. `ext.write` adds
-  `write_with_hash` and `open_atomic_with_hash` for guaranteed client-side
-  digest regardless of backend capability. All proxy layers (`ProxyStore`,
-  `ObservedStore`, `CachedStore`) forward `WriteResult` and `head()`;
-  `StoreEvent.metadata["write_result"]` is populated on successful writes.
-  Docs: Write Integrity guide, full API surface, and RFC-0011 (Implemented) landed in ID-148.
+- **`WriteResult`: write methods return rich metadata; `Store.head()`; user metadata; hashing helpers; async parity** (ID-146, ID-148, ID-013b):
+  The entire write surface now returns a structured result and accepts optional user metadata.
+
+  - **`WriteResult` dataclass** — every `write*()` call returns `WriteResult(path, size, source,
+    digest, etag, version_id, last_modified, metadata)`. `source` signals origin:
+    `NativeSource` (from the backend's write response), `BasicSource` (from a post-write stat),
+    or `SidecarSource` (from `ext.write`). Two new capabilities gate the rich fields:
+    `WRITE_RESULT_NATIVE` (backend populates `etag`, `digest`, `version_id`, `last_modified`
+    from its own response) and `USER_METADATA` (caller-supplied `metadata=` is persisted).
+  - **`Store.head(path)`** — retrieves file metadata as a `WriteResult` without reading content;
+    gated on `Capability.METADATA`.
+  - **`ext.write`** — `write_with_hash` and `open_atomic_with_hash` guarantee a client-side
+    SHA-256 digest in `WriteResult.digest` regardless of whether the backend declares
+    `WRITE_RESULT_NATIVE`; suitable for integrity-critical pipelines.
+  - **Async parity** — `AsyncStore.write*()` and `AsyncBackend.write` / `write_atomic`
+    return `WriteResult` and accept `metadata=`; `Capability.USER_METADATA` enforced at the
+    `AsyncStore` layer; `aio.ext.write.write_with_hash` mirrors the sync helper.
+  - **Proxy forwarding** — `ProxyStore`, `ObservedStore`, and `CachedStore` all forward
+    `WriteResult` and `head()`; `StoreEvent.metadata["write_result"]` is populated on
+    successful writes.
+  - Docs: Write Integrity guide; RFC-0011 (Implemented).
 
 - **`AsyncBackendSyncAdapter`** (ID-141–143c): new public class wrapping any
   `AsyncBackend` as a synchronous `Backend` via a private event loop on a
@@ -196,7 +44,83 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   streaming chain. Decision guide: `guides/async-sync-bridges.md`. Unblocks
   ID-127 (Graph backend).
 
+### Fixed
+
+- **`AsyncMemoryBackend.delete` raises `InvalidPath` for directory paths** (BUG-184):
+  When a directory path was passed with `missing_ok=True`, the backend silently returned
+  instead of raising `InvalidPath` — diverging from sync `MemoryBackend` (BE-012) and
+  spec `ASYNC-012`. Fixed by inserting the `isinstance(existing, _DirNode)` guard mirrored
+  from `_memory.py:204-205`; spec `ASYNC-012` tightened to pin the outcome; the PBT guard
+  that previously suppressed the directory-path case is removed.
+
+- **s3fs lazy init raises `got multiple values for keyword argument 'config'`** (BUG-178):
+  When `client_options={"config_kwargs": {...}}` and `retry=RetryPolicy(...)` were both supplied,
+  `aiobotocore.create_client()` received two `config=` arguments. Fixed by extracting
+  `_S3Base._build_s3fs_kwargs()`, which merges `config_kwargs` into a single
+  `botocore.config.Config` before the retry-derived config is applied; both `S3Backend` and
+  `S3PyArrowBackend` delegate to the shared builder.
+
+- **`SQLBlobBackend.glob` drops zero-segment `**/` matches on SQLite** (BUG-175):
+  SQLite's `GLOB` operator treated `**` as two independent `*`s and required a literal `/`
+  between them, dropping zero-directory-depth matches. Replaced with `extract_prefix` +
+  `LIKE` narrowing; the existing Python regex handles final filtering.
+
+- **`SQLBlobBackend.copy(src, src)` no longer silently destroys data** (BUG-176):
+  `copy()` lacked the `src == dst` early-return guard that `move()` has. With
+  `overwrite=True` the single row was deleted before the `INSERT ... SELECT`
+  ran, destroying the file; with `overwrite=False` the method incorrectly
+  raised `AlreadyExists`. Fixed by mirroring `move()`'s guard at the top of
+  `copy()`: verify source exists, then return immediately.
+
+- **`AsyncAzureBackend.write` streaming** (BUG-165): `write` and
+  `write_atomic` materialized any `AsyncIterable[bytes]` payload into a
+  single `bytes` buffer before calling `upload_blob` / `upload_data`,
+  holding the entire file in memory and breaking the streaming contract
+  (SIO-003, ASYNC-021). The async iterator is now passed through — the
+  Azure SDK accepts `AsyncIterable[bytes]` directly and streams it in
+  bounded memory.
+
+- **Docs pages deployment on release tags** (BUG-164): `pages` job moved to a
+  dedicated `gh-pages-deploy.yml` workflow triggered by `workflow_run` on `Docs`
+  completion. Eliminates the `github-pages` environment protection rule failure
+  when `docs.yml` ran in a tag ref context on release events.
+
+### Changed
+
+- **pyarrow 24.x mypy compatibility** (BK-154): pyarrow 24.0.0 shipped partial
+  type stubs that surfaced `attr-defined`, `name-defined`, and `no-untyped-call`
+  errors under mypy strict mode. Added `follow_imports = "skip"` for
+  `pyarrow`/`pyarrow.*` in `pyproject.toml`, restoring pre-24 behaviour where
+  all `pa.*` resolves as `Any`. Removed the now-redundant
+  `# type: ignore[import-untyped]` annotations on pyarrow imports in
+  `ext/arrow.py`, `ext/parquet.py`, `backends/_s3_pyarrow.py`, and
+  `backends/_sqlalchemy.py`.
+
 ### Documentation
+
+- **Documentation gaps from Audit-011 resolved** (BK-162): Fixed 16 findings across four areas —
+  custom-backend guide and snippet updated for `WriteResult` return type, `metadata=` kwarg, and
+  new capability descriptions (`USER_METADATA`, `WRITE_RESULT_NATIVE`, `LAZY_READ`); `async.md`
+  gained a Write Results section, `aio.ext.write` prose, and an Async-Sync Bridges cross-reference;
+  `extensions.md` added the `aio.ext.write` table row and import stubs; `s3.md`, `azure.md`, and
+  `local.md` received Write Results sections and corrected `USER_METADATA` claims. Audit report:
+  `sdd/audits/audit-011-docs-v023-gaps.md`.
+
+- **SFTPGo compatibility note in README and SFTP guide**: documents SFTPGo as a zero-dependency
+  SFTP server for local development and CI, with a comparison table against OpenSSH-server.
+
+- **Backend-specifics visibility in API reference** (BK-153): added a three-tier admonition
+  vocabulary (info/note/warning) across all `docs-src/api/` pages — capability-gate notes on
+  B-series methods, backend-conditional argument notes on `metadata=` and `max_depth=`, conditional
+  field notes on `FileInfo`, `WriteResult`, `FolderInfo`, and `BackendConfig.options`, and
+  interop-section warnings on `Backend`, `AsyncBackend`, `AsyncStore`, `ProxyStore`,
+  `ReadOnlyHttpBackend`, and `SFTPUtils`. Vocabulary documented in `sdd/DOCUMENTATION.md`.
+  Closed all 20 findings from audit-009.
+
+- **Docs site spacing and typography** (BK-157): custom CSS reduces whitespace across all pages —
+  table cell padding halved, headings follow the classic generous-above/tight-below asymmetry,
+  parameter/returns blocks and bullet lists are compact, adjacent heading-before-method gaps
+  collapsed.
 
 - **Content rule 6 — code examples are sourced, not written** (ID-144):
   codifies the existing `examples/snippets/` practice (ID-057, ID-106) in
@@ -234,6 +158,68 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   ID-150 for 2026-10-19.
 
 ### Internal
+
+- **`test_streaming_integrity` SFTP→Azure pipe-threshold adjusted** (BUG-174):
+  `PIPE_THRESHOLD` raised 1.5 MiB → 2.25 MiB. Root cause is a tracemalloc attribution
+  artifact — Azure SDK's staged-block uploader holds two 1 MiB chunks live simultaneously
+  when the source is wrapped in `io.BufferedReader`; revised ceiling reflects the two-chunk
+  hold plus headroom. No production-code change.
+
+- **Async test coverage expansion** (ID-155, ID-156, ID-157, BK-164): four new modules under
+  `tests/aio/` targeting async-specific concerns absent from the existing suite.
+  `test_async_pbt_stateful.py` (ID-155) — `RuleBasedStateMachine` driving `AsyncMemoryBackend`
+  and `SyncBackendAdapter(MemoryBackend())` in lock-step against a shared model; surfaced BUG-184.
+  `test_sync_adapter_conformance.py` extended with live `S3/moto`, `SFTP`, and `Azurite` fixtures
+  (ID-156) so `AsyncBackendSyncAdapter` is exercised against real SDKs and connection pools.
+  `test_async_azure_live.py` (ID-157) — 17 Azurite-backed tests covering ETag/`last_modified`
+  propagation, chunked download, `USER_METADATA` round-trip, and HNS `write_atomic`.
+  `test_async_drift.py`, `test_async_adapter_unit.py`, `test_async_error.py` (BK-164) — API-parity
+  guard against the sync surface, executor-boundary unit tests, and error-passthrough assertions.
+
+- **Async e2e streaming integrity test** (ID-138): `tests/e2e/test_async_streaming_integrity.py`
+  validates a five-hop async chain (`AsyncMemoryBackend` → `AsyncAzureBackend` (Azurite) →
+  `AsyncMemoryBackend` → `SyncBackendAdapter(LocalBackend)` → `AsyncMemoryBackend`) with per-hop
+  SHA-256 verification. Falls back to a no-Azurite chain when the service is unavailable.
+
+- **HNS `write_atomic` WriteResult parity tests** (BUG-181): four mock tests added to
+  `TestAsyncAzureHNSPaths` covering rich-field population from `get_file_properties()`;
+  `version_id`/`digest` confirmed `None` on HNS (ADLS Gen2 `PathProperties` does not surface
+  these); `metadata=` forwarding to pre-rename `upload_data`; `overwrite` mode guards.
+
+- **pytest-asyncio event-loop leak and `ResourceWarning` fixes** (ID-158, BUG-180):
+  session-scoped `_close_leaked_event_loops` fixture closes orphaned loops before GC at teardown,
+  eliminating the `ResourceWarning` promoted to error by BK-158. Companion fix:
+  `UrllibTransport._request()` wraps the caught `HTTPError` in `contextlib.closing()` so the
+  file descriptor is released before GC on Python 3.14.
+
+- **PBT `BackendModel` tracks empty directory nodes** (BUG-183): `BackendModel` in
+  `test_pbt_stateful.py` derived implicit dirs from the live-file map, forgetting nodes after the
+  last file was deleted and diverging from `MemoryBackend`'s MEM-DS-006 dir-retention semantics.
+  Fixed with a separate `self.dirs` set; `delete_folder` rule added. No production-code change.
+
+- **Test fixture and duplication consolidation** (ID-153, BK-156, BK-163): `_free_port`,
+  `moto_server`, `azurite_server`, and availability helpers promoted to root `tests/conftest.py`,
+  eliminating cross-boundary imports. ~110 duplicate conformance tests removed from `test_sftp.py`,
+  `test_azure.py`, and `test_sqlblob.py`. Five shared S3/S3-PyArrow invariants extracted to
+  `test_s3_shared.py`.
+
+- **Extension import-path contract** (BK-160, BK-161): Rule 12 added to `sdd/DESIGN.md` requiring
+  extensions to use public import paths when one exists. `test_no_private_module_imports` AST
+  checker enforces it; 10 private-path imports fixed across 10 modules; 3 justified exceptions
+  documented with inline comments.
+
+- **`filterwarnings = error` in pytest** (BK-158): unhandled warnings now fail the suite;
+  existing SQLAlchemy suppressors retained with inline justification.
+
+- **S3 and S3-PyArrow test and spec consolidation** (BK-155): shared invariants extracted to
+  `tests/backends/test_s3_shared.py`, parametrized over both backends with per-param
+  `pytest.mark.spec(...)` marks preserving `S3-NNN` and `S3PA-NNN` traceability;
+  Category-1 conformance duplicates removed from `test_s3.py` and `test_s3_pyarrow.py`.
+
+- **Dafny `WriteResult` — `last_modified` spec-opacity closed** (ID-152):
+  `MemoryBackend.dfy:Write` returns a capability-conditional timestamp witness (`Some(0)` when
+  `CapWriteResultNative in capabilities`) instead of the hardcoded `Option_None()`. Adapter at
+  `tests/backends/dafny_oracle.py` lifts `Some(n)` to `datetime.fromtimestamp(n, tz=timezone.utc)`.
 
 - **Hypothesis property coverage for `WriteResult`** (ID-151c): adds
   `tests/test_pbt_write_result.py` with two property tests on top of

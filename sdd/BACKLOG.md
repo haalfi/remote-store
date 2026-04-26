@@ -63,6 +63,23 @@ Existing items may be more verbose — trim on next touch.
 
 ## Ideas
 
+### Docs & Tooling
+
+- [ ] **ID-159 — `FEATURES.md` hybrid generation (partial codegen + curated)**
+  `FEATURES.md` is currently hand-maintained entirely. Over time it will drift.
+  Target: the mechanical parts (method list with signatures, capability declarations
+  per backend, install extras) are generated from code at release time via a
+  `scripts/gen_features.py` step; the narrative parts (intro, "problem it solves"
+  descriptions, Config mini-example, Error Model table) remain hand-curated.
+  Similar pattern to how `gen_pages.py` drives the docs site: generated skeleton,
+  curated prose injected via region tags or a template merge.
+  **Constraints:** must still produce a single readable Markdown file (not a
+  docs-site page); generation runs as part of the release skill, not CI;
+  hand-curated sections are preserved across regenerations via region tags.
+  **Next:** design the region-tag schema; identify exactly which tables are
+  100% derivable from source (capability matrix, extras, method list) vs.
+  which need curation (descriptions, notes, examples).
+
 ### Streaming & Memory Optimization
 
 - [ ] **ID-140 — SQLBlob lazy reads for SQLite & PostgreSQL**
