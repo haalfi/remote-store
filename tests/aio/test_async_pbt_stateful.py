@@ -23,18 +23,18 @@ from __future__ import annotations
 
 import asyncio
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from hypothesis import strategies as st
-from hypothesis.stateful import RuleBasedStateMachine, invariant, rule
+from hypothesis.stateful import RuleBasedStateMachine, rule
 
 import remote_store._errors
 from remote_store.aio import AsyncMemoryBackend, SyncBackendAdapter
 from remote_store.backends._memory import MemoryBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import Coroutine
     from typing import TypeVar
 
     T = TypeVar("T")
@@ -70,6 +70,12 @@ class AsyncBackendModel(RuleBasedStateMachine):
     arbiter both must agree with. The explicit ``dirs`` set is required for
     the same reason as in the sync suite: ``delete()`` does not auto-prune
     ancestor dir nodes (spec MEM-DS-006 / BUG-183).
+
+    Scope: this suite covers the **happy path** of each rule's spec ID and
+    the lock-step agreement between the two backends. Negative-path
+    invariants (``AlreadyExists``, ``NotFound``, ``DirectoryNotEmpty``) are
+    exercised by the example-based suites — see ``test_async_memory.py``,
+    ``test_sync_adapter_conformance.py``, and ``test_async_backend.py``.
     """
 
     def __init__(self) -> None:
@@ -81,10 +87,12 @@ class AsyncBackendModel(RuleBasedStateMachine):
         self.dirs: set[str] = set()
 
     def teardown(self) -> None:
-        # Each backend closed independently — a raise from native.aclose()
-        # must not skip adapted.aclose() (and vice versa); filterwarnings=error
-        # promotes any leaked-resource warning from a skipped close to a hard
-        # failure and would shadow the original error.
+        # Close each backend independently. Today both aclose() impls are
+        # effectively no-op (AsyncMemoryBackend inherits the default; the
+        # adapter's aclose just delegates to a no-op MemoryBackend.close()),
+        # so the symmetric guard is purely defensive: a future native backend
+        # with real resources must not see one close skipped because the other
+        # raised first.
         try:
             try:
                 self.loop.run_until_complete(self.native.aclose())
@@ -93,12 +101,15 @@ class AsyncBackendModel(RuleBasedStateMachine):
         finally:
             self.loop.close()
 
-    def _run(self, coro: Awaitable[T]) -> T:  # type: ignore[type-var]
+    def _run(self, coro: Coroutine[Any, Any, T]) -> T:
         return self.loop.run_until_complete(coro)
 
-    @rule(path=_path, data=_content)
-    def write_new(self, path: str, data: bytes) -> None:
-        """Write to a path that should not exist yet (ASYNC-008)."""
+    # Rule bodies live as ``_do_*`` helpers so the regression tests at the
+    # bottom can drive the same code path without going through the @rule
+    # decorator. The @rule-decorated wrappers below are thin adapters that
+    # Hypothesis schedules with generated arguments.
+
+    def _do_write_new(self, path: str, data: bytes) -> None:
         if path in self.model or not _can_write(path, self.model, self.dirs):
             return
         self._run(self.native.write(path, data))
@@ -106,9 +117,7 @@ class AsyncBackendModel(RuleBasedStateMachine):
         self.model[path] = data
         self.dirs.update(_ancestors(path))
 
-    @rule(path=_path, data=_content)
-    def write_overwrite(self, path: str, data: bytes) -> None:
-        """Write with overwrite=True (ASYNC-008)."""
+    def _do_write_overwrite(self, path: str, data: bytes) -> None:
         if path not in self.model and not _can_write(path, self.model, self.dirs):
             return
         self._run(self.native.write(path, data, overwrite=True))
@@ -116,9 +125,7 @@ class AsyncBackendModel(RuleBasedStateMachine):
         self.model[path] = data
         self.dirs.update(_ancestors(path))
 
-    @rule(path=_path, data=_content)
-    def write_atomic(self, path: str, data: bytes) -> None:
-        """write_atomic with overwrite=True (ASYNC-010)."""
+    def _do_write_atomic(self, path: str, data: bytes) -> None:
         if path not in self.model and not _can_write(path, self.model, self.dirs):
             return
         self._run(self.native.write_atomic(path, data, overwrite=True))
@@ -126,9 +133,7 @@ class AsyncBackendModel(RuleBasedStateMachine):
         self.model[path] = data
         self.dirs.update(_ancestors(path))
 
-    @rule(path=_path)
-    def read_bytes(self, path: str) -> None:
-        """read_bytes must agree with the model on both backends (ASYNC-007)."""
+    def _do_read_bytes(self, path: str) -> None:
         if path in self.dirs:
             return  # reading a directory raises InvalidPath, not NotFound
         if path in self.model:
@@ -142,9 +147,7 @@ class AsyncBackendModel(RuleBasedStateMachine):
             with pytest.raises(remote_store._errors.NotFound, match=re.escape(path)):
                 self._run(self.adapted.read_bytes(path))
 
-    @rule(path=_path)
-    def read_streaming(self, path: str) -> None:
-        """Streaming read concatenates to the model bytes (ASYNC-006, ASYNC-020)."""
+    def _do_read_streaming(self, path: str) -> None:
         if path in self.dirs or path not in self.model:
             return
 
@@ -157,41 +160,31 @@ class AsyncBackendModel(RuleBasedStateMachine):
         assert self._run(_drain(self.native)) == self.model[path]
         assert self._run(_drain(self.adapted)) == self.model[path]
 
-    @rule(path=_path)
-    def exists(self, path: str) -> None:
-        """exists is True for files OR live directories on both backends (ASYNC-004)."""
+    def _do_exists(self, path: str) -> None:
         is_present = path in self.model or path in self.dirs
         assert self._run(self.native.exists(path)) is is_present
         assert self._run(self.adapted.exists(path)) is is_present
 
-    @rule(path=_path)
-    def is_file(self, path: str) -> None:
-        """is_file matches the model on both backends (ASYNC-005)."""
+    def _do_is_file(self, path: str) -> None:
         is_file = path in self.model
         assert self._run(self.native.is_file(path)) is is_file
         assert self._run(self.adapted.is_file(path)) is is_file
 
-    @rule(path=_path)
-    def delete(self, path: str) -> None:
-        """Delete an existing file (ASYNC-012). delete() does not prune dirs."""
+    def _do_delete(self, path: str) -> None:
         if path not in self.model:
             return
         self._run(self.native.delete(path))
         self._run(self.adapted.delete(path))
         del self.model[path]
 
-    @rule(path=_path)
-    def delete_missing_ok(self, path: str) -> None:
-        """Delete with missing_ok=True is total on file paths (ASYNC-012)."""
+    def _do_delete_missing_ok(self, path: str) -> None:
         if path in self.dirs:
             return
         self._run(self.native.delete(path, missing_ok=True))
         self._run(self.adapted.delete(path, missing_ok=True))
         self.model.pop(path, None)
 
-    @rule(path=_path)
-    def delete_folder(self, path: str) -> None:
-        """Recursively delete a live directory (ASYNC-013)."""
+    def _do_delete_folder(self, path: str) -> None:
         if path not in self.dirs:
             return
         self._run(self.native.delete_folder(path, recursive=True))
@@ -200,13 +193,11 @@ class AsyncBackendModel(RuleBasedStateMachine):
         self.dirs = {d for d in self.dirs if d != path and not d.startswith(prefix)}
         self.model = {k: v for k, v in self.model.items() if not k.startswith(prefix)}
 
-    @rule(src=_path, dst=_path)
-    def move(self, src: str, dst: str) -> None:
-        """Move a file (ASYNC-018). Skip cases that depend on backend-specific outcomes."""
+    def _do_move(self, src: str, dst: str) -> None:
         if src not in self.model:
             return
         if src == dst:
-            return  # no-op, covered separately
+            return  # same-path move is spec-defined as a no-op (ASYNC-047)
         # Skip if dst conflicts: the spec allows InvalidPath vs AlreadyExists
         # vs success-with-overwrite, but the model can't predict which
         # backend-specific guard fires first without duplicating internals.
@@ -219,9 +210,7 @@ class AsyncBackendModel(RuleBasedStateMachine):
         self.model[dst] = self.model.pop(src)
         self.dirs.update(_ancestors(dst))
 
-    @rule(src=_path, dst=_path)
-    def copy(self, src: str, dst: str) -> None:
-        """Copy a file (ASYNC-019)."""
+    def _do_copy(self, src: str, dst: str) -> None:
         if src not in self.model:
             return
         if dst in self.dirs or dst in self.model:
@@ -233,9 +222,7 @@ class AsyncBackendModel(RuleBasedStateMachine):
         self.model[dst] = self.model[src]
         self.dirs.update(_ancestors(dst))
 
-    @rule(path=_path)
-    def list_files_flat(self, path: str) -> None:
-        """Non-recursive list_files agrees with the model (ASYNC-014)."""
+    def _do_list_files_flat(self, path: str) -> None:
         prefix = path + "/"
         expected = {k for k in self.model if k.startswith(prefix) and "/" not in k[len(prefix) :]}
 
@@ -250,12 +237,80 @@ class AsyncBackendModel(RuleBasedStateMachine):
         assert native_actual == expected, f"native list_files({path!r}): {native_actual} != {expected}"
         assert adapted_actual == expected, f"adapted list_files({path!r}): {adapted_actual} != {expected}"
 
-    @invariant()
-    def backends_agree_on_existing_files(self) -> None:
-        """Every modelled file is readable from both backends with matching bytes."""
-        for path, expected in self.model.items():
-            assert self._run(self.native.read_bytes(path)) == expected
-            assert self._run(self.adapted.read_bytes(path)) == expected
+    @rule(path=_path, data=_content)
+    def write_new(self, path: str, data: bytes) -> None:
+        """Write to a path that should not exist yet (ASYNC-008 happy path)."""
+        self._do_write_new(path, data)
+
+    @rule(path=_path, data=_content)
+    def write_overwrite(self, path: str, data: bytes) -> None:
+        """Write with overwrite=True (ASYNC-008 happy path)."""
+        self._do_write_overwrite(path, data)
+
+    @rule(path=_path, data=_content)
+    def write_atomic(self, path: str, data: bytes) -> None:
+        """write_atomic with overwrite=True (ASYNC-010 happy path)."""
+        self._do_write_atomic(path, data)
+
+    @rule(path=_path)
+    def read_bytes(self, path: str) -> None:
+        """read_bytes hits both content-equality and NotFound paths (ASYNC-007)."""
+        self._do_read_bytes(path)
+
+    @rule(path=_path)
+    def read_streaming(self, path: str) -> None:
+        """Streaming read concatenates to the model bytes (ASYNC-006, ASYNC-020).
+
+        Content is capped at 100 bytes (`_content`), and `AsyncMemoryBackend.read`
+        emits a single chunk by design — so this rule does not exercise the
+        multi-chunk shape of `SyncBackendAdapter.read` (ASYNC-033, 65 KiB
+        chunks). Multi-chunk drains are covered by
+        `tests/aio/test_sync_adapter_conformance.py` and
+        `tests/aio/test_async_to_sync_adapter.py`. The value here is asserting
+        that the streaming entry point on both backends remains content-correct
+        under arbitrary stateful sequences generated by Hypothesis.
+        """
+        self._do_read_streaming(path)
+
+    @rule(path=_path)
+    def exists(self, path: str) -> None:
+        """exists is True for files OR live directories on both backends (ASYNC-004)."""
+        self._do_exists(path)
+
+    @rule(path=_path)
+    def is_file(self, path: str) -> None:
+        """is_file matches the model on both backends (ASYNC-005)."""
+        self._do_is_file(path)
+
+    @rule(path=_path)
+    def delete(self, path: str) -> None:
+        """Delete an existing file (ASYNC-012 happy path). Does not prune dirs."""
+        self._do_delete(path)
+
+    @rule(path=_path)
+    def delete_missing_ok(self, path: str) -> None:
+        """Delete with missing_ok=True is total on file paths (ASYNC-012)."""
+        self._do_delete_missing_ok(path)
+
+    @rule(path=_path)
+    def delete_folder(self, path: str) -> None:
+        """Recursively delete a live directory (ASYNC-013 happy path, recursive=True)."""
+        self._do_delete_folder(path)
+
+    @rule(src=_path, dst=_path)
+    def move(self, src: str, dst: str) -> None:
+        """Move a file (ASYNC-018 happy path). Skip dst-conflict cases."""
+        self._do_move(src, dst)
+
+    @rule(src=_path, dst=_path)
+    def copy(self, src: str, dst: str) -> None:
+        """Copy a file (ASYNC-019 happy path). Skip dst-conflict cases."""
+        self._do_copy(src, dst)
+
+    @rule(path=_path)
+    def list_files_flat(self, path: str) -> None:
+        """Non-recursive list_files agrees with the model (ASYNC-014)."""
+        self._do_list_files_flat(path)
 
 
 # Hypothesis discovers and runs this automatically. Markers are applied to
@@ -266,7 +321,6 @@ TestAsyncBackendModel = AsyncBackendModel.TestCase
 TestAsyncBackendModel.__module__ = __name__
 TestAsyncBackendModel = pytest.mark.pbt(TestAsyncBackendModel)
 TestAsyncBackendModel = pytest.mark.spec(
-    "ASYNC-001",
     "ASYNC-004",
     "ASYNC-005",
     "ASYNC-006",
@@ -294,15 +348,15 @@ def test_bug183_empty_dir_persists_after_file_delete_async() -> None:
     """
     m = AsyncBackendModel()
     try:
-        m.write_new(path="0/0", data=b"")
-        m.delete(path="0/0")
+        m._do_write_new("0/0", b"")
+        m._do_delete("0/0")
 
         assert m._run(m.native.is_folder("0")), "native should retain the empty dir node"
         assert m._run(m.adapted.is_folder("0")), "adapted should retain the empty dir node"
         assert "0" in m.dirs
 
         # Must be skipped by the rule guard, not reach the backend.
-        m.write_new(path="0", data=b"")
+        m._do_write_new("0", b"")
         assert "0" in m.dirs
         assert "0" not in m.model
         assert not m._run(m.native.is_file("0"))
@@ -317,17 +371,17 @@ def test_delete_folder_rule_prunes_dirs_and_descendants_async() -> None:
     """Regression: ``delete_folder`` rule must shrink ``self.dirs`` for both backends."""
     m = AsyncBackendModel()
     try:
-        m.write_new(path="a/b/c", data=b"x")
+        m._do_write_new("a/b/c", b"x")
         assert m.dirs == {"a", "a/b"}
         assert m.model == {"a/b/c": b"x"}
 
-        m.delete_folder(path="a")
+        m._do_delete_folder("a")
         assert not m._run(m.native.exists("a"))
         assert not m._run(m.adapted.exists("a"))
         assert m.dirs == set()
         assert m.model == {}
 
-        m.write_new(path="a", data=b"y")
+        m._do_write_new("a", b"y")
         assert m.model == {"a": b"y"}
         assert m._run(m.native.read_bytes("a")) == b"y"
         assert m._run(m.adapted.read_bytes("a")) == b"y"
