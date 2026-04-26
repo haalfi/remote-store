@@ -225,7 +225,7 @@ counterpart.
 
 !!! info "Quality flag: `Capability.ATOMIC_MOVE`"
     When declared, `move()` is guaranteed atomic under concurrent access.
-    Check `backend.capabilities().supports(Capability.ATOMIC_MOVE)` to query at runtime.
+    Check `store.supports(Capability.ATOMIC_MOVE)` to query at runtime.
 
 ::: remote_store.aio.AsyncBackend.copy
     options:

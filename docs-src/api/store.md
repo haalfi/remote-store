@@ -45,8 +45,10 @@
       heading_level: 3
 
 !!! info "Quality flag: `Capability.SEEKABLE_READ`"
-    When declared, the stream is natively seekable. Without it, the Store spools
-    the entire content to memory first to satisfy the seekable contract.
+    When declared, the stream is natively seekable. Without it, the Store falls
+    back to a `SpooledTemporaryFile` (RAM-first, spilling to disk beyond the
+    threshold). Backends may provide a more efficient implementation — for
+    example, Azure issues HTTP Range requests instead of spooling.
 
 ::: remote_store.Store.read_text
     options:
