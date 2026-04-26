@@ -157,8 +157,11 @@ class AsyncBackendModel(RuleBasedStateMachine):
                 chunks.append(chunk)
             return b"".join(chunks)
 
-        assert self._run(_drain(self.native)) == self.model[path]
-        assert self._run(_drain(self.adapted)) == self.model[path]
+        expected = self.model[path]
+        native_actual = self._run(_drain(self.native))
+        adapted_actual = self._run(_drain(self.adapted))
+        assert native_actual == expected, f"native streaming read({path!r}): {native_actual!r} != {expected!r}"
+        assert adapted_actual == expected, f"adapted streaming read({path!r}): {adapted_actual!r} != {expected!r}"
 
     def _do_exists(self, path: str) -> None:
         is_present = path in self.model or path in self.dirs
@@ -206,7 +209,20 @@ class AsyncBackendModel(RuleBasedStateMachine):
         if src not in self.model:
             return
         if src == dst:
-            return  # same-path move is spec-defined as a no-op (ASYNC-047)
+            # Same-path move is spec-defined as a no-op when the source exists
+            # (ASYNC-047). Drive both backends and assert content survives —
+            # otherwise the suite would silently accept an implementation that
+            # raised, deleted, or corrupted on a same-path move.
+            self._run(self.native.move(src, src))
+            self._run(self.adapted.move(src, src))
+            expected = self.model[src]
+            assert self._run(self.native.read_bytes(src)) == expected, (
+                f"native same-path move({src!r}) corrupted content"
+            )
+            assert self._run(self.adapted.read_bytes(src)) == expected, (
+                f"adapted same-path move({src!r}) corrupted content"
+            )
+            return
         # Skip if dst conflicts: the spec allows InvalidPath vs AlreadyExists
         # vs success-with-overwrite, but the model can't predict which
         # backend-specific guard fires first without duplicating internals.
@@ -308,7 +324,7 @@ class AsyncBackendModel(RuleBasedStateMachine):
 
     @rule(src=_path, dst=_path)
     def move(self, src: str, dst: str) -> None:
-        """Move a file (ASYNC-018 happy path). Skip dst-conflict cases."""
+        """Move a file (ASYNC-018 happy path; ASYNC-047 same-path no-op). Skip dst-conflict cases."""
         self._do_move(src, dst)
 
     @rule(src=_path, dst=_path)
@@ -344,6 +360,7 @@ TestAsyncBackendModel = pytest.mark.spec(
     "ASYNC-019",
     "ASYNC-020",
     "ASYNC-030",
+    "ASYNC-047",
 )(TestAsyncBackendModel)
 
 
