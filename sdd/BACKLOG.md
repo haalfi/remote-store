@@ -65,6 +65,53 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
+- [ ] **ID-161 — Publish `llms.txt` to the docs site**
+  Add a machine-readable discovery file at `docs-src/llms.txt` (served as
+  `https://docs.remotestore.dev/llms.txt`) per the
+  [llmstxt.org](https://llmstxt.org/) open standard. The file gives LLM
+  tools a single, stable entry point — a curated H1 title, a one-paragraph
+  summary, and a short link list — without relying on any specific platform.
+
+  **Format** (llmstxt.org §2):
+  ```
+  # remote-store
+
+  > Unified file-storage API for Python — one `Store` interface across
+  > Local, S3, SFTP, Azure, SQL, and more.
+
+  ## Docs
+  - [Getting started](https://docs.remotestore.dev/getting-started/)
+  - [Backends & capabilities](https://docs.remotestore.dev/capabilities-matrix/)
+  - [API reference](https://docs.remotestore.dev/api/)
+  - [Migration guide](https://docs.remotestore.dev/migration/)
+  - [FEATURES (authoritative)](https://github.com/haalfi/remote-store/blob/master/FEATURES.md)
+
+  ## Source
+  - [GitHub](https://github.com/haalfi/remote-store)
+  - [PyPI](https://pypi.org/project/remote-store/)
+  ```
+
+  **Why this adds value over `context7.json` (ID-160):** `context7.json`
+  targets one proprietary index; `llms.txt` is an open, client-agnostic
+  standard. Tools that resolve `/llms.txt` at a domain root (e.g. Cursor,
+  OpenAI's URL tools, or any future LLM IDE plugin) will discover the file
+  without prior registration.
+
+  **MkDocs note:** `docs_dir: docs-src` is set in `mkdocs.yml`. MkDocs
+  copies non-Markdown files verbatim, so `docs-src/llms.txt` will appear
+  at the site root automatically. No plugin or hook needed.
+
+  **Maintenance:** the link list should be reviewed when major new guides
+  land, not on every release. The file has no version number — it describes
+  the current stable docs, not a specific release.
+
+  **Optional follow-on (not in scope here):** `llms-full.txt` —
+  concatenated full prose of all guides, for tools that prefer a single
+  large context file. Worth a separate ID if demand appears.
+
+  **Exit criteria:** `docs-src/llms.txt` committed; `GET
+  https://docs.remotestore.dev/llms.txt` returns the file after next deploy.
+
 - [ ] **ID-160 — Submit remote-store to Context7 library index**
   `context7.json` ships at the repo root (PR #449's replacement). The remaining
   step is the one-time, out-of-band submission to Context7 (Upstash's curated
