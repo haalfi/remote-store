@@ -10079,6 +10079,13 @@
 
 
 <h1 id="async-api">Async API<a class="headerlink" href="#async-api" title="Permanent link">&para;</a></h1>
+<!-- Capability admonition placement rules (applies to this file and store.md):
+     - Section-level (capability applies to ALL methods in the section):
+       place the admonition directly after the section heading, before the first ::: directive.
+     - Method-level (capability applies to ONE method only):
+       place the admonition after that method's ::: directive block (end of method section).
+-->
+
 <p>The <code>remote_store.aio</code> module provides native <code>async</code>/<code>await</code> support
 for store operations. See <a href="../store/">Store</a> for the synchronous
 counterpart.</p>
@@ -10716,7 +10723,12 @@ declare this capability. Most backends declare it.</p>
 
     </div>
 
+</div><div class="admonition info">
+<p class="admonition-title">Quality flag: <code>Capability.LAZY_READ</code></p>
+<p>When declared, data is fetched lazily — partial reads avoid loading the whole
+file. Without it, the backend may buffer content before returning the stream.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -10782,7 +10794,14 @@ declare this capability. Most backends declare it.</p>
 <div class="admonition note">
 <p class="admonition-title">Requires <code>Capability.WRITE</code></p>
 <p><code>write()</code> raises <code>CapabilityNotSupported</code> on backends that do not declare
-this capability. Most backends declare it.</p>
+this capability. Most backends declare it.
+<code>write_atomic()</code> additionally requires <code>Capability.ATOMIC_WRITE</code>.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Quality flag: <code>Capability.WRITE_RESULT_NATIVE</code></p>
+<p>When declared, the returned <code>WriteResult</code> fields (<code>etag</code>, <code>version_id</code>,
+<code>last_modified</code>, <code>digest</code>) are populated from the backend's write response.
+Without it, only locally computable fields are set.</p>
 </div>
 
 
@@ -11421,7 +11440,11 @@ both in a single I/O call should override this for efficiency.</p>
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.GLOB</code></p>
+<p><code>glob()</code> raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -11477,11 +11500,13 @@ and add <code>Capability.GLOB</code> to their capability set.</p>
 
     </div>
 
-</div><div class="admonition note">
-<p class="admonition-title">Requires <code>Capability.GLOB</code></p>
-<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+</div><h3 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.METADATA</code></p>
+<p><code>get_file_info()</code> requires <code>Capability.METADATA</code>.
+<code>get_folder_info()</code> requires <code>Capability.METADATA</code> without <code>max_depth</code>,
+or <code>Capability.LIST</code> when <code>max_depth</code> is set.</p>
 </div>
-<h3 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h3>
 
 
 <div class="doc doc-object doc-function">
@@ -11631,10 +11656,16 @@ and add <code>Capability.GLOB</code> to their capability set.</p>
     </div>
 
 </div><div class="admonition note">
-<p class="admonition-title">Requires <code>Capability.METADATA</code></p>
-<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+<p class="admonition-title">Capability depends on <code>max_depth</code></p>
+<p>Without <code>max_depth</code>: requires <code>Capability.METADATA</code>.
+With <code>max_depth</code> set: requires <code>Capability.LIST</code> — works on backends that lack <code>METADATA</code>.</p>
 </div>
 <h3 id="file-operations">File Operations<a class="headerlink" href="#file-operations" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.MOVE</code> / <code>Capability.COPY</code></p>
+<p><code>move()</code> requires <code>Capability.MOVE</code>; <code>copy()</code> requires <code>Capability.COPY</code>.
+Each raises <code>CapabilityNotSupported</code> on backends that do not declare the respective capability.</p>
+</div>
 
 
 <div class="doc doc-object doc-function">
@@ -11715,6 +11746,11 @@ and add <code>Capability.GLOB</code> to their capability set.</p>
 </div><div class="admonition note">
 <p class="admonition-title">Requires <code>Capability.MOVE</code></p>
 <p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Quality flag: <code>Capability.ATOMIC_MOVE</code></p>
+<p>When declared, <code>move()</code> is guaranteed atomic under concurrent access.
+Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query at runtime.</p>
 </div>
 
 

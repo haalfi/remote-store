@@ -9711,6 +9711,13 @@
 
 
 <h1 id="store">Store<a class="headerlink" href="#store" title="Permanent link">&para;</a></h1>
+<!-- Capability admonition placement rules (applies to this file and aio.md):
+     - Section-level (capability applies to ALL methods in the section):
+       place the admonition directly after the section heading, before the first ::: directive.
+     - Method-level (capability applies to ONE method only):
+       place the admonition after that method's ::: directive block (end of method section).
+-->
+
 
 
 <div class="doc doc-object doc-class">
@@ -9871,7 +9878,12 @@ declare this capability. Most backends declare it.</p>
 
     </div>
 
+</div><div class="admonition info">
+<p class="admonition-title">Quality flag: <code>Capability.LAZY_READ</code></p>
+<p>When declared, data is fetched lazily — partial reads avoid loading the whole
+file. Without it, the backend may buffer content before returning the stream.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -10008,7 +10020,14 @@ passing the stream to PyArrow or other analytical readers.</p>
 
     </div>
 
+</div><div class="admonition info">
+<p class="admonition-title">Quality flag: <code>Capability.SEEKABLE_READ</code></p>
+<p>When declared, the stream is natively seekable. Without it, the Store falls
+back to a <code>SpooledTemporaryFile</code> (RAM-first, spilling to disk beyond the
+threshold). Backends may provide a more efficient implementation — for
+example, Azure issues HTTP Range requests instead of spooling.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -10110,6 +10129,18 @@ passing the stream to PyArrow or other analytical readers.</p>
 
 </div><hr />
 <h2 id="writing">Writing<a class="headerlink" href="#writing" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.WRITE</code></p>
+<p><code>write()</code> and <code>write_text()</code> raise <code>CapabilityNotSupported</code> on backends that do not
+declare this capability. Most backends declare it.
+<code>write_atomic()</code> and <code>open_atomic()</code> additionally require <code>Capability.ATOMIC_WRITE</code>.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Quality flag: <code>Capability.WRITE_RESULT_NATIVE</code></p>
+<p>When declared, the returned <code>WriteResult</code> fields (<code>etag</code>, <code>version_id</code>,
+<code>last_modified</code>, <code>digest</code>) are populated from the backend's write response.
+Without it, only locally computable fields are set.</p>
+</div>
 
 
 <div class="doc doc-object doc-function">
@@ -11043,7 +11074,12 @@ Both have <code>.name</code> and <code>.path</code> attributes (satisfying the
 
     </div>
 
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.GLOB</code></p>
+<p><code>glob()</code> raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.
+Check <code>store.supports(Capability.GLOB)</code> before calling.</p>
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -11111,12 +11147,7 @@ Both have <code>.name</code> and <code>.path</code> attributes (satisfying the
 
     </div>
 
-</div><div class="admonition note">
-<p class="admonition-title">Requires <code>Capability.GLOB</code></p>
-<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.
-Check <code>store.supports(Capability.GLOB)</code> before calling.</p>
-</div>
-<div class="admonition info">
+</div><div class="admonition info">
 <p class="admonition-title">Ordering and laziness</p>
 <p><strong>Ordering is backend-defined</strong> and may vary between backends (e.g.
 lexicographic on S3, OS-dependent on local filesystems). Callers must
@@ -11126,6 +11157,11 @@ Memory usage stays bounded for large directories.</p>
 </div>
 <hr />
 <h2 id="file-operations">File Operations<a class="headerlink" href="#file-operations" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.MOVE</code> / <code>Capability.COPY</code></p>
+<p><code>move()</code> requires <code>Capability.MOVE</code>; <code>copy()</code> requires <code>Capability.COPY</code>.
+Each raises <code>CapabilityNotSupported</code> on backends that do not declare the respective capability.</p>
+</div>
 
 
 <div class="doc doc-object doc-function">
@@ -11216,7 +11252,8 @@ Memory usage stays bounded for large directories.</p>
 <p class="admonition-title">Atomicity</p>
 <p>Atomicity is backend-dependent. Local uses <code>os.replace</code> (atomic on same
 filesystem). S3 and Azure use copy-then-delete (not atomic). SFTP
-atomicity depends on the server.</p>
+atomicity depends on the server.
+Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query this at runtime.</p>
 </div>
 
 
@@ -11311,6 +11348,13 @@ local preserves metadata (<code>copy2</code>); SFTP does not (stream copy).</p>
 </div>
 <hr />
 <h2 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Partially requires <code>Capability.METADATA</code></p>
+<p><code>head()</code> and <code>get_file_info()</code> require <code>Capability.METADATA</code>.
+<code>get_folder_info()</code> requires <code>Capability.METADATA</code> without <code>max_depth</code>,
+or <code>Capability.LIST</code> when <code>max_depth</code> is set.
+<code>exists()</code>, <code>is_file()</code>, and <code>is_folder()</code> are always available.</p>
+</div>
 
 
 <div class="doc doc-object doc-function">
@@ -11672,8 +11716,9 @@ performs a full recursive traversal via the backend.</p>
     </div>
 
 </div><div class="admonition note">
-<p class="admonition-title">Requires <code>Capability.METADATA</code></p>
-<p>Raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.</p>
+<p class="admonition-title">Capability depends on <code>max_depth</code></p>
+<p>Without <code>max_depth</code>: requires <code>Capability.METADATA</code>.
+With <code>max_depth</code> set: requires <code>Capability.LIST</code> — works on backends that lack <code>METADATA</code>.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Backend-conditional argument: <code>max_depth=</code></p>
@@ -12188,10 +12233,6 @@ relying on these in production.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Related types:</strong> <code>WritableContent = BinaryIO | bytes</code>,
-<a href="../models/"><code>FileInfo</code></a>, <a href="../models/"><code>FolderInfo</code></a>,
-<a href="../models/"><code>ResolutionPlan</code></a>, <a href="../models/"><code>RemotePath</code></a>,
-<a href="../capabilities/"><code>Capability</code></a>.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../getting-started/">Getting Started</a> — step-by-step guide to reading and writing files</li>
