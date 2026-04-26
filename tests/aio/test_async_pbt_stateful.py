@@ -178,6 +178,11 @@ class AsyncBackendModel(RuleBasedStateMachine):
         del self.model[path]
 
     def _do_delete_missing_ok(self, path: str) -> None:
+        # Skip directory paths: this is a known lock-step divergence (BUG-184)
+        # — MemoryBackend.delete(dir_path, missing_ok=True) raises InvalidPath
+        # while AsyncMemoryBackend.delete(dir_path, missing_ok=True) silently
+        # returns. Once BUG-184 is fixed and the spec pins the outcome, drop
+        # this guard so Hypothesis exercises the directory-path case.
         if path in self.dirs:
             return
         self._run(self.native.delete(path, missing_ok=True))
@@ -191,7 +196,11 @@ class AsyncBackendModel(RuleBasedStateMachine):
         self._run(self.adapted.delete_folder(path, recursive=True))
         prefix = path + "/"
         self.dirs = {d for d in self.dirs if d != path and not d.startswith(prefix)}
-        self.model = {k: v for k, v in self.model.items() if not k.startswith(prefix)}
+        # `k != path` is technically redundant — `_can_write` ensures a path
+        # cannot be in both `self.model` and `self.dirs` simultaneously — but
+        # the guard makes the dependency explicit, so a future relaxation of
+        # `_can_write` cannot silently drift this filter.
+        self.model = {k: v for k, v in self.model.items() if k != path and not k.startswith(prefix)}
 
     def _do_move(self, src: str, dst: str) -> None:
         if src not in self.model:
@@ -326,6 +335,7 @@ TestAsyncBackendModel = pytest.mark.spec(
     "ASYNC-006",
     "ASYNC-007",
     "ASYNC-008",
+    "ASYNC-009",
     "ASYNC-010",
     "ASYNC-012",
     "ASYNC-013",
