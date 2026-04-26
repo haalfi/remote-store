@@ -65,6 +65,22 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
+- [ ] **ID-160 — Submit remote-store to Context7 library index**
+  `context7.json` ships at the repo root (PR #449's replacement). The remaining
+  step is the one-time, out-of-band submission to Context7 (Upstash's curated
+  index for LLM-backed code discovery). Two paths:
+  1. Web form: paste `https://github.com/haalfi/remote-store` into
+     <https://context7.com/add-library>. Processing takes 1–10 minutes.
+  2. GitHub PR against `upstash/context7` referencing the repo URL plus
+     `https://docs.remotestore.dev`.
+
+  Once indexed, Context7 surfaces `src/remote_store/`, `docs-src/`, `examples/`,
+  `FEATURES.md`, and `README.md` to LLM clients. Close this item when the
+  library appears under `/haalfi/remote-store` (or whatever slug Context7
+  assigns) and a query against it returns content.
+
+  No code change — the `context7.json` configuration is already in place.
+
 - [ ] **ID-159 — `FEATURES.md` hybrid generation (partial codegen + curated)**
   `FEATURES.md` is currently hand-maintained entirely. Over time it will drift.
   Target: the mechanical parts (method list with signatures, capability declarations
