@@ -257,7 +257,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### How to bump
 
-Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). It modifies `pyproject.toml`, `src/remote_store/__init__.py`, and `CITATION.cff` in-place without committing or tagging (configured in `pyproject.toml`). The release checklist below handles the commit and tag lifecycle.
+Version is managed with [`bump-my-version`](https://github.com/callowayproject/bump-my-version). It modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` in-place without committing or tagging. The release checklist below handles the commit and tag lifecycle.
 
 Quick reference for the command syntax:
 
@@ -276,9 +276,9 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - **New Store method / cross-reference validation**: see the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
 - **Pre-PR validation**: run `hatch run all`, verify CHANGELOG and BACKLOG are updated, then check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
 
-### Release
+## Release
 
-#### Phase 0: Pre-flight
+### Phase 0: Pre-flight
 
 - [ ] Master is clean: `git status` shows no uncommitted changes
 - [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
@@ -287,19 +287,19 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
 - [ ] Decide bump level (patch / minor / major) per the table above
 
-#### Phase 1: Content freeze
+### Phase 1: Content freeze
 
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**)
 - [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time (release skill Phase 1)
 - [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here, marked `[x]` with version (e.g. `(v0.8.0)`)
-- [ ] FEATURES.md updated for this release: version, backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited
+- [ ] FEATURES.md updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; `bump-my-version` handles it in Phase 2)
 - [ ] README.md: backends table, installation extras, API table, badges are current
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
 - [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed
 - [ ] Guides: new/changed backend guides are accurate
 - [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
 
-#### Phase 2: Version bump (on a release branch)
+### Phase 2: Version bump (on a release branch)
 
 - [ ] Create release branch: `git checkout -b release-vX.Y.Z`
 - [ ] CHANGELOG.md: rename `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`, add fresh empty `[Unreleased]` above
@@ -307,10 +307,10 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Tagline consistent: `pyproject.toml` = README.md = `docs-src/index.md` = `mkdocs.yml` = `CITATION.cff`
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
-- [ ] `bump-my-version bump patch|minor|major` (modifies version in `pyproject.toml`, `__init__.py`, `CITATION.cff`)
-- [ ] Review and commit: `git diff` to verify, then `git add pyproject.toml src/remote_store/__init__.py CITATION.cff CHANGELOG.md packaging/conda-forge/recipe.yaml && git commit -m "Release vX.Y.Z"`
+- [ ] `bump-my-version bump patch|minor|major` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag)
+- [ ] Review and commit: `git diff` to verify, then stage the bump-my-version-modified files (see `[[tool.bumpversion.files]]` in `pyproject.toml`) plus `CHANGELOG.md` and `packaging/conda-forge/recipe.yaml`, and commit as `Release vX.Y.Z`
 
-#### Phase 3: Validate
+### Phase 3: Validate
 
 - [ ] `hatch run all` passes (lint + format-check + typecheck + test-cov + examples)
 - [ ] `mkdocs build --strict` passes
@@ -318,7 +318,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
 - [ ] Conda recipe: version in `packaging/conda-forge/recipe.yaml` matches release version
 
-#### Phase 4: Ship
+### Phase 4: Ship
 
 _Automated by skill agent (`/release`). User role: review and merge PR only._
 
@@ -332,12 +332,16 @@ _Automated by skill agent (`/release`). User role: review and merge PR only._
 
 _Release template: title = version, description = "What's Changed" header with condensed sections (Added, Fixed, Internal), two links (CHANGELOG.md + git version diff). See `.claude/skills/release/SKILL.md` § Phase 4 for full template._
 
-#### Phase 5: Post-release verification
+### Phase 5: Post-release verification
 
 - [ ] PyPI: `pip install remote-store==X.Y.Z` in a fresh venv, verify version and README renders on pypi.org
 - [ ] GitHub Pages: check version switcher shows new version as "latest"
 - [ ] ReadTheDocs: check https://docs.remotestore.dev/stable/ shows the new version (RTD automation rule activates tag-based builds; `stable` is the default version)
 - [ ] Conda recipe: fetch sha256 from PyPI (`curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"`) and update `source.sha256` in `packaging/conda-forge/recipe.yaml`
-- [ ] Commit recipe sha256 update via a branch and PR (branch protection requires PRs even for metadata-only changes)
-- [ ] Conda-forge: if feedstock exists, verify bot opened a version-bump PR
+- [ ] Commit `packaging/conda-forge/recipe.yaml` sha256 update in this repo via a branch and PR
+- [ ] **Until conda-forge/staged-recipes PR #32401 is merged:** update `haalfi/staged-recipes`
+      branch `add-remote-store` via a local clone (not the GitHub API — API commits are
+      unverified); push with `--force-with-lease` and post a bump comment on
+      conda-forge/staged-recipes PR #32401 mentioning `@conda-forge/help-python`
+- [ ] **After feedstock exists:** verify bot opened a version-bump PR
 - [ ] Announce if applicable (tracking issues, users)

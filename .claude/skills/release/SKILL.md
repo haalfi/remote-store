@@ -5,49 +5,24 @@ disable-model-invocation: true
 argument-hint: "[patch|minor|major]"
 ---
 
-**Authority:** Release template (§ Phase 4) is authoritative here. Full checklist structure in `CONTRIBUTING.md` § Release—SKILL.md references it there.
+**Authority:** `CONTRIBUTING.md` § Release is the authoritative checklist for all phases.
+This skill carries the agent-specific execution layer (Phase 4 roles, release template) and
+surfaced process notes that an agent must not miss.
 
 Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patch = bugfix/refactor, no bump = CI/docs only.
 
-## Phase 0: Pre-flight
+Execute `CONTRIBUTING.md` § Release (Phases 0–5). Agent notes per phase:
 
-- [ ] Master clean, CI green
-- [ ] No shipping `[~]` items in `sdd/BACKLOG.md`
-- [ ] `[Unreleased]` in CHANGELOG.md is non-empty
+**Phase 1** — Update FEATURES.md content only; do NOT touch the version header
+(`# Features — remote-store vX.Y.Z` where `X.Y.Z` is the *current* version) —
+`bump-my-version` updates it in Phase 2.
 
-## Phase 1: Content freeze
+**Phase 2** — `bump-my-version` reads its target files from `[[tool.bumpversion.files]]`
+in `pyproject.toml`.
 
-- [ ] CHANGELOG `[Unreleased]` complete — every user-facing change has a stub line
-- [ ] CHANGELOG `[Unreleased]` condensed — expand stubs into prose; one entry per
-      user-facing concept (multiple IDs for the same feature → one paragraph;
-      pre-release bugs on new-in-this-release code → fold into Added or drop)
-- [ ] `FEATURES.md` updated for this release: version, backends, extensions,
-      capabilities, extras — this is the only time FEATURES.md is edited
-- [ ] `sdd/BACKLOG-DONE.md`: shipping items moved, marked `[x]` with version
-- [ ] README: backends table, installation extras, API table, badges current
-- [ ] Specs vs code: `pytest -m spec` as proxy
-- [ ] `hatch run examples` passes; review notebooks if API changed
-- [ ] Guides accurate for new/changed backends; apply `sdd/CONTENT-RULES.md`
-- [ ] DEVELOPMENT_STORY.md section (pre-1.0 only)
-
-## Phase 2: Version bump (release branch)
-
-- [ ] `git checkout -b release-vX.Y.Z`
-- [ ] CHANGELOG: rename `[Unreleased]` → `[X.Y.Z] - YYYY-MM-DD`, add fresh `[Unreleased]`
-- [ ] `date-released` in CITATION.cff → today
-- [ ] Tagline consistent: pyproject.toml = README = docs-src/index.md = mkdocs.yml = CITATION.cff
-- [ ] Keywords consistent: pyproject.toml = CITATION.cff
-- [ ] Conda recipe: `context.version` in `packaging/conda-forge/recipe.yaml` → X.Y.Z
-- [ ] `bump-my-version bump patch|minor|major` (modifies pyproject.toml, __init__.py, CITATION.cff — does NOT commit or tag)
-- [ ] `git diff`, stage changed files, commit as `Release vX.Y.Z`
-
-## Phase 3: Validate
-
-- [ ] `hatch run all` passes
-- [ ] `mkdocs build --strict` passes
-- [ ] `python -m build` + `twine check dist/*` clean
-- [ ] `pip install dist/*.whl` → version matches
-- [ ] Conda recipe version matches
+**Phase 5** — Agent assists with conda steps (sha256 fetch, recipe update, branch+PR).
+Staged-recipes steps apply only while conda-forge/staged-recipes PR #32401 is open; once
+a feedstock exists, only the bot-PR verification step remains.
 
 ## Phase 4: Ship (Skill Agent)
 
@@ -75,11 +50,3 @@ Bump level: `$ARGUMENTS` (ask if missing). Minor = new API/feature/backend, patc
 - [Full Changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md#xyz---yyyy-mm-dd)
 - [Compare vPREV...vX.Y.Z](https://github.com/haalfi/remote-store/compare/vPREV...vX.Y.Z)
 ```
-
-## Phase 5: Post-release verification
-
-- [ ] PyPI: `pip install remote-store==X.Y.Z` in fresh venv
-- [ ] GitHub Pages: version switcher shows new version
-- [ ] ReadTheDocs: https://docs.remotestore.dev/ correct version
-- [ ] Conda recipe: update sha256 from PyPI, commit via branch+PR
-- [ ] Conda-forge feedstock: verify bot PR if applicable
