@@ -52,6 +52,15 @@ def _azure_available() -> bool:
         return False
 
 
+def _sftp_available() -> bool:
+    try:
+        import paramiko  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _azurite_reachable() -> bool:
     try:
         s = socket.create_connection(("127.0.0.1", 10000), timeout=1)
@@ -97,6 +106,31 @@ def azurite_server() -> Iterator[str | None]:
         yield None
         return
     yield _AZURITE_CONN_STR
+
+
+@pytest.fixture(scope="session")
+def sftp_server() -> Iterator[tuple[int, str] | None]:
+    """Start an in-process SFTP server for the test session."""
+    if not _sftp_available():
+        yield None
+        return
+
+    import shutil
+    import tempfile
+
+    from tests.backends.sftp_server import start_sftp_server, stop_sftp_server
+
+    tmpdir = tempfile.mkdtemp(prefix="sftp_test_")
+    thread, port, host_key, stop_event, server_socket = start_sftp_server(root=tmpdir, host="127.0.0.1")
+
+    key_type = host_key.get_name()
+    key_b64 = host_key.get_base64()
+    host_key_entry = f"[127.0.0.1]:{port} {key_type} {key_b64}"
+
+    yield port, host_key_entry
+
+    stop_sftp_server(thread, stop_event, server_socket)
+    shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 @pytest.fixture(autouse=True, scope="session")

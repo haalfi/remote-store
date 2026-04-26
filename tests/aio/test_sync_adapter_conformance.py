@@ -12,6 +12,13 @@ The ``adapted_backend`` fixture is parametrised across both wrapped backends
 so a regression in the adapter is caught regardless of which substrate it
 wraps, and any divergence between them fails a single test.
 
+A separate ``live_adapted_backend`` fixture runs the same suite against
+``S3Backend`` (moto), ``SFTPBackend`` (in-process server), and ``AzureBackend``
+(Azurite). These exercise the blocking patterns through ``asyncio.to_thread``
+that Memory/Local cannot reach: real network I/O, connection pools, SDK-level
+retries, and pagination. The live classes are marked ``integration`` so they
+do not inflate the default test run.
+
 Spec: ASYNC-030 through ASYNC-035 (``sdd/specs/029-async-store-backend-api.md``).
 """
 
@@ -19,6 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import uuid
 from typing import TYPE_CHECKING
 
 import pytest
@@ -27,9 +35,10 @@ from remote_store._errors import AlreadyExists, NotFound
 from remote_store.aio._sync_adapter import SyncBackendAdapter
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
+from tests.conftest import _azure_available, _azurite_reachable, _s3_available, _sftp_available
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Iterator
     from pathlib import Path
 
 
@@ -234,5 +243,375 @@ class TestAdapterConcurrency:
         ]
         results = await asyncio.gather(*ops)
         # Three read results must all equal the seed content
+        read_results = [r for r in results if isinstance(r, bytes)]
+        assert read_results == [b"seed"] * 3
+
+
+# ---------------------------------------------------------------------------
+# Live backends: S3 (moto) / SFTP (in-process) / Azure (Azurite)
+#
+# Separate fixture so the fast Memory/Local path (<1 s) is unaffected.
+# These exercise blocking patterns asyncio.to_thread must bridge: real
+# network I/O, connection-pool reuse, SDK-level retries, S3 pagination.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(
+    params=[
+        pytest.param(
+            "s3",
+            marks=pytest.mark.skipif(not _s3_available(), reason="moto/s3fs not installed"),
+        ),
+        pytest.param(
+            "sftp",
+            marks=pytest.mark.skipif(not _sftp_available(), reason="paramiko not installed"),
+        ),
+        pytest.param(
+            "azure",
+            marks=[
+                pytest.mark.requires_docker,
+                pytest.mark.skipif(
+                    not _azure_available() or not _azurite_reachable(),
+                    reason="azure SDK not installed or Azurite not reachable",
+                ),
+            ],
+        ),
+    ],
+    ids=["live-s3", "live-sftp", "live-azure"],
+)
+def live_adapted_backend(
+    request: pytest.FixtureRequest,
+    moto_server: str | None,
+    sftp_server: tuple[int, str] | None,
+    azurite_server: str | None,
+) -> Iterator[SyncBackendAdapter]:
+    """``SyncBackendAdapter`` over a live backend for integration conformance."""
+    if request.param == "s3":
+        import boto3
+
+        from remote_store.backends._s3 import S3Backend
+
+        assert moto_server is not None  # noqa: S101
+        bucket = f"adapter-{uuid.uuid4().hex[:8]}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=moto_server,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        b = S3Backend(
+            bucket=bucket,
+            key="testing",
+            secret="testing",
+            region_name="us-east-1",
+            endpoint_url=moto_server,
+        )
+        yield SyncBackendAdapter(b)
+        b.close()
+    elif request.param == "sftp":
+        from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+
+        assert sftp_server is not None  # noqa: S101
+        port, _host_key_entry = sftp_server
+        base_path = f"/adapter_{uuid.uuid4().hex[:8]}"
+        b = SFTPBackend(
+            host="127.0.0.1",
+            port=port,
+            username="testuser",
+            password="testpass",
+            base_path=base_path,
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+        )
+        yield SyncBackendAdapter(b)
+        b.close()
+    elif request.param == "azure":
+        from azure.storage.blob import BlobServiceClient
+
+        from remote_store.backends._azure import AzureBackend
+
+        assert azurite_server is not None  # noqa: S101
+        container = f"adapter-{uuid.uuid4().hex[:8]}"
+        service = BlobServiceClient.from_connection_string(azurite_server)
+        try:
+            service.create_container(container)
+        except Exception:  # noqa: BLE001
+            service.close()
+            raise
+        b = AzureBackend(container=container, connection_string=azurite_server)
+        try:
+            yield SyncBackendAdapter(b)
+        finally:
+            b.close()
+            service.delete_container(container)
+            service.close()
+    else:
+        pytest.skip(f"Unknown live backend: {request.param}")
+
+
+@pytest.fixture(
+    params=[
+        pytest.param(
+            "s3",
+            marks=pytest.mark.skipif(not _s3_available(), reason="moto/s3fs not installed"),
+        ),
+        pytest.param(
+            "azure",
+            marks=[
+                pytest.mark.requires_docker,
+                pytest.mark.skipif(
+                    not _azure_available() or not _azurite_reachable(),
+                    reason="azure SDK not installed or Azurite not reachable",
+                ),
+            ],
+        ),
+    ],
+    ids=["live-s3", "live-azure"],
+)
+def live_adapted_backend_concurrent(
+    request: pytest.FixtureRequest,
+    moto_server: str | None,
+    azurite_server: str | None,
+) -> Iterator[SyncBackendAdapter]:
+    """Like ``live_adapted_backend`` but excludes SFTP.
+
+    Paramiko's SFTP client is not thread-safe: concurrent ``asyncio.to_thread``
+    calls against a single ``SFTPBackend`` instance race on the shared socket,
+    which causes hangs. S3 and Azure use connection pools that are safe for
+    concurrent threaded access, making them suitable concurrency-test substrates.
+    """
+    if request.param == "s3":
+        import boto3
+
+        from remote_store.backends._s3 import S3Backend
+
+        assert moto_server is not None  # noqa: S101
+        bucket = f"adapter-conc-{uuid.uuid4().hex[:8]}"
+        client = boto3.client(
+            "s3",
+            endpoint_url=moto_server,
+            aws_access_key_id="testing",
+            aws_secret_access_key="testing",
+            region_name="us-east-1",
+        )
+        client.create_bucket(Bucket=bucket)
+        b = S3Backend(
+            bucket=bucket,
+            key="testing",
+            secret="testing",
+            region_name="us-east-1",
+            endpoint_url=moto_server,
+        )
+        yield SyncBackendAdapter(b)
+        b.close()
+    elif request.param == "azure":
+        from azure.storage.blob import BlobServiceClient
+
+        from remote_store.backends._azure import AzureBackend
+
+        assert azurite_server is not None  # noqa: S101
+        container = f"adapter-conc-{uuid.uuid4().hex[:8]}"
+        service = BlobServiceClient.from_connection_string(azurite_server)
+        try:
+            service.create_container(container)
+        except Exception:  # noqa: BLE001
+            service.close()
+            raise
+        b = AzureBackend(container=container, connection_string=azurite_server)
+        try:
+            yield SyncBackendAdapter(b)
+        finally:
+            b.close()
+            service.delete_container(container)
+            service.close()
+    else:
+        pytest.skip(f"Unknown concurrent backend: {request.param}")
+
+
+# ---------------------------------------------------------------------------
+# Live: Streaming read
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+class TestAdapterStreamingReadLive:
+    """Same streaming-read checks as ``TestAdapterStreamingRead`` against live backends."""
+
+    @pytest.mark.spec("ASYNC-033")
+    async def test_large_file_full_content(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        data = b"x" * (250 * 1024)
+        await live_adapted_backend.write("big.bin", data)
+        chunks = [c async for c in live_adapted_backend.read("big.bin")]
+        assert b"".join(chunks) == data
+        assert all(len(c) > 0 for c in chunks)
+
+    @pytest.mark.spec("ASYNC-033")
+    async def test_read_closes_stream_on_early_break(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("big.bin", b"y" * (250 * 1024))
+        async with contextlib.aclosing(live_adapted_backend.read("big.bin")) as stream:
+            async for _ in stream:
+                break
+        await live_adapted_backend.delete("big.bin")
+        assert await live_adapted_backend.exists("big.bin") is False
+
+    @pytest.mark.spec("ASYNC-033")
+    async def test_read_not_found_propagates(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        # Different backends capitalise the message differently; match on path.
+        with pytest.raises(NotFound, match="missing.bin"):
+            async for _ in live_adapted_backend.read("missing.bin"):
+                pass
+
+    @pytest.mark.spec("ASYNC-031")
+    async def test_read_bytes_not_found_propagates(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        with pytest.raises(NotFound, match="missing.bin"):
+            await live_adapted_backend.read_bytes("missing.bin")
+
+
+# ---------------------------------------------------------------------------
+# Live: Write materialisation
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.spec("ASYNC-036")
+class TestAdapterWriteMaterialisationLive:
+    """Write / write_atomic materialisation against live backends."""
+
+    async def test_write_async_iterator(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("f.txt", _chunks(b"part-1-", b"part-2"))
+        assert await live_adapted_backend.read_bytes("f.txt") == b"part-1-part-2"
+
+    async def test_write_atomic_async_iterator(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write_atomic("f.txt", _chunks(b"a", b"bc"))
+        assert await live_adapted_backend.read_bytes("f.txt") == b"abc"
+
+    async def test_write_bytes_direct(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("f.txt", b"direct")
+        assert await live_adapted_backend.read_bytes("f.txt") == b"direct"
+
+    async def test_overwrite_false_raises_already_exists(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("f.txt", b"first")
+        with pytest.raises(AlreadyExists, match="already exists"):
+            await live_adapted_backend.write("f.txt", b"second")
+
+    async def test_overwrite_true_replaces_content(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("f.txt", b"old")
+        await live_adapted_backend.write("f.txt", b"new", overwrite=True)
+        assert await live_adapted_backend.read_bytes("f.txt") == b"new"
+
+
+# ---------------------------------------------------------------------------
+# Live: Listing -- exercises S3 pagination / Azure continuation tokens
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.spec("ASYNC-032")
+class TestAdapterListingLive:
+    """List_files / list_folders / iter_children against live backends."""
+
+    async def test_list_files_yields_every_item(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        for i in range(20):
+            await live_adapted_backend.write(f"f{i:02d}.txt", str(i).encode())
+        files = [f async for f in live_adapted_backend.list_files("")]
+        assert {f.name for f in files} == {f"f{i:02d}.txt" for i in range(20)}
+
+    async def test_list_files_recursive(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("a.txt", b"a")
+        await live_adapted_backend.write("sub/b.txt", b"b")
+        files = [f async for f in live_adapted_backend.list_files("", recursive=True)]
+        assert {f.name for f in files} == {"a.txt", "b.txt"}
+
+    async def test_list_folders(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("sub1/a.txt", b"a")
+        await live_adapted_backend.write("sub2/b.txt", b"b")
+        folders = [f async for f in live_adapted_backend.list_folders("")]
+        assert {f.name for f in folders} == {"sub1", "sub2"}
+
+    async def test_iter_children_yields_files_and_folders(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("file.txt", b"x")
+        await live_adapted_backend.write("sub/nested.txt", b"y")
+        children = [c async for c in live_adapted_backend.iter_children("")]
+        names = {c.name for c in children}
+        assert names == {"file.txt", "sub"}
+
+
+# ---------------------------------------------------------------------------
+# Live: Move / copy / delete
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.spec("ASYNC-031")
+class TestAdapterMoveCopyDeleteLive:
+    """Blocking move/copy/delete delegated to asyncio.to_thread against live backends."""
+
+    async def test_move(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("src.txt", b"data")
+        await live_adapted_backend.move("src.txt", "dst.txt")
+        assert await live_adapted_backend.exists("src.txt") is False
+        assert await live_adapted_backend.read_bytes("dst.txt") == b"data"
+
+    async def test_copy(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("src.txt", b"data")
+        await live_adapted_backend.copy("src.txt", "dst.txt")
+        assert await live_adapted_backend.read_bytes("src.txt") == b"data"
+        assert await live_adapted_backend.read_bytes("dst.txt") == b"data"
+
+    async def test_move_dst_exists_raises_already_exists(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("src.txt", b"a")
+        await live_adapted_backend.write("dst.txt", b"b")
+        with pytest.raises(AlreadyExists, match="already exists"):
+            await live_adapted_backend.move("src.txt", "dst.txt")
+
+    async def test_delete(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("f.txt", b"x")
+        await live_adapted_backend.delete("f.txt")
+        assert await live_adapted_backend.exists("f.txt") is False
+
+    async def test_delete_folder_recursive(self, live_adapted_backend: SyncBackendAdapter) -> None:
+        await live_adapted_backend.write("dir/a.txt", b"a")
+        await live_adapted_backend.write("dir/b.txt", b"b")
+        await live_adapted_backend.delete_folder("dir", recursive=True)
+        assert await live_adapted_backend.exists("dir") is False
+
+
+# ---------------------------------------------------------------------------
+# Live: Concurrency -- exercises real thread-pool dispatch under network I/O
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.spec("ASYNC-031", "ASYNC-055")
+class TestAdapterConcurrencyLive:
+    """asyncio.to_thread dispatch must not deadlock against live backends.
+
+    Uses ``live_adapted_backend_concurrent`` (S3/Azure only). SFTP is excluded
+    because paramiko's SFTP client is not thread-safe: concurrent
+    ``asyncio.to_thread`` calls against a single ``SFTPBackend`` instance race
+    on the shared socket. S3 and Azure use connection pools safe for concurrent
+    threaded access.
+    """
+
+    async def test_concurrent_writes(self, live_adapted_backend_concurrent: SyncBackendAdapter) -> None:
+        await asyncio.gather(*[live_adapted_backend_concurrent.write(f"f{i}.txt", f"c{i}".encode()) for i in range(10)])
+        for i in range(10):
+            assert await live_adapted_backend_concurrent.read_bytes(f"f{i}.txt") == f"c{i}".encode()
+
+    async def test_concurrent_reads_return_identical_content(
+        self, live_adapted_backend_concurrent: SyncBackendAdapter
+    ) -> None:
+        await live_adapted_backend_concurrent.write("shared.txt", b"shared-content")
+        results = await asyncio.gather(*[live_adapted_backend_concurrent.read_bytes("shared.txt") for _ in range(10)])
+        assert all(r == b"shared-content" for r in results)
+
+    async def test_concurrent_mixed_ops(self, live_adapted_backend_concurrent: SyncBackendAdapter) -> None:
+        await live_adapted_backend_concurrent.write("seed.txt", b"seed")
+        ops = [live_adapted_backend_concurrent.write(f"new{i}.txt", f"n{i}".encode()) for i in range(5)] + [
+            live_adapted_backend_concurrent.read_bytes("seed.txt") for _ in range(3)
+        ]
+        results = await asyncio.gather(*ops)
         read_results = [r for r in results if isinstance(r, bytes)]
         assert read_results == [b"seed"] * 3
