@@ -20,6 +20,10 @@ Execute `CONTRIBUTING.md` § Release (Phases 0–5). Agent notes per phase:
 **Phase 2** — `bump-my-version` reads its target files from `[[tool.bumpversion.files]]`
 in `pyproject.toml`.
 
+**Phase 5** — Agent assists with conda steps (sha256 fetch, recipe update, branch+PR).
+Staged-recipes steps apply only while conda-forge/staged-recipes PR #32401 is open; once
+a feedstock exists, only the bot-PR verification step remains.
+
 ## Phase 4: Ship (Skill Agent)
 
 - [ ] **[Agent]** Push release branch to origin
