@@ -6,7 +6,6 @@
   "includes": [
     "src/remote_store/",
     "guides/",
-    "docs-src/",
     "examples/",
     "FEATURES.md",
     "README.md"
@@ -16,21 +15,14 @@
       "tests/",
       "benchmarks/",
       "sdd/",
+      "docs-src/",
       ".github/",
-      ".git/",
-      ".claude/",
-      "research/",
-      "legacy/",
-      "site/",
-      "dist/",
-      "tmp/",
-      "node_modules/"
+      ".claude/"
     ],
     "files": [
       "pyproject.toml",
       "CHANGELOG.md",
-      "LICENSE",
-      "coverage.xml"
+      "LICENSE"
     ]
   },
   "rules": [
