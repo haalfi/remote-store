@@ -238,6 +238,20 @@ class AsyncBackendModel(RuleBasedStateMachine):
     def _do_copy(self, src: str, dst: str) -> None:
         if src not in self.model:
             return
+        if src == dst:
+            # Same-path copy is spec-defined as a no-op when the source exists
+            # (ASYNC-047). Drive both backends and assert content survives —
+            # symmetric to the same-path move path in `_do_move`.
+            self._run(self.native.copy(src, src))
+            self._run(self.adapted.copy(src, src))
+            expected = self.model[src]
+            assert self._run(self.native.read_bytes(src)) == expected, (
+                f"native same-path copy({src!r}) corrupted content"
+            )
+            assert self._run(self.adapted.read_bytes(src)) == expected, (
+                f"adapted same-path copy({src!r}) corrupted content"
+            )
+            return
         if dst in self.dirs or dst in self.model:
             return
         if not _can_write(dst, self.model, self.dirs):
@@ -329,7 +343,7 @@ class AsyncBackendModel(RuleBasedStateMachine):
 
     @rule(src=_path, dst=_path)
     def copy(self, src: str, dst: str) -> None:
-        """Copy a file (ASYNC-019 happy path). Skip dst-conflict cases."""
+        """Copy a file (ASYNC-019 happy path; ASYNC-047 same-path no-op). Skip dst-conflict cases."""
         self._do_copy(src, dst)
 
     @rule(path=_path)
