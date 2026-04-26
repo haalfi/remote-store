@@ -198,10 +198,16 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.aio.AsyncBackend.get_folder_info
     options:
       show_root_heading: true
       heading_level: 4
+
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ### File Operations
 
@@ -214,6 +220,9 @@ counterpart.
       show_root_heading: true
       heading_level: 4
 
+!!! note "Requires `Capability.MOVE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 !!! info "Quality flag: `Capability.ATOMIC_MOVE`"
     When declared, `move()` is guaranteed atomic under concurrent access.
     Check `backend.capabilities().supports(Capability.ATOMIC_MOVE)` to query at runtime.
@@ -222,6 +231,9 @@ counterpart.
     options:
       show_root_heading: true
       heading_level: 4
+
+!!! note "Requires `Capability.COPY`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ### Lifecycle
 

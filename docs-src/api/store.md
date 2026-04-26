@@ -190,6 +190,9 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.MOVE`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 !!! info "Atomicity"
     Atomicity is backend-dependent. Local uses `os.replace` (atomic on same
     filesystem). S3 and Azure use copy-then-delete (not atomic). SFTP
@@ -200,6 +203,9 @@
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Requires `Capability.COPY`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 !!! info "Metadata preservation"
     Metadata preservation is backend-dependent. S3 copies metadata;
@@ -218,6 +224,9 @@
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 ::: remote_store.Store.exists
     options:
@@ -239,10 +248,16 @@
       show_root_heading: true
       heading_level: 3
 
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
+
 ::: remote_store.Store.get_folder_info
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Requires `Capability.METADATA`"
+    Raises `CapabilityNotSupported` on backends that do not declare this capability.
 
 !!! note "Backend-conditional argument: `max_depth=`"
     Backends with native depth limiting prune traversal early. Backends that do not
