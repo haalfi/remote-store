@@ -5,6 +5,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+- [x] **ID-155 — Async stateful PBT (`tests/aio/test_async_pbt_stateful.py`)**
+  Hypothesis `RuleBasedStateMachine` driving `AsyncMemoryBackend` (native)
+  and `SyncBackendAdapter(MemoryBackend())` (adapted) in lock-step against a
+  shared dict + dirs model. Rules cover write / overwrite / write_atomic /
+  read_bytes / streaming read / exists / is_file / delete / delete_missing_ok /
+  delete_folder / move / copy / list_files; an `@invariant` re-reads every
+  modelled file from both backends after each step. Divergence between the two
+  contract implementations or between either implementation and the model
+  fails the test — the same shape that caught BUG-183 on the sync side.
+  Hypothesis 6.x has no built-in async state machine; rules dispatch through a
+  per-instance event loop with `loop.run_until_complete`, keeping
+  `asyncio.Lock` and `asyncio.to_thread` executor identity stable across the
+  whole rule sequence (a per-rule `asyncio.run` would not). The two
+  reproducer-style tests from the sync suite are mirrored against both
+  backends.
+
 - [x] **ID-156 — Adapter conformance across S3 / SFTP / Azurite**
   Extended `tests/aio/test_sync_adapter_conformance.py` with a separate
   `live_adapted_backend` fixture (S3/moto, SFTP/in-process server,
