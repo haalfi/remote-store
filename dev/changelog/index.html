@@ -11505,6 +11505,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>ID-156: Extend <code>SyncBackendAdapter</code> conformance to live backends — add <code>live_adapted_backend</code> fixture (S3/moto, SFTP/in-process, Azure/Azurite) and five <code>@pytest.mark.integration</code> test classes mirroring the Memory/Local suite; move <code>sftp_server</code> session fixture to root <code>tests/conftest.py</code> so all test modules can access it</li>
 <li>ID-157: Live Azurite integration suite for <code>AsyncAzureBackend</code> (<code>tests/aio/test_async_azure_live.py</code>)</li>
 <li>
 <p>ID-158: Fix pytest-asyncio phantom event-loop ResourceWarning</p>

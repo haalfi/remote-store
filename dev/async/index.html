@@ -9101,6 +9101,11 @@ calls <code>aclose()</code> on exit.</p>
   (<code>list_files</code>, <code>list_folders</code>, <code>glob</code>). For very large directories this
   may use more memory than the sync API. Native async backends stream
   without materialisation.</li>
+<li><strong><code>SyncBackendAdapter</code> + <code>SFTPBackend</code> is not safe for concurrent use.</strong>
+  Paramiko's <code>SFTPClient</code> is not thread-safe; concurrent <code>asyncio.gather</code>
+  calls against a single <code>SFTPBackend</code> instance race on the shared socket
+  and may hang. Create one <code>SFTPBackend</code> per thread, or use a native async
+  SFTP library. See <a href="../backends/sftp/#connection-behaviour">SFTP backend guide</a>.</li>
 <li><strong><code>asyncio</code> only</strong> — trio and anyio are not supported.</li>
 </ul>
 <h2 id="async-write-helpers">Async write helpers<a class="headerlink" href="#async-write-helpers" title="Permanent link">&para;</a></h2>

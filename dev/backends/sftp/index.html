@@ -9145,6 +9145,7 @@
 <li><strong>Lazy connect</strong> — no network call happens during construction. The SSH/SFTP connection is established on the first operation.</li>
 <li><strong>Auto-reconnect</strong> — if the connection goes stale between operations, the backend reconnects transparently.</li>
 <li><strong>Retry</strong> — transient SSH errors (<code>SSHException</code>, <code>OSError</code>, <code>EOFError</code>) are retried up to 3 times with exponential backoff (2 s min, 10 s max).</li>
+<li><strong>Single connection, not thread-safe</strong> — each <code>SFTPBackend</code> instance holds one paramiko <code>SFTPClient</code>. Calling it from multiple threads simultaneously (e.g. via <code>SyncBackendAdapter</code> + <code>asyncio.gather</code>) races on the shared socket. Create one <code>SFTPBackend</code> per thread for parallel workloads.</li>
 </ul>
 <h2 id="capabilities">Capabilities<a class="headerlink" href="#capabilities" title="Permanent link">&para;</a></h2>
 <p>The SFTP backend supports all capabilities except <code>GLOB</code> and <code>ATOMIC_MOVE</code>.
@@ -9226,6 +9227,17 @@ then falls back to <code>rename</code>, and finally to a stream copy followed by
 a delete.  Because atomicity cannot be guaranteed across all servers,
 <code>ATOMIC_MOVE</code> is not declared.</p>
 
+
+<details class="warning" open>
+  <summary>Warning</summary>
+  <p><strong>Not thread-safe for concurrent access.</strong> This backend maintains a
+single SSH/SFTP connection (paramiko <code>SFTPClient</code>), which is not
+safe to call from multiple threads simultaneously. Concurrent calls
+via :class:<code>~remote_store.aio.SyncBackendAdapter</code> and
+<code>asyncio.gather</code> will race on the shared socket and may hang or
+corrupt responses. Create one <code>SFTPBackend</code> instance per thread if
+you need parallel operations.</p>
+</details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
     <ul>

@@ -8806,6 +8806,17 @@ a delete.  Because atomicity cannot be guaranteed across all servers,
 <code>ATOMIC_MOVE</code> is not declared.</p>
 
 
+<details class="warning" open>
+  <summary>Warning</summary>
+  <p><strong>Not thread-safe for concurrent access.</strong> This backend maintains a
+single SSH/SFTP connection (paramiko <code>SFTPClient</code>), which is not
+safe to call from multiple threads simultaneously. Concurrent calls
+via :class:<code>~remote_store.aio.SyncBackendAdapter</code> and
+<code>asyncio.gather</code> will race on the shared socket and may hang or
+corrupt responses. Create one <code>SFTPBackend</code> instance per thread if
+you need parallel operations.</p>
+</details>
+
 <p><span class="doc-section-title">Parameters:</span></p>
     <ul>
         <li class="doc-section-item field-body">
