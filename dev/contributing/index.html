@@ -8920,10 +8920,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Consistency Checklists">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#release" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8998,11 +8997,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -9361,10 +9355,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Consistency Checklists">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#release" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9439,11 +9432,6 @@
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -9712,7 +9700,7 @@ errors.</p>
 </tbody>
 </table>
 <h3 id="how-to-bump">How to bump<a class="headerlink" href="#how-to-bump" title="Permanent link">&para;</a></h3>
-<p>Version is managed with <a href="https://github.com/callowayproject/bump-my-version"><code>bump-my-version</code></a>. It modifies <code>pyproject.toml</code>, <code>src/remote_store/__init__.py</code>, and <code>CITATION.cff</code> in-place without committing or tagging (configured in <code>pyproject.toml</code>). The release checklist below handles the commit and tag lifecycle.</p>
+<p>Version is managed with <a href="https://github.com/callowayproject/bump-my-version"><code>bump-my-version</code></a>. It modifies the files listed in <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code> in-place without committing or tagging. The release checklist below handles the commit and tag lifecycle.</p>
 <p>Quick reference for the command syntax:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
@@ -9726,8 +9714,8 @@ errors.</p>
 <li><strong>New Store method / cross-reference validation</strong>: see the ripple-check table in <code>sdd/CLAUDE-REFERENCE.md</code>.</li>
 <li><strong>Pre-PR validation</strong>: run <code>hatch run all</code>, verify CHANGELOG and BACKLOG are updated, then check the ripple-check table in <code>sdd/CLAUDE-REFERENCE.md</code>.</li>
 </ul>
-<h3 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h3>
-<h4 id="phase-0-pre-flight">Phase 0: Pre-flight<a class="headerlink" href="#phase-0-pre-flight" title="Permanent link">&para;</a></h4>
+<h2 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h2>
+<h3 id="phase-0-pre-flight">Phase 0: Pre-flight<a class="headerlink" href="#phase-0-pre-flight" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] Master is clean: <code>git status</code> shows no uncommitted changes</li>
 <li>[ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)</li>
@@ -9736,19 +9724,19 @@ errors.</p>
 <li>[ ] <code>[Unreleased]</code> section in CHANGELOG.md is non-empty</li>
 <li>[ ] Decide bump level (patch / minor / major) per the table above</li>
 </ul>
-<h4 id="phase-1-content-freeze">Phase 1: Content freeze<a class="headerlink" href="#phase-1-content-freeze" title="Permanent link">&para;</a></h4>
+<h3 id="phase-1-content-freeze">Phase 1: Content freeze<a class="headerlink" href="#phase-1-content-freeze" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] CHANGELOG.md <code>[Unreleased]</code> is complete — every completed item has a stub line (see ripple-check row <strong>CHANGELOG entry</strong>)</li>
 <li>[ ] CHANGELOG.md <code>[Unreleased]</code> condensed — stubs expanded to prose at release time (release skill Phase 1)</li>
 <li>[ ] <code>sdd/BACKLOG-DONE.md</code>: all shipping items moved here, marked <code>[x]</code> with version (e.g. <code>(v0.8.0)</code>)</li>
-<li>[ ] FEATURES.md updated for this release: version, backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited</li>
+<li>[ ] FEATURES.md updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; <code>bump-my-version</code> handles it in Phase 2)</li>
 <li>[ ] README.md: backends table, installation extras, API table, badges are current</li>
 <li>[ ] Specs vs code: spot-check shipped features match their specs (<code>pytest -m spec</code> as proxy)</li>
 <li>[ ] Examples: <code>hatch run examples</code> passes; manually review notebooks if API surface changed</li>
 <li>[ ] Guides: new/changed backend guides are accurate</li>
 <li>[ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)</li>
 </ul>
-<h4 id="phase-2-version-bump-on-a-release-branch">Phase 2: Version bump (on a release branch)<a class="headerlink" href="#phase-2-version-bump-on-a-release-branch" title="Permanent link">&para;</a></h4>
+<h3 id="phase-2-version-bump-on-a-release-branch">Phase 2: Version bump (on a release branch)<a class="headerlink" href="#phase-2-version-bump-on-a-release-branch" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] Create release branch: <code>git checkout -b release-vX.Y.Z</code></li>
 <li>[ ] CHANGELOG.md: rename <code>[Unreleased]</code> to <code>[X.Y.Z] - YYYY-MM-DD</code>, add fresh empty <code>[Unreleased]</code> above</li>
@@ -9756,10 +9744,10 @@ errors.</p>
 <li>[ ] Tagline consistent: <code>pyproject.toml</code> = README.md = <code>docs-src/index.md</code> = <code>mkdocs.yml</code> = <code>CITATION.cff</code></li>
 <li>[ ] Keywords consistent: <code>pyproject.toml</code> = <code>CITATION.cff</code></li>
 <li>[ ] Conda recipe: update <code>context.version</code> in <code>packaging/conda-forge/recipe.yaml</code> to X.Y.Z</li>
-<li>[ ] <code>bump-my-version bump patch|minor|major</code> (modifies version in <code>pyproject.toml</code>, <code>__init__.py</code>, <code>CITATION.cff</code>)</li>
-<li>[ ] Review and commit: <code>git diff</code> to verify, then <code>git add pyproject.toml src/remote_store/__init__.py CITATION.cff CHANGELOG.md packaging/conda-forge/recipe.yaml &amp;&amp; git commit -m "Release vX.Y.Z"</code></li>
+<li>[ ] <code>bump-my-version bump patch|minor|major</code> (modifies the files listed in <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code> — does NOT commit or tag)</li>
+<li>[ ] Review and commit: <code>git diff</code> to verify, then stage the bump-my-version-modified files (see <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code>) plus <code>CHANGELOG.md</code> and <code>packaging/conda-forge/recipe.yaml</code>, and commit as <code>Release vX.Y.Z</code></li>
 </ul>
-<h4 id="phase-3-validate">Phase 3: Validate<a class="headerlink" href="#phase-3-validate" title="Permanent link">&para;</a></h4>
+<h3 id="phase-3-validate">Phase 3: Validate<a class="headerlink" href="#phase-3-validate" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] <code>hatch run all</code> passes (lint + format-check + typecheck + test-cov + examples)</li>
 <li>[ ] <code>mkdocs build --strict</code> passes</li>
@@ -9767,7 +9755,7 @@ errors.</p>
 <li>[ ] <code>pip install dist/*.whl &amp;&amp; python -c "import remote_store; print(remote_store.__version__)"</code> — version matches</li>
 <li>[ ] Conda recipe: version in <code>packaging/conda-forge/recipe.yaml</code> matches release version</li>
 </ul>
-<h4 id="phase-4-ship">Phase 4: Ship<a class="headerlink" href="#phase-4-ship" title="Permanent link">&para;</a></h4>
+<h3 id="phase-4-ship">Phase 4: Ship<a class="headerlink" href="#phase-4-ship" title="Permanent link">&para;</a></h3>
 <p><em>Automated by skill agent (<code>/release</code>). User role: review and merge PR only.</em></p>
 <ul>
 <li>[ ] <strong>[Agent]</strong> Push release branch to origin</li>
@@ -9779,14 +9767,18 @@ errors.</p>
 <li>[ ] <strong>[Agent]</strong> Delete the release branch</li>
 </ul>
 <p><em>Release template: title = version, description = "What's Changed" header with condensed sections (Added, Fixed, Internal), two links (CHANGELOG.md + git version diff). See <code>.claude/skills/release/SKILL.md</code> § Phase 4 for full template.</em></p>
-<h4 id="phase-5-post-release-verification">Phase 5: Post-release verification<a class="headerlink" href="#phase-5-post-release-verification" title="Permanent link">&para;</a></h4>
+<h3 id="phase-5-post-release-verification">Phase 5: Post-release verification<a class="headerlink" href="#phase-5-post-release-verification" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] PyPI: <code>pip install remote-store==X.Y.Z</code> in a fresh venv, verify version and README renders on pypi.org</li>
 <li>[ ] GitHub Pages: check version switcher shows new version as "latest"</li>
 <li>[ ] ReadTheDocs: check https://docs.remotestore.dev/stable/ shows the new version (RTD automation rule activates tag-based builds; <code>stable</code> is the default version)</li>
 <li>[ ] Conda recipe: fetch sha256 from PyPI (<code>curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"</code>) and update <code>source.sha256</code> in <code>packaging/conda-forge/recipe.yaml</code></li>
-<li>[ ] Commit recipe sha256 update via a branch and PR (branch protection requires PRs even for metadata-only changes)</li>
-<li>[ ] Conda-forge: if feedstock exists, verify bot opened a version-bump PR</li>
+<li>[ ] Commit <code>packaging/conda-forge/recipe.yaml</code> sha256 update in this repo via a branch and PR</li>
+<li>[ ] <strong>Until conda-forge/staged-recipes PR #32401 is merged:</strong> update <code>haalfi/staged-recipes</code>
+      branch <code>add-remote-store</code> via a local clone (not the GitHub API — API commits are
+      unverified); push with <code>--force-with-lease</code> and post a bump comment on
+      conda-forge/staged-recipes PR #32401 mentioning <code>@conda-forge/help-python</code></li>
+<li>[ ] <strong>After feedstock exists:</strong> verify bot opened a version-bump PR</li>
 <li>[ ] Announce if applicable (tracking issues, users)</li>
 </ul>
 
