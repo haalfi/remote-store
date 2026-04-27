@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Under Review
 
 ## Summary
 
@@ -286,11 +286,10 @@ each backend's `capabilities` property, and on `on_module` to collect extras
 from `pyproject.toml`. Griffe is not the IR; it is the parse layer.
 
 **Extras → backend mapping.** `pyproject.toml` does not currently encode which
-extra enables which backend. The mapping is either: (a) a small hand-maintained
-table in the generator, or (b) inferred by inspecting the guarded import block
-in `src/remote_store/backends/__init__.py`. Option (a) is simpler and correct
-today; option (b) is more robust against future backends but more complex.
-Decision deferred to implementation.
+extra enables which backend. The mapping is inferred by inspecting the guarded
+import block in `src/remote_store/backends/__init__.py`: each `try/except
+ImportError` block associates an extra's package with its backend class. This
+requires no hand-maintained table and stays correct as new backends are added.
 
 **Static capability extraction.** Today capabilities are declared as
 module-level `CapabilitySet` constants and exposed via a `capabilities`
@@ -361,14 +360,7 @@ Rejected.
 
 ## Open Questions
 
-1. **Extras → backend mapping source.** Hand-maintained table in the generator
-   (option a) vs. inferred from the guarded import block in
-   `backends/__init__.py` (option b). The implementation PR decides.
-
-2. **Schema bump strategy at version 2.0.** Read-only legacy is chosen for now.
-   If a breaking schema change is needed, the decision to forklift-upgrade
-   historical snapshots vs. mark them as `schema_version: 1.0` and skip them
-   in new tooling is deferred to that point.
+None.
 
 ## References
 
