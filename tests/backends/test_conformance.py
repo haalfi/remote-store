@@ -52,6 +52,12 @@ class TestBackendIdentity:
     def test_capabilities_is_capabilityset(self, backend: Backend) -> None:
         assert isinstance(backend.capabilities, CapabilitySet)
 
+    @pytest.mark.spec("BE-003")
+    def test_capabilities_subset_of_class_var(self, backend: Backend) -> None:
+        """ID-159: instance capabilities must be a subset of the class-level CAPABILITIES."""
+        cls = type(backend)
+        assert set(backend.capabilities) <= set(cls.CAPABILITIES)
+
     def test_repr_returns_string(self, backend: Backend) -> None:
         r = repr(backend)
         assert isinstance(r, str)

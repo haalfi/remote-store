@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from remote_store._errors import CapabilityNotSupported
 
@@ -25,6 +25,9 @@ class AsyncBackend(abc.ABC):
     Every backend must implement all abstract methods. Backend-native
     exceptions must never leak -- they must be mapped to ``remote_store`` errors.
     """
+
+    # Subclasses must assign a CapabilitySet here; enforced by the conformance suite.
+    CAPABILITIES: ClassVar[CapabilitySet]
 
     # region: context-manager
 

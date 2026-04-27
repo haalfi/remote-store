@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from enum import Enum
 from io import StringIO
-from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -193,6 +193,8 @@ class SFTPBackend(Backend):
         connect_kwargs: Extra kwargs passed to ``SSHClient.connect()``.
     """
 
+    CAPABILITIES: ClassVar[CapabilitySet] = _SFTP_CAPABILITIES
+
     def __init__(
         self,
         host: str,
@@ -239,7 +241,7 @@ class SFTPBackend(Backend):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _SFTP_CAPABILITIES
+        return self.CAPABILITIES
 
     # endregion
 

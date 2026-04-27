@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound
@@ -39,6 +39,8 @@ class AsyncMemoryBackend(AsyncBackend):
     passes with zero skips.
     """
 
+    CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
+
     def __init__(self) -> None:
         self._root = _DirNode()
         self._file_count = 0
@@ -53,7 +55,7 @@ class AsyncMemoryBackend(AsyncBackend):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _ALL_CAPABILITIES
+        return self.CAPABILITIES
 
     # endregion
 

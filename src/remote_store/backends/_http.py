@@ -12,7 +12,7 @@ import urllib.request
 from collections.abc import Callable
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, cast, runtime_checkable
+from typing import TYPE_CHECKING, BinaryIO, ClassVar, Protocol, TypeVar, cast, runtime_checkable
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -227,6 +227,8 @@ class ReadOnlyHttpBackend(Backend):
         max_redirects: Maximum number of redirects to follow.
     """
 
+    CAPABILITIES: ClassVar[CapabilitySet] = _CAPABILITIES
+
     def __init__(
         self,
         base_url: str,
@@ -260,7 +262,7 @@ class ReadOnlyHttpBackend(Backend):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _CAPABILITIES
+        return self.CAPABILITIES
 
     # endregion
 
