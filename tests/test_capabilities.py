@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import importlib
+
 import pytest
 
 from remote_store._capabilities import Capability, CapabilitySet
@@ -173,3 +175,31 @@ class TestUserMetadata:
         with pytest.raises(CapabilityNotSupported, match="user_metadata") as exc_info:
             cs.require(Capability.USER_METADATA, backend="sftp")
         assert exc_info.value.capability == "user_metadata"
+
+
+class TestCapabilitiesClassVar:
+    """ID-159: CAPABILITIES ClassVar is accessible at class level without instantiation."""
+
+    @pytest.mark.parametrize(
+        ("module", "cls_name", "require"),
+        [
+            ("remote_store.backends._local", "LocalBackend", None),
+            ("remote_store.backends._memory", "MemoryBackend", None),
+            ("remote_store.aio.backends._memory", "AsyncMemoryBackend", None),
+            ("remote_store.backends._sftp", "SFTPBackend", "paramiko"),
+            ("remote_store.backends._s3", "S3Backend", "s3fs"),
+            ("remote_store.backends._s3_pyarrow", "S3PyArrowBackend", "pyarrow"),
+            ("remote_store.backends._azure", "AzureBackend", "azure.storage.blob"),
+            ("remote_store.aio.backends._azure", "AsyncAzureBackend", "azure.storage.blob"),
+            ("remote_store.backends._http", "ReadOnlyHttpBackend", None),
+            ("remote_store.backends._sqlalchemy", "SQLBlobBackend", "sqlalchemy"),
+            ("remote_store.backends._sqlalchemy", "SQLQueryBackend", "sqlalchemy"),
+        ],
+    )
+    def test_class_attr_no_instantiation(self, module: str, cls_name: str, require: str | None) -> None:
+        if require is not None:
+            pytest.importorskip(require)
+        mod = importlib.import_module(module)
+        cls = getattr(mod, cls_name)
+        caps = cls.CAPABILITIES
+        assert isinstance(caps, CapabilitySet), f"{cls_name}.CAPABILITIES is not a CapabilitySet"

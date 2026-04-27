@@ -152,6 +152,36 @@ def test_capabilities(backend: SQLBlobBackend) -> None:
     assert Capability.ATOMIC_MOVE in caps, "SQLBlob must declare ATOMIC_MOVE (transactional move)"
 
 
+@pytest.mark.spec("SQL-BLOB-003")
+def test_capabilities_classvar_full_schema(backend: SQLBlobBackend) -> None:
+    """ID-159: CAPABILITIES ClassVar equals instance capabilities for full-schema backend."""
+    assert set(backend.capabilities) == set(SQLBlobBackend.CAPABILITIES)
+
+
+@pytest.mark.spec("SQL-BLOB-003")
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["minimal_engine", "mtime_engine"],
+    ids=["key-data-only", "key-data-mtime"],
+)
+def test_capabilities_classvar_upper_bound(
+    fixture_name: str,
+    minimal_engine: sa.Engine,
+    mtime_engine: sa.Engine,
+) -> None:
+    """ID-159: CAPABILITIES ClassVar is an upper bound — narrow-schema instances are a subset."""
+    table_name = "minimal" if fixture_name == "minimal_engine" else "mtime_only"
+    engine = minimal_engine if fixture_name == "minimal_engine" else mtime_engine
+    b = SQLBlobBackend(engine=engine, table_name=table_name, create_table=False)
+    try:
+        instance_caps = set(b.capabilities)
+        class_caps = set(SQLBlobBackend.CAPABILITIES)
+        assert instance_caps < class_caps, "Narrow-schema instance must be a strict subset of CAPABILITIES"
+        assert instance_caps <= class_caps, "All instance capabilities must be in CAPABILITIES upper bound"
+    finally:
+        b.close()
+
+
 @pytest.mark.spec("SQL-BLOB-004")
 def test_repr(backend: SQLBlobBackend) -> None:
     r = repr(backend)

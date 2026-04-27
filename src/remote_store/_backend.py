@@ -5,7 +5,7 @@ from __future__ import annotations
 import abc
 import shutil
 import tempfile
-from typing import TYPE_CHECKING, BinaryIO, TypeVar
+from typing import TYPE_CHECKING, BinaryIO, ClassVar, TypeVar
 
 from remote_store._errors import CapabilityNotSupported
 
@@ -46,6 +46,8 @@ class Backend(abc.ABC):
     Every backend must implement all abstract methods. Backend-native
     exceptions must never leak — they must be mapped to ``remote_store`` errors.
     """
+
+    CAPABILITIES: ClassVar[CapabilitySet]
 
     @property
     @abc.abstractmethod

@@ -234,6 +234,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         blob-storage backend (S3, Local, Azure) instead.
     """
 
+    # Upper bound — runtime capabilities() may narrow for narrow-column schemas (create_table=False).
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
 
     def __init__(
