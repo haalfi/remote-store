@@ -25,14 +25,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAPH = ROOT / "docs-src" / "_data" / "graph" / "graph.json"
 OUT = ROOT / "docs-src" / "_data" / "graph" / "graph_viz.html"
-D3_CACHE = ROOT / "docs-src" / "_data" / "graph" / "_d3.v7.min.js"
-D3_CDN = "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"
+D3_VENDOR = ROOT / "docs-src" / "_data" / "graph" / "d3.v7.min.js"
 
 # ---------------------------------------------------------------------------
 # HTML template  (plain string -- no .format(), placeholders are __TOKENS__)
@@ -167,24 +165,22 @@ _TEMPLATE = (
     "  package: 0.12,\n"
     "};\n"
     "\n"
+    "// ---- SVG ------------------------------------------------------------------\n"
+    "const svg = d3.select('#graph');\n"
+    "\n"
     "// ---- Simulation -----------------------------------------------------------\n"
+    "// forceX/forceY call .x()/.y() synchronously during initialize() -- svg must\n"
+    "// be declared first.  clientWidth is 0 at init time anyway; use design constants.\n"
+    "const W0 = 1200, H0 = 800;\n"
     "const simulation = d3.forceSimulation(nodes)\n"
     "  .force('link', d3.forceLink(links).id(d=>d.id)\n"
     "    .distance(d=>d.kind==='declares'?170:d.kind==='inherits'?65:100)\n"
     "    .strength(d=>d.kind==='declares'?0.04:d.kind==='of'?0.5:0.4))\n"
     "  .force('charge', d3.forceManyBody().strength(-620))\n"
     "  .force('collide', d3.forceCollide().radius(d=>(NODE_CFG[d.kind]?.r||10)+14))\n"
-    "  .force('xbias', d3.forceX().x(d=>{\n"
-    "    const W=svg.node().clientWidth||1200;\n"
-    "    return (X_BIAS[d.kind]??0.5)*W;\n"
-    "  }).strength(0.07))\n"
-    "  .force('ybias', d3.forceY().y(d=>{\n"
-    "    const H=svg.node().clientHeight||800;\n"
-    "    return (Y_BIAS[d.kind]??0.5)*H;\n"
-    "  }).strength(0.04));\n"
+    "  .force('xbias', d3.forceX(d=>(X_BIAS[d.kind]??0.5)*W0).strength(0.07))\n"
+    "  .force('ybias', d3.forceY(d=>(Y_BIAS[d.kind]??0.5)*H0).strength(0.04));\n"
     "\n"
-    "// ---- SVG ------------------------------------------------------------------\n"
-    "const svg = d3.select('#graph');\n"
     "const defs = svg.append('defs');\n"
     "Object.entries(EDGE_CFG).forEach(([kind,cfg])=>{\n"
     "  defs.append('marker').attr('id','arrow-'+kind)\n"
@@ -361,19 +357,10 @@ _TEMPLATE = (
 # ---------------------------------------------------------------------------
 
 
-def _fetch_d3() -> str:
-    """Return D3 source, using a local cache to avoid repeated downloads."""
-    if D3_CACHE.exists():
-        return D3_CACHE.read_text(encoding="utf-8")
-    print(f"Downloading D3 from {D3_CDN} ...")
-    req = urllib.request.Request(D3_CDN, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310
-        src = resp.read().decode("utf-8")
-    D3_CACHE.write_text(src, encoding="utf-8")
-    return src
-
-
 def generate(graph: dict) -> str:
+    if not D3_VENDOR.exists():
+        raise FileNotFoundError(f"{D3_VENDOR.name} not found — it should be committed to the repo.")
+    d3_src = D3_VENDOR.read_text(encoding="utf-8")
     graph_data = json.dumps(graph, ensure_ascii=False, separators=(",", ":"))
     return (
         _TEMPLATE.replace("__VERSION__", graph.get("source_version", ""))
@@ -381,7 +368,7 @@ def generate(graph: dict) -> str:
         .replace("__N_NODES__", str(len(graph.get("nodes", []))))
         .replace("__N_EDGES__", str(len(graph.get("edges", []))))
         .replace("__GRAPH_DATA__", graph_data)
-        .replace("__D3_INLINE__", _fetch_d3())
+        .replace("__D3_INLINE__", d3_src)
     )
 
 
