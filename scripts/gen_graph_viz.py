@@ -25,11 +25,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAPH = ROOT / "docs-src" / "_data" / "graph" / "graph.json"
 OUT = ROOT / "docs-src" / "_data" / "graph" / "graph_viz.html"
+D3_CACHE = ROOT / "docs-src" / "_data" / "graph" / "_d3.v7.min.js"
+D3_CDN = "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"
 
 # ---------------------------------------------------------------------------
 # HTML template  (plain string -- no .format(), placeholders are __TOKENS__)
@@ -41,7 +44,7 @@ _TEMPLATE = (
     "<head>\n"
     '<meta charset="UTF-8">\n'
     "<title>remote-store graph IR — v__VERSION__</title>\n"
-    '<script src="https://d3js.org/d3.v7.min.js"></script>\n'
+    "<script>__D3_INLINE__</script>\n"
     "<style>\n"
     "*{box-sizing:border-box;margin:0;padding:0}\n"
     "body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;"
@@ -358,6 +361,18 @@ _TEMPLATE = (
 # ---------------------------------------------------------------------------
 
 
+def _fetch_d3() -> str:
+    """Return D3 source, using a local cache to avoid repeated downloads."""
+    if D3_CACHE.exists():
+        return D3_CACHE.read_text(encoding="utf-8")
+    print(f"Downloading D3 from {D3_CDN} ...")
+    req = urllib.request.Request(D3_CDN, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310
+        src = resp.read().decode("utf-8")
+    D3_CACHE.write_text(src, encoding="utf-8")
+    return src
+
+
 def generate(graph: dict) -> str:
     graph_data = json.dumps(graph, ensure_ascii=False, separators=(",", ":"))
     return (
@@ -366,6 +381,7 @@ def generate(graph: dict) -> str:
         .replace("__N_NODES__", str(len(graph.get("nodes", []))))
         .replace("__N_EDGES__", str(len(graph.get("edges", []))))
         .replace("__GRAPH_DATA__", graph_data)
+        .replace("__D3_INLINE__", _fetch_d3())
     )
 
 
