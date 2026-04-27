@@ -184,9 +184,10 @@ One-hop walk from `cls:remote_store.backends._s3.S3Backend`:
 cls:...S3Backend
   ← enables          xtr:s3
   → inherits         cls:remote_store._backend.Backend
-  → declares (×12)   cap:READ, cap:WRITE, cap:DELETE, cap:LIST, cap:GLOB,
+  → declares (×13)   cap:READ, cap:WRITE, cap:DELETE, cap:LIST, cap:GLOB,
                      cap:MOVE, cap:COPY, cap:ATOMIC_WRITE, cap:METADATA,
-                     cap:USER_METADATA, cap:SEEKABLE_READ, cap:LAZY_READ
+                     cap:USER_METADATA, cap:SEEKABLE_READ, cap:LAZY_READ,
+                     cap:WRITE_RESULT_NATIVE
                      (all condition: null)
   ↔ mirrors          (no async S3 backend exists yet; edge applies once one is added)
 
@@ -285,11 +286,19 @@ Extension that fires on `on_class_instance` to populate `declares` edges from
 each backend's `capabilities` property, and on `on_module` to collect extras
 from `pyproject.toml`. Griffe is not the IR; it is the parse layer.
 
-**Extras → backend mapping.** `pyproject.toml` does not currently encode which
-extra enables which backend. The mapping is inferred by inspecting the guarded
-import block in `src/remote_store/backends/__init__.py`: each `try/except
-ImportError` block associates an extra's package with its backend class. This
-requires no hand-maintained table and stays correct as new backends are added.
+**Extras → backend mapping.** The mapping is a two-source join:
+
+1. `src/remote_store/backends/__init__.py` — each `try/except ImportError` block
+   names the backend class and, implicitly, the package whose absence causes the
+   failure (e.g. `from remote_store.backends._s3 import S3Backend` fails when
+   `s3fs` is absent).
+2. `pyproject.toml` `[project.optional-dependencies]` — maps each pip extra name
+   to the packages it installs.
+
+The generator joins the two by package name: "which extra installs the package
+that `backends/__init__.py` needs for this class?" This requires no
+hand-maintained table and stays correct as new backends are added, as long as
+both sources are consulted.
 
 **Static capability extraction.** Today capabilities are declared as
 module-level `CapabilitySet` constants and exposed via a `capabilities`
