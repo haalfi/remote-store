@@ -11119,7 +11119,7 @@ semantics.</p>
 </ul>
 <hr />
 <h2 id="phase-2-asyncazurebackend">Phase 2: AsyncAzureBackend<a class="headerlink" href="#phase-2-asyncazurebackend" title="Permanent link">&para;</a></h2>
-<p>Native async Azure backend using <code>azure.storage.blob.aio</code> and <code>azure.storage.filedatalake.aio</code>. Implemented in <code>remote_store.aio._async_azure</code>. See <a href="../012-azure-backend/">012-azure-backend.md</a> for the sync counterpart.</p>
+<p>Native async Azure backend using <code>azure.storage.blob.aio</code> and <code>azure.storage.filedatalake.aio</code>. Implemented in <code>remote_store.aio.backends._azure</code>. See <a href="../012-azure-backend/">012-azure-backend.md</a> for the sync counterpart.</p>
 <h3 id="async-070-dual-mode-architecture">ASYNC-070: Dual-Mode Architecture<a class="headerlink" href="#async-070-dual-mode-architecture" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>AsyncAzureBackend</code> supports both plain Blob Storage and ADLS Gen2 (HNS-enabled) accounts. HNS is detected lazily on first I/O via <code>_ensure_hns()</code> and cached. Non-HNS accounts use the Blob SDK (<code>BlobServiceClient</code>, <code>ContainerClient</code>). HNS accounts use the DataLake SDK (<code>DataLakeServiceClient</code>, <code>FileSystemClient</code>).
 <strong>See also:</strong> <a href="../012-azure-backend/">012-azure-backend.md</a> (AZ-002).</p>
