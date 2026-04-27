@@ -17,7 +17,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   declares, gates, of, enables, mirrors, and inherits edges.
   Deterministic output (nodes sorted by id URI, edges by (kind, src, dst), sort_keys=True).
   Golden test: `tests/test_gen_graph.py`.
-  Remaining work (gen_features.py projection → FEATURES.md): ID-162.
+  Remaining work (gen_features.py projection → FEATURES.md): ID-163.
 
 ## v0.24.0
 

@@ -208,10 +208,20 @@ class TestRegionReplacement:
         assert "before" in result
         assert "after" in result
 
-    def test_leaves_unknown_region_untouched(self, gen_features_module):
+    def test_leaves_unmatched_document_region_untouched(self, gen_features_module):
+        # Region in document without a corresponding projection key is left as-is.
+        text = (
+            "<!-- BEGIN_GENERATED:foo -->\nfoo content\n<!-- END_GENERATED:foo -->\n"
+            "<!-- BEGIN_GENERATED:bar -->\nbar content\n<!-- END_GENERATED:bar -->"
+        )
+        result = gen_features_module._replace_regions(text, {"foo": "new foo"})
+        assert "new foo" in result
+        assert "bar content" in result
+
+    def test_raises_if_projection_key_not_in_document(self, gen_features_module):
         text = "<!-- BEGIN_GENERATED:bar -->\nstuff\n<!-- END_GENERATED:bar -->"
-        result = gen_features_module._replace_regions(text, {"other": "x"})
-        assert "stuff" in result
+        with pytest.raises(ValueError, match="other"):
+            gen_features_module._replace_regions(text, {"other": "x"})
 
     def test_replaces_multiple_regions(self, gen_features_module):
         text = (

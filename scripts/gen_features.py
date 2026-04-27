@@ -4,6 +4,12 @@ Run with:  hatch run gen-features
            hatch run python scripts/gen_features.py [--check]
 
 --check exits 1 if FEATURES.md would change; use in CI or pre-commit.
+
+Backend row order in the generated tables follows _register_builtin_backends()
+declaration order in _registry.py (which equals lazy-import sequence, heaviest
+optional dependencies last).  This is intentional: the order is stable and
+machine-derived.  It does not group backends by topic (e.g. s3 and s3-pyarrow
+are separated because s3-pyarrow is the last registered backend).
 """
 
 from __future__ import annotations
@@ -247,13 +253,20 @@ _REGION_RE = re.compile(
 
 
 def _replace_regions(text: str, projections: dict[str, str]) -> str:
+    matched: set[str] = set()
+
     def _sub(m: re.Match) -> str:
         name = m.group(2)
         if name not in projections:
             return m.group(0)
+        matched.add(name)
         return f"{m.group(1)}\n{projections[name]}\n{m.group(3)}"
 
-    return _REGION_RE.sub(_sub, text)
+    result = _REGION_RE.sub(_sub, text)
+    missing = set(projections) - matched
+    if missing:
+        raise ValueError(f"Projection keys not found in document: {sorted(missing)}")
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -290,7 +303,7 @@ def main() -> None:
         return
 
     if original_lf != updated:
-        FEATURES.write_text(updated, encoding="utf-8")
+        FEATURES.write_text(updated, encoding="utf-8", newline="\n")
         print(f"Updated {FEATURES.relative_to(ROOT)}")
     else:
         print("FEATURES.md is already up to date.")
