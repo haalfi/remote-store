@@ -21,7 +21,7 @@ from remote_store._errors import (
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
-from remote_store.backends._azure import _AZURE_BLOCK_SIZE
+from remote_store.backends._azure import _AZURE_BLOCK_SIZE, AzureBackend
 from remote_store.backends._azure_common import (
     _build_azure_write_result,
     build_azure_retry,
@@ -72,6 +72,7 @@ class AsyncAzureBackend(AsyncBackend):
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
+    __mirror__ = AzureBackend
 
     def __init__(
         self,
