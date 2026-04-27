@@ -142,9 +142,11 @@ Existing items may be more verbose — trim on next touch.
   **Constraints:** must still produce a single readable Markdown file (not a
   docs-site page); generation runs as part of the release skill, not CI;
   hand-curated sections are preserved across regenerations via region tags.
-  **Next:** design the region-tag schema; identify exactly which tables are
-  100% derivable from source (capability matrix, extras, method list) vs.
-  which need curation (descriptions, notes, examples).
+  **Design:** [RFC-0012](rfcs/rfc-0012-doc-graph-model.md) — defines the graph
+  IR (nodes, edges, snapshots, projection layer) that `gen_features.py` consumes.
+  **Next:** implement RFC-0012 preconditions (`CAPABILITIES: ClassVar` on backends,
+  `_GATING` table in `_store.py`), then `scripts/gen_graph.py` and
+  `scripts/gen_features.py`.
 
 ### Streaming & Memory Optimization
 
