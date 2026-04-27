@@ -308,7 +308,9 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
 - [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
 - [ ] `bump-my-version bump patch|minor|major` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag)
-- [ ] Review and commit: `git diff` to verify, then stage the bump-my-version-modified files (see `[[tool.bumpversion.files]]` in `pyproject.toml`) plus `CHANGELOG.md` and `packaging/conda-forge/recipe.yaml`, and commit as `Release vX.Y.Z`
+- [ ] `hatch run gen-graph` (stamps `source_version` + `snapshot` in `docs-src/_data/graph/graph.json` from the bumped version)
+- [ ] `hatch run gen-features` (regenerates mechanical sections of `FEATURES.md` from updated `graph.json`)
+- [ ] Review and commit: `git diff` to verify, then stage the bump-my-version-modified files (see `[[tool.bumpversion.files]]` in `pyproject.toml`) plus `CHANGELOG.md`, `packaging/conda-forge/recipe.yaml`, `docs-src/_data/graph/graph.json`, and `FEATURES.md`, and commit as `Release vX.Y.Z`
 
 ### Phase 3: Validate
 

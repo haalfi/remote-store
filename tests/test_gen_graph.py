@@ -11,6 +11,11 @@ from pathlib import Path
 
 import pytest
 
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib  # type: ignore[no-redef]
+
 pytestmark = pytest.mark.os_sensitive
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -46,9 +51,12 @@ def test_graph_schema(gen_graph_module):
     """graph.json must satisfy the RFC-0012 schema invariants."""
     graph = gen_graph_module.build_graph()
 
+    with open(ROOT / "pyproject.toml", "rb") as f:
+        expected_version = tomllib.load(f)["project"]["version"]
+
     assert graph["schema_version"] == "1.0"
-    assert graph["snapshot"] == "unreleased"
-    assert graph["source_version"] is None
+    assert graph["source_version"] == expected_version
+    assert graph["snapshot"] == expected_version
 
     nodes = graph["nodes"]
     edges = graph["edges"]
@@ -95,3 +103,18 @@ def test_graph_schema(gen_graph_module):
     assert "of" in edge_kinds
     assert "enables" in edge_kinds
     assert "mirrors" in edge_kinds
+
+
+def test_graph_json_is_up_to_date(gen_graph_module):
+    """Committed graph.json must match a fresh build_graph() call.
+
+    Fails if the script was modified but the output file was not regenerated.
+    Run:  hatch run gen-graph
+    """
+    committed = (ROOT / "docs-src" / "_data" / "graph" / "graph.json").read_bytes()
+    committed_lf = committed.replace(b"\r\n", b"\n")
+
+    fresh = json.dumps(gen_graph_module.build_graph(), sort_keys=True, indent=2) + "\n"
+    fresh_bytes = fresh.encode("utf-8")
+
+    assert committed_lf == fresh_bytes, "graph.json is out of date. Run:  hatch run gen-graph"

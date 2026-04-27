@@ -34,7 +34,7 @@ jobs:
           else
             FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
           fi
-          CODE_PAT='^(src|tests|examples)/|^pyproject\.toml$|^\.github/workflows/ci\.yml$'
+          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^FEATURES\.md$|^docs-src/_data/graph/graph\.json$|^\.github/workflows/ci\.yml$'
           DOCS_PAT='^(docs-src|src|guides)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/(specs|adrs|rfcs)/|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
@@ -67,6 +67,8 @@ jobs:
       - run: ruff format --check src/ tests/ examples/
       - run: python scripts/check_test_assertions.py tests
       - run: python scripts/check_mock_spec.py tests
+      - run: python scripts/gen_graph.py --check
+      - run: python scripts/gen_features.py --check
 
   typecheck:
     needs: [changes]
@@ -279,7 +281,7 @@ jobs:
       - name: Download tla2tools.jar (pinned)
         env:
           TLA_VERSION: 1.8.0
-          TLA_SHA256: af03b2baae73b523fe162c0ff195c5adeed42cd1d092200b0bde2cd15914f624
+          TLA_SHA256: d5d07d5dab38ddb840c91ec48fa02f28b37a608d5af9a73570018591dbc8ef7f
         run: |
           curl -fsSL -o tla2tools.jar \
             "https://github.com/tlaplus/tlaplus/releases/download/v${TLA_VERSION}/tla2tools.jar"

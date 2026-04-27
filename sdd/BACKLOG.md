@@ -65,6 +65,13 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
+- [ ] **ID-164 — Complete `method` node properties in graph IR**
+  `build_graph()` emits only `summary` for `method` nodes; RFC-0012 taxonomy also
+  specifies `is_abstract`, `is_async`, `file`, and `line`. These require Griffe
+  method introspection on the gating targets (`_GATING` values map to `Store`
+  methods). Implement once the method-level walk is added to the generator.
+  **Depends on:** ID-159 (merged).
+
 - [ ] **ID-162 — `mirrors` edges in the graph: add `capability_delta` metadata**
   `__mirror__` creates `mirrors` edges in the documentation graph but the two backends
   may differ in capabilities (e.g. `AsyncMemoryBackend` declares `LAZY_READ`;
@@ -139,20 +146,6 @@ Existing items may be more verbose — trim on next touch.
 
   No code change — the `context7.json` configuration is already in place.
 
-- [~] **ID-163 — `FEATURES.md` projection from graph IR**
-  `scripts/gen_features.py` ships (PR #537): reads `graph.json`, regenerates
-  three mechanical sections of `FEATURES.md` via region tags. `gen-features` /
-  `gen-features-check` hatch scripts added. Idempotency gate in pytest.
-  Remaining:
-  (a) Stamp `source_version` + `snapshot` in graph.json at release time: remove
-  the `version = None` hardcode in `gen_graph.py` and always read from
-  `pyproject.toml`. Release sequence: `bump-my-version` → `gen-graph` (stamps
-  version) → `gen-features` → commit. Git tag freezes the file; self-describing
-  version serves consumers without git context.
-  (b) Wire `gen-graph` + `gen-features` into the release skill.
-  (c) Add `gen-graph-check` + `gen-features-check` to pre-commit / CI so
-  graph→projection drift is caught before pytest.
-  **Depends on:** ID-159 (merged).
 
 ### Streaming & Memory Optimization
 
