@@ -63,6 +63,10 @@ Every backend starts with these imports. The key types:
 to `store.write_atomic()` raise `CapabilityNotSupported` automatically — you
 don't need to handle it.
 
+`_REDIS_CAPABILITIES` is assigned to the class-level `CAPABILITIES` attribute in Step 3.
+Tooling and conformance tests read `YourBackend.CAPABILITIES` without instantiating the class,
+so the constant must be a class attribute — not computed in `__init__`.
+
 Three capabilities added in v0.23.0 are worth declaring when they apply:
 
 - **`USER_METADATA`** — declare this when your backend stores the `metadata=` mapping passed to `write()` and `write_atomic()`. Without it, `Store` raises `CapabilityNotSupported` if the caller passes non-empty metadata.
@@ -85,7 +89,7 @@ Each capability gates specific Store methods. See the
 **Rules:**
 
 - `name` must be a unique string. Used in error messages and the registry.
-- `capabilities` returns a [`CapabilitySet`](api/capabilities.md) — immutable, created once.
+- `CAPABILITIES: ClassVar[CapabilitySet]` exposes the capability set at class level — no instantiation required. The `capabilities` property delegates to `self.CAPABILITIES` so both the class view and the instance view always agree.
 - Constructor parameters become `options:` in YAML config (more on this later).
 
 ---
@@ -567,8 +571,9 @@ are generally thread-safe, so our example doesn't need explicit locking.
 
 ### Abstract methods (must implement)
 
-| Method | Returns | Raises on error |
+| Member | Type | Raises on error |
 |---|---|---|
+| `CAPABILITIES` (class attribute) | [`ClassVar[CapabilitySet]`](api/capabilities.md) | — |
 | `name` (property) | `str` | — |
 | `capabilities` (property) | [`CapabilitySet`](api/capabilities.md) | — |
 | `exists(path)` | `bool` | Never raises [`NotFound`](api/errors.md) |

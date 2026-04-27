@@ -24,7 +24,7 @@ from __future__ import annotations
 import contextlib
 import io
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, BinaryIO
+from typing import TYPE_CHECKING, BinaryIO, ClassVar
 
 try:
     import redis
@@ -92,6 +92,8 @@ class RedisBackend(Backend):
     # -- Step 3: Constructor and properties --------------------------------
 
     # --8<-- [start:step3-constructor]
+    CAPABILITIES: ClassVar[CapabilitySet] = _REDIS_CAPABILITIES
+
     def __init__(self, url: str = "redis://localhost:6379/0", prefix: str = "rs:") -> None:
         self._client = redis.Redis.from_url(url, decode_responses=False)
         self._prefix = prefix
@@ -102,7 +104,7 @@ class RedisBackend(Backend):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _REDIS_CAPABILITIES
+        return self.CAPABILITIES
 
     # --8<-- [end:step3-constructor]
 
