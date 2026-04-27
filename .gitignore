@@ -21,7 +21,6 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .gremlins_cache/
-docs-src/_data/graph/_d3.v7.min.js
 
 # Building
 dist/
