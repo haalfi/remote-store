@@ -859,6 +859,11 @@
       "src": "req:remote_store._store.Store.get_folder_info.gate"
     },
     {
+      "dst": "mtd:remote_store._store.Store.get_folder_info",
+      "kind": "gates",
+      "src": "req:remote_store._store.Store.get_folder_info.gate_depth"
+    },
+    {
       "dst": "mtd:remote_store._store.Store.glob",
       "kind": "gates",
       "src": "req:remote_store._store.Store.glob.gate"
@@ -1007,6 +1012,12 @@
       "index": 0,
       "kind": "of",
       "src": "req:remote_store._store.Store.get_folder_info.gate"
+    },
+    {
+      "dst": "cap:LIST",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._store.Store.get_folder_info.gate_depth"
     },
     {
       "dst": "cap:GLOB",
@@ -1291,98 +1302,174 @@
       "summary": "Read-only SQL query materializer implementing a subset of the Backend contract."
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.copy",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 594,
       "summary": "copy"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.delete",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 353,
       "summary": "delete"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.delete_folder",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 374,
       "summary": "delete_folder"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.get_file_info",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 664,
       "summary": "get_file_info"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.get_folder_info",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 683,
       "summary": "get_folder_info"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.glob",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 539,
       "summary": "glob"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.head",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 748,
       "summary": "head"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.iter_children",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 517,
       "summary": "iter_children"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.list_files",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 411,
       "summary": "list_files"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.list_folders",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 475,
       "summary": "list_folders"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.move",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 563,
       "summary": "move"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.open_atomic",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 304,
       "summary": "open_atomic"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.read",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 75,
       "summary": "read"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.read_bytes",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 95,
       "summary": "read_bytes"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.read_seekable",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 114,
       "summary": "read_seekable"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.read_text",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 145,
       "summary": "read_text"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.write",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 178,
       "summary": "write"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.write_atomic",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 258,
       "summary": "write_atomic"
     },
     {
+      "file": "src/remote_store/_store.py",
       "id": "mtd:remote_store._store.Store.write_text",
+      "is_abstract": false,
+      "is_async": false,
       "kind": "method",
+      "line": 219,
       "summary": "write_text"
     },
     {
@@ -1419,6 +1506,11 @@
     },
     {
       "id": "req:remote_store._store.Store.get_folder_info.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._store.Store.get_folder_info.gate_depth",
       "kind": "requirement",
       "mode": "all"
     },
@@ -1523,7 +1615,7 @@
       "kind_of": "backend"
     }
   ],
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "snapshot": "0.24.0",
   "source_version": "0.24.0"
 }

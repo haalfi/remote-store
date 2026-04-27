@@ -9344,7 +9344,7 @@ and release-skill integration) is tracked under ID-159.</p>
 addressable by a stable URI string. No separate adjacency structure — queries
 iterate the arrays.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;schema_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;schema_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.1&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;source_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.24.0&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;snapshot&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.24.0&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">&quot;nodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">],</span>
@@ -9352,9 +9352,9 @@ iterate the arrays.</p>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">}</span>
 </code></pre></div>
 <p><code>schema_version</code> and <code>source_version</code> are independent fields. A schema bump
-(new node kinds, renamed edge kinds) increments <code>schema_version</code>; a new package
-release increments <code>source_version</code>. <code>snapshot</code> mirrors <code>source_version</code> (both
-track <code>pyproject.toml[project][version]</code>).</p>
+(new node kinds, renamed edge kinds, or new properties on an existing node kind)
+increments <code>schema_version</code>; a new package release increments <code>source_version</code>.
+<code>snapshot</code> mirrors <code>source_version</code> (both track <code>pyproject.toml[project][version]</code>).</p>
 <hr />
 <h3 id="promote-to-node-rule">Promote-to-node rule<a class="headerlink" href="#promote-to-node-rule" title="Permanent link">&para;</a></h3>
 <p>If a value is referenced from more than one node, or a natural query is "which
@@ -9393,7 +9393,7 @@ parent (booleans, <code>sync/async</code>, <code>abc/backend/facade</code>) stay
 <tr>
 <td><code>method</code></td>
 <td><code>mtd:</code></td>
-<td><code>summary</code> (implemented); <code>is_abstract</code>, <code>is_async</code>, <code>file</code>, <code>line</code> (deferred — see ID-164)</td>
+<td><code>summary</code>, <code>is_abstract</code>, <code>is_async</code>, <code>file</code>, <code>line</code></td>
 <td>—</td>
 </tr>
 <tr>
@@ -9472,6 +9472,16 @@ change.</p>
 gate(s). All current methods use <code>mode: all</code> with a single capability; the
 node exists so the schema does not change when a method needs a conjunction or
 disjunction.</p>
+<p>Two patterns use multiple <code>req:</code> nodes vs. multiple <code>of</code> edges:</p>
+<ul>
+<li><strong>AND of capabilities</strong> (one <code>req:</code>, N <code>of</code> edges): the method requires all N
+  capabilities simultaneously on the same code path.</li>
+<li><strong>Alternative gates</strong> (N <code>req:</code> nodes, each with its own <code>of</code> edge): the method
+  chooses one capability gate at runtime based on a condition. Each <code>req:</code> node
+  represents one branch. URI convention: <code>&lt;method&gt;.gate</code> for the primary gate;
+  <code>&lt;method&gt;.gate_&lt;discriminator&gt;</code> for each alternative (e.g. <code>.gate_depth</code> for a
+  depth-limited code path).</li>
+</ul>
 <hr />
 <h3 id="edge-taxonomy">Edge taxonomy<a class="headerlink" href="#edge-taxonomy" title="Permanent link">&para;</a></h3>
 <table>

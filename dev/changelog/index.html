@@ -11533,6 +11533,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>ID-164: graph IR — method nodes carry <code>is_abstract</code>, <code>is_async</code>, <code>file</code>, <code>line</code> (RFC-0012 taxonomy completion); schema_version bumped to 1.1.</li>
 <li>ID-163: <code>gen_graph.py</code> — read <code>source_version</code>/<code>snapshot</code> from <code>pyproject.toml</code> (remove <code>None</code> hardcode); add <code>--check</code> mode and <code>gen-graph-check</code> hatch script; wire <code>gen-graph</code> + <code>gen-features</code> into release Phase 2 checklist; add both checks to CI lint job.</li>
 <li>ID-163: <code>scripts/gen_features.py</code> — project graph IR → FEATURES.md mechanical sections (backends table, write-result flags, install extras); add <code>gen-features</code> / <code>gen-features-check</code> hatch scripts.</li>
 <li>ID-159: Add <code>__mirror__: ClassVar[type[...]]</code> to async backends pointing to their sync peer (precondition C for <code>scripts/gen_graph.py</code>).</li>
