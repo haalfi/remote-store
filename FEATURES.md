@@ -300,7 +300,7 @@ ownership — they never call `store.close()`.
 
 ## Error Model
 
-All errors are subclasses of `StoreError` (importable from `remote_store`).
+All errors are subclasses of `RemoteStoreError` (importable from `remote_store`).
 Backend-native exceptions are mapped at the adapter boundary — callers
 always receive a typed error, never an `S3ServiceError` or `azure.core.…`.
 
@@ -312,8 +312,8 @@ always receive a typed error, never an `S3ServiceError` or `azure.core.…`.
 | `CapabilityNotSupported` | A method is called without the required capability |
 | `BackendUnavailable` | The backend is unreachable (network, auth, service down) |
 | `PermissionDenied` | Caller lacks access rights |
-| `ResourceLocked` | File is locked by another process (some backends only) |
-| `StoreError` | Base class for all errors above |
+| `DirectoryNotEmpty` | Directory is not empty and the operation requires it to be |
+| `RemoteStoreError` | Base class for all errors above |
 
 ---
 
