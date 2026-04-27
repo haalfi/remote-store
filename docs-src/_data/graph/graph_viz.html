@@ -68,7 +68,7 @@ const NODE_CFG = {
   method:      {color:'#10B981',r:10, label:n=>n.id.split('.').pop()},
   package:     {color:'#A855F7',r:15, label:n=>n.id.split(':')[1]},
   requirement: {color:'#F43F5E',r:8,  label:n=>{
-    const p=n.id.split('.');return p[p.length-2]+'.gate';
+    const p=n.id.split('.');return p[p.length-2]+'.'+p[p.length-1];
   }},
   extra:       {color:'#94A3B8',r:11, label:n=>n.id.split(':')[1]},
 };
@@ -182,16 +182,20 @@ function buildLegend(){
 }
 
 // ---- Detail ---------------------------------------------------------------
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function showDetail(node){
   const el=document.getElementById('detail');
   if(!node){el.innerHTML='<span class="placeholder">Click a node to inspect it</span>';return;}
   const skip=new Set(['id','kind']);
   const rows=Object.entries(node)
     .filter(([k])=>!skip.has(k))
-    .map(([k,v])=>`<div class="detail-row">${k}: <span>${v}</span></div>`)
+    .map(([k,v])=>`<div class="detail-row">${esc(k)}: <span>${esc(v)}</span></div>`)
     .join('');
-  el.innerHTML=`<div class="detail-id">${node.id}</div>`
-    +`<div class="detail-row">kind: <span>${node.kind}</span></div>${rows}`;
+  el.innerHTML=`<div class="detail-id">${esc(node.id)}</div>`
+    +`<div class="detail-row">kind: <span>${esc(node.kind)}</span></div>${rows}`;
 }
 
 // ---- Rendering ------------------------------------------------------------

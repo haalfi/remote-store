@@ -121,7 +121,7 @@ _TEMPLATE = (
     "  method:      {color:'#10B981',r:10, label:n=>n.id.split('.').pop()},\n"
     "  package:     {color:'#A855F7',r:15, label:n=>n.id.split(':')[1]},\n"
     "  requirement: {color:'#F43F5E',r:8,  label:n=>{\n"
-    "    const p=n.id.split('.');return p[p.length-2]+'.gate';\n"
+    "    const p=n.id.split('.');return p[p.length-2]+'.'+p[p.length-1];\n"
     "  }},\n"
     "  extra:       {color:'#94A3B8',r:11, label:n=>n.id.split(':')[1]},\n"
     "};\n"
@@ -235,6 +235,10 @@ _TEMPLATE = (
     "}\n"
     "\n"
     "// ---- Detail ---------------------------------------------------------------\n"
+    "function esc(s){\n"
+    "  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')\n"
+    "    .replace(/>/g,'&gt;').replace(/\"/g,'&quot;');\n"
+    "}\n"
     "function showDetail(node){\n"
     "  const el=document.getElementById('detail');\n"
     '  if(!node){el.innerHTML=\'<span class="placeholder">'
@@ -242,10 +246,10 @@ _TEMPLATE = (
     "  const skip=new Set(['id','kind']);\n"
     "  const rows=Object.entries(node)\n"
     "    .filter(([k])=>!skip.has(k))\n"
-    '    .map(([k,v])=>`<div class="detail-row">${k}: <span>${v}</span></div>`)\n'
+    '    .map(([k,v])=>`<div class="detail-row">${esc(k)}: <span>${esc(v)}</span></div>`)\n'
     "    .join('');\n"
-    '  el.innerHTML=`<div class="detail-id">${node.id}</div>`\n'
-    '    +`<div class="detail-row">kind: <span>${node.kind}</span></div>${rows}`;\n'
+    '  el.innerHTML=`<div class="detail-id">${esc(node.id)}</div>`\n'
+    '    +`<div class="detail-row">kind: <span>${esc(node.kind)}</span></div>${rows}`;\n'
     "}\n"
     "\n"
     "// ---- Rendering ------------------------------------------------------------\n"
@@ -387,8 +391,11 @@ def main() -> None:
             if existing == html_bytes:
                 print(f"gen-graph-viz-check: {OUT.name} is up to date.")
                 return
+            label = "stale"
+        else:
+            label = "missing"
         print(
-            f"gen-graph-viz-check: {OUT.name} is stale -- run hatch run gen-graph-viz",
+            f"gen-graph-viz-check: {OUT.name} is {label} -- run hatch run gen-graph-viz",
             file=sys.stderr,
         )
         sys.exit(1)

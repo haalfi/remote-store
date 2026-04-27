@@ -22,7 +22,6 @@ __pycache__/
 .ruff_cache/
 .gremlins_cache/
 docs-src/_data/graph/_d3.v7.min.js
-# d3.v7.min.js is vendored and tracked
 
 # Building
 dist/
