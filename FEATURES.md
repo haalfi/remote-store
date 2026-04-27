@@ -207,31 +207,35 @@ Built-in backends cover the most common targets. All implement the same
 `Backend` ABC; `SFTPUtils`, `S3PyArrowBackend`, and the SQL backends expose
 additional backend-specific options via `BackendConfig.options`.
 
+<!-- BEGIN_GENERATED:backends_main -->
 | Type | Class | Extra | Capabilities |
 |---|---|---|---|
 | `local` | `LocalBackend` | — | All |
 | `memory` | `MemoryBackend` | — | All except `GLOB`, `LAZY_READ` |
-| `http` | `ReadOnlyHttpBackend` | — (stdlib; `requests`/`httpx` optional) | `READ`, `METADATA`, `LAZY_READ` |
+| `http` | `ReadOnlyHttpBackend` | — (stdlib; `requests`/`httpx` optional) | `LAZY_READ`, `METADATA`, `READ` |
+| `azure` | `AzureBackend` | `remote-store[azure]` | All except `ATOMIC_MOVE`, `SEEKABLE_READ` |
 | `s3` | `S3Backend` | `remote-store[s3]` | All except `ATOMIC_MOVE` |
-| `s3-pyarrow` | `S3PyArrowBackend` | `remote-store[s3-pyarrow]` | All except `ATOMIC_MOVE` |
-| `sftp` | `SFTPBackend` | `remote-store[sftp]` | All except `GLOB`, `ATOMIC_MOVE` |
-| `azure` | `AzureBackend` | `remote-store[azure]` | All except `SEEKABLE_READ`, `ATOMIC_MOVE` |
+| `sftp` | `SFTPBackend` | `remote-store[sftp]` | All except `ATOMIC_MOVE`, `GLOB` |
 | `sql-blob` | `SQLBlobBackend` | `remote-store[sql]` | All except `LAZY_READ` |
-| `sql-query` | `SQLQueryBackend` | `remote-store[sql-query]` | `READ`, `LIST`, `METADATA`, `GLOB`, `SEEKABLE_READ` |
+| `sql-query` | `SQLQueryBackend` | `remote-store[sql-query]` | `GLOB`, `LIST`, `METADATA`, `READ`, `SEEKABLE_READ` |
+| `s3-pyarrow` | `S3PyArrowBackend` | `remote-store[s3-pyarrow]` | All except `ATOMIC_MOVE` |
+<!-- END_GENERATED:backends_main -->
 
 **Write-result quality flags by backend:**
 
+<!-- BEGIN_GENERATED:backends_flags -->
 | Backend | `WRITE_RESULT_NATIVE` | `USER_METADATA` |
 |---|---|---|
 | `local` | Yes | — |
-| `memory` | Yes | — |
-| `s3` | Yes | — |
-| `s3-pyarrow` | Yes | — |
-| `sftp` | Yes | — |
-| `azure` | Yes | Yes |
-| `sql-blob` | Yes (requires `modified_at` column) | Yes (requires `user_metadata` column) |
+| `memory` | Yes | Yes |
 | `http` | — | — |
+| `azure` | Yes | Yes |
+| `s3` | Yes | Yes |
+| `sftp` | Yes | — |
+| `sql-blob` | Yes (requires `modified_at` column) | Yes (requires `user_metadata` column) |
 | `sql-query` | — | — |
+| `s3-pyarrow` | Yes | — |
+<!-- END_GENERATED:backends_flags -->
 
 ---
 
@@ -352,6 +356,7 @@ conformance suite as native backends.
 
 ## Install extras
 
+<!-- BEGIN_GENERATED:install_extras -->
 ```
 pip install remote-store[s3]          # S3 via s3fs
 pip install remote-store[s3-pyarrow]  # S3 via PyArrow C++ filesystem
@@ -359,12 +364,13 @@ pip install remote-store[sftp]        # SFTP via paramiko
 pip install remote-store[azure]       # Azure ADLS Gen2 via Azure SDK
 pip install remote-store[sql]         # SQL blob store via SQLAlchemy
 pip install remote-store[sql-query]   # SQL query store via SQLAlchemy + PyArrow
-pip install remote-store[arrow]       # PyArrow filesystem bridge + Parquet extension
-pip install remote-store[otel]        # OpenTelemetry distributed tracing
-pip install remote-store[pydantic]    # Pydantic settings integration
-pip install remote-store[yaml]        # YAML config loading
-pip install remote-store[dagster]     # Dagster IO manager
-pip install remote-store[toml]        # TOML config (stdlib on Python 3.11+)
 pip install remote-store[requests]    # requests HTTP adapter for ReadOnlyHttpBackend
 pip install remote-store[httpx]       # httpx HTTP adapter for ReadOnlyHttpBackend
+pip install remote-store[arrow]       # PyArrow filesystem bridge + Parquet extension
+pip install remote-store[otel]        # OpenTelemetry distributed tracing
+pip install remote-store[toml]        # TOML config (stdlib on Python 3.11+)
+pip install remote-store[yaml]        # YAML config loading
+pip install remote-store[pydantic]    # Pydantic settings integration
+pip install remote-store[dagster]     # Dagster IO manager
 ```
+<!-- END_GENERATED:install_extras -->

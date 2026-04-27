@@ -139,13 +139,14 @@ Existing items may be more verbose — trim on next touch.
 
   No code change — the `context7.json` configuration is already in place.
 
-- [ ] **ID-162 — `FEATURES.md` projection from graph IR**
-  `scripts/gen_graph.py` and the graph IR (RFC-0012) are complete (ID-159 done).
-  Remaining: write `scripts/gen_features.py` that reads `graph.json` and
-  regenerates the mechanical sections of `FEATURES.md` (capability matrix,
-  method list, extras table) while preserving hand-curated narrative via
-  region tags. Wire into the release skill so FEATURES.md is auto-updated
-  at release time.
+- [~] **ID-163 — `FEATURES.md` projection from graph IR**
+  `scripts/gen_features.py` ships (PR #537): reads `graph.json`, regenerates
+  three mechanical sections of `FEATURES.md` via region tags. `gen-features` /
+  `gen-features-check` hatch scripts added. Idempotency gate in pytest.
+  Remaining: (a) wire `hatch run gen-features` into the release skill so
+  FEATURES.md is auto-updated at release time; (b) add `gen-graph-check` +
+  `gen-features-check` to pre-commit / CI so graph→projection drift is caught
+  before pytest (currently only the pytest gate closes the loop).
   **Depends on:** ID-159 (merged).
 
 ### Streaming & Memory Optimization

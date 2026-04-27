@@ -162,6 +162,9 @@ bench-report-comparative-md = "python benchmarks/report.py --comparative --markd
 bench-report-user = "python benchmarks/report.py --user"
 bench-latency-matrix = "python benchmarks/run_latency_matrix.py"
 bench-charts = "python -m benchmarks.charts"
+gen-graph = "python scripts/gen_graph.py"
+gen-features = "python scripts/gen_features.py"
+gen-features-check = "python scripts/gen_features.py --check"
 check-test-quality = ["python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests"]
 # Mutation testing — scoped for Windows command-line length limits (~450 tests max).
 # Each scope pairs source targets with the tests that exercise them.
