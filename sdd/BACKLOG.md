@@ -139,6 +139,13 @@ Existing items may be more verbose — trim on next touch.
 
   No code change — the `context7.json` configuration is already in place.
 
+- [~] **ID-018 — conda-forge publishing**
+  Recipe, CI validation, release checklist steps all done.
+  - Done: [recipe](../packaging/conda-forge/recipe.yaml),
+    [conda-recipe workflow](../.github/workflows/conda-recipe.yml),
+    staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
+  - Blocked: waiting for conda-forge reviewer approval. When merged: add
+    `conda install -c conda-forge remote-store` to README.
 
 ### Streaming & Memory Optimization
 
@@ -261,16 +268,6 @@ Existing items may be more verbose — trim on next touch.
   - Depends on: unified `resolve()` → `ResolutionPlan` (ID-120); at least two
     working backends to be useful; pairs well with ID-119
   - Next: design as separate spec — backend-agnostic, useful independently
-
-### Integrations
-
-- [~] **ID-018 — conda-forge publishing**
-  Recipe, CI validation, release checklist steps all done.
-  - Done: [recipe](../packaging/conda-forge/recipe.yaml),
-    [conda-recipe workflow](../.github/workflows/conda-recipe.yml),
-    staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
-  - Blocked: waiting for conda-forge reviewer approval. When merged: add
-    `conda install -c conda-forge remote-store` to README.
 
 ---
 

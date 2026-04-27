@@ -7,6 +7,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-165 — `gen_graph_viz.py` — interactive graph visualization**
+  `scripts/gen_graph_viz.py` reads `docs-src/_data/graph/graph.json` and writes a
+  self-contained D3 v7 force-directed HTML file to `docs-src/_data/graph/graph_viz.html`.
+  Nodes are color-coded by kind (cap/cls/mtd/pkg/req/xtr); edges styled by type
+  (declares/enables/gates/inherits/mirrors/of) with directional arrowheads.
+  Schema 1.1 fields used: abstract methods rendered with dashed stroke; async methods
+  labelled with a small badge.  Sidebar filter checkboxes, click-to-inspect detail panel,
+  drag/zoom/pan.  `gen-graph-viz` / `gen-graph-viz-check` hatch scripts added.
+
 - [x] **ID-164 — Complete `method` node properties in graph IR**
   `build_graph()` now emits `is_abstract`, `is_async`, `file`, and `line` on
   every `method` node (RFC-0012 taxonomy). `_rel_file()` generalized to
