@@ -139,14 +139,13 @@ def _class_uri(griffe_cls: griffe.Class) -> str:
     return f"cls:{griffe_cls.path}"
 
 
-def _rel_file(griffe_cls: griffe.Class) -> str:
-    fp = griffe_cls.filepath
-    if fp is None:
+def _rel_path(filepath: Path | None) -> str:
+    if filepath is None:
         return ""
     try:
-        return str(Path(fp).relative_to(ROOT)).replace("\\", "/")
+        return str(Path(filepath).relative_to(ROOT)).replace("\\", "/")
     except ValueError:
-        return str(fp).replace("\\", "/")
+        return str(filepath).replace("\\", "/")
 
 
 def _collect_backend_classes(pkg: griffe.Module) -> list[griffe.Class]:
@@ -254,7 +253,7 @@ def build_graph() -> dict[str, Any]:
                 "kind": "class",
                 "role": "abc",
                 "runtime": _runtime(griffe_cls),
-                "file": _rel_file(griffe_cls),
+                "file": _rel_path(griffe_cls.filepath),
                 "line": griffe_cls.lineno,
                 "summary": _first_line(griffe_cls.docstring.value if griffe_cls.docstring else None),
             }
@@ -271,7 +270,7 @@ def build_graph() -> dict[str, Any]:
                 "kind": "class",
                 "role": "backend",
                 "runtime": runtime,
-                "file": _rel_file(griffe_cls),
+                "file": _rel_path(griffe_cls.filepath),
                 "line": griffe_cls.lineno,
                 "summary": _first_line(griffe_cls.docstring.value if griffe_cls.docstring else None),
             }
@@ -326,12 +325,26 @@ def build_graph() -> dict[str, Any]:
             edges.append({"kind": "enables", "src": f"xtr:{extra_name}", "dst": backend_uri})
 
     # --- Store method nodes + gates/of edges ---
+    # Today _GATING targets Store only. To extend to AsyncStore, also walk
+    # pkg.members["aio"].members["_async_store"].members["AsyncStore"].
+    store_cls = pkg["_store"]["Store"]
     for method_name, cap in gating.items():
         mtd_uri = f"mtd:remote_store._store.Store.{method_name}"
         req_uri = f"req:remote_store._store.Store.{method_name}.gate"
         cap_uri = f"cap:{cap.name}"
 
-        nodes.append({"id": mtd_uri, "kind": "method", "summary": method_name})
+        member = store_cls[method_name]
+        nodes.append(
+            {
+                "id": mtd_uri,
+                "kind": "method",
+                "summary": method_name,
+                "is_abstract": "abstractmethod" in member.labels,
+                "is_async": "async" in member.labels,
+                "file": _rel_path(member.filepath),
+                "line": member.lineno,
+            }
+        )
         nodes.append({"id": req_uri, "kind": "requirement", "mode": "all"})
 
         edges.append({"kind": "gates", "src": req_uri, "dst": mtd_uri})
@@ -359,7 +372,7 @@ def build_graph() -> dict[str, Any]:
     return {
         "edges": edges,
         "nodes": nodes,
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "snapshot": version,
         "source_version": version,
     }

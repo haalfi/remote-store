@@ -7,6 +7,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-164 — Complete `method` node properties in graph IR**
+  `build_graph()` now emits `is_abstract`, `is_async`, `file`, and `line` on
+  every `method` node (RFC-0012 taxonomy). `_rel_file()` generalized to
+  `_rel_path(filepath: Path | None)`. Schema bumped to version `"1.1"`.
+  New test: `test_method_nodes_carry_introspection_fields` in `tests/test_gen_graph.py`.
+
 - [x] **ID-163 — `FEATURES.md` projection from graph IR**
   `scripts/gen_features.py` reads `graph.json` and regenerates three mechanical
   sections of `FEATURES.md` via `<!-- BEGIN_GENERATED:X --> / <!-- END_GENERATED:X -->`
