@@ -21,7 +21,7 @@ import io
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -189,6 +189,8 @@ class DafnyOracleBackend(Backend):
     (seeded in the constructor); ``_str_to_dafny`` translates "" → "."
     at the single entry point.
     """
+
+    CAPABILITIES: ClassVar[CapabilitySet] = _ORACLE_CAPABILITIES
 
     def __init__(self) -> None:
         self._mb = _dafny_module.MemoryBackend()

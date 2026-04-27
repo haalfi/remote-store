@@ -153,12 +153,6 @@ def test_capabilities(backend: SQLBlobBackend) -> None:
 
 
 @pytest.mark.spec("SQL-BLOB-003")
-def test_capabilities_classvar_full_schema(backend: SQLBlobBackend) -> None:
-    """ID-159: CAPABILITIES ClassVar equals instance capabilities for full-schema backend."""
-    assert set(backend.capabilities) == set(SQLBlobBackend.CAPABILITIES)
-
-
-@pytest.mark.spec("SQL-BLOB-003")
 @pytest.mark.parametrize(
     "fixture_name",
     ["minimal_engine", "mtime_engine"],
