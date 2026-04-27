@@ -8,7 +8,7 @@ import io
 import json
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, cast, runtime_checkable
+from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, Protocol, TypeVar, cast, runtime_checkable
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -233,6 +233,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         single statement. For files larger than process memory, use a
         blob-storage backend (S3, Local, Azure) instead.
     """
+
+    CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
 
     def __init__(
         self,
@@ -919,6 +921,8 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
     ``SEEKABLE_READ``.
     """
 
+    CAPABILITIES: ClassVar[CapabilitySet] = _QUERY_CAPABILITIES
+
     def __init__(
         self,
         url: str | None = None,
@@ -963,7 +967,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _QUERY_CAPABILITIES
+        return self.CAPABILITIES
 
     # endregion
 

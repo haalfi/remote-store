@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import tempfile
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, TypeVar, cast
 
 from remote_store._backend import _COPY_BUFSIZE
 from remote_store._capabilities import Capability, CapabilitySet
@@ -56,6 +56,8 @@ class S3Backend(_S3Base):
         client_options: Additional options passed to s3fs.
     """
 
+    CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
+
     def __init__(
         self,
         bucket: str,
@@ -90,7 +92,7 @@ class S3Backend(_S3Base):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _ALL_CAPABILITIES
+        return self.CAPABILITIES
 
     @property
     def _s3fs(self) -> Any:

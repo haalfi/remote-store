@@ -7,7 +7,7 @@ import io
 import logging
 import threading
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, BinaryIO
+from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -39,6 +39,8 @@ class MemoryBackend(Backend):
     suite passes with zero skips.
     """
 
+    CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
+
     def __init__(self) -> None:
         self._root = _DirNode()
         self._file_count = 0
@@ -53,7 +55,7 @@ class MemoryBackend(Backend):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _ALL_CAPABILITIES
+        return self.CAPABILITIES
 
     # endregion
 

@@ -7,7 +7,7 @@ import logging
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
@@ -71,6 +71,8 @@ class AsyncAzureBackend(AsyncBackend):
             uploads and downloads (default ``1`` -- sequential).
     """
 
+    CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
+
     def __init__(
         self,
         container: str,
@@ -114,7 +116,7 @@ class AsyncAzureBackend(AsyncBackend):
     @property
     def capabilities(self) -> CapabilitySet:
         """Declared capabilities of this backend."""
-        return _ALL_CAPABILITIES
+        return self.CAPABILITIES
 
     # endregion
 

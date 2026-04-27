@@ -9,7 +9,7 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, TypeVar, cast
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
@@ -196,6 +196,8 @@ class AzureBackend(Backend):
             uploads and downloads (default ``1`` -- sequential).
     """
 
+    CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
+
     def __init__(
         self,
         container: str,
@@ -237,7 +239,7 @@ class AzureBackend(Backend):
 
     @property
     def capabilities(self) -> CapabilitySet:
-        return _ALL_CAPABILITIES
+        return self.CAPABILITIES
 
     # endregion
 
