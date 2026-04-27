@@ -21,21 +21,25 @@ ROOT = Path(__file__).resolve().parent.parent
 def _names_referencing_scripts(tree: ast.Module) -> set[str]:
     """Collect variable names assigned to paths containing 'scripts'.
 
-    Covers patterns like:
+    Covers plain and annotated assignments:
         SCRIPTS = ROOT / "scripts"
-        SCRIPTS_DIR = Path(__file__).parent.parent / "scripts"
+        SCRIPTS: Path = ROOT / "scripts"
     """
     names: set[str] = set()
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign):
+        if isinstance(node, ast.Assign):
+            value = node.value
+            targets = [t for t in node.targets if isinstance(t, ast.Name)]
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
+            value = node.value
+            targets = [node.target]
+        else:
             continue
-        for target in node.targets:
-            if not isinstance(target, ast.Name):
-                continue
-            for child in ast.walk(node.value):
-                if isinstance(child, ast.Constant) and isinstance(child.value, str) and "scripts" in child.value:
+        for child in ast.walk(value):
+            if isinstance(child, ast.Constant) and isinstance(child.value, str) and "scripts" in child.value:
+                for target in targets:
                     names.add(target.id)
-                    break
+                break
     return names
 
 
@@ -46,6 +50,10 @@ def _uses_scripts_sys_path(tree: ast.Module, scripts_names: set[str]) -> int | N
         sys.path.insert(N, str(SCRIPTS))
         sys.path.append(str(SCRIPTS))
         sys.path.insert(N, "…/scripts")
+
+    Only inspects the path argument (index 1 for insert, 0 for append) to avoid
+    false positives from variable names used as the index slot.
+
     Returns None if no such call is found.
     """
     for node in ast.walk(tree):
@@ -61,7 +69,16 @@ def _uses_scripts_sys_path(tree: ast.Module, scripts_names: set[str]) -> int | N
             and func.value.value.id == "sys"
         ):
             continue
-        for arg in ast.walk(node):
+        # Select only the path argument to avoid false positives from the index slot.
+        if func.attr == "insert":
+            if len(node.args) < 2:
+                continue
+            path_arg = node.args[1]
+        else:  # append
+            if not node.args:
+                continue
+            path_arg = node.args[0]
+        for arg in ast.walk(path_arg):
             if isinstance(arg, ast.Constant) and isinstance(arg.value, str) and "scripts" in arg.value:
                 return node.lineno
             if isinstance(arg, ast.Name) and arg.id in scripts_names:
@@ -77,6 +94,7 @@ def _check_file(path: Path) -> str | None:
     try:
         tree = ast.parse(source, filename=str(path))
     except SyntaxError:
+        sys.stderr.write(f"Skipping {path}: SyntaxError\n")
         return None
     scripts_names = _names_referencing_scripts(tree)
     line = _uses_scripts_sys_path(tree, scripts_names)
