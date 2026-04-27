@@ -12335,6 +12335,14 @@ documentation examples.</p>
 passes with zero skips.</p>
 
 
+<details class="note" open>
+  <summary>Note</summary>
+  <p><code>LAZY_READ</code> is included here but absent from <code>MemoryBackend</code>
+(the sync mirror).  The sync backend buffers fully in memory; the
+async backend can yield chunks incrementally.  The <code>mirrors</code> graph
+edge does not imply capability parity — see ID-162.</p>
+</details>
+
 
 
 

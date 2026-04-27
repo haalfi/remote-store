@@ -9531,7 +9531,7 @@ disjunction.</p>
 <td><code>mirrors</code></td>
 <td>class → class</td>
 <td>—</td>
-<td>Symmetric; sync ↔ async peer</td>
+<td>Canonical direction: async → sync peer (one edge per pair; deduped by generator)</td>
 </tr>
 <tr>
 <td><code>composes</code></td>
@@ -9806,12 +9806,11 @@ Rejected.</p>
   and <code>FEATURES.md</code>.</li>
 </ul>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
-<p><strong>Sync↔async peer discovery for <code>mirrors</code> edges.</strong> The detection strategy is
-deferred to ID-159. Candidates: a <code>__mirror__: type</code> class annotation on each
-backend (explicit, rename-safe), a naming-convention heuristic
-(<code>AsyncXxxBackend</code> ↔ <code>XxxBackend</code>, fragile), or a generator-side <code>_MIRRORS</code>
-table (maintenance burden). The class annotation is preferred but requires a
-small non-breaking addition to each async backend class.</p>
+<p><strong>Sync↔async peer discovery for <code>mirrors</code> edges.</strong> Resolved by ID-159: each
+async backend carries a <code>__mirror__: ClassVar[type[T]]</code> annotation pointing
+to its sync peer.  The generator emits one directed edge per pair in the
+canonical async → sync direction (deduped).  Consumers that need to query from
+the sync side must reverse the edge themselves.</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>ID-159 (<code>FEATURES.md</code> hybrid generation): <code>sdd/BACKLOG.md</code></li>
