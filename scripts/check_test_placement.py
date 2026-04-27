@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Placement check: tests for scripts/ utilities must live in tests/scripts/.
 
-Any test file directly under tests/ (not in a subdirectory) that loads modules
-from scripts/ via sys.path manipulation belongs in tests/scripts/ instead.
+Any test file anywhere under the tests tree (except tests/scripts/) that loads
+modules from scripts/ via sys.path manipulation belongs in tests/scripts/ instead.
 See the placement rule in sdd/TESTING.md § Test Subpackage Placement.
 
 CI enforcement for the placement rule.
@@ -12,10 +12,10 @@ Exit code 0 = ok; 1 = violations found.
 from __future__ import annotations
 
 import ast
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TESTS_DIR = ROOT / "tests"
 
 
 def _names_referencing_scripts(tree: ast.Module) -> set[str]:
@@ -29,11 +29,9 @@ def _names_referencing_scripts(tree: ast.Module) -> set[str]:
     for node in ast.walk(tree):
         if not isinstance(node, ast.Assign):
             continue
-        # Check if any target is a simple Name
         for target in node.targets:
             if not isinstance(target, ast.Name):
                 continue
-            # Check if the RHS contains a "scripts" string literal
             for child in ast.walk(node.value):
                 if isinstance(child, ast.Constant) and isinstance(child.value, str) and "scripts" in child.value:
                     names.add(target.id)
@@ -63,7 +61,6 @@ def _uses_scripts_sys_path(tree: ast.Module, scripts_names: set[str]) -> int | N
             and func.value.value.id == "sys"
         ):
             continue
-        # This is sys.path.insert/append — examine all arguments
         for arg in ast.walk(node):
             if isinstance(arg, ast.Constant) and isinstance(arg.value, str) and "scripts" in arg.value:
                 return node.lineno
@@ -75,7 +72,6 @@ def _uses_scripts_sys_path(tree: ast.Module, scripts_names: set[str]) -> int | N
 def _check_file(path: Path) -> str | None:
     """Return a violation message if the file belongs in tests/scripts/, else None."""
     source = path.read_text(encoding="utf-8")
-    # Fast pre-filter: skip files that don't reference sys.path or scripts at all
     if "sys.path" not in source or "scripts" not in source:
         return None
     try:
@@ -89,11 +85,21 @@ def _check_file(path: Path) -> str | None:
     return None
 
 
-def main() -> int:
-    # Only check files directly in tests/ root, not in subdirectories
-    violations: list[str] = [
-        msg for path in sorted(TESTS_DIR.glob("test_*.py")) if (msg := _check_file(path)) is not None
-    ]
+def main(directories: list[str] | None = None) -> int:
+    if directories is None:
+        directories = ["tests"]
+
+    violations: list[str] = []
+    for directory in directories:
+        tests_dir = Path(directory)
+        scripts_subpkg = tests_dir / "scripts"
+        for path in sorted(tests_dir.rglob("test_*.py")):
+            # Skip files already in the correct subpackage
+            if path.is_relative_to(scripts_subpkg):
+                continue
+            msg = _check_file(path)
+            if msg is not None:
+                violations.append(msg)
 
     if violations:
         print(f"Found {len(violations)} misplaced script test(s):\n")
@@ -107,4 +113,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    dirs = sys.argv[1:] or None
+    raise SystemExit(main(dirs))
