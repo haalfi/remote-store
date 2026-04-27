@@ -13,7 +13,7 @@ import pytest
 
 pytestmark = pytest.mark.os_sensitive
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS = ROOT / "scripts"
 
 
@@ -40,3 +40,11 @@ def test_graph_viz_html_is_up_to_date(gen_graph_viz_module):
     fresh_bytes = fresh.encode("utf-8")
 
     assert committed_lf == fresh_bytes, "graph_viz.html is out of date. Run:  hatch run gen-graph-viz"
+
+
+def test_generate_raises_when_d3_vendor_missing(gen_graph_viz_module, monkeypatch, tmp_path):
+    """generate() must raise FileNotFoundError when D3_VENDOR is absent."""
+    monkeypatch.setattr(gen_graph_viz_module, "D3_VENDOR", tmp_path / "nonexistent.js")
+    graph = json.loads((ROOT / "docs-src" / "_data" / "graph" / "graph.json").read_bytes())
+    with pytest.raises(FileNotFoundError):
+        gen_graph_viz_module.generate(graph)

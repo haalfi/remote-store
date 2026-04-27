@@ -361,12 +361,15 @@ _TEMPLATE = (
 # ---------------------------------------------------------------------------
 
 
+_TOKENS = ("__VERSION__", "__SCHEMA_VERSION__", "__N_NODES__", "__N_EDGES__", "__GRAPH_DATA__", "__D3_INLINE__")
+
+
 def generate(graph: dict) -> str:
     if not D3_VENDOR.exists():
         raise FileNotFoundError(f"{D3_VENDOR.name} not found — it should be committed to the repo.")
     d3_src = D3_VENDOR.read_text(encoding="utf-8")
     graph_data = json.dumps(graph, ensure_ascii=False, separators=(",", ":"))
-    return (
+    result = (
         _TEMPLATE.replace("__VERSION__", graph.get("source_version", ""))
         .replace("__SCHEMA_VERSION__", graph.get("schema_version", ""))
         .replace("__N_NODES__", str(len(graph.get("nodes", []))))
@@ -374,6 +377,10 @@ def generate(graph: dict) -> str:
         .replace("__GRAPH_DATA__", graph_data)
         .replace("__D3_INLINE__", d3_src)
     )
+    for token in _TOKENS:
+        if token in result:
+            raise RuntimeError(f"Template token {token!r} survived substitution — check for collisions")
+    return result
 
 
 def main() -> None:
