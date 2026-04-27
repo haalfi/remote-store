@@ -81,7 +81,7 @@ iterate the arrays.
 {
   "schema_version": "1.0",
   "source_version": "0.24.0",
-  "snapshot": "release",
+  "snapshot": "0.24.0",
   "nodes": [ ... ],
   "edges": [ ... ]
 }
@@ -89,10 +89,8 @@ iterate the arrays.
 
 `schema_version` and `source_version` are independent fields. A schema bump
 (new node kinds, renamed edge kinds) increments `schema_version`; a new package
-release increments `source_version`.
-
-The rolling (unreleased) file sets `"source_version": null` and
-`"snapshot": "unreleased"`.
+release increments `source_version`. `snapshot` mirrors `source_version` (both
+track `pyproject.toml[project][version]`).
 
 ---
 
@@ -226,22 +224,26 @@ def matrix(g):
 
 ### Snapshots
 
-One JSON file per released version; one rolling file for unreleased state.
+One rolling file tracks the current development state. `source_version` and
+`snapshot` are both set to the `pyproject.toml` `[project][version]` at
+generation time; `gen_graph.py` reads this dynamically so no manual update is
+needed.
 
 | File | `source_version` | `snapshot` |
 |---|---|---|
-| `docs-src/_data/graph/graph-0.24.0.json` | `"0.24.0"` | `"release"` |
-| `docs-src/_data/graph/graph-0.25.0.json` | `"0.25.0"` | `"release"` |
-| `docs-src/_data/graph/graph.json` | `null` | `"unreleased"` |
+| `docs-src/_data/graph/graph.json` | current pyproject version | current pyproject version |
 
 Files live in `docs-src/_data/graph/` (git-tracked; mkdocs copies the
-directory verbatim). Release snapshots are immutable once committed.
+directory verbatim).
 
-**Starting point:** the next release after this RFC is accepted generates the
-first versioned snapshot. No backfill of older versions.
+**Release-time flow (Phase 2):** after `bump-my-version` stamps the new version
+into `pyproject.toml`, run `hatch run gen-graph` to re-stamp `graph.json` with
+the release version before committing. The git tag then freezes the file;
+`source_version` is self-describing for consumers without git context.
 
-**Release-time hook:** the release skill (Phase 2) renames `graph.json` to
-`graph-<new_version>.json` and writes a fresh `graph.json` for the next cycle.
+**Consumer note:** between releases `graph.json` reflects the pyproject version
+at the last commit that touched it, not necessarily the in-progress dev state.
+Use git history or `git tag` to identify the exact released snapshot.
 
 **Determinism:** the serializer must produce byte-identical output for the same
 source tree. Rules:
@@ -361,11 +363,14 @@ added in 0.24.0. Rejected.
 
 ### Single rolling file (no per-version snapshots)
 
-Diffing unreleased state against a prior release requires storing the prior
-release somewhere. Without snapshots, that prior state lives only in git
-history, not as a structured artefact. Per-version snapshots are cheap
-(hundreds of KB per file) and make the release-diff projection trivial.
-Rejected.
+**Adopted (ID-163).** The original proposal kept per-version archive files
+(`graph-X.Y.Z.json`) alongside the rolling file. During implementation the
+archive step was dropped in favour of simplicity: `graph.json` is always
+stamped with the current `pyproject.toml` version; the git tag is the
+immutable record of the released state. Diffing two releases means checking out
+the two tags and comparing `graph.json`. This trades the convenience of
+in-tree snapshot artefacts for a smaller file surface and a simpler release
+sequence.
 
 ## Impact
 

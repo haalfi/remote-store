@@ -5,6 +5,7 @@ Run with:  hatch run python scripts/gen_graph.py
 
 from __future__ import annotations
 
+import argparse
 import ast
 import importlib
 import json
@@ -365,8 +366,6 @@ def build_graph() -> dict[str, Any]:
 
 
 def main() -> None:
-    import argparse
-
     parser = argparse.ArgumentParser(description="Generate docs-src/_data/graph/graph.json from source.")
     parser.add_argument("--check", action="store_true", help="Exit 1 if graph.json would change; do not write.")
     args = parser.parse_args()
