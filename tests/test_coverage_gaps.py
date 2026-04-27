@@ -632,6 +632,8 @@ def test_local_permission_errors(
 _CAPABILITY_GATING_CASES = [
     pytest.param(Capability.READ, lambda s: s.read("test.txt"), "read", id="read"),
     pytest.param(Capability.READ, lambda s: s.read_bytes("test.txt"), "read", id="read_bytes"),
+    pytest.param(Capability.READ, lambda s: s.read_seekable("test.txt"), "read", id="read_seekable"),
+    pytest.param(Capability.READ, lambda s: s.read_text("test.txt"), "read", id="read_text"),
     pytest.param(Capability.WRITE, lambda s: s.write("new.txt", b"data"), "write", id="write"),
     pytest.param(
         Capability.ATOMIC_WRITE, lambda s: s.write_atomic("new.txt", b"data"), "atomic_write", id="write_atomic"

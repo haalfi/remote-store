@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-159: Add `_GATING` dict to `_store.py` as single source of truth for capability gates (precondition B for `scripts/gen_graph.py`).
 - ID-159: Add `CAPABILITIES: ClassVar[CapabilitySet]` to all backends and ABCs for static extraction (precondition A for `scripts/gen_graph.py`).
 - Refactor: move async backends into `aio/backends/` subpackage (mirrors sync `backends/` layout).
 - ID-160: Add `context7.json` for Context7 library indexing.

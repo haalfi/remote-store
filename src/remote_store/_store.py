@@ -17,8 +17,9 @@ _GATING: dict[str, Capability] = {
     "read": Capability.READ,
     "read_bytes": Capability.READ,
     "read_seekable": Capability.READ,
+    "read_text": Capability.READ,  # delegates to read_bytes; listed for static graph extraction
     "write": Capability.WRITE,
-    "write_text": Capability.WRITE,
+    "write_text": Capability.WRITE,  # delegates to write; listed for static graph extraction
     "write_atomic": Capability.ATOMIC_WRITE,
     "open_atomic": Capability.ATOMIC_WRITE,
     "delete": Capability.DELETE,
@@ -30,6 +31,8 @@ _GATING: dict[str, Capability] = {
     "move": Capability.MOVE,
     "copy": Capability.COPY,
     "get_file_info": Capability.METADATA,
+    # Primary gate. Depth-limited path (max_depth is not None) gates on LIST via
+    # _gate("list_files") instead; gen_graph.py must special-case this method.
     "get_folder_info": Capability.METADATA,
     "head": Capability.METADATA,
 }
@@ -947,7 +950,11 @@ class Store:
 
     def _gate(self, method: str) -> None:
         """Raise CapabilityNotSupported if the backend lacks the gated capability."""
-        self._backend.capabilities.require(_GATING[method], backend=self._backend.name)
+        try:
+            cap = _GATING[method]
+        except KeyError:
+            raise AssertionError(f"_gate({method!r}) called but {method!r} is not registered in _GATING") from None
+        self._backend.capabilities.require(cap, backend=self._backend.name)
 
     def _full_path(self, path: str) -> str:
         """Resolve a path that may be empty (store root) or a relative subpath.
