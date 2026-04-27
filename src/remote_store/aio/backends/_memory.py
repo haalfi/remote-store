@@ -38,6 +38,12 @@ class AsyncMemoryBackend(AsyncBackend):
 
     Supports all capabilities except ``GLOB``.  The full conformance suite
     passes with zero skips.
+
+    Note:
+        ``LAZY_READ`` is included here but absent from ``MemoryBackend``
+        (the sync mirror).  The sync backend buffers fully in memory; the
+        async backend can yield chunks incrementally.  The ``mirrors`` graph
+        edge does not imply capability parity — see ID-162.
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES

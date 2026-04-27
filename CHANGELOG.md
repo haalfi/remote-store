@@ -12,6 +12,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - Refactor: move async backends into `aio/backends/` subpackage (mirrors sync `backends/` layout).
 - ID-160: Add `context7.json` for Context7 library indexing.
 - ID-159: RFC-0012 — documentation graph model design (IR schema, snapshots, projections).
+- ID-159: `scripts/gen_graph.py` — graph IR generator (`docs-src/_data/graph/graph.json`); preconditions: `CAPABILITIES: ClassVar` on all backends, `_GATING` dict in `_store.py`, `__mirror__` on async backends.
 
 ## [0.24.0] - 2026-04-26
 

@@ -147,7 +147,7 @@ disjunction.
 | `of` | requirement → capability | `index: int` | Members of the group |
 | `enables` | extra → class/extension | — | pip extra → backend |
 | `requires_dep` | extra → package_dep | — | pip dependency |
-| `mirrors` | class → class | — | Symmetric; sync ↔ async peer |
+| `mirrors` | class → class | — | Canonical direction: async → sync peer (one edge per pair; deduped by generator) |
 | `composes` | extension → class | — | The Store/Backend it wraps |
 | `requires_cap` | extension/role → capability | — | Capability needed by ext/role |
 | `played_by` | extension → role | — | Extension has this role on the edge |
@@ -383,12 +383,11 @@ Rejected.
 
 ## Open Questions
 
-**Sync↔async peer discovery for `mirrors` edges.** The detection strategy is
-deferred to ID-159. Candidates: a `__mirror__: type` class annotation on each
-backend (explicit, rename-safe), a naming-convention heuristic
-(`AsyncXxxBackend` ↔ `XxxBackend`, fragile), or a generator-side `_MIRRORS`
-table (maintenance burden). The class annotation is preferred but requires a
-small non-breaking addition to each async backend class.
+**Sync↔async peer discovery for `mirrors` edges.** Resolved by ID-159: each
+async backend carries a ``__mirror__: ClassVar[type[T]]`` annotation pointing
+to its sync peer.  The generator emits one directed edge per pair in the
+canonical async → sync direction (deduped).  Consumers that need to query from
+the sync side must reverse the edge themselves.
 
 ## References
 

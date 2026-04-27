@@ -119,6 +119,7 @@ dev = [
   "tomli>=1.1.0",  # toml extra is marker-gated to <3.11; tests need tomli on all versions
   "polars>=0.20",
   "duckdb>=0.9",
+  "griffe>=1.0",  # required by scripts/gen_graph.py (tested in tests/test_gen_graph.py)
 ]
 
 [tool.hatch.envs.default]

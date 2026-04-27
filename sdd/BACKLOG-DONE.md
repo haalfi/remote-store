@@ -5,6 +5,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## [Unreleased]
+
+- [x] **ID-159 — Documentation graph model: preconditions + gen_graph.py**
+  RFC-0012 accepted. All preconditions implemented:
+  `CAPABILITIES: ClassVar[CapabilitySet]` added to all 11 backend classes (sync and async);
+  `_GATING: dict[str, Capability]` + `Store._gate()` added to `_store.py`;
+  `__mirror__` class annotation added to `AsyncMemoryBackend` and `AsyncAzureBackend`.
+  `scripts/gen_graph.py` generates `docs-src/_data/graph/graph.json`:
+  capability, class, extra, method, requirement, and package nodes;
+  declares, gates, of, enables, mirrors, and inherits edges.
+  Deterministic output (nodes sorted by id URI, edges by (kind, src, dst), sort_keys=True).
+  Golden test: `tests/test_gen_graph.py`.
+  Remaining work (gen_features.py projection → FEATURES.md): ID-162.
+
 ## v0.24.0
 
 - [x] **BUG-184 — `AsyncMemoryBackend.delete(dir_path, missing_ok=True)` silently returns; sync `MemoryBackend` raises `InvalidPath`**
