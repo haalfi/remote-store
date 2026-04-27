@@ -57,7 +57,23 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **ID-168 — Audit and enforce non-src test subpackage placement**
+  Tests that exercise `scripts/`, tooling, or other non-library-src concerns should
+  live in dedicated subpackages (`tests/scripts/`, `tests/e2e/`) rather than under
+  `tests/` root or `tests/backends/`. Define the placement rule formally (in
+  `sdd/TESTING.md` or a lint script), then sweep `tests/` for remaining
+  misplacements beyond ID-166 and ID-167. Consider a CI lint check (e.g. a
+  `check_test_placement.py` script) to prevent regression.
+
+- [ ] **ID-167 — Move `test_dafny_classorder.py` to `tests/scripts/`**
+  `tests/backends/test_dafny_classorder.py` exercises `scripts/_dafny_classorder.py`,
+  not a backend. Move to `tests/scripts/` to complete script-test consolidation.
+  Update any CI path filters that reference the old location.
+
+- [ ] **ID-166 — Move `test_gen_graph.py` to `tests/scripts/`**
+  `tests/test_gen_graph.py` exercises `scripts/gen_graph.py`, not library src. Move
+  to `tests/scripts/` to match the pattern established by `test_gen_graph_viz.py`
+  (ID-165). Update any CI path filters that reference the old location.
 
 ---
 
