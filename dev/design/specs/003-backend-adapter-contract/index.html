@@ -7425,10 +7425,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#be-003-capabilities-property" class="md-nav__link">
+  <a href="#be-003-capabilities" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BE-003: Capabilities Property
+        BE-003: Capabilities
       
     </span>
   </a>
@@ -9236,10 +9236,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#be-003-capabilities-property" class="md-nav__link">
+  <a href="#be-003-capabilities" class="md-nav__link">
     <span class="md-ellipsis">
       
-        BE-003: Capabilities Property
+        BE-003: Capabilities
       
     </span>
   </a>
@@ -9567,8 +9567,9 @@
 <p><strong>Invariant:</strong> <code>Backend</code> is an ABC. Subclasses must implement all abstract methods.</p>
 <h3 id="be-002-name-property">BE-002: Name Property<a class="headerlink" href="#be-002-name-property" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>name</code> property returns a unique identifier string for the backend type (e.g. <code>"local"</code>, <code>"s3"</code>).</p>
-<h3 id="be-003-capabilities-property">BE-003: Capabilities Property<a class="headerlink" href="#be-003-capabilities-property" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>capabilities</code> property returns a <code>CapabilitySet</code> declaring all supported operations.</p>
+<h3 id="be-003-capabilities">BE-003: Capabilities<a class="headerlink" href="#be-003-capabilities" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Every concrete backend class must declare <code>CAPABILITIES: ClassVar[CapabilitySet]</code> as a class attribute assigning a non-empty <code>CapabilitySet</code>. This enables static capability extraction without instantiation (e.g. <code>gen_graph.py</code>). The <code>capabilities</code> property returns a <code>CapabilitySet</code> declaring all supported operations; for backends with a static capability set it delegates to <code>self.CAPABILITIES</code>. For backends that narrow capabilities at runtime (e.g. <code>SQLBlobBackend</code> with a narrow-column schema), <code>CAPABILITIES</code> is an upper bound and the instance <code>capabilities</code> may be a strict subset.</p>
+<p><strong>Conformance invariant:</strong> <code>set(instance.capabilities) ⊆ set(type(instance).CAPABILITIES)</code> for all backends. Enforced by <code>tests/backends/test_conformance.py::TestBackendIdentity::test_capabilities_subset_of_class_var</code>.</p>
 <h3 id="be-004-exists">BE-004: exists()<a class="headerlink" href="#be-004-exists" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>exists(path)</code> returns <code>bool</code>. Returns <code>False</code> for missing paths — never raises <code>NotFound</code>. Also returns <code>False</code> for paths whose ancestors contain a file (file-as-directory-component), where traversal cannot proceed; these are treated as non-existent.</p>
 <h3 id="be-005-is_file-is_folder">BE-005: is_file() / is_folder()<a class="headerlink" href="#be-005-is_file-is_folder" title="Permanent link">&para;</a></h3>

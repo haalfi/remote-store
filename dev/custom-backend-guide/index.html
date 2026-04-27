@@ -9652,7 +9652,7 @@ and scoping. You implement the raw operations; <code>Store</code> handles the po
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">BinaryIO</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">ClassVar</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">try</span><span class="p">:</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">redis</span>
@@ -9741,6 +9741,9 @@ and scoping. You implement the raw operations; <code>Store</code> handles the po
 <p><strong>Capabilities gate Store methods.</strong> If you don't declare <code>ATOMIC_WRITE</code>, calls
 to <code>store.write_atomic()</code> raise <code>CapabilityNotSupported</code> automatically — you
 don't need to handle it.</p>
+<p><code>_REDIS_CAPABILITIES</code> is assigned to the class-level <code>CAPABILITIES</code> attribute in Step 3.
+Tooling and conformance tests read <code>YourBackend.CAPABILITIES</code> without instantiating the class,
+so the constant must be a class attribute — not computed in <code>__init__</code>.</p>
 <p>Three capabilities added in v0.23.0 are worth declaring when they apply:</p>
 <ul>
 <li><strong><code>USER_METADATA</code></strong> — declare this when your backend stores the <code>metadata=</code> mapping passed to <code>write()</code> and <code>write_atomic()</code>. Without it, <code>Store</code> raises <code>CapabilityNotSupported</code> if the caller passes non-empty metadata.</li>
@@ -9752,22 +9755,24 @@ don't need to handle it.</p>
 <a href="../api/capabilities/">Capability reference</a> for the full list.</p>
 <hr />
 <h2 id="step-3-constructor-and-properties">Step 3: Constructor and properties<a class="headerlink" href="#step-3-constructor-and-properties" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rs:&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">decode_responses</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="n">prefix</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nd">@property</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">return</span> <span class="s2">&quot;redis&quot;</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nd">@property</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CapabilitySet</span><span class="p">:</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="k">return</span> <span class="n">_REDIS_CAPABILITIES</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">CAPABILITIES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">CapabilitySet</span><span class="p">]</span> <span class="o">=</span> <span class="n">_REDIS_CAPABILITIES</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rs:&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">decode_responses</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nd">@property</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="k">return</span> <span class="s2">&quot;redis&quot;</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nd">@property</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CapabilitySet</span><span class="p">:</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAPABILITIES</span>
 </code></pre></div>
 <p><strong>Rules:</strong></p>
 <ul>
 <li><code>name</code> must be a unique string. Used in error messages and the registry.</li>
-<li><code>capabilities</code> returns a <a href="../api/capabilities/"><code>CapabilitySet</code></a> — immutable, created once.</li>
+<li><code>CAPABILITIES: ClassVar[CapabilitySet]</code> exposes the capability set at class level — no instantiation required. The <code>capabilities</code> property delegates to <code>self.CAPABILITIES</code> so both the class view and the instance view always agree.</li>
 <li>Constructor parameters become <code>options:</code> in YAML config (more on this later).</li>
 </ul>
 <hr />
@@ -10282,13 +10287,18 @@ it doesn't need the <code>GLOB</code> capability.</p>
 <h2 id="partial-capability-backends">Partial-capability backends<a class="headerlink" href="#partial-capability-backends" title="Permanent link">&para;</a></h2>
 <p>Not every backend supports every operation. The HTTP backend, for example,
 is read-only:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">_HTTP_CAPABILITIES</span> <span class="o">=</span> <span class="n">CapabilitySet</span><span class="p">(</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="p">{</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>        <span class="n">Capability</span><span class="o">.</span><span class="n">READ</span><span class="p">,</span>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>        <span class="n">Capability</span><span class="o">.</span><span class="n">LIST</span><span class="p">,</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>        <span class="n">Capability</span><span class="o">.</span><span class="n">METADATA</span><span class="p">,</span>
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>    <span class="p">}</span>
-<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">_ReadOnlyBackend</span><span class="p">(</span><span class="n">Backend</span><span class="p">):</span>  <span class="c1"># type: ignore[abstract]</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="n">CAPABILITIES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">CapabilitySet</span><span class="p">]</span> <span class="o">=</span> <span class="n">CapabilitySet</span><span class="p">(</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>        <span class="p">{</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>            <span class="n">Capability</span><span class="o">.</span><span class="n">READ</span><span class="p">,</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>            <span class="n">Capability</span><span class="o">.</span><span class="n">LIST</span><span class="p">,</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>            <span class="n">Capability</span><span class="o">.</span><span class="n">METADATA</span><span class="p">,</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>        <span class="p">}</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>    <span class="p">)</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>    <span class="nd">@property</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CapabilitySet</span><span class="p">:</span>
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CAPABILITIES</span>
 </code></pre></div>
 <p>When a user calls <code>store.write()</code> on an HTTP-backed store, the <code>Store</code> layer
 raises <code>CapabilityNotSupported</code> before your backend code runs. You still need
@@ -10648,12 +10658,17 @@ are generally thread-safe, so our example doesn't need explicit locking.</p>
 <table>
 <thead>
 <tr>
-<th>Method</th>
-<th>Returns</th>
+<th>Member</th>
+<th>Type</th>
 <th>Raises on error</th>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><code>CAPABILITIES</code> (class attribute)</td>
+<td><a href="../api/capabilities/"><code>ClassVar[CapabilitySet]</code></a></td>
+<td>—</td>
+</tr>
 <tr>
 <td><code>name</code> (property)</td>
 <td><code>str</code></td>
