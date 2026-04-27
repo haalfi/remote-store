@@ -79,7 +79,7 @@ iterate the arrays.
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "source_version": "0.24.0",
   "snapshot": "0.24.0",
   "nodes": [ ... ],
@@ -88,9 +88,9 @@ iterate the arrays.
 ```
 
 `schema_version` and `source_version` are independent fields. A schema bump
-(new node kinds, renamed edge kinds) increments `schema_version`; a new package
-release increments `source_version`. `snapshot` mirrors `source_version` (both
-track `pyproject.toml[project][version]`).
+(new node kinds, renamed edge kinds, or new properties on an existing node kind)
+increments `schema_version`; a new package release increments `source_version`.
+`snapshot` mirrors `source_version` (both track `pyproject.toml[project][version]`).
 
 ---
 
@@ -109,7 +109,7 @@ parent (booleans, `sync/async`, `abc/backend/facade`) stay as properties.
 | `package` | `pkg:` | `runtime` (`sync`/`async`), `version` | — |
 | `module` | `mod:` | `file` | — |
 | `class` | `cls:` | `role`, `runtime`, `file`, `line`, `summary` | `abc` · `backend` · `facade` · `extension` · `data` · `enum` · `error` · `helper` |
-| `method` | `mtd:` | `summary` (implemented); `is_abstract`, `is_async`, `file`, `line` (deferred — see ID-164) | — |
+| `method` | `mtd:` | `summary`, `is_abstract`, `is_async`, `file`, `line` | — |
 | `capability` | `cap:` | `summary`, `semantics` | — |
 | `data_model` | `dm:` | `frozen`, `summary` | — |
 | `field` | `fld:` | `default`, `summary` | — |
@@ -131,6 +131,16 @@ change.
 gate(s). All current methods use `mode: all` with a single capability; the
 node exists so the schema does not change when a method needs a conjunction or
 disjunction.
+
+Two patterns use multiple `req:` nodes vs. multiple `of` edges:
+
+- **AND of capabilities** (one `req:`, N `of` edges): the method requires all N
+  capabilities simultaneously on the same code path.
+- **Alternative gates** (N `req:` nodes, each with its own `of` edge): the method
+  chooses one capability gate at runtime based on a condition. Each `req:` node
+  represents one branch. URI convention: `<method>.gate` for the primary gate;
+  `<method>.gate_<discriminator>` for each alternative (e.g. `.gate_depth` for a
+  depth-limited code path).
 
 ---
 

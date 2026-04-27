@@ -54,7 +54,7 @@ def test_graph_schema(gen_graph_module):
     with open(ROOT / "pyproject.toml", "rb") as f:
         expected_version = tomllib.load(f)["project"]["version"]
 
-    assert graph["schema_version"] == "1.0"
+    assert graph["schema_version"] == "1.1"
     assert graph["source_version"] == expected_version
     assert graph["snapshot"] == expected_version
 
@@ -103,6 +103,71 @@ def test_graph_schema(gen_graph_module):
     assert "of" in edge_kinds
     assert "enables" in edge_kinds
     assert "mirrors" in edge_kinds
+
+
+def test_method_nodes_carry_introspection_fields(gen_graph_module):
+    """RFC-0012 method node taxonomy: is_abstract, is_async, file, line (ID-164).
+
+    is_abstract reflects whether the method body has @abstractmethod,
+    not whether it gates an abstract operation in the underlying backend.
+    Store.read_bytes is a concrete sync method, so all four flags are known.
+    """
+    graph = gen_graph_module.build_graph()
+    node = next(
+        (n for n in graph["nodes"] if n["id"] == "mtd:remote_store._store.Store.read_bytes"),
+        None,
+    )
+    assert node is not None, "method node for Store.read_bytes not found"
+    assert node["summary"] == "read_bytes"
+    assert node["is_abstract"] is False
+    assert node["is_async"] is False
+    assert node["file"] == "src/remote_store/_store.py"
+    assert isinstance(node["line"], int)
+    assert node["line"] > 0
+
+    # Every method node carries all five taxonomy fields with correct types
+    method_nodes = [n for n in graph["nodes"] if n["kind"] == "method"]
+    assert method_nodes, "no method nodes in graph"
+    for n in method_nodes:
+        for key in ("summary", "is_abstract", "is_async", "file", "line"):
+            assert key in n, f"method node {n['id']!r} missing field {key!r}"
+        assert isinstance(n["is_abstract"], bool), f"is_abstract not bool on {n['id']!r}"
+        assert isinstance(n["is_async"], bool), f"is_async not bool on {n['id']!r}"
+        assert isinstance(n["line"], int), f"line not int on {n['id']!r}"
+        assert isinstance(n["file"], str), f"file not str on {n['id']!r}"
+        assert n["file"], f"file is empty on {n['id']!r}"
+
+
+def test_get_folder_info_dual_gate(gen_graph_module):
+    """get_folder_info has two runtime gates: METADATA (max_depth=None) and LIST (depth-limited).
+
+    The generator special-cases this method to emit both req: nodes.
+    Asserts that both gates are present so a future refactor cannot silently drop one.
+    """
+    graph = gen_graph_module.build_graph()
+    gfi_mtd = "mtd:remote_store._store.Store.get_folder_info"
+
+    gates_edges = [e for e in graph["edges"] if e["kind"] == "gates" and e["dst"] == gfi_mtd]
+    assert len(gates_edges) == 2, f"expected 2 gates edges for get_folder_info, got {len(gates_edges)}"
+    sources = {e["src"] for e in gates_edges}
+    assert sources == {
+        "req:remote_store._store.Store.get_folder_info.gate",
+        "req:remote_store._store.Store.get_folder_info.gate_depth",
+    }
+
+    of_depth = [
+        e
+        for e in graph["edges"]
+        if e["kind"] == "of" and e["src"] == "req:remote_store._store.Store.get_folder_info.gate_depth"
+    ]
+    assert of_depth == [
+        {
+            "dst": "cap:LIST",
+            "index": 0,
+            "kind": "of",
+            "src": "req:remote_store._store.Store.get_folder_info.gate_depth",
+        }
+    ]
 
 
 def test_graph_json_is_up_to_date(gen_graph_module):
