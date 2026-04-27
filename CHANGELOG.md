@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-163: `scripts/gen_features.py` — project graph IR → FEATURES.md mechanical sections (backends table, write-result flags, install extras); add `gen-features` / `gen-features-check` hatch scripts.
 - ID-159: Add `__mirror__: ClassVar[type[...]]` to async backends pointing to their sync peer (precondition C for `scripts/gen_graph.py`).
 - ID-159: Add `_GATING` dict to `_store.py` as single source of truth for capability gates (precondition B for `scripts/gen_graph.py`).
 - ID-159: Add `CAPABILITIES: ClassVar[CapabilitySet]` to all backends and ABCs for static extraction (precondition A for `scripts/gen_graph.py`).
