@@ -90,9 +90,9 @@ def _derive_extra(module_suffix: str, cls_name: str, available_extras: dict[str,
 
     # sqlalchemy uses abbreviated extra names ('sql', 'sql-query') that don't
     # directly correspond to the module name 'sqlalchemy'. Disambiguate by
-    # class name: classes that use PyArrow carry 'Arrow', 'Query', or 'Result'.
+    # class name: the only working discriminator is 'Query' (SQLQueryBackend).
     if "sqlalchemy" in canonical:
-        if any(hint in cls_name for hint in ("Arrow", "Query", "Result")):
+        if "Query" in cls_name:
             return "sql-query" if "sql-query" in available_extras else None
         return "sql" if "sql" in available_extras else None
 
@@ -336,7 +336,10 @@ def build_graph() -> dict[str, Any]:
         edges.append({"kind": "gates", "src": req_uri, "dst": mtd_uri})
         edges.append({"kind": "of", "src": req_uri, "dst": cap_uri, "index": 0})
 
-    # --- Deduplicate mirrors edges (symmetric pairs) ---
+    # --- Deduplicate mirrors edges ---
+    # Each __mirror__ annotation produces one async→sync edge.  Dedup by
+    # canonical pair so the graph contains exactly one edge per peer pair.
+    # Canonical direction: async→sync (src URI sorts before dst after sort()).
     seen_mirrors: set[tuple[str, str]] = set()
     deduped_edges: list[dict[str, Any]] = []
     for edge in edges:

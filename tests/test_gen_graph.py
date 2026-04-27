@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.os_sensitive
+
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 
@@ -26,8 +28,12 @@ def gen_graph_module():
     return gen_graph
 
 
-def test_graph_deterministic(gen_graph_module):
-    """Two successive calls to build_graph() must produce byte-identical JSON."""
+def test_graph_deterministic_in_process(gen_graph_module):
+    """Two successive in-process calls to build_graph() must produce byte-identical JSON.
+
+    Guards against non-deterministic data structures (unsorted sets, etc.).
+    Cross-run stability is anchored by the committed graph.json snapshot.
+    """
     build_graph = gen_graph_module.build_graph
 
     first = json.dumps(build_graph(), sort_keys=True, indent=2) + "\n"
@@ -85,6 +91,7 @@ def test_graph_schema(gen_graph_module):
     edge_kinds = {e["kind"] for e in edges}
     assert "declares" in edge_kinds
     assert "gates" in edge_kinds
+    assert "inherits" in edge_kinds
     assert "of" in edge_kinds
     assert "enables" in edge_kinds
     assert "mirrors" in edge_kinds

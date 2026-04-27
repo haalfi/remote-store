@@ -2,6 +2,90 @@
   "edges": [
     {
       "condition": null,
+      "dst": "cap:ATOMIC_MOVE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:ATOMIC_WRITE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:COPY",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:DELETE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:GLOB",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:LAZY_READ",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:LIST",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:METADATA",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:MOVE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:READ",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:SEEKABLE_READ",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:USER_METADATA",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:WRITE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
+      "dst": "cap:WRITE_RESULT_NATIVE",
+      "kind": "declares",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
+    },
+    {
+      "condition": null,
       "dst": "cap:ATOMIC_WRITE",
       "kind": "declares",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
@@ -825,6 +909,11 @@
       "src": "req:remote_store._store.Store.read_seekable.gate"
     },
     {
+      "dst": "mtd:remote_store._store.Store.read_text",
+      "kind": "gates",
+      "src": "req:remote_store._store.Store.read_text.gate"
+    },
+    {
       "dst": "mtd:remote_store._store.Store.write",
       "kind": "gates",
       "src": "req:remote_store._store.Store.write.gate"
@@ -838,6 +927,11 @@
       "dst": "mtd:remote_store._store.Store.write_text",
       "kind": "gates",
       "src": "req:remote_store._store.Store.write_text.gate"
+    },
+    {
+      "dst": "cls:remote_store.aio._async_backend.AsyncBackend",
+      "kind": "inherits",
+      "src": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter"
     },
     {
       "dst": "cls:remote_store.aio._async_backend.AsyncBackend",
@@ -975,6 +1069,12 @@
       "src": "req:remote_store._store.Store.read_seekable.gate"
     },
     {
+      "dst": "cap:READ",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._store.Store.read_text.gate"
+    },
+    {
       "dst": "cap:WRITE",
       "index": 0,
       "kind": "of",
@@ -1069,7 +1169,7 @@
       "id": "cls:remote_store._backend.Backend",
       "kind": "class",
       "line": 43,
-      "role": "abc",
+      "role": "backend",
       "runtime": "sync",
       "summary": "Abstract base class for all storage backends."
     },
@@ -1078,9 +1178,18 @@
       "id": "cls:remote_store.aio._async_backend.AsyncBackend",
       "kind": "class",
       "line": 22,
-      "role": "abc",
+      "role": "backend",
       "runtime": "async",
       "summary": "Abstract base class for all async storage backends."
+    },
+    {
+      "file": "src/remote_store/aio/_sync_adapter.py",
+      "id": "cls:remote_store.aio._sync_adapter.SyncBackendAdapter",
+      "kind": "class",
+      "line": 46,
+      "role": "backend",
+      "runtime": "async",
+      "summary": "Wraps a synchronous :class:`Backend` as an :class:`AsyncBackend`."
     },
     {
       "file": "src/remote_store/aio/backends/_azure.py",
@@ -1176,7 +1285,7 @@
       "file": "src/remote_store/backends/_sqlalchemy.py",
       "id": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend",
       "kind": "class",
-      "line": 913,
+      "line": 914,
       "role": "backend",
       "runtime": "sync",
       "summary": "Read-only SQL query materializer implementing a subset of the Backend contract."
@@ -1255,6 +1364,11 @@
       "id": "mtd:remote_store._store.Store.read_seekable",
       "kind": "method",
       "summary": "read_seekable"
+    },
+    {
+      "id": "mtd:remote_store._store.Store.read_text",
+      "kind": "method",
+      "summary": "read_text"
     },
     {
       "id": "mtd:remote_store._store.Store.write",
@@ -1353,6 +1467,11 @@
     },
     {
       "id": "req:remote_store._store.Store.read_seekable.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._store.Store.read_text.gate",
       "kind": "requirement",
       "mode": "all"
     },
