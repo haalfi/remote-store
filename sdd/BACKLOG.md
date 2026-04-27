@@ -65,6 +65,13 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
+- [ ] **ID-164 — Complete `method` node properties in graph IR**
+  `build_graph()` emits only `summary` for `method` nodes; RFC-0012 taxonomy also
+  specifies `is_abstract`, `is_async`, `file`, and `line`. These require Griffe
+  method introspection on the gating targets (`_GATING` values map to `Store`
+  methods). Implement once the method-level walk is added to the generator.
+  **Depends on:** ID-159 (merged).
+
 - [ ] **ID-162 — `mirrors` edges in the graph: add `capability_delta` metadata**
   `__mirror__` creates `mirrors` edges in the documentation graph but the two backends
   may differ in capabilities (e.g. `AsyncMemoryBackend` declares `LAZY_READ`;

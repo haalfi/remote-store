@@ -238,8 +238,8 @@ def build_graph() -> dict[str, Any]:
     edges: list[dict[str, Any]] = []
 
     # --- package nodes ---
-    nodes.append({"id": "pkg:remote_store", "kind": "package", "runtime": "sync"})
-    nodes.append({"id": "pkg:remote_store.aio", "kind": "package", "runtime": "async"})
+    nodes.append({"id": "pkg:remote_store", "kind": "package", "runtime": "sync", "version": version})
+    nodes.append({"id": "pkg:remote_store.aio", "kind": "package", "runtime": "async", "version": version})
 
     # --- capability nodes ---
     for cap in Capability:
@@ -371,18 +371,18 @@ def main() -> None:
     args = parser.parse_args()
 
     graph = build_graph()
-    OUT.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(graph, sort_keys=True, indent=2) + "\n"
     text_bytes = text.encode("utf-8").replace(b"\r\n", b"\n")
 
     if args.check:
-        existing = OUT.read_bytes() if OUT.exists() else b""
-        if existing != text_bytes:
+        existing_lf = OUT.read_bytes().replace(b"\r\n", b"\n") if OUT.exists() else b""
+        if existing_lf != text_bytes:
             print("graph.json is out of date.\nRun:  hatch run gen-graph")
             raise SystemExit(1)
         return
 
     # Ensure LF line endings regardless of platform
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_bytes(text_bytes)
     print(f"Wrote {OUT.relative_to(ROOT)} ({len(graph['nodes'])} nodes, {len(graph['edges'])} edges)")
 

@@ -109,7 +109,7 @@ parent (booleans, `sync/async`, `abc/backend/facade`) stay as properties.
 | `package` | `pkg:` | `runtime` (`sync`/`async`), `version` | — |
 | `module` | `mod:` | `file` | — |
 | `class` | `cls:` | `role`, `runtime`, `file`, `line`, `summary` | `abc` · `backend` · `facade` · `extension` · `data` · `enum` · `error` · `helper` |
-| `method` | `mtd:` | `is_abstract`, `is_async`, `file`, `line`, `summary` | — |
+| `method` | `mtd:` | `summary` (implemented); `is_abstract`, `is_async`, `file`, `line` (deferred — see ID-164) | — |
 | `capability` | `cap:` | `summary`, `semantics` | — |
 | `data_model` | `dm:` | `frozen`, `summary` | — |
 | `field` | `fld:` | `default`, `summary` | — |

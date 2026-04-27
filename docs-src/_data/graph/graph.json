@@ -1388,12 +1388,14 @@
     {
       "id": "pkg:remote_store",
       "kind": "package",
-      "runtime": "sync"
+      "runtime": "sync",
+      "version": "0.24.0"
     },
     {
       "id": "pkg:remote_store.aio",
       "kind": "package",
-      "runtime": "async"
+      "runtime": "async",
+      "version": "0.24.0"
     },
     {
       "id": "req:remote_store._store.Store.copy.gate",
