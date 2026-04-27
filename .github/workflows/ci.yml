@@ -67,6 +67,7 @@ jobs:
       - run: ruff format --check src/ tests/ examples/
       - run: python scripts/check_test_assertions.py tests
       - run: python scripts/check_mock_spec.py tests
+      - run: python scripts/check_test_placement.py
       - run: python scripts/gen_graph.py --check
       - run: python scripts/gen_features.py --check
       - run: python scripts/gen_graph_viz.py --check

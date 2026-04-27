@@ -6,6 +6,21 @@ Authoritative source for test **quality** rules in `tests/`. Companion to
 `sdd/DESIGN.md` § 11 (test style). Derived from
 `sdd/research/research-testing-best-practices.md`.
 
+## Test Subpackage Placement
+
+Each test file belongs in the subpackage matching its subject:
+
+| Subject | Subpackage |
+|---------|------------|
+| Library source (`src/remote_store/`) | `tests/` root |
+| Async variants of library tests | `tests/aio/` |
+| Concrete backend conformance and integration | `tests/backends/` |
+| End-to-end workflow tests (require Docker services) | `tests/e2e/` |
+| `scripts/` utilities and build tooling | `tests/scripts/` |
+
+Tests that load modules from `scripts/` via `sys.path` manipulation must live
+in `tests/scripts/`. The `check-test-placement` hatch script enforces this.
+
 ## Rules
 
 1. **Every test must have at least one meaningful assertion** [CI-enforced]

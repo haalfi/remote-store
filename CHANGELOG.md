@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-168: audit and enforce non-src test subpackage placement — `tests/test_gen_features.py` moved to `tests/scripts/`; placement rule added to `sdd/TESTING.md`; `scripts/check_test_placement.py` CI lint check added to `lint` job and `check-test-quality`.
 - ID-167: `tests/backends/test_dafny_classorder.py` moved to `tests/scripts/test_dafny_classorder.py` — consolidates script tests under `tests/scripts/`.
 - ID-166: `tests/test_gen_graph.py` moved to `tests/scripts/test_gen_graph.py` — consolidates script tests under `tests/scripts/`; `ROOT` anchor depth corrected for new location.
 - ID-165: `scripts/gen_graph_viz.py` — generate self-contained interactive D3 HTML visualization from `graph.json`; committed artifact at `docs-src/_data/graph/graph_viz.html`; `gen-graph-viz` / `gen-graph-viz-check` hatch scripts added.

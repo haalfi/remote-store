@@ -7,6 +7,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-168 — Audit and enforce non-src test subpackage placement**
+  Sweep complete: one remaining misplacement found and resolved.
+  `tests/test_gen_features.py` moved to `tests/scripts/test_gen_features.py`; `ROOT`
+  anchor updated from `.parent.parent` to `.parent.parent.parent`.
+  Placement rule formalised in `sdd/TESTING.md` § Test Subpackage Placement.
+  `scripts/check_test_placement.py` (AST-based) added; wired into the `lint` CI
+  job and `check-test-quality` hatch script to prevent regression.
+
 - [x] **ID-167 — Move `test_dafny_classorder.py` to `tests/scripts/`**
   `tests/backends/test_dafny_classorder.py` moved to `tests/scripts/test_dafny_classorder.py`.
   File content unchanged (`parents[2]` resolves correctly to the repo root from the new location).
