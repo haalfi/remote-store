@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 try:
-    from remote_store.aio.backends._azure import AsyncAzureBackend
+    from remote_store.aio.backends import AsyncAzureBackend
 
     __all__ = [*__all__, "AsyncAzureBackend"]
 except ImportError:  # pragma: no cover

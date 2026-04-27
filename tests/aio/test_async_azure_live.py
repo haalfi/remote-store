@@ -305,7 +305,7 @@ class TestAsyncAzureLiveErrorMapping:
         """``read()`` async generator on a missing key raises ``NotFound``.
 
         ``read()`` uses a bare try/except wrapping ``classify_azure_error``
-        directly (see ``_async_azure.py:read``) — wire-distinct from the
+        directly (see ``backends/_azure.py:read``) — wire-distinct from the
         ``_errors()`` async context manager covered by ``read_bytes`` /
         ``get_file_info`` / ``delete``. Without this test, a regression in
         the streaming-iterator's classifier branch would slip past the
