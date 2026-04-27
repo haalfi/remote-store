@@ -12,8 +12,7 @@ portable and versionable.
 
 Layout: D3 force-directed with per-kind positional bias (soft LR columns
 without rigidity).  "declares" edges are hidden by default -- they dominate
-numerically (133/190) and collapse the centre; toggle them on to see the
-full picture.
+numerically and collapse the centre; toggle them on to see the full picture.
 
 Schema compatibility: reads graph.json schema_version 1.0 and 1.1.  Version
 1.1 fields (is_abstract, is_async, file, line on method nodes) are used when
