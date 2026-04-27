@@ -11533,6 +11533,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>ID-163: <code>scripts/gen_features.py</code> — project graph IR → FEATURES.md mechanical sections (backends table, write-result flags, install extras); add <code>gen-features</code> / <code>gen-features-check</code> hatch scripts.</li>
 <li>ID-159: Add <code>__mirror__: ClassVar[type[...]]</code> to async backends pointing to their sync peer (precondition C for <code>scripts/gen_graph.py</code>).</li>
 <li>ID-159: Add <code>_GATING</code> dict to <code>_store.py</code> as single source of truth for capability gates (precondition B for <code>scripts/gen_graph.py</code>).</li>
 <li>ID-159: Add <code>CAPABILITIES: ClassVar[CapabilitySet]</code> to all backends and ABCs for static extraction (precondition A for <code>scripts/gen_graph.py</code>).</li>
