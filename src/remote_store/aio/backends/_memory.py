@@ -12,6 +12,7 @@ from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, 
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
 from remote_store._path import RemotePath
 from remote_store.aio._async_backend import AsyncBackend
+from remote_store.backends._memory import MemoryBackend
 from remote_store.backends._memory_tree import DirNode as _DirNode
 from remote_store.backends._memory_tree import FileEntry as _FileEntry
 from remote_store.backends._memory_tree import FileSnapshot as _FileSnapshot
@@ -40,6 +41,7 @@ class AsyncMemoryBackend(AsyncBackend):
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
+    __mirror__: ClassVar[type[MemoryBackend]] = MemoryBackend
 
     def __init__(self) -> None:
         self._root = _DirNode()

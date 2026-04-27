@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import importlib
+
 import pytest
 
 from remote_store._errors import CapabilityNotSupported
@@ -139,6 +141,46 @@ class TestAsyncBackendWriteResult:
         result = await backend.write_atomic("f.txt", b"x", metadata={"k": "v"})
         assert isinstance(result, WriteResult)
         assert result.metadata == {"k": "v"}
+
+
+class TestAsyncBackendMirror:
+    """ID-159: __mirror__ points each async backend to its sync peer."""
+
+    @pytest.mark.spec("ID-159")
+    @pytest.mark.parametrize(
+        ("async_module", "async_cls", "sync_module", "sync_cls", "require"),
+        [
+            (
+                "remote_store.aio.backends._memory",
+                "AsyncMemoryBackend",
+                "remote_store.backends._memory",
+                "MemoryBackend",
+                None,
+            ),
+            (
+                "remote_store.aio.backends._azure",
+                "AsyncAzureBackend",
+                "remote_store.backends._azure",
+                "AzureBackend",
+                "azure.storage.blob",
+            ),
+        ],
+    )
+    def test_mirror_points_to_sync_peer(
+        self,
+        async_module: str,
+        async_cls: str,
+        sync_module: str,
+        sync_cls: str,
+        require: str | None,
+    ) -> None:
+        if require is not None:
+            pytest.importorskip(require)
+        a_mod = importlib.import_module(async_module)
+        s_mod = importlib.import_module(sync_module)
+        async_backend_cls = getattr(a_mod, async_cls)
+        sync_backend_cls = getattr(s_mod, sync_cls)
+        assert async_backend_cls.__mirror__ is sync_backend_cls
 
 
 class TestAsyncBackendIterChildrenDefault:
