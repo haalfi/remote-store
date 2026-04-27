@@ -301,7 +301,7 @@ def store_chain():  # -> Iterator[list[tuple[str, Store]]]
         from azure.storage.blob import BlobServiceClient
 
         from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
-        from remote_store.aio._async_azure import AsyncAzureBackend
+        from remote_store.aio.backends._azure import AsyncAzureBackend
 
         bridged_tag = uuid.uuid4().hex[:8]
         bridged_container = f"e2e-stream-bridged-{bridged_tag}"

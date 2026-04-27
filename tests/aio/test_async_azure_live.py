@@ -41,7 +41,7 @@ from azure.storage.blob.aio import BlobClient as AsyncBlobClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, NotFound, RemoteStoreError  # noqa: E402
 from remote_store._models import WriteResult  # noqa: E402
-from remote_store.aio._async_azure import AsyncAzureBackend  # noqa: E402
+from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 from remote_store.backends._azure_common import classify_azure_error  # noqa: E402
 from tests.conftest import _azurite_reachable  # noqa: E402
 
@@ -305,7 +305,7 @@ class TestAsyncAzureLiveErrorMapping:
         """``read()`` async generator on a missing key raises ``NotFound``.
 
         ``read()`` uses a bare try/except wrapping ``classify_azure_error``
-        directly (see ``_async_azure.py:read``) — wire-distinct from the
+        directly (see ``backends/_azure.py:read``) — wire-distinct from the
         ``_errors()`` async context manager covered by ``read_bytes`` /
         ``get_file_info`` / ``delete``. Without this test, a regression in
         the streaming-iterator's classifier branch would slip past the

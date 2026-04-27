@@ -40,8 +40,8 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from remote_store import Capability
-from remote_store.aio._async_memory import AsyncMemoryBackend
 from remote_store.aio._async_store import AsyncStore
+from remote_store.aio.backends._memory import AsyncMemoryBackend
 from remote_store.backends._local import LocalBackend
 from tests.e2e.conftest import AZURITE_CONN_STR, AZURITE_HOST, AZURITE_PORT, _port_open
 
@@ -241,7 +241,7 @@ class TestAsyncStreamingIntegrity:
             if _async_azure_available():
                 from azure.storage.blob import BlobServiceClient
 
-                from remote_store.aio._async_azure import AsyncAzureBackend
+                from remote_store.aio.backends._azure import AsyncAzureBackend
 
                 tag = uuid.uuid4().hex[:8]
                 azure_container = f"e2e-async-stream-{tag}"

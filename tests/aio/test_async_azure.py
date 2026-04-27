@@ -52,7 +52,7 @@ from remote_store._errors import (  # noqa: E402
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry, WriteResult  # noqa: E402
-from remote_store.aio._async_azure import AsyncAzureBackend  # noqa: E402
+from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 from remote_store.backends._azure_common import (  # noqa: E402
     build_azure_retry,
     classify_azure_error,

@@ -7,7 +7,7 @@ import pytest
 from remote_store._errors import CapabilityNotSupported
 from remote_store._models import WriteResult
 from remote_store.aio._async_backend import AsyncBackend
-from remote_store.aio._async_memory import AsyncMemoryBackend
+from remote_store.aio.backends._memory import AsyncMemoryBackend
 
 
 class TestAsyncBackendABC:

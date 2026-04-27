@@ -9,8 +9,8 @@ import pytest
 
 from remote_store import CapabilityNotSupported
 from remote_store._models import WriteResult
-from remote_store.aio._async_memory import AsyncMemoryBackend
 from remote_store.aio._async_store import AsyncStore
+from remote_store.aio.backends._memory import AsyncMemoryBackend
 from remote_store.aio.ext.write import write_with_hash
 
 

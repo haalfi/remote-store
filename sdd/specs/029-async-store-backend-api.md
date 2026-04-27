@@ -377,7 +377,7 @@ semantics.
 
 ## Phase 2: AsyncAzureBackend
 
-Native async Azure backend using `azure.storage.blob.aio` and `azure.storage.filedatalake.aio`. Implemented in `remote_store.aio._async_azure`. See [012-azure-backend.md](012-azure-backend.md) for the sync counterpart.
+Native async Azure backend using `azure.storage.blob.aio` and `azure.storage.filedatalake.aio`. Implemented in `remote_store.aio.backends._azure`. See [012-azure-backend.md](012-azure-backend.md) for the sync counterpart.
 
 ### ASYNC-070: Dual-Mode Architecture
 
