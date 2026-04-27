@@ -65,6 +65,14 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
+- [ ] **ID-162 — `mirrors` edges in the graph: add `capability_delta` metadata**
+  `__mirror__` creates `mirrors` edges in the documentation graph but the two backends
+  may differ in capabilities (e.g. `AsyncMemoryBackend` declares `LAZY_READ`;
+  `MemoryBackend` does not). A graph consumer could incorrectly conclude both are
+  equivalent. The `mirrors` edge should carry a `capability_delta` field (or two
+  sub-fields: `async_only`, `sync_only`) so consumers can present accurate differences.
+  Requires a schema change to RFC-0012.
+
 - [ ] **ID-161 — Publish `llms.txt` to the docs site**
   Add a machine-readable discovery file at `docs-src/llms.txt` (served as
   `https://docs.remotestore.dev/llms.txt`) per the

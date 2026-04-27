@@ -72,7 +72,7 @@ class AsyncAzureBackend(AsyncBackend):
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
-    __mirror__ = AzureBackend
+    __mirror__: ClassVar[type[AzureBackend]] = AzureBackend
 
     def __init__(
         self,

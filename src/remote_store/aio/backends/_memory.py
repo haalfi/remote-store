@@ -41,7 +41,7 @@ class AsyncMemoryBackend(AsyncBackend):
     """
 
     CAPABILITIES: ClassVar[CapabilitySet] = _ALL_CAPABILITIES
-    __mirror__ = MemoryBackend
+    __mirror__: ClassVar[type[MemoryBackend]] = MemoryBackend
 
     def __init__(self) -> None:
         self._root = _DirNode()
