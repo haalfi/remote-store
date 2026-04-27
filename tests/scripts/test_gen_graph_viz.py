@@ -11,8 +11,6 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.os_sensitive
-
 ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS = ROOT / "scripts"
 
@@ -26,6 +24,7 @@ def gen_graph_viz_module():
     return gen_graph_viz
 
 
+@pytest.mark.os_sensitive
 def test_graph_viz_html_is_up_to_date(gen_graph_viz_module):
     """Committed graph_viz.html must match a fresh generate() call.
 
@@ -47,4 +46,21 @@ def test_generate_raises_when_d3_vendor_missing(gen_graph_viz_module, monkeypatc
     monkeypatch.setattr(gen_graph_viz_module, "D3_VENDOR", tmp_path / "nonexistent.js")
     graph = json.loads((ROOT / "docs-src" / "_data" / "graph" / "graph.json").read_bytes())
     with pytest.raises(FileNotFoundError):
+        gen_graph_viz_module.generate(graph)
+
+
+def test_generate_raises_on_token_contamination(gen_graph_viz_module):
+    """generate() must raise RuntimeError when a replacement value re-introduces a token.
+
+    source_version == "__D3_INLINE__": re.sub fills the __VERSION__ slot with the
+    string "__D3_INLINE__", which survives in the output (re.sub does not rescan
+    replacement values). The post-substitution guard must catch this.
+    """
+    graph = {
+        "source_version": "__D3_INLINE__",
+        "schema_version": "1.1",
+        "nodes": [],
+        "edges": [],
+    }
+    with pytest.raises(RuntimeError, match="survived substitution"):
         gen_graph_viz_module.generate(graph)

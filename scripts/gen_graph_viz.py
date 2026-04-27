@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -362,6 +363,7 @@ _TEMPLATE = (
 
 
 _TOKENS = ("__VERSION__", "__SCHEMA_VERSION__", "__N_NODES__", "__N_EDGES__", "__GRAPH_DATA__", "__D3_INLINE__")
+_TOKEN_RE = re.compile("|".join(re.escape(t) for t in _TOKENS))
 
 
 def generate(graph: dict) -> str:
@@ -369,14 +371,17 @@ def generate(graph: dict) -> str:
         raise FileNotFoundError(f"{D3_VENDOR.name} not found — it should be committed to the repo.")
     d3_src = D3_VENDOR.read_text(encoding="utf-8")
     graph_data = json.dumps(graph, ensure_ascii=False, separators=(",", ":"))
-    result = (
-        _TEMPLATE.replace("__VERSION__", graph.get("source_version", ""))
-        .replace("__SCHEMA_VERSION__", graph.get("schema_version", ""))
-        .replace("__N_NODES__", str(len(graph.get("nodes", []))))
-        .replace("__N_EDGES__", str(len(graph.get("edges", []))))
-        .replace("__GRAPH_DATA__", graph_data)
-        .replace("__D3_INLINE__", d3_src)
-    )
+    replacements = {
+        "__VERSION__": graph.get("source_version", ""),
+        "__SCHEMA_VERSION__": graph.get("schema_version", ""),
+        "__N_NODES__": str(len(graph.get("nodes", []))),
+        "__N_EDGES__": str(len(graph.get("edges", []))),
+        "__GRAPH_DATA__": graph_data,
+        "__D3_INLINE__": d3_src,
+    }
+    # Single-pass substitution: re.sub does not rescan replacement values, so a
+    # replacement that contains another token cannot cause cross-contamination.
+    result = _TOKEN_RE.sub(lambda m: replacements[m.group(0)], _TEMPLATE)
     for token in _TOKENS:
         if token in result:
             raise RuntimeError(f"Template token {token!r} survived substitution — check for collisions")
