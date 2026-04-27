@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound
 from remote_store._models import FileInfo, FolderEntry, WriteResult
-from remote_store.aio._async_memory import AsyncMemoryBackend
+from remote_store.aio.backends._memory import AsyncMemoryBackend
 
 
 class TestAsyncMemoryBasics:

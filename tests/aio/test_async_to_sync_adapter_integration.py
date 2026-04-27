@@ -47,7 +47,7 @@ def azurite_adapter_store() -> Iterator[Store]:
 
     from remote_store import Store
     from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
-    from remote_store.aio._async_azure import AsyncAzureBackend
+    from remote_store.aio.backends._azure import AsyncAzureBackend
 
     tag = uuid.uuid4().hex[:8]
     container = f"adapter-integ-{tag}"
@@ -81,7 +81,7 @@ class TestAdapterLifecycleAzurite:
         from azure.storage.blob import BlobServiceClient
 
         from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
-        from remote_store.aio._async_azure import AsyncAzureBackend
+        from remote_store.aio.backends._azure import AsyncAzureBackend
 
         tag = uuid.uuid4().hex[:8]
         container = f"adapter-cm-{tag}"
@@ -111,7 +111,7 @@ class TestAdapterLifecycleAzurite:
 
         from remote_store import Store
         from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
-        from remote_store.aio._async_azure import AsyncAzureBackend
+        from remote_store.aio.backends._azure import AsyncAzureBackend
 
         tag = uuid.uuid4().hex[:8]
         container = f"adapter-idem-{tag}"
@@ -365,7 +365,7 @@ class TestAdapterClosedReuseAzurite:
         from azure.storage.blob import BlobServiceClient
 
         from remote_store._async_to_sync_adapter import AsyncBackendSyncAdapter
-        from remote_store.aio._async_azure import AsyncAzureBackend
+        from remote_store.aio.backends._azure import AsyncAzureBackend
 
         tag = uuid.uuid4().hex[:8]
         container = f"adapter-closed-{tag}"

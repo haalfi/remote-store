@@ -41,7 +41,7 @@ from azure.storage.blob.aio import BlobClient as AsyncBlobClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, NotFound, RemoteStoreError  # noqa: E402
 from remote_store._models import WriteResult  # noqa: E402
-from remote_store.aio._async_azure import AsyncAzureBackend  # noqa: E402
+from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 from remote_store.backends._azure_common import classify_azure_error  # noqa: E402
 from tests.conftest import _azurite_reachable  # noqa: E402
 
