@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.os_sensitive
+
 _SCRIPTS = Path(__file__).resolve().parents[2] / "scripts" / "_dafny_classorder.py"
 
 

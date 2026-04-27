@@ -7,6 +7,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-167 — Move `test_dafny_classorder.py` to `tests/scripts/`**
+  `tests/backends/test_dafny_classorder.py` moved to `tests/scripts/test_dafny_classorder.py`.
+  File content unchanged (`parents[2]` resolves correctly to the repo root from the new location).
+
+- [x] **ID-166 — Move `test_gen_graph.py` to `tests/scripts/`**
+  `tests/test_gen_graph.py` moved to `tests/scripts/test_gen_graph.py`.
+  `ROOT` anchor updated from `.parent.parent` to `.parent.parent.parent` to reach the repo root from the new depth.
+  `pyproject.toml` dev-extra comment updated to reflect new path.
+
 - [x] **ID-165 — `gen_graph_viz.py` — interactive graph visualization**
   `scripts/gen_graph_viz.py` reads `docs-src/_data/graph/graph.json` and writes a
   self-contained D3 v7 force-directed HTML file to `docs-src/_data/graph/graph_viz.html`.
@@ -20,7 +29,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `build_graph()` now emits `is_abstract`, `is_async`, `file`, and `line` on
   every `method` node (RFC-0012 taxonomy). `_rel_file()` generalized to
   `_rel_path(filepath: Path | None)`. Schema bumped to version `"1.1"`.
-  New test: `test_method_nodes_carry_introspection_fields` in `tests/test_gen_graph.py`.
+  New test: `test_method_nodes_carry_introspection_fields` in `tests/scripts/test_gen_graph.py`.
 
 - [x] **ID-163 — `FEATURES.md` projection from graph IR**
   `scripts/gen_features.py` reads `graph.json` and regenerates three mechanical
@@ -31,7 +40,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `gen_graph.py` updated: `version = None` hardcode removed; `source_version`
   and `snapshot` now read from `pyproject.toml["project"]["version"]`; `--check`
   mode and `gen-graph-check` hatch script added; `test_graph_json_is_up_to_date`
-  idempotency gate added to `tests/test_gen_graph.py`.
+  idempotency gate added to `tests/scripts/test_gen_graph.py`.
   Release Phase 2 checklist updated: `bump-my-version` → `gen-graph` → `gen-features`
   → commit (stamps version; FEATURES.md and graph.json included in release commit).
   CI lint job extended: `gen-graph-check` + `gen-features-check` run before pytest;
@@ -46,7 +55,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   capability, class, extra, method, requirement, and package nodes;
   declares, gates, of, enables, mirrors, and inherits edges.
   Deterministic output (nodes sorted by id URI, edges by (kind, src, dst), sort_keys=True).
-  Golden test: `tests/test_gen_graph.py`.
+  Golden test: `tests/scripts/test_gen_graph.py`.
   Remaining work (gen_features.py projection → FEATURES.md): ID-163.
 
 ## v0.24.0
