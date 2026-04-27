@@ -281,7 +281,7 @@ jobs:
       - name: Download tla2tools.jar (pinned)
         env:
           TLA_VERSION: 1.8.0
-          TLA_SHA256: af03b2baae73b523fe162c0ff195c5adeed42cd1d092200b0bde2cd15914f624
+          TLA_SHA256: d5d07d5dab38ddb840c91ec48fa02f28b37a608d5af9a73570018591dbc8ef7f
         run: |
           curl -fsSL -o tla2tools.jar \
             "https://github.com/tlaplus/tlaplus/releases/download/v${TLA_VERSION}/tla2tools.jar"
