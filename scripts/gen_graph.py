@@ -342,7 +342,7 @@ def build_graph() -> dict[str, Any]:
                 "is_abstract": "abstractmethod" in member.labels,
                 "is_async": "async" in member.labels,
                 "file": _rel_path(member.filepath),
-                "line": member.lineno,
+                "line": member.lineno or 0,
             }
         )
         nodes.append({"id": req_uri, "kind": "requirement", "mode": "all"})

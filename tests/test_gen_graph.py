@@ -125,12 +125,15 @@ def test_method_nodes_carry_introspection_fields(gen_graph_module):
     assert isinstance(node["line"], int)
     assert node["line"] > 0
 
-    # Every method node carries all five taxonomy fields
+    # Every method node carries all five taxonomy fields with correct types
     method_nodes = [n for n in graph["nodes"] if n["kind"] == "method"]
     assert method_nodes, "no method nodes in graph"
     for n in method_nodes:
         for key in ("summary", "is_abstract", "is_async", "file", "line"):
             assert key in n, f"method node {n['id']!r} missing field {key!r}"
+        assert isinstance(n["is_abstract"], bool), f"is_abstract not bool on {n['id']!r}"
+        assert isinstance(n["is_async"], bool), f"is_async not bool on {n['id']!r}"
+        assert isinstance(n["line"], int), f"line not int on {n['id']!r}"
 
 
 def test_graph_json_is_up_to_date(gen_graph_module):
