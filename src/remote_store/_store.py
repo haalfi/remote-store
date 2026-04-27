@@ -13,6 +13,30 @@ from remote_store._errors import InvalidPath, NotFound
 from remote_store._models import FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath
 
+_GATING: dict[str, Capability] = {
+    "read": Capability.READ,
+    "read_bytes": Capability.READ,
+    "read_seekable": Capability.READ,
+    "read_text": Capability.READ,  # delegates to read_bytes; listed for static graph extraction
+    "write": Capability.WRITE,
+    "write_text": Capability.WRITE,  # delegates to write; listed for static graph extraction
+    "write_atomic": Capability.ATOMIC_WRITE,
+    "open_atomic": Capability.ATOMIC_WRITE,
+    "delete": Capability.DELETE,
+    "delete_folder": Capability.DELETE,
+    "list_files": Capability.LIST,
+    "list_folders": Capability.LIST,
+    "iter_children": Capability.LIST,
+    "glob": Capability.GLOB,
+    "move": Capability.MOVE,
+    "copy": Capability.COPY,
+    "get_file_info": Capability.METADATA,
+    # Primary gate. Depth-limited path (max_depth is not None) gates on LIST via
+    # _gate("list_files") instead; gen_graph.py must special-case this method.
+    "get_folder_info": Capability.METADATA,
+    "head": Capability.METADATA,
+}
+
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -65,7 +89,7 @@ class Store:
             InvalidPath: If *path* is empty.
         """
         log.debug("read path=%r", path, extra={"op": "read", "path": path, "backend": self._backend.name})
-        self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
+        self._gate("read")
         return self._backend.read(self._require_file_path(path))
 
     def read_bytes(self, path: str) -> bytes:
@@ -84,7 +108,7 @@ class Store:
         Equivalent to ``read(path).read()``.
         """
         log.debug("read_bytes path=%r", path, extra={"op": "read_bytes", "path": path, "backend": self._backend.name})
-        self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
+        self._gate("read_bytes")
         return self._backend.read_bytes(self._require_file_path(path))
 
     def read_seekable(self, path: str) -> BinaryIO:
@@ -115,7 +139,7 @@ class Store:
             path,
             extra={"op": "read_seekable", "path": path, "backend": self._backend.name},
         )
-        self._backend.capabilities.require(Capability.READ, backend=self._backend.name)
+        self._gate("read_seekable")
         return self._backend.read_seekable(self._require_file_path(path))
 
     def read_text(self, path: str, *, encoding: str = "utf-8", errors: str = "strict") -> str:
@@ -187,7 +211,7 @@ class Store:
         _validate_metadata(metadata)
         if metadata:
             self._backend.capabilities.require(Capability.USER_METADATA, backend=_bk)
-        self._backend.capabilities.require(Capability.WRITE, backend=_bk)
+        self._gate("write")
         result = self._backend.write(self._require_file_path(path), content, overwrite=overwrite, metadata=metadata)
         log.info("write complete path=%r", path, extra={"op": "write", "path": path, "backend": _bk})
         return self._rebase_write_result(result)
@@ -270,7 +294,7 @@ class Store:
         _validate_metadata(metadata)
         if metadata:
             self._backend.capabilities.require(Capability.USER_METADATA, backend=_bk)
-        self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=_bk)
+        self._gate("write_atomic")
         result = self._backend.write_atomic(
             self._require_file_path(path), content, overwrite=overwrite, metadata=metadata
         )
@@ -313,7 +337,7 @@ class Store:
             overwrite,
             extra={"op": "open_atomic", "path": path, "backend": _bk},
         )
-        self._backend.capabilities.require(Capability.ATOMIC_WRITE, backend=_bk)
+        self._gate("open_atomic")
         with self._backend.open_atomic(self._require_file_path(path), overwrite=overwrite) as f:
             yield f
         log.info(
@@ -343,7 +367,7 @@ class Store:
         log.debug(
             "delete path=%r missing_ok=%r", path, missing_ok, extra={"op": "delete", "path": path, "backend": _bk}
         )
-        self._backend.capabilities.require(Capability.DELETE, backend=_bk)
+        self._gate("delete")
         self._backend.delete(self._require_file_path(path), missing_ok=missing_ok)
         log.info("delete complete path=%r", path, extra={"op": "delete", "path": path, "backend": _bk})
 
@@ -376,7 +400,7 @@ class Store:
         )
         if not path or path == ".":
             raise InvalidPath("Cannot delete the store root", path=path)
-        self._backend.capabilities.require(Capability.DELETE, backend=_bk)
+        self._gate("delete_folder")
         self._backend.delete_folder(self._full_path(path), recursive=recursive, missing_ok=missing_ok)
         log.info("delete_folder complete path=%r", path, extra={"op": "delete_folder", "path": path, "backend": _bk})
 
@@ -425,7 +449,7 @@ class Store:
             max_depth,
             extra={"op": "list_files", "path": path, "backend": _bk},
         )
-        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        self._gate("list_files")
 
         # Determine recursion mode
         effective_recursive = max_depth > 0 if max_depth is not None else recursive
@@ -473,7 +497,7 @@ class Store:
             max_depth,
             extra={"op": "list_folders", "path": path, "backend": _bk},
         )
-        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        self._gate("list_folders")
 
         effective_depth = max_depth if max_depth is not None else 0
 
@@ -505,7 +529,7 @@ class Store:
         """
         _bk = self._backend.name
         log.debug("iter_children path=%r", path, extra={"op": "iter_children", "path": path, "backend": _bk})
-        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        self._gate("iter_children")
         for entry in self._backend.iter_children(self._full_path(path)):
             if isinstance(entry, FolderEntry):
                 yield self._rebase_folder_entry(entry)
@@ -527,7 +551,7 @@ class Store:
             CapabilityNotSupported: If the backend lacks ``GLOB``.
         """
         log.debug("glob pattern=%r", pattern, extra={"op": "glob", "path": pattern, "backend": self._backend.name})
-        self._backend.capabilities.require(Capability.GLOB, backend=self._backend.name)
+        self._gate("glob")
         full_pattern = f"{self._root}/{pattern}" if self._root else pattern
         for info in self._backend.glob(full_pattern):
             yield self._rebase_file_info(info)
@@ -557,7 +581,7 @@ class Store:
         log.debug(
             "move src=%r dst=%r overwrite=%r", src, dst, overwrite, extra={"op": "move", "path": src, "backend": _bk}
         )
-        self._backend.capabilities.require(Capability.MOVE, backend=_bk)
+        self._gate("move")
         src_path = self._require_file_path(src)
         dst_path = self._require_file_path(dst)
         if src_path == dst_path:
@@ -588,7 +612,7 @@ class Store:
         log.debug(
             "copy src=%r dst=%r overwrite=%r", src, dst, overwrite, extra={"op": "copy", "path": src, "backend": _bk}
         )
-        self._backend.capabilities.require(Capability.COPY, backend=_bk)
+        self._gate("copy")
         src_path = self._require_file_path(src)
         dst_path = self._require_file_path(dst)
         if src_path == dst_path:
@@ -652,7 +676,7 @@ class Store:
         """
         _bk = self._backend.name
         log.debug("get_file_info path=%r", path, extra={"op": "get_file_info", "path": path, "backend": _bk})
-        self._backend.capabilities.require(Capability.METADATA, backend=_bk)
+        self._gate("get_file_info")
         info = self._backend.get_file_info(self._require_file_path(path))
         return self._rebase_file_info(info)
 
@@ -691,12 +715,12 @@ class Store:
 
         if max_depth is None:
             # Full recursive traversal via backend
-            self._backend.capabilities.require(Capability.METADATA, backend=_bk)
+            self._gate("get_folder_info")
             info = self._backend.get_folder_info(self._full_path(path))
             return self._rebase_folder_info(info)
 
         # Depth-limited aggregation at the Store level
-        self._backend.capabilities.require(Capability.LIST, backend=_bk)
+        self._gate("list_files")
         if not self._backend.is_folder(self._full_path(path)):
             raise NotFound(
                 f"Folder not found: {path}",
@@ -742,7 +766,7 @@ class Store:
         """
         _bk = self._backend.name
         log.debug("head path=%r", path, extra={"op": "head", "path": path, "backend": _bk})
-        self._backend.capabilities.require(Capability.METADATA, backend=_bk)
+        self._gate("head")
         info = self._backend.get_file_info(self._require_file_path(path))
         rebased = self._rebase_file_info(info)
         return WriteResult(
@@ -923,6 +947,14 @@ class Store:
     # endregion
 
     # region: private helpers
+
+    def _gate(self, method: str) -> None:
+        """Raise CapabilityNotSupported if the backend lacks the gated capability."""
+        try:
+            cap = _GATING[method]
+        except KeyError:
+            raise AssertionError(f"_gate({method!r}) called but {method!r} is not registered in _GATING") from None
+        self._backend.capabilities.require(cap, backend=self._backend.name)
 
     def _full_path(self, path: str) -> str:
         """Resolve a path that may be empty (store root) or a relative subpath.
