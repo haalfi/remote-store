@@ -9773,7 +9773,9 @@ errors.</p>
 <li>[ ] Keywords consistent: <code>pyproject.toml</code> = <code>CITATION.cff</code></li>
 <li>[ ] Conda recipe: update <code>context.version</code> in <code>packaging/conda-forge/recipe.yaml</code> to X.Y.Z</li>
 <li>[ ] <code>bump-my-version bump patch|minor|major</code> (modifies the files listed in <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code> — does NOT commit or tag)</li>
-<li>[ ] Review and commit: <code>git diff</code> to verify, then stage the bump-my-version-modified files (see <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code>) plus <code>CHANGELOG.md</code> and <code>packaging/conda-forge/recipe.yaml</code>, and commit as <code>Release vX.Y.Z</code></li>
+<li>[ ] <code>hatch run gen-graph</code> (stamps <code>source_version</code> + <code>snapshot</code> in <code>docs-src/_data/graph/graph.json</code> from the bumped version)</li>
+<li>[ ] <code>hatch run gen-features</code> (regenerates mechanical sections of <code>FEATURES.md</code> from updated <code>graph.json</code>)</li>
+<li>[ ] Review and commit: <code>git diff</code> to verify, then stage the bump-my-version-modified files (see <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code>) plus <code>CHANGELOG.md</code>, <code>packaging/conda-forge/recipe.yaml</code>, <code>docs-src/_data/graph/graph.json</code>, and <code>FEATURES.md</code>, and commit as <code>Release vX.Y.Z</code></li>
 </ul>
 <h3 id="phase-3-validate">Phase 3: Validate<a class="headerlink" href="#phase-3-validate" title="Permanent link">&para;</a></h3>
 <ul>
