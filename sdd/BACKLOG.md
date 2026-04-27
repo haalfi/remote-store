@@ -139,20 +139,6 @@ Existing items may be more verbose — trim on next touch.
 
   No code change — the `context7.json` configuration is already in place.
 
-- [~] **ID-163 — `FEATURES.md` projection from graph IR**
-  `scripts/gen_features.py` ships (PR #537): reads `graph.json`, regenerates
-  three mechanical sections of `FEATURES.md` via region tags. `gen-features` /
-  `gen-features-check` hatch scripts added. Idempotency gate in pytest.
-  Remaining:
-  (a) Stamp `source_version` + `snapshot` in graph.json at release time: remove
-  the `version = None` hardcode in `gen_graph.py` and always read from
-  `pyproject.toml`. Release sequence: `bump-my-version` → `gen-graph` (stamps
-  version) → `gen-features` → commit. Git tag freezes the file; self-describing
-  version serves consumers without git context.
-  (b) Wire `gen-graph` + `gen-features` into the release skill.
-  (c) Add `gen-graph-check` + `gen-features-check` to pre-commit / CI so
-  graph→projection drift is caught before pytest.
-  **Depends on:** ID-159 (merged).
 
 ### Streaming & Memory Optimization
 

@@ -212,7 +212,7 @@ def _store_gating() -> dict[str, Any]:
 def build_graph() -> dict[str, Any]:
     """Build and return the full graph dict."""
     pyproject = _load_pyproject()
-    version: str | None = None  # rolling unreleased file
+    version: str = pyproject["project"]["version"]
 
     extras_roots = _extras_to_names(pyproject)
 
@@ -359,17 +359,32 @@ def build_graph() -> dict[str, Any]:
         "edges": edges,
         "nodes": nodes,
         "schema_version": "1.0",
-        "snapshot": "unreleased",
+        "snapshot": version,
         "source_version": version,
     }
 
 
 def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate docs-src/_data/graph/graph.json from source.")
+    parser.add_argument("--check", action="store_true", help="Exit 1 if graph.json would change; do not write.")
+    args = parser.parse_args()
+
     graph = build_graph()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(graph, sort_keys=True, indent=2) + "\n"
+    text_bytes = text.encode("utf-8").replace(b"\r\n", b"\n")
+
+    if args.check:
+        existing = OUT.read_bytes() if OUT.exists() else b""
+        if existing != text_bytes:
+            print("graph.json is out of date.\nRun:  hatch run gen-graph")
+            raise SystemExit(1)
+        return
+
     # Ensure LF line endings regardless of platform
-    OUT.write_bytes(text.encode("utf-8").replace(b"\r\n", b"\n"))
+    OUT.write_bytes(text_bytes)
     print(f"Wrote {OUT.relative_to(ROOT)} ({len(graph['nodes'])} nodes, {len(graph['edges'])} edges)")
 
 

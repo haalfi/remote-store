@@ -34,7 +34,7 @@ jobs:
           else
             FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
           fi
-          CODE_PAT='^(src|tests|examples)/|^pyproject\.toml$|^\.github/workflows/ci\.yml$'
+          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^FEATURES\.md$|^docs-src/_data/graph/graph\.json$|^\.github/workflows/ci\.yml$'
           DOCS_PAT='^(docs-src|src|guides)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/(specs|adrs|rfcs)/|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
@@ -67,6 +67,8 @@ jobs:
       - run: ruff format --check src/ tests/ examples/
       - run: python scripts/check_test_assertions.py tests
       - run: python scripts/check_mock_spec.py tests
+      - run: python scripts/gen_graph.py --check
+      - run: python scripts/gen_features.py --check
 
   typecheck:
     needs: [changes]

@@ -163,6 +163,7 @@ bench-report-user = "python benchmarks/report.py --user"
 bench-latency-matrix = "python benchmarks/run_latency_matrix.py"
 bench-charts = "python -m benchmarks.charts"
 gen-graph = "python scripts/gen_graph.py"
+gen-graph-check = "python scripts/gen_graph.py --check"
 gen-features = "python scripts/gen_features.py"
 gen-features-check = "python scripts/gen_features.py --check"
 check-test-quality = ["python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests"]

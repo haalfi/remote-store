@@ -1522,6 +1522,6 @@
     }
   ],
   "schema_version": "1.0",
-  "snapshot": "unreleased",
-  "source_version": null
+  "snapshot": "0.24.0",
+  "source_version": "0.24.0"
 }

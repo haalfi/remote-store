@@ -7,6 +7,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-163 — `FEATURES.md` projection from graph IR**
+  `scripts/gen_features.py` reads `graph.json` and regenerates three mechanical
+  sections of `FEATURES.md` via `<!-- BEGIN_GENERATED:X --> / <!-- END_GENERATED:X -->`
+  region tags (`backends_main`, `backends_flags`, `install_extras`).
+  `gen-features` / `gen-features-check` hatch scripts added; idempotency gate
+  in `tests/test_gen_features.py`.
+  `gen_graph.py` updated: `version = None` hardcode removed; `source_version`
+  and `snapshot` now read from `pyproject.toml["project"]["version"]`; `--check`
+  mode and `gen-graph-check` hatch script added; `test_graph_json_is_up_to_date`
+  idempotency gate added to `tests/test_gen_graph.py`.
+  Release Phase 2 checklist updated: `bump-my-version` → `gen-graph` → `gen-features`
+  → commit (stamps version; FEATURES.md and graph.json included in release commit).
+  CI lint job extended: `gen-graph-check` + `gen-features-check` run before pytest;
+  `CODE_PAT` updated to trigger on `scripts/`, `FEATURES.md`, and `graph.json`.
+
 - [x] **ID-159 — Documentation graph model: preconditions + gen_graph.py**
   RFC-0012 accepted. All preconditions implemented:
   `CAPABILITIES: ClassVar[CapabilitySet]` added to all 11 backend classes (sync and async);
