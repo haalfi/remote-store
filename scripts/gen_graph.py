@@ -329,7 +329,7 @@ def build_graph() -> dict[str, Any]:
     # pkg.members["aio"].members["_async_store"].members["AsyncStore"].
     store_cls = pkg["_store"]["Store"]
     for method_name, cap in gating.items():
-        if method_name not in store_cls.members:
+        if method_name not in store_cls.members:  # pragma: no cover
             raise AssertionError(
                 f"_GATING key {method_name!r} is not a Griffe member of Store; "
                 "update Store or _GATING to keep them in sync."

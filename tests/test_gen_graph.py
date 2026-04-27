@@ -138,6 +138,38 @@ def test_method_nodes_carry_introspection_fields(gen_graph_module):
         assert n["file"], f"file is empty on {n['id']!r}"
 
 
+def test_get_folder_info_dual_gate(gen_graph_module):
+    """get_folder_info has two runtime gates: METADATA (max_depth=None) and LIST (depth-limited).
+
+    The generator special-cases this method to emit both req: nodes.
+    Asserts that both gates are present so a future refactor cannot silently drop one.
+    """
+    graph = gen_graph_module.build_graph()
+    gfi_mtd = "mtd:remote_store._store.Store.get_folder_info"
+
+    gates_edges = [e for e in graph["edges"] if e["kind"] == "gates" and e["dst"] == gfi_mtd]
+    assert len(gates_edges) == 2, f"expected 2 gates edges for get_folder_info, got {len(gates_edges)}"
+    sources = {e["src"] for e in gates_edges}
+    assert sources == {
+        "req:remote_store._store.Store.get_folder_info.gate",
+        "req:remote_store._store.Store.get_folder_info.gate_depth",
+    }
+
+    of_depth = [
+        e
+        for e in graph["edges"]
+        if e["kind"] == "of" and e["src"] == "req:remote_store._store.Store.get_folder_info.gate_depth"
+    ]
+    assert of_depth == [
+        {
+            "dst": "cap:LIST",
+            "index": 0,
+            "kind": "of",
+            "src": "req:remote_store._store.Store.get_folder_info.gate_depth",
+        }
+    ]
+
+
 def test_graph_json_is_up_to_date(gen_graph_module):
     """Committed graph.json must match a fresh build_graph() call.
 

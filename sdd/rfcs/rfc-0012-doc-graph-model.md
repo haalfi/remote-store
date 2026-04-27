@@ -132,6 +132,16 @@ gate(s). All current methods use `mode: all` with a single capability; the
 node exists so the schema does not change when a method needs a conjunction or
 disjunction.
 
+Two patterns use multiple `req:` nodes vs. multiple `of` edges:
+
+- **AND of capabilities** (one `req:`, N `of` edges): the method requires all N
+  capabilities simultaneously on the same code path.
+- **Alternative gates** (N `req:` nodes, each with its own `of` edge): the method
+  chooses one capability gate at runtime based on a condition. Each `req:` node
+  represents one branch. URI convention: `<method>.gate` for the primary gate;
+  `<method>.gate_<discriminator>` for each alternative (e.g. `.gate_depth` for a
+  depth-limited code path).
+
 ---
 
 ### Edge taxonomy
