@@ -859,6 +859,11 @@
       "src": "req:remote_store._store.Store.get_folder_info.gate"
     },
     {
+      "dst": "mtd:remote_store._store.Store.get_folder_info",
+      "kind": "gates",
+      "src": "req:remote_store._store.Store.get_folder_info.gate_depth"
+    },
+    {
       "dst": "mtd:remote_store._store.Store.glob",
       "kind": "gates",
       "src": "req:remote_store._store.Store.glob.gate"
@@ -1007,6 +1012,12 @@
       "index": 0,
       "kind": "of",
       "src": "req:remote_store._store.Store.get_folder_info.gate"
+    },
+    {
+      "dst": "cap:LIST",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._store.Store.get_folder_info.gate_depth"
     },
     {
       "dst": "cap:GLOB",
@@ -1495,6 +1506,11 @@
     },
     {
       "id": "req:remote_store._store.Store.get_folder_info.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._store.Store.get_folder_info.gate_depth",
       "kind": "requirement",
       "mode": "all"
     },

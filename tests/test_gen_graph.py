@@ -134,6 +134,8 @@ def test_method_nodes_carry_introspection_fields(gen_graph_module):
         assert isinstance(n["is_abstract"], bool), f"is_abstract not bool on {n['id']!r}"
         assert isinstance(n["is_async"], bool), f"is_async not bool on {n['id']!r}"
         assert isinstance(n["line"], int), f"line not int on {n['id']!r}"
+        assert isinstance(n["file"], str), f"file not str on {n['id']!r}"
+        assert n["file"], f"file is empty on {n['id']!r}"
 
 
 def test_graph_json_is_up_to_date(gen_graph_module):

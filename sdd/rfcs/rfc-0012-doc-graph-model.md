@@ -88,9 +88,9 @@ iterate the arrays.
 ```
 
 `schema_version` and `source_version` are independent fields. A schema bump
-(new node kinds, renamed edge kinds) increments `schema_version`; a new package
-release increments `source_version`. `snapshot` mirrors `source_version` (both
-track `pyproject.toml[project][version]`).
+(new node kinds, renamed edge kinds, or new properties on an existing node kind)
+increments `schema_version`; a new package release increments `source_version`.
+`snapshot` mirrors `source_version` (both track `pyproject.toml[project][version]`).
 
 ---
 

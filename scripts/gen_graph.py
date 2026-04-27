@@ -329,6 +329,11 @@ def build_graph() -> dict[str, Any]:
     # pkg.members["aio"].members["_async_store"].members["AsyncStore"].
     store_cls = pkg["_store"]["Store"]
     for method_name, cap in gating.items():
+        if method_name not in store_cls.members:
+            raise AssertionError(
+                f"_GATING key {method_name!r} is not a Griffe member of Store; "
+                "update Store or _GATING to keep them in sync."
+            )
         mtd_uri = f"mtd:remote_store._store.Store.{method_name}"
         req_uri = f"req:remote_store._store.Store.{method_name}.gate"
         cap_uri = f"cap:{cap.name}"
@@ -349,6 +354,15 @@ def build_graph() -> dict[str, Any]:
 
         edges.append({"kind": "gates", "src": req_uri, "dst": mtd_uri})
         edges.append({"kind": "of", "src": req_uri, "dst": cap_uri, "index": 0})
+
+    # Special-case: get_folder_info has a secondary depth-limited gate on LIST.
+    # When max_depth is not None, Store._gate("list_files") is called instead.
+    # See _store.py _GATING comment: "gen_graph.py must special-case this method."
+    _gfi_mtd = "mtd:remote_store._store.Store.get_folder_info"
+    _gfi_req2 = "req:remote_store._store.Store.get_folder_info.gate_depth"
+    nodes.append({"id": _gfi_req2, "kind": "requirement", "mode": "all"})
+    edges.append({"kind": "gates", "src": _gfi_req2, "dst": _gfi_mtd})
+    edges.append({"kind": "of", "src": _gfi_req2, "dst": f"cap:{Capability.LIST.name}", "index": 0})
 
     # --- Deduplicate mirrors edges ---
     # Each __mirror__ annotation produces one async→sync edge.  Dedup by
