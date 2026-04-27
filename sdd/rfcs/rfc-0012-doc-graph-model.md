@@ -16,13 +16,25 @@ replace in-node `since:` / `deprecated_in:` tracking.
 
 ## Motivation
 
-`FEATURES.md` is currently hand-maintained and will drift as the backend surface
-grows (ID-159). The capability matrix, method list, and extras table are all
-mechanically derivable from source, but there is no shared IR from which
-multiple outputs can be generated consistently. Without a shared IR:
+Two documentation surfaces share the same drift problem:
 
-- The capability matrix, the API reference, and the extras index are each
-  regenerated from scratch, duplicating traversal logic.
+**`FEATURES.md`** (ID-159) is a hand-maintained capabilities snapshot. The
+capability matrix, method list, and extras table are all mechanically derivable
+from source.
+
+**The API reference** (`docs/api/store/`, `docs/api/aio/`, per-backend pages)
+has the same issue: method tables, capability gates, and backend-conditional
+parameter admonitions are written by hand against the source and drift silently
+as the API evolves.
+
+Both surfaces expose the same cross-cutting relationships — which capability
+gates which method, which extra enables which backend — but currently each is
+authored independently with no shared extraction logic.
+
+Without a shared IR:
+
+- `FEATURES.md`, the API reference, and the extras index each duplicate the
+  same traversal logic.
 - Cross-cutting relationships — `cap:WRITE` gates `Store.write`,
   `xtr:s3` enables `S3Backend` — are not queryable; they live in prose.
 - Diff between releases requires diffing prose documents, not structured data.
