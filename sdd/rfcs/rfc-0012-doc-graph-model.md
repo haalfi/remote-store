@@ -2,7 +2,7 @@
 
 ## Status
 
-Under Review
+Accepted
 
 ## Summary
 
@@ -188,7 +188,7 @@ cls:...S3Backend
                      cap:MOVE, cap:COPY, cap:ATOMIC_WRITE, cap:METADATA,
                      cap:USER_METADATA, cap:SEEKABLE_READ, cap:LAZY_READ
                      (all condition: null)
-  ↔ mirrors          cls:remote_store.aio.backends._s3.AsyncS3Backend
+  ↔ mirrors          (no async S3 backend exists yet; edge applies once one is added)
 
 mtd:remote_store.Store.write
   ← gates    req:Store.write.gate
@@ -303,10 +303,12 @@ CAPABILITIES: ClassVar[CapabilitySet] = CapabilitySet({...})
 This is the recommended precondition for ID-159. It is a small, non-breaking
 refactor of each backend.
 
-**Gating table.** The `gates` edges originate from a central `_GATING` table in
-`_store.py` mapping method names to `Capability` values. This table is both the
-runtime check source and the static extraction target; the generator reads it
-directly.
+**Gating table.** Today, capability gating in `_store.py` is done via inline
+`.require()` calls scattered across each method (see References). The recommended
+precondition for ID-159 is to consolidate these into a central `_GATING` dict
+mapping method names to `Capability` values — making it both the runtime check
+source and the static extraction target for `gates` edges. This is the same
+category of precondition as `CAPABILITIES: ClassVar` on backends.
 
 ## Alternatives Considered
 
@@ -360,7 +362,12 @@ Rejected.
 
 ## Open Questions
 
-None.
+**Sync↔async peer discovery for `mirrors` edges.** The detection strategy is
+deferred to ID-159. Candidates: a `__mirror__: type` class annotation on each
+backend (explicit, rename-safe), a naming-convention heuristic
+(`AsyncXxxBackend` ↔ `XxxBackend`, fragile), or a generator-side `_MIRRORS`
+table (maintenance burden). The class annotation is preferred but requires a
+small non-breaking addition to each async backend class.
 
 ## References
 
