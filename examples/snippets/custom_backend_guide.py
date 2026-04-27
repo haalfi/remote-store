@@ -581,13 +581,19 @@ def _demo_extensions() -> None:
 
 def _demo_partial_capabilities() -> None:
     # --8<-- [start:partial-capabilities]
-    _HTTP_CAPABILITIES = CapabilitySet(
-        {
-            Capability.READ,
-            Capability.LIST,
-            Capability.METADATA,
-        }
-    )
+    class _ReadOnlyBackend(Backend):  # type: ignore[abstract]
+        CAPABILITIES: ClassVar[CapabilitySet] = CapabilitySet(
+            {
+                Capability.READ,
+                Capability.LIST,
+                Capability.METADATA,
+            }
+        )
+
+        @property
+        def capabilities(self) -> CapabilitySet:
+            return self.CAPABILITIES
+
     # --8<-- [end:partial-capabilities]
 
 

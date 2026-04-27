@@ -72,6 +72,16 @@ Before committing, check whether your change has cross-file dependencies:
 | **CHANGELOG entry**        | Add `- <ID>: <Title>` at the top of `[Unreleased]`.       |
 |                            | One line, no details, no sections. Release skill          |
 |                            | organises into sections and expands to prose.             |
+| **`CAPABILITIES` ClassVar**| `sdd/specs/003-backend-adapter-contract.md` (BE-003),     |
+| (added/changed on a backend| `tests/test_capabilities.py` (class-attr parametrize list),|
+| or ABC)                    | `tests/backends/test_conformance.py` (subset invariant),  |
+|                            | `guides/custom-backend-guide.md`, `examples/snippets/`    |
+| **`_GATING` dict**         | `sdd/specs/001-store-api.md` (STORE-gate entries),        |
+| (key→Capability mapping    | `tests/test_store.py` (gate-fires parametrize list),      |
+| in `_store.py`)            | `guides/` if a method's capability docs change            |
+| **`__mirror__` attribute** | `sdd/specs/` async spec (async-mirror invariant),         |
+| (on an async backend)      | `scripts/gen_graph.py` (mirrors-edge emission),           |
+|                            | `tests/` mirror test if backend is added or removed       |
 
 ---
 

@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
+from remote_store._capabilities import Capability, CapabilitySet
 from remote_store.aio._async_backend import AsyncBackend
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
 
     from remote_store._backend import Backend as _SyncBackend
-    from remote_store._capabilities import CapabilitySet
     from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
     from remote_store._resolution import ResolutionPlan
     from remote_store.aio._types import AsyncWritableContent
@@ -52,6 +52,9 @@ class SyncBackendAdapter(AsyncBackend):
     Args:
         backend: The synchronous backend instance to wrap.
     """
+
+    # Universal upper bound — the wrapped backend's runtime capabilities() narrows this.
+    CAPABILITIES: ClassVar[CapabilitySet] = CapabilitySet(set(Capability))
 
     def __init__(self, backend: _SyncBackend) -> None:
         self._sync = backend

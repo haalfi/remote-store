@@ -171,7 +171,6 @@ def test_capabilities_classvar_upper_bound(
         instance_caps = set(b.capabilities)
         class_caps = set(SQLBlobBackend.CAPABILITIES)
         assert instance_caps < class_caps, "Narrow-schema instance must be a strict subset of CAPABILITIES"
-        assert instance_caps <= class_caps, "All instance capabilities must be in CAPABILITIES upper bound"
     finally:
         b.close()
 

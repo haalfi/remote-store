@@ -26,6 +26,7 @@ class AsyncBackend(abc.ABC):
     exceptions must never leak -- they must be mapped to ``remote_store`` errors.
     """
 
+    # Subclasses must assign a CapabilitySet here; enforced by the conformance suite.
     CAPABILITIES: ClassVar[CapabilitySet]
 
     # region: context-manager

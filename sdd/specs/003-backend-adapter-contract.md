@@ -71,9 +71,11 @@ for cap in cs:
 
 **Invariant:** `name` property returns a unique identifier string for the backend type (e.g. `"local"`, `"s3"`).
 
-### BE-003: Capabilities Property
+### BE-003: Capabilities
 
-**Invariant:** `capabilities` property returns a `CapabilitySet` declaring all supported operations.
+**Invariant:** Every concrete backend class must declare `CAPABILITIES: ClassVar[CapabilitySet]` as a class attribute assigning a non-empty `CapabilitySet`. This enables static capability extraction without instantiation (e.g. `gen_graph.py`). The `capabilities` property returns a `CapabilitySet` declaring all supported operations; for backends with a static capability set it delegates to `self.CAPABILITIES`. For backends that narrow capabilities at runtime (e.g. `SQLBlobBackend` with a narrow-column schema), `CAPABILITIES` is an upper bound and the instance `capabilities` may be a strict subset.
+
+**Conformance invariant:** `set(instance.capabilities) ⊆ set(type(instance).CAPABILITIES)` for all backends. Enforced by `tests/backends/test_conformance.py::TestBackendIdentity::test_capabilities_subset_of_class_var`.
 
 ### BE-004: exists()
 

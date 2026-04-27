@@ -180,26 +180,29 @@ class TestUserMetadata:
 class TestCapabilitiesClassVar:
     """ID-159: CAPABILITIES ClassVar is accessible at class level without instantiation."""
 
+    @pytest.mark.spec("ID-159")
     @pytest.mark.parametrize(
         ("module", "cls_name", "require"),
         [
             ("remote_store.backends._local", "LocalBackend", None),
             ("remote_store.backends._memory", "MemoryBackend", None),
             ("remote_store.aio.backends._memory", "AsyncMemoryBackend", None),
-            ("remote_store.backends._sftp", "SFTPBackend", "paramiko"),
-            ("remote_store.backends._s3", "S3Backend", "s3fs"),
-            ("remote_store.backends._s3_pyarrow", "S3PyArrowBackend", "pyarrow"),
-            ("remote_store.backends._azure", "AzureBackend", "azure.storage.blob"),
-            ("remote_store.aio.backends._azure", "AsyncAzureBackend", "azure.storage.blob"),
+            ("remote_store.backends._sftp", "SFTPBackend", ("paramiko",)),
+            ("remote_store.backends._s3", "S3Backend", ("s3fs",)),
+            ("remote_store.backends._s3_pyarrow", "S3PyArrowBackend", ("pyarrow", "s3fs")),
+            ("remote_store.backends._azure", "AzureBackend", ("azure.storage.blob",)),
+            ("remote_store.aio.backends._azure", "AsyncAzureBackend", ("azure.storage.blob",)),
             ("remote_store.backends._http", "ReadOnlyHttpBackend", None),
-            ("remote_store.backends._sqlalchemy", "SQLBlobBackend", "sqlalchemy"),
-            ("remote_store.backends._sqlalchemy", "SQLQueryBackend", "sqlalchemy"),
+            ("remote_store.backends._sqlalchemy", "SQLBlobBackend", ("sqlalchemy",)),
+            ("remote_store.backends._sqlalchemy", "SQLQueryBackend", ("sqlalchemy",)),
         ],
     )
-    def test_class_attr_no_instantiation(self, module: str, cls_name: str, require: str | None) -> None:
+    def test_class_attr_no_instantiation(self, module: str, cls_name: str, require: tuple[str, ...] | None) -> None:
         if require is not None:
-            pytest.importorskip(require)
+            for req in require:
+                pytest.importorskip(req)
         mod = importlib.import_module(module)
         cls = getattr(mod, cls_name)
         caps = cls.CAPABILITIES
         assert isinstance(caps, CapabilitySet), f"{cls_name}.CAPABILITIES is not a CapabilitySet"
+        assert len(caps) > 0, f"{cls_name}.CAPABILITIES is empty"
