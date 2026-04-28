@@ -945,19 +945,21 @@ class AsyncAzureBackend(AsyncBackend):
 
     # region: dunder methods
 
+    def _has_open_clients(self) -> bool:
+        return any(
+            (
+                getattr(self, "_cc_instance", None),
+                getattr(self, "_blob_service_instance", None),
+                getattr(self, "_fs_instance", None),
+                getattr(self, "_datalake_service_instance", None),
+            )
+        )
+
     def __del__(self) -> None:
         # Guard against interpreter shutdown: module globals may be None.
         # Cannot call async aclose() from __del__, so warn only.
         try:
-            has_clients = any(
-                (
-                    getattr(self, "_cc_instance", None),
-                    getattr(self, "_blob_service_instance", None),
-                    getattr(self, "_fs_instance", None),
-                    getattr(self, "_datalake_service_instance", None),
-                )
-            )
-            if not has_clients:
+            if not self._has_open_clients():
                 return
         except Exception:  # noqa: BLE001
             return
