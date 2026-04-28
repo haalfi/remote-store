@@ -67,6 +67,7 @@ jobs:
       - run: ruff format --check src/ tests/ examples/
       - run: python scripts/check_test_assertions.py tests
       - run: python scripts/check_mock_spec.py tests
+      - run: python scripts/check_test_placement.py tests
       - run: python scripts/gen_graph.py --check
       - run: python scripts/gen_features.py --check
       - run: python scripts/gen_graph_viz.py --check
@@ -281,8 +282,8 @@ jobs:
           java-version: '21'
       - name: Download tla2tools.jar (pinned)
         env:
-          TLA_VERSION: 1.8.0
-          TLA_SHA256: d5d07d5dab38ddb840c91ec48fa02f28b37a608d5af9a73570018591dbc8ef7f
+          TLA_VERSION: 1.7.4
+          TLA_SHA256: 936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88
         run: |
           curl -fsSL -o tla2tools.jar \
             "https://github.com/tlaplus/tlaplus/releases/download/v${TLA_VERSION}/tla2tools.jar"

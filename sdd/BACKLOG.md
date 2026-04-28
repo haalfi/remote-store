@@ -57,14 +57,6 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **ID-168 — Audit and enforce non-src test subpackage placement**
-  Tests that exercise `scripts/`, tooling, or other non-library-src concerns should
-  live in dedicated subpackages (`tests/scripts/`, `tests/e2e/`) rather than under
-  `tests/` root or `tests/backends/`. Define the placement rule formally (in
-  `sdd/TESTING.md` or a lint script), then sweep `tests/` for remaining
-  misplacements beyond ID-166 and ID-167. Consider a CI lint check (e.g. a
-  `check_test_placement.py` script) to prevent regression.
-
 ---
 
 ## Ideas
