@@ -65,6 +65,20 @@ class TestGraphClassMethods:
         }
         assert mod.graph_class_methods(graph, "pkg.mod.Foo") == {"x": frozenset({"METADATA", "LIST"})}
 
+    def test_orphan_gate_method_silently_skipped(self, mod):
+        # A `gates` edge with no paired `of` edge -> the method is silently
+        # skipped.  gen-graph-check upstream guarantees the schema, so this
+        # branch shouldn't fire in practice; the test documents the intended
+        # behaviour and pins it against future refactors.
+        graph = {
+            "nodes": [],
+            "edges": [
+                {"kind": "gates", "src": "req:pkg.mod.Foo.x.g", "dst": "mtd:pkg.mod.Foo.x"},
+                # no matching `of` edge for the gate
+            ],
+        }
+        assert mod.graph_class_methods(graph, "pkg.mod.Foo") == {}
+
     def test_other_class_methods_excluded(self, mod):
         graph = {
             "nodes": [],
@@ -126,7 +140,9 @@ class TestPageClassMethods:
             "read_bytes": frozenset({"READ"}),
         }
 
-    def test_method_level_admonition_applies_only_to_preceding_method(self, mod):
+    def test_method_level_admonition_does_not_bleed_backward(self, mod):
+        # Admonition trailing the LAST directive applies to that directive
+        # (write_atomic), and must NOT reach back to an earlier directive (write).
         text = _page("""
 ## Writing
 
@@ -144,6 +160,27 @@ class TestPageClassMethods:
         ir = mod.page_class_methods(text, "remote_store._store.Store")
         assert ir["write"] == frozenset()
         assert ir["write_atomic"] == frozenset({"ATOMIC_WRITE"})
+
+    def test_method_level_admonition_does_not_bleed_forward(self, mod):
+        # Admonition BETWEEN two directives applies to the preceding directive
+        # (write), and must NOT bleed forward into the next directive (write_atomic).
+        text = _page("""
+## Writing
+
+::: remote_store.Store.write
+    options:
+      show_root_heading: true
+
+!!! note "Requires `Capability.WRITE`"
+    Method-level note for write.
+
+::: remote_store.Store.write_atomic
+    options:
+      show_root_heading: true
+""")
+        ir = mod.page_class_methods(text, "remote_store._store.Store")
+        assert ir["write"] == frozenset({"WRITE"})
+        assert ir["write_atomic"] == frozenset()
 
     def test_section_and_method_level_unioned(self, mod):
         text = _page("""

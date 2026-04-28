@@ -63,29 +63,26 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
-- [~] **ID-170 — `check_api_docs.py` — verify API reference pages against graph IR**
-  Hand-maintained API pages (`docs-src/api/store.md`, later `backend.md`,
-  `aio.md`, `index.md`) drift silently when methods or capability gates change.
-  Generation is the wrong tool here — the curated prose ("Most backends declare
-  it", section ordering, conditional-argument hedges) is the value. A *checker*
-  that walks `graph.json` and each page in parallel catches the drift without
-  touching the prose.
+- [ ] **ID-171 — `check_api_docs.py` Phase 2 — extend verifier to remaining API pages**
+  Phase 1 (ID-170, done) shipped the `Store` → `store.md` checker plus the
+  reusable `graph_class_methods` / `page_class_methods` / `compare`
+  extractors. Remaining pages to wire into `PAGES`:
 
-  Design: per page, two independent extractors produce the same canonical IR:
-  `{class: {method: frozenset(required_capabilities)}}`. A trivial dict-diff
-  step reports mismatches with localised messages ("`Store.foo` in graph but
-  missing from `store.md`"; "page claims `Store.bar` requires `WRITE` but
-  graph says `DELETE`"). Each extractor is independently testable.
+  - `Backend` → `docs-src/api/backend.md` — same shape as `Store`; should
+    drop in mechanically. Watch for the `glob` "default raises
+    CapabilityNotSupported" admonition style; may need a new
+    `_REQUIRES_PREFIXES` entry.
+  - `AsyncStore` / `AsyncBackend` → `docs-src/api/aio.md` — single page
+    documents both classes; `PAGES` will need either two entries pointing
+    at the same path or a per-class section anchor.
+  - `__all__` ↔ `docs-src/api/index.md` — different IR (`{symbol_name:
+    kind}` rather than `{method: caps}`); separate extractor pair, same
+    compare pattern. Optional: also verify `__all__` from
+    `backends/__init__.py` (secondary public API per ripple-check table).
 
-  **Phase 1 (this item):** `Store` → `docs-src/api/store.md`. Highest
-  staleness risk; `_GATING` already encodes the source of truth.
-
-  **Phase 2 (follow-on IDs):** `Backend` → `backend.md`; `AsyncStore`/
-  `AsyncBackend` → `aio.md`; `__all__` ↔ `index.md` symbol catalog.
-
-  Hatch scripts: `gen-api-check`. Wire into CI lint job alongside
-  `gen-features-check` and `gen-graph-check`. No `--write` mode (verification
-  only).
+  Each page is its own commit/PR for easy review (per the staged-rollout
+  decision in PR #548). No new infrastructure expected; Phase 1 already
+  covers the shared parsing primitives.
 
 - [ ] **ID-161 — Publish `llms.txt` to the docs site**
   Add a machine-readable discovery file at `docs-src/llms.txt` (served as

@@ -7,6 +7,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-170 — `check_api_docs.py` — verify `Store` page against graph IR (Phase 1)**
+  New verifier script projects `graph.json` and `docs-src/api/store.md` through
+  two pure extractors (`graph_class_methods`, `page_class_methods`) into the
+  same canonical IR `{method: frozenset(required_capabilities)}`, then a
+  trivial coverage compare reports a missing `:::` directive or an admonition
+  that fails to claim a required capability. Each extractor is independently
+  testable; the live page+graph round-trip runs in CI.
+  - **Caught:** `!!! note "Requires Capability.GLOB"` was placed before
+    `::: Store.glob` instead of after, against the file's own placement-rule
+    comment. Moved.
+  - **Wiring:** `hatch run gen-api-check`; CI lint step inserted immediately
+    after `gen-graph.py --check` (the data-flow source).
+  - **Tests:** 22 in `tests/scripts/test_check_api_docs.py` covering each
+    extractor in isolation, the no-bleed-backward and no-bleed-forward
+    invariants, the orphan-gate skip path, and a live integration round-trip.
+  - **Next:** ID-171 (Phase 2 — `Backend`, `AsyncStore`/`AsyncBackend`,
+    `index.md`).
+
 - [x] **ID-169 — Sort generated lists in FEATURES.md alphabetically**
   Backend rows in `backends_main` and `backends_flags`, and entries in
   `install_extras`, are now sorted alphabetically by type string / extra name.
