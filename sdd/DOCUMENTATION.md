@@ -36,7 +36,7 @@ Pages that try to be two things at once must be split.
 
 **Decision rule:** If it makes sense on GitHub without MkDocs, it goes in a source directory. If it only makes sense on the docs site, it goes in `docs-src/`.
 
-New how-to guides always go in `guides/`. New explanation pages that synthesize content from multiple sources go in `docs-src/`.
+New user-facing prose pages — how-to guides AND explanation pages — go in `guides/` as the canonical source. `docs-src/<page>.md` holds the corresponding `include-markdown` stub for the docs site build. Site-only artefacts (nav, templates, mkdocs-only includes) stay in `docs-src/`.
 
 ### 3. Docstring completeness
 
@@ -135,7 +135,7 @@ The README must contain:
 | Tutorial | Learning | Guided first success | `README.md` Quick Start, `docs-src/getting-started.md`, notebooks |
 | How-To Guides | Tasks | Answer "how do I X?" | `guides/` (readable on GitHub, wrapped into site via `docs-src/`) |
 | Reference | Information | Precise lookup | Python docstrings in `src/`, extracted into `docs-src/api/` |
-| Explanation | Understanding | Help understand *why* | `docs-src/` for user-facing pages, `sdd/adrs/` for formal decisions |
+| Explanation | Understanding | Help understand *why* | `guides/` for user-facing pages (rendered via `docs-src/` stubs), `sdd/adrs/` for formal decisions |
 
 ### Content drift prevention
 

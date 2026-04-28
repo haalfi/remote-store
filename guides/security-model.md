@@ -75,4 +75,4 @@ for response timelines, scope, and the fix policy.
 
 - [Architecture Overview](architecture.md) — system design and error model
 - [API Reference: Secret](api/config.md#remote_store.Secret)
-- [Spec 020: Credential Hygiene](design/specs/020-credential-hygiene.md)
+- [Spec 020: Credential Hygiene](https://github.com/haalfi/remote-store/blob/master/sdd/specs/020-credential-hygiene.md)

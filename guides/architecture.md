@@ -83,7 +83,7 @@ See the [Extensions guide](extensions.md) for the full list and installation
 instructions.
 
 Extensions follow the contract defined in
-[ADR-0008](design/adrs/0008-extension-architecture.md):
+[ADR-0008](https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0008-extension-architecture.md):
 no singleton state, no global registries, composable with the core Store API.
 
 ## Capability system
@@ -101,7 +101,7 @@ See the [Capabilities Matrix](capabilities-matrix.md) for the full table.
 ## Configuration philosophy
 
 Configuration follows strict rules
-([ADR-0002](design/adrs/0002-config-resolution-no-merge.md)):
+([ADR-0002](https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0002-config-resolution-no-merge.md)):
 
 1. Config-as-code has absolute priority (TOML, YAML, or dict)
 2. No merging, no overrides, no magic environment variable layering
@@ -109,7 +109,7 @@ Configuration follows strict rules
 
 ## Design decisions
 
-Detailed rationale lives in the [ADRs](design/adrs/index.md).
+Detailed rationale lives in the [ADRs](https://github.com/haalfi/remote-store/tree/master/sdd/adrs).
 
 ## See also
 

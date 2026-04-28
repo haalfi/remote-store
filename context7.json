@@ -36,8 +36,8 @@
     "Errors typed in remote_store.errors (re-exported from remote_store). Base RemoteStoreError; subclasses: NotFound, AlreadyExists, PermissionDenied, InvalidPath, CapabilityNotSupported, DirectoryNotEmpty, BackendUnavailable. SDK exceptions never leak.",
     "Configuration loads from TOML, YAML, dict, or Pydantic models via Registry; ${ENV_VAR} placeholders are resolved and credentials are wrapped in Secret automatically.",
     "Extensions in remote_store.ext (always available): batch, cache, glob, integrity, observe, partition, streams, transfer, write. Optional via extras: arrow (PyArrow + Parquet), otel (OpenTelemetry), pydantic, yaml, dagster (IO manager). See FEATURES.md.",
-    "Write methods and head() return WriteResult(path, size, source, digest, etag, version_id, last_modified, metadata). source: NativeSource (backend response), BasicSource (post-write stat), or SidecarSource (ext.write). Rich fields need WRITE_RESULT_NATIVE.",
-    "All write*() methods accept an optional metadata= dict[str, str]. The backend must declare Capability.USER_METADATA; otherwise a non-empty metadata raises CapabilityNotSupported. Use store.head(path) to fetch metadata + size + etag without reading.",
+    "Write methods return WriteResult(path, size, source, digest, etag, version_id, last_modified, metadata). source: NativeSource (write response), BasicSource (post-write stat), or SidecarSource (ext.write hash). Rich fields need WRITE_RESULT_NATIVE.",
+    "Write*() methods accept optional metadata= dict[str, str]; backend must declare USER_METADATA, otherwise non-empty raises CapabilityNotSupported. store.head(path) returns WriteResult metadata (size, etag, last_modified) without reading content.",
     "Capabilities split into method gates (READ, WRITE, DELETE, LIST, GLOB, MOVE, COPY, ATOMIC_WRITE, METADATA, USER_METADATA, required to call) and quality flags (SEEKABLE_READ, LAZY_READ, ATOMIC_MOVE, WRITE_RESULT_NATIVE, method works either way)."
   ]
 }
