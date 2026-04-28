@@ -1,4 +1,4 @@
-// BackendContract.dfy:Formal specification of the remote-store backend
+// BackendContract.dfy: Formal specification of the remote-store backend
 // behavioural contract.  Covers the six BK-140 gaps identified in
 // research-backend-contract-completeness.md:
 //
@@ -22,7 +22,7 @@
 //   preserves fs on error paths by construction (only mutates fs on
 //   the success path).  This means the frame condition is verified
 //   for the reference implementation but NOT enforced by the abstract
-//   contract:see gap coverage table in README.
+//   contract: see gap coverage table in README.
 // - Happy-path postconditions use `ensures <preconditions> ==> r.Ok?`
 //   to mandate success when no error condition applies.
 
@@ -55,7 +55,7 @@ datatype Capability =
   | CapWriteResultNative | CapUserMetadata
 
 // CapGlob is defined but the Glob method is intentionally excluded
-// from this contract:it is a capability-gated convenience method
+// from this contract: it is a capability-gated convenience method
 // with no unique postcondition structure (it delegates to ListFiles +
 // pattern matching).
 type CapabilitySet = set<Capability>
@@ -125,7 +125,7 @@ datatype FolderInfo = FolderInfo(
   total_size: nat
 )
 
-// Constructor helper for the default rich-field-empty FileInfo:keeps
+// Constructor helper for the default rich-field-empty FileInfo: keeps
 // refinement code terse when a backend does not populate rich fields.
 function BasicFileInfo(path: Path, name: string, size: nat): FileInfo
 {
@@ -198,7 +198,7 @@ function SlashCount(p: string): nat
 
 // Root sentinel: "." represents the virtual root directory.
 // Dafny's Path type requires non-empty strings, so the Python
-// adapter maps "" → "." at the type boundary:one translation
+// adapter maps "" → "." at the type boundary: one translation
 // point instead of per-method root guards.
 const Root: Path := "."
 
@@ -267,7 +267,7 @@ ghost function SumSizesSeq(fs: Filesystem, keys: seq<Path>): nat
   else fs[keys[0]].info.size + SumSizesSeq(fs, keys[1..])
 }
 
-// Sum file sizes over a set:delegates to seq-based sum via SetToSeq.
+// Sum file sizes over a set: delegates to seq-based sum via SetToSeq.
 // Ghost because SetToSeq uses `:|`.
 ghost function SumSizes(fs: Filesystem, keys: set<Path>): nat
   requires forall k | k in keys :: k in fs && fs[k].FileEntry?
@@ -321,7 +321,7 @@ trait Backend {
     ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
 
   // ====================================================================
-  // read(path) → content  (no modifies:fs unchanged)
+  // read(path) → content  (no modifies: fs unchanged)
   // ====================================================================
   method Read(path: Path) returns (r: Result<seq<nat>>)
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
@@ -386,14 +386,14 @@ trait Backend {
     ensures r.Ok? && r.value.source == BasicSource ==>
       r.value.digest.None? && r.value.etag.None? &&
       r.value.version_id.None? && r.value.last_modified.None?
-    // WR-012: metadata echo:verbatim when the gate was passed,
+    // WR-012: metadata echo: verbatim when the gate was passed,
     // None otherwise (including the empty-mapping carve-out).
     ensures r.Ok? ==>
       r.value.metadata == (
         if HasUserMetadata(metadata) && CapUserMetadata in capabilities
         then metadata
         else None)
-    // WR-013: user-metadata round-trip:FileInfo carries what was
+    // WR-013: user-metadata round-trip: FileInfo carries what was
     // written when the gate was passed.  On a non-declaring backend
     // FileInfo.metadata is None regardless of what was passed.
     ensures r.Ok? ==>
@@ -404,7 +404,7 @@ trait Backend {
     // WR-001a: stored FileInfo reflects the same rich-field shape as
     // WriteResult when CapWriteResultNative is declared.  This
     // postcondition detects *divergence* between WriteResult and the
-    // subsequently readable FileInfo:not *absence*: a backend that
+    // subsequently readable FileInfo: not *absence*: a backend that
     // returns WriteResult with all rich fields None and stores
     // FileInfo with all rich fields None still satisfies this clause
     // vacuously.  Absence of rich-field population by a declaring
@@ -515,7 +515,7 @@ trait Backend {
   // ====================================================================
   // get_folder_info(path) → FolderInfo
   // ====================================================================
-  // BE-017: symmetric with GetFileInfo:file path → InvalidPath.
+  // BE-017: symmetric with GetFileInfo: file path → InvalidPath.
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
     ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
@@ -528,7 +528,7 @@ trait Backend {
   // move(src, dst, overwrite)
   // ====================================================================
   // Gap 2: directory src → InvalidPath (not NotFound).
-  // Gap 5: atomicity is backend-dependent:backends that guarantee atomic
+  // Gap 5: atomicity is backend-dependent: backends that guarantee atomic
   //   rename declare CapAtomicMove; others use copy-then-delete.
   //   Postcondition covers only the final state, not intermediate visibility.
   method Move(src: Path, dst: Path, overwrite: bool)

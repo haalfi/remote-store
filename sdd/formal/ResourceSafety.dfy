@@ -1,4 +1,4 @@
-// ResourceSafety.dfy:Formal model of resource lifecycle safety.
+// ResourceSafety.dfy: Formal model of resource lifecycle safety.
 //
 // Covers two BK-140 gaps:
 //   Gap 6  SIO-001   Acquire-then-wrap: no handle leaked on wrapper failure
@@ -47,7 +47,7 @@ predicate SafeWrapInvariant(pipeline: WrapPipeline)
     // Failure: the layers sequence is TRUNCATED to only the handles
     // that were actually acquired before the failure.  Handles beyond
     // the failure point were never created and are absent from the
-    // sequence:the invariant says nothing about them because they
+    // sequence: the invariant says nothing about them because they
     // don't exist.  All layers present are Closed (cleaned up).
     0 <= pipeline.failed_at <= |pipeline.layers| &&
     (forall i | 0 <= i < pipeline.failed_at ::
@@ -86,7 +86,7 @@ lemma SafeWrapImpliesNoLeaks(pipeline: WrapPipeline)
 }
 
 // ---------------------------------------------------------------------------
-// §1.3  Safe wrapping:models _safe_wrap() from _stream.py
+// §1.3  Safe wrapping: models _safe_wrap() from _stream.py
 // ---------------------------------------------------------------------------
 
 // Models _safe_wrap(raw, *wrappers) from _stream.py.
@@ -101,7 +101,7 @@ method SafeWrap(rawId: nat, wrapperCount: nat, failAt: int)
   ensures AllHandlesAccountedFor(pipeline)
 {
   if failAt == -1 {
-    // All wrappers succeed:build a fully Wrapped pipeline.
+    // All wrappers succeed: build a fully Wrapped pipeline.
     var layers: seq<Resource> := [];
     var i := 0;
     while i <= wrapperCount
@@ -147,7 +147,7 @@ method SafeWrap(rawId: nat, wrapperCount: nat, failAt: int)
 }
 
 // ---------------------------------------------------------------------------
-// §1.4  Unsafe wrapping:demonstrates the leak (pre-fix pattern)
+// §1.4  Unsafe wrapping: demonstrates the leak (pre-fix pattern)
 // ---------------------------------------------------------------------------
 
 method UnsafeWrap(rawId: nat, wrapperCount: nat, failAt: nat)
@@ -241,7 +241,7 @@ method CopyDeleteMove(srcExists: bool, dstExists: bool, overwrite: bool,
   assert phase == CopyDone;
 
   if deleteFails {
-    // Phase 2 failed:both src and dst exist.
+    // Phase 2 failed: both src and dst exist.
     // Backend MUST report this as an error.
     assert phase == CopyDone;
     return;
@@ -260,7 +260,7 @@ lemma CopyDoneIsNotSuccess(phase: MovePhase)
   ensures !phase.Failed?
 {
   assert phase.CopyDone?;
-  // CopyDone? is not DeleteDone? is not Failed?:disjoint constructors.
+  // CopyDone? is not DeleteDone? is not Failed?: disjoint constructors.
 }
 
 // Both move strategies agree on the happy path.
@@ -271,7 +271,7 @@ lemma MoveFinalStateEquivalence(
   requires copyDeletePhase == DeleteDone
   ensures atomicPhase == copyDeletePhase
 {
-  // Trivially equal:same constructor, same value.
+  // Trivially equal: same constructor, same value.
 }
 
 // ---------------------------------------------------------------------------
@@ -296,7 +296,7 @@ method SafeConnect(connectSucceeds: bool)
     state := Connected;
     assert state == Connected;
   } else {
-    // Connection failed:close the client.
+    // Connection failed: close the client.
     state := Released;
     assert state == Released;
   }
