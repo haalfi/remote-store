@@ -63,13 +63,15 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
-- [ ] **ID-174 — Diátaxis-aligned docs filesystem reorg**
+- [ ] **ID-174 — Diátaxis-aligned docs filesystem reorg under `docs/`**
   `_nav.yml` already classifies pages into Diátaxis buckets (Tutorial, Guides,
   Reference, Explanation, Further Reading) but the **filesystem** doesn't
   reflect them: everything lives in `guides/`, with category determined
   per-page by the nav title. This works in mkdocs but obscures intent for
   contributors and external indexers (Context7, llms.txt tooling, code
-  search) that read filesystem layout as a signal.
+  search) that read filesystem layout as a signal. Five top-level folders
+  for prose would also clutter the repo root, so all Diátaxis subdirs nest
+  under a single `docs/` umbrella.
 
   **Misplacements per current `_nav.yml` (commit `0cabcda`):**
   - Explanation in `guides/`: `concurrency.md`, `performance.md` —
@@ -83,29 +85,37 @@ Existing items may be more verbose — trim on next touch.
 
   **Target layout:**
   ```
-  tutorials/    getting-started.md (extracted from README slice)
-  how-to/       async, batch-operations, cache, custom-backend-guide,
-                dagster, glob-pattern-matching, observe, parquet-datasets,
-                retry, transfer-operations, troubleshooting, write-integrity,
-                health-check, data-lake-patterns, choosing-a-backend,
-                pyarrow-adapter, async-sync-bridges, backends/*
-  reference/    capabilities-matrix.md, FEATURES.md, migration.md
-  explanation/  architecture.md, security-model.md, concurrency.md,
-                performance.md, development-story.md
-  further/      further-reading.md
+  docs/
+    tutorials/    getting-started.md (extracted from README slice)
+    how-to/       async, batch-operations, cache, custom-backend-guide,
+                  dagster, glob-pattern-matching, observe, parquet-datasets,
+                  retry, transfer-operations, troubleshooting, write-integrity,
+                  health-check, data-lake-patterns, choosing-a-backend,
+                  pyarrow-adapter, async-sync-bridges, backends/*
+    reference/    capabilities-matrix.md, FEATURES.md, migration.md
+    explanation/  architecture.md, security-model.md, concurrency.md,
+                  performance.md, development-story.md
+    further/      further-reading.md
   ```
 
+  `guides/` disappears; `FEATURES.md` and `migration.md` move from the
+  repo root into `docs/reference/`. The `docs-src/` stub layer stays as-is
+  for this item — collapsing it is a separate question worth its own
+  treatment.
+
   **Scope of the change:**
-  1. Move ~30 files into the new top-level folders.
-  2. Replace `docs-src/<page>.md` include-markdown stubs to point at the
-     new paths.
+  1. Move ~30 files into the new `docs/<bucket>/` paths.
+  2. Update `docs-src/<page>.md` include-markdown stubs to point at the
+     new paths (e.g. `../docs/explanation/architecture.md`).
   3. Update `_link_map.yml` (cross-reference resolver) for every relocated
      page.
-  4. Update `context7.json` `folders` to enumerate the new dirs (or switch
-     to a single `docs/` umbrella with the four subdirs inside).
+  4. Update `context7.json` `folders` — replace `guides/`, `FEATURES.md`,
+     `migration.md` with `docs/`.
   5. Update `examples/snippets/*.py` source-comment headers.
   6. Update `CLAUDE.md` and `sdd/DOCUMENTATION.md` placement rules.
-  7. Verify `hatch run docs-build --strict` clean and Context7 still
+  7. Update any references in `sdd/` (specs, ADRs, RFCs) that point at
+     `guides/...` or root `FEATURES.md` / `migration.md`.
+  8. Verify `hatch run docs-build --strict` clean and Context7 still
      surfaces all expected files.
 
   **Why not now:** ~30-file refactor with link-map and CHANGELOG impact
@@ -115,9 +125,10 @@ Existing items may be more verbose — trim on next touch.
   twice.
 
   **Exit criteria:** filesystem layout matches `_nav.yml` Diátaxis
-  categories one-to-one; `_link_map.yml` resolves all references;
-  `docs-build --strict` clean; `context7.json` updated; CLAUDE.md and
-  `sdd/DOCUMENTATION.md` reflect the new structure.
+  categories one-to-one under a single `docs/` root; `_link_map.yml`
+  resolves all references; `docs-build --strict` clean; `context7.json`
+  updated; `CLAUDE.md` and `sdd/DOCUMENTATION.md` reflect the new
+  structure.
 
 - [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/api/index.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
