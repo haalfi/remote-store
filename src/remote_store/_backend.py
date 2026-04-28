@@ -7,7 +7,6 @@ import shutil
 import tempfile
 from typing import TYPE_CHECKING, BinaryIO, ClassVar, TypeVar
 
-from remote_store._capabilities import Capability
 from remote_store._errors import CapabilityNotSupported
 
 if TYPE_CHECKING:
@@ -20,28 +19,6 @@ if TYPE_CHECKING:
     from remote_store._types import WritableContent
 
 T = TypeVar("T")
-
-# Capability requirements for each gated Backend method.  Consumed by
-# gen_graph.py to emit gates/of edges into graph.json; not enforced at runtime
-# (enforcement is in Store._gate, which wraps these methods).
-_BACKEND_GATING: dict[str, Capability] = {
-    "read": Capability.READ,
-    "read_bytes": Capability.READ,
-    "read_seekable": Capability.READ,
-    "write": Capability.WRITE,
-    "write_atomic": Capability.ATOMIC_WRITE,
-    "open_atomic": Capability.ATOMIC_WRITE,
-    "delete": Capability.DELETE,
-    "delete_folder": Capability.DELETE,
-    "list_files": Capability.LIST,
-    "list_folders": Capability.LIST,
-    "iter_children": Capability.LIST,
-    "glob": Capability.GLOB,
-    "get_file_info": Capability.METADATA,
-    "get_folder_info": Capability.METADATA,
-    "move": Capability.MOVE,
-    "copy": Capability.COPY,
-}
 
 # BUG-162: Explicit copy buffer size for shutil.copyfileobj.  On Windows
 # the default (shutil.COPY_BUFSIZE = 1 MiB) causes the transfer pipe layer

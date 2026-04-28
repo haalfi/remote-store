@@ -209,10 +209,27 @@ def _store_gating() -> dict[str, Any]:
     return _GATING
 
 
-def _backend_gating() -> dict[str, Any]:
-    from remote_store._backend import _BACKEND_GATING
-
-    return _BACKEND_GATING
+# Capability-name strings for each gated Backend method.  Defined here
+# (gen_graph.py is the only consumer) to avoid an unused-variable alert in
+# _backend.py — Backend has no runtime _gate() equivalent, unlike Store.
+_BACKEND_GATING: dict[str, str] = {
+    "read": "READ",
+    "read_bytes": "READ",
+    "read_seekable": "READ",
+    "write": "WRITE",
+    "write_atomic": "ATOMIC_WRITE",
+    "open_atomic": "ATOMIC_WRITE",
+    "delete": "DELETE",
+    "delete_folder": "DELETE",
+    "list_files": "LIST",
+    "list_folders": "LIST",
+    "iter_children": "LIST",
+    "glob": "GLOB",
+    "get_file_info": "METADATA",
+    "get_folder_info": "METADATA",
+    "move": "MOVE",
+    "copy": "COPY",
+}
 
 
 def build_graph() -> dict[str, Any]:
@@ -377,9 +394,8 @@ def build_graph() -> dict[str, Any]:
     edges.append({"kind": "of", "src": _gfi_req2, "dst": f"cap:{Capability.LIST.name}", "index": 0})
 
     # --- Backend method nodes + gates/of edges ---
-    backend_gating = _backend_gating()
     backend_cls = pkg["_backend"]["Backend"]
-    for method_name, cap in backend_gating.items():
+    for method_name, cap_name in _BACKEND_GATING.items():
         if method_name not in backend_cls.members:  # pragma: no cover
             raise AssertionError(
                 f"_BACKEND_GATING key {method_name!r} is not a Griffe member of Backend; "
@@ -387,7 +403,7 @@ def build_graph() -> dict[str, Any]:
             )
         mtd_uri = f"mtd:remote_store._backend.Backend.{method_name}"
         req_uri = f"req:remote_store._backend.Backend.{method_name}.gate"
-        cap_uri = f"cap:{cap.name}"
+        cap_uri = f"cap:{cap_name}"
 
         member = backend_cls[method_name]
         nodes.append(
