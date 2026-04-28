@@ -209,6 +209,29 @@ def _store_gating() -> dict[str, Any]:
     return _GATING
 
 
+# Capability-name strings for each gated Backend method.  Defined here
+# (gen_graph.py is the only consumer) to avoid an unused-variable alert in
+# _backend.py — Backend has no runtime _gate() equivalent, unlike Store.
+_BACKEND_GATING: dict[str, str] = {
+    "read": "READ",
+    "read_bytes": "READ",
+    "read_seekable": "READ",
+    "write": "WRITE",
+    "write_atomic": "ATOMIC_WRITE",
+    "open_atomic": "ATOMIC_WRITE",
+    "delete": "DELETE",
+    "delete_folder": "DELETE",
+    "list_files": "LIST",
+    "list_folders": "LIST",
+    "iter_children": "LIST",
+    "glob": "GLOB",
+    "get_file_info": "METADATA",
+    "get_folder_info": "METADATA",
+    "move": "MOVE",
+    "copy": "COPY",
+}
+
+
 def build_graph() -> dict[str, Any]:
     """Build and return the full graph dict."""
     pyproject = _load_pyproject()
@@ -333,8 +356,6 @@ def build_graph() -> dict[str, Any]:
             edges.append({"kind": "enables", "src": f"xtr:{extra_name}", "dst": backend_uri})
 
     # --- Store method nodes + gates/of edges ---
-    # Today _GATING targets Store only. To extend to AsyncStore, also walk
-    # pkg.members["aio"].members["_async_store"].members["AsyncStore"].
     store_cls = pkg["_store"]["Store"]
     for method_name, cap in gating.items():
         if method_name not in store_cls.members:  # pragma: no cover
@@ -371,6 +392,35 @@ def build_graph() -> dict[str, Any]:
     nodes.append({"id": _gfi_req2, "kind": "requirement", "mode": "all"})
     edges.append({"kind": "gates", "src": _gfi_req2, "dst": _gfi_mtd})
     edges.append({"kind": "of", "src": _gfi_req2, "dst": f"cap:{Capability.LIST.name}", "index": 0})
+
+    # --- Backend method nodes + gates/of edges ---
+    backend_cls = pkg["_backend"]["Backend"]
+    for method_name, cap_name in _BACKEND_GATING.items():
+        if method_name not in backend_cls.members:  # pragma: no cover
+            raise AssertionError(
+                f"_BACKEND_GATING key {method_name!r} is not a Griffe member of Backend; "
+                "update Backend or _BACKEND_GATING to keep them in sync."
+            )
+        mtd_uri = f"mtd:remote_store._backend.Backend.{method_name}"
+        req_uri = f"req:remote_store._backend.Backend.{method_name}.gate"
+        cap_uri = f"cap:{cap_name}"
+
+        member = backend_cls[method_name]
+        nodes.append(
+            {
+                "id": mtd_uri,
+                "kind": "method",
+                "summary": method_name,
+                "is_abstract": "abstractmethod" in member.labels,
+                "is_async": "async" in member.labels,
+                "file": _rel_path(member.filepath),
+                "line": member.lineno or 0,
+            }
+        )
+        nodes.append({"id": req_uri, "kind": "requirement", "mode": "all"})
+
+        edges.append({"kind": "gates", "src": req_uri, "dst": mtd_uri})
+        edges.append({"kind": "of", "src": req_uri, "dst": cap_uri, "index": 0})
 
     # --- Deduplicate mirrors edges ---
     # Each __mirror__ annotation produces one async→sync edge.  Dedup by

@@ -63,26 +63,26 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
-- [ ] **ID-171 — `check_api_docs.py` Phase 2 — extend verifier to remaining API pages**
-  Phase 1 (ID-170, done) shipped the `Store` → `store.md` checker plus the
-  reusable `graph_class_methods` / `page_class_methods` / `compare`
-  extractors. Remaining pages to wire into `PAGES`:
+- [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/api/index.md`**
+  Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
+  Different IR from the method-caps checker: `{symbol_name: kind}` rather
+  than `{method: caps}`; separate extractor pair, same compare pattern.
+  Sources of truth: `remote_store.__all__` (primary public API) and
+  `remote_store.backends.__all__` (secondary; e.g. `SFTPUtils`). Page side:
+  parse `[Name](page.md)` link rows in the existing tables under `## Core`,
+  `## Backends`, etc. Compare = set diff with missing/extra symbol messages.
+  Stop and confirm before implementing — this is a genuinely different IR
+  (per the Phase 1 reviewers' staged-rollout preference).
 
-  - `Backend` → `docs-src/api/backend.md` — same shape as `Store`; should
-    drop in mechanically. Watch for the `glob` "default raises
-    CapabilityNotSupported" admonition style; may need a new
-    `_REQUIRES_PREFIXES` entry.
-  - `AsyncStore` / `AsyncBackend` → `docs-src/api/aio.md` — single page
-    documents both classes; `PAGES` will need either two entries pointing
-    at the same path or a per-class section anchor.
-  - `__all__` ↔ `docs-src/api/index.md` — different IR (`{symbol_name:
-    kind}` rather than `{method: caps}`); separate extractor pair, same
-    compare pattern. Optional: also verify `__all__` from
-    `backends/__init__.py` (secondary public API per ripple-check table).
-
-  Each page is its own commit/PR for easy review (per the staged-rollout
-  decision in PR #548). No new infrastructure expected; Phase 1 already
-  covers the shared parsing primitives.
+- [ ] **ID-172 — `check_api_docs.py` — `AsyncStore`/`AsyncBackend` ↔ `docs-src/api/aio.md`**
+  Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
+  Blocked on aio rework: the `aio.md` page and `AsyncStore`/`AsyncBackend`
+  classes need rework before the verifier can be wired in meaningfully.
+  Wire up after that rework lands: add `_ASYNC_STORE_GATING` (or equivalent)
+  to `_async_store.py`, extend gen_graph.py for async gates, add both
+  classes to `PAGES` pointing at `aio.md`.
+  Griffe traversal path (for the implementer):
+  `pkg.members["aio"].members["_async_store"].members["AsyncStore"]`
 
 - [ ] **ID-161 — Publish `llms.txt` to the docs site**
   Add a machine-readable discovery file at `docs-src/llms.txt` (served as

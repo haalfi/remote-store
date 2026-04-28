@@ -216,6 +216,26 @@ def test_mirrors_edge_carries_capability_delta(gen_graph_module):
             assert d[key] == sorted(d[key]), f"{key} not sorted in {mirror_edge}"
 
 
+def test_backend_gating_keys_match_backend_members(gen_graph_module):
+    """Every key in _BACKEND_GATING must be a real member of the Backend class.
+
+    Guards against stale entries after a Backend method is renamed or removed.
+    Without this test the dict lives far from the class it describes, so a
+    rename would only surface at the next ``gen-graph-check`` CI run.
+    """
+    import griffe
+
+    sys.path.insert(0, str(ROOT / "src"))
+    pkg = griffe.load("remote_store")
+    backend_members = set(pkg["_backend"]["Backend"].members)
+
+    for method_name in gen_graph_module._BACKEND_GATING:
+        assert method_name in backend_members, (
+            f"_BACKEND_GATING key {method_name!r} not found in Backend.members — "
+            "update _BACKEND_GATING in scripts/gen_graph.py"
+        )
+
+
 def test_graph_json_is_up_to_date(gen_graph_module):
     """Committed graph.json must match a fresh build_graph() call.
 

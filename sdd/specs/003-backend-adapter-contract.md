@@ -288,3 +288,22 @@ raising `InvalidPath`. All other operations MUST raise appropriate errors.
 **Postconditions:** Returns only files (not folders). Paths in returned `FileInfo` objects are backend-relative (same convention as `list_files`).
 **Raises:** `CapabilityNotSupported` if the backend lacks `GLOB`.
 **See also:** [018-glob.md](018-glob.md) (GLOB-003 through GLOB-005), [ADR-0009](../adrs/0009-glob-three-tier-design.md).
+
+### BE-027: Capability-Gated Methods (Graph IR Metadata)
+
+**Invariant:** The mapping from Backend method names to required capability names used in the graph IR is maintained in `_BACKEND_GATING` in `scripts/gen_graph.py`. This is static metadata for documentation and tooling — Backend has no runtime `_gate()` equivalent (unlike `Store`). The per-method capability associations are:
+
+| Method(s) | Required capability |
+|-----------|---------------------|
+| `read`, `read_bytes`, `read_seekable` | `READ` |
+| `write` | `WRITE` |
+| `write_atomic`, `open_atomic` | `ATOMIC_WRITE` |
+| `delete`, `delete_folder` | `DELETE` |
+| `list_files`, `list_folders`, `iter_children` | `LIST` |
+| `glob` | `GLOB` |
+| `get_file_info`, `get_folder_info` | `METADATA` |
+| `move` | `MOVE` |
+| `copy` | `COPY` |
+
+**Enforcement:** Runtime capability enforcement for these methods is performed by `Store._gate()`, not by `Backend` directly. `_BACKEND_GATING` is the authoritative source for graph-IR generation only; keeping it in sync with the Backend ABC is enforced by `tests/scripts/test_gen_graph.py::test_backend_gating_keys_match_backend_members`.
+**See also:** `sdd/CLAUDE-REFERENCE.md` ripple-check row for `_BACKEND_GATING`.

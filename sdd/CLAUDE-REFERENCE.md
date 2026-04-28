@@ -82,6 +82,11 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `docs-src/api/store.md` `!!! note "Requires …"`           |
 |                            | admonitions — verified by `hatch run gen-api-check`       |
 |                            | (ID-170)                                                  |
+| **`_BACKEND_GATING` dict** | `sdd/specs/003-backend-adapter-contract.md` (BE-gate      |
+| (key→cap-name strings      | entries), `docs-src/api/backend.md` `!!! note "Requires   |
+| in `scripts/gen_graph.py`) | …"` admonitions — verified by `hatch run gen-api-check`   |
+|                            | (ID-171). Lives in gen_graph.py (static-extraction only;  |
+|                            | Backend has no runtime _gate() equivalent).               |
 | **`__mirror__` attribute** | `sdd/specs/` async spec (async-mirror invariant),         |
 | (on an async backend)      | `scripts/gen_graph.py` (mirrors-edge emission),           |
 |                            | `tests/` mirror test if backend is added or removed       |

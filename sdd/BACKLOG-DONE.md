@@ -7,6 +7,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-171 — `check_api_docs.py` Phase 2, sub-task 1 — `Backend` → `backend.md`**
+  Precondition discovered and fixed: `gen_graph.py` only emitted `gates` edges
+  for `Store`; `Backend` had no edges, making any PAGES entry vacuous.
+  - Added `_BACKEND_GATING: dict[str, str]` (16 capability-name string entries)
+    directly to `scripts/gen_graph.py` — its only consumer. Placing it in
+    `_backend.py` would have no runtime use (Backend has no `_gate()` equivalent)
+    and triggered a CodeQL unused-variable alert.
+  - Extended `gen_graph.py` with a Backend method/requirement nodes + gates/of
+    edges loop. Graph grows from 75 → 107 nodes, 158 → 222 edges.
+  - Added `remote_store._backend.Backend` to `PAGES` in `check_api_docs.py`.
+    Error-hint message updated to cover both gating dicts.
+  - **No drift found** — `backend.md` was already correctly annotated.
+  - Added `test_real_graph_backend_methods`; `TestLivePages` auto-covers
+    `backend.md` via PAGES. 23 tests total.
+  - **Remaining** (split per convention): `__all__` ↔ `index.md` → ID-173;
+    `AsyncStore`/`AsyncBackend` ↔ `aio.md` → ID-172 (blocked on aio rework).
+
 - [x] **ID-170 — `check_api_docs.py` — verify `Store` page against graph IR (Phase 1)**
   New verifier script projects `graph.json` and `docs-src/api/store.md` through
   two pure extractors (`graph_class_methods`, `page_class_methods`) into the
