@@ -105,6 +105,32 @@ class TestGraphClassMethods:
         for ungated in ("exists", "is_file", "is_folder", "ping", "close", "child", "resolve"):
             assert ungated not in ir
 
+    def test_real_graph_backend_methods(self, mod):
+        # Sanity check against the live graph: a few well-known Backend methods.
+        graph = mod._load_graph()
+        ir = mod.graph_class_methods(graph, "remote_store._backend.Backend")
+        assert ir["read"] == frozenset({"READ"})
+        assert ir["write"] == frozenset({"WRITE"})
+        assert ir["write_atomic"] == frozenset({"ATOMIC_WRITE"})
+        assert ir["glob"] == frozenset({"GLOB"})
+        assert ir["get_file_info"] == frozenset({"METADATA"})
+        assert ir["get_folder_info"] == frozenset({"METADATA"})
+        # Ungated methods must NOT appear.
+        for ungated in (
+            "name",
+            "capabilities",
+            "exists",
+            "is_file",
+            "is_folder",
+            "resolve",
+            "check_health",
+            "close",
+            "unwrap",
+            "native_path",
+            "to_key",
+        ):
+            assert ungated not in ir
+
 
 # ---------------------------------------------------------------------------
 # Page extractor

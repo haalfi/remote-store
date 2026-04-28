@@ -1,4 +1,4 @@
-"""Verify API reference pages against graph IR (ID-170).
+"""Verify API reference pages against graph IR (ID-170, ID-171).
 
 Hand-maintained API pages drift silently when methods or capability gates
 change.  This script walks ``graph.json`` and each API page in parallel and
@@ -17,7 +17,8 @@ Each extractor is a pure function over its single input -- testable in
 isolation.
 
 Phase 1: Store -> ``docs-src/api/store.md``.
-Phase 2 (separate IDs): Backend, AsyncStore/AsyncBackend, ``api/index.md``.
+Phase 2: Backend -> ``docs-src/api/backend.md``.
+         AsyncStore/AsyncBackend and ``api/index.md`` are follow-on items.
 
 Run with:
   hatch run gen-api-check
@@ -34,10 +35,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 GRAPH = ROOT / "docs-src" / "_data" / "graph" / "graph.json"
 
-# Class qualified-name -> page that documents it.  Phase 1 ships only Store;
-# Phase 2 will append Backend / AsyncStore / AsyncBackend entries here.
+# Class qualified-name -> page that documents it.
 PAGES: dict[str, Path] = {
     "remote_store._store.Store": ROOT / "docs-src" / "api" / "store.md",
+    "remote_store._backend.Backend": ROOT / "docs-src" / "api" / "backend.md",
 }
 
 # Admonition-title prefixes that introduce a capability requirement claim.
@@ -288,8 +289,9 @@ def main() -> int:
         for e in errors:
             print(f"  - {e}", file=sys.stderr)
         print(
-            "\nFix the page (or update _GATING in src/remote_store/_store.py "
-            "if the gate itself is wrong, then re-run `hatch run gen-graph`).",
+            "\nFix the page, or update the relevant _GATING dict "
+            "(Store: src/remote_store/_store.py, Backend: src/remote_store/_backend.py) "
+            "if the gate itself is wrong, then re-run `hatch run gen-graph`.",
             file=sys.stderr,
         )
         return 1
