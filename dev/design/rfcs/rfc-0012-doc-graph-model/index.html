@@ -9344,7 +9344,7 @@ and release-skill integration) is tracked under ID-159.</p>
 addressable by a stable URI string. No separate adjacency structure — queries
 iterate the arrays.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;schema_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.1&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;schema_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.2&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;source_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.24.0&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;snapshot&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.24.0&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">&quot;nodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="err">...</span><span class="w"> </span><span class="p">],</span>
@@ -9539,8 +9539,8 @@ disjunction.</p>
 <tr>
 <td><code>mirrors</code></td>
 <td>class → class</td>
-<td>—</td>
-<td>Canonical direction: async → sync peer (one edge per pair; deduped by generator)</td>
+<td><code>capability_delta: {async_only: [str], sync_only: [str]}</code></td>
+<td>Canonical direction: async → sync peer (one edge per pair; deduped by generator). Capability lists are sorted; names are anchored to the canonical direction so <code>async_only</code> lists capabilities present on <code>src</code> (async) but absent on <code>dst</code> (sync).</td>
 </tr>
 <tr>
 <td><code>composes</code></td>
@@ -9819,6 +9819,13 @@ async backend carries a <code>__mirror__: ClassVar[type[T]]</code> annotation po
 to its sync peer.  The generator emits one directed edge per pair in the
 canonical async → sync direction (deduped).  Consumers that need to query from
 the sync side must reverse the edge themselves.</p>
+<p><strong>Capability asymmetry between mirror peers.</strong> Resolved by ID-162 (schema 1.2):
+async and sync peers may declare different capability sets (e.g.
+<code>AsyncMemoryBackend</code> includes <code>LAZY_READ</code>; <code>MemoryBackend</code> does not). Each
+<code>mirrors</code> edge carries a <code>capability_delta</code> object with sorted <code>async_only</code> and
+<code>sync_only</code> capability-name lists so consumers can render the asymmetry instead
+of treating the peers as equivalent. The lists are always present (empty when
+the peers are symmetric).</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>ID-159 (<code>FEATURES.md</code> hybrid generation): <code>sdd/BACKLOG.md</code></li>

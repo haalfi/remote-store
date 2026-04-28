@@ -974,11 +974,21 @@
       "src": "cls:remote_store.backends._sftp.SFTPBackend"
     },
     {
+      "capability_delta": {
+        "async_only": [],
+        "sync_only": []
+      },
       "dst": "cls:remote_store.backends._azure.AzureBackend",
       "kind": "mirrors",
       "src": "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
     },
     {
+      "capability_delta": {
+        "async_only": [
+          "LAZY_READ"
+        ],
+        "sync_only": []
+      },
       "dst": "cls:remote_store.backends._memory.MemoryBackend",
       "kind": "mirrors",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
@@ -1615,7 +1625,7 @@
       "kind_of": "backend"
     }
   ],
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "snapshot": "0.24.0",
   "source_version": "0.24.0"
 }

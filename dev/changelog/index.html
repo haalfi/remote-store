@@ -11533,6 +11533,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>ID-162: graph IR — <code>mirrors</code> edges carry <code>capability_delta</code> (<code>async_only</code>/<code>sync_only</code>) so consumers can render sync↔async capability asymmetries (e.g. <code>LAZY_READ</code> on <code>AsyncMemoryBackend</code>); RFC-0012 schema bumped to 1.2.</li>
 <li>fix: <code>AsyncAzureBackend.__del__</code> — extract <code>_has_open_clients()</code> helper to resolve CodeQL <code>py/overly-complex-delete</code> alert #55.</li>
 <li>fix: pin <code>tla2tools.jar</code> to v1.7.4 in <code>ci.yml</code>, <code>tlc.Dockerfile</code>, and <code>tlc_check.sh</code> (v1.8.0 was a pre-release with inconsistent checksums); add <code>scripts/check_tla_no_emdash.py</code> CI guard; remove em dashes from TLA+ and Dafny formal files.</li>
 <li>ID-168: audit and enforce non-src test subpackage placement — <code>tests/test_gen_features.py</code> moved to <code>tests/scripts/</code>; placement rule added to <code>sdd/TESTING.md</code>; <code>scripts/check_test_placement.py</code> CI lint check added to <code>lint</code> job and <code>check-test-quality</code>.</li>
