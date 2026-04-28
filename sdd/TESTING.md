@@ -19,7 +19,8 @@ Each test file belongs in the subpackage matching its subject:
 | `scripts/` utilities and build tooling | `tests/scripts/` |
 
 Tests that load modules from `scripts/` via `sys.path` manipulation must live
-in `tests/scripts/`. The `check-test-placement` hatch script enforces this.
+in `tests/scripts/`. The `check-test-placement` lint enforces this for `sys.path`
+patterns; tests using `importlib.util.spec_from_file_location` are review-enforced.
 
 ## Rules
 

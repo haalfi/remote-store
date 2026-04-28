@@ -88,7 +88,11 @@ def _uses_scripts_sys_path(tree: ast.Module, scripts_names: set[str]) -> int | N
 
 def _check_file(path: Path) -> str | None:
     """Return a violation message if the file belongs in tests/scripts/, else None."""
-    source = path.read_text(encoding="utf-8")
+    try:
+        source = path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError) as exc:
+        sys.stderr.write(f"Skipping {path}: {type(exc).__name__}\n")
+        return None
     if "sys.path" not in source or "scripts" not in source:
         return None
     try:
@@ -99,7 +103,7 @@ def _check_file(path: Path) -> str | None:
     scripts_names = _names_referencing_scripts(tree)
     line = _uses_scripts_sys_path(tree, scripts_names)
     if line is not None:
-        return f"{path}:{line}: loads scripts/ module via sys.path — move to tests/scripts/"
+        return f"{path}:{line}: loads scripts/ module via sys.path: move to tests/scripts/"
     return None
 
 

@@ -169,6 +169,14 @@ class TestCheckFile:
         assert result is None
         assert "SyntaxError" in capsys.readouterr().err
 
+    def test_unicode_decode_error_returns_none(self, tmp_path, capsys):
+        f = tmp_path / "test_bad_encoding.py"
+        # Raw bytes not valid UTF-8 — read_text raises UnicodeDecodeError.
+        f.write_bytes(b"# scripts sys.path\n\xff\xfe")
+        result = _check_file(f)
+        assert result is None
+        assert "UnicodeDecodeError" in capsys.readouterr().err
+
 
 # ---------------------------------------------------------------------------
 # main()  (end-to-end)
