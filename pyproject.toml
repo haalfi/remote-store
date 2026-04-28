@@ -168,6 +168,7 @@ gen-features = "python scripts/gen_features.py"
 gen-features-check = "python scripts/gen_features.py --check"
 gen-graph-viz = "python scripts/gen_graph_viz.py"
 gen-graph-viz-check = "python scripts/gen_graph_viz.py --check"
+gen-api-check = "python scripts/check_api_docs.py"
 check-test-placement = "python scripts/check_test_placement.py tests"
 check-test-quality = ["python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests"]
 # Mutation testing — scoped for Windows command-line length limits (~450 tests max).

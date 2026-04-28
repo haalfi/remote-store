@@ -78,7 +78,10 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `guides/custom-backend-guide.md`, `examples/snippets/`    |
 | **`_GATING` dict**         | `sdd/specs/001-store-api.md` (STORE-gate entries),        |
 | (key→Capability mapping    | `tests/test_store.py` (gate-fires parametrize list),      |
-| in `_store.py`)            | `guides/` if a method's capability docs change            |
+| in `_store.py`)            | `guides/` if a method's capability docs change.           |
+|                            | `docs-src/api/store.md` `!!! note "Requires …"`           |
+|                            | admonitions — verified by `hatch run gen-api-check`       |
+|                            | (ID-170)                                                  |
 | **`__mirror__` attribute** | `sdd/specs/` async spec (async-mirror invariant),         |
 | (on an async backend)      | `scripts/gen_graph.py` (mirrors-edge emission),           |
 |                            | `tests/` mirror test if backend is added or removed       |

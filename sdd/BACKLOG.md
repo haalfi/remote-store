@@ -63,6 +63,27 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
+- [ ] **ID-171 — `check_api_docs.py` Phase 2 — extend verifier to remaining API pages**
+  Phase 1 (ID-170, done) shipped the `Store` → `store.md` checker plus the
+  reusable `graph_class_methods` / `page_class_methods` / `compare`
+  extractors. Remaining pages to wire into `PAGES`:
+
+  - `Backend` → `docs-src/api/backend.md` — same shape as `Store`; should
+    drop in mechanically. Watch for the `glob` "default raises
+    CapabilityNotSupported" admonition style; may need a new
+    `_REQUIRES_PREFIXES` entry.
+  - `AsyncStore` / `AsyncBackend` → `docs-src/api/aio.md` — single page
+    documents both classes; `PAGES` will need either two entries pointing
+    at the same path or a per-class section anchor.
+  - `__all__` ↔ `docs-src/api/index.md` — different IR (`{symbol_name:
+    kind}` rather than `{method: caps}`); separate extractor pair, same
+    compare pattern. Optional: also verify `__all__` from
+    `backends/__init__.py` (secondary public API per ripple-check table).
+
+  Each page is its own commit/PR for easy review (per the staged-rollout
+  decision in PR #548). No new infrastructure expected; Phase 1 already
+  covers the shared parsing primitives.
+
 - [ ] **ID-161 — Publish `llms.txt` to the docs site**
   Add a machine-readable discovery file at `docs-src/llms.txt` (served as
   `https://docs.remotestore.dev/llms.txt`) per the
