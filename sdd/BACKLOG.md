@@ -63,6 +63,86 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
+- [ ] **ID-174 — Diátaxis-aligned docs filesystem reorg under `docs/`**
+  `_nav.yml` already classifies pages into Diátaxis buckets (Tutorial, Guides,
+  Reference, Explanation, Further Reading) but the **filesystem** doesn't
+  reflect them: everything lives in `guides/`, with category determined
+  per-page by the nav title. This works in mkdocs but obscures intent for
+  contributors and external indexers (Context7, llms.txt tooling, code
+  search) that read filesystem layout as a signal. Five top-level folders
+  for prose would also clutter the repo root, so all Diátaxis subdirs nest
+  under a single `docs/` umbrella.
+
+  **Misplacements per current `_nav.yml` (commit `0cabcda`):**
+  - Explanation in `guides/`: `concurrency.md`, `performance.md` —
+    classified Explanation in nav, sit alongside how-to pages.
+  - Further Reading in `guides/`: `further-reading.md` (just moved),
+    `development-story.md`.
+  - Reference at repo root: `FEATURES.md`, `migration.md`,
+    `guides/capabilities-matrix.md`.
+  - Tutorial: `getting-started.md` (currently a `docs-src/` stub including
+    a slice of `README.md`) — no `tutorials/` folder exists.
+
+  **Target layout:**
+  ```
+  docs/
+    tutorials/    getting-started.md (extracted from README slice)
+    how-to/       async, batch-operations, cache, custom-backend-guide,
+                  dagster, glob-pattern-matching, observe, parquet-datasets,
+                  retry, transfer-operations, troubleshooting, write-integrity,
+                  health-check, data-lake-patterns, choosing-a-backend,
+                  pyarrow-adapter, async-sync-bridges, backends/*
+    reference/    capabilities-matrix.md, FEATURES.md, migration.md
+    explanation/  architecture.md, security-model.md, concurrency.md,
+                  performance.md, development-story.md
+    further/      further-reading.md
+  ```
+
+  `guides/` disappears; `FEATURES.md` and `migration.md` move from the
+  repo root into `docs/reference/`. The `docs-src/` stub layer stays as-is
+  for this item — collapsing it is a separate question worth its own
+  treatment.
+
+  **Scope of the change:**
+  1. Move ~30 files into the new `docs/<bucket>/` paths.
+  2. Update `docs-src/<page>.md` include-markdown stubs to point at the
+     new paths (e.g. `../docs/explanation/architecture.md`).
+  3. Update `_link_map.yml` (cross-reference resolver) for every relocated
+     page.
+  4. Update `context7.json` `folders` — replace `guides/`, `FEATURES.md`,
+     `migration.md` with `docs/`.
+  5. Update `examples/snippets/*.py` source-comment headers.
+  6. Update `CLAUDE.md` and `sdd/DOCUMENTATION.md` placement rules.
+  7. Update any references in `sdd/` (specs, ADRs, RFCs) that point at
+     `guides/...` or root `FEATURES.md` / `migration.md`.
+  8. **Link migration in moved prose** — site-only relative paths like
+     `design/specs/...`, `design/adrs/...`, `design/index.md`,
+     `development-story.md`, `changelog.md`, `contributing.md`,
+     `api/...` resolve in mkdocs (via gen-files / `_link_map.yml`) but
+     break when the same files are read directly on GitHub or surfaced
+     via Context7. Decide a single rewrite strategy and apply it
+     uniformly across all moved guides — options: (a) absolute GitHub
+     URLs (works everywhere, regression on rendered docs since site
+     readers leave the site); (b) layout-aware relative paths that
+     resolve in both contexts (requires the new `docs/` root to mirror
+     the GitHub layout); (c) status quo (relative paths that work in
+     mkdocs only, accept GitHub-direct breakage). PR #550 left these
+     links untouched; this step closes the gap.
+  9. Verify `hatch run docs-build --strict` clean and Context7 still
+     surfaces all expected files.
+
+  **Why not now:** ~30-file refactor with link-map and CHANGELOG impact
+  spanning every guide. Bundling it into ID-160 (Context7 fixes) would
+  obscure both diffs. Sequence after ID-161 (`llms.txt`) ships, since the
+  llms.txt link list will reference the final URLs and shouldn't churn
+  twice.
+
+  **Exit criteria:** filesystem layout matches `_nav.yml` Diátaxis
+  categories one-to-one under a single `docs/` root; `_link_map.yml`
+  resolves all references; `docs-build --strict` clean; `context7.json`
+  updated; `CLAUDE.md` and `sdd/DOCUMENTATION.md` reflect the new
+  structure.
+
 - [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/api/index.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
   Different IR from the method-caps checker: `{symbol_name: kind}` rather
@@ -141,12 +221,12 @@ Existing items may be more verbose — trim on next touch.
      `https://docs.remotestore.dev`.
 
   Once indexed, Context7 surfaces `src/remote_store/`, `guides/`, `examples/`,
-  `FEATURES.md`, `README.md`, and `migration.md` to LLM clients. (`docs-src/`
-  is the mkdocs build source — `include-markdown` stubs and `:::` directives;
-  `guides/` is the canonical prose. Rendered docs are reachable via the
-  `documentation` URL field at <https://docs.remotestore.dev>.) Close this
-  item when the library appears under `/haalfi/remote-store` (or whatever
-  slug Context7 assigns) and a query against it returns content.
+  `sdd/specs/`, `FEATURES.md`, `README.md`, and `migration.md` to LLM clients.
+  (`docs-src/` is the mkdocs build source — `include-markdown` stubs and
+  `:::` directives; `guides/` is the canonical prose. Rendered docs are
+  reachable via the `documentation` URL field at <https://docs.remotestore.dev>.)
+  Close this item when the library appears under `/haalfi/remote-store` (or
+  whatever slug Context7 assigns) and a query against it returns content.
 
   No code change — the `context7.json` configuration is already in place.
 
