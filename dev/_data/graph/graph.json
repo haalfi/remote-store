@@ -834,6 +834,86 @@
       "src": "xtr:sql-query"
     },
     {
+      "dst": "mtd:remote_store._backend.Backend.copy",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.copy.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.delete",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.delete.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.delete_folder",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.delete_folder.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.get_file_info",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.get_file_info.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.get_folder_info",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.get_folder_info.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.glob",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.glob.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.iter_children",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.iter_children.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.list_files",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.list_files.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.list_folders",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.list_folders.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.move",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.move.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.open_atomic",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.open_atomic.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.read",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.read.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.read_bytes",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.read_bytes.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.read_seekable",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.read_seekable.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.write",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.write.gate"
+    },
+    {
+      "dst": "mtd:remote_store._backend.Backend.write_atomic",
+      "kind": "gates",
+      "src": "req:remote_store._backend.Backend.write_atomic.gate"
+    },
+    {
       "dst": "mtd:remote_store._store.Store.copy",
       "kind": "gates",
       "src": "req:remote_store._store.Store.copy.gate"
@@ -992,6 +1072,102 @@
       "dst": "cls:remote_store.backends._memory.MemoryBackend",
       "kind": "mirrors",
       "src": "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
+    },
+    {
+      "dst": "cap:COPY",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.copy.gate"
+    },
+    {
+      "dst": "cap:DELETE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.delete.gate"
+    },
+    {
+      "dst": "cap:DELETE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.delete_folder.gate"
+    },
+    {
+      "dst": "cap:METADATA",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.get_file_info.gate"
+    },
+    {
+      "dst": "cap:METADATA",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.get_folder_info.gate"
+    },
+    {
+      "dst": "cap:GLOB",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.glob.gate"
+    },
+    {
+      "dst": "cap:LIST",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.iter_children.gate"
+    },
+    {
+      "dst": "cap:LIST",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.list_files.gate"
+    },
+    {
+      "dst": "cap:LIST",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.list_folders.gate"
+    },
+    {
+      "dst": "cap:MOVE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.move.gate"
+    },
+    {
+      "dst": "cap:ATOMIC_WRITE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.open_atomic.gate"
+    },
+    {
+      "dst": "cap:READ",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.read.gate"
+    },
+    {
+      "dst": "cap:READ",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.read_bytes.gate"
+    },
+    {
+      "dst": "cap:READ",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.read_seekable.gate"
+    },
+    {
+      "dst": "cap:WRITE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.write.gate"
+    },
+    {
+      "dst": "cap:ATOMIC_WRITE",
+      "index": 0,
+      "kind": "of",
+      "src": "req:remote_store._backend.Backend.write_atomic.gate"
     },
     {
       "dst": "cap:COPY",
@@ -1189,7 +1365,7 @@
       "file": "src/remote_store/_backend.py",
       "id": "cls:remote_store._backend.Backend",
       "kind": "class",
-      "line": 43,
+      "line": 47,
       "role": "backend",
       "runtime": "sync",
       "summary": "Abstract base class for all storage backends."
@@ -1310,6 +1486,150 @@
       "role": "backend",
       "runtime": "sync",
       "summary": "Read-only SQL query materializer implementing a subset of the Backend contract."
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.copy",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 367,
+      "summary": "copy"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.delete",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 257,
+      "summary": "delete"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.delete_folder",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 271,
+      "summary": "delete_folder"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.get_file_info",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 320,
+      "summary": "get_file_info"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.get_folder_info",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 335,
+      "summary": "get_folder_info"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.glob",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 401,
+      "summary": "glob"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.iter_children",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 384,
+      "summary": "iter_children"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.list_files",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 286,
+      "summary": "list_files"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.list_folders",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 309,
+      "summary": "list_folders"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.move",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 350,
+      "summary": "move"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.open_atomic",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 240,
+      "summary": "open_atomic"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.read",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 112,
+      "summary": "read"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.read_bytes",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 127,
+      "summary": "read_bytes"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.read_seekable",
+      "is_abstract": false,
+      "is_async": false,
+      "kind": "method",
+      "line": 142,
+      "summary": "read_seekable"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.write",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 186,
+      "summary": "write"
+    },
+    {
+      "file": "src/remote_store/_backend.py",
+      "id": "mtd:remote_store._backend.Backend.write_atomic",
+      "is_abstract": true,
+      "is_async": false,
+      "kind": "method",
+      "line": 214,
+      "summary": "write_atomic"
     },
     {
       "file": "src/remote_store/_store.py",
@@ -1493,6 +1813,86 @@
       "kind": "package",
       "runtime": "async",
       "version": "0.24.0"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.copy.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.delete.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.delete_folder.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.get_file_info.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.get_folder_info.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.glob.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.iter_children.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.list_files.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.list_folders.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.move.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.open_atomic.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.read.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.read_bytes.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.read_seekable.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.write.gate",
+      "kind": "requirement",
+      "mode": "all"
+    },
+    {
+      "id": "req:remote_store._backend.Backend.write_atomic.gate",
+      "kind": "requirement",
+      "mode": "all"
     },
     {
       "id": "req:remote_store._store.Store.copy.gate",

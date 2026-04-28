@@ -7688,6 +7688,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#be-027-capability-gated-methods-graph-ir-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-027: Capability-Gated Methods (Graph IR Metadata)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9499,6 +9510,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#be-027-capability-gated-methods-graph-ir-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-027: Capability-Gated Methods (Graph IR Metadata)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9757,6 +9779,56 @@ raising <code>InvalidPath</code>. All other operations MUST raise appropriate er
 <strong>Postconditions:</strong> Returns only files (not folders). Paths in returned <code>FileInfo</code> objects are backend-relative (same convention as <code>list_files</code>).
 <strong>Raises:</strong> <code>CapabilityNotSupported</code> if the backend lacks <code>GLOB</code>.
 <strong>See also:</strong> <a href="../018-glob/">018-glob.md</a> (GLOB-003 through GLOB-005), <a href="../../adrs/0009-glob-three-tier-design/">ADR-0009</a>.</p>
+<h3 id="be-027-capability-gated-methods-graph-ir-metadata">BE-027: Capability-Gated Methods (Graph IR Metadata)<a class="headerlink" href="#be-027-capability-gated-methods-graph-ir-metadata" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> The mapping from Backend method names to required capability names used in the graph IR is maintained in <code>_BACKEND_GATING</code> in <code>scripts/gen_graph.py</code>. This is static metadata for documentation and tooling — Backend has no runtime <code>_gate()</code> equivalent (unlike <code>Store</code>). The per-method capability associations are:</p>
+<table>
+<thead>
+<tr>
+<th>Method(s)</th>
+<th>Required capability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>read</code>, <code>read_bytes</code>, <code>read_seekable</code></td>
+<td><code>READ</code></td>
+</tr>
+<tr>
+<td><code>write</code></td>
+<td><code>WRITE</code></td>
+</tr>
+<tr>
+<td><code>write_atomic</code>, <code>open_atomic</code></td>
+<td><code>ATOMIC_WRITE</code></td>
+</tr>
+<tr>
+<td><code>delete</code>, <code>delete_folder</code></td>
+<td><code>DELETE</code></td>
+</tr>
+<tr>
+<td><code>list_files</code>, <code>list_folders</code>, <code>iter_children</code></td>
+<td><code>LIST</code></td>
+</tr>
+<tr>
+<td><code>glob</code></td>
+<td><code>GLOB</code></td>
+</tr>
+<tr>
+<td><code>get_file_info</code>, <code>get_folder_info</code></td>
+<td><code>METADATA</code></td>
+</tr>
+<tr>
+<td><code>move</code></td>
+<td><code>MOVE</code></td>
+</tr>
+<tr>
+<td><code>copy</code></td>
+<td><code>COPY</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Enforcement:</strong> Runtime capability enforcement for these methods is performed by <code>Store._gate()</code>, not by <code>Backend</code> directly. <code>_BACKEND_GATING</code> is the authoritative source for graph-IR generation only; keeping it in sync with the Backend ABC is enforced by <code>tests/scripts/test_gen_graph.py::test_backend_gating_keys_match_backend_members</code>.
+<strong>See also:</strong> <code>sdd/CLAUDE-REFERENCE.md</code> ripple-check row for <code>_BACKEND_GATING</code>.</p>
 
 
 
