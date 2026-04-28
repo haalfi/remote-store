@@ -115,7 +115,20 @@ Existing items may be more verbose — trim on next touch.
   6. Update `CLAUDE.md` and `sdd/DOCUMENTATION.md` placement rules.
   7. Update any references in `sdd/` (specs, ADRs, RFCs) that point at
      `guides/...` or root `FEATURES.md` / `migration.md`.
-  8. Verify `hatch run docs-build --strict` clean and Context7 still
+  8. **Link migration in moved prose** — site-only relative paths like
+     `design/specs/...`, `design/adrs/...`, `design/index.md`,
+     `development-story.md`, `changelog.md`, `contributing.md`,
+     `api/...` resolve in mkdocs (via gen-files / `_link_map.yml`) but
+     break when the same files are read directly on GitHub or surfaced
+     via Context7. Decide a single rewrite strategy and apply it
+     uniformly across all moved guides — options: (a) absolute GitHub
+     URLs (works everywhere, regression on rendered docs since site
+     readers leave the site); (b) layout-aware relative paths that
+     resolve in both contexts (requires the new `docs/` root to mirror
+     the GitHub layout); (c) status quo (relative paths that work in
+     mkdocs only, accept GitHub-direct breakage). PR #550 left these
+     links untouched; this step closes the gap.
+  9. Verify `hatch run docs-build --strict` clean and Context7 still
      surfaces all expected files.
 
   **Why not now:** ~30-file refactor with link-map and CHANGELOG impact

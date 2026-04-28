@@ -19,7 +19,12 @@
     "benchmarks/",
     "docs-src/",
     ".github/",
-    ".claude/"
+    ".claude/",
+    "sdd/adrs/",
+    "sdd/audits/",
+    "sdd/formal/",
+    "sdd/research/",
+    "sdd/rfcs/"
   ],
   "excludeFiles": [
     "pyproject.toml",
@@ -38,6 +43,6 @@
     "Extensions in remote_store.ext (always available): batch, cache, glob, integrity, observe, partition, streams, transfer, write. Optional via extras: arrow (PyArrow + Parquet), otel (OpenTelemetry), pydantic, yaml, dagster (IO manager). See FEATURES.md.",
     "Write methods return WriteResult(path, size, source, digest, etag, version_id, last_modified, metadata). source: NativeSource (write response), BasicSource (post-write stat), or SidecarSource (ext.write hash). Rich fields need WRITE_RESULT_NATIVE.",
     "Write*() methods accept optional metadata= dict[str, str]; backend must declare USER_METADATA, otherwise non-empty raises CapabilityNotSupported. store.head(path) returns WriteResult metadata (size, etag, last_modified) without reading content.",
-    "Capabilities split into method gates (READ, WRITE, DELETE, LIST, GLOB, MOVE, COPY, ATOMIC_WRITE, METADATA, USER_METADATA, required to call) and quality flags (SEEKABLE_READ, LAZY_READ, ATOMIC_MOVE, WRITE_RESULT_NATIVE, method works either way)."
+    "Capabilities split into method gates (READ, WRITE, DELETE, LIST, GLOB, MOVE, COPY, ATOMIC_WRITE, METADATA, required to call) and quality flags (SEEKABLE_READ, LAZY_READ, ATOMIC_MOVE, WRITE_RESULT_NATIVE, method works either way)."
   ]
 }
