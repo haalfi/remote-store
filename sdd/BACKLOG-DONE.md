@@ -7,6 +7,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-169 — Sort generated lists in FEATURES.md alphabetically**
+  Backend rows in `backends_main` and `backends_flags`, and entries in
+  `install_extras`, are now sorted alphabetically by type string / extra name.
+  Previously they followed source-file declaration order
+  (`_register_builtin_backends()` and `pyproject.toml` key order), which is
+  not a meaningful sort criterion for readers. Three new tests assert the
+  ordering invariant.
+
 - [x] **ID-162 — `mirrors` edges in the graph: `capability_delta` metadata**
   `mirrors` edges now carry `capability_delta: {async_only: [str], sync_only: [str]}`
   so graph consumers can render sync↔async capability asymmetries instead of

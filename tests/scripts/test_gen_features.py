@@ -102,6 +102,11 @@ class TestBackendsMainTable:
         assert lines[0] == "| Type | Class | Extra | Capabilities |"
         assert lines[1] == "|---|---|---|---|"
 
+    def test_backends_sorted_alphabetically(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_main(graph)
+        type_strs = [row.split("|")[1].strip().strip("`") for row in table.splitlines()[2:] if row.startswith("| `")]
+        assert type_strs == sorted(type_strs)
+
     def test_all_registered_backends_present(self, gen_features_module, graph):
         table = gen_features_module.project_backends_main(graph)
         for type_str, _ in gen_features_module._parse_registry_order():
@@ -163,6 +168,11 @@ class TestBackendsFlagsTable:
         assert cols[1] == "Yes"
         assert cols[2] == "Yes"
 
+    def test_backends_sorted_alphabetically(self, gen_features_module, graph):
+        table = gen_features_module.project_backends_flags(graph)
+        type_strs = [row.split("|")[1].strip().strip("`") for row in table.splitlines()[2:] if row.startswith("| `")]
+        assert type_strs == sorted(type_strs)
+
 
 class TestInstallExtras:
     def test_starts_and_ends_with_fence(self, gen_features_module, pyproject):
@@ -197,6 +207,15 @@ class TestInstallExtras:
         comment_cols = [line.index("#") for line in block.splitlines() if "#" in line and not line.startswith("```")]
         if comment_cols:
             assert len(set(comment_cols)) == 1, "Comment columns are not aligned"
+
+    def test_extras_sorted_alphabetically(self, gen_features_module, pyproject):
+        block = gen_features_module.project_install_extras(pyproject)
+        extras = [
+            line.split("[")[1].split("]")[0]
+            for line in block.splitlines()
+            if line.startswith("pip install remote-store[")
+        ]
+        assert extras == sorted(extras)
 
 
 class TestRegionReplacement:
