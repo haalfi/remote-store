@@ -9,7 +9,10 @@ import sys
 from pathlib import Path
 
 EM_DASH = "—"
-TLA_DIR = Path("sdd/formal/tla")
+TLA_DIR = Path(__file__).resolve().parent.parent / "sdd" / "formal" / "tla"
+
+if not TLA_DIR.is_dir():
+    sys.exit(f"error: {TLA_DIR} not found")
 
 violations: list[str] = []
 

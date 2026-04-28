@@ -102,7 +102,7 @@ Init ==
 
 \* Call(op, outcome): one store operation completes. The inner method
 \* runs, on_any fires, the matching on_<op> fires (regardless of
-\* outcome (OBS-003 step 6/7, clarified in this PR), and on_error
+\* outcome, OBS-003 step 6/7, clarified in this PR), and on_error
 \* fires iff outcome = "error".
 Call(op, outcome) ==
     /\ op \in Ops
