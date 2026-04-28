@@ -54,7 +54,7 @@ def test_graph_schema(gen_graph_module):
     with open(ROOT / "pyproject.toml", "rb") as f:
         expected_version = tomllib.load(f)["project"]["version"]
 
-    assert graph["schema_version"] == "1.1"
+    assert graph["schema_version"] == "1.2"
     assert graph["source_version"] == expected_version
     assert graph["snapshot"] == expected_version
 
@@ -168,6 +168,40 @@ def test_get_folder_info_dual_gate(gen_graph_module):
             "src": "req:remote_store._store.Store.get_folder_info.gate_depth",
         }
     ]
+
+
+def test_mirrors_edge_carries_capability_delta(gen_graph_module):
+    """ID-162: mirrors edges must report async-only / sync-only capability differences.
+
+    AsyncMemoryBackend declares LAZY_READ; MemoryBackend does not. The delta
+    lets graph consumers present accurate sync/async asymmetries instead of
+    treating peers as equivalent.
+    """
+    graph = gen_graph_module.build_graph()
+    async_uri = "cls:remote_store.aio.backends._memory.AsyncMemoryBackend"
+    sync_uri = "cls:remote_store.backends._memory.MemoryBackend"
+
+    edge = next(
+        (e for e in graph["edges"] if e["kind"] == "mirrors" and {e["src"], e["dst"]} == {async_uri, sync_uri}),
+        None,
+    )
+    assert edge is not None, "expected a mirrors edge between AsyncMemoryBackend and MemoryBackend"
+    assert "capability_delta" in edge, f"mirrors edge missing capability_delta: {edge}"
+
+    delta = edge["capability_delta"]
+    assert set(delta.keys()) == {"async_only", "sync_only"}
+    assert delta["async_only"] == ["LAZY_READ"]
+    assert delta["sync_only"] == []
+
+    # Every mirrors edge must carry a well-formed delta with sorted lists.
+    for mirror_edge in (e for e in graph["edges"] if e["kind"] == "mirrors"):
+        d = mirror_edge.get("capability_delta")
+        assert isinstance(d, dict), f"mirrors edge missing capability_delta dict: {mirror_edge}"
+        assert set(d.keys()) == {"async_only", "sync_only"}
+        for key in ("async_only", "sync_only"):
+            assert isinstance(d[key], list)
+            assert all(isinstance(x, str) for x in d[key])
+            assert d[key] == sorted(d[key]), f"{key} not sorted in {mirror_edge}"
 
 
 def test_graph_json_is_up_to_date(gen_graph_module):

@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-162: graph IR — `mirrors` edges carry `capability_delta` (`async_only`/`sync_only`) so consumers can render sync↔async capability asymmetries (e.g. `LAZY_READ` on `AsyncMemoryBackend`); RFC-0012 schema bumped to 1.2.
 - fix: `AsyncAzureBackend.__del__` — extract `_has_open_clients()` helper to resolve CodeQL `py/overly-complex-delete` alert #55.
 - fix: pin `tla2tools.jar` to v1.7.4 in `ci.yml`, `tlc.Dockerfile`, and `tlc_check.sh` (v1.8.0 was a pre-release with inconsistent checksums); add `scripts/check_tla_no_emdash.py` CI guard; remove em dashes from TLA+ and Dafny formal files.
 - ID-168: audit and enforce non-src test subpackage placement — `tests/test_gen_features.py` moved to `tests/scripts/`; placement rule added to `sdd/TESTING.md`; `scripts/check_test_placement.py` CI lint check added to `lint` job and `check-test-quality`.
