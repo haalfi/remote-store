@@ -9,6 +9,7 @@
     "src/remote_store/",
     "guides/",
     "examples/",
+    "sdd/specs/",
     "FEATURES.md",
     "README.md",
     "migration.md"
@@ -16,7 +17,6 @@
   "excludeFolders": [
     "tests/",
     "benchmarks/",
-    "sdd/",
     "docs-src/",
     ".github/",
     ".claude/"
