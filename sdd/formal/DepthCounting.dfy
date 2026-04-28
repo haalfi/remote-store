@@ -1,4 +1,4 @@
-// DepthCounting.dfy — Verified reference algorithm for DEPTH-001.
+// DepthCounting.dfy:Verified reference algorithm for DEPTH-001.
 //
 // Gap 4 from BK-140: backends diverged on how they count depth in
 // `list_files(path, recursive=True, max_depth=N)`.
@@ -124,7 +124,7 @@ lemma ChildHasNonNegativeDepth(root: string, child: string)
   }
 }
 
-// Property 4: Depth filter is inclusive — depth == maxDepth passes.
+// Property 4: Depth filter is inclusive:depth == maxDepth passes.
 lemma DepthFilterIsInclusive(root: string, child: string, maxDepth: nat)
   requires Depth(root, child) == maxDepth as int
   ensures Depth(root, child) <= maxDepth as int

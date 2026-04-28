@@ -15,7 +15,7 @@ set -euo pipefail
 # Disable MSYS/Git-Bash automatic path conversion (mangles Docker -v mounts).
 export MSYS_NO_PATHCONV=1
 
-TLA_VERSION=1.8.0
+TLA_VERSION=1.7.4
 IMAGE="remote-store-tlc:${TLA_VERSION}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
