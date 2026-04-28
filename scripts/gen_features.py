@@ -5,11 +5,8 @@ Run with:  hatch run gen-features
 
 --check exits 1 if FEATURES.md would change; use in CI or pre-commit.
 
-Backend row order in the generated tables follows _register_builtin_backends()
-declaration order in _registry.py (which equals lazy-import sequence, heaviest
-optional dependencies last).  This is intentional: the order is stable and
-machine-derived.  It does not group backends by topic (e.g. s3 and s3-pyarrow
-are separated because s3-pyarrow is the last registered backend).
+Backend rows and install-extras entries are sorted alphabetically by type
+string / extra name (ID-169).
 """
 
 from __future__ import annotations
@@ -168,7 +165,7 @@ def project_backends_main(graph: dict) -> str:
         "| Type | Class | Extra | Capabilities |",
         "|---|---|---|---|",
     ]
-    for type_str, cls_name in registry:
+    for type_str, cls_name in sorted(registry):
         qname = qname_map.get(cls_name)
         if qname is None:
             continue
@@ -192,7 +189,7 @@ def project_backends_flags(graph: dict) -> str:
         "| Backend | `WRITE_RESULT_NATIVE` | `USER_METADATA` |",
         "|---|---|---|",
     ]
-    for type_str, cls_name in registry:
+    for type_str, cls_name in sorted(registry):
         qname = qname_map.get(cls_name)
         if qname is None:
             continue
@@ -214,7 +211,7 @@ def project_install_extras(pyproject: dict) -> str:
     pkg = pyproject["project"]["name"]
 
     entries: list[tuple[str, str | None]] = []
-    for extra in opt_deps:
+    for extra in sorted(opt_deps):
         if extra in _EXCLUDE_EXTRAS:
             continue
         cmd = f"pip install {pkg}[{extra}]"
