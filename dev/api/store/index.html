@@ -11102,12 +11102,7 @@ Both have <code>.name</code> and <code>.path</code> attributes (satisfying the
 
     </div>
 
-</div><div class="admonition note">
-<p class="admonition-title">Requires <code>Capability.GLOB</code></p>
-<p><code>glob()</code> raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.
-Check <code>store.supports(Capability.GLOB)</code> before calling.</p>
 </div>
-
 
 <div class="doc doc-object doc-function">
 
@@ -11175,7 +11170,12 @@ Check <code>store.supports(Capability.GLOB)</code> before calling.</p>
 
     </div>
 
-</div><div class="admonition info">
+</div><div class="admonition note">
+<p class="admonition-title">Requires <code>Capability.GLOB</code></p>
+<p><code>glob()</code> raises <code>CapabilityNotSupported</code> on backends that do not declare this capability.
+Check <code>store.supports(Capability.GLOB)</code> before calling.</p>
+</div>
+<div class="admonition info">
 <p class="admonition-title">Ordering and laziness</p>
 <p><strong>Ordering is backend-defined</strong> and may vary between backends (e.g.
 lexicographic on S3, OS-dependent on local filesystems). Callers must
