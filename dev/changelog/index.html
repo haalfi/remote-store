@@ -11533,6 +11533,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>fix: pin <code>tla2tools.jar</code> to v1.7.4 in <code>ci.yml</code>, <code>tlc.Dockerfile</code>, and <code>tlc_check.sh</code> (v1.8.0 was a pre-release with inconsistent checksums); add <code>scripts/check_tla_no_emdash.py</code> CI guard; remove em dashes from TLA+ and Dafny formal files.</li>
 <li>ID-168: audit and enforce non-src test subpackage placement — <code>tests/test_gen_features.py</code> moved to <code>tests/scripts/</code>; placement rule added to <code>sdd/TESTING.md</code>; <code>scripts/check_test_placement.py</code> CI lint check added to <code>lint</code> job and <code>check-test-quality</code>.</li>
 <li>ID-167: <code>tests/backends/test_dafny_classorder.py</code> moved to <code>tests/scripts/test_dafny_classorder.py</code> — consolidates script tests under <code>tests/scripts/</code>.</li>
 <li>ID-166: <code>tests/test_gen_graph.py</code> moved to <code>tests/scripts/test_gen_graph.py</code> — consolidates script tests under <code>tests/scripts/</code>; <code>ROOT</code> anchor depth corrected for new location.</li>
