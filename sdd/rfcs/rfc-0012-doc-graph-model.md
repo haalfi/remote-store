@@ -79,7 +79,7 @@ iterate the arrays.
 
 ```json
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "source_version": "0.24.0",
   "snapshot": "0.24.0",
   "nodes": [ ... ],
@@ -155,7 +155,7 @@ Two patterns use multiple `req:` nodes vs. multiple `of` edges:
 | `of` | requirement → capability | `index: int` | Members of the group |
 | `enables` | extra → class/extension | — | pip extra → backend |
 | `requires_dep` | extra → package_dep | — | pip dependency |
-| `mirrors` | class → class | — | Canonical direction: async → sync peer (one edge per pair; deduped by generator) |
+| `mirrors` | class → class | `capability_delta: {async_only: [str], sync_only: [str]}` | Canonical direction: async → sync peer (one edge per pair; deduped by generator). Capability lists are sorted; names are anchored to the canonical direction so `async_only` lists capabilities present on `src` (async) but absent on `dst` (sync). |
 | `composes` | extension → class | — | The Store/Backend it wraps |
 | `requires_cap` | extension/role → capability | — | Capability needed by ext/role |
 | `played_by` | extension → role | — | Extension has this role on the edge |
@@ -403,6 +403,14 @@ async backend carries a ``__mirror__: ClassVar[type[T]]`` annotation pointing
 to its sync peer.  The generator emits one directed edge per pair in the
 canonical async → sync direction (deduped).  Consumers that need to query from
 the sync side must reverse the edge themselves.
+
+**Capability asymmetry between mirror peers.** Resolved by ID-162 (schema 1.2):
+async and sync peers may declare different capability sets (e.g.
+`AsyncMemoryBackend` includes `LAZY_READ`; `MemoryBackend` does not). Each
+`mirrors` edge carries a `capability_delta` object with sorted `async_only` and
+`sync_only` capability-name lists so consumers can render the asymmetry instead
+of treating the peers as equivalent. The lists are always present (empty when
+the peers are symmetric).
 
 ## References
 

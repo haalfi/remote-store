@@ -304,8 +304,16 @@ def build_graph() -> dict[str, Any]:
             mirror = getattr(rt_cls, "__mirror__", None)
             if mirror is not None and isinstance(mirror, type):
                 mirror_uri = f"cls:{mirror.__module__}.{mirror.__qualname__}"
-                edges.append({"kind": "mirrors", "src": uri, "dst": mirror_uri})
-                edges.append({"kind": "mirrors", "src": mirror_uri, "dst": uri})
+                # capability_delta (ID-162): names are anchored to the canonical
+                # async->sync direction kept by the dedup pass below.
+                async_caps = {c.name for c in (getattr(rt_cls, "CAPABILITIES", None) or ())}
+                sync_caps = {c.name for c in (getattr(mirror, "CAPABILITIES", None) or ())}
+                capability_delta = {
+                    "async_only": sorted(async_caps - sync_caps),
+                    "sync_only": sorted(sync_caps - async_caps),
+                }
+                edges.append({"kind": "mirrors", "src": uri, "dst": mirror_uri, "capability_delta": capability_delta})
+                edges.append({"kind": "mirrors", "src": mirror_uri, "dst": uri, "capability_delta": capability_delta})
 
             # inherits edges (runtime __bases__, only when target is in the graph)
             for base in rt_cls.__bases__:
@@ -386,7 +394,7 @@ def build_graph() -> dict[str, Any]:
     return {
         "edges": edges,
         "nodes": nodes,
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "snapshot": version,
         "source_version": version,
     }

@@ -7,6 +7,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **ID-162 — `mirrors` edges in the graph: `capability_delta` metadata**
+  `mirrors` edges now carry `capability_delta: {async_only: [str], sync_only: [str]}`
+  so graph consumers can render sync↔async capability asymmetries instead of
+  treating peers as equivalent. Names are anchored to the canonical async→sync
+  direction kept by the dedup pass; lists are sorted and always present (empty
+  when peers are symmetric). Real example: `AsyncMemoryBackend` declares
+  `LAZY_READ`; `MemoryBackend` does not — the edge now reports
+  `async_only: ["LAZY_READ"]`. RFC-0012 edge-taxonomy table and Open Questions
+  updated; schema bumped to `"1.2"`. New test
+  `test_mirrors_edge_carries_capability_delta` covers the AsyncMemoryBackend
+  pair plus a shape invariant on every `mirrors` edge.
+
 - [x] **ID-168 — Audit and enforce non-src test subpackage placement**
   Sweep complete: one remaining misplacement found and resolved.
   `tests/test_gen_features.py` moved to `tests/scripts/test_gen_features.py`; `ROOT`
