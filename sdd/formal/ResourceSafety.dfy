@@ -1,4 +1,4 @@
-// ResourceSafety.dfy: Formal model of resource lifecycle safety.
+// ResourceSafety.dfy. Formal model of resource lifecycle safety.
 //
 // Covers two BK-140 gaps:
 //   Gap 6  SIO-001   Acquire-then-wrap: no handle leaked on wrapper failure

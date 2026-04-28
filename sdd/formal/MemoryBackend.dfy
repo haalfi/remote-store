@@ -1,4 +1,4 @@
-// MemoryBackend.dfy: Reference refinement of BackendContract.
+// MemoryBackend.dfy. Reference refinement of BackendContract.
 //
 // Proves that an in-memory implementation satisfies every postcondition
 // of the Backend trait.  This is the "model" backend: if Dafny can

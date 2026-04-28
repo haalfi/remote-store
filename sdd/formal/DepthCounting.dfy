@@ -1,4 +1,4 @@
-// DepthCounting.dfy: Verified reference algorithm for DEPTH-001.
+// DepthCounting.dfy. Verified reference algorithm for DEPTH-001.
 //
 // Gap 4 from BK-140: backends diverged on how they count depth in
 // `list_files(path, recursive=True, max_depth=N)`.

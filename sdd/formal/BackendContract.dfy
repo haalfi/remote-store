@@ -1,4 +1,4 @@
-// BackendContract.dfy: Formal specification of the remote-store backend
+// BackendContract.dfy. Formal specification of the remote-store backend
 // behavioural contract.  Covers the six BK-140 gaps identified in
 // research-backend-contract-completeness.md:
 //
@@ -22,7 +22,7 @@
 //   preserves fs on error paths by construction (only mutates fs on
 //   the success path).  This means the frame condition is verified
 //   for the reference implementation but NOT enforced by the abstract
-//   contract: see gap coverage table in README.
+//   contract. See gap coverage table in README.
 // - Happy-path postconditions use `ensures <preconditions> ==> r.Ok?`
 //   to mandate success when no error condition applies.
 
@@ -198,7 +198,7 @@ function SlashCount(p: string): nat
 
 // Root sentinel: "." represents the virtual root directory.
 // Dafny's Path type requires non-empty strings, so the Python
-// adapter maps "" → "." at the type boundary: one translation
+// adapter maps "" → "." at the type boundary, one translation
 // point instead of per-method root guards.
 const Root: Path := "."
 
