@@ -20,6 +20,10 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
+# When adding or renaming a gated Backend method, also update _BACKEND_GATING
+# in scripts/gen_graph.py (the graph-IR generator that maps method→capability).
+# The runtime gate is enforced by Store._gate(), not by Backend directly.
+
 # BUG-162: Explicit copy buffer size for shutil.copyfileobj.  On Windows
 # the default (shutil.COPY_BUFSIZE = 1 MiB) causes the transfer pipe layer
 # to hold two chunks simultaneously (current + previous), exceeding the

@@ -81,6 +81,8 @@ Existing items may be more verbose — trim on next touch.
   Wire up after that rework lands: add `_ASYNC_STORE_GATING` (or equivalent)
   to `_async_store.py`, extend gen_graph.py for async gates, add both
   classes to `PAGES` pointing at `aio.md`.
+  Griffe traversal path (for the implementer):
+  `pkg.members["aio"].members["_async_store"].members["AsyncStore"]`
 
 - [ ] **ID-161 — Publish `llms.txt` to the docs site**
   Add a machine-readable discovery file at `docs-src/llms.txt` (served as

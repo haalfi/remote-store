@@ -290,7 +290,7 @@ def main() -> int:
             print(f"  - {e}", file=sys.stderr)
         print(
             "\nFix the page, or update the relevant _GATING dict "
-            "(Store: src/remote_store/_store.py, Backend: src/remote_store/_backend.py) "
+            "(Store: src/remote_store/_store.py, Backend: scripts/gen_graph.py) "
             "if the gate itself is wrong, then re-run `hatch run gen-graph`.",
             file=sys.stderr,
         )
