@@ -9211,7 +9211,7 @@
 </tbody>
 </table>
 <p><strong>Decision rule:</strong> If it makes sense on GitHub without MkDocs, it goes in a source directory. If it only makes sense on the docs site, it goes in <code>docs-src/</code>.</p>
-<p>New how-to guides always go in <code>guides/</code>. New explanation pages that synthesize content from multiple sources go in <code>docs-src/</code>.</p>
+<p>New user-facing prose pages — how-to guides AND explanation pages — go in <code>guides/</code> as the canonical source. <code>docs-src/&lt;page&gt;.md</code> holds the corresponding <code>include-markdown</code> stub for the docs site build. Site-only artefacts (nav, templates, mkdocs-only includes) stay in <code>docs-src/</code>.</p>
 <h3 id="3-docstring-completeness">3. Docstring completeness<a class="headerlink" href="#3-docstring-completeness" title="Permanent link">&para;</a></h3>
 <p>Format and style rules are in <code>sdd/DESIGN.md</code> § 4. This section covers what mkdocstrings requires per symbol type:</p>
 <table>
@@ -9406,7 +9406,7 @@ docstrings, use MkDocs admonition syntax: <code>!!! example</code> with indented
 <td>Explanation</td>
 <td>Understanding</td>
 <td>Help understand <em>why</em></td>
-<td><code>docs-src/</code> for user-facing pages, <code>sdd/adrs/</code> for formal decisions</td>
+<td><code>guides/</code> for user-facing pages (rendered via <code>docs-src/</code> stubs), <code>sdd/adrs/</code> for formal decisions</td>
 </tr>
 </tbody>
 </table>

@@ -11534,6 +11534,8 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
 <li>ID-171: <code>check_api_docs.py</code> — extend verifier to <code>Backend</code> → <code>backend.md</code>. Added <code>_BACKEND_GATING: dict[str, str]</code> (capability-name strings, static-extraction only) directly to <code>scripts/gen_graph.py</code>; extended gen_graph.py to emit method + requirement nodes and gates/of edges for all 16 gated <code>Backend</code> methods (graph: 75 → 107 nodes, 158 → 222 edges). No drift found on <code>backend.md</code>.</li>
+<li>ID-160: Context7 validation fix and indexing improvements.</li>
+<li>ID-174: backlog item — Diátaxis-aligned docs filesystem reorg under <code>docs/</code>.</li>
 <li>ID-170: <code>scripts/check_api_docs.py</code> — verify-only checker that walks <code>graph.json</code> and <code>docs-src/api/store.md</code> in parallel; flags missing <code>:::</code> directives or capability admonitions that drift from <code>_GATING</code>. New <code>gen-api-check</code> hatch script wired into the CI lint job. First catch: misplaced <code>Capability.GLOB</code> admonition in <code>store.md</code> moved from before <code>glob</code>'s directive to after, per the file's own placement-rule comment.</li>
 <li>ID-169: <code>gen_features.py</code> — sort backend rows and install-extras entries alphabetically instead of by source-file declaration order.</li>
 <li>ID-162: graph IR — <code>mirrors</code> edges carry <code>capability_delta</code> (<code>async_only</code>/<code>sync_only</code>) so consumers can render sync↔async capability asymmetries (e.g. <code>LAZY_READ</code> on <code>AsyncMemoryBackend</code>); RFC-0012 schema bumped to 1.2.</li>
