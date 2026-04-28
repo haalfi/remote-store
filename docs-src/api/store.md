@@ -169,14 +169,14 @@
       show_root_heading: true
       heading_level: 3
 
-!!! note "Requires `Capability.GLOB`"
-    `glob()` raises `CapabilityNotSupported` on backends that do not declare this capability.
-    Check `store.supports(Capability.GLOB)` before calling.
-
 ::: remote_store.Store.glob
     options:
       show_root_heading: true
       heading_level: 3
+
+!!! note "Requires `Capability.GLOB`"
+    `glob()` raises `CapabilityNotSupported` on backends that do not declare this capability.
+    Check `store.supports(Capability.GLOB)` before calling.
 
 !!! info "Ordering and laziness"
     **Ordering is backend-defined** and may vary between backends (e.g.

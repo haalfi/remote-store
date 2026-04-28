@@ -63,6 +63,30 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
+- [~] **ID-170 — `check_api_docs.py` — verify API reference pages against graph IR**
+  Hand-maintained API pages (`docs-src/api/store.md`, later `backend.md`,
+  `aio.md`, `index.md`) drift silently when methods or capability gates change.
+  Generation is the wrong tool here — the curated prose ("Most backends declare
+  it", section ordering, conditional-argument hedges) is the value. A *checker*
+  that walks `graph.json` and each page in parallel catches the drift without
+  touching the prose.
+
+  Design: per page, two independent extractors produce the same canonical IR:
+  `{class: {method: frozenset(required_capabilities)}}`. A trivial dict-diff
+  step reports mismatches with localised messages ("`Store.foo` in graph but
+  missing from `store.md`"; "page claims `Store.bar` requires `WRITE` but
+  graph says `DELETE`"). Each extractor is independently testable.
+
+  **Phase 1 (this item):** `Store` → `docs-src/api/store.md`. Highest
+  staleness risk; `_GATING` already encodes the source of truth.
+
+  **Phase 2 (follow-on IDs):** `Backend` → `backend.md`; `AsyncStore`/
+  `AsyncBackend` → `aio.md`; `__all__` ↔ `index.md` symbol catalog.
+
+  Hatch scripts: `gen-api-check`. Wire into CI lint job alongside
+  `gen-features-check` and `gen-graph-check`. No `--write` mode (verification
+  only).
+
 - [ ] **ID-161 — Publish `llms.txt` to the docs site**
   Add a machine-readable discovery file at `docs-src/llms.txt` (served as
   `https://docs.remotestore.dev/llms.txt`) per the

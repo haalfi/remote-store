@@ -6,6 +6,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-170: `scripts/check_api_docs.py` — verify-only checker that walks `graph.json` and `docs-src/api/store.md` in parallel; flags missing `:::` directives or capability admonitions that drift from `_GATING`. New `gen-api-check` hatch script wired into the CI lint job. First catch: misplaced `Capability.GLOB` admonition in `store.md` moved from before `glob`'s directive to after, per the file's own placement-rule comment.
 - ID-169: `gen_features.py` — sort backend rows and install-extras entries alphabetically instead of by source-file declaration order.
 - ID-162: graph IR — `mirrors` edges carry `capability_delta` (`async_only`/`sync_only`) so consumers can render sync↔async capability asymmetries (e.g. `LAZY_READ` on `AsyncMemoryBackend`); RFC-0012 schema bumped to 1.2.
 - fix: `AsyncAzureBackend.__del__` — extract `_has_open_clients()` helper to resolve CodeQL `py/overly-complex-delete` alert #55.

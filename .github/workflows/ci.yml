@@ -72,6 +72,7 @@ jobs:
       - run: python scripts/gen_graph.py --check
       - run: python scripts/gen_features.py --check
       - run: python scripts/gen_graph_viz.py --check
+      - run: python scripts/check_api_docs.py
 
   typecheck:
     needs: [changes]
