@@ -1,6 +1,6 @@
 --------------------------- MODULE Observer ---------------------------
 (***************************************************************************
-  TLA+ model of the ObservedStore dispatch contract — OBS-003 step 6/7
+  TLA+ model of the ObservedStore dispatch contract (OBS-003 step 6/7)
   (every completed op fires on_any + matching on_<op> regardless of
   outcome) and OBS-003a (per-op hook class routing) from spec 019.
 
@@ -36,11 +36,11 @@
   ----------------------------------------------
   `Call` is a single atomic action that couples every variable by
   construction, so all six invariants hold vacuously on the unmutated
-  spec — TLC on `MC3` always passes green. That makes this module an
+  spec: TLC on `MC3` always passes green. That makes this module an
   *authoring* artefact in the sense of `sdd/formal/README.md` rule 3:
   the `verify-tla` CI job catches future edits to `Call` (or to the
   invariant bodies) that break internal consistency, but it does *not*
-  catch regressions in the Python `observe.py` implementation — there
+  catch regressions in the Python `observe.py` implementation. There
   is no automated link between the two layers.
 
   In particular, OBS-009's behavioural claims ("fire on_error then
@@ -58,7 +58,7 @@ EXTENDS Naturals, Sequences, FiniteSets, TLC
 CONSTANTS
     Ops,             \* set of operation names
     HookClasses,     \* set of per-op hook classes (OBS-003a: read/write/...)
-    ClassOf,         \* [Ops -> HookClasses] — OBS-003a mapping
+    ClassOf,         \* [Ops -> HookClasses], OBS-003a mapping
     Outcomes,        \* {"success", "error"}
     MaxCalls
 
@@ -102,7 +102,7 @@ Init ==
 
 \* Call(op, outcome): one store operation completes. The inner method
 \* runs, on_any fires, the matching on_<op> fires (regardless of
-\* outcome — OBS-003 step 6/7, clarified in this PR), and on_error
+\* outcome, OBS-003 step 6/7, clarified in this PR), and on_error
 \* fires iff outcome = "error".
 Call(op, outcome) ==
     /\ op \in Ops
@@ -127,13 +127,13 @@ Spec == Init /\ [][Next]_vars
 \* Invariants
 \* ==========================================================================
 
-\* (I1) EventPerCompletedOp — exactly one on_any event per inner call.
+\* (I1) EventPerCompletedOp: exactly one on_any event per inner call.
 \* Break-and-catch:
 \*   - any_events' = any_events (skip append) -> violated.
 \*   - any_events' = Append(Append(any_events, e), e) (double-fire) -> violated.
 EventPerCompletedOp == Len(any_events) = inner_calls
 
-\* (I2) RoutingByOpClass — every event in a per-op hook bucket has an op
+\* (I2) RoutingByOpClass: every event in a per-op hook bucket has an op
 \* whose OBS-003a class equals that bucket.
 \* Break-and-catch:
 \*   - Append to a non-matching class -> violated.
@@ -142,7 +142,7 @@ RoutingByOpClass ==
         \A i \in 1..Len(class_events[c]):
             ClassOf[class_events[c][i].op] = c
 
-\* (I3a) ClassHookOutcomeIndependent — the per-op hook fires for every
+\* (I3a) ClassHookOutcomeIndependent: the per-op hook fires for every
 \* call whose op is in that class, irrespective of outcome. Derived
 \* from any_events so no separate per-call history is needed.
 \* Break-and-catch:
@@ -153,7 +153,7 @@ ClassCallCount(c) ==
 ClassHookOutcomeIndependent ==
     \A c \in HookClasses: Len(class_events[c]) = ClassCallCount(c)
 
-\* (I3b) ErrorHookFiresOnErrorOnly — on_error fires for every error
+\* (I3b) ErrorHookFiresOnErrorOnly: on_error fires for every error
 \* call and only for error calls.
 \* Break-and-catch:
 \*   - Append to error_events on success -> violated (content).
@@ -165,7 +165,7 @@ ErrorHookFiresOnErrorOnly ==
     /\ Len(error_events) = ErrorCallCount
     /\ \A i \in 1..Len(error_events): error_events[i].outcome = "error"
 
-\* (I4) ErrorAlwaysReraise — every inner-method error surfaces as an
+\* (I4) ErrorAlwaysReraise: every inner-method error surfaces as an
 \* error to the caller. Shadows OBS-009's claim that the original
 \* exception always re-raises, but at this model's level of detail.
 \* The current Call action has no HookRaise sub-action, so I4 here is
@@ -181,7 +181,7 @@ ErrorAlwaysReraise ==
     \A i \in 1..Len(any_events):
         any_events[i].outcome = "error" => visible_outcomes[i] = "error"
 
-\* (I5) AfterHookExceptionIsolated — every inner-method success surfaces
+\* (I5) AfterHookExceptionIsolated: every inner-method success surfaces
 \* as a success to the caller. Success-side mirror of I4 and subject to
 \* the same caveat: without a HookRaise sub-action this is a structural
 \* check on Call (visible == inner on success paths), not a behavioural

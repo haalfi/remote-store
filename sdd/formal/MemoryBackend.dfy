@@ -1,7 +1,7 @@
-// MemoryBackend.dfy — Reference refinement of BackendContract.
+// MemoryBackend.dfy. Reference refinement of BackendContract.
 //
 // Proves that an in-memory implementation satisfies every postcondition
-// of the Backend trait.  This is the "model" backend — if Dafny can
+// of the Backend trait.  This is the "model" backend: if Dafny can
 // verify it, the contract is satisfiable and internally consistent.
 //
 // NOTE: MemoryBackendMinimal at the bottom of this file mirrors every method
@@ -194,7 +194,7 @@ class MemoryBackend extends Backend {
     }
 
     // WR-010 gate.  MemoryBackend declares CapUserMetadata, so this
-    // branch is dead code for this refinement — it exists to satisfy
+    // branch is dead code for this refinement: it exists to satisfy
     // the method contract (BackendContract.Write).  The live witness
     // for this branch is MemoryBackendMinimal at the end of this file.
     if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {
@@ -217,7 +217,7 @@ class MemoryBackend extends Backend {
     // WR-001a / WR-004: MemoryBackend declares CapWriteResultNative,
     // so source is NativeSource and rich fields are populated from
     // the write response.  ``last_modified`` carries an opaque Some(_)
-    // witness when the capability is declared — the contract at
+    // witness when the capability is declared: the contract at
     // BackendContract.dfy:404-412 only detects divergence between
     // WriteResult and FileInfo, so any consistent Some(_) value satisfies
     // the postcondition and also lets the Python oracle adapter surface
@@ -480,7 +480,7 @@ class MemoryBackend extends Backend {
     }
   }
 
-  // GetFolderInfo: symmetric with GetFileInfo — file path → InvalidPath.
+  // GetFolderInfo: symmetric with GetFileInfo: file path → InvalidPath.
   // Computes file_count and total_size by scanning the filesystem.
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
     ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
@@ -687,13 +687,13 @@ class MemoryBackend extends Backend {
 }
 
 // ---------------------------------------------------------------------------
-// MemoryBackendMinimal — satisfiability witness for the BasicSource /
+// MemoryBackendMinimal: satisfiability witness for the BasicSource /
 // CapabilityNotSupported branches.
 //
 // Declares neither CapWriteResultNative nor CapUserMetadata.  That makes the
 // WR-010 CapabilityNotSupported gate live code (not dead code as in
 // MemoryBackend), and forces wr_source to BasicSource on every successful
-// write — witnessing the BasicSource postcondition branch.
+// write: witnessing the BasicSource postcondition branch.
 // ---------------------------------------------------------------------------
 
 class MemoryBackendMinimal extends Backend {
@@ -868,7 +868,7 @@ class MemoryBackendMinimal extends Backend {
     }
 
     // WR-010 gate.  MemoryBackendMinimal does not declare CapUserMetadata,
-    // so this branch executes whenever the caller passes non-empty metadata —
+    // so this branch executes whenever the caller passes non-empty metadata:
     // it is the concrete satisfiability witness for the CapabilityNotSupported
     // error path.
     if HasUserMetadata(metadata) && CapUserMetadata !in capabilities {

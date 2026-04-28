@@ -68,6 +68,7 @@ jobs:
       - run: python scripts/check_test_assertions.py tests
       - run: python scripts/check_mock_spec.py tests
       - run: python scripts/check_test_placement.py tests
+      - run: python scripts/check_tla_no_emdash.py
       - run: python scripts/gen_graph.py --check
       - run: python scripts/gen_features.py --check
       - run: python scripts/gen_graph_viz.py --check
@@ -276,6 +277,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Check TLA+ files for em dashes
+        run: python scripts/check_tla_no_emdash.py
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
