@@ -4626,6 +4626,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#test-subpackage-placement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Subpackage Placement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rules" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8792,6 +8803,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#test-subpackage-placement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Subpackage Placement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rules" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8899,6 +8921,41 @@
 <p>Authoritative source for test <strong>quality</strong> rules in <code>tests/</code>. Companion to
 <code>sdd/DESIGN.md</code> § 11 (test style). Derived from
 <code>sdd/research/research-testing-best-practices.md</code>.</p>
+<h2 id="test-subpackage-placement">Test Subpackage Placement<a class="headerlink" href="#test-subpackage-placement" title="Permanent link">&para;</a></h2>
+<p>Each test file belongs in the subpackage matching its subject:</p>
+<table>
+<thead>
+<tr>
+<th>Subject</th>
+<th>Subpackage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Library source (<code>src/remote_store/</code>)</td>
+<td><code>tests/</code> root</td>
+</tr>
+<tr>
+<td>Async variants of library tests</td>
+<td><code>tests/aio/</code></td>
+</tr>
+<tr>
+<td>Concrete backend conformance and integration</td>
+<td><code>tests/backends/</code></td>
+</tr>
+<tr>
+<td>End-to-end workflow tests (require Docker services)</td>
+<td><code>tests/e2e/</code></td>
+</tr>
+<tr>
+<td><code>scripts/</code> utilities and build tooling</td>
+<td><code>tests/scripts/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Tests that load modules from <code>scripts/</code> via <code>sys.path</code> manipulation must live
+in <code>tests/scripts/</code>. The <code>check-test-placement</code> lint enforces this for <code>sys.path</code>
+patterns; tests using <code>importlib.util.spec_from_file_location</code> are review-enforced.</p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
