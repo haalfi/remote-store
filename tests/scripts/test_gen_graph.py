@@ -193,6 +193,18 @@ def test_mirrors_edge_carries_capability_delta(gen_graph_module):
     assert delta["async_only"] == ["LAZY_READ"]
     assert delta["sync_only"] == []
 
+    # Symmetric peers (no capability difference) must report empty lists, not
+    # be omitted. Pinning the AsyncAzureBackend pair guards against accidental
+    # capability drift on either side.
+    async_azure = "cls:remote_store.aio.backends._azure.AsyncAzureBackend"
+    sync_azure = "cls:remote_store.backends._azure.AzureBackend"
+    azure_edge = next(
+        (e for e in graph["edges"] if e["kind"] == "mirrors" and {e["src"], e["dst"]} == {async_azure, sync_azure}),
+        None,
+    )
+    assert azure_edge is not None, "expected a mirrors edge between AsyncAzureBackend and AzureBackend"
+    assert azure_edge["capability_delta"] == {"async_only": [], "sync_only": []}
+
     # Every mirrors edge must carry a well-formed delta with sorted lists.
     for mirror_edge in (e for e in graph["edges"] if e["kind"] == "mirrors"):
         d = mirror_edge.get("capability_delta")

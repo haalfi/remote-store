@@ -14,9 +14,12 @@ Layout: D3 force-directed with per-kind positional bias (soft LR columns
 without rigidity).  "declares" edges are hidden by default -- they dominate
 numerically and collapse the centre; toggle them on to see the full picture.
 
-Schema compatibility: reads graph.json schema_version 1.0 and 1.1.  Version
+Schema compatibility: reads graph.json schema_version 1.0, 1.1, and 1.2.
 1.1 fields (is_abstract, is_async, file, line on method nodes) are used when
-present; the rendering degrades gracefully when they are absent.
+present; the rendering degrades gracefully when they are absent.  1.2 adds
+``capability_delta`` to ``mirrors`` edges; the viz embeds it as data but does
+not render it (consumers wanting a sync/async capability diff should query
+``graph.json`` directly).
 """
 
 from __future__ import annotations
