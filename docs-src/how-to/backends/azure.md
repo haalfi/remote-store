@@ -1,5 +1,5 @@
 {%
-   include-markdown "../../guides/backends/azure.md"
+   include-markdown "../../../docs/how-to/backends/azure.md"
    rewrite-relative-urls=false
 %}
 

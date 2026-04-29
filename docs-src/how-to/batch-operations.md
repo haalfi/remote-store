@@ -1,4 +1,4 @@
 {%
-   include-markdown "../guides/batch-operations.md"
+   include-markdown "../../docs/how-to/batch-operations.md"
    rewrite-relative-urls=false
 %}

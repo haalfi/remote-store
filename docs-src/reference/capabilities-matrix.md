@@ -1,4 +1,4 @@
 {%
-   include-markdown "../guides/capabilities-matrix.md"
+   include-markdown "../../docs/reference/capabilities-matrix.md"
    rewrite-relative-urls=false
 %}

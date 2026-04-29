@@ -1,4 +1,4 @@
 {%
-   include-markdown "../guides/dagster.md"
+   include-markdown "../../docs/how-to/dagster.md"
    rewrite-relative-urls=false
 %}

@@ -1,4 +1,4 @@
 {%
-   include-markdown "../guides/transfer-operations.md"
+   include-markdown "../../docs/how-to/transfer-operations.md"
    rewrite-relative-urls=false
 %}

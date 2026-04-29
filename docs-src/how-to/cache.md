@@ -1,4 +1,4 @@
 {%
-   include-markdown "../guides/cache.md"
+   include-markdown "../../docs/how-to/cache.md"
    rewrite-relative-urls=false
 %}

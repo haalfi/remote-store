@@ -1,5 +1,5 @@
 {%
-   include-markdown "../../guides/backends/http.md"
+   include-markdown "../../../docs/how-to/backends/http.md"
    rewrite-relative-urls=false
 %}
 

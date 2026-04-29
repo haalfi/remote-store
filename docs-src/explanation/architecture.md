@@ -1,4 +1,4 @@
 {%
-   include-markdown "../guides/architecture.md"
+   include-markdown "../../docs/explanation/architecture.md"
    rewrite-relative-urls=false
 %}

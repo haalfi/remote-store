@@ -1,5 +1,5 @@
 {%
-   include-markdown "../../guides/backends/s3-pyarrow.md"
+   include-markdown "../../../docs/how-to/backends/s3-pyarrow.md"
    rewrite-relative-urls=false
 %}
 

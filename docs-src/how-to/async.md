@@ -1,4 +1,4 @@
 {%
-   include-markdown "../guides/async.md"
+   include-markdown "../../docs/how-to/async.md"
    rewrite-relative-urls=false
 %}

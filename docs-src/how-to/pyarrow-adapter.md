@@ -1,4 +1,4 @@
 {%
-   include-markdown "../guides/pyarrow-adapter.md"
+   include-markdown "../../docs/how-to/pyarrow-adapter.md"
    rewrite-relative-urls=false
 %}

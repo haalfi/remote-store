@@ -1,5 +1,5 @@
 {%
-   include-markdown "../../guides/backends/memory.md"
+   include-markdown "../../../docs/how-to/backends/memory.md"
    rewrite-relative-urls=false
 %}
 

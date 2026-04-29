@@ -1,5 +1,5 @@
 {%
-   include-markdown "../../guides/backends/sftp.md"
+   include-markdown "../../../docs/how-to/backends/sftp.md"
    rewrite-relative-urls=false
 %}
 

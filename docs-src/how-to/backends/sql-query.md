@@ -1,5 +1,5 @@
 {%
-   include-markdown "../../guides/backends/sql-query.md"
+   include-markdown "../../../docs/how-to/backends/sql-query.md"
    rewrite-relative-urls=false
 %}
 

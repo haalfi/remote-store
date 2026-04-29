@@ -1,4 +1,4 @@
 {%
-   include-markdown "../guides/concurrency.md"
+   include-markdown "../../docs/explanation/concurrency.md"
    rewrite-relative-urls=false
 %}
