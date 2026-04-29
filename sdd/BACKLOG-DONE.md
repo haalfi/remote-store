@@ -24,7 +24,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   precedence preserved: caller's `config_kwargs` < caller's pre-built
   `client_kwargs["config"]` < retry policy. Tests in
   `tests/backends/test_s3_options.py` extended with the no-RetryPolicy
-  reproduction from the report.
+  reproduction from the report. New "Botocore Client Tuning" section in
+  `guides/backends/s3.md` documents proxies, retries, timeouts, and MinIO
+  path-style addressing; runnable snippets in
+  `examples/snippets/s3_botocore_tuning.py` are wired into
+  `tests/test_snippets.py` and `tests/scripts/run_examples.py` so the
+  examples gate (`hatch run examples`) catches drift.
 
 - [x] **ID-174 — Diátaxis-aligned docs filesystem reorg (Phases 1 + 2)**
   **Phase 1:** Moved 36 prose files from `guides/` and repo root into

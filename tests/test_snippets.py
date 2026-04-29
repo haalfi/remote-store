@@ -81,3 +81,14 @@ class TestAsyncWriteIntegritySnippets:
 
         result = asyncio.run(demo())
         assert result is None
+
+
+class TestS3BotocoreTuningSnippets:
+    """Snippets used in the S3 backend guide's Botocore client tuning section."""
+
+    @pytest.mark.spec("S3-026")
+    def test_s3_botocore_tuning_demo(self) -> None:
+        from examples.snippets.s3_botocore_tuning import demo
+
+        result = demo()
+        assert result is None
