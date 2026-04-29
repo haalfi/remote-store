@@ -1,4 +1,4 @@
-"""Write-integrity snippets — sourced by docs/how-to/write-integrity.md.
+"""Write-integrity snippets — sourced by docs-src/how-to/write-integrity.md.
 
 Named regions are included via pymdownx.snippets ``--8<--`` syntax.
 Run directly or via ``hatch run examples`` to verify snippets.

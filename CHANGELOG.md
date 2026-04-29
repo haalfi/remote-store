@@ -8,7 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - ID-171: `check_api_docs.py` — extend verifier to `Backend` → `backend.md`. Added `_BACKEND_GATING: dict[str, str]` (capability-name strings, static-extraction only) directly to `scripts/gen_graph.py`; extended gen_graph.py to emit method + requirement nodes and gates/of edges for all 16 gated `Backend` methods (graph: 75 → 107 nodes, 158 → 222 edges). No drift found on `backend.md`.
 - ID-160: Context7 validation fix and indexing improvements.
-- ID-174: backlog item — Diátaxis-aligned docs filesystem reorg under `docs/`.
+- ID-174: Diátaxis-aligned docs reorg — Phase 1 (prose into `docs/` buckets) + Phase 2 (collapse `docs/` into `docs-src/`; delete `docs/` layer).
 - ID-170: `scripts/check_api_docs.py` — verify-only checker that walks `graph.json` and `docs-src/api/store.md` in parallel; flags missing `:::` directives or capability admonitions that drift from `_GATING`. New `gen-api-check` hatch script wired into the CI lint job. First catch: misplaced `Capability.GLOB` admonition in `store.md` moved from before `glob`'s directive to after, per the file's own placement-rule comment.
 - ID-169: `gen_features.py` — sort backend rows and install-extras entries alphabetically instead of by source-file declaration order.
 - ID-162: graph IR — `mirrors` edges carry `capability_delta` (`async_only`/`sync_only`) so consumers can render sync↔async capability asymmetries (e.g. `LAZY_READ` on `AsyncMemoryBackend`); RFC-0012 schema bumped to 1.2.
@@ -738,7 +738,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   a pandas DataFrame (BUG-135). Removes the hidden hard dependency on pandas
   for users installing `remote-store[dagster,arrow]` without pandas. Callers
   that need pandas call `table.to_pandas()` on the result. See
-  [Migration Guide](docs/reference/migration.md#v0200-to-v0210).
+  [Migration Guide](https://docs.remotestore.dev/stable/reference/migration/#v0200-to-v0210).
 
 ### Documentation
 

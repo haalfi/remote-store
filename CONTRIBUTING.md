@@ -74,15 +74,15 @@ For spec format and ID prefixes, see [`sdd/000-process.md`](sdd/000-process.md) 
 
 ## Adding a New Backend
 
-See [Build Your Own Backend](docs/how-to/custom-backend-guide.md) for a full
+See [Build Your Own Backend](docs-src/how-to/custom-backend-guide.md) for a full
 walkthrough of the `Backend` contract, error mapping, and capabilities.
 
 1. Write a spec in `sdd/specs/` or as an addendum in `sdd/specs/backends/<name>.md`
 2. Implement `Backend` ABC in `src/remote_store/backends/_<name>.py`
 3. Add a conformance fixture in `tests/backends/conftest.py`
 4. Both conformance suites run automatically: `tests/backends/test_conformance.py` (spec-traced) and `tests/backends/test_conformance_extended.py` (Dafny-derived, `@pytest.mark.extended_conformance`). The suites are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md`](sdd/formal/README.md) § Compiled Oracle
-5. Add user-facing guide in `docs/how-to/backends/<name>.md` and register in `mkdocs.yml` nav
-6. Update `docs/how-to/backends/index.md` (Supported Backends table)
+5. Add user-facing guide in `docs-src/how-to/backends/<name>.md` and add to `docs-src/_nav.yml`
+6. Update `docs-src/how-to/backends/index.md` (Supported Backends table)
 7. Update `README.md` (Supported Backends table + Installation extras)
 8. Add backend config example to `examples/configuration/configuration.py`
 9. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`
@@ -97,9 +97,8 @@ Extensions live in `src/remote_store/ext/` and follow the contract in [ADR-0008]
 4. Do not own Store lifecycle — never call `store.close()` or use `with store:`
 5. Let `CapabilityNotSupported` propagate — do not catch and suppress it
 6. Add tests in `tests/test_<name>.py` with `@pytest.mark.spec("ID")`
-7. Write a user guide in `docs/how-to/<name>.md`
-8. Add an `include-markdown` wrapper in `docs-src/<name>.md`
-9. Add the page to `docs-src/_nav.yml`
+7. Write a user guide in `docs-src/how-to/<name>.md`
+8. Add the page to `docs-src/_nav.yml`
 10. Add a runnable example in `examples/`
 11. Add an example docs wrapper in `docs-src/examples/<name>.md` and add it to `docs-src/examples/_nav.yml`
 12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
@@ -292,7 +291,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**)
 - [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time (release skill Phase 1)
 - [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here, marked `[x]` with version (e.g. `(v0.8.0)`)
-- [ ] `docs/reference/FEATURES.md` updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; `bump-my-version` handles it in Phase 2)
+- [ ] `docs-src/reference/FEATURES.md` updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; `bump-my-version` handles it in Phase 2)
 - [ ] README.md: backends table, installation extras, API table, badges are current
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
 - [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed
