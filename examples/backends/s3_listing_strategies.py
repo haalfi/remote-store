@@ -212,4 +212,4 @@ if __name__ == "__main__":
         finally:
             cleanup(store)
 
-    print("Done! See docs/how-to/backends/s3.md for detailed performance analysis.")
+    print("Done! See docs-src/how-to/backends/s3.md for detailed performance analysis.")

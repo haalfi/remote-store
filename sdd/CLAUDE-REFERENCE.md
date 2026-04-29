@@ -12,7 +12,7 @@ Before committing, check whether your change has cross-file dependencies:
 | If you changed…            | Also check / update                                       |
 |----------------------------|-----------------------------------------------------------|
 | **A backend**              | README backends table, `pyproject.toml` extras,           |
-|                            | `docs/how-to/backends/`, docs nav, `examples/`,           |
+|                            | `docs-src/how-to/backends/`, docs nav, `examples/`,       |
 |                            | `sdd/specs/`, `CONTRIBUTING.md` repo structure,           |
 |                            | `src/remote_store/_registry.py` auto-registration         |
 | **An error type**          | `sdd/specs/005-error-model.md`, all backends' error       |
@@ -48,13 +48,13 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `pyproject.toml` extras (if optional dep),                |
 |                            | README extensions table, `docs-src/api/extensions/*.md` +  |
 |                            | `api/extensions/index.md` + `api/extensions/_nav.yml`,    |
-|                            | `docs/how-to/`,          |
+|                            | `docs-src/how-to/`,      |
 |                            | `docs-src/` + `_nav.yml`, `examples/`,                    |
 |                            | CHANGELOG, BACKLOG                                        |
 | **An example script**      | README examples table, `docs-src/examples/*.md` wrapper,  |
 |                            | `tests/test_examples.py` import                           |
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
-|                            | `docs/how-to/backends/index.md`,                          |
+|                            | `docs-src/how-to/backends/index.md`,                      |
 |                            | `sdd/DOCUMENTATION.md` § Content homes                    |
 | **An API reference page**  | `sdd/DOCUMENTATION.md` § API page building blocks         |
 | (new or restructured)      | and building blocks for required sections                 |
@@ -75,10 +75,10 @@ Before committing, check whether your change has cross-file dependencies:
 | **`CAPABILITIES` ClassVar**| `sdd/specs/003-backend-adapter-contract.md` (BE-003),     |
 | (added/changed on a backend| `tests/test_capabilities.py` (class-attr parametrize list),|
 | or ABC)                    | `tests/backends/test_conformance.py` (subset invariant),  |
-|                            | `docs/how-to/custom-backend-guide.md`, `examples/snippets/` |
+|                            | `docs-src/how-to/custom-backend-guide.md`, `examples/snippets/` |
 | **`_GATING` dict**         | `sdd/specs/001-store-api.md` (STORE-gate entries),        |
 | (key→Capability mapping    | `tests/test_store.py` (gate-fires parametrize list),      |
-| in `_store.py`)            | `docs/how-to/` if a method's capability docs change.      |
+| in `_store.py`)            | `docs-src/how-to/` if a method's capability docs change.  |
 |                            | `docs-src/api/store.md` `!!! note "Requires …"`           |
 |                            | admonitions — verified by `hatch run gen-api-check`       |
 |                            | (ID-170)                                                  |
@@ -110,7 +110,7 @@ Before committing, check whether your change has cross-file dependencies:
 | Check or update testing quality rules    | `sdd/TESTING.md`                                     |
 | Check or update doc content quality rules | `sdd/CONTENT-RULES.md`                              |
 | Understand the full SDD workflow         | `sdd/000-process.md`                                 |
-| Add or update a backend guide            | `docs/how-to/backends/` + docs nav                   |
+| Add or update a backend guide            | `docs-src/how-to/backends/` + docs nav               |
 | Run a quick smoke test                   | `examples/` — pick one and run it                    |
 | Verify everything passes                 | `hatch run all` (lint + format-check + typecheck + test-cov + examples) |
 
@@ -135,12 +135,12 @@ tests/                     # pytest suite — spec-traced via @pytest.mark.spec(
 examples/                  # Core runnable examples (run locally, no credentials)
 examples/backends/         # Cloud backend examples (need services + credentials)
 sdd/                       # Specs, ADRs, RFCs, research, audits, backlog, design docs
-docs/how-to/               # User-facing how-to guides (Diátaxis)
-docs/how-to/backends/      # Backend configuration guides
-docs/explanation/          # Explanation pages (Diátaxis)
-docs/reference/            # Reference pages, FEATURES.md, migration guide
-docs/further/              # Further reading
-docs-src/                  # MkDocs Material documentation source (wrappers only)
+docs-src/how-to/           # User-facing how-to guides (Diátaxis)
+docs-src/how-to/backends/  # Backend configuration guides
+docs-src/explanation/      # Explanation pages (Diátaxis)
+docs-src/reference/        # Reference pages, FEATURES.md, migration guide
+docs-src/further/          # Further reading
+docs-src/                  # MkDocs Material documentation source (prose + nav)
 ```
 
 For backlog process, SDD workflow, and `sdd/` subtree details see `sdd/000-process.md`.

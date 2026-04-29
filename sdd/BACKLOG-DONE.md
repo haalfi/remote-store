@@ -7,19 +7,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
-- [x] **ID-174 — Diátaxis-aligned docs filesystem reorg under `docs/`**
-  Moved 36 prose files from `guides/` and repo root into `docs/<bucket>/`
-  (how-to, explanation, reference, further). Mirrored `docs-src/` wrappers
-  into the same hierarchy so relative links resolve identically in the GitHub
-  repo and the MkDocs rendered output. Updated all cross-bucket links across
-  docs-src/ API and extension stubs (50+ files), 26 Python example docstrings,
-  and hardcoded links in `scripts/docs/render.py`. Updated `context7.json`,
-  `pyproject.toml` bumpversion, CI path filters, `scripts/gen_features.py`,
+- [x] **ID-174 — Diátaxis-aligned docs filesystem reorg (Phases 1 + 2)**
+  **Phase 1:** Moved 36 prose files from `guides/` and repo root into
+  `docs/<bucket>/` (how-to, explanation, reference, further). Mirrored
+  `docs-src/` wrappers into the same hierarchy so relative links resolve
+  identically in the GitHub repo and the MkDocs rendered output. Updated all
+  cross-bucket links across docs-src/ API and extension stubs (50+ files),
+  26 Python example docstrings, and hardcoded links in `scripts/docs/render.py`.
+  **Phase 2:** Collapsed `docs/` entirely into `docs-src/` — inlined all 35
+  prose files directly, replacing `include-markdown` stubs. `docs/` layer
+  deleted. Absolute GitHub URLs used for links to repo files outside `docs-src/`
+  (sdd/, CONTRIBUTING.md, etc.). Updated `context7.json`, `pyproject.toml`
+  bumpversion, CI path filters, `scripts/gen_features.py`,
   `tests/scripts/test_gen_features.py`, `CLAUDE.md`, `sdd/CLAUDE-REFERENCE.md`,
   `sdd/DOCUMENTATION.md`, `CONTRIBUTING.md`, `README.md`,
-  `.claude/skills/release/SKILL.md`, `src/remote_store/ext/__init__.py`.
-  `guides/` directory removed. `docs-build --strict` passes with 0 warnings.
-  Unblocks ID-161.
+  `.claude/skills/release/SKILL.md`, `src/remote_store/ext/__init__.py`,
+  example files, and notebook. `docs/` directory removed.
+  `docs-build --strict` passes with 0 warnings. Unblocks ID-161.
 
 - [x] **ID-160 — Submit remote-store to Context7 library index**
   `context7.json` was already in place. Library registered and indexed at
