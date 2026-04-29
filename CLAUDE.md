@@ -17,7 +17,7 @@ Spec-Driven Development (SDD).
 
 ## Feature reference
 
-See `FEATURES.md` at the repo root for the authoritative list of backends,
+See `docs/reference/FEATURES.md` for the authoritative list of backends,
 extensions, capabilities, and install extras for the current version.
 
 ## Audits

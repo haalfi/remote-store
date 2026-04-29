@@ -6,7 +6,7 @@ and config-driven retry via TOML-style dicts.
 ---
 see_also:
   - label: Retry
-    url: ../retry.md
+    url: ../how-to/retry.md
     note: retry configuration guide
 """
 

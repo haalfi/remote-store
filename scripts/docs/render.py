@@ -256,8 +256,8 @@ weather data.
 
 ## See also
 
-- [Dagster](../dagster.md) — Dagster integration guide
-- [Data Lake Patterns](../data-lake-patterns.md) — medallion architecture patterns
+- [Dagster](../how-to/dagster.md) — Dagster integration guide
+- [Data Lake Patterns](../how-to/data-lake-patterns.md) — medallion architecture patterns
 - [Architecture: Medallion + Dagster Showcase]\
 (../design/research/research-medallion-dagster-showcase.md) — \
 detailed design rationale, store topology, and Dagster asset graph

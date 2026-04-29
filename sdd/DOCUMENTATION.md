@@ -25,7 +25,10 @@ Pages that try to be two things at once must be split.
 | Content type | Source location | Readable on GitHub? |
 |---|---|---|
 | Project intro, install, quick start | `README.md` | Yes |
-| User-facing guides | `guides/` | Yes |
+| How-to guides | `docs/how-to/` | Yes |
+| Explanation pages | `docs/explanation/` | Yes |
+| Reference pages | `docs/reference/` | Yes |
+| Further reading | `docs/further/` | Yes |
 | Runnable examples | `examples/` | Yes |
 | API docstrings | `src/` (Python source) | Yes |
 | Specs, ADRs, RFCs, research, audits | `sdd/` | Yes |
@@ -36,7 +39,12 @@ Pages that try to be two things at once must be split.
 
 **Decision rule:** If it makes sense on GitHub without MkDocs, it goes in a source directory. If it only makes sense on the docs site, it goes in `docs-src/`.
 
-New user-facing prose pages — how-to guides AND explanation pages — go in `guides/` as the canonical source. `docs-src/<page>.md` holds the corresponding `include-markdown` stub for the docs site build. Site-only artefacts (nav, templates, mkdocs-only includes) stay in `docs-src/`.
+New user-facing prose pages follow the Diátaxis bucket structure under `docs/`:
+- How-to guides go in `docs/how-to/` (backend-specific guides in `docs/how-to/backends/`).
+- Explanation pages go in `docs/explanation/`.
+- Reference pages go in `docs/reference/`.
+
+`docs-src/<page>.md` holds the corresponding `include-markdown` stub for the docs site build. Site-only artefacts (nav, templates, mkdocs-only includes) stay in `docs-src/`.
 
 ### 3. Docstring completeness
 
@@ -133,9 +141,9 @@ The README must contain:
 | Category | Orientation | Goal | Where it lives |
 |---|---|---|---|
 | Tutorial | Learning | Guided first success | `README.md` Quick Start, `docs-src/getting-started.md`, notebooks |
-| How-To Guides | Tasks | Answer "how do I X?" | `guides/` (readable on GitHub, wrapped into site via `docs-src/`) |
-| Reference | Information | Precise lookup | Python docstrings in `src/`, extracted into `docs-src/api/` |
-| Explanation | Understanding | Help understand *why* | `guides/` for user-facing pages (rendered via `docs-src/` stubs), `sdd/adrs/` for formal decisions |
+| How-To Guides | Tasks | Answer "how do I X?" | `docs/how-to/` (readable on GitHub, wrapped into site via `docs-src/`) |
+| Reference | Information | Precise lookup | Python docstrings in `src/`, extracted into `docs-src/api/`; prose reference pages in `docs/reference/` |
+| Explanation | Understanding | Help understand *why* | `docs/explanation/` for user-facing pages (rendered via `docs-src/` stubs), `sdd/adrs/` for formal decisions |
 
 ### Content drift prevention
 
@@ -154,9 +162,9 @@ Cross-references replace duplication, but actionable checklists should be co-loc
 
 | From | To | Link pattern |
 |---|---|---|
-| `guides/cache.md` | `ext.cache` API | `[CachedStore](../api/ext/cache.md)` |
-| `Store.read` docstring | Streaming guide | `See the [Streaming Guide](../guides/streaming.md)` |
-| `guides/backends/s3.md` | Capabilities matrix | `[Capabilities](../capabilities-matrix.md)` |
+| `docs/how-to/cache.md` | `ext.cache` API | `[CachedStore](../api/ext/cache.md)` |
+| `Store.read` docstring | Streaming guide | `See the [Streaming Guide](...)` |
+| `docs/how-to/backends/s3.md` | Capabilities matrix | `[Capabilities](../../reference/capabilities-matrix.md)` |
 
 ## API page building blocks
 

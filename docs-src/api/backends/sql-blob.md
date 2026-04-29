@@ -9,4 +9,4 @@ SQLAlchemy-supported SQL database.
 
 ## See also
 
-- [SQL Blob Backend Guide](../../backends/sql-blob.md) — usage patterns, configuration, and examples
+- [SQL Blob Backend Guide](../../how-to/backends/sql-blob.md) — usage patterns, configuration, and examples

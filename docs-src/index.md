@@ -123,7 +123,7 @@ extension. The hooks are public.
 store = Store(MyBackend(...))  # works with all extensions
 ```
 
-See the [custom backend guide](custom-backend-guide.md) for a step-by-step walkthrough.
+See the [custom backend guide](how-to/custom-backend-guide.md) for a step-by-step walkthrough.
 
 ---
 
@@ -149,7 +149,7 @@ See [Getting Started](getting-started.md) for a complete walkthrough.
 ## Where to go next
 
 - **[Getting Started](getting-started.md):** install, tutorial, and runnable examples
-- **Guides:** [Backends](backends/index.md) · [Extensions](extensions.md) · [Choosing a Backend](choosing-a-backend.md) · [and more](data-lake-patterns.md)
-- **Reference:** [API](api/index.md) · [Capabilities Matrix](capabilities-matrix.md) · [Changelog](changelog.md)
-- **Explanation:** [Architecture](architecture.md) · [Performance](performance.md) · [Concurrency](concurrency.md)
-- **[Further Reading](further-reading.md)**
+- **Guides:** [Backends](how-to/backends/index.md) · [Extensions](how-to/extensions.md) · [Choosing a Backend](how-to/choosing-a-backend.md) · [and more](how-to/data-lake-patterns.md)
+- **Reference:** [API](api/index.md) · [Capabilities Matrix](reference/capabilities-matrix.md) · [Changelog](changelog.md)
+- **Explanation:** [Architecture](explanation/architecture.md) · [Performance](explanation/performance.md) · [Concurrency](explanation/concurrency.md)
+- **[Further Reading](further/further-reading.md)**

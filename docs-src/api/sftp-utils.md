@@ -28,5 +28,5 @@
 
 ## See also
 
-- [SFTP Backend Guide](../backends/sftp.md) — connection setup, host key verification, and Key Vault integration
+- [SFTP Backend Guide](../how-to/backends/sftp.md) — connection setup, host key verification, and Key Vault integration
 - [SFTP Backend example](../examples/sftp-backend.md) — end-to-end SFTP usage

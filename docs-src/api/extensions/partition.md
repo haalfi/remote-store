@@ -4,4 +4,4 @@
 
 ## See also
 
-- [Data Lake Patterns](../../data-lake-patterns.md) — guide to Hive-style partitioning and data lake layouts
+- [Data Lake Patterns](../../how-to/data-lake-patterns.md) — guide to Hive-style partitioning and data lake layouts

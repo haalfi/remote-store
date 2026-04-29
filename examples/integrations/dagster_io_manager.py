@@ -9,7 +9,7 @@ Demonstrates:
 ---
 see_also:
   - label: Dagster
-    url: ../dagster.md
+    url: ../how-to/dagster.md
     note: Dagster integration guide
 """
 

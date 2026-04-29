@@ -9,5 +9,5 @@ paramiko. Explicit host key verification and Azure Key Vault PEM support.
 
 ## See also
 
-- [SFTP Backend Guide](../../backends/sftp.md) — usage patterns, configuration, and examples
+- [SFTP Backend Guide](../../how-to/backends/sftp.md) — usage patterns, configuration, and examples
 - [SFTP Backend example](../../examples/sftp-backend.md) — SFTP backend in action

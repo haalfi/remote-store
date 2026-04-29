@@ -9,5 +9,5 @@ structure. No filesystem access, no network. Ideal for testing and prototyping.
 
 ## See also
 
-- [Memory Backend Guide](../../backends/memory.md) — usage patterns, configuration, and examples
+- [Memory Backend Guide](../../how-to/backends/memory.md) — usage patterns, configuration, and examples
 - [Memory Backend example](../../examples/memory-backend.md) — in-memory backend in action

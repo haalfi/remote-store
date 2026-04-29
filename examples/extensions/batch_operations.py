@@ -10,7 +10,7 @@ Demonstrates:
 ---
 see_also:
   - label: Batch Operations
-    url: ../batch-operations.md
+    url: ../how-to/batch-operations.md
     note: bulk operations guide
 """
 

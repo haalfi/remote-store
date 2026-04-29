@@ -9,7 +9,7 @@ Run:
 ---
 see_also:
   - label: SQL Blob Backend
-    url: ../backends/sql-blob.md
+    url: ../how-to/backends/sql-blob.md
     note: backend guide
 """
 

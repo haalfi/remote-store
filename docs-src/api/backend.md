@@ -262,6 +262,6 @@
 
 ## See also
 
-- [Build Your Own Backend](../custom-backend-guide.md) — step-by-step guide to implementing a custom backend
-- [Capabilities Matrix](../capabilities-matrix.md) — per-backend capability comparison
+- [Build Your Own Backend](../how-to/custom-backend-guide.md) — step-by-step guide to implementing a custom backend
+- [Capabilities Matrix](../reference/capabilities-matrix.md) — per-backend capability comparison
 - [Errors](errors.md) — error types backends must raise

@@ -23,7 +23,7 @@ Environment variables:
 ---
 see_also:
   - label: S3-PyArrow Backend
-    url: ../backends/s3-pyarrow.md
+    url: ../how-to/backends/s3-pyarrow.md
     note: backend guide
 """
 

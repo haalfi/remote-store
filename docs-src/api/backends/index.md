@@ -2,7 +2,7 @@
 
 API reference for all storage backend classes.
 Each backend implements the [`Backend`](../backend.md) protocol.
-For usage guides, see [Backends](../../backends/index.md).
+For usage guides, see [Backends](../../how-to/backends/index.md).
 
 | Class | Description |
 |-------|-------------|
@@ -18,6 +18,6 @@ For usage guides, see [Backends](../../backends/index.md).
 
 ## See also
 
-- [Backend guides](../../backends/index.md) — configuration and usage guides for all backends
-- [Choosing a Backend](../../choosing-a-backend.md) — trade-offs and selection criteria
-- [Capabilities Matrix](../../capabilities-matrix.md) — per-backend capability comparison
+- [Backend guides](../../how-to/backends/index.md) — configuration and usage guides for all backends
+- [Choosing a Backend](../../how-to/choosing-a-backend.md) — trade-offs and selection criteria
+- [Capabilities Matrix](../../reference/capabilities-matrix.md) — per-backend capability comparison

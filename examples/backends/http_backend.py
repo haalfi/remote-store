@@ -9,7 +9,7 @@ Demonstrates:
 ---
 see_also:
   - label: HTTP Backend
-    url: ../backends/http.md
+    url: ../how-to/backends/http.md
     note: backend guide
 """
 

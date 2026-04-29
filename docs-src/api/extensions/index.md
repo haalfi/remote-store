@@ -2,7 +2,7 @@
 
 API reference for all extension modules.
 Extensions add optional capabilities to Store — install the relevant extra
-to enable each one. For usage guides, see [Extensions](../../extensions.md).
+to enable each one. For usage guides, see [Extensions](../../how-to/extensions.md).
 
 | Module | Description |
 |--------|-------------|
@@ -25,5 +25,5 @@ to enable each one. For usage guides, see [Extensions](../../extensions.md).
 
 ## See also
 
-- [Extensions guide](../../extensions.md) — overview of all extensions with installation instructions
-- [Choosing a Backend](../../choosing-a-backend.md) — backend selection guide
+- [Extensions guide](../../how-to/extensions.md) — overview of all extensions with installation instructions
+- [Choosing a Backend](../../how-to/choosing-a-backend.md) — backend selection guide
