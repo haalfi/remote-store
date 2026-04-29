@@ -29,7 +29,7 @@ Where files live is configuration, not application code.
 Under the hood, established Python libraries like `s3fs`, `paramiko`,
 and `azure-storage-file-datalake` do the real work.
 
-**Requires Python 3.10+.** The core API is synchronous; an async counterpart is available via `remote_store.aio`. See the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for atomicity caveats and race conditions.
+**Requires Python 3.10+.** The core API is synchronous; an async counterpart is available via `remote_store.aio`. See the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for atomicity caveats and race conditions.
 
 ## Installation
 
@@ -173,7 +173,7 @@ Zero runtime dependencies, strict mypy, spec-driven test suite. Optional integra
 \* Same-filesystem only; cross-filesystem falls back to copy+delete.
 \** Attempts `posix_rename` (atomic on POSIX-compliant servers) but falls back to copy+delete; atomicity cannot be guaranteed, so `ATOMIC_MOVE` is not declared.
 
-All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available on all backends via `Store.read_seekable()`. See [features](https://github.com/haalfi/remote-store/blob/master/docs/reference/FEATURES.md), the [capabilities matrix](https://docs.remotestore.dev/stable/capabilities-matrix/), and the [concurrency guide](https://docs.remotestore.dev/stable/concurrency/) for full details.
+All backends except HTTP and SQL Query support read, write, delete, list, copy, move, and metadata. HTTP is read-only. SQL Query is read-only: it materializes SQL queries to Parquet/CSV/Arrow IPC on read. Glob is natively supported by most backends; for those that lack it, the portable fallback `ext.glob.glob_files()` works with any `LIST`-capable backend. Seekable reads are available on all backends via `Store.read_seekable()`. See [features](https://github.com/haalfi/remote-store/blob/master/docs/reference/FEATURES.md), the [capabilities matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/), and the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for full details.
 
 ## Store API
 
@@ -205,7 +205,7 @@ For the full method list, see the [API reference](https://docs.remotestore.dev/s
 
 ## Performance
 
-Per-operation overhead is small relative to network round-trip time for most workloads. S3 listing is significantly faster via s3fs connection caching. See the [performance guide](https://docs.remotestore.dev/stable/performance/) for full comparative benchmarks, methodology, and per-operation breakdowns.
+Per-operation overhead is small relative to network round-trip time for most workloads. S3 listing is significantly faster via s3fs connection caching. See the [performance guide](https://docs.remotestore.dev/stable/explanation/performance/) for full comparative benchmarks, methodology, and per-operation breakdowns.
 
 ## Extensions
 
@@ -225,7 +225,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Write helpers | *(none)* | Client-side content hashing for write operations, compatible with any backend |
 | Dagster IO manager | `remote-store[dagster]` | IOManager adapter + config-driven Store resource for Dagster pipelines |
 
-Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/extensions/) for details.
+Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/how-to/extensions/) for details.
 
 ## Quality & Testing
 

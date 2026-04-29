@@ -102,10 +102,10 @@ Existing items may be more verbose — trim on next touch.
 
   ## Docs
   - [Getting started](https://docs.remotestore.dev/getting-started/)
-  - [Backends & capabilities](https://docs.remotestore.dev/capabilities-matrix/)
+  - [Backends & capabilities](https://docs.remotestore.dev/reference/capabilities-matrix/)
   - [API reference](https://docs.remotestore.dev/api/)
-  - [Migration guide](https://docs.remotestore.dev/migration/)
-  - [FEATURES (authoritative)](https://github.com/haalfi/remote-store/blob/master/FEATURES.md)
+  - [Migration guide](https://docs.remotestore.dev/reference/migration/)
+  - [FEATURES (authoritative)](https://github.com/haalfi/remote-store/blob/master/docs/reference/FEATURES.md)
 
   ## Source
   - [GitHub](https://github.com/haalfi/remote-store)
@@ -199,7 +199,7 @@ Existing items may be more verbose — trim on next touch.
   **Ripple checks when picked up** (per `sdd/CLAUDE-REFERENCE.md`):
   - Spec 040 SQL-BLOB-003 (capabilities list) and SQL-BLOB-020 (`read()`).
   - Spec 006 streaming-io — capability semantics already fit.
-  - `FEATURES.md` capability matrix.
+  - `docs/reference/FEATURES.md` capability matrix.
   - `tests/backends/test_sqlblob.py:131` asserts LAZY_READ is NOT declared —
     must split into dialect-conditional assertions.
   - Behavioral test: large blob (e.g. 50 MiB) read in 4 KiB chunks with

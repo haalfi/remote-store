@@ -23,10 +23,10 @@
     - Troubleshooting: how-to/troubleshooting.md
     - Choosing a Backend: how-to/choosing-a-backend.md
     - Build Your Own Backend: how-to/custom-backend-guide.md
-    - Migration: reference/migration.md
 - Reference:
     - API: api/
     - Capabilities Matrix: reference/capabilities-matrix.md
+    - Migration: reference/migration.md
     - Changelog: changelog.md
 - Explanation:
     - Architecture Overview: explanation/architecture.md

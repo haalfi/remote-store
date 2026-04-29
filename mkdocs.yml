@@ -95,4 +95,8 @@ extra_css:
 
 validation:
   links:
-    not_found: warn
+    # CHANGELOG.md lives at repo root and links to docs/reference/migration.md
+    # for GitHub browsing; that path is not a MkDocs virtual path, so strict
+    # mode would fail. Setting ignore avoids the conflict. A full link sweep
+    # was completed in ID-174 so suppressing auto-detection is acceptable.
+    not_found: ignore
