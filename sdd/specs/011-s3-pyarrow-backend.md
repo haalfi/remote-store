@@ -204,4 +204,4 @@ See [S3-022](008-s3-backend.md#s3-022-default-credential-chain).
 
 ### S3PA-026: config_kwargs and RetryPolicy Config Merge
 
-See [S3-026](008-s3-backend.md#s3-026-config_kwargs-and-retrypolicy-config-merge). Applies to the s3fs control path only; the PyArrow data path (`_pa_fs`) is unaffected.
+See [S3-026](008-s3-backend.md#s3-026). Applies to the s3fs control path only; the PyArrow data path (`_pa_fs`) is unaffected.

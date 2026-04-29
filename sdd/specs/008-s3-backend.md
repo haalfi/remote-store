@@ -237,7 +237,7 @@ lowercase-normalized in `ContentDigest`).
 
 **Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.
 
-### S3-026: config_kwargs is the only Config channel; client_kwargs['config'] is rejected
+### S3-026: config_kwargs is the only Config channel; client_kwargs['config'] is rejected { #s3-026 }
 
 **Invariant:** Every botocore `Config` option supplied to an S3 backend
 flows to s3fs via `opts['config_kwargs']` (a dict). The kwargs dict handed
