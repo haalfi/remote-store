@@ -157,12 +157,14 @@ class _S3Base(Backend):
         rejected with a clear ``ValueError`` that points to the supported
         channel — silent rewriting hid both prior bugs.
 
-        Retry-policy precedence: ``RetryPolicy.max_attempts`` overwrites the
-        ``retries`` entry entirely (matching ``botocore.Config.merge``
-        semantics: dict-replace, not dict-merge).  Caller-supplied retry
-        modes (``adaptive``, etc.) are lost when ``retry=`` is passed; pass
+        Retry-policy precedence: when ``retry=RetryPolicy(...)`` is passed,
+        the ``retries`` entry in ``config_kwargs`` is replaced wholesale
+        with ``{"max_attempts": rp.max_attempts, "mode": "standard"}``
+        (plain dict assignment, not a field-level merge).  Caller-supplied
+        non-``max_attempts`` keys (e.g. ``mode="adaptive"``) are dropped;
+        a ``log.warning`` fires when this happens.  Pass
         ``client_options={'config_kwargs': {'retries': {...}}}`` alone to
-        keep them.
+        keep caller-supplied retry knobs.
         """
         import copy
 
@@ -198,6 +200,17 @@ class _S3Base(Backend):
                     "mappable to botocore; only max_attempts is used",
                     self.name,
                 )
+            caller_retries = config_kwargs.get("retries")
+            if caller_retries:
+                dropped = {k: v for k, v in caller_retries.items() if k != "max_attempts"}
+                if dropped:
+                    log.warning(
+                        "%s: retry=RetryPolicy(...) replaced caller-supplied "
+                        "config_kwargs['retries'] entirely; dropped keys: %s. "
+                        "Pass only one of retry=/config_kwargs['retries'] to keep both.",
+                        self.name,
+                        sorted(dropped.keys()),
+                    )
             config_kwargs["retries"] = {"max_attempts": rp.max_attempts, "mode": "standard"}
 
         if config_kwargs:

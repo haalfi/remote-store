@@ -5,6 +5,8 @@ Unit-level; does not connect to S3. Requires s3fs and botocore.
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 pytest.importorskip("s3fs", reason="s3fs not installed")
@@ -157,6 +159,73 @@ class TestConfigKwargsRetryCollision:
         finally:
             backend.close()
 
+    def test_retry_overrides_caller_retries_emits_warning(self, backend_cls: str) -> None:
+        """S3-026: dropping caller-supplied retry knobs is observable.
+
+        When ``retry=RetryPolicy(...)`` is passed alongside non-empty
+        ``config_kwargs['retries']``, the builder replaces the retries dict
+        wholesale. Silent rewriting hid BUG-178 and BUG-185; emit a
+        ``log.warning`` enumerating the dropped keys so the next
+        mis-configuration is a one-line search instead of a runtime
+        surprise.
+        """
+        import logging
+        from unittest.mock import patch
+
+        from remote_store._config import RetryPolicy
+
+        cls = self._load_backend_cls(backend_cls)
+        backend = cls(
+            bucket="mybucket",
+            client_options={
+                "config_kwargs": {
+                    "retries": {"max_attempts": 3, "mode": "adaptive", "total_max_attempts": 9},
+                },
+            },
+            retry=RetryPolicy(max_attempts=5),
+        )
+        try:
+            with patch("s3fs.S3FileSystem"), self._caplog(logging.WARNING) as records:
+                _ = backend._s3fs
+            messages = [r.getMessage() for r in records]
+            matched = [m for m in messages if "config_kwargs['retries']" in m and "dropped" in m]
+            assert matched, f"expected drop-warning; got {messages!r}"
+            # Both non-max_attempts keys must be enumerated.
+            assert "mode" in matched[0]
+            assert "total_max_attempts" in matched[0]
+        finally:
+            backend.close()
+
+    def _caplog(self, level: int):  # noqa: ANN202 -- private test helper
+        import logging
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _ctx():
+            logger = logging.getLogger("remote_store.backends._s3_base")
+            handler = _ListHandler(level)
+            previous_level = logger.level
+            logger.addHandler(handler)
+            logger.setLevel(level)
+            try:
+                yield handler.records
+            finally:
+                logger.removeHandler(handler)
+                logger.setLevel(previous_level)
+
+        return _ctx()
+
+
+class _ListHandler(logging.Handler):
+    """Minimal logging.Handler that appends records to a list (mock-spec safe)."""
+
+    def __init__(self, level: int) -> None:
+        super().__init__(level=level)
+        self.records: list[logging.LogRecord] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.records.append(record)
+
 
 class TestAiobotocoreCreateClientBoundary:
     """S3-026: assert at the actual ``aiobotocore.create_client`` call site.
@@ -184,14 +253,25 @@ class TestAiobotocoreCreateClientBoundary:
             ),
         ],
     )
-    def test_create_client_receives_one_aioconfig_with_merged_values(self, backend_cls: str) -> None:
+    @pytest.mark.parametrize(
+        ("with_retry", "expected_max_attempts"),
+        [
+            pytest.param(True, 5, id="with-retry"),
+            # No-retry case is the literal BUG-185 reproduction (config_kwargs alone).
+            pytest.param(False, 3, id="without-retry"),
+        ],
+    )
+    def test_create_client_receives_one_aioconfig_with_merged_values(
+        self, backend_cls: str, with_retry: bool, expected_max_attempts: int
+    ) -> None:
         """End-to-end: the user's MinIO scenario reaches aiobotocore correctly.
 
         Patches the real ``AioSession.create_client`` with a side-effect
         that short-circuits ``set_session``, then asserts the captured call
         carries a single ``config=`` keyword whose ``AioConfig`` reflects
         every merged option (timeouts, addressing style, proxies, retry
-        policy).
+        policy). Parametrized over with/without ``RetryPolicy`` because the
+        no-retry variant is the literal BUG-185 reproduction.
         """
         import importlib
         from unittest.mock import patch
@@ -202,21 +282,24 @@ class TestAiobotocoreCreateClientBoundary:
 
         module_path, cls_name = backend_cls.split(":")
         cls = getattr(importlib.import_module(module_path), cls_name)
-        backend = cls(
-            bucket="mybucket",
-            endpoint_url="https://s3.internal:9000",
-            key="AKIA...",
-            secret="secret-redacted",
-            retry=RetryPolicy(max_attempts=5),
-            client_options={
+        kwargs: dict[str, object] = {
+            "bucket": "mybucket",
+            "endpoint_url": "https://s3.internal:9000",
+            "key": "AKIA...",
+            "secret": "secret-redacted",
+            "client_options": {
                 "config_kwargs": {
                     "connect_timeout": 3.0,
                     "read_timeout": 10.0,
+                    "retries": {"max_attempts": 3, "mode": "standard"},
                     "s3": {"addressing_style": "path"},
                     "proxies": {"http": None, "https": None},
                 },
             },
-        )
+        }
+        if with_retry:
+            kwargs["retry"] = RetryPolicy(max_attempts=5)
+        backend = cls(**kwargs)
         try:
             sentinel = RuntimeError("short-circuit set_session for assertion")
             with (
@@ -235,8 +318,9 @@ class TestAiobotocoreCreateClientBoundary:
             assert isinstance(cfg, AioConfig)
             assert cfg.connect_timeout == 3.0
             assert cfg.read_timeout == 10.0
-            # RetryPolicy wins on retries (whole dict replaced).
-            assert cfg.retries["max_attempts"] == 5
+            # With RetryPolicy: replaces the retries dict (max_attempts=5).
+            # Without: caller's config_kwargs.retries flows through (max_attempts=3).
+            assert cfg.retries["max_attempts"] == expected_max_attempts
             assert cfg.retries["mode"] == "standard"
             assert cfg.s3 == {"addressing_style": "path"}
             assert cfg.proxies == {"http": None, "https": None}

@@ -253,19 +253,22 @@ argument 'config'` (BUG-178, BUG-185).
 
 **Rules:**
 - A top-level `config_kwargs` dict in `client_options` is the supported
-  channel for botocore Config options. It is forwarded as-is through the
-  merge step; s3fs reconstructs `AioConfig(**config_kwargs)` itself.
+  channel for botocore Config options. It is forwarded as-is to s3fs,
+  which reconstructs `AioConfig(**config_kwargs)` itself.
 - If the caller passes `client_kwargs['config']` (a pre-built
   `botocore.config.Config`), the builder raises `ValueError` with a message
   pointing at `config_kwargs`. Silent rewriting is forbidden because it
   hid two consecutive bugs: it always produced a duplicate `config=` on
   s3fs ≥ 2024.x, and the kwarg-shape unit tests asserted at the wrong
   boundary.
-- `RetryPolicy` (when supplied via `retry=`) overrides the entire `retries`
-  entry in `config_kwargs` to `{"max_attempts": rp.max_attempts, "mode":
-  "standard"}` (matches `botocore.Config.merge` dict-replace semantics).
-  Caller-supplied retry modes (e.g. `adaptive`) are lost when both `retry=`
-  and `config_kwargs.retries` are supplied; use one channel.
+- `RetryPolicy` (when supplied via `retry=`) replaces the entire `retries`
+  entry in `config_kwargs` with `{"max_attempts": rp.max_attempts, "mode":
+  "standard"}` (plain dict assignment, not a field-level merge).
+  Caller-supplied retry modes (e.g. `adaptive`) and any other
+  non-`max_attempts` keys are dropped when both `retry=` and
+  `config_kwargs.retries` are supplied; the builder emits a `log.warning`
+  enumerating the dropped keys so the loss is observable. Use one channel
+  to keep caller-supplied retry knobs.
 - Caller-supplied fields outside `retries` (e.g. `connect_timeout`,
   `read_timeout`, `s3.addressing_style`, `proxies`) are preserved.
 
