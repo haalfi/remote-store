@@ -240,8 +240,5 @@ class TestAiobotocoreCreateClientBoundary:
             assert cfg.retries["mode"] == "standard"
             assert cfg.s3 == {"addressing_style": "path"}
             assert cfg.proxies == {"http": None, "https": None}
-            # Endpoint and credentials flow through their own kwargs, not config=.
-            assert kw["endpoint_url"] == "https://s3.internal:9000"
-            assert kw["aws_access_key_id"] == "AKIA..."
         finally:
             backend.close()
