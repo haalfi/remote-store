@@ -124,6 +124,7 @@ class TestConfigKwargsRetryCollision:
             call_kwargs = mock_cls.call_args.kwargs
             assert "client_kwargs" not in call_kwargs or "config" not in call_kwargs["client_kwargs"]
             merged = call_kwargs["config_kwargs"]
+            assert isinstance(merged, dict)
             assert merged["connect_timeout"] == 3.0
             assert merged["read_timeout"] == 10.0
             assert merged["retries"] == {"max_attempts": 3, "mode": "standard"}
@@ -169,7 +170,6 @@ class TestConfigKwargsRetryCollision:
         mis-configuration is a one-line search instead of a runtime
         surprise.
         """
-        import logging
         from unittest.mock import patch
 
         from remote_store._config import RetryPolicy
@@ -197,7 +197,6 @@ class TestConfigKwargsRetryCollision:
             backend.close()
 
     def _caplog(self, level: int):  # noqa: ANN202 -- private test helper
-        import logging
         from contextlib import contextmanager
 
         @contextmanager

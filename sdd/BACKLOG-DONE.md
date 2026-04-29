@@ -32,7 +32,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   timeouts, and MinIO path-style addressing; runnable snippets in
   `examples/snippets/s3_botocore_tuning.py` are wired into
   `tests/test_snippets.py` and `tests/scripts/run_examples.py` so the
-  examples gate (`hatch run examples`) catches drift.
+  examples gate (`hatch run examples`) catches drift. **Migration:**
+  callers that passed a pre-built `botocore.config.Config` via
+  `client_options={"client_kwargs": {"config": Config(...)}}` must switch
+  to `client_options={"config_kwargs": {...}}` (a plain dict of the same
+  `Config(...)` constructor kwargs). The old form raised `TypeError` at
+  first I/O on s3fs ≥ 2024.x already; it now fails fast at backend
+  construction with `ValueError` and a message naming the supported
+  channel.
 
 - [x] **ID-174 — Diátaxis-aligned docs filesystem reorg (Phases 1 + 2)**
   **Phase 1:** Moved 36 prose files from `guides/` and repo root into

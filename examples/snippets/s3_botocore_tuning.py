@@ -1,4 +1,4 @@
-"""S3 botocore-tuning snippets — sourced by guides/backends/s3.md.
+"""S3 botocore-tuning snippets — sourced by the S3 backend guide.
 
 Named regions are included via pymdownx.snippets ``--8<--`` syntax. Each
 snippet constructs an ``S3Backend`` with the relevant ``client_options``
