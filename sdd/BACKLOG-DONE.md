@@ -7,6 +7,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BUG-185 — `S3Backend(client_options={"config_kwargs": ...})` collides on `config=`**
+  The BUG-178 fix landed `_S3Base._build_s3fs_kwargs()` writing the merged
+  `botocore.config.Config` into `client_kwargs["config"]`, but
+  `s3fs.S3FileSystem.set_session` always calls
+  `aiobotocore.create_client("s3", config=AioConfig(**self.config_kwargs), **client_kwargs)`.
+  Any `client_kwargs["config"]` therefore duplicates `config=` and raises
+  `TypeError: got multiple values for keyword argument 'config'` —
+  with or without `RetryPolicy`. Reproduced on s3fs 2026.3.0 against an
+  internal MinIO-style endpoint that requires `s3.addressing_style="path"`
+  and `proxies={http: None, https: None}`. Fixed by routing every Config
+  source (top-level `config_kwargs`, caller's pre-built
+  `client_kwargs["config"]`, retry policy) through a single merged dict at
+  `opts["config_kwargs"]`; `client_kwargs["config"]` is never set. Spec
+  S3-026 / S3PA-026 updated to pin the new invariant. Existing merge
+  precedence preserved: caller's `config_kwargs` < caller's pre-built
+  `client_kwargs["config"]` < retry policy. Tests in
+  `tests/backends/test_s3_options.py` extended with the no-RetryPolicy
+  reproduction from the report.
+
 - [x] **ID-174 — Diátaxis-aligned docs filesystem reorg (Phases 1 + 2)**
   **Phase 1:** Moved 36 prose files from `guides/` and repo root into
   `docs/<bucket>/` (how-to, explanation, reference, further). Mirrored

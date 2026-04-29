@@ -596,10 +596,15 @@ class TestS3SharedRetryNonDefaultParams:
         with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
             _ = backend._s3fs
         assert mock_s3fs_cls.call_count == 1
-        merged_config = mock_s3fs_cls.call_args.kwargs["client_kwargs"]["config"]
-        assert isinstance(merged_config, botocore.config.Config)
-        assert merged_config.max_pool_connections == 20
-        assert merged_config.retries == {"max_attempts": 2, "mode": "standard"}
+        # S3-026 / BUG-185: the merged Config flows through opts["config_kwargs"] (a dict),
+        # never through client_kwargs["config"], because s3fs already passes
+        # config=AioConfig(**self.config_kwargs) to aiobotocore.create_client().
+        call_kwargs = mock_s3fs_cls.call_args.kwargs
+        assert "config" not in call_kwargs.get("client_kwargs", {})
+        merged_dict = call_kwargs["config_kwargs"]
+        assert isinstance(merged_dict, dict)
+        assert merged_dict["max_pool_connections"] == 20
+        assert merged_dict["retries"] == {"max_attempts": 2, "mode": "standard"}
 
 
 # ---------------------------------------------------------------------------

@@ -148,11 +148,16 @@ class _S3Base(Backend):
         """Build kwargs for ``s3fs.S3FileSystem(**kwargs)``.
 
         Merges ``self._client_options`` with credentials, region, retry, and
-        TLS settings.  Resolves BUG-178: any top-level ``config_kwargs`` entry
-        is folded into ``client_kwargs["config"]`` *before* the retry-derived
-        ``Config`` is applied, so ``aiobotocore.create_client()`` only ever
-        receives one ``config=`` argument.  Retry-policy values win on
-        conflicts.
+        TLS settings.  Every botocore ``Config`` source (caller's
+        ``config_kwargs`` dict, caller's pre-built ``client_kwargs["config"]``,
+        retry policy) is folded into a single dict and handed to s3fs as
+        ``opts["config_kwargs"]``: s3fs reconstructs ``AioConfig(**config_kwargs)``
+        and passes it as the sole ``config=`` argument to
+        ``aiobotocore.create_client()``.  Setting ``client_kwargs["config"]``
+        would collide with that built-in path and raise ``TypeError: got
+        multiple values for keyword argument 'config'`` (BUG-178, BUG-185).
+        Merge precedence (lowest → highest): caller's ``config_kwargs`` <
+        caller's pre-built ``client_kwargs["config"]`` < retry policy.
         """
         import copy
 
@@ -170,11 +175,14 @@ class _S3Base(Backend):
             client_kwargs["region_name"] = self._region_name
 
         cfg_kwargs = opts.pop("config_kwargs", None)
-        if cfg_kwargs is not None:
-            client_kwargs = opts.setdefault("client_kwargs", {})
-            caller_config = botocore.config.Config(**cfg_kwargs)
-            existing = client_kwargs.get("config")
-            client_kwargs["config"] = caller_config.merge(existing) if existing is not None else caller_config
+        client_kwargs = opts.get("client_kwargs") or {}
+        inline_config = client_kwargs.pop("config", None)
+
+        merged: botocore.config.Config | None = None
+        if cfg_kwargs:
+            merged = botocore.config.Config(**cfg_kwargs)
+        if inline_config is not None:
+            merged = inline_config if merged is None else merged.merge(inline_config)
 
         if self._retry is not None:
             rp = self._retry
@@ -184,14 +192,13 @@ class _S3Base(Backend):
                     "mappable to botocore; only max_attempts is used",
                     self.name,
                 )
-            client_kwargs = opts.setdefault("client_kwargs", {})
-            existing_config = client_kwargs.get("config")
             retry_config = botocore.config.Config(
                 retries={"max_attempts": rp.max_attempts, "mode": "standard"},
             )
-            client_kwargs["config"] = (
-                existing_config.merge(retry_config) if existing_config is not None else retry_config
-            )
+            merged = retry_config if merged is None else merged.merge(retry_config)
+
+        if merged is not None:
+            opts["config_kwargs"] = dict(merged._user_provided_options)
 
         if self._tls_ca_bundle is not None:
             client_kwargs = opts.setdefault("client_kwargs", {})
