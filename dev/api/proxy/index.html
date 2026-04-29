@@ -8832,11 +8832,11 @@
 <p>Base class for building Store middleware. Subclass it to intercept
 specific operations while delegating the rest to the inner Store.</p>
 <p>ProxyStore is an internal delegation base by design
-(<a href="https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0014-middleware-path-1-proxy-store-stream-wrappers.md">ADR-0014</a>) —
+(<a href="../../design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/">ADR-0014</a>) —
 it centralises the private-attribute coupling that <code>ObservedStore</code> and
 <code>CachedStore</code> share. It is documented here because it is visible in
 their inheritance chain and useful for anyone building custom Store
-extensions (<a href="https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0015-proxystore-publicly-documented.md">ADR-0015</a>).</p>
+extensions (<a href="../../design/adrs/0015-proxystore-publicly-documented/">ADR-0015</a>).</p>
 
 
 <div class="doc doc-object doc-class">

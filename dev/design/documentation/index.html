@@ -9170,22 +9170,22 @@
 </tr>
 <tr>
 <td>How-to guides</td>
-<td><code>docs/how-to/</code></td>
+<td><code>docs-src/how-to/</code></td>
 <td>Yes</td>
 </tr>
 <tr>
 <td>Explanation pages</td>
-<td><code>docs/explanation/</code></td>
+<td><code>docs-src/explanation/</code></td>
 <td>Yes</td>
 </tr>
 <tr>
 <td>Reference pages</td>
-<td><code>docs/reference/</code></td>
+<td><code>docs-src/reference/</code></td>
 <td>Yes</td>
 </tr>
 <tr>
 <td>Further reading</td>
-<td><code>docs/further/</code></td>
+<td><code>docs-src/further/</code></td>
 <td>Yes</td>
 </tr>
 <tr>
@@ -9221,16 +9221,16 @@
 <tr>
 <td>Site-specific pages, nav, templates</td>
 <td><code>docs-src/</code></td>
-<td>No (site only)</td>
+<td>Yes</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Decision rule:</strong> If it makes sense on GitHub without MkDocs, it goes in a source directory. If it only makes sense on the docs site, it goes in <code>docs-src/</code>.</p>
-<p>New user-facing prose pages follow the Diátaxis bucket structure under <code>docs/</code>:
-- How-to guides go in <code>docs/how-to/</code> (backend-specific guides in <code>docs/how-to/backends/</code>).
-- Explanation pages go in <code>docs/explanation/</code>.
-- Reference pages go in <code>docs/reference/</code>.</p>
-<p><code>docs-src/&lt;page&gt;.md</code> holds the corresponding <code>include-markdown</code> stub for the docs site build. Site-only artefacts (nav, templates, mkdocs-only includes) stay in <code>docs-src/</code>.</p>
+<p><strong>Decision rule:</strong> If it makes sense on GitHub without MkDocs, it goes in a source directory. If it only makes sense on the docs site, it goes in <code>docs-src/</code>. All user-facing prose now lives directly in <code>docs-src/</code> Diátaxis buckets.</p>
+<p>New user-facing prose pages follow the Diátaxis bucket structure under <code>docs-src/</code>:
+- How-to guides go in <code>docs-src/how-to/</code> (backend-specific guides in <code>docs-src/how-to/backends/</code>).
+- Explanation pages go in <code>docs-src/explanation/</code>.
+- Reference pages go in <code>docs-src/reference/</code>.</p>
+<p>Site-only artefacts (nav files, MkDocs-only includes) stay in <code>docs-src/</code> alongside the prose.</p>
 <h3 id="3-docstring-completeness">3. Docstring completeness<a class="headerlink" href="#3-docstring-completeness" title="Permanent link">&para;</a></h3>
 <p>Format and style rules are in <code>sdd/DESIGN.md</code> § 4. This section covers what mkdocstrings requires per symbol type:</p>
 <table>
@@ -9413,19 +9413,19 @@ docstrings, use MkDocs admonition syntax: <code>!!! example</code> with indented
 <td>How-To Guides</td>
 <td>Tasks</td>
 <td>Answer "how do I X?"</td>
-<td><code>docs/how-to/</code> (readable on GitHub, wrapped into site via <code>docs-src/</code>)</td>
+<td><code>docs-src/how-to/</code></td>
 </tr>
 <tr>
 <td>Reference</td>
 <td>Information</td>
 <td>Precise lookup</td>
-<td>Python docstrings in <code>src/</code>, extracted into <code>docs-src/api/</code>; prose reference pages in <code>docs/reference/</code></td>
+<td>Python docstrings in <code>src/</code>, extracted into <code>docs-src/api/</code>; prose reference pages in <code>docs-src/reference/</code></td>
 </tr>
 <tr>
 <td>Explanation</td>
 <td>Understanding</td>
 <td>Help understand <em>why</em></td>
-<td><code>docs/explanation/</code> for user-facing pages (rendered via <code>docs-src/</code> stubs), <code>sdd/adrs/</code> for formal decisions</td>
+<td><code>docs-src/explanation/</code> for user-facing pages, <code>sdd/adrs/</code> for formal decisions</td>
 </tr>
 </tbody>
 </table>
@@ -9469,7 +9469,7 @@ docstrings, use MkDocs admonition syntax: <code>!!! example</code> with indented
 </thead>
 <tbody>
 <tr>
-<td><code>docs/how-to/cache.md</code></td>
+<td><code>docs-src/how-to/cache.md</code></td>
 <td><code>ext.cache</code> API</td>
 <td><code>[CachedStore](../../api/ext/cache.md)</code></td>
 </tr>
@@ -9479,7 +9479,7 @@ docstrings, use MkDocs admonition syntax: <code>!!! example</code> with indented
 <td><code>See the [Streaming Guide](../../sdd/...)</code></td>
 </tr>
 <tr>
-<td><code>docs/how-to/backends/s3.md</code></td>
+<td><code>docs-src/how-to/backends/s3.md</code></td>
 <td>Capabilities matrix</td>
 <td><code>[Capabilities](../../../reference/capabilities-matrix.md)</code></td>
 </tr>

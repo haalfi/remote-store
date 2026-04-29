@@ -9537,15 +9537,15 @@ the canonical rule.</p>
 numbered and named after the feature it describes (e.g. <code>008-s3-backend.md</code>).</p>
 <p>For spec format and ID prefixes, see <a href="../design/process/"><code>sdd/000-process.md</code></a> § Spec format.</p>
 <h2 id="adding-a-new-backend">Adding a New Backend<a class="headerlink" href="#adding-a-new-backend" title="Permanent link">&para;</a></h2>
-<p>See <a href="https://github.com/haalfi/remote-store/blob/master/docs/how-to/custom-backend-guide.md">Build Your Own Backend</a> for a full
+<p>See <a href="https://github.com/haalfi/remote-store/blob/master/docs-src/how-to/custom-backend-guide.md">Build Your Own Backend</a> for a full
 walkthrough of the <code>Backend</code> contract, error mapping, and capabilities.</p>
 <ol>
 <li>Write a spec in <code>sdd/specs/</code> or as an addendum in <code>sdd/specs/backends/&lt;name&gt;.md</code></li>
 <li>Implement <code>Backend</code> ABC in <code>src/remote_store/backends/_&lt;name&gt;.py</code></li>
 <li>Add a conformance fixture in <code>tests/backends/conftest.py</code></li>
 <li>Both conformance suites run automatically: <code>tests/backends/test_conformance.py</code> (spec-traced) and <code>tests/backends/test_conformance_extended.py</code> (Dafny-derived, <code>@pytest.mark.extended_conformance</code>). The suites are validated by a Dafny-compiled oracle — see <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a> § Compiled Oracle</li>
-<li>Add user-facing guide in <code>docs/how-to/backends/&lt;name&gt;.md</code> and register in <code>mkdocs.yml</code> nav</li>
-<li>Update <code>docs/how-to/backends/index.md</code> (Supported Backends table)</li>
+<li>Add user-facing guide in <code>docs-src/how-to/backends/&lt;name&gt;.md</code> and add to <code>docs-src/_nav.yml</code></li>
+<li>Update <code>docs-src/how-to/backends/index.md</code> (Supported Backends table)</li>
 <li>Update <code>README.md</code> (Supported Backends table + Installation extras)</li>
 <li>Add backend config example to <code>examples/configuration/configuration.py</code></li>
 <li>If the backend needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code></li>
@@ -9559,8 +9559,7 @@ walkthrough of the <code>Backend</code> contract, error mapping, and capabilitie
 <li>Do not own Store lifecycle — never call <code>store.close()</code> or use <code>with store:</code></li>
 <li>Let <code>CapabilityNotSupported</code> propagate — do not catch and suppress it</li>
 <li>Add tests in <code>tests/test_&lt;name&gt;.py</code> with <code>@pytest.mark.spec("ID")</code></li>
-<li>Write a user guide in <code>docs/how-to/&lt;name&gt;.md</code></li>
-<li>Add an <code>include-markdown</code> wrapper in <code>docs-src/&lt;name&gt;.md</code></li>
+<li>Write a user guide in <code>docs-src/how-to/&lt;name&gt;.md</code></li>
 <li>Add the page to <code>docs-src/_nav.yml</code></li>
 <li>Add a runnable example in <code>examples/</code></li>
 <li>Add an example docs wrapper in <code>docs-src/examples/&lt;name&gt;.md</code> and add it to <code>docs-src/examples/_nav.yml</code></li>
@@ -9757,7 +9756,7 @@ errors.</p>
 <li>[ ] CHANGELOG.md <code>[Unreleased]</code> is complete — every completed item has a stub line (see ripple-check row <strong>CHANGELOG entry</strong>)</li>
 <li>[ ] CHANGELOG.md <code>[Unreleased]</code> condensed — stubs expanded to prose at release time (release skill Phase 1)</li>
 <li>[ ] <code>sdd/BACKLOG-DONE.md</code>: all shipping items moved here, marked <code>[x]</code> with version (e.g. <code>(v0.8.0)</code>)</li>
-<li>[ ] <code>docs/reference/FEATURES.md</code> updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; <code>bump-my-version</code> handles it in Phase 2)</li>
+<li>[ ] <code>docs-src/reference/FEATURES.md</code> updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; <code>bump-my-version</code> handles it in Phase 2)</li>
 <li>[ ] README.md: backends table, installation extras, API table, badges are current</li>
 <li>[ ] Specs vs code: spot-check shipped features match their specs (<code>pytest -m spec</code> as proxy)</li>
 <li>[ ] Examples: <code>hatch run examples</code> passes; manually review notebooks if API surface changed</li>
