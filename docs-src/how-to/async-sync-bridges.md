@@ -43,7 +43,7 @@ but your calling code is synchronous.
 - [API reference](../api/aio.md) — `AsyncBackendSyncAdapter`, `SyncBackendAdapter`, `AsyncStore`
 - [Async guide](async.md) — `AsyncStore`, native async backends, and the
   `SyncBackendAdapter` direction
-- [ADR-0025](https://github.com/haalfi/remote-store/blob/master/sdd/adrs/0025-async-to-sync-backend-adapter.md)
+- [ADR-0025](../design/adrs/0025-async-to-sync-backend-adapter.md)
   — decision record for `AsyncBackendSyncAdapter`
-- [spec 029 § AsyncBackendSyncAdapter](https://github.com/haalfi/remote-store/blob/master/sdd/specs/029-async-store-backend-api.md)
+- [spec 029 § AsyncBackendSyncAdapter](../design/specs/029-async-store-backend-api.md)
   — full invariant list (ASYNC-080…093)

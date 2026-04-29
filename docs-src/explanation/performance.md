@@ -152,12 +152,6 @@ docker compose -f benchmarks/infra/docker-compose.yml down -v
 For cloud benchmarks, set the appropriate environment variables (see
 `benchmarks/README.md` for the full reference table) and use `--infra cloud`.
 
-## See also
-
-- [Capabilities Matrix](../reference/capabilities-matrix.md) — feature support per backend
-- [Choosing a Backend](../how-to/choosing-a-backend.md) — decision guide with trade-offs
-- [PyArrow Adapter](../how-to/pyarrow-adapter.md) — tiered read strategy and S3 direct I/O
-
 ## Detailed Comparative Tables
 
 Per-backend tables comparing remote-store, raw SDK, and fsspec for each
@@ -167,3 +161,9 @@ operation. Generated with `hatch run bench-report-comparative-md`.
    include-markdown "../../benchmarks/results/comparative.md"
    rewrite-relative-urls=false
 %}
+
+## See also
+
+- [Capabilities Matrix](../reference/capabilities-matrix.md) — feature support per backend
+- [Choosing a Backend](../how-to/choosing-a-backend.md) — decision guide with trade-offs
+- [PyArrow Adapter](../how-to/pyarrow-adapter.md) — tiered read strategy and S3 direct I/O

@@ -101,8 +101,7 @@ backend = AsyncAzureBackend(
     account_key="...",
 )
 async with AsyncStore(backend, root_path="data") as store:
-    await store.write("report.csv", b"col1,col2
-1,2", overwrite=True)
+    await store.write("report.csv", b"col1,col2\n1,2", overwrite=True)
 ```
 
 `AsyncAzureBackend` supports both plain Blob Storage and ADLS Gen2

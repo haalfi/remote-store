@@ -24,7 +24,7 @@ How this documentation is written and kept accurate over time:
 
 ## Community and policy
 
-- [Contributing](https://github.com/haalfi/remote-store/blob/master/CONTRIBUTING.md): how to propose changes
+- [Contributing](../contributing.md): how to propose changes
 - [Security policy](https://github.com/haalfi/remote-store/blob/master/SECURITY.md): reporting vulnerabilities
 - [Code of Conduct](https://github.com/haalfi/remote-store/blob/master/CODE_OF_CONDUCT.md)
 - [Citation](https://github.com/haalfi/remote-store/blob/master/CITATION.cff): how to cite remote-store

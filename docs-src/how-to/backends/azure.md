@@ -30,9 +30,7 @@ config = RegistryConfig(
 
 with Registry(config) as registry:
     store = registry.get_store("data")
-    store.write("report.csv", b"col1,col2
-1,2
-")
+    store.write("report.csv", b"col1,col2\n1,2\n")
     data = store.read_bytes("report.csv")
 ```
 

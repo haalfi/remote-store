@@ -120,4 +120,4 @@ exported from `remote_store.__init__`.
 ## See also
 
 - [CHANGELOG](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
-- [Contributing](https://github.com/haalfi/remote-store/blob/master/CONTRIBUTING.md) — stability tiers and versioning policy
+- [Contributing](../contributing.md) — stability tiers and versioning policy
