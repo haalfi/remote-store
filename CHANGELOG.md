@@ -13,18 +13,20 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `config=AioConfig(**self.config_kwargs)` to `aiobotocore.create_client`, so a
   parallel `client_kwargs["config"]` duplicates the keyword and raises
   `TypeError`. The collision fired whenever `config_kwargs` was set —
-  with or without `RetryPolicy`. `_S3Base._build_s3fs_kwargs()` now merges
-  every `Config` source (top-level `config_kwargs`, caller's pre-built
-  `client_kwargs["config"]`, retry policy) into a single dict and hands it back
-  to s3fs as `config_kwargs=`; the builder never sets
-  `client_kwargs["config"]`. Spec S3-026 / S3PA-026 updated to pin the new
-  invariant. Merge precedence preserved: caller's `config_kwargs` < caller's
-  pre-built `client_kwargs["config"]` < retry policy. Unblocks MinIO-style
-  internal endpoints that require `s3.addressing_style="path"` and
-  `proxies={http: None, https: None}`. New "Botocore Client Tuning" section
-  in `guides/backends/s3.md` covers proxies, retries, timeouts, and MinIO
-  path-style addressing, with CI-verified snippets in
-  `examples/snippets/s3_botocore_tuning.py`.
+  with or without `RetryPolicy`. `_S3Base._build_s3fs_kwargs()` now routes
+  every `Config` option through `opts["config_kwargs"]` (a dict);
+  `client_kwargs["config"]` is never set, and any caller-supplied pre-built
+  `Config` in `client_kwargs` is rejected with a `ValueError` pointing at the
+  supported channel — silent rewriting hid both BUG-178 and BUG-185. Spec
+  S3-026 / S3PA-026 updated. Tests now also assert at the
+  `aiobotocore.session.AioSession.create_client` boundary (the actual call
+  site of the collision) so a future variant of the same bug class fails the
+  unit suite. Unblocks MinIO-style internal endpoints that require
+  `s3.addressing_style="path"` and `proxies={http: None, https: None}`. New
+  "Botocore Client Tuning" section in `guides/backends/s3.md` covers proxies,
+  retries, timeouts, and MinIO path-style addressing, with CI-verified
+  snippets in `examples/snippets/s3_botocore_tuning.py`. Follow-up
+  e2e-against-moto coverage tracked as `BK-186`.
 - ID-171: `check_api_docs.py` — extend verifier to `Backend` → `backend.md`. Added `_BACKEND_GATING: dict[str, str]` (capability-name strings, static-extraction only) directly to `scripts/gen_graph.py`; extended gen_graph.py to emit method + requirement nodes and gates/of edges for all 16 gated `Backend` methods (graph: 75 → 107 nodes, 158 → 222 edges). No drift found on `backend.md`.
 - ID-160: Context7 validation fix and indexing improvements.
 - ID-174: Diátaxis-aligned docs reorg — Phase 1 (prose into `docs/` buckets) + Phase 2 (collapse `docs/` into `docs-src/`; delete `docs/` layer).

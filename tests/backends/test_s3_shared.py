@@ -564,13 +564,15 @@ class TestS3SharedRetryNonDefaultParams:
         mock_fs = MagicMock(spec=_s3fs.S3FileSystem)
         with (
             caplog.at_level(logging.DEBUG, logger="remote_store.backends._s3_base"),
-            patch("s3fs.S3FileSystem", return_value=mock_fs),
-            patch("botocore.config.Config") as mock_config_cls,
+            patch("s3fs.S3FileSystem", return_value=mock_fs) as mock_s3fs_cls,
         ):
-            mock_config_cls.return_value.merge.return_value = mock_config_cls.return_value
             _ = backend._s3fs
-            assert mock_config_cls.call_args.kwargs == {
-                "retries": {"max_attempts": 3, "mode": "standard"},
+            # S3-026: retry policy lands as a plain dict in opts["config_kwargs"];
+            # botocore.config.Config is no longer constructed by the builder.
+            call_kwargs = mock_s3fs_cls.call_args.kwargs
+            assert call_kwargs["config_kwargs"]["retries"] == {
+                "max_attempts": 3,
+                "mode": "standard",
             }
         assert any("only max_attempts is used" in rec.message for rec in caplog.records)
 
@@ -581,7 +583,14 @@ class TestS3SharedRetryNonDefaultParams:
             pytest.param(S3PA_CLS, id="s3-pyarrow", marks=pytest.mark.spec("S3PA-026")),
         ],
     )
-    def test_s3fs_retry_with_existing_config_merges(self, backend_cls: str) -> None:
+    def test_s3fs_client_kwargs_config_with_retry_is_rejected(self, backend_cls: str) -> None:
+        """S3-026: caller-supplied ``client_kwargs['config']`` is rejected, even with retry=.
+
+        Pre-fix the builder silently merged the pre-built Config into a
+        ``client_kwargs['config']`` of its own, which always collided with
+        s3fs's built-in ``config=AioConfig(...)``. The new contract is to
+        fail fast with a ``ValueError`` pointing at the supported channel.
+        """
         import botocore.config
 
         from remote_store._config import RetryPolicy
@@ -593,18 +602,8 @@ class TestS3SharedRetryNonDefaultParams:
             client_options={"client_kwargs": {"config": existing_config}},
             retry=RetryPolicy(max_attempts=2),
         )
-        with patch("s3fs.S3FileSystem") as mock_s3fs_cls:
+        with pytest.raises(ValueError, match="config_kwargs"):
             _ = backend._s3fs
-        assert mock_s3fs_cls.call_count == 1
-        # S3-026 / BUG-185: the merged Config flows through opts["config_kwargs"] (a dict),
-        # never through client_kwargs["config"], because s3fs already passes
-        # config=AioConfig(**self.config_kwargs) to aiobotocore.create_client().
-        call_kwargs = mock_s3fs_cls.call_args.kwargs
-        assert "config" not in call_kwargs.get("client_kwargs", {})
-        merged_dict = call_kwargs["config_kwargs"]
-        assert isinstance(merged_dict, dict)
-        assert merged_dict["max_pool_connections"] == 20
-        assert merged_dict["retries"] == {"max_attempts": 2, "mode": "standard"}
 
 
 # ---------------------------------------------------------------------------

@@ -57,6 +57,31 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-186 — S3 control-path e2e test against moto/local aiobotocore**
+  Two consecutive same-user bugs (BUG-178, BUG-185) escaped because every
+  S3 config-plumbing test mocked at the `s3fs.S3FileSystem` boundary, not
+  at the `aiobotocore.create_client` boundary where the duplicate-`config`
+  `TypeError` actually fires. BUG-185 added a unit-level
+  `TestAiobotocoreCreateClientBoundary` that patches
+  `aiobotocore.session.AioSession.create_client`; this item adds the
+  matching e2e coverage.
+
+  Scope:
+  - `tests/e2e/test_s3_control_path.py` — spin up `moto` (S3 mock), drive
+    a full `S3Backend(...)` lifecycle (`list_files`, `read`, `write`,
+    `delete`) with non-trivial `client_options`: `s3.addressing_style="path"`,
+    `proxies={http: None, https: None}`, `connect_timeout`, `read_timeout`,
+    plus `RetryPolicy`. Mirror the user's MinIO scenario.
+  - Pin compatibility with the s3fs ≥ 2024.x `set_session` contract: a
+    future s3fs change that re-introduces a `client_kwargs['config']`
+    pop must not regress.
+  - Run the same matrix against `S3PyArrowBackend` (the PyArrow data path
+    has its own kwargs surface, not affected by S3-026, but the s3fs
+    control path still applies).
+
+  Spec: S3-026, S3PA-026. Blocks: nothing currently, but de-risks any
+  future S3 config change.
+
 - [ ] **BK-165 — Docs structure audit and authoring guide for the post-ID-174 layout**
   ID-174 collapsed `docs/` into `docs-src/` and inlined all prose, but the
   resulting layer cake is not yet documented as a coherent system. Three

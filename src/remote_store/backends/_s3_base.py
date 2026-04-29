@@ -147,21 +147,24 @@ class _S3Base(Backend):
     def _build_s3fs_kwargs(self) -> dict[str, Any]:
         """Build kwargs for ``s3fs.S3FileSystem(**kwargs)``.
 
-        Merges ``self._client_options`` with credentials, region, retry, and
-        TLS settings.  Every botocore ``Config`` source (caller's
-        ``config_kwargs`` dict, caller's pre-built ``client_kwargs["config"]``,
-        retry policy) is folded into a single dict and handed to s3fs as
-        ``opts["config_kwargs"]``: s3fs reconstructs ``AioConfig(**config_kwargs)``
-        and passes it as the sole ``config=`` argument to
-        ``aiobotocore.create_client()``.  Setting ``client_kwargs["config"]``
-        would collide with that built-in path and raise ``TypeError: got
-        multiple values for keyword argument 'config'`` (BUG-178, BUG-185).
-        Merge precedence (lowest → highest): caller's ``config_kwargs`` <
-        caller's pre-built ``client_kwargs["config"]`` < retry policy.
+        Routes every botocore ``Config`` option through ``opts['config_kwargs']``
+        (a dict) — never through ``client_kwargs['config']``.
+        ``s3fs.S3FileSystem.set_session`` already calls
+        ``aiobotocore.create_client(..., config=AioConfig(**self.config_kwargs),
+        **client_kwargs)``; a parallel ``client_kwargs['config']`` would
+        duplicate the ``config=`` keyword and raise ``TypeError`` (BUG-178,
+        BUG-185).  Caller-supplied ``client_kwargs['config']`` is therefore
+        rejected with a clear ``ValueError`` that points to the supported
+        channel — silent rewriting hid both prior bugs.
+
+        Retry-policy precedence: ``RetryPolicy.max_attempts`` overwrites the
+        ``retries`` entry entirely (matching ``botocore.Config.merge``
+        semantics: dict-replace, not dict-merge).  Caller-supplied retry
+        modes (``adaptive``, etc.) are lost when ``retry=`` is passed; pass
+        ``client_options={'config_kwargs': {'retries': {...}}}`` alone to
+        keep them.
         """
         import copy
-
-        import botocore.config  # type: ignore[import-untyped]
 
         opts: dict[str, Any] = copy.deepcopy(self._client_options)
         if self._endpoint_url is not None:
@@ -174,15 +177,18 @@ class _S3Base(Backend):
             client_kwargs: dict[str, Any] = opts.setdefault("client_kwargs", {})
             client_kwargs["region_name"] = self._region_name
 
-        cfg_kwargs = opts.pop("config_kwargs", None)
-        client_kwargs = opts.get("client_kwargs") or {}
-        inline_config = client_kwargs.pop("config", None)
+        if "config" in (opts.get("client_kwargs") or {}):
+            raise ValueError(
+                "client_options['client_kwargs']['config'] is not supported: "
+                "s3fs.S3FileSystem.set_session always passes "
+                "config=AioConfig(**self.config_kwargs) to "
+                "aiobotocore.create_client(), so a parallel "
+                "client_kwargs['config'] duplicates the keyword and raises "
+                "TypeError. Pass the same options as a dict via "
+                "client_options['config_kwargs'] (see spec S3-026)."
+            )
 
-        merged: botocore.config.Config | None = None
-        if cfg_kwargs:
-            merged = botocore.config.Config(**cfg_kwargs)
-        if inline_config is not None:
-            merged = inline_config if merged is None else merged.merge(inline_config)
+        config_kwargs: dict[str, Any] = dict(opts.pop("config_kwargs", None) or {})
 
         if self._retry is not None:
             rp = self._retry
@@ -192,13 +198,10 @@ class _S3Base(Backend):
                     "mappable to botocore; only max_attempts is used",
                     self.name,
                 )
-            retry_config = botocore.config.Config(
-                retries={"max_attempts": rp.max_attempts, "mode": "standard"},
-            )
-            merged = retry_config if merged is None else merged.merge(retry_config)
+            config_kwargs["retries"] = {"max_attempts": rp.max_attempts, "mode": "standard"}
 
-        if merged is not None:
-            opts["config_kwargs"] = dict(merged._user_provided_options)
+        if config_kwargs:
+            opts["config_kwargs"] = config_kwargs
 
         if self._tls_ca_bundle is not None:
             client_kwargs = opts.setdefault("client_kwargs", {})

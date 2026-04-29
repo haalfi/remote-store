@@ -17,16 +17,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   with or without `RetryPolicy`. Reproduced on s3fs 2026.3.0 against an
   internal MinIO-style endpoint that requires `s3.addressing_style="path"`
   and `proxies={http: None, https: None}`. Fixed by routing every Config
-  source (top-level `config_kwargs`, caller's pre-built
-  `client_kwargs["config"]`, retry policy) through a single merged dict at
-  `opts["config_kwargs"]`; `client_kwargs["config"]` is never set. Spec
-  S3-026 / S3PA-026 updated to pin the new invariant. Existing merge
-  precedence preserved: caller's `config_kwargs` < caller's pre-built
-  `client_kwargs["config"]` < retry policy. Tests in
-  `tests/backends/test_s3_options.py` extended with the no-RetryPolicy
-  reproduction from the report. New "Botocore Client Tuning" section in
-  `guides/backends/s3.md` documents proxies, retries, timeouts, and MinIO
-  path-style addressing; runnable snippets in
+  option through `opts["config_kwargs"]` (a dict);
+  `client_kwargs["config"]` is never set, and any caller-supplied pre-built
+  `Config` in `client_kwargs` is rejected with a `ValueError` pointing at
+  the supported channel. Silent rewriting hid both prior bugs and is no
+  longer permitted. Spec S3-026 / S3PA-026 rewritten to pin the new
+  invariant. Tests added at the actual collision boundary
+  (`TestAiobotocoreCreateClientBoundary` patches
+  `aiobotocore.session.AioSession.create_client` and triggers
+  `s3fs.connect()`), so a future variant of the same bug class fails the
+  unit suite instead of escaping to a user. Follow-up e2e coverage
+  against `moto` tracked as `BK-186` (prioritized). New "Botocore Client
+  Tuning" section in `guides/backends/s3.md` documents proxies, retries,
+  timeouts, and MinIO path-style addressing; runnable snippets in
   `examples/snippets/s3_botocore_tuning.py` are wired into
   `tests/test_snippets.py` and `tests/scripts/run_examples.py` so the
   examples gate (`hatch run examples`) catches drift.

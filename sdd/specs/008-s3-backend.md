@@ -237,33 +237,36 @@ lowercase-normalized in `ContentDigest`).
 
 **Postconditions:** After construction, `self._endpoint_url` always contains a scheme prefix or is `None`.
 
-### S3-026: config_kwargs and RetryPolicy Config Merge
+### S3-026: config_kwargs is the only Config channel; client_kwargs['config'] is rejected
 
-**Invariant:** Every botocore `Config` source supplied through `client_options`
-(top-level `config_kwargs` dict, pre-built `client_kwargs["config"]`) and
-through `retry=RetryPolicy(...)` is folded into a single dict and forwarded to
-`s3fs.S3FileSystem` as `config_kwargs=`. `client_kwargs["config"]` is never
-set, because `s3fs.S3FileSystem.set_session` already passes
-`config=AioConfig(**self.config_kwargs)` to `aiobotocore.create_client()` —
-adding a second `config` via `client_kwargs` raises `TypeError: got multiple
-values for keyword argument 'config'` (BUG-178, BUG-185).
+**Invariant:** Every botocore `Config` option supplied to an S3 backend
+flows to s3fs via `opts['config_kwargs']` (a dict). The kwargs dict handed
+to `s3fs.S3FileSystem` never contains `client_kwargs['config']`, and
+`aiobotocore.create_client()` therefore only ever receives one `config=`
+argument — the `AioConfig` s3fs builds from `self.config_kwargs`.
+
+**Why:** `s3fs.S3FileSystem.set_session` always calls
+`aiobotocore.create_client("s3", config=AioConfig(**self.config_kwargs),
+**client_kwargs)`. A parallel `client_kwargs['config']` duplicates the
+`config=` keyword and raises `TypeError: got multiple values for keyword
+argument 'config'` (BUG-178, BUG-185).
 
 **Rules:**
-- A top-level `config_kwargs` dict in `client_options` is consumed by the
-  builder; it never reaches `s3fs.S3FileSystem` as a raw dict alongside other
-  Config sources, only as the merged result.
-- If the caller passes `client_kwargs["config"]` (a pre-built
-  `botocore.config.Config`), the builder pops it out of `client_kwargs` and
-  merges it on top of `config_kwargs`; the pre-built object wins on
-  overlapping fields.
-- The retry-derived `Config` is then merged on top; retry-policy values win
-  on conflicts (e.g. `retries.max_attempts`). Caller-supplied fields not
-  overridden by the retry policy (e.g. `connect_timeout`, `s3.addressing_style`,
-  `proxies`) are preserved.
-- The merged result is exposed back to the caller via
-  `Config._user_provided_options` and stored in `opts["config_kwargs"]` as a
-  dict. `client_kwargs["config"]` is unset on the kwargs handed to s3fs.
-- `aiobotocore.create_client()` therefore only ever receives one `config=`
-  argument — the `AioConfig` s3fs builds from the merged `config_kwargs` dict.
+- A top-level `config_kwargs` dict in `client_options` is the supported
+  channel for botocore Config options. It is forwarded as-is through the
+  merge step; s3fs reconstructs `AioConfig(**config_kwargs)` itself.
+- If the caller passes `client_kwargs['config']` (a pre-built
+  `botocore.config.Config`), the builder raises `ValueError` with a message
+  pointing at `config_kwargs`. Silent rewriting is forbidden because it
+  hid two consecutive bugs: it always produced a duplicate `config=` on
+  s3fs ≥ 2024.x, and the kwarg-shape unit tests asserted at the wrong
+  boundary.
+- `RetryPolicy` (when supplied via `retry=`) overrides the entire `retries`
+  entry in `config_kwargs` to `{"max_attempts": rp.max_attempts, "mode":
+  "standard"}` (matches `botocore.Config.merge` dict-replace semantics).
+  Caller-supplied retry modes (e.g. `adaptive`) are lost when both `retry=`
+  and `config_kwargs.retries` are supplied; use one channel.
+- Caller-supplied fields outside `retries` (e.g. `connect_timeout`,
+  `read_timeout`, `s3.addressing_style`, `proxies`) are preserved.
 
 **Scope:** Applies to both `S3Backend` and `S3PyArrowBackend` (both use the `_S3Base._build_s3fs_kwargs()` builder).
