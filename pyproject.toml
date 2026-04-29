@@ -326,6 +326,6 @@ search = "version: {current_version}"
 replace = "version: {new_version}"
 
 [[tool.bumpversion.files]]
-filename = "docs/reference/FEATURES.md"
+filename = "docs-src/reference/FEATURES.md"
 search = "remote-store v{current_version}"
 replace = "remote-store v{new_version}"

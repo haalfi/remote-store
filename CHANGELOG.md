@@ -738,7 +738,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   a pandas DataFrame (BUG-135). Removes the hidden hard dependency on pandas
   for users installing `remote-store[dagster,arrow]` without pandas. Callers
   that need pandas call `table.to_pandas()` on the result. See
-  [Migration Guide](docs/reference/migration.md#v0200-to-v0210).
+  [Migration Guide](https://docs.remotestore.dev/stable/reference/migration/#v0200-to-v0210).
 
 ### Documentation
 
