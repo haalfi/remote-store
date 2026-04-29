@@ -266,12 +266,14 @@ class TestAiobotocoreCreateClientBoundary:
     ) -> None:
         """End-to-end: the user's MinIO scenario reaches aiobotocore correctly.
 
-        Patches the real ``AioSession.create_client`` with a side-effect
-        that short-circuits ``set_session``, then asserts the captured call
-        carries a single ``config=`` keyword whose ``AioConfig`` reflects
-        every merged option (timeouts, addressing style, proxies, retry
-        policy). Parametrized over with/without ``RetryPolicy`` because the
-        no-retry variant is the literal BUG-185 reproduction.
+        ``set_session`` runs to completion up to its own ``create_client``
+        call; we patch that call with a sentinel-raising side effect so the
+        keyword arguments are captured at the actual collision boundary
+        without spinning up an aiobotocore client. Asserts the captured
+        call carries a single ``config=`` keyword whose ``AioConfig``
+        reflects every merged option (timeouts, addressing style, proxies,
+        retry policy). Parametrized over with/without ``RetryPolicy``
+        because the no-retry variant is the literal BUG-185 reproduction.
         """
         import importlib
         from unittest.mock import patch

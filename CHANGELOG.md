@@ -27,6 +27,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   retries, timeouts, and MinIO path-style addressing, with CI-verified
   snippets in `examples/snippets/s3_botocore_tuning.py`. Follow-up
   e2e-against-moto coverage tracked as `BK-186`.
+  **Migration:** callers that passed a pre-built `botocore.config.Config`
+  via `client_options={"client_kwargs": {"config": Config(...)}}` must
+  switch to `client_options={"config_kwargs": {...}}` (a plain dict of the
+  same `Config(...)` constructor kwargs). The old form raised
+  `TypeError` at first I/O on s3fs ≥ 2024.x already; it now fails fast at
+  backend construction with `ValueError` and a message naming the
+  supported channel.
 - ID-171: `check_api_docs.py` — extend verifier to `Backend` → `backend.md`. Added `_BACKEND_GATING: dict[str, str]` (capability-name strings, static-extraction only) directly to `scripts/gen_graph.py`; extended gen_graph.py to emit method + requirement nodes and gates/of edges for all 16 gated `Backend` methods (graph: 75 → 107 nodes, 158 → 222 edges). No drift found on `backend.md`.
 - ID-160: Context7 validation fix and indexing improvements.
 - ID-174: Diátaxis-aligned docs reorg — Phase 1 (prose into `docs/` buckets) + Phase 2 (collapse `docs/` into `docs-src/`; delete `docs/` layer).

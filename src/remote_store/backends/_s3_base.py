@@ -187,7 +187,9 @@ class _S3Base(Backend):
                 "aiobotocore.create_client(), so a parallel "
                 "client_kwargs['config'] duplicates the keyword and raises "
                 "TypeError. Pass the same options as a dict via "
-                "client_options['config_kwargs'] (see spec S3-026)."
+                "client_options['config_kwargs'] (see spec S3-026). "
+                "If you need a botocore Config setting that does not map "
+                "to a config_kwargs key, please open an issue."
             )
 
         config_kwargs: dict[str, Any] = dict(opts.pop("config_kwargs", None) or {})

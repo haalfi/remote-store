@@ -88,6 +88,12 @@ class TestS3BotocoreTuningSnippets:
 
     @pytest.mark.spec("S3-026")
     def test_s3_botocore_tuning_demo(self) -> None:
+        # Snippet imports S3Backend, which imports s3fs at module load.
+        # Skip cleanly when the s3 extra isn't installed (matches the guard
+        # used in tests/backends/test_s3_options.py and test_s3_shared.py).
+        pytest.importorskip("s3fs", reason="s3fs not installed")
+        pytest.importorskip("botocore", reason="botocore not installed")
+
         from examples.snippets.s3_botocore_tuning import demo
 
         result = demo()

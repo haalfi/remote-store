@@ -202,6 +202,6 @@ See [S3-025](008-s3-backend.md#s3-025-endpoint-url-normalization).
 
 See [S3-022](008-s3-backend.md#s3-022-default-credential-chain).
 
-### S3PA-026: config_kwargs and RetryPolicy Config Merge
+### S3PA-026: config_kwargs is the only Config channel; client_kwargs['config'] is rejected
 
 See [S3-026](008-s3-backend.md#s3-026). Applies to the s3fs control path only; the PyArrow data path (`_pa_fs`) is unaffected.
