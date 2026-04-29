@@ -6,7 +6,7 @@ before accepting traffic.
 ---
 see_also:
   - label: Health Check
-    url: ../health-check.md
+    url: ../how-to/health-check.md
     note: health check guide
 """
 

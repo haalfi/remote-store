@@ -9,5 +9,5 @@ ADLS Gen2. Adapts at runtime to Hierarchical Namespace accounts.
 
 ## See also
 
-- [Azure Backend Guide](../../backends/azure.md) — usage patterns, configuration, and examples
+- [Azure Backend Guide](../../how-to/backends/azure.md) — usage patterns, configuration, and examples
 - [Azure Backend example](../../examples/azure-backend.md) — Azure backend in action

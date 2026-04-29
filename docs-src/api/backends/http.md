@@ -16,5 +16,5 @@ HTTP/HTTPS. Supports `READ` and `METADATA` capabilities only.
 
 ## See also
 
-- [HTTP Backend Guide](../../backends/http.md) — usage patterns, configuration, and examples
+- [HTTP Backend Guide](../../how-to/backends/http.md) — usage patterns, configuration, and examples
 - [HTTP Backend example](../../examples/http-backend.md) — read-only HTTP access in action

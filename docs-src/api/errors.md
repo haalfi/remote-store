@@ -18,5 +18,5 @@
 
 ## See also
 
-- [Troubleshooting](../troubleshooting.md) — diagnosing and resolving common errors
+- [Troubleshooting](../how-to/troubleshooting.md) — diagnosing and resolving common errors
 - [Error Handling example](../examples/error-handling.md) — catching and handling store errors

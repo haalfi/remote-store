@@ -6,7 +6,7 @@ to prevent partial writes from being visible to readers.
 ---
 see_also:
   - label: Concurrency
-    url: ../concurrency.md
+    url: ../explanation/concurrency.md
     note: atomicity and overwrite semantics
 """
 

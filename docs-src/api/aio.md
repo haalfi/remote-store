@@ -24,7 +24,7 @@ counterpart.
 !!! warning "Backend-specific methods"
     Methods in this section expose backend internals. Using them ties your
     code to a specific backend. For portable alternatives, see
-    [Store](store.md) or the [Async Store Guide](../async.md).
+    [Store](store.md) or the [Async Store Guide](../how-to/async.md).
 
 ::: remote_store.aio.AsyncStore.unwrap
     options:
@@ -328,9 +328,9 @@ counterpart.
 
 ## See also
 
-- [Async Store Guide](../async.md) — usage patterns, streaming, FastAPI integration
+- [Async Store Guide](../how-to/async.md) — usage patterns, streaming, FastAPI integration
 - [Example: Async Store](../examples/async-store.md) — runnable demo script
 - [Store](store.md) — synchronous counterpart
-- [Concurrency](../concurrency.md) — thread safety and atomicity semantics
+- [Concurrency](../explanation/concurrency.md) — thread safety and atomicity semantics
 - [aio.ext.write](extensions/aio-write.md) — async write helpers with client-side hashing
-- [Write Integrity guide](../write-integrity.md) — hashing workflows for sync and async
+- [Write Integrity guide](../how-to/write-integrity.md) — hashing workflows for sync and async

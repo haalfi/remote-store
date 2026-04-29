@@ -7,7 +7,7 @@ configuration examples across multiple backends.
 ---
 see_also:
   - label: Choosing a Backend
-    url: ../choosing-a-backend.md
+    url: ../how-to/choosing-a-backend.md
     note: backend selection guide
 """
 

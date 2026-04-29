@@ -12,7 +12,7 @@ Demonstrates:
 ---
 see_also:
   - label: Parquet Datasets
-    url: ../parquet-datasets.md
+    url: ../how-to/parquet-datasets.md
     note: managed Parquet dataset guide
   - label: ext.parquet API
     url: ../api/extensions/parquet.md

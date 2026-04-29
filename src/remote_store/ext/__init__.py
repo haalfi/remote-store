@@ -16,5 +16,5 @@ contract (see ADR-0008):
   (``from remote_store.ext.<name> import ...``); they are *not*
   re-exported from the top-level package (ADR-0013).
 
-See ``guides/extensions.md`` for the list of available extensions.
+See ``docs/how-to/extensions.md`` for the list of available extensions.
 """

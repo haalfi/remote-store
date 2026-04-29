@@ -10,5 +10,5 @@
 
 ## See also
 
-- [Health Check](../health-check.md) — verifying backend reachability at runtime
-- [Capabilities Matrix](../capabilities-matrix.md) — per-backend capability comparison
+- [Health Check](../how-to/health-check.md) — verifying backend reachability at runtime
+- [Capabilities Matrix](../reference/capabilities-matrix.md) — per-backend capability comparison

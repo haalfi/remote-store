@@ -9,7 +9,7 @@ Demonstrates:
 ---
 see_also:
   - label: Memory Backend
-    url: ../backends/memory.md
+    url: ../how-to/backends/memory.md
     note: backend guide
 """
 

@@ -7,12 +7,10 @@
   "description": "Write file storage code once. Run it against local files, S3, SFTP, or Azure. Python library with a unified Store API, swappable backends, and capability-gated methods.",
   "folders": [
     "src/remote_store/",
-    "guides/",
+    "docs/",
     "examples/",
     "sdd/specs/",
-    "FEATURES.md",
-    "README.md",
-    "migration.md"
+    "README.md"
   ],
   "excludeFolders": [
     "tests/",

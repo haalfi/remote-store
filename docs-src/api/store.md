@@ -349,7 +349,7 @@
 How key operations behave across backends. Verify against actual code before
 relying on these in production.
 
-| Behavior | [Local](../backends/local.md) | [S3](../backends/s3.md) | [S3-PyArrow](../backends/s3-pyarrow.md) | [SFTP](../backends/sftp.md) | [Azure](../backends/azure.md) | [Memory](../backends/memory.md) | [HTTP](../backends/http.md) | [SQLBlob](../backends/sql-blob.md) | [SQLQuery](../backends/sql-query.md) |
+| Behavior | [Local](../how-to/backends/local.md) | [S3](../how-to/backends/s3.md) | [S3-PyArrow](../how-to/backends/s3-pyarrow.md) | [SFTP](../how-to/backends/sftp.md) | [Azure](../how-to/backends/azure.md) | [Memory](../how-to/backends/memory.md) | [HTTP](../how-to/backends/http.md) | [SQLBlob](../how-to/backends/sql-blob.md) | [SQLQuery](../how-to/backends/sql-query.md) |
 |----------|-------|----|------------|------|-------|--------|------|---------|-----------|
 | `move()` atomicity | Atomic (same FS) | Copy+delete | Copy+delete | Server-dependent | Copy+delete | Atomic | — | Atomic (SQL transaction) | — |
 | `copy()` preserves metadata | Yes (`copy2`) | Yes | Yes | — | Yes | — | — | Yes | — |
@@ -360,5 +360,5 @@ relying on these in production.
 ## See also
 
 - [Getting Started](../getting-started.md) — step-by-step guide to reading and writing files
-- [Concurrency](../concurrency.md) — thread safety, atomic writes, and move semantics
+- [Concurrency](../explanation/concurrency.md) — thread safety, atomic writes, and move semantics
 - [Quickstart example](../examples/quickstart.md) — minimal config, write, and read

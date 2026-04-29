@@ -3,38 +3,38 @@
     - Tutorial: getting-started.md
     - Examples: examples/
 - Guides:
-    - Backends: backends/
+    - Backends: how-to/backends/
     - Extensions:
-        - Overview: extensions.md
-        - PyArrow Adapter: pyarrow-adapter.md
-        - Batch Operations: batch-operations.md
-        - Glob Pattern Matching: glob-pattern-matching.md
-        - Transfer Operations: transfer-operations.md
-        - Observability Hooks: observe.md
-        - Caching: cache.md
-        - Parquet Datasets: parquet-datasets.md
-        - Dagster IO Manager: dagster.md
-        - Retry Policy: retry.md
-    - Async Store: async.md
-    - Async/Sync Bridges: async-sync-bridges.md
-    - Write Integrity: write-integrity.md
-    - Health Check: health-check.md
-    - Data Lake Patterns: data-lake-patterns.md
-    - Troubleshooting: troubleshooting.md
-    - Choosing a Backend: choosing-a-backend.md
-    - Build Your Own Backend: custom-backend-guide.md
-    - Migration: migration.md
+        - Overview: how-to/extensions.md
+        - PyArrow Adapter: how-to/pyarrow-adapter.md
+        - Batch Operations: how-to/batch-operations.md
+        - Glob Pattern Matching: how-to/glob-pattern-matching.md
+        - Transfer Operations: how-to/transfer-operations.md
+        - Observability Hooks: how-to/observe.md
+        - Caching: how-to/cache.md
+        - Parquet Datasets: how-to/parquet-datasets.md
+        - Dagster IO Manager: how-to/dagster.md
+        - Retry Policy: how-to/retry.md
+    - Async Store: how-to/async.md
+    - Async/Sync Bridges: how-to/async-sync-bridges.md
+    - Write Integrity: how-to/write-integrity.md
+    - Health Check: how-to/health-check.md
+    - Data Lake Patterns: how-to/data-lake-patterns.md
+    - Troubleshooting: how-to/troubleshooting.md
+    - Choosing a Backend: how-to/choosing-a-backend.md
+    - Build Your Own Backend: how-to/custom-backend-guide.md
+    - Migration: reference/migration.md
 - Reference:
     - API: api/
-    - Capabilities Matrix: capabilities-matrix.md
+    - Capabilities Matrix: reference/capabilities-matrix.md
     - Changelog: changelog.md
 - Explanation:
-    - Architecture Overview: architecture.md
-    - Performance: performance.md
-    - Concurrency: concurrency.md
-    - Security Model: security-model.md
+    - Architecture Overview: explanation/architecture.md
+    - Performance: explanation/performance.md
+    - Concurrency: explanation/concurrency.md
+    - Security Model: explanation/security-model.md
     - Design: design/
 - Further Reading:
-    - Overview: further-reading.md
+    - Overview: further/further-reading.md
     - Development Story: development-story.md
     - Contributing: contributing.md

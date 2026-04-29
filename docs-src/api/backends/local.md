@@ -9,5 +9,5 @@ Built-in, no extra dependencies required.
 
 ## See also
 
-- [Local Backend Guide](../../backends/local.md) — usage patterns, configuration, and examples
+- [Local Backend Guide](../../how-to/backends/local.md) — usage patterns, configuration, and examples
 - [File Operations example](../../examples/file-operations.md) — full Store API demo using LocalBackend

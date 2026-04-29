@@ -20,7 +20,7 @@ Environment variables:
 ---
 see_also:
   - label: S3 Backend
-    url: ../backends/s3.md
+    url: ../how-to/backends/s3.md
     note: listing strategies and performance
 """
 
@@ -212,4 +212,4 @@ if __name__ == "__main__":
         finally:
             cleanup(store)
 
-    print("Done! See guides/backends/s3.md for detailed performance analysis.")
+    print("Done! See docs/how-to/backends/s3.md for detailed performance analysis.")

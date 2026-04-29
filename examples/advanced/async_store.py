@@ -6,7 +6,7 @@ store patterns.
 ---
 see_also:
   - label: Async Store
-    url: ../async.md
+    url: ../how-to/async.md
     note: async usage guide
   - label: Async API
     url: ../api/aio.md

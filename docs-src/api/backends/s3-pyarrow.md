@@ -9,5 +9,5 @@ that uses PyArrow's C++ S3 filesystem for higher throughput on large files.
 
 ## See also
 
-- [S3-PyArrow Backend Guide](../../backends/s3-pyarrow.md) — usage patterns, configuration, and examples
+- [S3-PyArrow Backend Guide](../../how-to/backends/s3-pyarrow.md) — usage patterns, configuration, and examples
 - [S3-PyArrow Backend example](../../examples/s3-pyarrow-backend.md) — S3-PyArrow backend in action

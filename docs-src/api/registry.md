@@ -6,5 +6,5 @@
 
 ## See also
 
-- [Choosing a Backend](../choosing-a-backend.md) — backend selection and registry usage
+- [Choosing a Backend](../how-to/choosing-a-backend.md) — backend selection and registry usage
 - [Configuration example](../examples/configuration.md) — registry-based store creation

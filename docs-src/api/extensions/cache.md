@@ -4,5 +4,5 @@
 
 ## See also
 
-- [Cache](../../cache.md) — guide to Store-level caching with TTL
+- [Cache](../../how-to/cache.md) — guide to Store-level caching with TTL
 - [Caching example](../../examples/caching.md) — caching middleware in action
