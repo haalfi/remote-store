@@ -43,10 +43,13 @@ them are defects.
 | R12 | One mechanism controls nav order per section | MUST |
 | R13 | Excluded files are auditable | MUST |
 
-**R6 classification note:** SDD content (specs, ADRs, RFCs, research, audits, process
-documents) is classified as Explanation under Diataxis — it deepens and broadens
-understanding of the system's design and history. No non-Diataxis top-level nav sections
-are permitted.
+**R6 classification note:** "Navigation is purely Diataxis" is a project-internal design
+decision, not a requirement derived from the Diataxis standard itself (which does not
+prescribe how internal or process documentation should be navigated). Per project
+agreement, SDD content (specs, ADRs, RFCs, research, audits, process documents) is
+classified as Explanation for nav purposes — it deepens understanding of the system's
+design and history. Findings against R6 report non-conformance with this project rule,
+not violations of Diataxis as an external standard.
 
 Files inspected: `mkdocs.yml`, `scripts/gen_pages.py`, `docs-src/_nav.yml`,
 `docs-src/_link_map.yml`, `docs-src/api/_nav.yml`, `docs-src/design/_nav.yml`,
@@ -64,7 +67,7 @@ and nav entries.
 | R1 | Repo links must not be broken | **FINDING** |
 | R2 | Rendered docs must not contain broken links | **FINDING** |
 | R3 | Version switching must not produce 404s | **WARNING** |
-| R4 | All authored Markdown reaches rendered docs | **FINDING** |
+| R4 | All authored Markdown reaches rendered docs | PASS |
 | R5 | Anchored files stay at their repo path | PASS |
 | R6 | Navigation is purely Diataxis | **FINDING** |
 | R7 | URL paths correspond to navigation position | **FINDING** |
@@ -81,15 +84,13 @@ and nav entries.
 
 | ID | Rule | Severity | Description |
 |----|------|----------|-------------|
-| F-01 | R1 | Major | Links to virtual pages (`design/adrs/*`, `design/specs/*`, etc.) broken in GitHub repo browser — systemic |
+| F-01 | R1 | Major | 4 links to virtual pages broken in GitHub repo browser: 3 in `architecture.md`, 1 in `security-model.md` |
 | F-02 | R1 | Minor | Include-markdown wrapper files render as raw Jinja text on GitHub |
 | F-03 | R2 | Major | Link validation set to `warn` — broken links do not fail the build |
-| F-04 | R2, R4 | Major | `development-story.md` referenced in nav but has no source file or `_link_map.yml` entry |
-| F-05 | R6 | Minor | Tutorial is a nav sub-item under "Getting Started", not a top-level Diataxis quadrant |
-| F-06 | R6 | Minor | Changelog listed under Reference section |
-| F-07 | R6 | Minor | "Further Reading" is a fifth top-level nav section outside Diataxis |
+| F-05 | R6 | Minor | Tutorial is a nav sub-item under "Getting Started", not a top-level section per project R6 rule |
+| F-06 | R6 | Minor | Changelog listed under Reference; does not fit any Diataxis or project-defined nav category |
+| F-07 | R6 | Minor | "Further Reading" is a fifth top-level nav section, contradicting the project's pure-Diataxis R6 rule |
 | F-08 | R6, R7 | Major | Design nested under Explanation in nav but URL prefix is `design/`, not `explanation/...` |
-| F-09 | R7 | Major | Design section URL `design/` contradicts its nav position under Explanation (duplicates F-08 consequence) |
 | F-10 | R7 | Minor | Changelog renders at `/changelog/`, contradicting its nav position under Reference |
 | F-11 | R9 | Minor | `_link_map.yml` comment says "repo-root files" but one entry points to `sdd/000-process.md` |
 | F-12 | R11 | Major | Three distinct mechanisms render `sdd/` files into docs; no unifying rule |
@@ -102,23 +103,21 @@ and nav entries.
 
 ### F-01: Virtual page links break in the GitHub repo browser (Major, R1)
 
-**Affected files:** `docs-src/explanation/architecture.md` (lines 86, 104, 112) and
-likely other `docs-src/` files that cross-link into the design section.
+A scan of all `docs-src/` files for links into `design/adrs/`, `design/specs/`,
+`design/rfcs/`, `design/research/`, and `design/audits/` found **4 broken links across
+2 files**:
 
-`docs-src/explanation/architecture.md` contains links of the form:
+| File | Line | Link |
+|------|------|------|
+| `docs-src/explanation/architecture.md` | 86 | `[ADR-0008](../design/adrs/0008-extension-architecture.md)` |
+| `docs-src/explanation/architecture.md` | 104 | `[ADR-0002](../design/adrs/0002-config-resolution-no-merge.md)` |
+| `docs-src/explanation/architecture.md` | 112 | `[ADRs](../design/adrs/index.md)` |
+| `docs-src/explanation/security-model.md` | 78 | `[Spec 020: Credential Hygiene](../design/specs/020-credential-hygiene.md)` |
 
-```
-[ADR 0008](../design/adrs/0008-extension-architecture.md)
-```
-
-The file `docs-src/design/adrs/0008-extension-architecture.md` does not exist on disk.
-`docs-src/design/adrs/` contains only `_index.tmpl`. The link resolves to a gen-files
-virtual page at MkDocs build time and works in the rendered docs, but when a crawler,
+None of these target files exist on disk. `docs-src/design/adrs/` and
+`docs-src/design/specs/` each contain only `_index.tmpl`. The links resolve to gen-files
+virtual pages at MkDocs build time and work in the rendered docs, but when a crawler,
 search engine, or agent navigates the GitHub repo and follows the link, GitHub returns 404.
-
-This is systemic: any `docs-src/` file that links to `design/adrs/*`, `design/specs/*`,
-`design/rfcs/*`, `design/research/*`, or `design/audits/*` has the same problem. The
-full extent requires a link scan across all `docs-src/` files.
 
 ---
 
@@ -161,29 +160,7 @@ cause the build to fail. Broken links can silently ship through CI undetected. S
 
 ---
 
-### F-04: `development-story.md` referenced in nav but has no source (Major, R2, R4)
-
-**Location:** `docs-src/_nav.yml`, Further Reading section.
-
-```yaml
-- Further Reading:
-    - Overview: further/further-reading.md
-    - Development Story: development-story.md
-    - Contributing: contributing.md
-```
-
-`development-story.md` is listed in the nav but:
-
-- `docs-src/development-story.md` does not exist on disk.
-- No `_link_map.yml` entry maps `DEVELOPMENT_STORY.md` to this path.
-- No `gen_pages.py` render function is visibly responsible for generating it.
-
-If this page is not produced by `gen_pages.py`, the nav entry produces a broken link in
-the rendered site. Confirmation requires a full read of the gen-files render functions.
-
----
-
-### F-05: Tutorial appears as a sub-item, not a top-level Diataxis quadrant (Minor, R6)
+### F-05: Tutorial is a nav sub-item, not a top-level section per project R6 rule (Minor, R6)
 
 **Location:** `docs-src/_nav.yml`.
 
@@ -193,10 +170,12 @@ the rendered site. Confirmation requires a full read of the gen-files render fun
     - Examples: examples/
 ```
 
-Tutorial is a Diataxis quadrant and should be a top-level navigation section. Instead it
-is nested as a sub-item inside a parent section labelled "Getting Started" — a label that
-is not a Diataxis term. This makes the nav structure depart from Diataxis at the first
-entry.
+Per the project's R6 rule (top-level nav uses the four Diataxis quadrant labels), Tutorial
+should be a top-level navigation section. Instead it is nested as a sub-item inside a
+parent section labelled "Getting Started" — a label that is not a Diataxis term.
+
+_Note: this is a non-conformance with the project's agreed nav structure, not a violation
+of Diataxis as an external standard. Diataxis does not mandate specific nav labels._
 
 ---
 
@@ -216,6 +195,9 @@ entry.
 Changelog is not Reference content by any Diataxis definition. A changelog is a
 historical record of changes, not a description of the system's machinery.
 
+_Note: non-conformance with the project's R6 rule (no content placed in a Diataxis
+section it doesn't belong to), not a violation of Diataxis itself._
+
 ---
 
 ### F-07: "Further Reading" is a fifth top-level section outside Diataxis (Minor, R6)
@@ -223,14 +205,16 @@ historical record of changes, not a description of the system's machinery.
 **Location:** `docs-src/_nav.yml`.
 
 The nav contains five top-level sections: Getting Started, Guides, Reference,
-Explanation, Further Reading. "Further Reading" is not a Diataxis quadrant. Per R6 no
-non-Diataxis top-level sections are permitted. "Development Story" and "Contributing"
-(its two entries) have no Diataxis home; their correct placement is a design decision for
-the authoring guide.
+Explanation, Further Reading. Per the project's R6 rule, no non-Diataxis top-level
+sections are permitted. "Development Story" and "Contributing" (its two entries) have no
+Diataxis home; their correct placement is a design decision for the authoring guide.
+
+_Note: non-conformance with the project-internal R6 rule, not a violation of Diataxis
+itself. Diataxis does not prohibit supplementary nav sections._
 
 ---
 
-### F-08 & F-09: Design nav position and URL prefix are misaligned (Major, R6, R7)
+### F-08: Design nav position and URL prefix are misaligned (Major, R6, R7)
 
 **Location:** `docs-src/_nav.yml` and the `design/` URL structure.
 
@@ -291,17 +275,17 @@ the two entries, making the boundary of what belongs in this file unclear.
 
 ### F-12: Three distinct mechanisms render `sdd/` files into docs; no unifying rule (Major, R11)
 
-| File(s) | Mechanism |
-|---------|-----------|
-| `sdd/DESIGN.md`, `sdd/DOCUMENTATION.md`, `sdd/TESTING.md`, `sdd/CONTENT-RULES.md` | Static `include-markdown` wrapper in `docs-src/design/*.md` |
-| `sdd/000-process.md` | `_link_map.yml` entry → `design/process.md` |
-| `sdd/specs/`, `sdd/adrs/`, `sdd/rfcs/`, `sdd/research/`, `sdd/audits/` | `gen_pages.py` `render_sdd_wrappers` scan |
+| File(s) | Mechanism | Layer |
+|---------|-----------|-------|
+| `sdd/DESIGN.md`, `sdd/DOCUMENTATION.md`, `sdd/TESTING.md`, `sdd/CONTENT-RULES.md` | Static authored `docs-src/design/*.md` files using the `include-markdown` MkDocs plugin. `gen_pages.py` does not write these files — `scan_include_wrappers` only detects them to populate the `LinkResolver` source map. | MkDocs plugin |
+| `sdd/000-process.md` | `_link_map.yml` entry read by `render_link_rewritten` in `gen_pages.py`, which writes a virtual page at `design/process.md`. | gen-files |
+| `sdd/specs/`, `sdd/adrs/`, `sdd/rfcs/`, `sdd/research/`, `sdd/audits/` | `gen_pages.py` `render_sdd_wrappers` filesystem scan, which writes virtual pages at `design/{kind}/{slug}.md`. | gen-files |
 
-Three different mechanisms render `sdd/` files into the docs. The rule for which
-mechanism applies to which file is not derivable from the file's location or metadata
-alone — a contributor must understand all three systems to place a new `sdd/` file
-correctly. This directly contradicts R11 (the wrapper pattern must be a principled
-bridge, not an ad-hoc collection of approaches).
+Three mechanisms, spanning two architectural layers (MkDocs plugin vs. gen-files), render
+`sdd/` content into the docs. The rule for which mechanism applies to which file is not
+derivable from file location or metadata alone — a contributor must understand all three
+systems to place a new `sdd/` file correctly. This contradicts R11 (the wrapper pattern
+must be a principled bridge, not an ad-hoc collection of approaches).
 
 ---
 
@@ -341,6 +325,7 @@ could leave dangling references in older versioned builds with no CI signal.
 
 | Rule | Evidence |
 |------|---------|
+| R4 — All authored Markdown reaches rendered docs | All `docs-src/` files have a rendering path. Root-level files (`CONTRIBUTING.md`, `DEVELOPMENT_STORY.md`, `CHANGELOG.md`) reach the site via `_link_map.yml` entries or `include-markdown` wrappers. Excluded files (`sdd/BACKLOG.md`, `sdd/CLAUDE-REFERENCE.md`, `CLAUDE.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`) are internal/agent tooling files, not authored user-facing documentation. |
 | R5 — Anchored files stay at their repo path | `sdd/`, `CHANGELOG.md`, `CONTRIBUTING.md` confirmed at canonical paths. The docs pipeline adapts to them via wrappers; no anchored file has been moved. |
 | R10 — No duplicated content | All `docs-src/design/*.md` files are pure `include-markdown` wrappers — one directive each, no copied text. `docs-src/changelog.md` similarly wraps `CHANGELOG.md`. Single source of truth intact across all checked pairs. |
 | R12 — One mechanism controls nav order | Nav authority chain is linear: `_nav.yml` files → `gen_pages.py nav_mod.build_summary()` → `SUMMARY.md` → literate-nav plugin. `SUMMARY.md` is the single source consumed by the plugin. No competing nav authority found. |

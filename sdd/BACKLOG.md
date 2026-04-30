@@ -72,8 +72,6 @@ Existing items may be more verbose — trim on next touch.
     virtual pages, include-markdown wrappers) and which content lives where.
 
   **Simplifications to evaluate (per audit-012 findings):**
-  - F-04: confirm whether `development-story.md` is a gen-files virtual page
-    or a broken nav entry; fix whichever it is.
   - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`.
   - F-12: unify the three mechanisms for rendering `sdd/` top-level files
     (include-markdown wrappers vs. `_link_map.yml` vs. gen-files scan).

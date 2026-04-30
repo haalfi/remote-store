@@ -15,7 +15,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `mkdocs.yml`, `scripts/gen_pages.py`, `docs-src/_nav.yml`,
   `docs-src/_link_map.yml`, all `docs-src/design/*.md`, and a full `.md`
   inventory across `sdd/`, `docs-src/`, root, and `examples/`. Delivered as
-  `sdd/audits/audit-012-docs-structure.md`: 13 findings + 1 warning across
+  `sdd/audits/audit-012-docs-structure.md`: 11 findings + 1 warning across
   7 rules; 4 rules passed cleanly. Authoring guide and simplification
   follow-up: BK-167.
 
