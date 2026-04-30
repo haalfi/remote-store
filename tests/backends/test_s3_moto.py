@@ -29,12 +29,16 @@ S3-PyArrow scope (S3PA-026): ``_FULL_CLIENT_OPTIONS['config_kwargs']`` is
 consumed by the s3fs builder only; ``S3PyArrowBackend`` reads
 ``endpoint_url`` / ``key`` / ``secret`` / ``region_name`` directly when
 constructing its PyArrow ``S3FileSystem`` and does not pass
-``client_options`` to the data path. So in the ``s3-pyarrow`` parametrize
-case, only the s3fs control-path operations (``list_files``, ``exists``,
-``delete``) exercise the tuned ``config_kwargs``; ``write`` / ``read``
-flow through PyArrow with default settings. ``S3PyArrowBackend.delete``
-(``_s3_pyarrow.py::delete``) checks ``self._s3fs.exists(...)`` first, so
-the failure-path test exercises s3fs on both backends.
+``client_options`` to the data path. Most ``S3PyArrowBackend`` methods
+still touch s3fs for control-path work under the tuned ``config_kwargs``
+-- ``write`` calls ``_s3fs.exists`` (overwrite check) and
+``_s3fs.call_s3('head_object', ...)`` (post-upload metadata),
+``list_files`` / ``exists`` / ``is_file`` / ``is_folder`` / ``delete`` /
+``delete_folder`` / ``move`` / ``copy`` all go through s3fs, etc. Only
+the actual byte transfers in ``write`` and ``read`` run through PyArrow
+at default settings; everything around them still exercises the tuned
+``config_kwargs``. That matches S3PA-026's delta against S3-026 (s3fs
+control path only).
 
 Why ``moto[server]`` (not ``moto.mock_aws``): ``mock_aws`` patches the
 synchronous ``botocore`` stack only. ``aiobotocore`` issues real HTTP
@@ -62,6 +66,7 @@ pytest.importorskip("s3fs")
 pytest.importorskip("aiobotocore")
 pytest.importorskip("moto")
 pytest.importorskip("botocore")
+pytest.importorskip("boto3")
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -175,7 +180,11 @@ class TestS3ControlPathMoto:
         """Same lifecycle with ``RetryPolicy`` alongside the tuned client_options.
 
         ``RetryPolicy`` replaces the ``config_kwargs['retries']`` entry
-        wholesale (S3-026); the round-trip must still complete cleanly.
+        wholesale (S3-026); each operation in the round-trip must observe
+        the expected effect. Mirrors the four assertions from
+        ``test_full_lifecycle_with_tuned_client_options`` so a regression
+        in any individual operation under ``RetryPolicy`` surfaces here,
+        not just exception-free completion.
         """
         from remote_store._config import RetryPolicy
 
@@ -193,10 +202,17 @@ class TestS3ControlPathMoto:
         )
         try:
             payload = b"BK-166 retry payload"
-            backend.write(key, payload, overwrite=True)
+            result = backend.write(key, payload, overwrite=True)
+            assert result.size == len(payload)
+
+            listed = [str(info.path) for info in backend.list_files("retry", recursive=True)]
+            assert key in listed
+
             with backend.read(key) as stream:
                 assert stream.read() == payload
+
             backend.delete(key)
+            assert not backend.exists(key)
         finally:
             backend.close()
 

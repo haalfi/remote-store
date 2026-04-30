@@ -41,10 +41,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `TestConfigKwargsRetryCollision::test_client_kwargs_config_is_rejected`
   (it short-circuits before any HTTP and gains nothing from a moto
   fixture, so the moto file does not duplicate it). For S3-PyArrow the
-  tuned `config_kwargs` only flow through the s3fs control path
-  (`list_files` / `exists` / `delete`); `write` / `read` go through
-  PyArrow with default settings — matches S3PA-026's delta against
-  S3-026. Specs: S3-026, S3PA-026.
+  tuned `config_kwargs` flow through the s3fs control path; only the
+  actual byte transfers in `write` / `read` run through PyArrow at
+  default settings, while the surrounding s3fs calls (overwrite check
+  via `_s3fs.exists`, post-upload `_s3fs.call_s3('head_object', ...)`,
+  plus `list_files` / `exists` / `is_file` / `is_folder` / `delete` /
+  `delete_folder` / `move` / `copy`) all use the tuned `config_kwargs`.
+  Matches S3PA-026's delta against S3-026 (s3fs control path only).
+  Specs: S3-026, S3PA-026.
 
 ## v0.24.1
 
