@@ -6,6 +6,33 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
+## v0.24.0 to v0.24.1
+
+**S3 botocore Config options route through `config_kwargs` (BUG-185):**
+
+Pre-built `botocore.config.Config` objects are no longer accepted in
+`client_options["client_kwargs"]`. Pass the same constructor kwargs through
+`config_kwargs` (a plain dict) instead. The old form raised `TypeError` at
+first I/O on s3fs ≥ 2024.x already; v0.24.1 fails fast with `ValueError` at
+backend construction and a message naming the supported channel.
+
+- Old: `S3Backend(..., client_options={"client_kwargs": {"config": Config(connect_timeout=10, retries={"max_attempts": 5})}})`
+- New: `S3Backend(..., client_options={"config_kwargs": {"connect_timeout": 10, "retries": {"max_attempts": 5}}})`
+
+The new "Botocore Client Tuning" section in `docs-src/how-to/backends/s3.md`
+documents proxies, retries, timeouts, and MinIO path-style addressing with
+runnable snippets. Applies to both `S3Backend` and `S3PyArrowBackend`.
+
+**Custom backends must declare `CAPABILITIES: ClassVar[CapabilitySet]` (ID-159):**
+
+If you maintain a custom `Backend` or `AsyncBackend` subclass, add a
+class-level `CAPABILITIES` attribute exposing the capability set without
+requiring instantiation, and delegate the `capabilities` property to it.
+Conformance and the new graph-IR generator both read from this class
+attribute. See `docs-src/how-to/custom-backend-guide.md` § "Step 3" for the
+template; existing constructor-set capability logic continues to work, but
+the ClassVar is required for static extraction.
+
 ## v0.20.0 to v0.21.0
 
 **`ParquetSerializer.deserialize()` returns Arrow Table (BUG-135):**

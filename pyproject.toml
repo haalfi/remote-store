@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "remote-store"
-version = "0.24.0"
+version = "0.24.1"
 description = "Write file storage code once. Run it against local files, S3, SFTP, or Azure."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -304,7 +304,7 @@ known-first-party = ["remote_store"]
 # Bumps version in all three locations atomically.
 
 [tool.bumpversion]
-current_version = "0.24.0"
+current_version = "0.24.1"
 commit = false
 tag = false
 tag_name = "v{new_version}"

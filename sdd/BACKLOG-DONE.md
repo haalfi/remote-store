@@ -5,7 +5,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## [Unreleased]
+## v0.24.1
 
 - [x] **BUG-185 — `S3Backend(client_options={"config_kwargs": ...})` collides on `config=`**
   The BUG-178 fix landed `_S3Base._build_s3fs_kwargs()` writing the merged
