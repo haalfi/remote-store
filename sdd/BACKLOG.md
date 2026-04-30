@@ -57,7 +57,7 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-186 — S3 control-path e2e test against moto/local aiobotocore**
+- [ ] **BK-166 — S3 control-path e2e test against moto/local aiobotocore**
   Two consecutive same-user bugs (BUG-178, BUG-185) escaped because every
   S3 config-plumbing test mocked at the `s3fs.S3FileSystem` boundary, not
   at the `aiobotocore.create_client` boundary where the duplicate-`config`

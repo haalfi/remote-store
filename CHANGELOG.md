@@ -85,7 +85,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Client Tuning" section in `docs-src/how-to/backends/s3.md` documents proxies,
   retries, timeouts, and MinIO path-style addressing; runnable snippets in
   `examples/snippets/s3_botocore_tuning.py` are wired into `tests/test_snippets.py`
-  and the examples gate. Follow-up moto-backed e2e coverage tracked as BK-186.
+  and the examples gate. Follow-up moto-backed e2e coverage tracked as BK-166.
   **Migration:** callers that passed a pre-built `botocore.config.Config` via
   `client_options={"client_kwargs": {"config": Config(...)}}` must switch to
   `client_options={"config_kwargs": {...}}` (a plain dict of the same `Config(...)`
