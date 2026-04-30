@@ -57,7 +57,64 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **BK-165 — Docs structure audit and authoring guide for the post-ID-174 layout**
+  ID-174 collapsed `docs/` into `docs-src/` and inlined all prose, but the
+  resulting layer cake is not yet documented as a coherent system. Three
+  page-emission mechanisms coexist:
+  1. Static authored Markdown under `docs-src/**/*.md` (the majority).
+  2. Virtual MkDocs pages from `mkdocs-gen-files` driven by `scripts/gen_pages.py`:
+     `render_sdd_wrappers` (sdd/ → `design/{kind}/{slug}.md`),
+     `render_link_rewritten` (`_link_map.yml` → `contributing.md`, `design/process.md`),
+     `render_example_pages` + `render_example_index` (docstring-driven),
+     `render_medallion_page`.
+  3. Auto-detected include wrappers (`scan_include_wrappers`).
+
+  Without an authoring guide, the next contributor must read `scripts/docs/`
+  to know where to put a new page, when to add a `_link_map.yml` entry vs.
+  a static file, and which links resolve to virtual paths.
+
+  **Audit deliverables (report-only first; no code change):**
+  - One-page diagram of the three mechanisms and which content lives where.
+  - Decision tree: "I need to add a new page about X — where does it go?"
+    Branches must cover: API reference, how-to, explanation, ADR, spec,
+    audit, research, RFC, example script, repo-level doc (CONTRIBUTING etc.).
+  - Inventory of duplications and tensions surfaced by ID-174:
+    - Examples are virtual; their docstrings are the single source of truth
+      for title/description/see_also. Considered (and rejected for now)
+      converting to static stubs — record the tradeoff.
+    - SDD content lives in `sdd/` but is rendered at `design/...` via wrappers;
+      GitHub viewers and docs viewers see different paths for the same content.
+    - `_link_map.yml` is a small, hand-maintained file; assess whether it
+      scales or should be replaced with a discovery convention.
+
+  **Conceptual work (after audit lands):**
+  - Add an authoring guide page (likely `sdd/DOCUMENTATION.md` extension or
+    a new `sdd/AUTHORING.md`) covering the decision tree and link
+    conventions (relative within docs-src, virtual paths for sdd/, absolute
+    GitHub URLs for everything else outside docs-src).
+  - Identify simplifications that reduce maintenance: e.g. whether all five
+    SDD kinds need the wrapper pattern or some could be static, whether the
+    examples-rendering chain is worth its complexity once docstring metadata
+    is documented.
+
+  **Open questions:**
+  1. Should the docstring-driven examples chain stay (single source of truth,
+     hidden machinery) or be replaced with static stubs (discoverability,
+     duplication)? Current state: stay.
+  2. Should `sdd/` move under `docs-src/design/` to remove the wrapper layer?
+     Tradeoff: cleaner build vs. moving authoritative artifacts off the
+     established `sdd/` path that tooling and skills already point to.
+  3. Is there a single source-of-truth model — one declarative file
+     describing every virtual page — that would replace the four current
+     mechanisms?
+
+  **Why now:** ID-174 finished the filesystem reorg; the next contributor
+  to touch docs (or a future Diátaxis phase) needs a map. Doing the audit
+  before adding more pages prevents drift back into the pre-ID-174 mess.
+
+  **Sequence:** report-only audit first. User decides what (if anything) to
+  fix and whether the conceptual deliverables become a separate ID per
+  audit-protocol (CLAUDE.md § Audits).
 
 ---
 
