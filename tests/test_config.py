@@ -863,10 +863,13 @@ def test_s3_retry_botocore_config() -> None:
     from remote_store.backends._s3 import S3Backend
 
     backend = S3Backend(bucket="b", retry=RetryPolicy(max_attempts=7))
-    config = backend._fs.client_kwargs.get("config")
-    assert config is not None
-    assert config.retries["max_attempts"] == 7
-    assert config.retries["mode"] == "standard"
+    # S3-026 / BUG-185: the merged Config flows to s3fs as config_kwargs (a dict),
+    # never as client_kwargs["config"] (which would collide with the
+    # config=AioConfig(...) s3fs passes to aiobotocore.create_client()).
+    config_kwargs = backend._fs.config_kwargs
+    assert "config" not in backend._fs.client_kwargs
+    assert config_kwargs["retries"]["max_attempts"] == 7
+    assert config_kwargs["retries"]["mode"] == "standard"
     backend.close()
 
 

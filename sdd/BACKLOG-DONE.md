@@ -7,6 +7,40 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## [Unreleased]
 
+- [x] **BUG-185 — `S3Backend(client_options={"config_kwargs": ...})` collides on `config=`**
+  The BUG-178 fix landed `_S3Base._build_s3fs_kwargs()` writing the merged
+  `botocore.config.Config` into `client_kwargs["config"]`, but
+  `s3fs.S3FileSystem.set_session` always calls
+  `aiobotocore.create_client("s3", config=AioConfig(**self.config_kwargs), **client_kwargs)`.
+  Any `client_kwargs["config"]` therefore duplicates `config=` and raises
+  `TypeError: got multiple values for keyword argument 'config'` —
+  with or without `RetryPolicy`. Reproduced on s3fs 2026.3.0 against an
+  internal MinIO-style endpoint that requires `s3.addressing_style="path"`
+  and `proxies={http: None, https: None}`. Fixed by routing every Config
+  option through `opts["config_kwargs"]` (a dict);
+  `client_kwargs["config"]` is never set, and any caller-supplied pre-built
+  `Config` in `client_kwargs` is rejected with a `ValueError` pointing at
+  the supported channel. Silent rewriting hid both prior bugs and is no
+  longer permitted. Spec S3-026 / S3PA-026 rewritten to pin the new
+  invariant. Tests added at the actual collision boundary
+  (`TestAiobotocoreCreateClientBoundary` patches
+  `aiobotocore.session.AioSession.create_client` and triggers
+  `s3fs.connect()`), so a future variant of the same bug class fails the
+  unit suite instead of escaping to a user. Follow-up e2e coverage
+  against `moto` tracked as `BK-186` (prioritized). New "Botocore Client
+  Tuning" section in `docs-src/how-to/backends/s3.md` documents proxies, retries,
+  timeouts, and MinIO path-style addressing; runnable snippets in
+  `examples/snippets/s3_botocore_tuning.py` are wired into
+  `tests/test_snippets.py` and `tests/scripts/run_examples.py` so the
+  examples gate (`hatch run examples`) catches drift. **Migration:**
+  callers that passed a pre-built `botocore.config.Config` via
+  `client_options={"client_kwargs": {"config": Config(...)}}` must switch
+  to `client_options={"config_kwargs": {...}}` (a plain dict of the same
+  `Config(...)` constructor kwargs). The old form raised `TypeError` at
+  first I/O on s3fs ≥ 2024.x already; it now fails fast at backend
+  construction with `ValueError` and a message naming the supported
+  channel.
+
 - [x] **ID-174 — Diátaxis-aligned docs filesystem reorg (Phases 1 + 2)**
   **Phase 1:** Moved 36 prose files from `guides/` and repo root into
   `docs/<bucket>/` (how-to, explanation, reference, further). Mirrored

@@ -147,16 +147,26 @@ class _S3Base(Backend):
     def _build_s3fs_kwargs(self) -> dict[str, Any]:
         """Build kwargs for ``s3fs.S3FileSystem(**kwargs)``.
 
-        Merges ``self._client_options`` with credentials, region, retry, and
-        TLS settings.  Resolves BUG-178: any top-level ``config_kwargs`` entry
-        is folded into ``client_kwargs["config"]`` *before* the retry-derived
-        ``Config`` is applied, so ``aiobotocore.create_client()`` only ever
-        receives one ``config=`` argument.  Retry-policy values win on
-        conflicts.
+        Routes every botocore ``Config`` option through ``opts['config_kwargs']``
+        (a dict) — never through ``client_kwargs['config']``.
+        ``s3fs.S3FileSystem.set_session`` already calls
+        ``aiobotocore.create_client(..., config=AioConfig(**self.config_kwargs),
+        **client_kwargs)``; a parallel ``client_kwargs['config']`` would
+        duplicate the ``config=`` keyword and raise ``TypeError`` (BUG-178,
+        BUG-185).  Caller-supplied ``client_kwargs['config']`` is therefore
+        rejected with a clear ``ValueError`` that points to the supported
+        channel — silent rewriting hid both prior bugs.
+
+        Retry-policy precedence: when ``retry=RetryPolicy(...)`` is passed,
+        the ``retries`` entry in ``config_kwargs`` is replaced wholesale
+        with ``{"max_attempts": rp.max_attempts, "mode": "standard"}``
+        (plain dict assignment, not a field-level merge).  Caller-supplied
+        non-``max_attempts`` keys (e.g. ``mode="adaptive"``) are dropped;
+        a ``log.warning`` fires when this happens.  Pass
+        ``client_options={'config_kwargs': {'retries': {...}}}`` alone to
+        keep caller-supplied retry knobs.
         """
         import copy
-
-        import botocore.config  # type: ignore[import-untyped]
 
         opts: dict[str, Any] = copy.deepcopy(self._client_options)
         if self._endpoint_url is not None:
@@ -169,12 +179,20 @@ class _S3Base(Backend):
             client_kwargs: dict[str, Any] = opts.setdefault("client_kwargs", {})
             client_kwargs["region_name"] = self._region_name
 
-        cfg_kwargs = opts.pop("config_kwargs", None)
-        if cfg_kwargs is not None:
-            client_kwargs = opts.setdefault("client_kwargs", {})
-            caller_config = botocore.config.Config(**cfg_kwargs)
-            existing = client_kwargs.get("config")
-            client_kwargs["config"] = caller_config.merge(existing) if existing is not None else caller_config
+        if "config" in (opts.get("client_kwargs") or {}):
+            raise ValueError(
+                "client_options['client_kwargs']['config'] is not supported: "
+                "s3fs.S3FileSystem.set_session always passes "
+                "config=AioConfig(**self.config_kwargs) to "
+                "aiobotocore.create_client(), so a parallel "
+                "client_kwargs['config'] duplicates the keyword and raises "
+                "TypeError. Pass the same options as a dict via "
+                "client_options['config_kwargs'] (see spec S3-026). "
+                "If you need a botocore Config setting that does not map "
+                "to a config_kwargs key, please open an issue."
+            )
+
+        config_kwargs: dict[str, Any] = dict(opts.pop("config_kwargs", None) or {})
 
         if self._retry is not None:
             rp = self._retry
@@ -184,14 +202,21 @@ class _S3Base(Backend):
                     "mappable to botocore; only max_attempts is used",
                     self.name,
                 )
-            client_kwargs = opts.setdefault("client_kwargs", {})
-            existing_config = client_kwargs.get("config")
-            retry_config = botocore.config.Config(
-                retries={"max_attempts": rp.max_attempts, "mode": "standard"},
-            )
-            client_kwargs["config"] = (
-                existing_config.merge(retry_config) if existing_config is not None else retry_config
-            )
+            caller_retries = config_kwargs.get("retries")
+            if caller_retries:
+                dropped = {k: v for k, v in caller_retries.items() if k != "max_attempts"}
+                if dropped:
+                    log.warning(
+                        "%s: retry=RetryPolicy(...) replaced caller-supplied "
+                        "config_kwargs['retries'] entirely; dropped keys: %s. "
+                        "Pass only one of retry=/config_kwargs['retries'] to keep both.",
+                        self.name,
+                        sorted(dropped.keys()),
+                    )
+            config_kwargs["retries"] = {"max_attempts": rp.max_attempts, "mode": "standard"}
+
+        if config_kwargs:
+            opts["config_kwargs"] = config_kwargs
 
         if self._tls_ca_bundle is not None:
             client_kwargs = opts.setdefault("client_kwargs", {})
