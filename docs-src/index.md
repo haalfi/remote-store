@@ -150,6 +150,6 @@ See [Getting Started](getting-started.md) for a complete walkthrough.
 
 - **[Getting Started](getting-started.md):** install, tutorial, and runnable examples
 - **Guides:** [Backends](how-to/backends/index.md) · [Extensions](how-to/extensions.md) · [Choosing a Backend](how-to/choosing-a-backend.md) · [and more](how-to/data-lake-patterns.md)
-- **Reference:** [API](api/index.md) · [Capabilities Matrix](reference/capabilities-matrix.md) · [Changelog](changelog.md)
+- **Reference:** [API](api/index.md) · [Features](reference/FEATURES.md) · [Capabilities Matrix](reference/capabilities-matrix.md) · [Changelog](changelog.md)
 - **Explanation:** [Architecture](explanation/architecture.md) · [Performance](explanation/performance.md) · [Concurrency](explanation/concurrency.md)
 - **[Further Reading](further/further-reading.md)**

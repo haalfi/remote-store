@@ -25,6 +25,7 @@
     - Build Your Own Backend: how-to/custom-backend-guide.md
 - Reference:
     - API: api/
+    - Features: reference/FEATURES.md
     - Capabilities Matrix: reference/capabilities-matrix.md
     - Migration: reference/migration.md
     - Changelog: changelog.md
