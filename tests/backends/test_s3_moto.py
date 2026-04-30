@@ -1,4 +1,4 @@
-"""S3 control-path lifecycle against ThreadedMotoServer -- covers BK-166, S3-026, S3PA-026.
+"""S3 control-path moto coverage -- covers BK-166, S3-026, S3PA-026.
 
 Wire-level coverage for BUG-178/BUG-185: drives the full backend lifecycle
 through the real ``s3fs`` + ``aiobotocore`` stack with ``moto`` standing in
@@ -17,6 +17,14 @@ behavior. The companion rejection assertion lives in
 inside ``_build_s3fs_kwargs`` before any HTTP and gains nothing from a
 moto fixture.
 
+Failure-path coverage: ``test_delete_missing_maps_to_notfound`` exercises
+the s3fs control path's error pipeline (``_s3fs_errors`` -> real moto 404
+-> ``NotFound``) under the tuned ``client_options``. Existing error-mapping
+tests in ``test_s3.py`` ``patch.object(s3_backend._s3fs, "cat_file",
+side_effect=Exception(...))`` -- they inject fake exceptions and never
+exercise the tuned ``config_kwargs`` end-to-end. Conformance tests do, but
+only against Docker (not the default suite).
+
 S3-PyArrow scope (S3PA-026): ``_FULL_CLIENT_OPTIONS['config_kwargs']`` is
 consumed by the s3fs builder only; ``S3PyArrowBackend`` reads
 ``endpoint_url`` / ``key`` / ``secret`` / ``region_name`` directly when
@@ -24,26 +32,27 @@ constructing its PyArrow ``S3FileSystem`` and does not pass
 ``client_options`` to the data path. So in the ``s3-pyarrow`` parametrize
 case, only the s3fs control-path operations (``list_files``, ``exists``,
 ``delete``) exercise the tuned ``config_kwargs``; ``write`` / ``read``
-flow through PyArrow with default settings. That matches S3PA-026's
-delta against S3-026 (s3fs control path only).
+flow through PyArrow with default settings. ``S3PyArrowBackend.delete``
+(``_s3_pyarrow.py::delete``) checks ``self._s3fs.exists(...)`` first, so
+the failure-path test exercises s3fs on both backends.
 
 Why ``moto[server]`` (not ``moto.mock_aws``): ``mock_aws`` patches the
 synchronous ``botocore`` stack only. ``aiobotocore`` issues real HTTP
 requests, so we need a real moto HTTP server -- pinned in
-``pyproject.toml`` as ``moto[server,s3]``.
+``pyproject.toml`` as ``moto[server,s3]``. The ``moto_server`` fixture is
+the session-scoped one from ``tests/conftest.py``, shared across all
+moto-backed tests in the suite.
 
 Why under ``tests/backends/`` (not ``tests/e2e/``): ``tests/e2e/`` is
 excluded from ``hatch run test`` / ``hatch run all`` via
 ``addopts="--ignore=tests/e2e"`` because those tests need Docker. Moto
-runs in-process and is fast (~1.5s for the whole module), so this file
-must run in the default suite to actually catch regressions; that was
-exactly the gap BUG-178 and BUG-185 fell through.
+runs in-process and is fast, so this file must run in the default suite
+to actually catch regressions; that was exactly the gap BUG-178 and
+BUG-185 fell through.
 """
 
 from __future__ import annotations
 
-import socket
-import time
 import uuid
 from typing import TYPE_CHECKING, Any
 
@@ -70,41 +79,16 @@ _FULL_CLIENT_OPTIONS: dict[str, Any] = {
 }
 
 
-def _wait_for_port(host: str, port: int, timeout: float = 5.0) -> None:
-    # ThreadedMotoServer.start() returns before the HTTP listener is ready;
-    # the first boto3 call against the yielded URL can race the bind on slow
-    # CI runners. Cheap insurance: poll until accept() succeeds or timeout.
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        try:
-            with socket.create_connection((host, port), timeout=0.5):
-                return
-        except OSError:
-            time.sleep(0.05)
-    raise RuntimeError(f"moto server at {host}:{port} did not become ready in {timeout}s")
-
-
 @pytest.fixture(scope="module")
-def moto_server() -> Iterator[str]:
-    """Start a ThreadedMotoServer on a free port; yield its endpoint URL."""
-    from moto.server import ThreadedMotoServer
+def moto_bucket(moto_server: str | None) -> Iterator[tuple[str, str]]:
+    """Create one bucket on the shared moto server for the whole module.
 
-    server = ThreadedMotoServer(port=0)
-    server.start()
-    host, port = server.get_host_and_port()
-    _wait_for_port(host, port)
-    yield f"http://{host}:{port}"
-    server.stop()
-
-
-@pytest.fixture(scope="module")
-def moto_bucket(moto_server: str) -> Iterator[tuple[str, str]]:
-    """Create one bucket on the moto server for the whole module.
-
-    Module-scoped because tests use UUID-suffixed object keys, write with
-    ``overwrite=True``, and clean up their own writes -- a fresh bucket per
-    parametrize case adds setup with no isolation benefit.
+    Module-scoped because tests use unique object keys per parametrize id,
+    write with ``overwrite=True``, and clean up their own writes -- a
+    fresh bucket per case adds setup with no isolation benefit.
     """
+    if moto_server is None:
+        pytest.skip("moto / s3fs not available")
     import boto3
 
     bucket = f"bk166-{uuid.uuid4().hex[:8]}"
@@ -149,7 +133,7 @@ def _load(dotted: str) -> type:
     ],
 )
 class TestS3ControlPathMoto:
-    """BK-166: drive a full backend lifecycle through real s3fs + aiobotocore."""
+    """BK-166: drive the full backend lifecycle through real s3fs + aiobotocore."""
 
     def test_full_lifecycle_with_tuned_client_options(self, backend_cls: str, moto_bucket: tuple[str, str]) -> None:
         """write -> list_files -> read -> delete with non-trivial client_options.
@@ -213,5 +197,40 @@ class TestS3ControlPathMoto:
             with backend.read(key) as stream:
                 assert stream.read() == payload
             backend.delete(key)
+        finally:
+            backend.close()
+
+    def test_delete_missing_maps_to_notfound(self, backend_cls: str, moto_bucket: tuple[str, str]) -> None:
+        """Failure path: ``delete(missing_key)`` under tuned config_kwargs maps to ``NotFound``.
+
+        Real moto returns a 404; the s3fs control path routes it through
+        ``_s3fs_errors`` -> ``_classify_error`` -> ``NotFound``. Both
+        backends use ``self._s3fs.exists(...)`` inside ``delete``, so the
+        ``s3-pyarrow`` parametrize id exercises the same s3fs path -- the
+        only place tuned ``config_kwargs`` apply for that backend.
+
+        Existing error-mapping tests in ``test_s3.py`` inject exceptions
+        via ``patch.object(_s3fs, "cat_file", side_effect=Exception(...))``;
+        no other test in the default suite exercises a real S3 404 with
+        ``client_options`` set.
+        """
+        from remote_store._errors import NotFound
+
+        endpoint, bucket = moto_bucket
+        cls = _load(backend_cls)
+        key = f"never/written-{cls.__name__}.txt"
+        backend = cls(
+            bucket=bucket,
+            endpoint_url=endpoint,
+            key="testing",
+            secret="testing",
+            region_name="us-east-1",
+            client_options=_FULL_CLIENT_OPTIONS,
+        )
+        try:
+            with pytest.raises(NotFound, match=key) as exc_info:
+                backend.delete(key, missing_ok=False)
+            assert exc_info.value.path == key
+            assert exc_info.value.backend == backend.name
         finally:
             backend.close()

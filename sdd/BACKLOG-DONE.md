@@ -13,19 +13,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `S3PyArrowBackend` against a `ThreadedMotoServer`, with non-trivial
   `client_options` (`s3.addressing_style="path"`, `proxies={http: None,
   https: None}`, `connect_timeout`, `read_timeout`) and a parametrized
-  `RetryPolicy` variant. Pins the s3fs ≥ 2024.x `set_session` contract: a
-  future regression that re-introduces a `client_kwargs['config']` pop in
-  the builder fails immediately because nothing in this test patches the
-  production code path — a real `TypeError: got multiple values for
-  keyword argument 'config'` from `aiobotocore` surfaces on first I/O.
-  Lives under `tests/backends/` (not `tests/e2e/`, which is excluded from
-  the default suite via `addopts="--ignore=tests/e2e"`) so a regression
-  is caught by `hatch run test` without remembering a separate command —
-  the gap BUG-178 and BUG-185 fell through. Sanity-checked locally by
-  reverting the BUG-185 fix; all four lifecycle cases failed with that
-  exact signature, then passed again on restore. The unit-level
-  `TestAiobotocoreCreateClientBoundary` continues to pin the kwarg
-  shape; the rejection assertion continues to live next to it in
+  `RetryPolicy` variant. Reuses the session-scoped `moto_server` fixture
+  in `tests/conftest.py` (no duplicate server). Pins the s3fs ≥ 2024.x
+  `set_session` contract: a future regression that re-introduces a
+  `client_kwargs['config']` pop in the builder fails immediately because
+  nothing in this test patches the production code path — a real
+  `TypeError: got multiple values for keyword argument 'config'` from
+  `aiobotocore` surfaces on first I/O.
+
+  Failure-path coverage: `test_delete_missing_maps_to_notfound` verifies
+  the s3fs control-path error pipeline (`_s3fs_errors` → real moto 404 →
+  `NotFound`) under the tuned `client_options` for both backends. The
+  existing error-mapping tests in `test_s3.py` inject exceptions via
+  `patch.object(_s3fs, "cat_file", side_effect=Exception(...))` and
+  never exercise the tuned `config_kwargs` end-to-end; conformance tests
+  do, but only against Docker (not the default suite). Sanity-checked
+  locally by reverting the BUG-185 fix; all six cases (4 lifecycle + 2
+  failure-path) failed with that exact signature, then passed again on
+  restore.
+
+  Lives under `tests/backends/` (not `tests/e2e/`, which is excluded
+  from the default suite via `addopts="--ignore=tests/e2e"`) so a
+  regression is caught by `hatch run test` without remembering a
+  separate command — the gap BUG-178 and BUG-185 fell through. The
+  unit-level `TestAiobotocoreCreateClientBoundary` continues to pin the
+  kwarg shape; the rejection assertion continues to live next to it in
   `TestConfigKwargsRetryCollision::test_client_kwargs_config_is_rejected`
   (it short-circuits before any HTTP and gains nothing from a moto
   fixture, so the moto file does not duplicate it). For S3-PyArrow the
