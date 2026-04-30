@@ -6,29 +6,124 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-185: S3Backend `config_kwargs` collision — route every botocore Config option through `opts["config_kwargs"]`, reject `client_kwargs["config"]` with `ValueError`.
-- ID-171: `check_api_docs.py` — extend verifier to `Backend` → `backend.md`. Added `_BACKEND_GATING: dict[str, str]` (capability-name strings, static-extraction only) directly to `scripts/gen_graph.py`; extended gen_graph.py to emit method + requirement nodes and gates/of edges for all 16 gated `Backend` methods (graph: 75 → 107 nodes, 158 → 222 edges). No drift found on `backend.md`.
-- ID-160: Context7 validation fix and indexing improvements.
-- ID-174: Diátaxis-aligned docs reorg — Phase 1 (prose into `docs/` buckets) + Phase 2 (collapse `docs/` into `docs-src/`; delete `docs/` layer).
-- ID-170: `scripts/check_api_docs.py` — verify-only checker that walks `graph.json` and `docs-src/api/store.md` in parallel; flags missing `:::` directives or capability admonitions that drift from `_GATING`. New `gen-api-check` hatch script wired into the CI lint job. First catch: misplaced `Capability.GLOB` admonition in `store.md` moved from before `glob`'s directive to after, per the file's own placement-rule comment.
-- ID-169: `gen_features.py` — sort backend rows and install-extras entries alphabetically instead of by source-file declaration order.
-- ID-162: graph IR — `mirrors` edges carry `capability_delta` (`async_only`/`sync_only`) so consumers can render sync↔async capability asymmetries (e.g. `LAZY_READ` on `AsyncMemoryBackend`); RFC-0012 schema bumped to 1.2.
-- fix: `AsyncAzureBackend.__del__` — extract `_has_open_clients()` helper to resolve CodeQL `py/overly-complex-delete` alert #55.
-- fix: pin `tla2tools.jar` to v1.7.4 in `ci.yml`, `tlc.Dockerfile`, and `tlc_check.sh` (v1.8.0 was a pre-release with inconsistent checksums); add `scripts/check_tla_no_emdash.py` CI guard; remove em dashes from TLA+ and Dafny formal files.
-- ID-168: audit and enforce non-src test subpackage placement — `tests/test_gen_features.py` moved to `tests/scripts/`; placement rule added to `sdd/TESTING.md`; `scripts/check_test_placement.py` CI lint check added to `lint` job and `check-test-quality`.
-- ID-167: `tests/backends/test_dafny_classorder.py` moved to `tests/scripts/test_dafny_classorder.py` — consolidates script tests under `tests/scripts/`.
-- ID-166: `tests/test_gen_graph.py` moved to `tests/scripts/test_gen_graph.py` — consolidates script tests under `tests/scripts/`; `ROOT` anchor depth corrected for new location.
-- ID-165: `scripts/gen_graph_viz.py` — generate self-contained interactive D3 HTML visualization from `graph.json`; committed artifact at `docs-src/_data/graph/graph_viz.html`; `gen-graph-viz` / `gen-graph-viz-check` hatch scripts added.
-- ID-164: graph IR — method nodes carry `is_abstract`, `is_async`, `file`, `line` (RFC-0012 taxonomy completion); schema_version bumped to 1.1.
-- ID-163: `gen_graph.py` — read `source_version`/`snapshot` from `pyproject.toml` (remove `None` hardcode); add `--check` mode and `gen-graph-check` hatch script; wire `gen-graph` + `gen-features` into release Phase 2 checklist; add both checks to CI lint job.
-- ID-163: `scripts/gen_features.py` — project graph IR → FEATURES.md mechanical sections (backends table, write-result flags, install extras); add `gen-features` / `gen-features-check` hatch scripts.
-- ID-159: Add `__mirror__: ClassVar[type[...]]` to async backends pointing to their sync peer (precondition C for `scripts/gen_graph.py`).
-- ID-159: Add `_GATING` dict to `_store.py` as single source of truth for capability gates (precondition B for `scripts/gen_graph.py`).
-- ID-159: Add `CAPABILITIES: ClassVar[CapabilitySet]` to all backends and ABCs for static extraction (precondition A for `scripts/gen_graph.py`).
-- Refactor: move async backends into `aio/backends/` subpackage (mirrors sync `backends/` layout).
-- ID-160: Add `context7.json` for Context7 library indexing.
-- ID-159: RFC-0012 — documentation graph model design (IR schema, snapshots, projections).
-- ID-159: `scripts/gen_graph.py` — graph IR generator (`docs-src/_data/graph/graph.json`); preconditions: `CAPABILITIES: ClassVar` on all backends, `_GATING` dict in `_store.py`, `__mirror__` on async backends.
+## [0.24.1] - 2026-04-30
+
+### Added
+
+- **`CAPABILITIES: ClassVar[CapabilitySet]` on every backend and ABC** (ID-159, BE-003):
+  `Backend`, `AsyncBackend`, all built-in backends, and `SyncBackendAdapter` now declare a
+  class-level `CAPABILITIES` attribute exposing the capability set without requiring
+  instantiation. The `capabilities` property delegates to `self.CAPABILITIES` so the
+  class view and the instance view always agree. Conformance tests enforce
+  `instance.capabilities <= Cls.CAPABILITIES` for every backend; for `SQLBlobBackend`,
+  `CAPABILITIES` is the upper bound and narrow-column schemas may yield a strictly
+  smaller instance set. Custom backends should follow the same pattern (see
+  `docs-src/how-to/custom-backend-guide.md`).
+- **`_GATING: dict[str, Capability]` in `_store.py`** (ID-159):
+  Single source of truth for the method → capability mapping read by `Store._gate()`.
+  Replaces the previous scattered gate logic; the new `_BACKEND_GATING: dict[str, str]`
+  in `scripts/gen_graph.py` plays the same role for `Backend`.
+- **`__mirror__: ClassVar[type[...]]` on async backends** (ID-159):
+  `AsyncMemoryBackend` and `AsyncAzureBackend` now point at their sync peer via
+  `__mirror__`, enabling static extraction of `mirrors` edges in the graph IR.
+- **RFC-0012 — Documentation Graph Model** (ID-159, accepted): IR schema, snapshot
+  rules, and projection contract for the `graph.json` artifact and downstream
+  generators.
+- **Documentation graph IR generator** (`scripts/gen_graph.py`, ID-159): emits
+  `docs-src/_data/graph/graph.json` with capability/class/extra/method/requirement/package
+  nodes and declares/gates/of/enables/mirrors/inherits edges. Method nodes carry
+  `is_abstract`, `is_async`, `file`, `line` (schema 1.1, ID-164); `mirrors` edges
+  carry `capability_delta: {async_only, sync_only}` so consumers can render sync↔async
+  asymmetries — e.g. `AsyncMemoryBackend` declares `LAZY_READ`; `MemoryBackend` does
+  not, so the edge reports `async_only: ["LAZY_READ"]` (schema 1.2, ID-162).
+  `source_version` and `snapshot` are read from `pyproject.toml`, not hardcoded
+  (ID-163). `gen-graph` / `gen-graph-check` hatch scripts.
+- **`FEATURES.md` projection from graph IR** (`scripts/gen_features.py`, ID-163):
+  regenerates the mechanical sections (`backends_main`, `backends_flags`,
+  `install_extras`) from `graph.json` between `<!-- BEGIN_GENERATED -->` /
+  `<!-- END_GENERATED -->` markers; rows are sorted alphabetically (ID-169) instead
+  of by source-file declaration order. `gen-features` / `gen-features-check` hatch
+  scripts; release Phase 2 runs `gen-graph` then `gen-features` after
+  `bump-my-version`.
+- **API-docs verifier** (`scripts/check_api_docs.py`, ID-170, ID-171): walks
+  `graph.json` and `docs-src/api/store.md` / `backend.md` in parallel through the
+  same canonical IR `{method: frozenset(required_capabilities)}` and flags missing
+  `:::` directives or capability admonitions that drift from `_GATING` /
+  `_BACKEND_GATING`. First catch: a `!!! note "Requires Capability.GLOB"` admonition
+  placed before `::: Store.glob` in `store.md` — moved per the file's own
+  placement-rule comment. `gen-api-check` hatch script wired into the CI lint job.
+- **Interactive graph visualisation** (`scripts/gen_graph_viz.py`, ID-165):
+  self-contained D3 v7 force-directed HTML rendered from `graph.json` and committed
+  at `docs-src/_data/graph/graph_viz.html`. Nodes are colour-coded by kind; edges
+  styled by type with directional arrowheads; abstract methods are dashed; async
+  methods carry a small badge. Sidebar filter checkboxes, click-to-inspect detail
+  panel, drag/zoom/pan. `gen-graph-viz` / `gen-graph-viz-check` hatch scripts.
+- **`scripts/check_test_placement.py`** (ID-168): AST-based lint check enforcing the
+  test subpackage placement rule formalised in `sdd/TESTING.md` § Test Subpackage
+  Placement. Wired into the `lint` CI job and the `check-test-quality` hatch script.
+- **`scripts/check_tla_no_emdash.py`**: CI guard rejecting non-ASCII em dashes in
+  TLA+ and Dafny formal files; TLC's lexer treats U+2014 as a hard error.
+
+### Fixed
+
+- **`S3Backend(client_options={"client_kwargs": {"config": Config(...)}})` raised
+  `TypeError: got multiple values for keyword argument 'config'`** (BUG-185):
+  s3fs's `set_session()` always calls
+  `aiobotocore.create_client("s3", config=AioConfig(**self.config_kwargs), **client_kwargs)`,
+  so any `client_kwargs["config"]` injected by the BUG-178 fix duplicated `config=`.
+  Reproduced on s3fs 2026.3.0 against an internal MinIO-style endpoint requiring
+  `s3.addressing_style="path"` and `proxies={http: None, https: None}`. Fixed by
+  routing every `botocore.config.Config` option through `opts["config_kwargs"]`
+  (a plain dict of `Config(...)` constructor kwargs); `client_kwargs["config"]` is
+  never set, and a caller-supplied pre-built `Config` in `client_kwargs` is rejected
+  at backend construction with `ValueError` pointing at the supported channel.
+  Silent rewriting hid both this bug and BUG-178 and is no longer permitted. Spec
+  S3-026 / S3PA-026 rewritten. Tests added at the actual collision boundary
+  (`TestAiobotocoreCreateClientBoundary` patches
+  `aiobotocore.session.AioSession.create_client` and triggers `s3fs.connect()`),
+  so a future variant of the same bug class fails the unit suite. New "Botocore
+  Client Tuning" section in `docs-src/how-to/backends/s3.md` documents proxies,
+  retries, timeouts, and MinIO path-style addressing; runnable snippets in
+  `examples/snippets/s3_botocore_tuning.py` are wired into `tests/test_snippets.py`
+  and the examples gate. Follow-up moto-backed e2e coverage tracked as BK-186.
+  **Migration:** callers that passed a pre-built `botocore.config.Config` via
+  `client_options={"client_kwargs": {"config": Config(...)}}` must switch to
+  `client_options={"config_kwargs": {...}}` (a plain dict of the same `Config(...)`
+  constructor kwargs). The old form raised `TypeError` at first I/O on s3fs ≥ 2024.x
+  already; it now fails fast with `ValueError` and a message naming the supported
+  channel.
+
+### Changed
+
+- **Documentation filesystem reorganised along Diátaxis** (ID-174): All prose moved
+  from `guides/` and the repo root into `docs-src/<bucket>/` (`how-to`,
+  `explanation`, `reference`, `further`); the intermediate `docs/` layer was
+  collapsed and removed in the same release. Cross-bucket links across
+  `docs-src/api/` stubs, extension stubs, 26 example docstrings, and
+  `scripts/docs/render.py` were updated; absolute GitHub URLs are now used for
+  links to repo files outside `docs-src/` (sdd/, CONTRIBUTING.md). `mkdocs build
+  --strict` passes with 0 warnings. **Bookmarks to specific guide URLs may need
+  updating.**
+
+### Internal
+
+- **Async backends moved into `aio/backends/` subpackage** to mirror the sync
+  `backends/` layout. Public imports through `remote_store.aio` and
+  `remote_store.aio.backends` are unchanged; only direct imports of private modules
+  (e.g. `remote_store._async_memory`) are affected.
+- **Test subpackage consolidation** (ID-166, ID-167, ID-168): `tests/test_gen_graph.py`
+  → `tests/scripts/test_gen_graph.py`, `tests/backends/test_dafny_classorder.py` →
+  `tests/scripts/test_dafny_classorder.py`, `tests/test_gen_features.py` →
+  `tests/scripts/test_gen_features.py`; `ROOT` anchors corrected for the new depth.
+- **Context7 indexing** (ID-160): `context7.json` schema fixes; library registered
+  at `/haalfi/remote-store` (691 snippets, source-reputation High, benchmark score
+  91.3, version 0.24.0; verified 2026-04-29).
+- **CodeQL `py/overly-complex-delete` alert #55**: `AsyncAzureBackend.__del__`
+  refactored to delegate the open-clients check to a new private
+  `_has_open_clients()` helper.
+- **TLA+ toolchain pinning**: `tla2tools.jar` pinned to v1.7.4 in `ci.yml`,
+  `tlc.Dockerfile`, and `scripts/tlc_check.sh` (v1.8.0 was a pre-release with
+  inconsistent checksums); em dashes removed from TLA+ and Dafny formal files.
 
 ## [0.24.0] - 2026-04-26
 
