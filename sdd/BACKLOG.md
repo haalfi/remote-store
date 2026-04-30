@@ -57,64 +57,44 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-165 — Docs structure audit and authoring guide for the post-ID-174 layout**
-  ID-174 collapsed `docs/` into `docs-src/` and inlined all prose, but the
-  resulting layer cake is not yet documented as a coherent system. Three
-  page-emission mechanisms coexist:
-  1. Static authored Markdown under `docs-src/**/*.md` (the majority).
-  2. Virtual MkDocs pages from `mkdocs-gen-files` driven by `scripts/gen_pages.py`:
-     `render_sdd_wrappers` (sdd/ → `design/{kind}/{slug}.md`),
-     `render_link_rewritten` (`_link_map.yml` → `contributing.md`, `design/process.md`),
-     `render_example_pages` + `render_example_index` (docstring-driven),
-     `render_medallion_page`.
-  3. Auto-detected include wrappers (`scan_include_wrappers`).
+- [ ] **BK-167 — Docs authoring guide and simplification follow-up (post audit-012)**
+  Follows BK-165 (audit phase complete, `sdd/audits/audit-012-docs-structure.md`).
+  Act on audit-012 findings as directed by the maintainer, and deliver the
+  conceptual work deferred from BK-165.
 
-  Without an authoring guide, the next contributor must read `scripts/docs/`
-  to know where to put a new page, when to add a `_link_map.yml` entry vs.
-  a static file, and which links resolve to virtual paths.
-
-  **Audit deliverables (report-only first; no code change):**
-  - One-page diagram of the three mechanisms and which content lives where.
+  **Authoring guide** (`sdd/AUTHORING.md` or extend `sdd/DOCUMENTATION.md`):
   - Decision tree: "I need to add a new page about X — where does it go?"
-    Branches must cover: API reference, how-to, explanation, ADR, spec,
-    audit, research, RFC, example script, repo-level doc (CONTRIBUTING etc.).
-  - Inventory of duplications and tensions surfaced by ID-174:
-    - Examples are virtual; their docstrings are the single source of truth
-      for title/description/see_also. Considered (and rejected for now)
-      converting to static stubs — record the tradeoff.
-    - SDD content lives in `sdd/` but is rendered at `design/...` via wrappers;
-      GitHub viewers and docs viewers see different paths for the same content.
-    - `_link_map.yml` is a small, hand-maintained file; assess whether it
-      scales or should be replaced with a discovery convention.
+    Branches: API reference, how-to, explanation, ADR, spec, audit, research,
+    RFC, example script, repo-level doc (CONTRIBUTING etc.).
+  - Link conventions: relative within `docs-src/`, virtual paths for `sdd/`
+    wrappers, absolute GitHub URLs for files outside `docs-src/`.
+  - Diagram of the three page-emission mechanisms (static Markdown, gen-files
+    virtual pages, include-markdown wrappers) and which content lives where.
 
-  **Conceptual work (after audit lands):**
-  - Add an authoring guide page (likely `sdd/DOCUMENTATION.md` extension or
-    a new `sdd/AUTHORING.md`) covering the decision tree and link
-    conventions (relative within docs-src, virtual paths for sdd/, absolute
-    GitHub URLs for everything else outside docs-src).
-  - Identify simplifications that reduce maintenance: e.g. whether all five
-    SDD kinds need the wrapper pattern or some could be static, whether the
-    examples-rendering chain is worth its complexity once docstring metadata
-    is documented.
+  **Simplifications to evaluate (per audit-012 findings):**
+  - F-04: confirm whether `development-story.md` is a gen-files virtual page
+    or a broken nav entry; fix whichever it is.
+  - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`.
+  - F-12: unify the three mechanisms for rendering `sdd/` top-level files
+    (include-markdown wrappers vs. `_link_map.yml` vs. gen-files scan).
+  - F-01/F-02: evaluate whether include-markdown wrappers should be replaced
+    with gen-files virtual pages so repo-browser links resolve correctly, or
+    whether `sdd/` top-level files move into `docs-src/design/` (removes the
+    wrapper layer entirely but conflicts with R5 for process docs).
+  - F-05/F-06/F-07/F-08: align nav structure to pure Diataxis and fix the
+    `design/` URL prefix to match its nav position under Explanation.
 
-  **Open questions:**
+  **Open questions from BK-165:**
   1. Should the docstring-driven examples chain stay (single source of truth,
      hidden machinery) or be replaced with static stubs (discoverability,
-     duplication)? Current state: stay.
+     duplication)?
   2. Should `sdd/` move under `docs-src/design/` to remove the wrapper layer?
      Tradeoff: cleaner build vs. moving authoritative artifacts off the
-     established `sdd/` path that tooling and skills already point to.
-  3. Is there a single source-of-truth model — one declarative file
-     describing every virtual page — that would replace the four current
-     mechanisms?
+     established `sdd/` path that tooling and skills already reference.
+  3. Is there a single declarative file describing every virtual page that
+     would replace the four current generation mechanisms?
 
-  **Why now:** ID-174 finished the filesystem reorg; the next contributor
-  to touch docs (or a future Diátaxis phase) needs a map. Doing the audit
-  before adding more pages prevents drift back into the pre-ID-174 mess.
-
-  **Sequence:** report-only audit first. User decides what (if anything) to
-  fix and whether the conceptual deliverables become a separate ID per
-  audit-protocol (CLAUDE.md § Audits).
+  **Depends on:** BK-165 (audit phase done).
 
 ---
 

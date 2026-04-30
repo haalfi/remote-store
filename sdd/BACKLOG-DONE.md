@@ -7,6 +7,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-165 — Docs structure audit for the post-ID-174 layout (audit phase)**
+  Established 13 audit rules covering the three-hierarchy vocabulary (repo
+  path / nav position / URL path), link integrity, Diataxis nav purity,
+  generation conventions, wrapper-pattern discipline, content coverage,
+  duplication, and exclusion auditability. Ran report-only audit against
+  `mkdocs.yml`, `scripts/gen_pages.py`, `docs-src/_nav.yml`,
+  `docs-src/_link_map.yml`, all `docs-src/design/*.md`, and a full `.md`
+  inventory across `sdd/`, `docs-src/`, root, and `examples/`. Delivered as
+  `sdd/audits/audit-012-docs-structure.md`: 13 findings + 1 warning across
+  7 rules; 4 rules passed cleanly. Authoring guide and simplification
+  follow-up: BK-167.
+
 - [x] **BK-166 — S3 control-path moto-backed lifecycle coverage**
   Adds `tests/backends/test_s3_moto.py`: drives a full backend lifecycle
   (`write` → `list_files` → `read` → `delete`) for both `S3Backend` and
