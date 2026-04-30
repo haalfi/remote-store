@@ -1,0 +1,40 @@
+- Home: index.md
+- Getting Started:
+    - Tutorial: getting-started.md
+    - Examples: examples/
+- Guides:
+    - Backends: how-to/backends/
+    - Extensions:
+        - Overview: how-to/extensions.md
+        - PyArrow Adapter: how-to/pyarrow-adapter.md
+        - Batch Operations: how-to/batch-operations.md
+        - Glob Pattern Matching: how-to/glob-pattern-matching.md
+        - Transfer Operations: how-to/transfer-operations.md
+        - Observability Hooks: how-to/observe.md
+        - Caching: how-to/cache.md
+        - Parquet Datasets: how-to/parquet-datasets.md
+        - Dagster IO Manager: how-to/dagster.md
+        - Retry Policy: how-to/retry.md
+    - Async Store: how-to/async.md
+    - Async/Sync Bridges: how-to/async-sync-bridges.md
+    - Write Integrity: how-to/write-integrity.md
+    - Health Check: how-to/health-check.md
+    - Data Lake Patterns: how-to/data-lake-patterns.md
+    - Troubleshooting: how-to/troubleshooting.md
+    - Choosing a Backend: how-to/choosing-a-backend.md
+    - Build Your Own Backend: how-to/custom-backend-guide.md
+- Reference:
+    - API: api/
+    - Capabilities Matrix: reference/capabilities-matrix.md
+    - Migration: reference/migration.md
+    - Changelog: changelog.md
+- Explanation:
+    - Architecture Overview: explanation/architecture.md
+    - Performance: explanation/performance.md
+    - Concurrency: explanation/concurrency.md
+    - Security Model: explanation/security-model.md
+    - Design: design/
+- Further Reading:
+    - Overview: further/further-reading.md
+    - Development Story: development-story.md
+    - Contributing: contributing.md
