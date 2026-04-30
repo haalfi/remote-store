@@ -4219,6 +4219,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0240-to-v0241" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.24.0 to v0.24.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0200-to-v0210" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8795,6 +8806,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0240-to-v0241" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.24.0 to v0.24.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0200-to-v0210" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8929,6 +8951,28 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
+<h2 id="v0240-to-v0241">v0.24.0 to v0.24.1<a class="headerlink" href="#v0240-to-v0241" title="Permanent link">&para;</a></h2>
+<p><strong>S3 botocore Config options route through <code>config_kwargs</code> (BUG-185):</strong></p>
+<p>Pre-built <code>botocore.config.Config</code> objects are no longer accepted in
+<code>client_options["client_kwargs"]</code>. Pass the same constructor kwargs through
+<code>config_kwargs</code> (a plain dict) instead. The old form raised <code>TypeError</code> at
+first I/O on s3fs ≥ 2024.x already; v0.24.1 fails fast with <code>ValueError</code> at
+backend construction and a message naming the supported channel.</p>
+<ul>
+<li>Old: <code>S3Backend(..., client_options={"client_kwargs": {"config": Config(connect_timeout=10, retries={"max_attempts": 5})}})</code></li>
+<li>New: <code>S3Backend(..., client_options={"config_kwargs": {"connect_timeout": 10, "retries": {"max_attempts": 5}}})</code></li>
+</ul>
+<p>The new "Botocore Client Tuning" section in <code>docs-src/how-to/backends/s3.md</code>
+documents proxies, retries, timeouts, and MinIO path-style addressing with
+runnable snippets. Applies to both <code>S3Backend</code> and <code>S3PyArrowBackend</code>.</p>
+<p><strong>Custom backends must declare <code>CAPABILITIES: ClassVar[CapabilitySet]</code> (ID-159):</strong></p>
+<p>If you maintain a custom <code>Backend</code> or <code>AsyncBackend</code> subclass, add a
+class-level <code>CAPABILITIES</code> attribute exposing the capability set without
+requiring instantiation, and delegate the <code>capabilities</code> property to it.
+Conformance and the new graph-IR generator both read from this class
+attribute. See <code>docs-src/how-to/custom-backend-guide.md</code> § "Step 3" for the
+template; existing constructor-set capability logic continues to work, but
+the ClassVar is required for static extraction.</p>
 <h2 id="v0200-to-v0210">v0.20.0 to v0.21.0<a class="headerlink" href="#v0200-to-v0210" title="Permanent link">&para;</a></h2>
 <p><strong><code>ParquetSerializer.deserialize()</code> returns Arrow Table (BUG-135):</strong></p>
 <p><code>ParquetSerializer.deserialize()</code> now returns a <code>pyarrow.Table</code> instead of a
