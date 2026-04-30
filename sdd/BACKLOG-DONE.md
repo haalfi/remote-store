@@ -28,7 +28,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `s3fs.connect()`), so a future variant of the same bug class fails the
   unit suite instead of escaping to a user. Follow-up e2e coverage
   against `moto` tracked as `BK-186` (prioritized). New "Botocore Client
-  Tuning" section in `guides/backends/s3.md` documents proxies, retries,
+  Tuning" section in `docs-src/how-to/backends/s3.md` documents proxies, retries,
   timeouts, and MinIO path-style addressing; runnable snippets in
   `examples/snippets/s3_botocore_tuning.py` are wired into
   `tests/test_snippets.py` and `tests/scripts/run_examples.py` so the
