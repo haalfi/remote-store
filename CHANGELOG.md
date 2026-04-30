@@ -9,7 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ### Added
 
 - **End-to-end coverage for the S3 control path** (BK-166, S3-026, S3PA-026):
-  `tests/e2e/test_s3_control_path.py` drives a full lifecycle
+  `tests/backends/test_s3_moto.py` drives a full lifecycle
   (`write` / `list_files` / `read` / `delete`) for both `S3Backend` and
   `S3PyArrowBackend` against a `ThreadedMotoServer` with the same tuned
   `client_options` shape that triggered BUG-178 and BUG-185
@@ -17,7 +17,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   and without `RetryPolicy`). Nothing in the test patches the production
   code path, so a regression in the `config_kwargs` routing surfaces as a
   real `TypeError: got multiple values for keyword argument 'config'`
-  from `aiobotocore`. Complements the unit-level
+  from `aiobotocore`. Runs in the default suite (`hatch run test`) so a
+  regression is caught without remembering a separate command — the gap
+  BUG-178 and BUG-185 fell through. Complements the unit-level
   `TestAiobotocoreCreateClientBoundary` (kwarg shape) with wire-level
   behavior. `moto[server,s3]` was already pinned in `[dev]`; no new
   dependencies.

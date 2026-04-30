@@ -7,8 +7,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-- [x] **BK-166 — S3 control-path e2e test against moto/local aiobotocore**
-  Adds `tests/e2e/test_s3_control_path.py`: drives a full backend lifecycle
+- [x] **BK-166 — S3 control-path moto-backed lifecycle coverage**
+  Adds `tests/backends/test_s3_moto.py`: drives a full backend lifecycle
   (`write` → `list_files` → `read` → `delete`) for both `S3Backend` and
   `S3PyArrowBackend` against a `ThreadedMotoServer`, with non-trivial
   `client_options` (`s3.addressing_style="path"`, `proxies={http: None,
@@ -18,11 +18,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the builder fails immediately because nothing in this test patches the
   production code path — a real `TypeError: got multiple values for
   keyword argument 'config'` from `aiobotocore` surfaces on first I/O.
-  Sanity-checked locally by reverting the BUG-185 fix; all four lifecycle
-  cases failed with that exact signature, then passed again on restore.
-  The unit-level `TestAiobotocoreCreateClientBoundary` continues to pin
-  the kwarg shape; this file pins the wire-level behavior end-to-end.
-  Specs: S3-026, S3PA-026.
+  Lives under `tests/backends/` (not `tests/e2e/`, which is excluded from
+  the default suite via `addopts="--ignore=tests/e2e"`) so a regression
+  is caught by `hatch run test` without remembering a separate command —
+  the gap BUG-178 and BUG-185 fell through. Sanity-checked locally by
+  reverting the BUG-185 fix; all four lifecycle cases failed with that
+  exact signature, then passed again on restore. The unit-level
+  `TestAiobotocoreCreateClientBoundary` continues to pin the kwarg
+  shape; the rejection assertion continues to live next to it in
+  `TestConfigKwargsRetryCollision::test_client_kwargs_config_is_rejected`
+  (it short-circuits before any HTTP and gains nothing from a moto
+  fixture, so the moto file does not duplicate it). For S3-PyArrow the
+  tuned `config_kwargs` only flow through the s3fs control path
+  (`list_files` / `exists` / `delete`); `write` / `read` go through
+  PyArrow with default settings — matches S3PA-026's delta against
+  S3-026. Specs: S3-026, S3PA-026.
 
 ## v0.24.1
 

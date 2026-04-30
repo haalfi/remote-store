@@ -1,6 +1,6 @@
-"""S3 control-path e2e against ThreadedMotoServer -- covers BK-166, S3-026, S3PA-026.
+"""S3 control-path lifecycle against ThreadedMotoServer -- covers BK-166, S3-026, S3PA-026.
 
-End-to-end coverage for BUG-178/BUG-185: drives the full backend lifecycle
+Wire-level coverage for BUG-178/BUG-185: drives the full backend lifecycle
 through the real ``s3fs`` + ``aiobotocore`` stack with ``moto`` standing in
 for the S3 endpoint. Nothing in this module patches the production code
 path, so a regression in the ``config_kwargs`` routing surfaces as a real
@@ -11,16 +11,39 @@ The unit-level ``TestAiobotocoreCreateClientBoundary`` in
 ``tests/backends/test_s3_options.py`` patches
 ``aiobotocore.session.AioSession.create_client`` and asserts on the
 captured kwargs; that pins the kwarg shape. This file pins the wire-level
-behavior end-to-end.
+behavior. The companion rejection assertion lives in
+``TestConfigKwargsRetryCollision::test_client_kwargs_config_is_rejected``
+(unit-level) and is intentionally not duplicated here -- it short-circuits
+inside ``_build_s3fs_kwargs`` before any HTTP and gains nothing from a
+moto fixture.
+
+S3-PyArrow scope (S3PA-026): ``_FULL_CLIENT_OPTIONS['config_kwargs']`` is
+consumed by the s3fs builder only; ``S3PyArrowBackend`` reads
+``endpoint_url`` / ``key`` / ``secret`` / ``region_name`` directly when
+constructing its PyArrow ``S3FileSystem`` and does not pass
+``client_options`` to the data path. So in the ``s3-pyarrow`` parametrize
+case, only the s3fs control-path operations (``list_files``, ``exists``,
+``delete``) exercise the tuned ``config_kwargs``; ``write`` / ``read``
+flow through PyArrow with default settings. That matches S3PA-026's
+delta against S3-026 (s3fs control path only).
 
 Why ``moto[server]`` (not ``moto.mock_aws``): ``mock_aws`` patches the
 synchronous ``botocore`` stack only. ``aiobotocore`` issues real HTTP
 requests, so we need a real moto HTTP server -- pinned in
 ``pyproject.toml`` as ``moto[server,s3]``.
+
+Why under ``tests/backends/`` (not ``tests/e2e/``): ``tests/e2e/`` is
+excluded from ``hatch run test`` / ``hatch run all`` via
+``addopts="--ignore=tests/e2e"`` because those tests need Docker. Moto
+runs in-process and is fast (~1.5s for the whole module), so this file
+must run in the default suite to actually catch regressions; that was
+exactly the gap BUG-178 and BUG-185 fell through.
 """
 
 from __future__ import annotations
 
+import socket
+import time
 import uuid
 from typing import TYPE_CHECKING, Any
 
@@ -47,6 +70,20 @@ _FULL_CLIENT_OPTIONS: dict[str, Any] = {
 }
 
 
+def _wait_for_port(host: str, port: int, timeout: float = 5.0) -> None:
+    # ThreadedMotoServer.start() returns before the HTTP listener is ready;
+    # the first boto3 call against the yielded URL can race the bind on slow
+    # CI runners. Cheap insurance: poll until accept() succeeds or timeout.
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=0.5):
+                return
+        except OSError:
+            time.sleep(0.05)
+    raise RuntimeError(f"moto server at {host}:{port} did not become ready in {timeout}s")
+
+
 @pytest.fixture(scope="module")
 def moto_server() -> Iterator[str]:
     """Start a ThreadedMotoServer on a free port; yield its endpoint URL."""
@@ -55,13 +92,19 @@ def moto_server() -> Iterator[str]:
     server = ThreadedMotoServer(port=0)
     server.start()
     host, port = server.get_host_and_port()
+    _wait_for_port(host, port)
     yield f"http://{host}:{port}"
     server.stop()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def moto_bucket(moto_server: str) -> Iterator[tuple[str, str]]:
-    """Create a fresh bucket on the moto server; yield ``(endpoint, bucket)``."""
+    """Create one bucket on the moto server for the whole module.
+
+    Module-scoped because tests use UUID-suffixed object keys, write with
+    ``overwrite=True``, and clean up their own writes -- a fresh bucket per
+    parametrize case adds setup with no isolation benefit.
+    """
     import boto3
 
     bucket = f"bk166-{uuid.uuid4().hex[:8]}"
@@ -105,7 +148,7 @@ def _load(dotted: str) -> type:
         ),
     ],
 )
-class TestS3ControlPathE2E:
+class TestS3ControlPathMoto:
     """BK-166: drive a full backend lifecycle through real s3fs + aiobotocore."""
 
     def test_full_lifecycle_with_tuned_client_options(self, backend_cls: str, moto_bucket: tuple[str, str]) -> None:
@@ -117,6 +160,9 @@ class TestS3ControlPathE2E:
         """
         endpoint, bucket = moto_bucket
         cls = _load(backend_cls)
+        # Unique key per parametrize id so cases sharing the module-scoped bucket
+        # cannot clobber each other if one fails before its own delete.
+        key = f"docs/hello-{cls.__name__}.txt"
         backend = cls(
             bucket=bucket,
             endpoint_url=endpoint,
@@ -126,18 +172,18 @@ class TestS3ControlPathE2E:
             client_options=_FULL_CLIENT_OPTIONS,
         )
         try:
-            payload = b"BK-166 e2e payload"
-            result = backend.write("docs/hello.txt", payload, overwrite=True)
+            payload = b"BK-166 wire-level payload"
+            result = backend.write(key, payload, overwrite=True)
             assert result.size == len(payload)
 
             listed = [str(info.path) for info in backend.list_files("docs", recursive=True)]
-            assert "docs/hello.txt" in listed
+            assert key in listed
 
-            with backend.read("docs/hello.txt") as stream:
+            with backend.read(key) as stream:
                 assert stream.read() == payload
 
-            backend.delete("docs/hello.txt")
-            assert not backend.exists("docs/hello.txt")
+            backend.delete(key)
+            assert not backend.exists(key)
         finally:
             backend.close()
 
@@ -151,6 +197,7 @@ class TestS3ControlPathE2E:
 
         endpoint, bucket = moto_bucket
         cls = _load(backend_cls)
+        key = f"retry/sample-{cls.__name__}.bin"
         backend = cls(
             bucket=bucket,
             endpoint_url=endpoint,
@@ -162,40 +209,9 @@ class TestS3ControlPathE2E:
         )
         try:
             payload = b"BK-166 retry payload"
-            backend.write("retry/sample.bin", payload, overwrite=True)
-            with backend.read("retry/sample.bin") as stream:
+            backend.write(key, payload, overwrite=True)
+            with backend.read(key) as stream:
                 assert stream.read() == payload
-            backend.delete("retry/sample.bin")
-        finally:
-            backend.close()
-
-    def test_prebuilt_config_in_client_kwargs_rejected(self, backend_cls: str, moto_bucket: tuple[str, str]) -> None:
-        """S3-026: pre-built ``Config`` in ``client_kwargs`` is rejected end-to-end.
-
-        Pins the s3fs ≥ 2024.x compatibility scope from BK-166: a future
-        regression that re-introduces a ``client_kwargs['config']`` pop in
-        our builder must fail at filesystem construction, before any I/O
-        reaches the wire. Triggered via ``backend._s3fs`` (not a public I/O
-        method) because the public methods wrap the builder's ``ValueError``
-        in ``RemoteStoreError`` via ``_s3fs_errors``; the rejection itself
-        is what we're verifying, not the error-mapping wrapper.
-        """
-        import botocore.config
-
-        endpoint, bucket = moto_bucket
-        cls = _load(backend_cls)
-        backend = cls(
-            bucket=bucket,
-            endpoint_url=endpoint,
-            key="testing",
-            secret="testing",
-            region_name="us-east-1",
-            client_options={
-                "client_kwargs": {"config": botocore.config.Config(connect_timeout=20)},
-            },
-        )
-        try:
-            with pytest.raises(ValueError, match="config_kwargs"):
-                _ = backend._s3fs
+            backend.delete(key)
         finally:
             backend.close()
