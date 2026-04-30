@@ -5,6 +5,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+- [x] **BK-166 — S3 control-path e2e test against moto/local aiobotocore**
+  Adds `tests/e2e/test_s3_control_path.py`: drives a full backend lifecycle
+  (`write` → `list_files` → `read` → `delete`) for both `S3Backend` and
+  `S3PyArrowBackend` against a `ThreadedMotoServer`, with non-trivial
+  `client_options` (`s3.addressing_style="path"`, `proxies={http: None,
+  https: None}`, `connect_timeout`, `read_timeout`) and a parametrized
+  `RetryPolicy` variant. Pins the s3fs ≥ 2024.x `set_session` contract: a
+  future regression that re-introduces a `client_kwargs['config']` pop in
+  the builder fails immediately because nothing in this test patches the
+  production code path — a real `TypeError: got multiple values for
+  keyword argument 'config'` from `aiobotocore` surfaces on first I/O.
+  Sanity-checked locally by reverting the BUG-185 fix; all four lifecycle
+  cases failed with that exact signature, then passed again on restore.
+  The unit-level `TestAiobotocoreCreateClientBoundary` continues to pin
+  the kwarg shape; this file pins the wire-level behavior end-to-end.
+  Specs: S3-026, S3PA-026.
+
 ## v0.24.1
 
 - [x] **BUG-185 — `S3Backend(client_options={"config_kwargs": ...})` collides on `config=`**
