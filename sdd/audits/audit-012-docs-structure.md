@@ -97,6 +97,10 @@ and nav entries.
 | F-13 | R13 | Major | No central exclusion list; excluded files not auditable without reading four systems |
 | W-01 | R3 | — | No build-time enforcement of cross-version link safety |
 
+_F-04 and F-09 were withdrawn during review and their IDs retired: F-04 was a false
+positive (the file exists on disk); F-09 duplicated F-08's consequence. Remaining IDs
+are unchanged to preserve external references._
+
 ---
 
 ## Findings
@@ -238,6 +242,10 @@ The URL implies a distinct top-level section outside Diataxis, which contradicts
 The nav position and URL path are misaligned, violating R7. Any internal cross-link to
 SDD content uses the `design/` prefix, anchoring the inconsistency into every such link.
 
+_Design artifact: the `design/` URL structure and the `docs-src/` layout were
+established by [ADR-0007](../adrs/0007-docs-src-literate-nav.md) (implemented in
+ID-174)._
+
 ---
 
 ### F-10: Changelog URL contradicts its nav position under Reference (Minor, R7)
@@ -287,6 +295,12 @@ derivable from file location or metadata alone — a contributor must understand
 systems to place a new `sdd/` file correctly. This contradicts R11 (the wrapper pattern
 must be a principled bridge, not an ad-hoc collection of approaches).
 
+_Design artifact: the gen-files scan approach for `sdd/` kinds was specified in
+[ADR-0007](../adrs/0007-docs-src-literate-nav.md) (implemented in ID-174). The
+include-markdown wrapper approach for `sdd/` top-level files and the `_link_map.yml`
+entry for `sdd/000-process.md` post-date that ADR and were added without a unifying
+rule._
+
 ---
 
 ### F-13: No central exclusion list; excluded files not auditable (Major, R13)
@@ -308,6 +322,9 @@ cross-reference: the `gen_pages.py` scan logic, `_link_map.yml`, all `docs-src/`
 include-markdown wrappers, and `docs-src/_nav.yml`. No single location enumerates
 excluded files or states the exclusion criteria. The boundary between "intentionally
 excluded" and "accidentally missed" is not auditable.
+
+_Design artifact: [ADR-0007](../adrs/0007-docs-src-literate-nav.md) documents the
+scan-based discovery approach but does not define an explicit exclusion list._
 
 ---
 
