@@ -6,6 +6,24 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Added
+
+- **End-to-end coverage for the S3 control path** (BK-166, S3-026, S3PA-026):
+  `tests/backends/test_s3_moto.py` drives a full lifecycle
+  (`write` / `list_files` / `read` / `delete`) for both `S3Backend` and
+  `S3PyArrowBackend` against a `ThreadedMotoServer` with the same tuned
+  `client_options` shape that triggered BUG-178 and BUG-185
+  (`s3.addressing_style="path"`, cleared proxies, custom timeouts; with
+  and without `RetryPolicy`). Nothing in the test patches the production
+  code path, so a regression in the `config_kwargs` routing surfaces as a
+  real `TypeError: got multiple values for keyword argument 'config'`
+  from `aiobotocore`. Runs in the default suite (`hatch run test`) so a
+  regression is caught without remembering a separate command — the gap
+  BUG-178 and BUG-185 fell through. Complements the unit-level
+  `TestAiobotocoreCreateClientBoundary` (kwarg shape) with wire-level
+  behavior. `moto[server,s3]` was already pinned in `[dev]`; no new
+  dependencies.
+
 ## [0.24.1] - 2026-04-30
 
 ### Added
@@ -85,7 +103,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   Client Tuning" section in `docs-src/how-to/backends/s3.md` documents proxies,
   retries, timeouts, and MinIO path-style addressing; runnable snippets in
   `examples/snippets/s3_botocore_tuning.py` are wired into `tests/test_snippets.py`
-  and the examples gate. Follow-up moto-backed e2e coverage tracked as BK-186.
+  and the examples gate. Follow-up moto-backed e2e coverage tracked as BK-166.
   **Migration:** callers that passed a pre-built `botocore.config.Config` via
   `client_options={"client_kwargs": {"config": Config(...)}}` must switch to
   `client_options={"config_kwargs": {...}}` (a plain dict of the same `Config(...)`

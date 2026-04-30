@@ -5,6 +5,51 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+- [x] **BK-166 — S3 control-path moto-backed lifecycle coverage**
+  Adds `tests/backends/test_s3_moto.py`: drives a full backend lifecycle
+  (`write` → `list_files` → `read` → `delete`) for both `S3Backend` and
+  `S3PyArrowBackend` against a `ThreadedMotoServer`, with non-trivial
+  `client_options` (`s3.addressing_style="path"`, `proxies={http: None,
+  https: None}`, `connect_timeout`, `read_timeout`) and a parametrized
+  `RetryPolicy` variant. Reuses the session-scoped `moto_server` fixture
+  in `tests/conftest.py` (no duplicate server). Pins the s3fs ≥ 2024.x
+  `set_session` contract: a future regression that re-introduces a
+  `client_kwargs['config']` pop in the builder fails immediately because
+  nothing in this test patches the production code path — a real
+  `TypeError: got multiple values for keyword argument 'config'` from
+  `aiobotocore` surfaces on first I/O.
+
+  Failure-path coverage: `test_delete_missing_maps_to_notfound` verifies
+  the s3fs control-path error pipeline (`_s3fs_errors` → real moto 404 →
+  `NotFound`) under the tuned `client_options` for both backends. The
+  existing error-mapping tests in `test_s3.py` inject exceptions via
+  `patch.object(_s3fs, "cat_file", side_effect=Exception(...))` and
+  never exercise the tuned `config_kwargs` end-to-end; conformance tests
+  do, but only against Docker (not the default suite). Sanity-checked
+  locally by reverting the BUG-185 fix; all six cases (4 lifecycle + 2
+  failure-path) failed with that exact signature, then passed again on
+  restore.
+
+  Lives under `tests/backends/` (not `tests/e2e/`, which is excluded
+  from the default suite via `addopts="--ignore=tests/e2e"`) so a
+  regression is caught by `hatch run test` without remembering a
+  separate command — the gap BUG-178 and BUG-185 fell through. The
+  unit-level `TestAiobotocoreCreateClientBoundary` continues to pin the
+  kwarg shape; the rejection assertion continues to live next to it in
+  `TestConfigKwargsRetryCollision::test_client_kwargs_config_is_rejected`
+  (it short-circuits before any HTTP and gains nothing from a moto
+  fixture, so the moto file does not duplicate it). For S3-PyArrow the
+  tuned `config_kwargs` flow through the s3fs control path; only the
+  actual byte transfers in `write` / `read` run through PyArrow at
+  default settings, while the surrounding s3fs calls (overwrite check
+  via `_s3fs.exists`, post-upload `_s3fs.call_s3('head_object', ...)`,
+  plus `list_files` / `exists` / `is_file` / `is_folder` / `delete` /
+  `delete_folder` / `move` / `copy`) all use the tuned `config_kwargs`.
+  Matches S3PA-026's delta against S3-026 (s3fs control path only).
+  Specs: S3-026, S3PA-026.
+
 ## v0.24.1
 
 - [x] **BUG-185 — `S3Backend(client_options={"config_kwargs": ...})` collides on `config=`**
@@ -27,7 +72,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `aiobotocore.session.AioSession.create_client` and triggers
   `s3fs.connect()`), so a future variant of the same bug class fails the
   unit suite instead of escaping to a user. Follow-up e2e coverage
-  against `moto` tracked as `BK-186` (prioritized). New "Botocore Client
+  against `moto` tracked as `BK-166` (prioritized). New "Botocore Client
   Tuning" section in `docs-src/how-to/backends/s3.md` documents proxies, retries,
   timeouts, and MinIO path-style addressing; runnable snippets in
   `examples/snippets/s3_botocore_tuning.py` are wired into
