@@ -11533,6 +11533,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BUG-185: S3Backend <code>config_kwargs</code> collision — route every botocore Config option through <code>opts["config_kwargs"]</code>, reject <code>client_kwargs["config"]</code> with <code>ValueError</code>.</li>
 <li>ID-171: <code>check_api_docs.py</code> — extend verifier to <code>Backend</code> → <code>backend.md</code>. Added <code>_BACKEND_GATING: dict[str, str]</code> (capability-name strings, static-extraction only) directly to <code>scripts/gen_graph.py</code>; extended gen_graph.py to emit method + requirement nodes and gates/of edges for all 16 gated <code>Backend</code> methods (graph: 75 → 107 nodes, 158 → 222 edges). No drift found on <code>backend.md</code>.</li>
 <li>ID-160: Context7 validation fix and indexing improvements.</li>
 <li>ID-174: Diátaxis-aligned docs reorg — Phase 1 (prose into <code>docs/</code> buckets) + Phase 2 (collapse <code>docs/</code> into <code>docs-src/</code>; delete <code>docs/</code> layer).</li>

@@ -7826,10 +7826,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-026-config_kwargs-and-retrypolicy-config-merge" class="md-nav__link">
+  <a href="#s3-026" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-026: config_kwargs and RetryPolicy Config Merge
+        S3-026: config_kwargs is the only Config channel; client_kwargs['config'] is rejected
       
     </span>
   </a>
@@ -9505,10 +9505,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#s3-026-config_kwargs-and-retrypolicy-config-merge" class="md-nav__link">
+  <a href="#s3-026" class="md-nav__link">
     <span class="md-ellipsis">
       
-        S3-026: config_kwargs and RetryPolicy Config Merge
+        S3-026: config_kwargs is the only Config channel; client_kwargs['config'] is rejected
       
     </span>
   </a>
@@ -9703,13 +9703,37 @@ lowercase-normalized in <code>ContentDigest</code>).
 - Bare <code>host:port</code> or hostname → prefixed with <code>https://</code>.
 - URLs with an existing <code>http://</code> or <code>https://</code> scheme (case-insensitive per RFC 3986 § 3.1) → whitespace-stripped, otherwise unchanged.</p>
 <p><strong>Postconditions:</strong> After construction, <code>self._endpoint_url</code> always contains a scheme prefix or is <code>None</code>.</p>
-<h3 id="s3-026-config_kwargs-and-retrypolicy-config-merge">S3-026: config_kwargs and RetryPolicy Config Merge<a class="headerlink" href="#s3-026-config_kwargs-and-retrypolicy-config-merge" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When <code>client_options={"config_kwargs": {...}}</code> and <code>retry=RetryPolicy(...)</code> are both supplied, the two do not collide on the <code>config=</code> keyword argument to <code>aiobotocore.create_client()</code>.</p>
+<h3 id="s3-026">S3-026: config_kwargs is the only Config channel; client_kwargs['config'] is rejected<a class="headerlink" href="#s3-026" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> Every botocore <code>Config</code> option supplied to an S3 backend
+flows to s3fs via <code>opts['config_kwargs']</code> (a dict). The kwargs dict handed
+to <code>s3fs.S3FileSystem</code> never contains <code>client_kwargs['config']</code>, and
+<code>aiobotocore.create_client()</code> therefore only ever receives one <code>config=</code>
+argument — the <code>AioConfig</code> s3fs builds from <code>self.config_kwargs</code>.</p>
+<p><strong>Why:</strong> <code>s3fs.S3FileSystem.set_session</code> always calls
+<code>aiobotocore.create_client("s3", config=AioConfig(**self.config_kwargs),
+**client_kwargs)</code>. A parallel <code>client_kwargs['config']</code> duplicates the
+<code>config=</code> keyword and raises <code>TypeError: got multiple values for keyword
+argument 'config'</code> (BUG-178, BUG-185).</p>
 <p><strong>Rules:</strong>
-- Any top-level <code>config_kwargs</code> dict in <code>client_options</code> is converted to a <code>botocore.config.Config</code> and placed in <code>client_kwargs["config"]</code> before the retry-derived <code>Config</code> is applied.
-- If <code>client_kwargs["config"]</code> is already set by the caller, <code>config_kwargs</code> is merged into it (caller-supplied object wins on conflicts).
-- The retry-derived <code>Config</code> is then merged on top; retry-policy values win on conflicts (e.g. <code>retries.max_attempts</code>). Caller-supplied fields not overridden by the retry policy (e.g. <code>connect_timeout</code>) are preserved.
-- <code>aiobotocore.create_client()</code> only ever receives one <code>config=</code> argument.</p>
+- A top-level <code>config_kwargs</code> dict in <code>client_options</code> is the supported
+  channel for botocore Config options. It is forwarded as-is to s3fs,
+  which reconstructs <code>AioConfig(**config_kwargs)</code> itself.
+- If the caller passes <code>client_kwargs['config']</code> (a pre-built
+  <code>botocore.config.Config</code>), the builder raises <code>ValueError</code> with a message
+  pointing at <code>config_kwargs</code>. Silent rewriting is forbidden because it
+  hid two consecutive bugs: it always produced a duplicate <code>config=</code> on
+  s3fs ≥ 2024.x, and the kwarg-shape unit tests asserted at the wrong
+  boundary.
+- <code>RetryPolicy</code> (when supplied via <code>retry=</code>) replaces the entire <code>retries</code>
+  entry in <code>config_kwargs</code> with <code>{"max_attempts": rp.max_attempts, "mode":
+  "standard"}</code> (plain dict assignment, not a field-level merge).
+  Caller-supplied retry modes (e.g. <code>adaptive</code>) and any other
+  non-<code>max_attempts</code> keys are dropped when both <code>retry=</code> and
+  <code>config_kwargs.retries</code> are supplied; the builder emits a <code>log.warning</code>
+  enumerating the dropped keys so the loss is observable. Use one channel
+  to keep caller-supplied retry knobs.
+- Caller-supplied fields outside <code>retries</code> (e.g. <code>connect_timeout</code>,
+  <code>read_timeout</code>, <code>s3.addressing_style</code>, <code>proxies</code>) are preserved.</p>
 <p><strong>Scope:</strong> Applies to both <code>S3Backend</code> and <code>S3PyArrowBackend</code> (both use the <code>_S3Base._build_s3fs_kwargs()</code> builder).</p>
 
 
