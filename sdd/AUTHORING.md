@@ -60,13 +60,16 @@ docs site"; host configuration is a deployment concern, not an authoring one.
 
 1. **Docs-site only?** → `docs-src/` (Diataxis bucket per
    [`DOCUMENTATION.md`](DOCUMENTATION.md#1-diataxis-placement) Rule 1).
-2. **Internal, process, or tooling?** → declare repo-only. Process docs
-   and SDD artefacts (specs, ADRs, RFCs, research, audits) live under
-   `sdd/`; other internal/tooling files have a free repo path. See
+2. **Pure internal tooling** (`sdd/BACKLOG.md`, `sdd/CLAUDE-REFERENCE.md`,
+   `CLAUDE.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, agent harness
+   files)? → repo path; declare repo-only.
+3. **Otherwise it is dual** → its anchored repo path, plain Markdown
+   only. Includes `README`, `CHANGELOG`, `CONTRIBUTING`, the
+   Authoritative Document Format trio, all process docs, and all SDD
+   artefacts (specs, ADRs, RFCs, research, audits). The bridge handles
+   the docs-site presentation. See
    [`sdd/CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md) and
    [`CONTRIBUTING.md`](../CONTRIBUTING.md) § Authoritative Document
    Format Scope for the path map.
-3. **Otherwise it is dual** → its anchored repo path, plain Markdown only.
-   The bridge handles the docs side.
 
 If unsure, declare dual.
