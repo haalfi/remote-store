@@ -26,7 +26,19 @@ disagreed.
 
 ## Decision
 
-Two coupled commitments. Either alone repeats the prior pattern.
+Two coupled commitments: an architectural choice and the gate that
+keeps it true. The recurring failure across the prior ADRs was not
+that the chosen mechanism was wrong; each was reasonable for the case
+that introduced it. The failure was that nothing prevented the next
+mechanism from being added alongside. A decision to "use one bridge"
+without a check that detects the second bridge degrades to a
+preference. The architecture below is the choice; the gate (third
+sub-decision) is what stops the preference from being negotiated away
+on the next deadline.
+
+Three sub-decisions follow: the bridge itself, the classification
+mechanism (an aspect of the architecture, chosen so the bridge does
+not need a parallel for special cases), and the gate.
 
 ### One bridge, by construction
 
@@ -42,29 +54,18 @@ DOCFRAME-005.
 
 Each `.md` file declares its class on itself via an HTML-comment marker;
 absence falls back to a directory-default rule or to `dual` (the safe
-default named in [`AUTHORING.md`](../AUTHORING.md) Rule 1). Contracts in
+default named in [`AUTHORING.md`](../AUTHORING.md) Rule 1). A central
+manifest is auditable but lives apart from the files it classifies, so
+additions land in one place and the manifest in another. The marker
+cannot drift from the file because it is part of the file. Contracts in
 [spec 047](../specs/047-docs-framework-tooling.md) DOCFRAME-002.
 
 ### Enforcement at PR time
 
 A check script (DOCFRAME-004) fails the build if any framework rule is
-violated, including the "one bridge" rule itself. Without enforcement,
-the next contributor under deadline pressure adds the next mechanism
-and the cycle resumes.
-
-## Why this shape
-
-The recurring failure was not that the chosen mechanism was wrong; each
-mechanism was reasonable for the case that introduced it. The failure
-was that no constraint prevented accumulation. A decision to "use one
-bridge" without a check that detects the second bridge degrades to a
-preference. This ADR pairs the architectural choice with the gate that
-keeps it true.
-
-Inline classification is chosen for the same reason. A central manifest
-is auditable but lives apart from the files it classifies, so additions
-land in one place and the manifest in another. The marker cannot drift
-from the file because it is part of the file.
+violated, including the "one bridge" rule itself. This is the half that
+the prior ADRs left out. Without it, the next contributor under
+deadline pressure adds the next mechanism and the cycle resumes.
 
 ## Consequences
 
