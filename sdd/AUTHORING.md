@@ -9,30 +9,34 @@ Companion to `sdd/DOCUMENTATION.md` (structure and placement) and
 
 ## Rules
 
-1. **File classification** — Every `.md` belongs to exactly one class:
+1. **File classification.** Every `.md` belongs to exactly one class:
    repo-only (appears only in the repo), docs-only (appears only on the docs
    site), or dual (must read correctly in both). Classes are recorded
    centrally, not inferred from path or from build behavior. The default
    class is **dual**; any `.md` not explicitly classified is treated as dual.
 
-2. **Single home** — Each `.md` lives at exactly one path. Other
+2. **Single home.** Each `.md` lives at exactly one path. Other
    presentations are derived from that path, never copied.
 
-3. **Dual files use plain Markdown** — Dual files contain only plain
+3. **Dual files use plain Markdown.** Dual files contain only plain
    Markdown: no Jinja directives, no plugin macros, no links to build-time
    virtual paths. The docs build adapts to dual files; dual files do not
    adapt to the docs build.
 
-4. **One bridge mechanism** — A single declared mechanism takes dual files
+4. **One bridge mechanism.** A single declared mechanism takes dual files
    into the docs site. New mechanisms are not added to handle special cases.
 
-5. **PR-time enforcement** — A PR-blocking check validates each gate
-   category: (a) classification — every `.md` is classified; (b) bridge
-   resolution — the bridge resolves cleanly for every dual file; (c) link
-   integrity — internal links resolve in their target presentation; (d) nav
-   alignment — URL paths correspond to nav position; (e) cross-version
-   safety — version switching produces no 404s. Each category corresponds
-   to one or more rules in `sdd/audits/audit-012-docs-structure.md`.
+5. **PR-time enforcement.** A PR-blocking check validates each gate
+   category:
+
+   - **classification:** every `.md` is classified.
+   - **bridge resolution:** the bridge resolves cleanly for every dual file.
+   - **link integrity:** internal links resolve in their target presentation.
+   - **nav alignment:** URL paths correspond to nav position.
+   - **cross-version safety:** version switching produces no 404s.
+
+   Each category corresponds to one or more rules in
+   `sdd/audits/audit-012-docs-structure.md`.
 
 ## Guides
 
