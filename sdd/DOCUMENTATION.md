@@ -37,7 +37,7 @@ Pages that try to be two things at once must be split.
 | Development narrative | `DEVELOPMENT_STORY.md` | Yes |
 | Site-specific pages, nav, templates | `docs-src/` | Yes |
 
-**Decision rule:** If it makes sense on GitHub without MkDocs, it goes in a source directory. If it only makes sense on the docs site, it goes in `docs-src/`. All user-facing prose now lives directly in `docs-src/` Diátaxis buckets.
+For file classification (repo-only / docs-only / dual), see `sdd/AUTHORING.md` Rule 1.
 
 New user-facing prose pages follow the Diátaxis bucket structure under `docs-src/`:
 - How-to guides go in `docs-src/how-to/` (backend-specific guides in `docs-src/how-to/backends/`).
@@ -70,7 +70,7 @@ No TODOs or placeholders in published docstrings.
 
 ### 4. Cross-linking requirements
 
-Two published sites exist. Use the right one depending on what you link to:
+Choose the link target based on which presentation hosts the destination (see `sdd/AUTHORING.md` for the two presentations):
 
 - **Documentation** (guides, API reference, explanation pages): link to ReadTheDocs (`https://docs.remotestore.dev/stable/`). Use `/stable/` (not `/latest/`) so links always point to the most recent release, not unreleased master. The `/en/` language prefix is omitted (single-language project, configured in RTD URL scheme).
 - **Source files** (specs, ADRs, examples, source code, CHANGELOG): link to the GitHub repository (`https://github.com/haalfi/remote-store/`).
