@@ -52,12 +52,14 @@ DOCFRAME-005.
 
 ### Classification next to the file, not in a manifest
 
-Each `.md` file declares its class on itself via an HTML-comment marker;
-absence falls back to a directory-default rule or to `dual` (the safe
-default named in [`AUTHORING.md`](../AUTHORING.md) Rule 1). A central
-manifest is auditable but lives apart from the files it classifies, so
-additions land in one place and the manifest in another. The marker
-cannot drift from the file because it is part of the file. Contracts in
+Each `.md` file declares its class on itself via an HTML-comment marker.
+Absence falls back to a directory-default rule (per
+[`AUTHORING.md`](../AUTHORING.md) Rule 1 and its directory-defaults
+table); a file with no marker AND no matching default is unclassified
+and fails the gate (G-01). A central manifest is auditable but lives
+apart from the files it classifies, so additions land in one place and
+the manifest in another. The marker cannot drift from the file because
+it is part of the file. Contracts in
 [spec 047](../specs/047-docs-framework-tooling.md) DOCFRAME-002.
 
 ### Enforcement at PR time

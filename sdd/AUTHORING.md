@@ -86,7 +86,7 @@ HTML comments are invisible in every Markdown renderer, so the marker
 adds no visible content. Three forms:
 
 ```markdown
-<!-- doc: dual dest=design/authoring.md -->
+<!-- doc: dual dest=explanation/design/authoring.md -->
 <!-- doc: repo-only -->
 <!-- doc: docs-only -->
 ```
@@ -105,29 +105,38 @@ is normalised; one or more spaces between tokens is accepted.
 
 ### Directory defaults
 
-When no marker is present, the file is classified by directory:
+When no marker is present, the file is classified by directory. The
+SDD-subdir rows follow the kind globs declared in
+`scripts/docs/scan.py:SDD_KINDS`; only RFCs have a `skip_stems`
+exclusion (`rfc-template`).
 
 | Source pattern | Default class | Default dest |
 |---|---|---|
-| `sdd/adrs/*.md` (matching kind glob, not `skip_stems`) | dual | `design/adrs/<slug>.md` |
-| `sdd/specs/*.md` | dual | `design/specs/<slug>.md` |
-| `sdd/rfcs/rfc-*.md` (not `rfc-template`) | dual | `design/rfcs/<slug>.md` |
-| `sdd/audits/audit-*.md` | dual | `design/audits/<slug>.md` |
-| `sdd/research/research-*.md` | dual | `design/research/<slug>.md` |
+| `sdd/adrs/*.md` | dual | `explanation/design/adrs/<slug>.md` |
+| `sdd/specs/*.md` | dual | `explanation/design/specs/<slug>.md` |
+| `sdd/rfcs/rfc-*.md` (not `rfc-template`) | dual | `explanation/design/rfcs/<slug>.md` |
+| `sdd/audits/audit-*.md` | dual | `explanation/design/audits/<slug>.md` |
+| `sdd/research/research-*.md` | dual | `explanation/design/research/<slug>.md` |
 | `docs-src/**/*.md` | docs-only | — |
-| `examples/**/README.md` | dual | per render rule (e.g. `examples/medallion-dagster.md`) |
 | anything else | requires explicit marker | — |
 
-In practice, this means:
+In practice:
 
 - Files added under `sdd/specs/`, `sdd/adrs/`, `sdd/rfcs/`, `sdd/audits/`,
   `sdd/research/` need no marker.
 - Files added under `docs-src/` need no marker.
-- Top-level `sdd/*.md` files (DESIGN, DOCUMENTATION, TESTING,
-  CONTENT-RULES, AUTHORING, 000-process) carry an explicit dual marker.
-- Repo-root `.md` files (README, CHANGELOG, CONTRIBUTING,
-  DEVELOPMENT_STORY, CLAUDE, CODE_OF_CONDUCT, SECURITY, BACKLOG,
-  BACKLOG-DONE, CLAUDE-REFERENCE, AGENTS) carry an explicit marker.
+- Top-level `sdd/*.md` process docs (000-process, AUTHORING, DESIGN,
+  DOCUMENTATION, TESTING, CONTENT-RULES) carry an explicit dual marker.
+- Internal `sdd/*.md` files (BACKLOG, BACKLOG-DONE, CLAUDE-REFERENCE)
+  carry an explicit repo-only marker.
+- Repo-root dual files (README, CHANGELOG, CONTRIBUTING,
+  DEVELOPMENT_STORY) carry an explicit dual marker.
+- Repo-root repo-only files (CLAUDE, CODE_OF_CONDUCT, SECURITY) carry
+  an explicit repo-only marker.
+- Example directories (`examples/<name>/README.md`, etc.): no directory
+  default. Each example README declares its own marker. The medallion
+  showcase's docs-side page is rendered separately and is not a default
+  dual mapping.
 
 ### Examples
 

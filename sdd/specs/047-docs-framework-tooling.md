@@ -19,7 +19,7 @@ selects the single-bridge architecture and inline-marker classification.
 three-tier `docs-src/` + gen-files + source-dirs split; this spec
 narrows ADR-0007's "build hook" tier to one bridge mechanism.
 
-**Tracks:** [BK-167a](../BACKLOG.md#bk-167a). [BK-167b](../BACKLOG.md#bk-167b)
+**Tracks:** [BK-167a](../BACKLOG.md). [BK-167b](../BACKLOG.md)
 applies the framework and closes the remaining audit-012 findings.
 
 ---
@@ -80,7 +80,7 @@ with shape:
 @dataclass(frozen=True)
 class DualEntry:
     source: Path        # absolute repo path
-    dest: str           # virtual dest, e.g. "design/authoring.md"
+    dest: str           # virtual dest, e.g. "explanation/design/authoring.md"
 ```
 
 `DualEntry` carries no class field: by construction, only dual entries
@@ -161,12 +161,10 @@ bridge unifies the source→dest map.
 ## DOCFRAME-007: Nav and URL Alignment
 
 **Invariant:** Each top-level nav section maps to a URL prefix matching
-its label (lowercased, hyphenated). The four Diataxis quadrants —
-Tutorial, Guides, Reference, Explanation — are the only top-level
-content sections (per [DOCUMENTATION.md](../DOCUMENTATION.md) Rule 1).
-`Home:` is permitted as the conventional top-level entry for the site
-index (`index.md`); it is not a content section. No other top-level
-section is allowed.
+its label (lowercased, hyphenated). The top-level nav structure follows
+[DOCUMENTATION.md](../DOCUMENTATION.md) Rule 9 (Tutorial, Guides,
+Reference, Explanation as the only content sections; `Home:` permitted
+as the index entry).
 
 **Required `docs-src/_nav.yml` shape after this spec lands:**
 
