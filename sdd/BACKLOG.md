@@ -57,19 +57,10 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-167 — Docs authoring guide and simplification follow-up (post audit-012)**
+- [ ] **BK-167 — audit-012 simplifications (post-framework)**
   Follows BK-165 (audit phase complete, `sdd/audits/audit-012-docs-structure.md`).
-  Act on audit-012 findings as directed by the maintainer, and deliver the
-  conceptual work deferred from BK-165.
-
-  **Authoring guide** (`sdd/AUTHORING.md` or extend `sdd/DOCUMENTATION.md`):
-  - Decision tree: "I need to add a new page about X — where does it go?"
-    Branches: API reference, how-to, explanation, ADR, spec, audit, research,
-    RFC, example script, repo-level doc (CONTRIBUTING etc.).
-  - Link conventions: relative within `docs-src/`, virtual paths for `sdd/`
-    wrappers, absolute GitHub URLs for files outside `docs-src/`.
-  - Diagram of the three page-emission mechanisms (static Markdown, gen-files
-    virtual pages, include-markdown wrappers) and which content lives where.
+  Authoring guide and framework wiring shipped — see BK-167 (partial) in
+  `BACKLOG-DONE.md`. Framework cleanup: BK-167a.
 
   **Simplifications to evaluate (per audit-012 findings):**
   - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`.
@@ -91,14 +82,65 @@ Existing items may be more verbose — trim on next touch.
      established `sdd/` path that tooling and skills already reference.
   3. Is there a single declarative file describing every virtual page that
      would replace the four current generation mechanisms?
-  4. File classification mechanism — central manifest vs. inline per-file
-     metadata (HTML comment markers, still plain Markdown). Inline keeps the
-     class next to the file; central preserves a single auditable boundary.
-     `sdd/AUTHORING.md` Rule 1 currently mandates central; adopting inline
-     would amend that rule. Evaluate against F-13 (auditable boundary) and
-     F-12 (one mechanism).
 
   **Depends on:** BK-165 (audit phase done).
+
+- [~] **BK-167a — Documentation framework cleanup (spin-off from BK-167)**
+  The framework first cut shipped under BK-167 (partial). This item bundles
+  the cleanup findings from the self-review (Documentation expert and SDD
+  expert) so the framework holds together as a system. Decisions already
+  taken: no CHANGELOG entry (SDD-only, no user-facing behavior); no ADR
+  (the framework rationale lives in audit-012 and the trio's Intent &
+  Scope sections).
+
+  **Convergent findings (both experts):**
+  - C-1: `sdd/AUTHORING.md` Rule 1 asserts "Classes are recorded centrally"
+    while open question Q4 (below) flags this as undecided. Either resolve
+    Q4 or soften Rule 1.
+  - C-2: Rule 4 names "the bridge" without defining or linking it; a reader
+    of the file in isolation cannot act on it.
+  - C-3: BK-167 entry was mixed-state without an `[~]` marker; this split
+    resolves it.
+  - C-4: "Source for the gate categories" subsection is meta-commentary
+    (format Exclusion 3) and asserts a category↔R-id mapping without
+    enumerating it.
+
+  **Documentation expert findings:**
+  - F-D-1: trio not surfaced from `README` or `CONTRIBUTING.md` beyond bare
+    scope list — non-Claude contributors miss it.
+  - F-D-4: "Diataxis" vs "Diátaxis" spelling drift across `DOCUMENTATION.md`
+    and `AUTHORING.md`.
+  - F-D-5: cross-link at `DOCUMENTATION.md:73` lacks an anchor.
+  - F-D-6: `CONTENT-RULES.md` Rule 4 still names `DOCUMENTATION.md § 2` as
+    placement authority — should also point to `AUTHORING.md` Rule 1.
+  - F-D-7: `CONTRIBUTING.md` scope list does not link the trio docs.
+
+  **SDD expert findings:**
+  - F-S-1: `AUTHORING.md` Intent & Scope blends "where files belong" with
+    "which constraints apply" — overlaps `DOCUMENTATION.md` /
+    `CONTENT-RULES.md` scope. Tighten to placement only.
+  - F-S-2: Rule 5's five gate categories each pass the Cross-check test
+    independently. Promote to Rules 5–9 (or restructure as Rule 5 with
+    sub-rules carrying clear normative force).
+  - F-S-4: Guides "If unsure, assume dual" is a binding tiebreaker, belongs
+    in Rule 1.
+  - F-S-5: URL alignment is duplicated (`DOCUMENTATION.md` Rule 9 +
+    `AUTHORING.md` Rule 5 gate category). Pick one home.
+  - F-S-6: "API page building blocks" (~130 lines of "Required" templates)
+    sits under Guides which the format says is non-binding. Either restore
+    as Rules or extract to its own doc.
+  - F-S-8: ripple-check table missing a row for "new authoritative process
+    doc added."
+
+  **Open question (carried from BK-167):**
+  Q4. File classification mechanism — central manifest vs. inline per-file
+  metadata (HTML comment markers, still plain Markdown). Inline keeps the
+  class next to the file; central preserves a single auditable boundary.
+  `sdd/AUTHORING.md` Rule 1 currently mandates central; adopting inline
+  would amend that rule. Evaluate against F-13 (auditable boundary) and
+  F-12 (one mechanism — currently in BK-167).
+
+  **Depends on:** BK-167 (partial) shipped.
 
 ---
 
