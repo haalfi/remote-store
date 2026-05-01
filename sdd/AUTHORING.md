@@ -58,7 +58,9 @@ docs site"; host configuration is a deployment concern, not an authoring one.
 
 1. **Docs-site only?** → `docs-src/` under the right Diataxis bucket.
 2. **Internal, process, or tooling?** → repo path of your choice; declare
-   it as repo-only.
+   it as repo-only. SDD artefacts (specs, ADRs, RFCs, research, audits) go
+   under `sdd/`; see [`sdd/CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md) for
+   the full path map.
 3. **Otherwise it is dual** → its anchored repo path, plain Markdown only.
    The bridge handles the docs side.
 

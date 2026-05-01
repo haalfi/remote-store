@@ -22,20 +22,20 @@ Pages that try to be two things at once must be split.
 
 ### 2. Content homes
 
-| Content type | Source location | Readable on GitHub? |
-|---|---|---|
-| Project intro, install, quick start | `README.md` | Yes |
-| How-to guides | `docs-src/how-to/` | Yes |
-| Explanation pages | `docs-src/explanation/` | Yes |
-| Reference pages | `docs-src/reference/` | Yes |
-| Further reading | `docs-src/further/` | Yes |
-| Runnable examples | `examples/` | Yes |
-| API docstrings | `src/` (Python source) | Yes |
-| Specs, ADRs, RFCs, research, audits | `sdd/` | Yes |
-| Contributor workflow | `CONTRIBUTING.md` | Yes |
-| Release history | `CHANGELOG.md` | Yes |
-| Development narrative | `DEVELOPMENT_STORY.md` | Yes |
-| Site-specific pages, nav, templates | `docs-src/` | Yes |
+| Content type | Source location |
+|---|---|
+| Project intro, install, quick start | `README.md` |
+| How-to guides | `docs-src/how-to/` |
+| Explanation pages | `docs-src/explanation/` |
+| Reference pages | `docs-src/reference/` |
+| Further reading | `docs-src/further/` |
+| Runnable examples | `examples/` |
+| API docstrings | `src/` (Python source) |
+| Specs, ADRs, RFCs, research, audits | `sdd/` |
+| Contributor workflow | `CONTRIBUTING.md` |
+| Release history | `CHANGELOG.md` |
+| Development narrative | `DEVELOPMENT_STORY.md` |
+| Site-specific pages, nav, templates | `docs-src/` |
 
 For file classification (repo-only / docs-only / dual), see [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1.
 
