@@ -57,32 +57,35 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-167a — Documentation framework tooling**
+- [~] **BK-167a — Documentation framework tooling**
   Builds the build-time infrastructure that enforces the framework defined
-  in BK-167. The framework states the rules; this item picks the mechanism
-  choices and implements the gate.
+  in BK-167. Design decisions captured in
+  [ADR-0027](adrs/0027-docs-bridge-single-mechanism.md); contracts in
+  [spec 047](specs/047-docs-framework-tooling.md).
 
   **Deliverables:**
-  - **Bridge implementation**: a single declared mechanism that takes dual
-    files from their repo path to the docs site. Replaces or unifies the
-    three current mechanisms (include-markdown wrappers, `_link_map.yml`,
-    gen-files scan). Resolves audit-012 F-12.
-  - **File classification storage**: pick central manifest or inline
-    per-file metadata (HTML comment markers, still plain Markdown).
-    Resolves Q4.
-  - **PR-time gate script**: validates that every rule in the framework
-    is satisfied (per `sdd/AUTHORING.md` Rule 5). Failures block merge.
+  - **Bridge implementation**: single `scan.scan_dual_files` +
+    `render.render_dual_pages` mechanism replacing include-markdown
+    wrappers, `_link_map.yml`, and the legacy gen-files scan helpers.
+    Resolves audit-012 F-01, F-02, F-11, F-12.
+  - **File classification storage**: inline HTML-comment marker
+    (`<!-- doc: dual dest=... -->`) with directory-default rules for
+    SDD subdirs and `docs-src/`. Resolves Q4 (inline) and F-13.
+  - **PR-time gate script** (`scripts/check_docs_framework.py`): seven
+    checks G-01 through G-07 covering AUTHORING and DOCUMENTATION rules.
+    Wired into `hatch run all`. Closes F-03, W-01.
+  - **Nav/URL fixes** (folded in per design review): Diataxis-pure
+    top-level nav, `explanation/design/` URL prefix, Changelog URL under
+    Reference. Closes F-05, F-06, F-07, F-08, F-10. Verified by G-06.
 
-  **Open questions:**
-  - Q2: Should `sdd/` move under `docs-src/design/` to remove the wrapper
-    layer? Tradeoff: cleaner build vs. moving authoritative artifacts off
-    the established `sdd/` path that tooling and skills already reference.
-  - Q3: Is there a single declarative file describing every virtual page
-    that would replace the four current generation mechanisms?
-  - Q4: Central manifest vs. inline per-file metadata for file
-    classification. Inline keeps the class next to the file; central
-    preserves a single auditable boundary. `sdd/AUTHORING.md` Rule 1 is
-    mechanism-agnostic; this item picks the mechanism.
+  **Resolved questions:**
+  - Q2 (move `sdd/`?) — no. `sdd/` paths are referenced by skills,
+    agents, and ripple-check; the bridge adapts to the canonical path.
+  - Q3 (single declarative file?) — no. Directory convention for SDD
+    subdirs plus inline markers is one declarative system without a
+    drift surface.
+  - Q4 (manifest vs inline?) — inline. Central manifest reintroduces
+    F-13's audit problem in a different location.
 
   **Depends on:** BK-167 (framework defined and wired in).
 

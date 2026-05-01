@@ -8,6 +8,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- BK-167a: ADR-0027 (single-bridge documentation pipeline with inline
+  classification) and Spec 047 (documentation framework tooling
+  contracts). Design draft only; no code change yet.
 - **End-to-end coverage for the S3 control path** (BK-166, S3-026, S3PA-026):
   `tests/backends/test_s3_moto.py` drives a full lifecycle
   (`write` / `list_files` / `read` / `delete`) for both `S3Backend` and
