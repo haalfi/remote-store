@@ -91,6 +91,12 @@ Existing items may be more verbose — trim on next touch.
      established `sdd/` path that tooling and skills already reference.
   3. Is there a single declarative file describing every virtual page that
      would replace the four current generation mechanisms?
+  4. File classification mechanism — central manifest vs. inline per-file
+     metadata (HTML comment markers, still plain Markdown). Inline keeps the
+     class next to the file; central preserves a single auditable boundary.
+     `sdd/AUTHORING.md` Rule 1 currently mandates central; adopting inline
+     would amend that rule. Evaluate against F-13 (auditable boundary) and
+     F-12 (one mechanism).
 
   **Depends on:** BK-165 (audit phase done).
 
