@@ -4,8 +4,10 @@
 
 Authoritative source for where documentation files belong and which
 constraints apply to each. Governs all `.md` content in the repository.
-Companion to `sdd/DOCUMENTATION.md` (structure and placement) and
-`sdd/CONTENT-RULES.md` (longevity rules).
+
+Part of the documentation framework (see `CLAUDE.md` § Documentation
+framework): structure → `sdd/DOCUMENTATION.md`; longevity →
+`sdd/CONTENT-RULES.md`.
 
 ## Rules
 

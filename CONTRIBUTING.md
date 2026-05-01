@@ -28,7 +28,7 @@ Sections 1 and 2 alone must be sufficient to understand the document's purpose a
 
 ### Scope
 
-Applies to root-level process documents in `sdd/` (000-process.md, DESIGN.md, DOCUMENTATION.md, TESTING.md, CONTENT-RULES.md, CLAUDE-REFERENCE.md). Does not apply to specs, ADRs, RFCs, research, audits, BACKLOG.md, README, CHANGELOG, DEVELOPMENT_STORY, CLAUDE.md, or CONTRIBUTING.md (which follow their own formats).
+Applies to root-level process documents in `sdd/` (000-process.md, AUTHORING.md, DESIGN.md, DOCUMENTATION.md, TESTING.md, CONTENT-RULES.md, CLAUDE-REFERENCE.md). Does not apply to specs, ADRs, RFCs, research, audits, BACKLOG.md, README, CHANGELOG, DEVELOPMENT_STORY, CLAUDE.md, or CONTRIBUTING.md (which follow their own formats).
 
 ### Cross-check
 

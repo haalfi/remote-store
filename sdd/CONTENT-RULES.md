@@ -2,9 +2,12 @@
 
 ## Intent & Scope
 
-Rules for writing documentation that stays accurate over time. Companion to
-`sdd/DOCUMENTATION.md` (structure and placement). Applies to all content:
-README, guides, docstrings, and inline doc comments.
+Rules for writing documentation that stays accurate over time. Applies to
+all content: README, guides, docstrings, and inline doc comments.
+
+Part of the documentation framework (see `CLAUDE.md` § Documentation
+framework): placement → `sdd/AUTHORING.md`; structure →
+`sdd/DOCUMENTATION.md`.
 
 Derived from `sdd/research/research-doc-content-longevity.md`.
 
