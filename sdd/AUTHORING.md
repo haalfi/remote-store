@@ -24,6 +24,17 @@ The docs site is published from the same `mkdocs.yml` build to two hosts:
 Authors do not target a specific host. They target "the docs site"; both
 hosts render the same build.
 
+Every authored `.md` falls into exactly one class by which presentations it
+serves:
+
+- **Repo-only**: appears only in the repo (internal process, agent tooling,
+  contributor housekeeping).
+- **Docs-only**: appears only on the docs site (site-specific prose, nav,
+  templates).
+- **Dual**: must read correctly in both presentations.
+
+The class fixes which of the principles below apply.
+
 ## Five principles
 
 ### 1. One file, one home
@@ -33,17 +44,10 @@ that path, never copied.
 
 *Why:* Duplicated prose drifts. A single home keeps authority unambiguous.
 
-### 2. Every file has a class
+### 2. Every file's class is recorded centrally
 
-Each `.md` belongs to exactly one of:
-
-- **Repo-only**: internal process, agent tooling, contributor housekeeping.
-  Stays in the repo, never appears on the docs site.
-- **Docs-only**: site-specific prose, nav, or templates. Lives in `docs-src/`.
-- **Dual**: must read correctly in both presentations. Lives at its anchored
-  repo path.
-
-Classifications are recorded centrally so the boundary is auditable.
+Each `.md` is recorded as repo-only, docs-only, or dual in one place — not
+inferred from where it lives or from how the build happens to handle it.
 
 *Why:* If the class is implicit, a reviewer cannot tell whether a missing
 file was deliberately excluded or accidentally dropped.
