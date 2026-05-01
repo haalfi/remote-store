@@ -4725,6 +4725,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#9-top-level-nav-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Top-level nav structure
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5667,6 +5678,34 @@
     
   
     0026: Strict-Gate Pattern for Optional Capability Kwargs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0027: Single Bridge with Enforcement, Not Layered Mechanisms
   
 
     
@@ -8796,6 +8835,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../specs/047-docs-framework-tooling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    047: Spec 047 — Documentation Framework Tooling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -9091,6 +9158,17 @@
     <span class="md-ellipsis">
       
         8. Link integrity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-top-level-nav-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Top-level nav structure
       
     </span>
   </a>
@@ -9440,6 +9518,8 @@
 <p>URL paths must correspond to navigation position. A page nested under nav section X has its URL prefix matching X (e.g., a page under Reference &gt; API renders at <code>/reference/api/...</code>, not <code>/api/...</code>).</p>
 <h3 id="8-link-integrity">8. Link integrity<a class="headerlink" href="#8-link-integrity" title="Permanent link">&para;</a></h3>
 <p>All internal links must resolve in their target presentation. Repo-side links (relative paths in <code>.md</code> files) must resolve on disk. Docs-site links (rendered URLs) must resolve in the built site. Broken links fail the build, not warn.</p>
+<h3 id="9-top-level-nav-structure">9. Top-level nav structure<a class="headerlink" href="#9-top-level-nav-structure" title="Permanent link">&para;</a></h3>
+<p><code>docs-src/_nav.yml</code> has only the four Diataxis quadrants as top-level content sections: Tutorial, Guides, Reference, Explanation. <code>Home:</code> is permitted as the conventional top-level entry for the site index (<code>index.md</code>); it is not a content section. No other top-level section is allowed. Content that does not fit a Diataxis quadrant nests under the closest fit (e.g. examples under Tutorial, contributor docs under Reference or Explanation).</p>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="diataxis-content-drift-prevention">Diataxis content drift prevention<a class="headerlink" href="#diataxis-content-drift-prevention" title="Permanent link">&para;</a></h3>
 <p>Each Diataxis category excludes specific content types. When a page accumulates excluded content, split it.</p>

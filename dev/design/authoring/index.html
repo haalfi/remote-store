@@ -4586,6 +4586,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#classification-markers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classification markers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directory-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directory defaults
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5512,6 +5545,34 @@
     
   
     0026: Strict-Gate Pattern for Optional Capability Kwargs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0027: Single Bridge with Enforcement, Not Layered Mechanisms
   
 
     
@@ -8641,6 +8702,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../specs/047-docs-framework-tooling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    047: Spec 047 — Documentation Framework Tooling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8887,6 +8976,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#classification-markers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classification markers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directory-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directory defaults
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -8931,9 +9053,14 @@ framework</a>): structure →
 <li>
 <p><strong>File classification.</strong> Every <code>.md</code> belongs to exactly one class:
    repo-only (appears only in the repo), docs-only (appears only on the docs
-   site), or dual (must read correctly in both). Files may carry an
-   explicit class marker; absence means <strong>dual</strong> (the safe default). The
-   class is not inferred from path or from build behavior.</p>
+   site), or dual (must read correctly in both). Each file is classified by
+   one of two routes: an explicit HTML-comment marker on the file itself,
+   or a directory-default rule when no marker is present. A file that
+   carries no marker AND matches no directory default is unclassified;
+   the gate (G-01) fails on unclassified files. Marker syntax, the three
+   classes, and the directory-default table are normative in
+   <em>Classification markers</em> and <em>Directory defaults</em> below. The class is
+   not inferred from path alone or from build behavior.</p>
 </li>
 <li>
 <p><strong>Single home.</strong> Each <code>.md</code> lives at exactly one path. Other
@@ -9010,6 +9137,113 @@ docs site"; host configuration is a deployment concern, not an authoring one.</p
    Format Scope for the path map.</li>
 </ol>
 <p>If unsure, declare dual.</p>
+<h3 id="classification-markers">Classification markers<a class="headerlink" href="#classification-markers" title="Permanent link">&para;</a></h3>
+<p>A marker is an HTML comment in the first 5 non-blank lines of the file.
+HTML comments are invisible in every Markdown renderer, so the marker
+adds no visible content. Three forms:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>&lt;!-- doc: dual dest=explanation/design/authoring.md --&gt;
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>&lt;!-- doc: repo-only --&gt;
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>&lt;!-- doc: docs-only --&gt;
+</code></pre></div>
+<p>Class semantics:</p>
+<ul>
+<li><strong><code>dual</code></strong> — the file appears at its repo path AND at the virtual
+  <code>dest</code> on the docs site. <code>dest=</code> is required.</li>
+<li><strong><code>repo-only</code></strong> — the file appears only at its repo path. The bridge
+  emits no virtual page. <code>dest=</code> MUST be absent.</li>
+<li><strong><code>docs-only</code></strong> — the file is authored under <code>docs-src/</code> and consumed
+  by MkDocs directly. <code>dest=</code> MUST be absent.</li>
+</ul>
+<p>The marker MAY follow a <code># Title</code> line. Whitespace inside the comment
+is normalised; one or more spaces between tokens is accepted.</p>
+<h3 id="directory-defaults">Directory defaults<a class="headerlink" href="#directory-defaults" title="Permanent link">&para;</a></h3>
+<p>When no marker is present, the file is classified by directory. The
+SDD-subdir rows follow the kind globs declared in
+<code>scripts/docs/scan.py:SDD_KINDS</code>; only RFCs have a <code>skip_stems</code>
+exclusion (<code>rfc-template</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Source pattern</th>
+<th>Default class</th>
+<th>Default dest</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sdd/adrs/*.md</code></td>
+<td>dual</td>
+<td><code>explanation/design/adrs/&lt;slug&gt;.md</code></td>
+</tr>
+<tr>
+<td><code>sdd/specs/*.md</code></td>
+<td>dual</td>
+<td><code>explanation/design/specs/&lt;slug&gt;.md</code></td>
+</tr>
+<tr>
+<td><code>sdd/rfcs/rfc-*.md</code> (not <code>rfc-template</code>)</td>
+<td>dual</td>
+<td><code>explanation/design/rfcs/&lt;slug&gt;.md</code></td>
+</tr>
+<tr>
+<td><code>sdd/audits/audit-*.md</code></td>
+<td>dual</td>
+<td><code>explanation/design/audits/&lt;slug&gt;.md</code></td>
+</tr>
+<tr>
+<td><code>sdd/research/research-*.md</code></td>
+<td>dual</td>
+<td><code>explanation/design/research/&lt;slug&gt;.md</code></td>
+</tr>
+<tr>
+<td><code>docs-src/**/*.md</code></td>
+<td>docs-only</td>
+<td>—</td>
+</tr>
+<tr>
+<td>anything else</td>
+<td>requires explicit marker</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>In practice:</p>
+<ul>
+<li>Files added under <code>sdd/specs/</code>, <code>sdd/adrs/</code>, <code>sdd/rfcs/</code>, <code>sdd/audits/</code>,
+  <code>sdd/research/</code> need no marker.</li>
+<li>Files added under <code>docs-src/</code> need no marker.</li>
+<li>Top-level <code>sdd/*.md</code> process docs (000-process, AUTHORING, DESIGN,
+  DOCUMENTATION, TESTING, CONTENT-RULES) carry an explicit dual marker.</li>
+<li>Internal <code>sdd/*.md</code> files (BACKLOG, BACKLOG-DONE, CLAUDE-REFERENCE)
+  carry an explicit repo-only marker.</li>
+<li>Repo-root dual files (README, CHANGELOG, CONTRIBUTING,
+  DEVELOPMENT_STORY) carry an explicit dual marker.</li>
+<li>Repo-root repo-only files (CLAUDE, CODE_OF_CONDUCT, SECURITY) carry
+  an explicit repo-only marker.</li>
+<li>Example directories (<code>examples/&lt;name&gt;/README.md</code>, etc.): no directory
+  default. Each example README declares its own marker. The medallion
+  showcase's docs-side page is rendered separately and is not a default
+  dual mapping.</li>
+</ul>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>&lt;!-- A new how-to guide. docs-src/ is docs-only by default; no marker needed. --&gt;
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="gh"># Streaming reads</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>...
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>&lt;!-- A repo-root contributor doc. Explicit dual marker; bridge emits docs/contributing/. --&gt;
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>&lt;!-- doc: dual dest=contributing.md --&gt;
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="gh"># Contributing</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>...
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>&lt;!-- A Claude-only operational file. Explicit repo-only marker; never reaches the docs site. --&gt;
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>&lt;!-- doc: repo-only --&gt;
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="gh"># Claude Code Reference</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>...
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>&lt;!-- A new spec. sdd/specs/ has a directory default; no marker needed. --&gt;
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="gh"># Spec 048 -- Some Topic</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>...
+</code></pre></div>
 
 
 

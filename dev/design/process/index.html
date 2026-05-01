@@ -5558,6 +5558,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0027: Single Bridge with Enforcement, Not Layered Mechanisms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8674,6 +8702,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../specs/047-docs-framework-tooling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    047: Spec 047 — Documentation Framework Tooling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -9001,6 +9057,14 @@
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    &lt;short code example&gt;
 </code></pre></div>
 <p>Each spec declares its prefix (e.g. <code>STORE</code>, <code>PATH</code>, <code>ERR</code>, <code>CACHE</code>). A test referencing <code>STORE-005</code> traces back to section 005 in the Store API spec.</p>
+<p>Specs cover both library contracts and build/CI tooling contracts.
+Library specs use subsystem prefixes (<code>STORE</code>, <code>S3</code>, <code>ERR</code>, ...) and
+are tested against runtime code. Tooling specs use a tool/framework
+prefix (e.g. <code>DOCFRAME</code>) and are tested against the script's output
+or repository state. Tooling specs declare <code>**Scope:** Build &amp; CI
+tooling</code> near the top so the category is visible without reading
+the body. The two coexist in the flat <code>sdd/specs/NNN-*.md</code> numbering;
+no subdirectory split is used while the tooling-spec count is small.</p>
 <h3 id="test-traceability">Test traceability<a class="headerlink" href="#test-traceability" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-003&quot;</span><span class="p">)</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_double_dot_rejected</span><span class="p">():</span>

@@ -317,6 +317,10 @@
          <lastmod>2026-05-01</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/design/adrs/0027-docs-bridge-single-mechanism/</loc>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/design/audits/</loc>
          <lastmod>2026-05-01</lastmod>
     </url>
@@ -742,6 +746,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/design/specs/046-ext-write/</loc>
+         <lastmod>2026-05-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/design/specs/047-docs-framework-tooling/</loc>
          <lastmod>2026-05-01</lastmod>
     </url>
     <url>

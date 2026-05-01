@@ -6952,6 +6952,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0027: Single Bridge with Enforcement, Not Layered Mechanisms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10068,6 +10096,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/specs/047-docs-framework-tooling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    047: Spec 047 — Documentation Framework Tooling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11774,6 +11830,14 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>BK-167a: ADR-0027 (single-bridge documentation pipeline with inline
+  classification) and Spec 047 (documentation framework tooling
+  contracts). Author-facing classification rules absorbed into
+  <code>sdd/AUTHORING.md</code>; spec 047 carries <code>**Scope:** Build &amp; CI tooling</code>
+  and defers to AUTHORING.md for syntax and defaults.
+  <code>sdd/000-process.md</code> updated to acknowledge tooling specs as a
+  distinct category coexisting with library specs in flat numbering.
+  Design draft only; no code change yet.</li>
 <li><strong>End-to-end coverage for the S3 control path</strong> (BK-166, S3-026, S3PA-026):
   <code>tests/backends/test_s3_moto.py</code> drives a full lifecycle
   (<code>write</code> / <code>list_files</code> / <code>read</code> / <code>delete</code>) for both <code>S3Backend</code> and
