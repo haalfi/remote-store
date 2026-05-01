@@ -89,13 +89,6 @@ Existing items may be more verbose — trim on next touch.
   - Q4 (manifest vs inline?) — inline. Central manifest reintroduces
     F-13's audit problem in a different location.
 
-  **Acceptance gate (before merging the design PR):**
-  - ADR-0027 status flips from Draft to Accepted. Until that flip,
-    [spec 047](specs/047-docs-framework-tooling.md) and
-    [`AUTHORING.md`](AUTHORING.md) reference a non-immutable decision;
-    the flip closes that gap per
-    [`000-process.md`](000-process.md) Rule 4.
-
   **Ripple coverage for spec 047 / ADR-0027:**
   As SDD artefacts under `sdd/specs/` and `sdd/adrs/`, both files are
   rendered by the existing `gen_pages.py` filesystem scan
