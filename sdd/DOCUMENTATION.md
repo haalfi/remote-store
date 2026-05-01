@@ -111,6 +111,10 @@ URL paths must correspond to navigation position. A page nested under nav sectio
 
 All internal links must resolve in their target presentation. Repo-side links (relative paths in `.md` files) must resolve on disk. Docs-site links (rendered URLs) must resolve in the built site. Broken links fail the build, not warn.
 
+### 9. Top-level nav structure
+
+`docs-src/_nav.yml` has only the four Diataxis quadrants as top-level content sections: Tutorial, Guides, Reference, Explanation. `Home:` is permitted as the conventional top-level entry for the site index (`index.md`); it is not a content section. No other top-level section is allowed. Content that does not fit a Diataxis quadrant nests under the closest fit (e.g. examples under Tutorial, contributor docs under Reference or Explanation).
+
 ## Guides
 
 ### Diataxis content drift prevention

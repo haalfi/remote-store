@@ -8,6 +8,14 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- BK-167a: ADR-0027 (single-bridge documentation pipeline with inline
+  classification) and Spec 047 (documentation framework tooling
+  contracts). Author-facing classification rules absorbed into
+  `sdd/AUTHORING.md`; spec 047 carries `**Scope:** Build & CI tooling`
+  and defers to AUTHORING.md for syntax and defaults.
+  `sdd/000-process.md` updated to acknowledge tooling specs as a
+  distinct category coexisting with library specs in flat numbering.
+  Design draft only; no code change yet.
 - **End-to-end coverage for the S3 control path** (BK-166, S3-026, S3PA-026):
   `tests/backends/test_s3_moto.py` drives a full lifecycle
   (`write` / `list_files` / `read` / `delete`) for both `S3Backend` and

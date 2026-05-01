@@ -14,9 +14,14 @@ framework](../CLAUDE.md#documentation-framework)): structure →
 
 1. **File classification.** Every `.md` belongs to exactly one class:
    repo-only (appears only in the repo), docs-only (appears only on the docs
-   site), or dual (must read correctly in both). Files may carry an
-   explicit class marker; absence means **dual** (the safe default). The
-   class is not inferred from path or from build behavior.
+   site), or dual (must read correctly in both). Each file is classified by
+   one of two routes: an explicit HTML-comment marker on the file itself,
+   or a directory-default rule when no marker is present. A file that
+   carries no marker AND matches no directory default is unclassified;
+   the gate (G-01) fails on unclassified files. Marker syntax, the three
+   classes, and the directory-default table are normative in
+   _Classification markers_ and _Directory defaults_ below. The class is
+   not inferred from path alone or from build behavior.
 
 2. **Single home.** Each `.md` lives at exactly one path. Other
    presentations are derived from that path, never copied.
@@ -73,3 +78,84 @@ docs site"; host configuration is a deployment concern, not an authoring one.
    Format Scope for the path map.
 
 If unsure, declare dual.
+
+### Classification markers
+
+A marker is an HTML comment in the first 5 non-blank lines of the file.
+HTML comments are invisible in every Markdown renderer, so the marker
+adds no visible content. Three forms:
+
+```markdown
+<!-- doc: dual dest=explanation/design/authoring.md -->
+<!-- doc: repo-only -->
+<!-- doc: docs-only -->
+```
+
+Class semantics:
+
+- **`dual`** — the file appears at its repo path AND at the virtual
+  `dest` on the docs site. `dest=` is required.
+- **`repo-only`** — the file appears only at its repo path. The bridge
+  emits no virtual page. `dest=` MUST be absent.
+- **`docs-only`** — the file is authored under `docs-src/` and consumed
+  by MkDocs directly. `dest=` MUST be absent.
+
+The marker MAY follow a `# Title` line. Whitespace inside the comment
+is normalised; one or more spaces between tokens is accepted.
+
+### Directory defaults
+
+When no marker is present, the file is classified by directory. The
+SDD-subdir rows follow the kind globs declared in
+`scripts/docs/scan.py:SDD_KINDS`; only RFCs have a `skip_stems`
+exclusion (`rfc-template`).
+
+| Source pattern | Default class | Default dest |
+|---|---|---|
+| `sdd/adrs/*.md` | dual | `explanation/design/adrs/<slug>.md` |
+| `sdd/specs/*.md` | dual | `explanation/design/specs/<slug>.md` |
+| `sdd/rfcs/rfc-*.md` (not `rfc-template`) | dual | `explanation/design/rfcs/<slug>.md` |
+| `sdd/audits/audit-*.md` | dual | `explanation/design/audits/<slug>.md` |
+| `sdd/research/research-*.md` | dual | `explanation/design/research/<slug>.md` |
+| `docs-src/**/*.md` | docs-only | — |
+| anything else | requires explicit marker | — |
+
+In practice:
+
+- Files added under `sdd/specs/`, `sdd/adrs/`, `sdd/rfcs/`, `sdd/audits/`,
+  `sdd/research/` need no marker.
+- Files added under `docs-src/` need no marker.
+- Top-level `sdd/*.md` process docs (000-process, AUTHORING, DESIGN,
+  DOCUMENTATION, TESTING, CONTENT-RULES) carry an explicit dual marker.
+- Internal `sdd/*.md` files (BACKLOG, BACKLOG-DONE, CLAUDE-REFERENCE)
+  carry an explicit repo-only marker.
+- Repo-root dual files (README, CHANGELOG, CONTRIBUTING,
+  DEVELOPMENT_STORY) carry an explicit dual marker.
+- Repo-root repo-only files (CLAUDE, CODE_OF_CONDUCT, SECURITY) carry
+  an explicit repo-only marker.
+- Example directories (`examples/<name>/README.md`, etc.): no directory
+  default. Each example README declares its own marker. The medallion
+  showcase's docs-side page is rendered separately and is not a default
+  dual mapping.
+
+### Examples
+
+```markdown
+<!-- A new how-to guide. docs-src/ is docs-only by default; no marker needed. -->
+# Streaming reads
+...
+
+<!-- A repo-root contributor doc. Explicit dual marker; bridge emits docs/contributing/. -->
+<!-- doc: dual dest=contributing.md -->
+# Contributing
+...
+
+<!-- A Claude-only operational file. Explicit repo-only marker; never reaches the docs site. -->
+<!-- doc: repo-only -->
+# Claude Code Reference
+...
+
+<!-- A new spec. sdd/specs/ has a directory default; no marker needed. -->
+# Spec 048 -- Some Topic
+...
+```
