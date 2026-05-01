@@ -10,6 +10,10 @@ The universal working principles for this repo are listed in
 [`CLAUDE.md`](CLAUDE.md) § Principles. They apply to any contributor,
 not only automated agents.
 
+## Documentation framework
+
+Three authority docs govern documentation in this repo: see [`CLAUDE.md` § Documentation framework](CLAUDE.md#documentation-framework) for the placement, structure, and longevity rules that apply to any docs PR.
+
 ## Authoritative Document Format
 
 Internal process and reference documents follow a fixed structure.

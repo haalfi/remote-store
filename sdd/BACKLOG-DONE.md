@@ -7,32 +7,35 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-- [x] **BK-167 (partial) — Documentation framework introduced**
-  First cut of the three-doc documentation framework (placement / structure /
-  longevity), wired into the entry points used by both Claude sessions and
-  human contributors.
-  - `sdd/AUTHORING.md` created: file classification (repo-only / docs-only /
-    dual; default dual), single home, plain Markdown for dual files, single
-    bridge mechanism, PR-time gate with five categories (classification,
-    bridge resolution, link integrity, nav alignment, cross-version safety).
-  - `CLAUDE.md` § Documentation framework names the three docs and the order
-    they apply (placement → structure → longevity); replaces the earlier
+- [x] **BK-167 — Documentation framework defined and wired in**
+  Three-doc documentation framework (placement → structure → longevity)
+  established and wired into the contributor and Claude-session entry
+  points. The framework states the rules; tooling that enforces them is
+  BK-167a; applying the framework and closing audit-012 findings is BK-167b.
+
+  - [`sdd/AUTHORING.md`](AUTHORING.md) created (placement authority): file
+    classification (repo-only / docs-only / dual; default dual), single
+    home, plain Markdown for dual files, single bridge mechanism, PR-time
+    gate enforcing every framework rule.
+  - [`CLAUDE.md` § Documentation framework](../CLAUDE.md#documentation-framework)
+    names the three docs and their application order; replaces the earlier
     two-pointer "Documentation conventions" stub.
-  - `CONTRIBUTING.md` Authoritative Document Format scope list adds
-    `AUTHORING.md`.
+  - [`CONTRIBUTING.md`](../CONTRIBUTING.md) gains a § Documentation
+    framework pointer and adds `AUTHORING.md` to the Authoritative Document
+    Format scope list with all named docs linked.
   - `sdd/DOCUMENTATION.md` and `sdd/CONTENT-RULES.md` Intent & Scope
     back-reference the framework so any entry node leads to the others.
-  - `sdd/DOCUMENTATION.md`: Rule 9 (URL alignment) added encoding audit-012
-    R7; § 2 duplicate "Decision rule" replaced with cross-reference to
-    `AUTHORING.md` Rule 1; § 4 vocabulary aligned to "two presentations";
-    "API page building blocks" demoted under Guides per the Authoritative
-    Document Format.
-  - `sdd/CONTENT-RULES.md` typography aligned to `DOCUMENTATION.md` § 8
-    (em-dash term-definition separators converted to colons / sentence
-    boundaries).
-  Cleanup follow-up from self-review (documentation expert + SDD expert):
-  BK-167a. Audit-012 simplification work (F-03, F-12, F-01/F-02,
-  F-05–F-08): BK-167.
+  - `sdd/DOCUMENTATION.md`: Rule 9 (URL alignment) added (audit-012 R7);
+    Rule 10 (link integrity) added (audit-012 R1/R2); § 2 duplicate
+    "Decision rule" replaced with cross-reference to `AUTHORING.md` Rule 1;
+    § 4 vocabulary aligned to "two presentations".
+  - `sdd/CONTENT-RULES.md` Rule 4 also points to `AUTHORING.md` Rule 1 for
+    file-placement authority; typography aligned to `DOCUMENTATION.md` § 8.
+  - All framework cross-references are real Markdown links — clickable in
+    the GitHub repo browser, crawler-discoverable.
+  - `sdd/CLAUDE-REFERENCE.md` ripple-check table gains a row for
+    "new authoritative process doc in `sdd/`."
+  - "Diataxis" spelling normalized across the trio + CLAUDE-REFERENCE.md.
 
 - [x] **BK-165 — Docs structure audit for the post-ID-174 layout (audit phase)**
   Established 13 audit rules covering the three-hierarchy vocabulary (repo

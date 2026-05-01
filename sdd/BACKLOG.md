@@ -57,89 +57,67 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-167 — audit-012 simplifications (post-framework)**
-  Follows BK-165 (audit phase complete, `sdd/audits/audit-012-docs-structure.md`).
-  Authoring guide and framework wiring shipped — see BK-167 (partial) in
-  `BACKLOG-DONE.md`. Framework cleanup: BK-167a.
+- [ ] **BK-167a — Documentation framework tooling**
+  Builds the build-time infrastructure that enforces the framework defined
+  in BK-167. The framework states the rules; this item picks the mechanism
+  choices and implements the gate.
 
-  **Simplifications to evaluate (per audit-012 findings):**
+  **Deliverables:**
+  - **Bridge implementation**: a single declared mechanism that takes dual
+    files from their repo path to the docs site. Replaces or unifies the
+    three current mechanisms (include-markdown wrappers, `_link_map.yml`,
+    gen-files scan). Resolves audit-012 F-12.
+  - **File classification storage**: pick central manifest or inline
+    per-file metadata (HTML comment markers, still plain Markdown).
+    Resolves Q4.
+  - **PR-time gate script**: validates `sdd/AUTHORING.md` Rule 5 — every
+    rule in the framework is satisfied. Failures block merge.
+
+  **Open questions:**
+  - Q2: Should `sdd/` move under `docs-src/design/` to remove the wrapper
+    layer? Tradeoff: cleaner build vs. moving authoritative artifacts off
+    the established `sdd/` path that tooling and skills already reference.
+  - Q3: Is there a single declarative file describing every virtual page
+    that would replace the four current generation mechanisms?
+  - Q4: Central manifest vs. inline per-file metadata for file
+    classification. Inline keeps the class next to the file; central
+    preserves a single auditable boundary. `sdd/AUTHORING.md` Rule 1 is
+    mechanism-agnostic; this item picks the mechanism.
+
+  **Depends on:** BK-167 (framework defined and wired in).
+
+- [ ] **BK-167b — Apply documentation framework; close audit-012 findings**
+  Once the framework (BK-167) and its tooling (BK-167a) are in place,
+  classify every existing `.md`, run the gate, and close the open
+  audit-012 findings. Exit criterion: framework "up & running, tested &
+  proven, documented & correct."
+
+  **Audit-012 findings to close:**
   - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`.
-  - F-12: unify the three mechanisms for rendering `sdd/` top-level files
-    (include-markdown wrappers vs. `_link_map.yml` vs. gen-files scan).
-  - F-01/F-02: evaluate whether include-markdown wrappers should be replaced
-    with gen-files virtual pages so repo-browser links resolve correctly, or
-    whether `sdd/` top-level files move into `docs-src/design/` (removes the
-    wrapper layer entirely but conflicts with R5 for process docs).
+  - F-01/F-02: include-markdown wrappers fail in the GitHub repo browser;
+    resolved by the bridge chosen in BK-167a.
   - F-05/F-06/F-07/F-08: align nav structure to pure Diataxis and fix the
     `design/` URL prefix to match its nav position under Explanation.
+  - F-13: excluded files auditable (closed by the classification system
+    from BK-167 + BK-167a).
 
-  **Open questions from BK-165:**
-  1. Should the docstring-driven examples chain stay (single source of truth,
-     hidden machinery) or be replaced with static stubs (discoverability,
-     duplication)?
-  2. Should `sdd/` move under `docs-src/design/` to remove the wrapper layer?
-     Tradeoff: cleaner build vs. moving authoritative artifacts off the
-     established `sdd/` path that tooling and skills already reference.
-  3. Is there a single declarative file describing every virtual page that
-     would replace the four current generation mechanisms?
+  **Other follow-up (from BK-167 self-review):**
+  - F-S-6: `sdd/DOCUMENTATION.md` "API page building blocks" placement.
+    Currently under Guides per the Authoritative Document Format, but the
+    templates carry "Required" / "Optional" columns. Decide: restore as a
+    Rule, extract to a separate doc, or soften the wording.
 
-  **Depends on:** BK-165 (audit phase done).
+  **Open question:**
+  - Q1: Should the docstring-driven examples chain stay (single source of
+    truth, hidden machinery) or be replaced with static stubs
+    (discoverability, duplication)?
 
-- [~] **BK-167a — Documentation framework cleanup (spin-off from BK-167)**
-  The framework first cut shipped under BK-167 (partial). This item bundles
-  the cleanup findings from the self-review (Documentation expert and SDD
-  expert) so the framework holds together as a system. Decisions already
-  taken: no CHANGELOG entry (SDD-only, no user-facing behavior); no ADR
-  (the framework rationale lives in audit-012 and the trio's Intent &
-  Scope sections).
+  **Exit criteria:**
+  - All `.md` files classified.
+  - PR-time gate green on master.
+  - All audit-012 findings closed (or explicitly deferred with rationale).
 
-  **Convergent findings (both experts):**
-  - C-1: `sdd/AUTHORING.md` Rule 1 asserts "Classes are recorded centrally"
-    while open question Q4 (below) flags this as undecided. Either resolve
-    Q4 or soften Rule 1.
-  - C-2: Rule 4 names "the bridge" without defining or linking it; a reader
-    of the file in isolation cannot act on it.
-  - C-3: BK-167 entry was mixed-state without an `[~]` marker; this split
-    resolves it.
-  - C-4: "Source for the gate categories" subsection is meta-commentary
-    (format Exclusion 3) and asserts a category↔R-id mapping without
-    enumerating it.
-
-  **Documentation expert findings:**
-  - F-D-1 (partial): trio not surfaced from `README` (a non-Claude
-    contributor entry point); `CONTRIBUTING.md` scope list now links the
-    trio as a partial fix.
-  - F-D-4: "Diataxis" vs "Diátaxis" spelling drift across `DOCUMENTATION.md`
-    and `AUTHORING.md`.
-  - F-D-6: `CONTENT-RULES.md` Rule 4 still names `DOCUMENTATION.md § 2` as
-    placement authority — should also point to `AUTHORING.md` Rule 1.
-
-  **SDD expert findings:**
-  - F-S-1: `AUTHORING.md` Intent & Scope blends "where files belong" with
-    "which constraints apply" — overlaps `DOCUMENTATION.md` /
-    `CONTENT-RULES.md` scope. Tighten to placement only.
-  - F-S-2: Rule 5's five gate categories each pass the Cross-check test
-    independently. Promote to Rules 5–9 (or restructure as Rule 5 with
-    sub-rules carrying clear normative force).
-  - F-S-4: Guides "If unsure, assume dual" is a binding tiebreaker, belongs
-    in Rule 1.
-  - F-S-5: URL alignment is duplicated (`DOCUMENTATION.md` Rule 9 +
-    `AUTHORING.md` Rule 5 gate category). Pick one home.
-  - F-S-6: "API page building blocks" (~130 lines of "Required" templates)
-    sits under Guides which the format says is non-binding. Either restore
-    as Rules or extract to its own doc.
-  - F-S-8: ripple-check table missing a row for "new authoritative process
-    doc added."
-
-  **Open question (carried from BK-167):**
-  Q4. File classification mechanism — central manifest vs. inline per-file
-  metadata (HTML comment markers, still plain Markdown). Inline keeps the
-  class next to the file; central preserves a single auditable boundary.
-  `sdd/AUTHORING.md` Rule 1 currently mandates central; adopting inline
-  would amend that rule. Evaluate against F-13 (auditable boundary) and
-  F-12 (one mechanism — currently in BK-167).
-
-  **Depends on:** BK-167 (partial) shipped.
+  **Depends on:** BK-167a (tooling).
 
 ---
 

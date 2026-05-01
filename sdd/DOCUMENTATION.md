@@ -39,7 +39,7 @@ Pages that try to be two things at once must be split.
 
 For file classification (repo-only / docs-only / dual), see [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1.
 
-New user-facing prose pages follow the Diátaxis bucket structure under `docs-src/`:
+New user-facing prose pages follow the Diataxis bucket structure under `docs-src/`:
 - How-to guides go in `docs-src/how-to/` (backend-specific guides in `docs-src/how-to/backends/`).
 - Explanation pages go in `docs-src/explanation/`.
 - Reference pages go in `docs-src/reference/`.
@@ -137,6 +137,10 @@ The README must contain:
 ### 9. URL alignment
 
 URL paths must correspond to navigation position. A page nested under nav section X has its URL prefix matching X (e.g., a page under Reference > API renders at `/reference/api/...`, not `/api/...`).
+
+### 10. Link integrity
+
+All internal links must resolve in their target presentation. Repo-side links (relative paths in `.md` files) must resolve on disk. Docs-site links (rendered URLs) must resolve in the built site. Broken links fail the build, not warn.
 
 ## Guides
 

@@ -30,8 +30,10 @@ Derived from [`sdd/research/research-doc-content-longevity.md`](research/researc
 
 4. **One copy per fact.** [review-enforced]
    Every fact lives in exactly one authoritative place; everywhere else is a link
-   or a paraphrase of the principle. The authoritative home for each content type
-   is in [`sdd/DOCUMENTATION.md` § 2](DOCUMENTATION.md#2-content-homes). README and guides link; they do not copy.
+   or a paraphrase of the principle. Authoritative homes: file placement in
+   [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1; content type homes in
+   [`sdd/DOCUMENTATION.md` § 2](DOCUMENTATION.md#2-content-homes). README and
+   guides link; they do not copy.
 
 5. **Source-code facts stay in source.** [review-enforced]
    API signatures, capability sets, type annotations, default values live in code.
