@@ -33,6 +33,15 @@ Each spec uses numbered section IDs with a module prefix declared at the top of 
 
 Each spec declares its prefix (e.g. `STORE`, `PATH`, `ERR`, `CACHE`). A test referencing `STORE-005` traces back to section 005 in the Store API spec.
 
+Specs cover both library contracts and build/CI tooling contracts.
+Library specs use subsystem prefixes (`STORE`, `S3`, `ERR`, ...) and
+are tested against runtime code. Tooling specs use a tool/framework
+prefix (e.g. `DOCFRAME`) and are tested against the script's output
+or repository state. Tooling specs declare `**Scope:** Build & CI
+tooling` near the top so the category is visible without reading
+the body. The two coexist in the flat `sdd/specs/NNN-*.md` numbering;
+no subdirectory split is used while the tooling-spec count is small.
+
 ### Test traceability
 
 ```python

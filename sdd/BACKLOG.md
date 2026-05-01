@@ -59,9 +59,11 @@ Existing items may be more verbose — trim on next touch.
 
 - [~] **BK-167a — Documentation framework tooling**
   Builds the build-time infrastructure that enforces the framework defined
-  in BK-167. Design decisions captured in
-  [ADR-0027](adrs/0027-docs-bridge-single-mechanism.md); contracts in
-  [spec 047](specs/047-docs-framework-tooling.md).
+  in BK-167. Author-facing rules (marker syntax, classification,
+  directory defaults) are normative in
+  [`AUTHORING.md`](AUTHORING.md); the tooling that enforces them is
+  specified in [spec 047](specs/047-docs-framework-tooling.md). Decision
+  rationale in [ADR-0027](adrs/0027-docs-bridge-single-mechanism.md).
 
   **Deliverables:**
   - **Bridge implementation**: single `scan.scan_dual_files` +

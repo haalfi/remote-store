@@ -1,11 +1,17 @@
 # Spec 047 — Documentation Framework Tooling
 
-Tooling layer that enforces the documentation framework defined by
-[`AUTHORING.md`](../AUTHORING.md), [`DOCUMENTATION.md`](../DOCUMENTATION.md),
-and [`CONTENT-RULES.md`](../CONTENT-RULES.md). Three deliverables: bridge,
-classification storage, PR-time gate.
+**Scope:** Build & CI tooling. Specifies the bridge, gate, and pipeline
+that enforce the documentation framework. Not library source code; the
+contracts here govern `scripts/docs/` and `scripts/check_docs_framework.py`.
 
 **Prefix:** `DOCFRAME`
+
+**Author-facing surface:** [`AUTHORING.md`](../AUTHORING.md). Authors do
+not need to read this spec to write or classify documents. Marker
+syntax, classification rules, directory defaults, and per-class
+semantics live in AUTHORING.md and are normative there. This spec
+defers to AUTHORING.md for those rules and only specifies the
+tooling that enforces them.
 
 **Related decisions:** [ADR-0027](../adrs/0027-docs-bridge-single-mechanism.md)
 selects the single-bridge architecture and inline-marker classification.
@@ -40,55 +46,28 @@ selection rationale and the three legacy mechanisms it supersedes.
 
 ---
 
-## DOCFRAME-002: Inline Classification Marker
+## DOCFRAME-002: Classification Parser Contract
 
-**Invariant:** Every `.md` file in the repository has a class — one of
-`dual`, `repo-only`, `docs-only` — derivable without reading any file
-other than the file itself and the directory-default table below.
+**Invariant:** The marker parser implements the syntax and semantics
+defined in [`AUTHORING.md`](../AUTHORING.md) Rule 1 and its "Classification
+markers" guide. This spec adds only the parsing contract:
 
-**Marker syntax (normative):**
+- The parser scans the first 5 non-blank lines of each `.md` file.
+- The parser is regex-based; no Markdown AST is constructed.
+- A malformed marker (unrecognised class, `dest=` on a non-dual class,
+  missing `dest=` on a dual marker, multiple markers in one file) is a
+  parse error reported by the gate as G-01.
+- Marker absence falls back to the directory-default table in
+  AUTHORING.md. Files matching no default and carrying no marker are a
+  G-01 failure.
 
-```markdown
-<!-- doc: dual dest=<virtual-dest> -->
-<!-- doc: repo-only -->
-<!-- doc: docs-only -->
-```
+**Postcondition:** Every `.md` in the repository resolves to exactly
+one class, derivable from the file plus the AUTHORING.md default
+table; no separate manifest is consulted.
 
-The marker MUST appear within the first 5 non-blank lines of the file.
-The marker MAY follow a `# Title` line. Whitespace inside the comment
-is normalised; the parser accepts one or more spaces between tokens.
-
-**Class semantics:**
-
-- **`dual`** — file appears unchanged at its repo path AND at the
-  virtual `dest` on the docs site. `dest=` is required.
-- **`repo-only`** — file appears only at its repo path. The bridge does
-  not emit a virtual page. `dest=` MUST be absent.
-- **`docs-only`** — file is authored under `docs-src/` and consumed by
-  MkDocs. The bridge does not act on it. `dest=` MUST be absent.
-
-**Default rules (apply when no marker is present):**
-
-| Source pattern | Default class | Default dest |
-|---|---|---|
-| `sdd/adrs/*.md` (matching kind glob, not `skip_stems`) | dual | `design/adrs/<slug>.md` |
-| `sdd/specs/*.md` | dual | `design/specs/<slug>.md` |
-| `sdd/rfcs/rfc-*.md` (not `rfc-template`) | dual | `design/rfcs/<slug>.md` |
-| `sdd/audits/audit-*.md` | dual | `design/audits/<slug>.md` |
-| `sdd/research/research-*.md` | dual | `design/research/<slug>.md` |
-| `docs-src/**/*.md` | docs-only | — |
-| `examples/**/README.md` | dual | (per existing render rule, e.g. `examples/medallion-dagster.md`) |
-| anything else | requires explicit marker | — |
-
-**Required explicit markers (no default):** `sdd/*.md` top-level files,
-all repo-root `.md` files, anything else not matching a default rule.
-
-**Postcondition:** The classification system is auditable from one input
-(the file plus this table); no separate manifest is consulted.
-
-**Rationale:** [AUTHORING.md](../AUTHORING.md) Rule 1. See
-[ADR-0027](../adrs/0027-docs-bridge-single-mechanism.md) for the choice
-of inline markers over a central manifest.
+**Rationale:** AUTHORING.md owns the rules; this spec owns the parser
+that enforces them. Splitting prevents author-facing content (syntax,
+examples) from drifting into a tooling spec authors do not read.
 
 ---
 
