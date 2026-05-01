@@ -170,13 +170,13 @@ Cross-references replace duplication, but actionable checklists should be co-loc
 | `Store.read` docstring | Streaming guide | `See the [Streaming Guide](...)` |
 | `docs-src/how-to/backends/s3.md` | Capabilities matrix | `[Capabilities](../../reference/capabilities-matrix.md)` |
 
-## API page building blocks
+### API page building blocks
 
 Reusable structural blocks for `docs-src/api/` pages. `store.md` is the
 canonical example. Apply the appropriate page-type template (see below) and
 compose from these blocks.
 
-### Admonition vocabulary
+#### Admonition vocabulary
 
 Three levels, applied consistently across all `docs-src/api/` pages:
 
@@ -191,7 +191,7 @@ Rules:
 - `!!! warning "Backend-specific methods"` is used only as a section/group header, not on individual methods.
 - Title fragment must be identical for the same pattern across all files (colon, no em dash, backtick-quoted param names).
 
-### Blocks
+#### Blocks
 
 **Class header** — renders the class summary only; methods follow in explicit
 sections.
@@ -284,7 +284,7 @@ Verify against actual code before relying on these in production.
 - [Example name](../examples/example-path.md) — one-line description
 ```
 
-### Page-type templates
+#### Page-type templates
 
 | Page type | Required blocks | Optional blocks |
 |---|---|---|
