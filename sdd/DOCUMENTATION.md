@@ -52,13 +52,6 @@ Format and style rules are in `sdd/DESIGN.md` § 4. This section covers what mkd
 | Enum | — | — | — | — |
 | Error class | — | — | — | — |
 
-Supplementary context that does not fit Args/Returns/Raises goes in a `Notes:` block, not scattered inline or appended to the summary line.
-
-Use ``Example:`` (not ``Usage:``) for code snippets in docstrings. In class/function
-docstrings, mkdocstrings renders ``Example:`` as a collapsible box. For module-level
-docstrings, use MkDocs admonition syntax: ``!!! example`` with indented code blocks
-(Google sections don't parse in module docstrings).
-
 No TODOs or placeholders in published docstrings.
 
 ### 4. Cross-linking requirements
@@ -88,17 +81,7 @@ Minimum per page:
 - Every how-to guide links to its matching example script (if one exists).
 - Every API class page links to its primary guide.
 
-### 5. PR documentation review
-
-The SDD workflow includes a DOCS step (see `sdd/000-process.md` rule 6). When reviewing PRs, check:
-
-- Docstrings meet rule 3 for all new/changed public symbols
-- Relevant guide updated (if behavior changed)
-- Example updated or added (if user-facing)
-- CHANGELOG stub present (one line per completed item — see ripple-check table **CHANGELOG entry**)
-- No orphaned cross-links (renamed/removed APIs)
-
-### 6. README requirements
+### 5. README requirements
 
 The README must contain:
 
@@ -114,39 +97,23 @@ The README must contain:
 - Link to full documentation site, CHANGELOG, and CONTRIBUTING
 - License, supported Python versions, project status badge
 
-### 7. Research document rules
-
-- Research docs live in `sdd/research/` and are named `research-<topic>.md`.
-- They are not edited after the related feature ships — they are historical records.
-- They may be surfaced on the docs site under Explanation > Research.
-- They do not need to follow the docstring or guide quality checklists.
-
-### 8. Typography
+### 6. Typography
 
 - **Prose dashes:** Use `—` (U+2014) sparingly as a parenthetical aside. Default to periods, colons, or commas. Never use `--` as an em dash substitute in documentation prose.
 - **Table N/A value:** `—` (U+2014) for any "not applicable / not supported / none" cell. Never `--` or `No`.
 - **Preserve `--`:** Only in shell flag syntax inside code blocks, spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax, `--8<--` snippet includes, and code/SQL comments inside fenced blocks.
 
-### 9. URL alignment
+### 7. URL alignment
 
 URL paths must correspond to navigation position. A page nested under nav section X has its URL prefix matching X (e.g., a page under Reference > API renders at `/reference/api/...`, not `/api/...`).
 
-### 10. Link integrity
+### 8. Link integrity
 
 All internal links must resolve in their target presentation. Repo-side links (relative paths in `.md` files) must resolve on disk. Docs-site links (rendered URLs) must resolve in the built site. Broken links fail the build, not warn.
 
 ## Guides
 
-### Diataxis categories
-
-| Category | Orientation | Goal | Where it lives |
-|---|---|---|---|
-| Tutorial | Learning | Guided first success | `README.md` Quick Start, `docs-src/getting-started.md`, notebooks |
-| How-To Guides | Tasks | Answer "how do I X?" | `docs-src/how-to/` |
-| Reference | Information | Precise lookup | Python docstrings in `src/`, extracted into `docs-src/api/`; prose reference pages in `docs-src/reference/` |
-| Explanation | Understanding | Help understand *why* | `docs-src/explanation/` for user-facing pages, `sdd/adrs/` for formal decisions |
-
-### Content drift prevention
+### Diataxis content drift prevention
 
 Each Diataxis category excludes specific content types. When a page accumulates excluded content, split it.
 
@@ -159,13 +126,21 @@ Each Diataxis category excludes specific content types. When a page accumulates 
 
 Cross-references replace duplication, but actionable checklists should be co-located with the rules they support. When condensing, keep lookup tables near the decision point.
 
-### Cross-link example
+### Docstring style notes
 
-| From | To | Link pattern |
-|---|---|---|
-| `docs-src/how-to/cache.md` | `ext.cache` API | `[CachedStore](../api/ext/cache.md)` |
-| `Store.read` docstring | Streaming guide | `See the [Streaming Guide](...)` |
-| `docs-src/how-to/backends/s3.md` | Capabilities matrix | `[Capabilities](../../reference/capabilities-matrix.md)` |
+Supplementary context that does not fit Args/Returns/Raises goes in a `Notes:` block, not scattered inline or appended to the summary line.
+
+Use ``Example:`` (not ``Usage:``) for code snippets in docstrings. In class/function docstrings, mkdocstrings renders ``Example:`` as a collapsible box. For module-level docstrings, use MkDocs admonition syntax: ``!!! example`` with indented code blocks (Google sections don't parse in module docstrings).
+
+### PR documentation review checklist
+
+The SDD workflow includes a DOCS step (see `sdd/000-process.md` rule 6). When reviewing PRs, check:
+
+- Docstrings meet Rule 3 for all new/changed public symbols.
+- Relevant guide updated (if behavior changed).
+- Example updated or added (if user-facing).
+- CHANGELOG stub present (one line per completed item; see ripple-check table **CHANGELOG entry**).
+- No orphaned cross-links (renamed/removed APIs).
 
 ### API page building blocks
 
