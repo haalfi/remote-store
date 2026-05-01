@@ -39,13 +39,6 @@ Pages that try to be two things at once must be split.
 
 For file classification (repo-only / docs-only / dual), see [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1.
 
-New user-facing prose pages follow the Diataxis bucket structure under `docs-src/`:
-- How-to guides go in `docs-src/how-to/` (backend-specific guides in `docs-src/how-to/backends/`).
-- Explanation pages go in `docs-src/explanation/`.
-- Reference pages go in `docs-src/reference/`.
-
-Site-only artefacts (nav files, MkDocs-only includes) stay in `docs-src/` alongside the prose.
-
 ### 3. Docstring completeness
 
 Format and style rules are in `sdd/DESIGN.md` § 4. This section covers what mkdocstrings requires per symbol type:
