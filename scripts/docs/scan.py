@@ -116,7 +116,11 @@ def scan_all_sdd(repo_root: Path) -> dict[str, list[SddEntry]]:
 # DOCFRAME-002: Classification marker parser
 # ---------------------------------------------------------------------------
 
-_MARKER_RE = re.compile(r"<!--\s+doc:\s+(dual|repo-only|docs-only)(?:\s+dest=(\S+))?\s*-->")
+# Permissive: captures any non-whitespace class token so unrecognised classes
+# are detected and rejected below rather than silently falling through to the
+# directory-default table.
+_MARKER_RE = re.compile(r"<!--\s+doc:\s+(\S+)(?:\s+dest=(\S+))?\s*-->")
+_VALID_CLASSES = frozenset({"dual", "repo-only", "docs-only"})
 
 
 def _parse_marker(text: str) -> tuple[str, str | None] | None:
@@ -124,8 +128,8 @@ def _parse_marker(text: str) -> tuple[str, str | None] | None:
 
     Returns ``(class, dest)`` where *dest* is ``None`` for non-dual classes.
     Returns ``None`` when no marker is present.
-    Raises ``ValueError`` on malformed markers (bad class, missing/extra dest=,
-    multiple markers).
+    Raises ``ValueError`` on malformed markers (unrecognised class, missing/extra
+    ``dest=``, multiple markers — including same-line duplicates).
     """
     non_blank = 0
     found: list[re.Match[str]] = []
@@ -133,9 +137,7 @@ def _parse_marker(text: str) -> tuple[str, str | None] | None:
         if not line.strip():
             continue
         non_blank += 1
-        m = _MARKER_RE.search(line)
-        if m:
-            found.append(m)
+        found.extend(_MARKER_RE.finditer(line))
         if non_blank >= 5:
             break
 
@@ -148,6 +150,8 @@ def _parse_marker(text: str) -> tuple[str, str | None] | None:
     klass = m.group(1)
     dest = m.group(2)
 
+    if klass not in _VALID_CLASSES:
+        raise ValueError(f"Unrecognised marker class {klass!r}")
     if klass == "dual" and dest is None:
         raise ValueError("dual marker requires dest=")
     if klass != "dual" and dest is not None:
@@ -198,6 +202,34 @@ class DualEntry:
     dest: str  # virtual dest, e.g. "explanation/design/authoring.md"
 
 
+# Directories skipped by the rglob pass in scan_dual_files.
+# Prevents phantom DualEntry hits in build artefacts, tool caches, and VCS
+# internals, and keeps scan time within the DOCFRAME-004 5-second budget.
+_RGLOB_SKIP_DIRS = frozenset(
+    {
+        ".git",
+        ".hg",
+        ".svn",
+        ".venv",
+        "venv",
+        ".env",
+        "env",
+        "node_modules",
+        "site",
+        "htmlcov",
+        "tmp",
+        "build",
+        "dist",
+        "__pycache__",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".pytest_cache",
+        ".tox",
+        ".hatch",
+    }
+)
+
+
 def scan_dual_files(repo_root: Path) -> Iterator[DualEntry]:
     """Discover all dual files in *repo_root*.
 
@@ -205,6 +237,12 @@ def scan_dual_files(repo_root: Path) -> Iterator[DualEntry]:
     ``dual``: SDD-subdir files (directory-default dual per
     :data:`SDD_KINDS`) and files elsewhere that carry an explicit
     ``<!-- doc: dual dest=... -->`` marker.
+
+    **Caveat:** malformed markers (those that cause :func:`_parse_marker` to
+    raise ``ValueError``) are silently skipped — the file is omitted from the
+    output rather than surfacing an error. The gate (DOCFRAME-004) is the
+    authority for detecting and reporting G-01 violations; callers that need a
+    complete and verified source→dest map must run the gate first.
 
     Spec: DOCFRAME-001, DOCFRAME-003.
     """
@@ -233,8 +271,12 @@ def scan_dual_files(repo_root: Path) -> Iterator[DualEntry]:
             # repo-only or docs-only override: not a dual file
 
     # Files elsewhere: yield those with explicit dual markers.
+    # Skip build artefacts, VCS internals, and tool caches (see _RGLOB_SKIP_DIRS).
     docs_src = (repo_root / "docs-src").resolve()
     for md in sorted(repo_root.rglob("*.md")):
+        rel_parts = md.relative_to(repo_root).parts
+        if any(part in _RGLOB_SKIP_DIRS for part in rel_parts):
+            continue
         abs_md = md.resolve()
         if any(abs_md.is_relative_to(d) for d in sdd_dirs):
             continue

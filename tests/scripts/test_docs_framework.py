@@ -65,6 +65,65 @@ def test_marker_absent_in_repo_root_is_an_error(scan_mod, tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# DOCFRAME-002: error paths
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("DOCFRAME-002")
+def test_marker_rejects_dual_without_dest(scan_mod):
+    with pytest.raises(ValueError, match="requires dest="):
+        scan_mod._parse_marker("<!-- doc: dual -->\n# Title\n")
+
+
+@pytest.mark.spec("DOCFRAME-002")
+def test_marker_rejects_non_dual_with_dest(scan_mod):
+    with pytest.raises(ValueError, match="must not have dest="):
+        scan_mod._parse_marker("<!-- doc: repo-only dest=foo.md -->\n# Title\n")
+
+
+@pytest.mark.spec("DOCFRAME-002")
+def test_marker_rejects_multiple_markers(scan_mod):
+    text = "<!-- doc: repo-only -->\n<!-- doc: repo-only -->\n# Title\n"
+    with pytest.raises(ValueError, match="Multiple"):
+        scan_mod._parse_marker(text)
+
+
+@pytest.mark.spec("DOCFRAME-002")
+def test_marker_rejects_same_line_duplicate_markers(scan_mod):
+    text = "<!-- doc: repo-only --><!-- doc: repo-only -->\n# Title\n"
+    with pytest.raises(ValueError, match="Multiple"):
+        scan_mod._parse_marker(text)
+
+
+@pytest.mark.spec("DOCFRAME-002")
+def test_marker_rejects_unrecognised_class(scan_mod):
+    with pytest.raises(ValueError, match="Unrecognised"):
+        scan_mod._parse_marker("<!-- doc: duel dest=x.md -->\n# Title\n")
+
+
+# ---------------------------------------------------------------------------
+# DOCFRAME-002: additional happy paths and directory defaults
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("DOCFRAME-002")
+def test_marker_parses_docs_only_no_dest(scan_mod):
+    result = scan_mod._parse_marker("<!-- doc: docs-only -->\n# Title\n")
+    assert result == ("docs-only", None)
+
+
+@pytest.mark.spec("DOCFRAME-002")
+def test_classify_file_docs_src_is_docs_only(scan_mod, tmp_path):
+    docs_src = tmp_path / "docs-src" / "guides"
+    docs_src.mkdir(parents=True)
+    md = docs_src / "my-guide.md"
+    md.write_text("# My Guide\n\nContent.\n")
+    klass, dest = scan_mod._classify_file(md, tmp_path)
+    assert klass == "docs-only"
+    assert dest is None
+
+
+# ---------------------------------------------------------------------------
 # DOCFRAME-001 + DOCFRAME-003: scan_dual_files / DualEntry
 # ---------------------------------------------------------------------------
 
@@ -92,3 +151,31 @@ def test_scan_dual_files_yields_only_dual_class(scan_mod, tmp_path):
     assert adr.resolve() in sources
     assert readme.resolve() in sources
     assert claude_md.resolve() not in sources
+
+
+@pytest.mark.spec("DOCFRAME-002")
+@pytest.mark.spec("DOCFRAME-003")
+def test_scan_dual_files_skip_stems_not_yielded(scan_mod, tmp_path):
+    rfcs_dir = tmp_path / "sdd" / "rfcs"
+    rfcs_dir.mkdir(parents=True)
+    template = rfcs_dir / "rfc-template.md"
+    template.write_text("# RFC Template\n\nContent.\n")
+    real_rfc = rfcs_dir / "rfc-0001-something.md"
+    real_rfc.write_text("# RFC-0001: Something\n\nContent.\n")
+
+    entries = list(scan_mod.scan_dual_files(tmp_path))
+    sources = {e.source for e in entries}
+    assert template.resolve() not in sources
+    assert real_rfc.resolve() in sources
+
+
+@pytest.mark.spec("DOCFRAME-001")
+def test_scan_dual_files_skips_deny_list_dirs(scan_mod, tmp_path):
+    deny_dir = tmp_path / "tmp"
+    deny_dir.mkdir()
+    phantom = deny_dir / "notes.md"
+    phantom.write_text("<!-- doc: dual dest=phantom.md -->\n# Notes\n")
+
+    entries = list(scan_mod.scan_dual_files(tmp_path))
+    sources = {e.source for e in entries}
+    assert phantom.resolve() not in sources
