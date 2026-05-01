@@ -24,10 +24,10 @@ framework](../CLAUDE.md#documentation-framework)): structure →
 3. **Dual files use plain Markdown.** Dual files contain only plain
    Markdown: no Jinja directives, no MkDocs plugin macros (the
    `pymdownx.snippets` `--8<--` form is the one exception, per
-   `sdd/CONTENT-RULES.md` Rule 6), no links to build-time virtual paths
-   (paths resolvable only after MkDocs renders, e.g. into gen-files
-   outputs). The docs build adapts to dual files; dual files do not adapt
-   to the docs build.
+   [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules)), no links
+   to build-time virtual paths (paths resolvable only after MkDocs
+   renders, e.g. into gen-files outputs). The docs build adapts to dual
+   files; dual files do not adapt to the docs build.
 
 4. **One bridge mechanism.** The bridge is the mechanism that takes dual
    files from their repo path and presents them on the docs site. Exactly

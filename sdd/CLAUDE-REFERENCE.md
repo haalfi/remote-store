@@ -55,6 +55,7 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `tests/test_examples.py` import                           |
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
 |                            | `docs-src/how-to/backends/index.md`,                      |
+|                            | `sdd/AUTHORING.md` Rule 1 (file classification),          |
 |                            | `sdd/DOCUMENTATION.md` § Content homes                    |
 | **An API reference page**  | `sdd/DOCUMENTATION.md` § API page building blocks         |
 | (new or restructured)      | and building blocks for required sections                 |

@@ -12,7 +12,7 @@ not only automated agents.
 
 ## Documentation framework
 
-Three authority docs govern documentation in this repo: see [`CLAUDE.md` § Documentation framework](CLAUDE.md#documentation-framework) for the placement, structure, and longevity rules that apply to any docs PR.
+See [`CLAUDE.md` § Documentation framework](CLAUDE.md#documentation-framework) for placement, structure, and longevity rules.
 
 ## Authoritative Document Format
 

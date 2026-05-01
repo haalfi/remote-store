@@ -100,7 +100,9 @@ Existing items may be more verbose — trim on next touch.
     (no build-time enforcement of cross-version link safety): `not_found:
     error` plus mike's version-switch handling closes both.
   - F-01/F-02: include-markdown wrappers fail in the GitHub repo browser;
-    resolved by the bridge chosen in BK-167a.
+    resolved by the bridge chosen in BK-167a. The new
+    `docs-src/design/authoring.md` wrapper introduced by BK-167 is removed
+    as part of this transition.
   - F-05/F-06/F-07/F-08: align nav structure to pure Diataxis and fix the
     `design/` URL prefix to match its nav position under Explanation.
   - F-10: Changelog URL `/changelog/` contradicts nav position under
