@@ -35,9 +35,6 @@ Companion to `sdd/DOCUMENTATION.md` (structure and placement) and
    - **nav alignment:** URL paths correspond to nav position.
    - **cross-version safety:** version switching produces no 404s.
 
-   Each category corresponds to one or more rules in
-   `sdd/audits/audit-012-docs-structure.md`.
-
 ## Guides
 
 ### Two presentations, one source
@@ -66,3 +63,8 @@ docs site"; host configuration is a deployment concern, not an authoring one.
    The bridge handles the docs side.
 
 If unsure, assume dual.
+
+### Source for the gate categories
+
+The categories named in Rule 5 trace to rules in
+`sdd/audits/audit-012-docs-structure.md`.
