@@ -81,12 +81,12 @@ with shape:
 class DualEntry:
     source: Path        # absolute repo path
     dest: str           # virtual dest, e.g. "design/authoring.md"
-    klass: str          # "dual" (only dual entries reach render)
 ```
 
-`scan_dual_files` returns only entries with `klass == "dual"`. Repo-only
-and docs-only files appear in the gate's classification audit but never
-in the bridge's render input.
+`DualEntry` carries no class field: by construction, only dual entries
+reach render input. Repo-only and docs-only files are observed by the
+gate's classification audit (G-01) on a separate code path that does
+not produce `DualEntry` records.
 
 ---
 
@@ -106,7 +106,7 @@ every PR.
 | G-03 | AUTHORING R3 | Dual files contain no `{% ... %}` Jinja directive and no MkDocs macro syntax. The `--8<--` snippet form is permitted. |
 | G-04 | AUTHORING R4 | No `include-markdown` directive in any `docs-src/**/*.md`. No `_link_map.yml` exists. |
 | G-05 | AUTHORING R3 (link safety) | Every relative `](path)` link in every dual file resolves on disk in the repo. |
-| G-06 | DOCUMENTATION R7 | For every page in `SUMMARY.md`, the URL prefix matches the nav-section prefix (Reference → `/reference/`, Explanation → `/explanation/`, etc.). |
+| G-06 | DOCUMENTATION R7 | For every page reachable through `docs-src/_nav.yml` and its child `_nav.yml` files, the URL prefix matches the nav-section prefix (Reference → `/reference/`, Explanation → `/explanation/`, etc.). The check parses the nav source files directly; it does not rely on the generated `SUMMARY.md` (which is a build-time artifact, not a source). |
 | G-07 | DOCUMENTATION R8 | `mkdocs build --strict` succeeds with `validation.links.not_found: error`. |
 
 **Failure output:** one line per violation, formatted
@@ -161,22 +161,32 @@ bridge unifies the source→dest map.
 ## DOCFRAME-007: Nav and URL Alignment
 
 **Invariant:** Each top-level nav section maps to a URL prefix matching
-its label (lowercased, hyphenated). The four Diataxis quadrants are the
-only top-level sections (per [DOCUMENTATION.md](../DOCUMENTATION.md)
-Rule 1).
+its label (lowercased, hyphenated). The four Diataxis quadrants —
+Tutorial, Guides, Reference, Explanation — are the only top-level
+content sections (per [DOCUMENTATION.md](../DOCUMENTATION.md) Rule 1).
+`Home:` is permitted as the conventional top-level entry for the site
+index (`index.md`); it is not a content section. No other top-level
+section is allowed.
 
 **Required `docs-src/_nav.yml` shape after this spec lands:**
 
 ```yaml
 - Home: index.md
-- Tutorial: getting-started.md
+- Tutorial:
+    - Getting Started: getting-started.md
+    - Examples: examples/
 - Guides: ...
 - Reference: ...
 - Explanation:
     - ...
     - Design: explanation/design/
-- Examples: examples/
 ```
+
+Examples nest under Tutorial (the learn-by-doing quadrant). Changelog
+nests under Reference at the URL `/reference/changelog/` (closes F-10).
+"Further Reading" is removed; its prior contents (Development Story,
+Contributing) move under Explanation or Reference per their content
+type.
 
 **Closes:** F-05 (Tutorial top-level), F-06 (Changelog out of
 Reference), F-07 (Further Reading out of Diataxis), F-08 (Design URL

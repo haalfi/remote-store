@@ -14,11 +14,14 @@ framework](../CLAUDE.md#documentation-framework)): structure →
 
 1. **File classification.** Every `.md` belongs to exactly one class:
    repo-only (appears only in the repo), docs-only (appears only on the docs
-   site), or dual (must read correctly in both). Files may carry an
-   explicit class marker (see _Classification markers_ below); absence
-   means **dual** (the safe default) when the file matches a directory
-   default, otherwise the marker is required. The class is not inferred
-   from path alone or from build behavior.
+   site), or dual (must read correctly in both). Each file is classified by
+   one of two routes: an explicit HTML-comment marker on the file itself,
+   or a directory-default rule when no marker is present. A file that
+   carries no marker AND matches no directory default is unclassified;
+   the gate (G-01) fails on unclassified files. Marker syntax, the three
+   classes, and the directory-default table are normative in
+   _Classification markers_ and _Directory defaults_ below. The class is
+   not inferred from path alone or from build behavior.
 
 2. **Single home.** Each `.md` lives at exactly one path. Other
    presentations are derived from that path, never copied.

@@ -89,6 +89,28 @@ Existing items may be more verbose — trim on next touch.
   - Q4 (manifest vs inline?) — inline. Central manifest reintroduces
     F-13's audit problem in a different location.
 
+  **Acceptance gate (before merging the design PR):**
+  - ADR-0027 status flips from Draft to Accepted. Until that flip,
+    [spec 047](specs/047-docs-framework-tooling.md) and
+    [`AUTHORING.md`](AUTHORING.md) reference a non-immutable decision;
+    the flip closes that gap per
+    [`000-process.md`](000-process.md) Rule 4.
+
+  **Ripple coverage for spec 047 / ADR-0027:**
+  As SDD artefacts under `sdd/specs/` and `sdd/adrs/`, both files are
+  rendered by the existing `gen_pages.py` filesystem scan
+  (`render.render_sdd_wrappers`) at `design/specs/047-*.md` and
+  `design/adrs/0027-*.md`. The `sdd/CLAUDE-REFERENCE.md` ripple-check
+  row "A new authoritative process doc in `sdd/`" applies to trio-level
+  process docs (AUTHORING / DOCUMENTATION / CONTENT-RULES / DESIGN /
+  TESTING / 000-process), not SDD artefacts; its targets (CLAUDE.md
+  framework section, sibling authority back-references,
+  `docs-src/further/further-reading.md`) do not apply here. The new
+  tooling-spec category is a content distinction recorded in
+  [`000-process.md`](000-process.md) § Spec format; it does not require
+  a structural ripple-check entry. Post-bridge (DOCFRAME-005), the
+  unified scanner replaces the auto-render path; semantics unchanged.
+
   **Depends on:** BK-167 (framework defined and wired in).
 
 - [ ] **BK-167b — Apply documentation framework; close audit-012 findings**
