@@ -2,17 +2,27 @@
 
 ## Two presentations, one source
 
-remote-store's documentation runs in two places: the GitHub repo browser and
-the MkDocs site on `gh-pages` (served via mike).
+remote-store's documentation runs in two presentations: the GitHub repo
+browser, and the rendered MkDocs site.
 
-| | Repo (GitHub) | Docs site (mike on gh-pages) |
+| | Repo (GitHub) | Docs site (MkDocs) |
 |---|---|---|
 | Reader | Contributors, agents, package-index and source-link arrivals | End users, evaluators, search-engine arrivals |
-| Engine | Plain Markdown only | MkDocs + plugins + mike versioning |
+| Engine | Plain Markdown only | MkDocs + plugins |
 | Role | Source of truth | Curated reading experience |
 
 Neither presentation is canonical. The repo holds authority; the docs site
 presents it. Both must read correctly without each other.
+
+The docs site is published from the same `mkdocs.yml` build to two hosts:
+
+- **ReadTheDocs** (`https://docs.remotestore.dev/`): primary host. Serves
+  released versions; `/stable/` is the user-facing default.
+- **GitHub Pages via mike**: secondary host. Serves the `dev` track from
+  master and provides the version-selector archive.
+
+Authors do not target a specific host. They target "the docs site"; both
+hosts render the same build.
 
 ## Five principles
 
