@@ -10,8 +10,6 @@ framework](../CLAUDE.md#documentation-framework)): placement →
 [`sdd/AUTHORING.md`](AUTHORING.md); structure →
 [`sdd/DOCUMENTATION.md`](DOCUMENTATION.md).
 
-Derived from [`sdd/research/research-doc-content-longevity.md`](research/research-doc-content-longevity.md).
-
 ## Rules
 
 1. **The 6-month test.** [review-enforced]
@@ -79,3 +77,7 @@ shape; volatile detail lives in its authoritative location.** The positive side
 of the same coin: a document is the SSoT for its own stable core — its purpose,
 principles, and design intent. Other documents link to it for those things; they
 do not restate them. When in doubt, ask rule 1.
+
+### Provenance
+
+Derived from [`sdd/research/research-doc-content-longevity.md`](research/research-doc-content-longevity.md).
