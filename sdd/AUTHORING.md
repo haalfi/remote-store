@@ -12,7 +12,8 @@ Companion to `sdd/DOCUMENTATION.md` (structure and placement) and
 1. **File classification** — Every `.md` belongs to exactly one class:
    repo-only (appears only in the repo), docs-only (appears only on the docs
    site), or dual (must read correctly in both). Classes are recorded
-   centrally, not inferred from path or from build behavior.
+   centrally, not inferred from path or from build behavior. The default
+   class is **dual**; any `.md` not explicitly classified is treated as dual.
 
 2. **Single home** — Each `.md` lives at exactly one path. Other
    presentations are derived from that path, never copied.
