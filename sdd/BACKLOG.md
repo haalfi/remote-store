@@ -106,14 +106,13 @@ Existing items may be more verbose — trim on next touch.
     enumerating it.
 
   **Documentation expert findings:**
-  - F-D-1: trio not surfaced from `README` or `CONTRIBUTING.md` beyond bare
-    scope list — non-Claude contributors miss it.
+  - F-D-1 (partial): trio not surfaced from `README` (a non-Claude
+    contributor entry point); `CONTRIBUTING.md` scope list now links the
+    trio as a partial fix.
   - F-D-4: "Diataxis" vs "Diátaxis" spelling drift across `DOCUMENTATION.md`
     and `AUTHORING.md`.
-  - F-D-5: cross-link at `DOCUMENTATION.md:73` lacks an anchor.
   - F-D-6: `CONTENT-RULES.md` Rule 4 still names `DOCUMENTATION.md § 2` as
     placement authority — should also point to `AUTHORING.md` Rule 1.
-  - F-D-7: `CONTRIBUTING.md` scope list does not link the trio docs.
 
   **SDD expert findings:**
   - F-S-1: `AUTHORING.md` Intent & Scope blends "where files belong" with

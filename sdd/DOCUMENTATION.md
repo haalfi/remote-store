@@ -4,7 +4,7 @@
 
 Authoritative source for documentation structure and standards. Governs the shape and quality of all docs work: new pages, restructuring, and reviews.
 
-Part of the documentation framework (see `CLAUDE.md` § Documentation framework): placement → `sdd/AUTHORING.md`; longevity → `sdd/CONTENT-RULES.md`.
+Part of the documentation framework (see [`CLAUDE.md` § Documentation framework](../CLAUDE.md#documentation-framework)): placement → [`sdd/AUTHORING.md`](AUTHORING.md); longevity → [`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
 
 ## Rules
 
@@ -37,7 +37,7 @@ Pages that try to be two things at once must be split.
 | Development narrative | `DEVELOPMENT_STORY.md` | Yes |
 | Site-specific pages, nav, templates | `docs-src/` | Yes |
 
-For file classification (repo-only / docs-only / dual), see `sdd/AUTHORING.md` Rule 1.
+For file classification (repo-only / docs-only / dual), see [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1.
 
 New user-facing prose pages follow the Diátaxis bucket structure under `docs-src/`:
 - How-to guides go in `docs-src/how-to/` (backend-specific guides in `docs-src/how-to/backends/`).
@@ -70,7 +70,7 @@ No TODOs or placeholders in published docstrings.
 
 ### 4. Cross-linking requirements
 
-Choose the link target based on which presentation hosts the destination (see `sdd/AUTHORING.md` for the two presentations):
+Choose the link target based on which presentation hosts the destination (see [`sdd/AUTHORING.md`](AUTHORING.md#two-presentations-one-source) for the two presentations):
 
 - **Documentation** (guides, API reference, explanation pages): link to ReadTheDocs (`https://docs.remotestore.dev/stable/`). Use `/stable/` (not `/latest/`) so links always point to the most recent release, not unreleased master. The `/en/` language prefix is omitted (single-language project, configured in RTD URL scheme).
 - **Source files** (specs, ADRs, examples, source code, CHANGELOG): link to the GitHub repository (`https://github.com/haalfi/remote-store/`).

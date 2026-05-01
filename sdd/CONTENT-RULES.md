@@ -5,11 +5,12 @@
 Rules for writing documentation that stays accurate over time. Applies to
 all content: README, guides, docstrings, and inline doc comments.
 
-Part of the documentation framework (see `CLAUDE.md` § Documentation
-framework): placement → `sdd/AUTHORING.md`; structure →
-`sdd/DOCUMENTATION.md`.
+Part of the documentation framework (see [`CLAUDE.md` § Documentation
+framework](../CLAUDE.md#documentation-framework)): placement →
+[`sdd/AUTHORING.md`](AUTHORING.md); structure →
+[`sdd/DOCUMENTATION.md`](DOCUMENTATION.md).
 
-Derived from `sdd/research/research-doc-content-longevity.md`.
+Derived from [`sdd/research/research-doc-content-longevity.md`](research/research-doc-content-longevity.md).
 
 ## Rules
 
@@ -30,7 +31,7 @@ Derived from `sdd/research/research-doc-content-longevity.md`.
 4. **One copy per fact.** [review-enforced]
    Every fact lives in exactly one authoritative place; everywhere else is a link
    or a paraphrase of the principle. The authoritative home for each content type
-   is in `sdd/DOCUMENTATION.md` § 2. README and guides link; they do not copy.
+   is in [`sdd/DOCUMENTATION.md` § 2](DOCUMENTATION.md#2-content-homes). README and guides link; they do not copy.
 
 5. **Source-code facts stay in source.** [review-enforced]
    API signatures, capability sets, type annotations, default values live in code.

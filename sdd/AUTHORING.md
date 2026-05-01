@@ -5,9 +5,10 @@
 Authoritative source for where documentation files belong and which
 constraints apply to each. Governs all `.md` content in the repository.
 
-Part of the documentation framework (see `CLAUDE.md` § Documentation
-framework): structure → `sdd/DOCUMENTATION.md`; longevity →
-`sdd/CONTENT-RULES.md`.
+Part of the documentation framework (see [`CLAUDE.md` § Documentation
+framework](../CLAUDE.md#documentation-framework)): structure →
+[`sdd/DOCUMENTATION.md`](DOCUMENTATION.md); longevity →
+[`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
 
 ## Rules
 
@@ -69,4 +70,4 @@ If unsure, assume dual.
 ### Source for the gate categories
 
 The categories named in Rule 5 trace to rules in
-`sdd/audits/audit-012-docs-structure.md`.
+[`sdd/audits/audit-012-docs-structure.md`](audits/audit-012-docs-structure.md).
