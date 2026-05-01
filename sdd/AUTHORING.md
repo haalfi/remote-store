@@ -31,6 +31,23 @@ Companion to `sdd/DOCUMENTATION.md` (structure and placement) and
 
 ## Guides
 
+### Two presentations, one source
+
+remote-store's documentation has two presentations: the GitHub repo browser
+and the rendered docs site.
+
+| | Repo | Docs site |
+|---|---|---|
+| Reader | Arrivals from code, package indexes, agents | End users and evaluators |
+| Engine | Plain Markdown | MkDocs |
+| Role | Source of truth | Curated reading experience |
+
+Neither presentation is canonical. The repo holds authority; the docs site
+presents it. Both must read correctly without each other.
+
+The docs site may be served from more than one host. Authors target "the
+docs site"; host configuration is a deployment concern, not an authoring one.
+
 ### Where does my new file go?
 
 1. **Docs-site only?** → `docs-src/` under the right Diataxis bucket.
