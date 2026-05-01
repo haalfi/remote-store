@@ -6,9 +6,10 @@ policy.
 
 ## Spec-Driven Development
 
-The SDD methodology lives in the [Process](../design/process.md) page.
+The SDD methodology lives in
+[`sdd/000-process.md`](https://github.com/haalfi/remote-store/blob/master/sdd/000-process.md).
 The spec / ADR / RFC / research / audit trail is browsable under
-[Design](../design/).
+[`sdd/`](https://github.com/haalfi/remote-store/tree/master/sdd).
 
 ## Documentation conventions
 

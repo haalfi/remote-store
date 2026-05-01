@@ -25,10 +25,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     Format scope list with all named docs linked.
   - `sdd/DOCUMENTATION.md` and `sdd/CONTENT-RULES.md` Intent & Scope
     back-reference the framework so any entry node leads to the others.
-  - `sdd/DOCUMENTATION.md`: Rule 9 (URL alignment) added (audit-012 R7);
-    Rule 10 (link integrity) added (audit-012 R1/R2); § 2 duplicate
-    "Decision rule" replaced with cross-reference to `AUTHORING.md` Rule 1;
-    § 4 vocabulary aligned to "two presentations".
+  - `sdd/DOCUMENTATION.md` tightened: § 2 cross-references
+    `sdd/000-process.md` § Document types (the canonical home for SDD
+    artefact lifecycle/naming, including research-doc immutability that
+    DOCUMENTATION.md no longer restates); duplicate Diataxis tables
+    removed (Rule 1 + Rule 2 cover it); duplicate Cross-link example
+    table removed (Rule 4 covers it); Rule 5 (PR documentation review)
+    moved to Guides as a heuristic checklist (review-time aid, not a
+    content-shape rule); Rule 3 prose moved to Guides as "Docstring style
+    notes" (table stays as Rule). Net rules: 10 → 8.
   - `sdd/CONTENT-RULES.md` Rule 4 also points to `AUTHORING.md` Rule 1 for
     file-placement authority; typography aligned to `DOCUMENTATION.md` § 8.
   - All framework cross-references are real Markdown links, clickable in

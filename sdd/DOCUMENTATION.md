@@ -37,7 +37,7 @@ Pages that try to be two things at once must be split.
 | Development narrative | `DEVELOPMENT_STORY.md` |
 | Site-specific pages, nav, templates | `docs-src/` |
 
-For file classification (repo-only / docs-only / dual), see [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1.
+For file classification (repo-only / docs-only / dual), see [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1. For SDD artefact path patterns, naming, and lifecycle (specs, ADRs, RFCs, research, audits), see [`sdd/000-process.md` § Document types](000-process.md#document-types).
 
 ### 3. Docstring completeness
 
