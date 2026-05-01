@@ -2,36 +2,27 @@
 
 ## Two presentations, one source
 
-remote-store's documentation runs in two presentations: the GitHub repo
-browser, and the rendered MkDocs site.
+remote-store's documentation has two presentations: the GitHub repo browser
+and the rendered docs site.
 
-| | Repo (GitHub) | Docs site (MkDocs) |
+| | Repo | Docs site |
 |---|---|---|
-| Reader | Contributors, agents, package-index and source-link arrivals | End users, evaluators, search-engine arrivals |
-| Engine | Plain Markdown only | MkDocs + plugins |
+| Reader | Arrivals from code, package indexes, agents | End users and evaluators |
+| Engine | Plain Markdown | MkDocs |
 | Role | Source of truth | Curated reading experience |
 
 Neither presentation is canonical. The repo holds authority; the docs site
 presents it. Both must read correctly without each other.
 
-The docs site is published from the same `mkdocs.yml` build to two hosts:
-
-- **ReadTheDocs** (`https://docs.remotestore.dev/`): primary host. Serves
-  released versions; `/stable/` is the user-facing default.
-- **GitHub Pages via mike**: secondary host. Serves the `dev` track from
-  master and provides the version-selector archive.
-
-Authors do not target a specific host. They target "the docs site"; both
-hosts render the same build.
+The docs site may be served from more than one host. Authors target "the
+docs site"; host configuration is a deployment concern, not an authoring one.
 
 Every authored `.md` falls into exactly one class by which presentations it
 serves:
 
-- **Repo-only**: appears only in the repo (internal process, agent tooling,
-  contributor housekeeping).
-- **Docs-only**: appears only on the docs site (site-specific prose, nav,
-  templates).
-- **Dual**: must read correctly in both presentations.
+- **Repo-only**: appears only in the repo.
+- **Docs-only**: appears only on the docs site.
+- **Dual**: must read correctly in both.
 
 The class fixes which of the principles below apply.
 
