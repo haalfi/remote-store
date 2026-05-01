@@ -31,8 +31,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     § 4 vocabulary aligned to "two presentations".
   - `sdd/CONTENT-RULES.md` Rule 4 also points to `AUTHORING.md` Rule 1 for
     file-placement authority; typography aligned to `DOCUMENTATION.md` § 8.
-  - All framework cross-references are real Markdown links — clickable in
-    the GitHub repo browser, crawler-discoverable.
+  - All framework cross-references are real Markdown links, clickable in
+    the GitHub repo browser and crawler-discoverable.
   - `sdd/CLAUDE-REFERENCE.md` ripple-check table gains a row for
     "new authoritative process doc in `sdd/`."
   - "Diataxis" spelling normalized in the framework trio and

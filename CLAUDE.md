@@ -73,9 +73,9 @@ fenced blocks. Table separator rows (`| --- |`) are structural Markdown.
 
 Three authority docs govern documentation. Apply in order:
 
-1. **[`sdd/AUTHORING.md`](sdd/AUTHORING.md)** — placement (where files belong).
-2. **[`sdd/DOCUMENTATION.md`](sdd/DOCUMENTATION.md)** — structure (what shape they take).
-3. **[`sdd/CONTENT-RULES.md`](sdd/CONTENT-RULES.md)** — longevity (writing that stays accurate).
+1. **[`sdd/AUTHORING.md`](sdd/AUTHORING.md)**: placement (where files belong).
+2. **[`sdd/DOCUMENTATION.md`](sdd/DOCUMENTATION.md)**: structure (what shape they take).
+3. **[`sdd/CONTENT-RULES.md`](sdd/CONTENT-RULES.md)**: longevity (writing that stays accurate).
 
 ## Code conventions
 

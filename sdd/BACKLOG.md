@@ -70,8 +70,8 @@ Existing items may be more verbose — trim on next touch.
   - **File classification storage**: pick central manifest or inline
     per-file metadata (HTML comment markers, still plain Markdown).
     Resolves Q4.
-  - **PR-time gate script**: validates `sdd/AUTHORING.md` Rule 5 — every
-    rule in the framework is satisfied. Failures block merge.
+  - **PR-time gate script**: validates that every rule in the framework
+    is satisfied (per `sdd/AUTHORING.md` Rule 5). Failures block merge.
 
   **Open questions:**
   - Q2: Should `sdd/` move under `docs-src/design/` to remove the wrapper
