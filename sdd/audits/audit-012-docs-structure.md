@@ -130,13 +130,10 @@ search engine, or agent navigates the GitHub repo and follows the link, GitHub r
 **Affected files:** `docs-src/design/content-rules.md`, `docs-src/design/design.md`,
 `docs-src/design/documentation.md`, `docs-src/design/testing.md`.
 
-Each of these files contains only a Jinja2 directive:
-
-```
-{%
-   include-markdown "../../sdd/DOCUMENTATION.md"
-%}
-```
+Each of these files contains only an `include-markdown` Jinja2 directive
+that references the corresponding source file under `../../sdd/` (for
+example, `docs-src/design/documentation.md` includes
+`sdd/DOCUMENTATION.md`).
 
 In the GitHub repo browser, Jinja2 directives are not processed — they render as literal
 text. A reader navigating to these files on GitHub sees only the raw template syntax, not
