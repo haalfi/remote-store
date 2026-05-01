@@ -69,11 +69,13 @@ spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax
 (`A -- text --> B`), `--8<--` snippet includes, and code/SQL comments inside
 fenced blocks. Table separator rows (`| --- |`) are structural Markdown.
 
-## Documentation conventions
+## Documentation framework
 
-See `sdd/DOCUMENTATION.md` for structure and placement rules.
-See `sdd/CONTENT-RULES.md` for content quality and longevity rules — apply
-these when writing or reviewing any README, guide, or docstring.
+Three authority docs govern documentation. Apply in order:
+
+1. **[`sdd/AUTHORING.md`](sdd/AUTHORING.md)**: placement (where files belong).
+2. **[`sdd/DOCUMENTATION.md`](sdd/DOCUMENTATION.md)**: structure (what shape they take).
+3. **[`sdd/CONTENT-RULES.md`](sdd/CONTENT-RULES.md)**: longevity (writing that stays accurate).
 
 ## Code conventions
 

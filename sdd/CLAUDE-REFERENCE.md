@@ -55,6 +55,7 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `tests/test_examples.py` import                           |
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
 |                            | `docs-src/how-to/backends/index.md`,                      |
+|                            | `sdd/AUTHORING.md` Rule 1 (file classification),          |
 |                            | `sdd/DOCUMENTATION.md` § Content homes                    |
 | **An API reference page**  | `sdd/DOCUMENTATION.md` § API page building blocks         |
 | (new or restructured)      | and building blocks for required sections                 |
@@ -90,6 +91,13 @@ Before committing, check whether your change has cross-file dependencies:
 | **`__mirror__` attribute** | `sdd/specs/` async spec (async-mirror invariant),         |
 | (on an async backend)      | `scripts/gen_graph.py` (mirrors-edge emission),           |
 |                            | `tests/` mirror test if backend is added or removed       |
+| **A new authoritative**    | `CLAUDE.md` § Documentation framework (if part of the     |
+| **process doc in `sdd/`**  | trio), `CONTRIBUTING.md` Authoritative Document Format    |
+|                            | § Scope, sibling authority docs (back-references in       |
+|                            | their Intent & Scope), `.claude/skills/*/SKILL.md`        |
+|                            | foundation lists, `docs-src/design/` wrapper + `_nav.yml`,|
+|                            | `docs-src/further/further-reading.md`, and this           |
+|                            | ripple-check table                                        |
 
 ---
 
@@ -135,9 +143,9 @@ tests/                     # pytest suite — spec-traced via @pytest.mark.spec(
 examples/                  # Core runnable examples (run locally, no credentials)
 examples/backends/         # Cloud backend examples (need services + credentials)
 sdd/                       # Specs, ADRs, RFCs, research, audits, backlog, design docs
-docs-src/how-to/           # User-facing how-to guides (Diátaxis)
+docs-src/how-to/           # User-facing how-to guides (Diataxis)
 docs-src/how-to/backends/  # Backend configuration guides
-docs-src/explanation/      # Explanation pages (Diátaxis)
+docs-src/explanation/      # Explanation pages (Diataxis)
 docs-src/reference/        # Reference pages, FEATURES.md, migration guide
 docs-src/further/          # Further reading
 docs-src/                  # MkDocs Material documentation source (prose + nav)

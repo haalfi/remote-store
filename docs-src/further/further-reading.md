@@ -6,15 +6,16 @@ policy.
 
 ## Spec-Driven Development
 
-The full spec / ADR / RFC / research trail lives on the
-[Design index](../design/documentation.md). Start there for the methodology and the
-document-by-document record.
+The SDD methodology lives in [Process](../design/process.md). The spec /
+ADR / RFC / research / audit trail is browsable under
+[Design](../design/).
 
 ## Documentation conventions
 
 How this documentation is written and kept accurate over time:
 
-- [Documentation Standards](../design/documentation.md): structure and placement rules
+- [Authoring Standards](../design/authoring.md): where files belong (placement)
+- [Documentation Standards](../design/documentation.md): structure and shape
 - [Content Rules](../design/content-rules.md): keeping prose accurate over time
 
 ## Project history

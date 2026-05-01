@@ -2,9 +2,9 @@
 
 ## Intent & Scope
 
-Authoritative source for documentation structure, standards, and placement rules for `remote-store`. Governs all docs work: new pages, restructuring, and reviews.
+Authoritative source for documentation structure and standards. Governs the shape and quality of all docs work: new pages, restructuring, and reviews.
 
-When writing or reviewing any documentation (README, guides, docstrings, and inline comments), also apply the rules in `sdd/CONTENT-RULES.md` to keep content accurate over time.
+Part of the documentation framework (see [`CLAUDE.md` § Documentation framework](../CLAUDE.md#documentation-framework)): placement → [`sdd/AUTHORING.md`](AUTHORING.md); longevity → [`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
 
 ## Rules
 
@@ -22,29 +22,22 @@ Pages that try to be two things at once must be split.
 
 ### 2. Content homes
 
-| Content type | Source location | Readable on GitHub? |
-|---|---|---|
-| Project intro, install, quick start | `README.md` | Yes |
-| How-to guides | `docs-src/how-to/` | Yes |
-| Explanation pages | `docs-src/explanation/` | Yes |
-| Reference pages | `docs-src/reference/` | Yes |
-| Further reading | `docs-src/further/` | Yes |
-| Runnable examples | `examples/` | Yes |
-| API docstrings | `src/` (Python source) | Yes |
-| Specs, ADRs, RFCs, research, audits | `sdd/` | Yes |
-| Contributor workflow | `CONTRIBUTING.md` | Yes |
-| Release history | `CHANGELOG.md` | Yes |
-| Development narrative | `DEVELOPMENT_STORY.md` | Yes |
-| Site-specific pages, nav, templates | `docs-src/` | Yes |
+| Content type | Source location |
+|---|---|
+| Project intro, install, quick start | `README.md` |
+| How-to guides | `docs-src/how-to/` |
+| Explanation pages | `docs-src/explanation/` |
+| Reference pages | `docs-src/reference/` |
+| Further reading | `docs-src/further/` |
+| Runnable examples | `examples/` |
+| API docstrings | `src/` (Python source) |
+| Specs, ADRs, RFCs, research, audits | `sdd/` |
+| Contributor workflow | `CONTRIBUTING.md` |
+| Release history | `CHANGELOG.md` |
+| Development narrative | `DEVELOPMENT_STORY.md` |
+| Site-specific pages, nav, templates | `docs-src/` |
 
-**Decision rule:** If it makes sense on GitHub without MkDocs, it goes in a source directory. If it only makes sense on the docs site, it goes in `docs-src/`. All user-facing prose now lives directly in `docs-src/` Diátaxis buckets.
-
-New user-facing prose pages follow the Diátaxis bucket structure under `docs-src/`:
-- How-to guides go in `docs-src/how-to/` (backend-specific guides in `docs-src/how-to/backends/`).
-- Explanation pages go in `docs-src/explanation/`.
-- Reference pages go in `docs-src/reference/`.
-
-Site-only artefacts (nav files, MkDocs-only includes) stay in `docs-src/` alongside the prose.
+For file classification (repo-only / docs-only / dual), see [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1. For SDD artefact path patterns, naming, and lifecycle (specs, ADRs, RFCs, research, audits), see [`sdd/000-process.md` § Document types](000-process.md#document-types).
 
 ### 3. Docstring completeness
 
@@ -59,18 +52,11 @@ Format and style rules are in `sdd/DESIGN.md` § 4. This section covers what mkd
 | Enum | — | — | — | — |
 | Error class | — | — | — | — |
 
-Supplementary context that does not fit Args/Returns/Raises goes in a `Notes:` block, not scattered inline or appended to the summary line.
-
-Use ``Example:`` (not ``Usage:``) for code snippets in docstrings. In class/function
-docstrings, mkdocstrings renders ``Example:`` as a collapsible box. For module-level
-docstrings, use MkDocs admonition syntax: ``!!! example`` with indented code blocks
-(Google sections don't parse in module docstrings).
-
 No TODOs or placeholders in published docstrings.
 
 ### 4. Cross-linking requirements
 
-Two published sites exist. Use the right one depending on what you link to:
+Choose the link target based on which presentation hosts the destination (see [`sdd/AUTHORING.md`](AUTHORING.md#two-presentations-one-source) for the two presentations):
 
 - **Documentation** (guides, API reference, explanation pages): link to ReadTheDocs (`https://docs.remotestore.dev/stable/`). Use `/stable/` (not `/latest/`) so links always point to the most recent release, not unreleased master. The `/en/` language prefix is omitted (single-language project, configured in RTD URL scheme).
 - **Source files** (specs, ADRs, examples, source code, CHANGELOG): link to the GitHub repository (`https://github.com/haalfi/remote-store/`).
@@ -95,17 +81,7 @@ Minimum per page:
 - Every how-to guide links to its matching example script (if one exists).
 - Every API class page links to its primary guide.
 
-### 5. PR documentation review
-
-The SDD workflow includes a DOCS step (see `sdd/000-process.md` rule 6). When reviewing PRs, check:
-
-- Docstrings meet rule 3 for all new/changed public symbols
-- Relevant guide updated (if behavior changed)
-- Example updated or added (if user-facing)
-- CHANGELOG stub present (one line per completed item — see ripple-check table **CHANGELOG entry**)
-- No orphaned cross-links (renamed/removed APIs)
-
-### 6. README requirements
+### 5. README requirements
 
 The README must contain:
 
@@ -121,31 +97,23 @@ The README must contain:
 - Link to full documentation site, CHANGELOG, and CONTRIBUTING
 - License, supported Python versions, project status badge
 
-### 7. Research document rules
-
-- Research docs live in `sdd/research/` and are named `research-<topic>.md`.
-- They are not edited after the related feature ships — they are historical records.
-- They may be surfaced on the docs site under Explanation > Research.
-- They do not need to follow the docstring or guide quality checklists.
-
-### 8. Typography
+### 6. Typography
 
 - **Prose dashes:** Use `—` (U+2014) sparingly as a parenthetical aside. Default to periods, colons, or commas. Never use `--` as an em dash substitute in documentation prose.
 - **Table N/A value:** `—` (U+2014) for any "not applicable / not supported / none" cell. Never `--` or `No`.
 - **Preserve `--`:** Only in shell flag syntax inside code blocks, spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax, `--8<--` snippet includes, and code/SQL comments inside fenced blocks.
 
+### 7. URL alignment
+
+URL paths must correspond to navigation position. A page nested under nav section X has its URL prefix matching X (e.g., a page under Reference > API renders at `/reference/api/...`, not `/api/...`).
+
+### 8. Link integrity
+
+All internal links must resolve in their target presentation. Repo-side links (relative paths in `.md` files) must resolve on disk. Docs-site links (rendered URLs) must resolve in the built site. Broken links fail the build, not warn.
+
 ## Guides
 
-### Diataxis categories
-
-| Category | Orientation | Goal | Where it lives |
-|---|---|---|---|
-| Tutorial | Learning | Guided first success | `README.md` Quick Start, `docs-src/getting-started.md`, notebooks |
-| How-To Guides | Tasks | Answer "how do I X?" | `docs-src/how-to/` |
-| Reference | Information | Precise lookup | Python docstrings in `src/`, extracted into `docs-src/api/`; prose reference pages in `docs-src/reference/` |
-| Explanation | Understanding | Help understand *why* | `docs-src/explanation/` for user-facing pages, `sdd/adrs/` for formal decisions |
-
-### Content drift prevention
+### Diataxis content drift prevention
 
 Each Diataxis category excludes specific content types. When a page accumulates excluded content, split it.
 
@@ -158,21 +126,29 @@ Each Diataxis category excludes specific content types. When a page accumulates 
 
 Cross-references replace duplication, but actionable checklists should be co-located with the rules they support. When condensing, keep lookup tables near the decision point.
 
-### Cross-link example
+### Docstring style notes
 
-| From | To | Link pattern |
-|---|---|---|
-| `docs-src/how-to/cache.md` | `ext.cache` API | `[CachedStore](../api/ext/cache.md)` |
-| `Store.read` docstring | Streaming guide | `See the [Streaming Guide](...)` |
-| `docs-src/how-to/backends/s3.md` | Capabilities matrix | `[Capabilities](../../reference/capabilities-matrix.md)` |
+Supplementary context that does not fit Args/Returns/Raises goes in a `Notes:` block, not scattered inline or appended to the summary line.
 
-## API page building blocks
+Use ``Example:`` (not ``Usage:``) for code snippets in docstrings. In class/function docstrings, mkdocstrings renders ``Example:`` as a collapsible box. For module-level docstrings, use MkDocs admonition syntax: ``!!! example`` with indented code blocks (Google sections don't parse in module docstrings).
+
+### PR documentation review checklist
+
+The SDD workflow includes a DOCS step (see `sdd/000-process.md` rule 6). When reviewing PRs, check:
+
+- Docstrings meet Rule 3 for all new/changed public symbols.
+- Relevant guide updated (if behavior changed).
+- Example updated or added (if user-facing).
+- CHANGELOG stub present (one line per completed item; see ripple-check table **CHANGELOG entry**).
+- No orphaned cross-links (renamed/removed APIs).
+
+### API page building blocks
 
 Reusable structural blocks for `docs-src/api/` pages. `store.md` is the
 canonical example. Apply the appropriate page-type template (see below) and
 compose from these blocks.
 
-### Admonition vocabulary
+#### Admonition vocabulary
 
 Three levels, applied consistently across all `docs-src/api/` pages:
 
@@ -187,7 +163,7 @@ Rules:
 - `!!! warning "Backend-specific methods"` is used only as a section/group header, not on individual methods.
 - Title fragment must be identical for the same pattern across all files (colon, no em dash, backtick-quoted param names).
 
-### Blocks
+#### Blocks
 
 **Class header** — renders the class summary only; methods follow in explicit
 sections.
@@ -280,7 +256,7 @@ Verify against actual code before relying on these in production.
 - [Example name](../examples/example-path.md) — one-line description
 ```
 
-### Page-type templates
+#### Page-type templates
 
 | Page type | Required blocks | Optional blocks |
 |---|---|---|

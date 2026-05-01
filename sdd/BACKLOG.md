@@ -57,42 +57,80 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-167 — Docs authoring guide and simplification follow-up (post audit-012)**
-  Follows BK-165 (audit phase complete, `sdd/audits/audit-012-docs-structure.md`).
-  Act on audit-012 findings as directed by the maintainer, and deliver the
-  conceptual work deferred from BK-165.
+- [ ] **BK-167a — Documentation framework tooling**
+  Builds the build-time infrastructure that enforces the framework defined
+  in BK-167. The framework states the rules; this item picks the mechanism
+  choices and implements the gate.
 
-  **Authoring guide** (`sdd/AUTHORING.md` or extend `sdd/DOCUMENTATION.md`):
-  - Decision tree: "I need to add a new page about X — where does it go?"
-    Branches: API reference, how-to, explanation, ADR, spec, audit, research,
-    RFC, example script, repo-level doc (CONTRIBUTING etc.).
-  - Link conventions: relative within `docs-src/`, virtual paths for `sdd/`
-    wrappers, absolute GitHub URLs for files outside `docs-src/`.
-  - Diagram of the three page-emission mechanisms (static Markdown, gen-files
-    virtual pages, include-markdown wrappers) and which content lives where.
+  **Deliverables:**
+  - **Bridge implementation**: a single declared mechanism that takes dual
+    files from their repo path to the docs site. Replaces or unifies the
+    three current mechanisms (include-markdown wrappers, `_link_map.yml`,
+    gen-files scan). Resolves audit-012 F-12.
+  - **File classification storage**: pick central manifest or inline
+    per-file metadata (HTML comment markers, still plain Markdown).
+    Resolves Q4.
+  - **PR-time gate script**: validates that every rule in the framework
+    is satisfied (per `sdd/AUTHORING.md` Rule 5). Failures block merge.
 
-  **Simplifications to evaluate (per audit-012 findings):**
-  - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`.
-  - F-12: unify the three mechanisms for rendering `sdd/` top-level files
-    (include-markdown wrappers vs. `_link_map.yml` vs. gen-files scan).
-  - F-01/F-02: evaluate whether include-markdown wrappers should be replaced
-    with gen-files virtual pages so repo-browser links resolve correctly, or
-    whether `sdd/` top-level files move into `docs-src/design/` (removes the
-    wrapper layer entirely but conflicts with R5 for process docs).
+  **Open questions:**
+  - Q2: Should `sdd/` move under `docs-src/design/` to remove the wrapper
+    layer? Tradeoff: cleaner build vs. moving authoritative artifacts off
+    the established `sdd/` path that tooling and skills already reference.
+  - Q3: Is there a single declarative file describing every virtual page
+    that would replace the four current generation mechanisms?
+  - Q4: Central manifest vs. inline per-file metadata for file
+    classification. Inline keeps the class next to the file; central
+    preserves a single auditable boundary. `sdd/AUTHORING.md` Rule 1 is
+    mechanism-agnostic; this item picks the mechanism.
+
+  **Depends on:** BK-167 (framework defined and wired in).
+
+- [ ] **BK-167b — Apply documentation framework; close audit-012 findings**
+  Once the framework (BK-167) and its tooling (BK-167a) are in place,
+  classify every existing `.md`, run the gate, and close the open
+  audit-012 findings. Exit criterion: framework "up & running, tested &
+  proven, documented & correct."
+
+  **Audit-012 findings to close:**
+  - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`
+    AND restore `mkdocs build --strict` in `.github/workflows/ci.yml`
+    (currently relaxed so cross-presentation links from the trio do not
+    block PRs before the bridge in BK-167a rewrites them). Absorbs W-01
+    (no build-time enforcement of cross-version link safety): `not_found:
+    error` plus mike's version-switch handling closes both.
+  - F-01/F-02: include-markdown wrappers fail in the GitHub repo browser;
+    resolved by the bridge chosen in BK-167a. The new
+    `docs-src/design/authoring.md` wrapper introduced by BK-167 is removed
+    as part of this transition.
   - F-05/F-06/F-07/F-08: align nav structure to pure Diataxis and fix the
     `design/` URL prefix to match its nav position under Explanation.
+  - F-10: Changelog URL `/changelog/` contradicts nav position under
+    Reference. Closed by enforcing `sdd/DOCUMENTATION.md` Rule 9 (URL
+    alignment).
+  - F-11: `_link_map.yml` comment says "repo-root files" but lists
+    `sdd/000-process.md`. Closed when the bridge unification (BK-167a)
+    replaces `_link_map.yml`.
+  - F-13: excluded files auditable (closed by the classification system
+    from BK-167 + BK-167a).
 
-  **Open questions from BK-165:**
-  1. Should the docstring-driven examples chain stay (single source of truth,
-     hidden machinery) or be replaced with static stubs (discoverability,
-     duplication)?
-  2. Should `sdd/` move under `docs-src/design/` to remove the wrapper layer?
-     Tradeoff: cleaner build vs. moving authoritative artifacts off the
-     established `sdd/` path that tooling and skills already reference.
-  3. Is there a single declarative file describing every virtual page that
-     would replace the four current generation mechanisms?
+  **Other follow-up (from BK-167 self-review):**
+  - F-S-6: `sdd/DOCUMENTATION.md` "API page building blocks" placement.
+    Currently under Guides per the Authoritative Document Format, but the
+    templates carry "Required" / "Optional" columns. Decide: restore as a
+    Rule, extract to a separate doc, or soften the wording.
 
-  **Depends on:** BK-165 (audit phase done).
+  **Open question:**
+  - Q1: Should the docstring-driven examples chain stay (single source of
+    truth, hidden machinery) or be replaced with static stubs
+    (discoverability, duplication)?
+
+  **Exit criteria:**
+  - All `.md` files classified.
+  - PR-time gate green on master.
+  - All audit-012 findings closed (or explicitly deferred with rationale).
+
+  **Depends on:** BK-167a (tooling).
 
 ---
 

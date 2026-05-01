@@ -7,6 +7,43 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-167 — Documentation framework defined and wired in**
+  Three-doc documentation framework (placement → structure → longevity)
+  established and wired into the contributor and Claude-session entry
+  points. The framework states the rules; tooling that enforces them is
+  BK-167a; applying the framework and closing audit-012 findings is BK-167b.
+
+  - [`sdd/AUTHORING.md`](AUTHORING.md) created (placement authority): file
+    classification (repo-only / docs-only / dual; default dual), single
+    home, plain Markdown for dual files, single bridge mechanism, PR-time
+    gate enforcing every framework rule.
+  - [`CLAUDE.md` § Documentation framework](../CLAUDE.md#documentation-framework)
+    names the three docs and their application order; replaces the earlier
+    two-pointer "Documentation conventions" stub.
+  - [`CONTRIBUTING.md`](../CONTRIBUTING.md) gains a § Documentation
+    framework pointer and adds `AUTHORING.md` to the Authoritative Document
+    Format scope list with all named docs linked.
+  - `sdd/DOCUMENTATION.md` and `sdd/CONTENT-RULES.md` Intent & Scope
+    back-reference the framework so any entry node leads to the others.
+  - `sdd/DOCUMENTATION.md` tightened: § 2 cross-references
+    `sdd/000-process.md` § Document types (the canonical home for SDD
+    artefact lifecycle/naming, including research-doc immutability that
+    DOCUMENTATION.md no longer restates); duplicate Diataxis tables
+    removed (Rule 1 + Rule 2 cover it); duplicate Cross-link example
+    table removed (Rule 4 covers it); Rule 5 (PR documentation review)
+    moved to Guides as a heuristic checklist (review-time aid, not a
+    content-shape rule); Rule 3 prose moved to Guides as "Docstring style
+    notes" (table stays as Rule). Net rules: 10 → 8.
+  - `sdd/CONTENT-RULES.md` Rule 4 also points to `AUTHORING.md` Rule 1 for
+    file-placement authority; typography aligned to `DOCUMENTATION.md` § 8.
+  - All framework cross-references are real Markdown links, clickable in
+    the GitHub repo browser and crawler-discoverable.
+  - `sdd/CLAUDE-REFERENCE.md` ripple-check table gains a row for
+    "new authoritative process doc in `sdd/`."
+  - "Diataxis" spelling normalized in the framework trio and
+    `sdd/CLAUDE-REFERENCE.md` (historical entries in `CHANGELOG`,
+    `DEVELOPMENT_STORY`, older RFCs, and `BACKLOG` entries unchanged).
+
 - [x] **BK-165 — Docs structure audit for the post-ID-174 layout (audit phase)**
   Established 13 audit rules covering the three-hierarchy vocabulary (repo
   path / nav position / URL path), link integrity, Diataxis nav purity,
