@@ -93,7 +93,10 @@ Before committing, check whether your change has cross-file dependencies:
 | **A new authoritative**    | `CLAUDE.md` § Documentation framework (if part of the     |
 | **process doc in `sdd/`**  | trio), `CONTRIBUTING.md` Authoritative Document Format    |
 |                            | § Scope, sibling authority docs (back-references in       |
-|                            | their Intent & Scope), and this ripple-check table        |
+|                            | their Intent & Scope), `.claude/skills/*/SKILL.md`        |
+|                            | foundation lists, `docs-src/design/` wrapper + `_nav.yml`,|
+|                            | `docs-src/further/further-reading.md`, and this           |
+|                            | ripple-check table                                        |
 
 ---
 

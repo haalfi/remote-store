@@ -94,10 +94,18 @@ Existing items may be more verbose — trim on next touch.
 
   **Audit-012 findings to close:**
   - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`.
+    Absorbs W-01 (no build-time enforcement of cross-version link safety):
+    `not_found: error` plus mike's version-switch handling closes both.
   - F-01/F-02: include-markdown wrappers fail in the GitHub repo browser;
     resolved by the bridge chosen in BK-167a.
   - F-05/F-06/F-07/F-08: align nav structure to pure Diataxis and fix the
     `design/` URL prefix to match its nav position under Explanation.
+  - F-10: Changelog URL `/changelog/` contradicts nav position under
+    Reference. Closed by enforcing `sdd/DOCUMENTATION.md` Rule 9 (URL
+    alignment).
+  - F-11: `_link_map.yml` comment says "repo-root files" but lists
+    `sdd/000-process.md`. Closed when the bridge unification (BK-167a)
+    replaces `_link_map.yml`.
   - F-13: excluded files auditable (closed by the classification system
     from BK-167 + BK-167a).
 

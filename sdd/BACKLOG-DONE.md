@@ -35,7 +35,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     the GitHub repo browser, crawler-discoverable.
   - `sdd/CLAUDE-REFERENCE.md` ripple-check table gains a row for
     "new authoritative process doc in `sdd/`."
-  - "Diataxis" spelling normalized across the trio + CLAUDE-REFERENCE.md.
+  - "Diataxis" spelling normalized in the framework trio and
+    `sdd/CLAUDE-REFERENCE.md` (historical entries in `CHANGELOG`,
+    `DEVELOPMENT_STORY`, older RFCs, and `BACKLOG` entries unchanged).
 
 - [x] **BK-165 — Docs structure audit for the post-ID-174 layout (audit phase)**
   Established 13 audit rules covering the three-hierarchy vocabulary (repo
