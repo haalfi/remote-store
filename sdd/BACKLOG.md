@@ -104,6 +104,8 @@ Existing items may be more verbose — trim on next touch.
   a structural ripple-check entry. Post-bridge (DOCFRAME-005), the
   unified scanner replaces the auto-render path; semantics unchanged.
 
+  **Progress:** Step 1 landed — `_parse_marker`, `_classify_file`, `DualEntry`, `scan_dual_files` in `scripts/docs/scan.py` with five spec-traced tests (DOCFRAME-001..003).
+
   **Depends on:** BK-167 (framework defined and wired in).
 
 - [ ] **BK-167b — Apply documentation framework; close audit-012 findings**

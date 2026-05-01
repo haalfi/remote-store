@@ -8,6 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- BK-167a (Step 1): `scan_dual_files`, `DualEntry`, `_parse_marker`, and `_classify_file` added to `scripts/docs/scan.py`; five spec-traced tests in `tests/scripts/test_docs_framework.py` covering DOCFRAME-001..003.
 - BK-167a: ADR-0027 (single-bridge documentation pipeline with inline
   classification) and Spec 047 (documentation framework tooling
   contracts). Author-facing classification rules absorbed into

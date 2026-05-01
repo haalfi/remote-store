@@ -11,6 +11,10 @@ Record types:
     One spec/ADR/RFC/audit/research document discovered under
     ``sdd/<kind.source_dir>/``.
 
+:class:`DualEntry`
+    One dual file: absolute repo source path and its virtual docs dest.
+    Produced by :func:`scan_dual_files`.
+
 :class:`ExampleEntry`
     One example script discovered under ``examples/<category>/``. Title,
     description, and optional ``see_also`` come from the module docstring.
@@ -22,6 +26,7 @@ Record types:
 from __future__ import annotations
 
 import ast
+import fnmatch
 import re
 import warnings
 from dataclasses import dataclass, field
@@ -30,6 +35,7 @@ from typing import TYPE_CHECKING
 import yaml
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 _YAML_TAIL_RE = re.compile(r"\n---\n(see_also:.*?)\Z", re.DOTALL)
@@ -79,6 +85,8 @@ class SddEntry:
 
 def _scan_kind(repo_root: Path, kind: SddKind) -> list[SddEntry]:
     directory = repo_root / kind.source_dir
+    if not directory.is_dir():
+        return []
     entries: list[SddEntry] = []
     for p in sorted(directory.glob(kind.glob)):
         if p.stem in kind.skip_stems:
@@ -102,6 +110,142 @@ def _scan_kind(repo_root: Path, kind: SddKind) -> list[SddEntry]:
 def scan_all_sdd(repo_root: Path) -> dict[str, list[SddEntry]]:
     """Scan every :data:`SDD_KINDS` entry, keyed by ``kind.slug``."""
     return {kind.slug: _scan_kind(repo_root, kind) for kind in SDD_KINDS}
+
+
+# ---------------------------------------------------------------------------
+# DOCFRAME-002: Classification marker parser
+# ---------------------------------------------------------------------------
+
+_MARKER_RE = re.compile(r"<!--\s+doc:\s+(dual|repo-only|docs-only)(?:\s+dest=(\S+))?\s*-->")
+
+
+def _parse_marker(text: str) -> tuple[str, str | None] | None:
+    """Parse the doc classification marker from the first 5 non-blank lines.
+
+    Returns ``(class, dest)`` where *dest* is ``None`` for non-dual classes.
+    Returns ``None`` when no marker is present.
+    Raises ``ValueError`` on malformed markers (bad class, missing/extra dest=,
+    multiple markers).
+    """
+    non_blank = 0
+    found: list[re.Match[str]] = []
+    for line in text.split("\n"):
+        if not line.strip():
+            continue
+        non_blank += 1
+        m = _MARKER_RE.search(line)
+        if m:
+            found.append(m)
+        if non_blank >= 5:
+            break
+
+    if len(found) > 1:
+        raise ValueError("Multiple doc markers found in file")
+    if not found:
+        return None
+
+    m = found[0]
+    klass = m.group(1)
+    dest = m.group(2)
+
+    if klass == "dual" and dest is None:
+        raise ValueError("dual marker requires dest=")
+    if klass != "dual" and dest is not None:
+        raise ValueError(f"{klass} marker must not have dest=")
+
+    return klass, dest
+
+
+def _classify_file(path: Path, repo_root: Path) -> tuple[str, str | None]:
+    """Classify *path* via its inline marker or the directory-default table.
+
+    Returns ``(class, dest)`` where *dest* is ``None`` for non-dual classes.
+    Raises ``ValueError`` (G-01) when the file is unclassified.
+    """
+    from pathlib import Path as _Path  # runtime import; Path is TYPE_CHECKING-only above
+
+    path = _Path(path).resolve()
+    repo_root = _Path(repo_root).resolve()
+
+    result = _parse_marker(path.read_text(encoding="utf-8"))
+    if result is not None:
+        return result
+
+    # Directory defaults (AUTHORING.md § Directory defaults)
+    for kind in SDD_KINDS:
+        kind_dir = (repo_root / kind.source_dir).resolve()
+        if path.parent == kind_dir and fnmatch.fnmatch(path.name, kind.glob) and path.stem not in kind.skip_stems:
+            return "dual", f"explanation/design/{kind.slug}/{path.stem}.md"
+
+    docs_src = (repo_root / "docs-src").resolve()
+    if path.is_relative_to(docs_src):
+        return "docs-only", None
+
+    rel = path.relative_to(repo_root)
+    raise ValueError(f"{rel} carries no marker and matches no directory default (G-01)")
+
+
+# ---------------------------------------------------------------------------
+# DOCFRAME-001 + DOCFRAME-003: DualEntry and scan_dual_files
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class DualEntry:
+    """One dual file: absolute source path and its virtual docs destination."""
+
+    source: Path  # absolute repo path
+    dest: str  # virtual dest, e.g. "explanation/design/authoring.md"
+
+
+def scan_dual_files(repo_root: Path) -> Iterator[DualEntry]:
+    """Discover all dual files in *repo_root*.
+
+    Yields :class:`DualEntry` for every file whose effective classification is
+    ``dual``: SDD-subdir files (directory-default dual per
+    :data:`SDD_KINDS`) and files elsewhere that carry an explicit
+    ``<!-- doc: dual dest=... -->`` marker.
+
+    Spec: DOCFRAME-001, DOCFRAME-003.
+    """
+    from pathlib import Path as _Path
+
+    repo_root = _Path(repo_root).resolve()
+
+    # SDD subdirs: directory-default dual; explicit marker can override.
+    sdd_dirs: set[Path] = set()
+    for kind in SDD_KINDS:
+        kind_dir = repo_root / kind.source_dir
+        sdd_dirs.add(kind_dir.resolve())
+        if not kind_dir.is_dir():
+            continue
+        for p in sorted(kind_dir.glob(kind.glob)):
+            if p.stem in kind.skip_stems:
+                continue
+            try:
+                result = _parse_marker(p.read_text(encoding="utf-8"))
+            except ValueError:
+                continue  # malformed — gate (G-01) handles this
+            if result is None:
+                yield DualEntry(source=p.resolve(), dest=f"explanation/design/{kind.slug}/{p.stem}.md")
+            elif result[0] == "dual":
+                yield DualEntry(source=p.resolve(), dest=result[1])
+            # repo-only or docs-only override: not a dual file
+
+    # Files elsewhere: yield those with explicit dual markers.
+    docs_src = (repo_root / "docs-src").resolve()
+    for md in sorted(repo_root.rglob("*.md")):
+        abs_md = md.resolve()
+        if any(abs_md.is_relative_to(d) for d in sdd_dirs):
+            continue
+        if abs_md.is_relative_to(docs_src):
+            continue
+        try:
+            result = _parse_marker(md.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if result is not None and result[0] == "dual":
+            yield DualEntry(source=abs_md, dest=result[1])
 
 
 # ---------------------------------------------------------------------------
