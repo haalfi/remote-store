@@ -134,6 +134,10 @@ The README must contain:
 - **Table N/A value:** `—` (U+2014) for any "not applicable / not supported / none" cell. Never `--` or `No`.
 - **Preserve `--`:** Only in shell flag syntax inside code blocks, spec-ID ranges (`BATCH-020 -- BATCH-025`), Mermaid edge syntax, `--8<--` snippet includes, and code/SQL comments inside fenced blocks.
 
+### 9. URL alignment
+
+URL paths must correspond to navigation position. A page nested under nav section X has its URL prefix matching X (e.g., a page under Reference > API renders at `/reference/api/...`, not `/api/...`).
+
 ## Guides
 
 ### Diataxis categories

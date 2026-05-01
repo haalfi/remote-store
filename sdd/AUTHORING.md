@@ -26,9 +26,13 @@ Companion to `sdd/DOCUMENTATION.md` (structure and placement) and
 4. **One bridge mechanism** — A single declared mechanism takes dual files
    into the docs site. New mechanisms are not added to handle special cases.
 
-5. **PR-time enforcement** — A PR-blocking check validates that
-   classifications are known, the bridge resolves cleanly for every dual
-   file, and internal links resolve in their target presentation.
+5. **PR-time enforcement** — A PR-blocking check validates each gate
+   category: (a) classification — every `.md` is classified; (b) bridge
+   resolution — the bridge resolves cleanly for every dual file; (c) link
+   integrity — internal links resolve in their target presentation; (d) nav
+   alignment — URL paths correspond to nav position; (e) cross-version
+   safety — version switching produces no 404s. Each category corresponds
+   to one or more rules in `sdd/audits/audit-012-docs-structure.md`.
 
 ## Guides
 
