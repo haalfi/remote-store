@@ -8,6 +8,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-169 — Add unit tests for DOCFRAME-004 gate (G-02 through G-06)**
+  Five spec-traced pytest tests added in `tests/scripts/test_check_docs_framework.py`:
+  `test_dest_collision_fails` (G-02), `test_jinja_in_dual_file_fails` (G-03),
+  `test_include_markdown_in_docs_src_fails` (G-04), `test_broken_repo_link_in_dual_fails`
+  (G-05), `test_url_nav_misalignment_fails` (G-06). Each test builds a minimal
+  `tmp_path` fixture tree and asserts directly on the `_check_gXX` return value.
+
 - [x] **ID-175 — Author templates folder (`sdd/templates/`)**
   `sdd/templates/` created with five starter templates: `rfc-template.md`
   (moved from `sdd/rfcs/`), `spec-template.md`, `adr-template.md`,
