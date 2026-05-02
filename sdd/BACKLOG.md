@@ -132,8 +132,9 @@ Existing items may be more verbose — trim on next touch.
   `## Backends`, etc. Compare = set diff with missing/extra symbol messages.
   Stop and confirm before implementing — this is a genuinely different IR
   (per the Phase 1 reviewers' staged-rollout preference).
+  Page target: `docs-src/reference/api/index.md`.
 
-- [ ] **ID-172 — `check_api_docs.py` — `AsyncStore`/`AsyncBackend` ↔ `docs-src/api/aio.md`**
+- [ ] **ID-172 — `check_api_docs.py` — `AsyncStore`/`AsyncBackend` ↔ `docs-src/reference/api/aio.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
   Blocked on aio rework: the `aio.md` page and `AsyncStore`/`AsyncBackend`
   classes need rework before the verifier can be wired in meaningfully.

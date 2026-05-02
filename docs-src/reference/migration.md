@@ -19,7 +19,7 @@ backend construction and a message naming the supported channel.
 - Old: `S3Backend(..., client_options={"client_kwargs": {"config": Config(connect_timeout=10, retries={"max_attempts": 5})}})`
 - New: `S3Backend(..., client_options={"config_kwargs": {"connect_timeout": 10, "retries": {"max_attempts": 5}}})`
 
-The new "Botocore Client Tuning" section in `docs-src/how-to/backends/s3.md`
+The new "Botocore Client Tuning" section in `docs-src/guides/backends/s3.md`
 documents proxies, retries, timeouts, and MinIO path-style addressing with
 runnable snippets. Applies to both `S3Backend` and `S3PyArrowBackend`.
 
@@ -29,7 +29,7 @@ If you maintain a custom `Backend` or `AsyncBackend` subclass, add a
 class-level `CAPABILITIES` attribute exposing the capability set without
 requiring instantiation, and delegate the `capabilities` property to it.
 Conformance and the new graph-IR generator both read from this class
-attribute. See `docs-src/how-to/custom-backend-guide.md` § "Step 3" for the
+attribute. See `docs-src/guides/custom-backend-guide.md` § "Step 3" for the
 template; existing constructor-set capability logic continues to work, but
 the ClassVar is required for static extraction.
 

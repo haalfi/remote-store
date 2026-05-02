@@ -1,5 +1,7 @@
-# API first (primary reference), then feature overview, then capability lookup,
-# then migration path, then history (changelog). Files before sub-section (api/).
+# Feature inventory files first (features overview + capability lookup answer
+# "what does the library support?"), then API sub-section (the primary reference
+# content), then release history (migration, changelog).
+# Default rule: files before sub-section (api/).
 - Features: FEATURES.md
 - Capabilities Matrix: capabilities-matrix.md
 - API: api/

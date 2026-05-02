@@ -26,7 +26,7 @@ Pages that try to be two things at once must be split.
 | Content type | Source location |
 |---|---|
 | Project intro, install, quick start | `README.md` |
-| How-to guides | `docs-src/how-to/` |
+| Guides | `docs-src/guides/` |
 | Explanation pages | `docs-src/explanation/` |
 | Reference pages | `docs-src/reference/` |
 | Runnable examples | `examples/` |
@@ -67,8 +67,8 @@ Required cross-links:
 
 | From | To | How |
 |---|---|---|
-| Guide --> API method it uses | API reference page | `[Store.read()](../api/store.md#remote_store.Store.read)` |
-| Guide --> example script | Examples page | `[example](../examples/file-operations.md)` |
+| Guide --> API method it uses | API reference page | `[Store.read()](../reference/api/store.md#remote_store.Store.read)` |
+| Guide --> example script | Examples page | `[example](../tutorial/examples/file-operations.md)` |
 | API method --> guide that explains it | Guide page | In docstring: `See the [Streaming Guide](...)` |
 | Error class --> methods that raise it | API reference | In error docstring "Raised by" section |
 | Backend guide --> capabilities | Capabilities matrix | Link to matrix row |
@@ -77,8 +77,8 @@ Required cross-links:
 
 Minimum per page:
 
-- Every how-to guide links to at least one API reference page.
-- Every how-to guide links to its matching example script (if one exists).
+- Every guide links to at least one API reference page.
+- Every guide links to its matching example script (if one exists).
 - Every API class page links to its primary guide.
 
 ### 5. README requirements
