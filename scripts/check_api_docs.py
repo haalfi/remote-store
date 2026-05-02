@@ -16,8 +16,8 @@ Pattern (per page):
 Each extractor is a pure function over its single input -- testable in
 isolation.
 
-Phase 1: Store -> ``docs-src/api/store.md``.
-Phase 2: Backend -> ``docs-src/api/backend.md``.
+Phase 1: Store -> ``docs-src/reference/api/store.md``.
+Phase 2: Backend -> ``docs-src/reference/api/backend.md``.
          AsyncStore/AsyncBackend and ``api/index.md`` are follow-on items.
 
 Run with:
@@ -37,8 +37,8 @@ GRAPH = ROOT / "docs-src" / "_data" / "graph" / "graph.json"
 
 # Class qualified-name -> page that documents it.
 PAGES: dict[str, Path] = {
-    "remote_store._store.Store": ROOT / "docs-src" / "api" / "store.md",
-    "remote_store._backend.Backend": ROOT / "docs-src" / "api" / "backend.md",
+    "remote_store._store.Store": ROOT / "docs-src" / "reference" / "api" / "store.md",
+    "remote_store._backend.Backend": ROOT / "docs-src" / "reference" / "api" / "backend.md",
 }
 
 # Admonition-title prefixes that introduce a capability requirement claim.

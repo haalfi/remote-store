@@ -1,8 +1,8 @@
 """API documentation coverage checks (ID-058).
 
 Verifies that every symbol in ``remote_store.__all__`` has:
-  1. A matching `:::` directive in ``docs-src/api/**/*.md``
-  2. A row in ``docs-src/api/index.md``
+  1. A matching `:::` directive in ``docs-src/reference/api/**/*.md``
+  2. A row in ``docs-src/reference/api/index.md``
 
 And every symbol in ``remote_store.backends.__all__`` has a `:::` directive.
 """
@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-DOCS_API = ROOT / "docs-src" / "api"
+DOCS_API = ROOT / "docs-src" / "reference" / "api"
 
 
 def _collect_directives(directory: Path) -> set[str]:
@@ -53,7 +53,7 @@ class TestApiDocsCoverage:
 
     @pytest.mark.spec("ID-058")
     def test_all_symbols_have_directive(self) -> None:
-        """Every symbol in __all__ must have a ::: directive in docs-src/api/."""
+        """Every symbol in __all__ must have a ::: directive in docs-src/reference/api/."""
         import remote_store
 
         all_symbols = set(remote_store.__all__)
@@ -69,7 +69,7 @@ class TestApiDocsCoverage:
             if fq not in self.directives and not self._covered_by_module(symbol):
                 missing.append(symbol)
 
-        assert not missing, f"Symbols in __all__ missing ::: directive in docs-src/api/: {missing}"
+        assert not missing, f"Symbols in __all__ missing ::: directive in docs-src/reference/api/: {missing}"
 
     def _covered_by_module(self, symbol: str) -> bool:
         """Check if a symbol is covered by a module-level ::: directive."""
@@ -107,7 +107,7 @@ class TestApiDocsCoverage:
             if symbol not in index_symbols:
                 missing.append(symbol)
 
-        assert not missing, f"Core symbols in __all__ missing from docs-src/api/index.md: {missing}"
+        assert not missing, f"Core symbols in __all__ missing from docs-src/reference/api/index.md: {missing}"
 
     @pytest.mark.spec("ID-058")
     def test_backends_all_have_directive(self) -> None:
