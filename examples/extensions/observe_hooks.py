@@ -10,7 +10,7 @@ Demonstrates:
 ---
 see_also:
   - label: Observe
-    url: ../how-to/observe.md
+    url: ../../guides/observe.md
     note: instrumentation guide
 """
 

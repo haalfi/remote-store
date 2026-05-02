@@ -1,0 +1,7 @@
+# API first (primary reference), then feature overview, then capability lookup,
+# then migration path, then history (changelog). Files before sub-section (api/).
+- Features: FEATURES.md
+- Capabilities Matrix: capabilities-matrix.md
+- API: api/
+- Migration: migration.md
+- Changelog: changelog.md

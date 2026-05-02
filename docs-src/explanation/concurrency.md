@@ -27,18 +27,18 @@ Several backends implement `move(src, dst)` as a **copy followed by a delete**. 
 
 | Backend | `move()` implementation | Atomic? |
 |---------|------------------------|---------|
-| [Local](../how-to/backends/local.md) | `shutil.move()` (`os.rename()` on same filesystem, copy+delete across) | Yes* |
-| [S3](../how-to/backends/s3.md) | Copy object + delete object | — |
-| [S3-PyArrow](../how-to/backends/s3-pyarrow.md) | Copy object + delete object | — |
-| [Azure](../how-to/backends/azure.md) (HNS) | `rename_file()` | Yes |
-| [Azure](../how-to/backends/azure.md) (non-HNS) | Copy blob + delete blob | — |
-| [SFTP](../how-to/backends/sftp.md) (`posix_rename`) | `posix_rename` | Yes |
-| [SFTP](../how-to/backends/sftp.md) (`rename`) | `rename()` | Yes (but not guaranteed atomic on all servers) |
-| [SFTP](../how-to/backends/sftp.md) (final fallback) | Read + write + delete | — |
-| [Memory](../how-to/backends/memory.md) | Dict key reassignment | Yes |
-| [HTTP](../how-to/backends/http.md) | — (read-only) | — |
-| [SQLBlob](../how-to/backends/sql-blob.md) | SQL `UPDATE` in transaction | Yes |
-| [SQLQuery](../how-to/backends/sql-query.md) | — (read-only) | — |
+| [Local](../guides/backends/local.md) | `shutil.move()` (`os.rename()` on same filesystem, copy+delete across) | Yes* |
+| [S3](../guides/backends/s3.md) | Copy object + delete object | — |
+| [S3-PyArrow](../guides/backends/s3-pyarrow.md) | Copy object + delete object | — |
+| [Azure](../guides/backends/azure.md) (HNS) | `rename_file()` | Yes |
+| [Azure](../guides/backends/azure.md) (non-HNS) | Copy blob + delete blob | — |
+| [SFTP](../guides/backends/sftp.md) (`posix_rename`) | `posix_rename` | Yes |
+| [SFTP](../guides/backends/sftp.md) (`rename`) | `rename()` | Yes (but not guaranteed atomic on all servers) |
+| [SFTP](../guides/backends/sftp.md) (final fallback) | Read + write + delete | — |
+| [Memory](../guides/backends/memory.md) | Dict key reassignment | Yes |
+| [HTTP](../guides/backends/http.md) | — (read-only) | — |
+| [SQLBlob](../guides/backends/sql-blob.md) | SQL `UPDATE` in transaction | Yes |
+| [SQLQuery](../guides/backends/sql-query.md) | — (read-only) | — |
 
 SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename()`, and finally copy+delete. Most OpenSSH servers support `posix_rename`. Servers that lack it usually still support `rename()`, which is atomic on most POSIX filesystems.
 
@@ -52,18 +52,18 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 
 | Backend | `move()` atomic? | `write_atomic()` truly atomic? | `overwrite=False` race-free? |
 |---------|-----------------|-------------------------------|------------------------------|
-| [Local](../how-to/backends/local.md) | Yes* | Yes (temp file + `os.replace()`) | No (TOCTOU) |
-| [S3](../how-to/backends/s3.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
-| [S3-PyArrow](../how-to/backends/s3-pyarrow.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
-| [Azure](../how-to/backends/azure.md) (HNS) | Yes (`rename_file`) | Yes (temp file + rename) | No (TOCTOU) |
-| [Azure](../how-to/backends/azure.md) (non-HNS) | No (copy + delete) | Yes (direct PUT is atomic) | No (TOCTOU) |
-| [SFTP](../how-to/backends/sftp.md) | Yes** | Yes** (temp file + rename) | No (TOCTOU) |
-| [Memory](../how-to/backends/memory.md) | Yes | Yes (direct) | No (TOCTOU) |
-| [SQLBlob](../how-to/backends/sql-blob.md) | Yes (SQL transaction) | Yes (direct) | No (TOCTOU) |
+| [Local](../guides/backends/local.md) | Yes* | Yes (temp file + `os.replace()`) | No (TOCTOU) |
+| [S3](../guides/backends/s3.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
+| [S3-PyArrow](../guides/backends/s3-pyarrow.md) | No (copy + delete) | Yes (PUT is inherently atomic) | No (TOCTOU) |
+| [Azure](../guides/backends/azure.md) (HNS) | Yes (`rename_file`) | Yes (temp file + rename) | No (TOCTOU) |
+| [Azure](../guides/backends/azure.md) (non-HNS) | No (copy + delete) | Yes (direct PUT is atomic) | No (TOCTOU) |
+| [SFTP](../guides/backends/sftp.md) | Yes** | Yes** (temp file + rename) | No (TOCTOU) |
+| [Memory](../guides/backends/memory.md) | Yes | Yes (direct) | No (TOCTOU) |
+| [SQLBlob](../guides/backends/sql-blob.md) | Yes (SQL transaction) | Yes (direct) | No (TOCTOU) |
 
 \* Local `move()` uses `shutil.move()`, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only `write_atomic()` uses `os.replace()`.
 
-\*\* SFTP `move()` is atomic when `posix_rename` or `rename()` succeeds; falls back to copy+delete as a last resort. `write_atomic()` has an orphan-file risk if the connection drops between write and rename (see the [SFTP backend guide](../how-to/backends/sftp.md)).
+\*\* SFTP `move()` is atomic when `posix_rename` or `rename()` succeeds; falls back to copy+delete as a last resort. `write_atomic()` has an orphan-file risk if the connection drops between write and rename (see the [SFTP backend guide](../guides/backends/sftp.md)).
 
 ## See also
 

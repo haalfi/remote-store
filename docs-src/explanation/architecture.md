@@ -1,7 +1,7 @@
 # Architecture Overview
 
 This page explains *why* `remote-store` is structured the way it is.
-For API details, see the [API Reference](../api/index.md). For how-to
+For API details, see the [API Reference](../reference/api/index.md). For how-to
 instructions, see the Guides section in the sidebar.
 
 ## Three-layer design
@@ -79,7 +79,7 @@ observability, caching, glob pattern matching, PyArrow integration, and more.
 Some extensions are always available (no extra dependencies); others require
 optional extras such as `arrow`, `otel`, or `dagster`.
 
-See the [Extensions guide](../how-to/extensions.md) for the full list and installation
+See the [Extensions guide](../guides/extensions.md) for the full list and installation
 instructions.
 
 Extensions follow the contract defined in

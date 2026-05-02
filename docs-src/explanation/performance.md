@@ -63,7 +63,7 @@ compares their absolute latencies:
 
 S3-PyArrow reads are slower for sequential workloads because the C++ data path
 adds connection management and metadata overhead per call. The S3-PyArrow
-backend's advantage is native [PyArrow integration](../how-to/pyarrow-adapter.md) — Tier 1
+backend's advantage is native [PyArrow integration](../guides/pyarrow-adapter.md) — Tier 1
 Parquet column pruning, I/O coalescing, and GIL-free reads. For sequential
 byte streaming, the regular S3 backend is faster.
 
@@ -162,5 +162,5 @@ operation. Generated with `hatch run bench-report-comparative-md`.
 ## See also
 
 - [Capabilities Matrix](../reference/capabilities-matrix.md) — feature support per backend
-- [Choosing a Backend](../how-to/choosing-a-backend.md) — decision guide with trade-offs
-- [PyArrow Adapter](../how-to/pyarrow-adapter.md) — tiered read strategy and S3 direct I/O
+- [Choosing a Backend](../guides/choosing-a-backend.md) — decision guide with trade-offs
+- [PyArrow Adapter](../guides/pyarrow-adapter.md) — tiered read strategy and S3 direct I/O

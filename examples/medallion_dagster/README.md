@@ -1,5 +1,5 @@
 # Medallion + Dagster Showcase
-<!-- doc: dual dest=examples/medallion-dagster.md -->
+<!-- doc: dual dest=tutorial/examples/medallion-dagster.md -->
 
 A self-contained Dagster project demonstrating remote-store's value proposition
 through a real-world **medallion architecture** (Bronze → Silver → Gold) over
@@ -108,7 +108,7 @@ Granularity: daily measurements.
 
 ## See also
 
-- [Dagster](../../docs-src/how-to/dagster.md) — Dagster integration guide
-- [Data Lake Patterns](../../docs-src/how-to/data-lake-patterns.md) — medallion architecture patterns
+- [Dagster](../../docs-src/guides/dagster.md) — Dagster integration guide
+- [Data Lake Patterns](../../docs-src/guides/data-lake-patterns.md) — medallion architecture patterns
 - [Architecture: Medallion + Dagster Showcase](../../sdd/research/research-medallion-dagster-showcase.md) — detailed design rationale, store topology, and Dagster asset graph
 - [Source: `examples/medallion_dagster/`](https://github.com/haalfi/remote-store/tree/master/examples/medallion_dagster/)

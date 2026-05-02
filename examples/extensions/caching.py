@@ -6,7 +6,7 @@ cache statistics, and max_content_size.
 ---
 see_also:
   - label: Cache
-    url: ../how-to/cache.md
+    url: ../../guides/cache.md
     note: caching guide
 """
 

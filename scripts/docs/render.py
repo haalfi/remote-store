@@ -146,7 +146,7 @@ def _example_page(entry: ExampleEntry) -> str:
 
 def render_example_pages(writer: Writer, entries: Iterable[ExampleEntry]) -> None:
     for entry in entries:
-        writer(f"examples/{entry.slug}.md", _example_page(entry))
+        writer(f"tutorial/examples/{entry.slug}.md", _example_page(entry))
 
 
 def render_example_index(
@@ -194,4 +194,4 @@ def render_example_index(
             "",
         ]
     )
-    writer("examples/index.md", "\n".join(lines))
+    writer("tutorial/examples/index.md", "\n".join(lines))

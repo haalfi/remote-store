@@ -20,7 +20,7 @@ Environment variables:
 ---
 see_also:
   - label: SFTP Backend
-    url: ../how-to/backends/sftp.md
+    url: ../../guides/backends/sftp.md
     note: backend guide
 """
 

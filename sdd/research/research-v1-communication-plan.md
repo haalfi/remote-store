@@ -22,7 +22,7 @@ runtime dependencies in the core package, native async for backends that
 support it.
 
 Authoritative inventory of backends, capabilities, extensions, and extras
-lives in [`FEATURES.md`](../../docs-src/reference/FEATURES.md). Avoid copying that list into
+lives in [`FEATURES.md`](../../FEATURES.md). Avoid copying that list into
 announcement copy — link to it.
 
 ### What it is _not_
@@ -74,7 +74,7 @@ defers to — other tools.
 | Dimension                | fsspec          | smart_open      | cloudpathlib    | obstore          | remote-store           |
 |--------------------------|-----------------|-----------------|-----------------|------------------|------------------------|
 | API surface              | broad           | `open()` only   | pathlib-style   | narrow           | narrow, capability-gated |
-| Backend coverage         | 30+             | S3/GCS/Az/SFTP  | S3/GCS/Az       | S3/GCS/Az        | see [`FEATURES.md`](../../docs-src/reference/FEATURES.md) |
+| Backend coverage         | 30+             | S3/GCS/Az/SFTP  | S3/GCS/Az       | S3/GCS/Az        | see [`FEATURES.md`](../../FEATURES.md) |
 | SFTP support             | via sshfs       | Yes             | —               | —                | Yes                    |
 | Local + in-memory        | Yes             | local fallback  | local mock      | local            | Yes (test-grade)       |
 | List / glob / delete     | Yes             | —               | Yes             | Yes              | Yes                    |

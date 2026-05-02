@@ -74,5 +74,5 @@ for response timelines, scope, and the fix policy.
 ## See also
 
 - [Architecture Overview](architecture.md) — system design and error model
-- [API Reference: Secret](../api/config.md#remote_store.Secret)
+- [API Reference: Secret](../reference/api/config.md#remote_store.Secret)
 - [Spec 020: Credential Hygiene](design/specs/020-credential-hygiene.md)

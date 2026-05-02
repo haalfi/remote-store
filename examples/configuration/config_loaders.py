@@ -7,7 +7,7 @@ Secret wrapping and validation.
 ---
 see_also:
   - label: Extensions
-    url: ../how-to/extensions.md
+    url: ../../guides/extensions.md
     note: extension modules overview
 """
 

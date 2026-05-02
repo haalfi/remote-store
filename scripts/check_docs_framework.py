@@ -44,8 +44,8 @@ _G01_EXCLUDE_DIRS = frozenset({".claude", ".github"})
 # Expected URL prefixes per top-level nav section.  Sections absent from this
 # table are not checked (e.g. Tutorial, Home).
 _SECTION_PREFIXES: dict[str, tuple[str, ...]] = {
-    "Guides": ("how-to/",),
-    "Reference": ("reference/", "api/"),
+    "Guides": ("guides/",),
+    "Reference": ("reference/",),
     "Explanation": ("explanation/",),
 }
 

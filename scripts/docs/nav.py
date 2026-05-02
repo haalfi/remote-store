@@ -47,11 +47,11 @@ def scanned_sections_from(
 
     example_groups: list[tuple[str, list[tuple[str, str]]]] = []
     for cat in categories:
-        items = [(e.title, f"examples/{e.slug}.md") for e in examples if e.subdir == cat.subdir]
+        items = [(e.title, f"tutorial/examples/{e.slug}.md") for e in examples if e.subdir == cat.subdir]
         example_groups.append((cat.label, items))
-    example_groups.append(("Showcases", [("Medallion + Dagster Showcase", "examples/medallion-dagster.md")]))
+    example_groups.append(("Showcases", [("Medallion + Dagster Showcase", "tutorial/examples/medallion-dagster.md")]))
 
-    return ScannedSections(flat=flat, grouped={"examples": example_groups})
+    return ScannedSections(flat=flat, grouped={"tutorial/examples": example_groups})
 
 
 def build_summary(docs_src: Path, sections: ScannedSections) -> str:

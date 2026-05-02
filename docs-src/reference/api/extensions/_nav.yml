@@ -1,0 +1,19 @@
+# Base-install extensions (no extras required) first, alphabetical.
+# aio.ext.write follows ext.write as its async counterpart.
+# Optional extras (require pip install extras) second, alphabetical.
+- ext.batch: batch.md
+- ext.cache: cache.md
+- ext.glob: glob.md
+- ext.integrity: integrity.md
+- ext.observe: observe.md
+- ext.partition: partition.md
+- ext.streams: streams.md
+- ext.transfer: transfer.md
+- ext.write: write.md
+- aio.ext.write: aio-write.md
+- ext.arrow: arrow.md
+- ext.dagster: dagster.md
+- ext.otel: otel.md
+- ext.parquet: parquet.md
+- ext.pydantic: pydantic.md
+- ext.yaml: yaml.md

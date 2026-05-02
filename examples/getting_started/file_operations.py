@@ -6,7 +6,7 @@ checks — using the local backend.
 ---
 see_also:
   - label: Getting Started
-    url: ../getting-started.md
+    url: ../../tutorial/getting-started.md
     note: step-by-step guide
 """
 

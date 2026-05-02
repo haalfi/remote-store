@@ -6,7 +6,7 @@ programmatically using structured attributes.
 ---
 see_also:
   - label: Troubleshooting
-    url: ../how-to/troubleshooting.md
+    url: ../../guides/troubleshooting.md
     note: error diagnosis guide
 """
 
