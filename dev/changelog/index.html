@@ -11830,14 +11830,9 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
-<li>BK-167a: ADR-0027 (single-bridge documentation pipeline with inline
-  classification) and Spec 047 (documentation framework tooling
-  contracts). Author-facing classification rules absorbed into
-  <code>sdd/AUTHORING.md</code>; spec 047 carries <code>**Scope:** Build &amp; CI tooling</code>
-  and defers to AUTHORING.md for syntax and defaults.
-  <code>sdd/000-process.md</code> updated to acknowledge tooling specs as a
-  distinct category coexisting with library specs in flat numbering.
-  Design draft only; no code change yet.</li>
+<li>BK-167b: <code>check_links.py</code> — two-mode internal link checker (<code>--mode repo</code>/<code>--mode site</code>); <code>hatch run check-links</code></li>
+<li>BK-167a (Step 1): <code>scan_dual_files</code>, <code>DualEntry</code>, <code>_parse_marker</code>, <code>_classify_file</code> in <code>scripts/docs/scan.py</code>; five spec-traced tests (DOCFRAME-001..003)</li>
+<li>BK-167a: ADR-0027, Spec 047 (docs framework tooling contracts), <code>sdd/AUTHORING.md</code></li>
 <li><strong>End-to-end coverage for the S3 control path</strong> (BK-166, S3-026, S3PA-026):
   <code>tests/backends/test_s3_moto.py</code> drives a full lifecycle
   (<code>write</code> / <code>list_files</code> / <code>read</code> / <code>delete</code>) for both <code>S3Backend</code> and
