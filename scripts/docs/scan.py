@@ -212,7 +212,8 @@ def _scan_kind_for_dual(kind: SddKind, kind_dir: Path) -> list[DualEntry]:
             # An explicit dual marker still yields an entry.
             try:
                 result = _parse_marker(p.read_text(encoding="utf-8"))
-            except ValueError:
+            except ValueError as exc:
+                warnings.warn(f"Malformed doc marker in {p.name}: {exc}; skipping", stacklevel=2)
                 continue
             if result is not None and result[0] == "dual":
                 entries.append(DualEntry(source=p.resolve(), dest=result[1]))
