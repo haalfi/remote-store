@@ -57,6 +57,7 @@ BUG-185 fell through.
 
 from __future__ import annotations
 
+import sys
 import uuid
 from typing import TYPE_CHECKING, Any
 
@@ -133,7 +134,13 @@ def _load(dotted: str) -> type:
         pytest.param(
             "remote_store.backends._s3_pyarrow:S3PyArrowBackend",
             id="s3-pyarrow",
-            marks=pytest.mark.spec("S3PA-026"),
+            marks=[
+                pytest.mark.spec("S3PA-026"),
+                pytest.mark.skipif(
+                    sys.version_info >= (3, 14),
+                    reason="pyarrow multipart upload incompatible with moto ThreadedMotoServer on Python 3.14 (BK-168)",
+                ),
+            ],
         ),
     ],
 )

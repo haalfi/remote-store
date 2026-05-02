@@ -22,6 +22,7 @@ All tests are skipped if dependencies are not installed.
 from __future__ import annotations
 
 import importlib
+import sys
 import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -64,6 +65,8 @@ def s3_any_backend(request: pytest.FixtureRequest, moto_server: str | None) -> I
     provides its own list of ``pytest.param(..., marks=pytest.mark.spec(...))``
     values so S3-NNN and S3PA-NNN traceability is preserved per backend.
     """
+    if request.param == S3PA_CLS and sys.version_info >= (3, 14):
+        pytest.skip("pyarrow multipart upload incompatible with moto ThreadedMotoServer on Python 3.14 (BK-168)")
     backend_cls = _load_backend_cls(request.param)
     bucket = f"shared-{uuid.uuid4().hex[:8]}"
     client = boto3.client(

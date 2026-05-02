@@ -7,6 +7,7 @@ All tests are skipped if dependencies are not installed.
 from __future__ import annotations
 
 import io
+import sys
 import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -18,6 +19,11 @@ pytest.importorskip("moto", reason="moto not installed")
 pytest.importorskip("s3fs", reason="s3fs not installed")
 pytest.importorskip("pyarrow", reason="pyarrow not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
+
+pytestmark = pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="pyarrow multipart upload incompatible with moto ThreadedMotoServer on Python 3.14 (BK-168)",
+)
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
 
