@@ -86,8 +86,8 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 2. Implement `Backend` ABC in `src/remote_store/backends/_<name>.py`
 3. Add a conformance fixture in `tests/backends/conftest.py`
 4. Both conformance suites run automatically: `tests/backends/test_conformance.py` (spec-traced) and `tests/backends/test_conformance_extended.py` (Dafny-derived, `@pytest.mark.extended_conformance`). The suites are validated by a Dafny-compiled oracle — see [`sdd/formal/README.md`](sdd/formal/README.md) § Compiled Oracle
-5. Add user-facing guide in `docs-src/how-to/backends/<name>.md` and add to `docs-src/_nav.yml`
-6. Update `docs-src/how-to/backends/index.md` (Supported Backends table)
+5. Add user-facing guide in `docs-src/guides/backends/<name>.md` and add to `docs-src/guides/_nav.yml`
+6. Update `docs-src/guides/backends/index.md` (Supported Backends table)
 7. Update `README.md` (Supported Backends table + Installation extras)
 8. Add backend config example to `examples/configuration/configuration.py`
 9. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`
@@ -102,10 +102,10 @@ Extensions live in `src/remote_store/ext/` and follow the contract in [ADR-0008]
 4. Do not own Store lifecycle — never call `store.close()` or use `with store:`
 5. Let `CapabilityNotSupported` propagate — do not catch and suppress it
 6. Add tests in `tests/test_<name>.py` with `@pytest.mark.spec("ID")`
-7. Write a user guide in `docs-src/how-to/<name>.md`
-8. Add the page to `docs-src/_nav.yml`
+7. Write a user guide in `docs-src/guides/<name>.md`
+8. Add the page to `docs-src/guides/_nav.yml` (under the Extensions section)
 10. Add a runnable example in `examples/`
-11. Add an example docs wrapper in `docs-src/examples/<name>.md` and add it to `docs-src/examples/_nav.yml`
+11. The example docs page is auto-generated at `tutorial/examples/<slug>.md` from the module docstring via `gen_pages.py` — no manual wrapper file needed
 12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
 
 ### Export patterns

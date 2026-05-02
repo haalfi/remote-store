@@ -29,6 +29,7 @@ Pages that try to be two things at once must be split.
 | Guides | `docs-src/guides/` |
 | Explanation pages | `docs-src/explanation/` |
 | Reference pages | `docs-src/reference/` |
+| Feature inventory (exception) | `FEATURES.md` at repo root (dual → `reference/FEATURES.md`) |
 | Runnable examples | `examples/` |
 | API docstrings | `src/` (Python source) |
 | Specs, ADRs, RFCs, research, audits | `sdd/` |
@@ -148,13 +149,13 @@ The SDD workflow includes a DOCS step (see `sdd/000-process.md` rule 6). When re
 
 ### API page building blocks
 
-Reusable structural blocks for `docs-src/api/` pages. `store.md` is the
+Reusable structural blocks for `docs-src/reference/api/` pages. `store.md` is the
 canonical example. Apply the appropriate page-type template (see below) and
 compose from these blocks.
 
 #### Admonition vocabulary
 
-Three levels, applied consistently across all `docs-src/api/` pages:
+Three levels, applied consistently across all `docs-src/reference/api/` pages:
 
 | Level | When to use | Title pattern |
 |-------|-------------|---------------|

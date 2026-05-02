@@ -130,10 +130,15 @@ In practice:
   DOCUMENTATION, TESTING, CONTENT-RULES) carry an explicit dual marker.
 - Internal `sdd/*.md` files (BACKLOG, BACKLOG-DONE, CLAUDE-REFERENCE)
   carry an explicit repo-only marker.
-- Repo-root dual files (README, CHANGELOG, CONTRIBUTING,
-  DEVELOPMENT_STORY) carry an explicit dual marker.
-- Repo-root repo-only files (CLAUDE, CODE_OF_CONDUCT, SECURITY) carry
-  an explicit repo-only marker.
+- Repo-root dual files (CHANGELOG, CONTRIBUTING, DEVELOPMENT_STORY,
+  FEATURES) carry an explicit dual marker. `FEATURES.md` lives at
+  the repo root (not under `docs-src/reference/`) — the dual bridge
+  renders it at `reference/FEATURES.md`. Its peers (capabilities-matrix,
+  migration) live under `docs-src/reference/` as docs-only files.
+- Repo-root repo-only files (CLAUDE, CODE_OF_CONDUCT, README, SECURITY)
+  carry an explicit repo-only marker. `README.md` is repo-only; its
+  quick-start content is served on the docs site via
+  `docs-src/tutorial/getting-started.md` instead.
 - Example directories (`examples/<name>/README.md`, etc.): no directory
   default. Each example README declares its own marker. The medallion
   showcase's docs-side page is rendered separately and is not a default
@@ -142,7 +147,7 @@ In practice:
 ### Examples
 
 ```markdown
-<!-- A new how-to guide. docs-src/ is docs-only by default; no marker needed. -->
+<!-- A new guide. docs-src/ is docs-only by default; no marker needed. -->
 # Streaming reads
 ...
 

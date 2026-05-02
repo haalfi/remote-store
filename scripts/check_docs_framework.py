@@ -249,6 +249,21 @@ def _check_g06(repo_root: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# G-07: legacy api/ directory must not exist
+# ---------------------------------------------------------------------------
+
+
+def _check_g07(repo_root: Path) -> list[str]:
+    legacy = repo_root / "docs-src" / "api"
+    if legacy.exists():
+        return [
+            "G-07 docs-src/api/: legacy directory exists — API reference must live "
+            "under docs-src/reference/api/ (Rule 7)"
+        ]
+    return []
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -259,6 +274,7 @@ _CHECKS = [
     ("G-04", _check_g04),
     ("G-05", _check_g05),
     ("G-06", _check_g06),
+    ("G-07", _check_g07),
 ]
 
 
@@ -275,7 +291,7 @@ def main() -> int:
             print(line, file=sys.stderr)
         return 1
 
-    print(f"docs-framework check passed ({len(_CHECKS)} checks: G-01..G-06).")
+    print(f"docs-framework check passed ({len(_CHECKS)} checks: G-01..G-07).")
     return 0
 
 

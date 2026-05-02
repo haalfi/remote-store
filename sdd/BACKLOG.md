@@ -122,7 +122,7 @@ Existing items may be more verbose — trim on next touch.
   scaffold; `hatch run all` passes; `check_docs_framework.py` G-01 passes
   (the new directory default covers all `sdd/templates/*.md` files).
 
-- [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/api/index.md`**
+- [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/reference/api/index.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
   Different IR from the method-caps checker: `{symbol_name: kind}` rather
   than `{method: caps}`; separate extractor pair, same compare pattern.
