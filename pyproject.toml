@@ -180,6 +180,7 @@ mutate-ext-proxy = "pytest --gremlins --gremlin-targets=src/remote_store/ext/arr
 mutate-ext-format = "pytest --gremlins --gremlin-targets=src/remote_store/ext/parquet.py,src/remote_store/ext/yaml.py,src/remote_store/ext/pydantic.py,src/remote_store/ext/dagster.py tests/test_ext_parquet.py tests/test_ext_yaml.py tests/test_ext_pydantic.py tests/test_dagster.py"
 mutate-backends-local = "pytest --gremlins --gremlin-targets=src/remote_store/backends/_local.py,src/remote_store/backends/_http.py,src/remote_store/backends/_http_httpx.py,src/remote_store/backends/_http_requests.py,src/remote_store/backends/_sqlalchemy.py tests/backends/test_local.py tests/backends/test_http.py tests/backends/test_sqlblob.py tests/backends/test_sqlquery.py"
 mutate-backends-cloud = "pytest --gremlins --gremlin-targets=src/remote_store/backends/_s3.py,src/remote_store/backends/_s3_base.py,src/remote_store/backends/_s3_pyarrow.py,src/remote_store/backends/_sftp.py,src/remote_store/backends/_azure.py tests/backends/test_s3.py tests/backends/test_s3_pyarrow.py tests/backends/test_s3_shared.py tests/backends/test_sftp.py tests/backends/test_azure.py"
+check-links = "python scripts/docs/check_links.py --root ."
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"

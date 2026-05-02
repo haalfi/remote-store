@@ -8,6 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- BK-167b: `scripts/docs/check_links.py` — two-mode internal link checker (`--mode repo` for raw on-disk targets, `--mode site` for post-rewrite dual-file destinations); 11 spec-traced tests in `tests/scripts/test_check_links.py`; `hatch run check-links` script added.
 - BK-167a (Step 1): `scan_dual_files`, `DualEntry`, `_parse_marker`, and `_classify_file` added to `scripts/docs/scan.py`; five spec-traced tests in `tests/scripts/test_docs_framework.py` covering DOCFRAME-001..003.
 - BK-167a: ADR-0027 (single-bridge documentation pipeline with inline
   classification) and Spec 047 (documentation framework tooling
