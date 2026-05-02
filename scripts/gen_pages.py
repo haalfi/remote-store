@@ -56,7 +56,6 @@ resolver = LinkResolver(
 
 render.render_sdd_indexes(DOCS_SRC, _writer, sdd_entries)
 render.render_dual_pages(_writer, dual_entries, resolver)
-render.render_rfc_template(ROOT, _writer, resolver)
 render.copy_assets(ROOT / "assets", _binary_writer)
 render.render_example_pages(_writer, examples)
 render.render_example_index(_writer, examples, categories)

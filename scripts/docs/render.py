@@ -105,12 +105,6 @@ def render_dual_pages(
         writer(entry.dest, resolver.rewrite(content, entry.source, entry.dest))
 
 
-def render_rfc_template(repo_root: Path, writer: Writer, resolver: LinkResolver) -> None:
-    dest = "explanation/design/rfcs/rfc-template.md"
-    source = repo_root / "sdd" / "rfcs" / "rfc-template.md"
-    writer(dest, resolver.rewrite(source.read_text(encoding="utf-8"), source, dest))
-
-
 # ---------------------------------------------------------------------------
 # Assets
 # ---------------------------------------------------------------------------
