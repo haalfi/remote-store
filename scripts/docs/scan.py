@@ -236,13 +236,13 @@ def _git_repo_markdown(repo_root: Path) -> list[Path]:
     import subprocess
 
     result = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "*.md"],
         capture_output=True,
         text=True,
         cwd=repo_root,
     )
     if result.returncode == 0:
-        return sorted((repo_root / p).resolve() for p in result.stdout.splitlines() if p.endswith(".md"))
+        return sorted((repo_root / p).resolve() for p in result.stdout.splitlines())
     # Fallback: rglob, skipping VCS internals only.
     return sorted(
         md.resolve()
