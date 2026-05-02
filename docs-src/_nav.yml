@@ -1,7 +1,5 @@
 - Home: index.md
-- Tutorial:
-    - Getting Started: tutorial/getting-started.md
-    - Examples: tutorial/examples/
+- Tutorial: tutorial/
 - Guides: guides/
 - Reference: reference/
 - Explanation: explanation/

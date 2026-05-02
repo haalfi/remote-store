@@ -1,7 +1,6 @@
 """PR-time gate for the documentation framework (DOCFRAME-004, Spec 047).
 
-Checks G-01 through G-06.  G-07 (``mkdocs build --strict``) is handled
-separately by ``hatch run docs-build``.
+Checks G-01 through G-07.
 
 Exit 0 when all checks pass.  Non-zero on failure; one line per violation
 printed to stderr, sorted by path for stable diffs.
