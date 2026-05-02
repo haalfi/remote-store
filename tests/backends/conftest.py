@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import socket
-import sys
 import tempfile
 import uuid
 from typing import TYPE_CHECKING
@@ -61,6 +60,16 @@ def _s3_pyarrow_available() -> bool:
         return False
 
 
+def _pyarrow_ge_23() -> bool:
+    if not _s3_pyarrow_available():
+        return False
+    from importlib.metadata import version
+
+    v = version("pyarrow")
+    major, minor = int(v.split(".")[0]), int(v.split(".")[1])
+    return (major, minor) >= (23, 0)
+
+
 def _sftp_available() -> bool:
     try:
         import paramiko  # noqa: F401
@@ -108,8 +117,8 @@ _s3_pyarrow_param = pytest.param(
     marks=[
         pytest.mark.skipif(not _s3_pyarrow_available(), reason="pyarrow/s3fs not installed"),
         pytest.mark.skipif(
-            sys.version_info >= (3, 14),
-            reason="pyarrow multipart upload incompatible with moto ThreadedMotoServer on Python 3.14 (BK-168)",
+            _pyarrow_ge_23(),
+            reason="pyarrow 23+ multipart upload incompatible with moto ThreadedMotoServer (BK-168)",
         ),
     ],
 )

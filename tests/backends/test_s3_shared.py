@@ -22,7 +22,6 @@ All tests are skipped if dependencies are not installed.
 from __future__ import annotations
 
 import importlib
-import sys
 import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -32,6 +31,17 @@ import pytest
 pytest.importorskip("moto", reason="moto not installed")
 pytest.importorskip("s3fs", reason="s3fs not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
+
+
+def _pyarrow_ge_23() -> bool:
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        v = version("pyarrow")
+        major, minor = int(v.split(".")[0]), int(v.split(".")[1])
+        return (major, minor) >= (23, 0)
+    except PackageNotFoundError:
+        return False
 
 
 if TYPE_CHECKING:
@@ -65,8 +75,8 @@ def s3_any_backend(request: pytest.FixtureRequest, moto_server: str | None) -> I
     provides its own list of ``pytest.param(..., marks=pytest.mark.spec(...))``
     values so S3-NNN and S3PA-NNN traceability is preserved per backend.
     """
-    if request.param == S3PA_CLS and sys.version_info >= (3, 14):
-        pytest.skip("pyarrow multipart upload incompatible with moto ThreadedMotoServer on Python 3.14 (BK-168)")
+    if request.param == S3PA_CLS and _pyarrow_ge_23():
+        pytest.skip("pyarrow 23+ multipart upload incompatible with moto ThreadedMotoServer (BK-168)")
     backend_cls = _load_backend_cls(request.param)
     bucket = f"shared-{uuid.uuid4().hex[:8]}"
     client = boto3.client(

@@ -71,20 +71,19 @@ Existing items may be more verbose — trim on next touch.
   `test_broken_repo_link_in_dual_fails` (G-05),
   `test_url_nav_misalignment_fails` (G-06). Spec: DOCFRAME-004.
 
-- [ ] **BK-168 — Lift pyarrow <24 pin; fix pyarrow multipart/moto incompatibility**
+- [ ] **BK-168 — Lift pyarrow <24 pin; fix pyarrow 23+ multipart/moto incompatibility**
 
-  `S3PyArrowBackend` conformance tests fail when pyarrow routes writes through multipart
-  upload against moto's `ThreadedMotoServer`. The `<24` upper-bound pin is a temporary
-  hold; this item tracks the root-cause fix and pin removal.
+  `S3PyArrowBackend` moto-backed tests fail on all Python versions when pyarrow 23+ is
+  installed. Root fix: raise pyarrow's multipart threshold above test file sizes, or pin
+  `pyarrow<23`, or upgrade moto to a version that handles the empty-body response.
 
   **Root cause:** `pa.fs.S3FileSystem.open_output_stream` routes writes through multipart
-  upload in pyarrow 23+ on Python 3.14 (and in pyarrow 24 on all Pythons). The moto 5.2.0
-  `ThreadedMotoServer` returns HTTP 200 OK with an empty response body for
-  `CompleteMultipartUpload`; pyarrow's C++ S3 client (`s3fs.cc:758`) treats the empty
-  body as `INTERNAL_FAILURE`. On Python 3.14 the `<24` pin is insufficient — pyarrow
-  23.0.1 triggers the same failure (possibly due to Python 3.14's `io.DEFAULT_BUFFER_SIZE`
-  increase causing pyarrow to take the multipart code path for small files). Conformance
-  tests are skipped on Python 3.14 pending this fix.
+  upload in pyarrow 23+ regardless of Python version. moto's `ThreadedMotoServer` returns
+  HTTP 200 OK with an empty `CompleteMultipartUpload` body; pyarrow's C++ S3 client
+  (`s3fs.cc:758`) treats the empty body as `INTERNAL_FAILURE`. The `<24` pin is insufficient
+  — pyarrow 23.0.1 (the fallback) triggers the same failure on all Pythons. All moto-backed
+  s3-pyarrow tests are now skipped when `pyarrow >= 23` via `_pyarrow_ge_23()` in conftest
+  and the affected test files.
 
   **Work required:**
   1. Diagnose whether the fix is on the moto side (bump to moto ≥5.3 if it ships a

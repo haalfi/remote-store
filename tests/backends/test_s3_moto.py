@@ -57,7 +57,6 @@ BUG-185 fell through.
 
 from __future__ import annotations
 
-import sys
 import uuid
 from typing import TYPE_CHECKING, Any
 
@@ -68,6 +67,18 @@ pytest.importorskip("aiobotocore")
 pytest.importorskip("moto")
 pytest.importorskip("botocore")
 pytest.importorskip("boto3")
+
+
+def _pyarrow_ge_23() -> bool:
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        v = version("pyarrow")
+        major, minor = int(v.split(".")[0]), int(v.split(".")[1])
+        return (major, minor) >= (23, 0)
+    except PackageNotFoundError:
+        return False
+
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -137,8 +148,8 @@ def _load(dotted: str) -> type:
             marks=[
                 pytest.mark.spec("S3PA-026"),
                 pytest.mark.skipif(
-                    sys.version_info >= (3, 14),
-                    reason="pyarrow multipart upload incompatible with moto ThreadedMotoServer on Python 3.14 (BK-168)",
+                    _pyarrow_ge_23(),
+                    reason="pyarrow 23+ multipart upload incompatible with moto ThreadedMotoServer (BK-168)",
                 ),
             ],
         ),
