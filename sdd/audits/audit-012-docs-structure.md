@@ -386,7 +386,7 @@ Mike version management is configured correctly (`version_selector: true`,
 versioned docs and silent link warnings means that a page removed in a newer version
 could leave dangling references in older versioned builds with no CI signal.
 
-**Closure (BK-167b):** Closed by F-03 fix (`not_found: error` + `mkdocs build --strict`).
+**Closure (BK-167b):** Closed by F-03 fix (`mkdocs build --strict`). `--strict` promotes `not_found: warn` to a build failure; MkDocs 1.x rejects `error` as a literal config value.
 Mike's version-switch handling prevents cross-version navigation from hitting dead pages.
 
 ---

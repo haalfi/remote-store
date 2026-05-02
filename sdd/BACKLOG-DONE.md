@@ -26,8 +26,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   replacing include-markdown wrappers, `_link_map.yml`, and the legacy
   gen-files scan helpers. Inline HTML-comment classification markers with
   directory-default rules for SDD subdirs and `docs-src/`. `check_links.py`
-  two-mode link checker. Spec 047 and ADR-0027 authored. All DOCFRAME checks
-  (G-01 through G-07) pass; `hatch run all` gate green.
+  two-mode link checker. Spec 047 and ADR-0027 authored. DOCFRAME checks
+  G-01 through G-07 implemented; G-01..G-06 pass as lint; unit tests for
+  G-02..G-06 deferred to BK-169. `hatch run all` gate green.
 
 - [x] **BK-167b (partial) — check_links.py link checker**
   `scripts/docs/check_links.py` — two-mode internal link checker (`--mode repo` for raw on-disk targets, `--mode site` for post-rewrite dual-file destinations). 11 spec-traced tests in `tests/scripts/test_check_links.py`. `hatch run check-links` script added. Remainder (classify all `.md`, wire gate, close audit-012 findings) continues in BK-167b.

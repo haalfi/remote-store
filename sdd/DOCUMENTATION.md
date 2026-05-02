@@ -29,7 +29,6 @@ Pages that try to be two things at once must be split.
 | How-to guides | `docs-src/how-to/` |
 | Explanation pages | `docs-src/explanation/` |
 | Reference pages | `docs-src/reference/` |
-| Further reading | `docs-src/further/` |
 | Runnable examples | `examples/` |
 | API docstrings | `src/` (Python source) |
 | Specs, ADRs, RFCs, research, audits | `sdd/` |

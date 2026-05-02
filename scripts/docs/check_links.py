@@ -132,17 +132,12 @@ def check_site_links(repo_root: Path) -> list[BrokenLink]:
     from docs.link import LinkResolver, build_source_map  # type: ignore[import]
     from docs.scan import scan_all_sdd, scan_dual_files  # type: ignore[import]
 
-    source_map: dict[Path, str] = dict(
-        build_source_map(
-            repo_root,
-            sdd_entries=scan_all_sdd(repo_root),
-            link_entries=[],
-            include_pairs=[],
-        )
-    )
     dual_entries = list(scan_dual_files(repo_root))
-    for entry in dual_entries:
-        source_map.setdefault(entry.source, entry.dest)
+    source_map: dict[Path, str] = build_source_map(
+        repo_root,
+        sdd_entries=scan_all_sdd(repo_root),
+        dual_entries=dual_entries,
+    )
 
     known_dests = _build_known_dests(repo_root, source_map)
     resolver = LinkResolver(

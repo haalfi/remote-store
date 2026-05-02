@@ -45,8 +45,7 @@ resolver = LinkResolver(
     build_source_map(
         ROOT,
         sdd_entries=sdd_entries,
-        link_entries=[],
-        include_pairs=[],
+        dual_entries=dual_entries,
     ),
     repo_root=ROOT,
     github_blob_url="https://github.com/haalfi/remote-store/blob/master",

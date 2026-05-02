@@ -24,6 +24,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from docs.scan import DualEntry
+
 _LINK_RE = re.compile(r"\]\(([^)\s]+)(\s+\"[^\"]*\")?\)")
 
 
@@ -94,8 +96,7 @@ def build_source_map(
     repo_root: Path,
     *,
     sdd_entries: dict[str, list],  # kind_slug -> list[SddEntry]
-    link_entries: list,  # unused after DOCFRAME-005; kept for API compat
-    include_pairs: list[tuple[Path, str]],  # unused after DOCFRAME-005; kept for API compat
+    dual_entries: list[DualEntry],
 ) -> dict[Path, str]:
     """Assemble the absolute-source → virtual-dest map for the resolver."""
     source_map: dict[Path, str] = {}
@@ -112,10 +113,7 @@ def build_source_map(
         for md in docs_src.rglob("*.md"):
             source_map.setdefault(md.resolve(), md.relative_to(docs_src).as_posix())
 
-    for entry in link_entries:
-        source_map[entry.source] = entry.dest
-
-    for src, dest in include_pairs:
-        source_map.setdefault(src, dest)
+    for entry in dual_entries:
+        source_map.setdefault(entry.source.resolve(), entry.dest)
 
     return source_map
