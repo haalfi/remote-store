@@ -66,6 +66,29 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
+- [ ] **ID-175 — Author templates folder (`sdd/templates/`)**
+  Add `sdd/templates/` containing `repo-only` starter templates for every
+  SDD artefact kind: RFC, spec, ADR, audit, research. Each file gets a
+  `<!-- doc: repo-only -->` marker and a minimal scaffold matching the
+  conventions in `sdd/000-process.md` (front-matter fields, section
+  headings, status line). This consolidates authoring guidance that is
+  currently scattered (only the RFC template exists, and it lives inside
+  `sdd/rfcs/` as a peer of real RFCs).
+
+  **Scope:**
+  - `sdd/templates/rfc-template.md` — move existing `sdd/rfcs/rfc-template.md` here; update any links
+  - `sdd/templates/spec-template.md`
+  - `sdd/templates/adr-template.md`
+  - `sdd/templates/audit-template.md`
+  - `sdd/templates/research-template.md`
+
+  **Classification:** all `repo-only` — templates are authoring tools, not
+  documentation. The rendered docs site gains nothing from them.
+
+  **Exit criteria:** templates folder exists; each file is `repo-only`
+  and contains a usable scaffold; `AUTHORING.md` links to the folder;
+  `check-links` and `hatch run all` pass.
+
 - [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/api/index.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
   Different IR from the method-caps checker: `{symbol_name: kind}` rather
