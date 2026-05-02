@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import socket
+import sys
 import tempfile
 import uuid
 from typing import TYPE_CHECKING
@@ -104,7 +105,13 @@ _s3_param = pytest.param(
 
 _s3_pyarrow_param = pytest.param(
     "s3-pyarrow",
-    marks=pytest.mark.skipif(not _s3_pyarrow_available(), reason="pyarrow/s3fs not installed"),
+    marks=[
+        pytest.mark.skipif(not _s3_pyarrow_available(), reason="pyarrow/s3fs not installed"),
+        pytest.mark.skipif(
+            sys.version_info >= (3, 14),
+            reason="pyarrow multipart upload incompatible with moto ThreadedMotoServer on Python 3.14 (BK-168)",
+        ),
+    ],
 )
 
 _sftp_param = pytest.param(

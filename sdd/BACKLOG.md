@@ -71,18 +71,20 @@ Existing items may be more verbose — trim on next touch.
   `test_broken_repo_link_in_dual_fails` (G-05),
   `test_url_nav_misalignment_fails` (G-06). Spec: DOCFRAME-004.
 
-- [ ] **BK-168 — Lift pyarrow <24 pin; validate pyarrow 24 compatibility**
+- [ ] **BK-168 — Lift pyarrow <24 pin; fix pyarrow multipart/moto incompatibility**
 
-  pyarrow 24.0.0 released 2026-05-02 breaks `S3PyArrowBackend` conformance tests.
-  The `<24` upper-bound pin (`s3-pyarrow`, `arrow`, `sql-query` extras) is a
-  temporary hold; this item tracks the work to lift it.
+  `S3PyArrowBackend` conformance tests fail when pyarrow routes writes through multipart
+  upload against moto's `ThreadedMotoServer`. The `<24` upper-bound pin is a temporary
+  hold; this item tracks the root-cause fix and pin removal.
 
-  **Root cause:** `pa.fs.S3FileSystem.open_output_stream` in pyarrow 24 routes all
-  writes through multipart upload (even small files that previously used `PutObject`
-  directly). The moto 5.2.0 `ThreadedMotoServer` returns HTTP 200 OK with an empty
-  response body for `CompleteMultipartUpload`; pyarrow 24's C++ S3 client (`s3fs.cc`)
-  is now strict about embedded error parsing and treats the empty body as
-  `INTERNAL_FAILURE`. Every `s3-pyarrow` conformance write fails.
+  **Root cause:** `pa.fs.S3FileSystem.open_output_stream` routes writes through multipart
+  upload in pyarrow 23+ on Python 3.14 (and in pyarrow 24 on all Pythons). The moto 5.2.0
+  `ThreadedMotoServer` returns HTTP 200 OK with an empty response body for
+  `CompleteMultipartUpload`; pyarrow's C++ S3 client (`s3fs.cc:758`) treats the empty
+  body as `INTERNAL_FAILURE`. On Python 3.14 the `<24` pin is insufficient — pyarrow
+  23.0.1 triggers the same failure (possibly due to Python 3.14's `io.DEFAULT_BUFFER_SIZE`
+  increase causing pyarrow to take the multipart code path for small files). Conformance
+  tests are skipped on Python 3.14 pending this fix.
 
   **Work required:**
   1. Diagnose whether the fix is on the moto side (bump to moto ≥5.3 if it ships a
