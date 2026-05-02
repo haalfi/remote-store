@@ -104,13 +104,15 @@ Existing items may be more verbose — trim on next touch.
   a structural ripple-check entry. Post-bridge (DOCFRAME-005), the
   unified scanner replaces the auto-render path; semantics unchanged.
 
+  **Progress:** Step 1 landed — `_parse_marker`, `_classify_file`, `DualEntry`, `scan_dual_files` in `scripts/docs/scan.py` with five spec-traced tests (DOCFRAME-001..003).
+
   **Depends on:** BK-167 (framework defined and wired in).
 
-- [ ] **BK-167b — Apply documentation framework; close audit-012 findings**
-  Once the framework (BK-167) and its tooling (BK-167a) are in place,
-  classify every existing `.md`, run the gate, and close the open
-  audit-012 findings. Exit criterion: framework "up & running, tested &
-  proven, documented & correct."
+- [~] **BK-167b — Apply documentation framework; close audit-012 findings**
+  Classify all `.md`, wire the PR-time gate, and close the open audit-012
+  findings. `check_links.py` (repo-side + site-side link checker) already
+  landed — see BACKLOG-DONE.md. Exit criterion: framework "up & running,
+  tested & proven, documented & correct."
 
   **Audit-012 findings to close:**
   - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`

@@ -201,20 +201,20 @@ result.
 
 `tests/scripts/test_docs_framework.py`:
 
-| Test | Spec ref |
-|---|---|
-| `test_marker_parses_dual_with_dest` | DOCFRAME-002 |
-| `test_marker_parses_repo_only_no_dest` | DOCFRAME-002 |
-| `test_marker_absent_defaults_to_dual_in_sdd_subdir` | DOCFRAME-002 |
-| `test_marker_absent_in_repo_root_is_an_error` | DOCFRAME-002, G-01 |
-| `test_scan_dual_files_yields_only_dual_class` | DOCFRAME-001, DOCFRAME-003 |
-| `test_render_dual_pages_uses_link_resolver` | DOCFRAME-001 |
-| `test_dest_collision_fails` | G-02 |
-| `test_jinja_in_dual_file_fails` | G-03 |
-| `test_include_markdown_in_docs_src_fails` | G-04 |
-| `test_broken_repo_link_in_dual_fails` | G-05 |
-| `test_url_nav_misalignment_fails` | G-06 |
-| `test_mkdocs_strict_passes_after_bridge` | G-07 |
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_marker_parses_dual_with_dest` | DOCFRAME-002 | |
+| `test_marker_parses_repo_only_no_dest` | DOCFRAME-002 | |
+| `test_marker_absent_defaults_to_dual_in_sdd_subdir` | DOCFRAME-002 | |
+| `test_marker_absent_in_repo_root_is_an_error` | DOCFRAME-002, G-01 | |
+| `test_scan_dual_files_yields_only_dual_class` | DOCFRAME-001, DOCFRAME-003 | |
+| `test_render_dual_pages_uses_link_resolver` | DOCFRAME-001 | DOCFRAME-004 gate (later step) |
+| `test_dest_collision_fails` | G-02 | DOCFRAME-004 gate (later step) |
+| `test_jinja_in_dual_file_fails` | G-03 | DOCFRAME-004 gate (later step) |
+| `test_include_markdown_in_docs_src_fails` | G-04 | DOCFRAME-004 gate (later step) |
+| `test_broken_repo_link_in_dual_fails` | G-05 | DOCFRAME-004 gate (later step) |
+| `test_url_nav_misalignment_fails` | G-06 | DOCFRAME-004 gate (later step) |
+| `test_mkdocs_strict_passes_after_bridge` | G-07 | DOCFRAME-004 gate (later step) |
 
 Each test traces back via `@pytest.mark.spec("DOCFRAME-NNN")` per
 [`000-process.md`](../000-process.md) Rule 2.
