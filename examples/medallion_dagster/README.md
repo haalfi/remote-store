@@ -1,5 +1,5 @@
 # Medallion + Dagster Showcase
-<!-- doc: repo-only -->
+<!-- doc: dual dest=examples/medallion-dagster.md -->
 
 A self-contained Dagster project demonstrating remote-store's value proposition
 through a real-world **medallion architecture** (Bronze → Silver → Gold) over

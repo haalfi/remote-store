@@ -109,11 +109,6 @@ def build_source_map(
     if rfc_template.exists():
         source_map[rfc_template.resolve()] = "explanation/design/rfcs/rfc-template.md"
 
-    # Medallion showcase README is inlined as examples/medallion-dagster.md.
-    medallion = repo_root / "examples" / "medallion_dagster" / "README.md"
-    if medallion.exists():
-        source_map[medallion.resolve()] = "examples/medallion-dagster.md"
-
     for entry in link_entries:
         source_map[entry.source] = entry.dest
 
