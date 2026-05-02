@@ -1,6 +1,6 @@
 - Home: index.md
-- Getting Started:
-    - Tutorial: getting-started.md
+- Tutorial:
+    - Getting Started: getting-started.md
     - Examples: examples/
 - Guides:
     - Backends: how-to/backends/
@@ -28,14 +28,12 @@
     - Features: reference/FEATURES.md
     - Capabilities Matrix: reference/capabilities-matrix.md
     - Migration: reference/migration.md
-    - Changelog: changelog.md
+    - Changelog: reference/changelog.md
 - Explanation:
     - Architecture Overview: explanation/architecture.md
     - Performance: explanation/performance.md
     - Concurrency: explanation/concurrency.md
     - Security Model: explanation/security-model.md
-    - Design: design/
-- Further Reading:
-    - Overview: further/further-reading.md
-    - Development Story: development-story.md
-    - Contributing: contributing.md
+    - Contributing: explanation/contributing.md
+    - Development Story: explanation/development-story.md
+    - Design: explanation/design/
