@@ -171,6 +171,7 @@ def test_scan_dual_files_skip_stems_not_yielded(scan_mod, tmp_path):
 
 @pytest.mark.spec("DOCFRAME-001")
 def test_scan_dual_files_skips_deny_list_dirs(scan_mod, tmp_path):
+    (tmp_path / ".gitignore").write_text("tmp/\n")
     deny_dir = tmp_path / "tmp"
     deny_dir.mkdir()
     phantom = deny_dir / "notes.md"

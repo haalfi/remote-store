@@ -202,32 +202,49 @@ class DualEntry:
     dest: str  # virtual dest, e.g. "explanation/design/authoring.md"
 
 
-# Directories skipped by the rglob pass in scan_dual_files.
-# Prevents phantom DualEntry hits in build artefacts, tool caches, and VCS
-# internals, and keeps scan time within the DOCFRAME-004 5-second budget.
-_RGLOB_SKIP_DIRS = frozenset(
-    {
-        ".git",
-        ".hg",
-        ".svn",
-        ".venv",
-        "venv",
-        ".env",
-        "env",
-        "node_modules",
-        "site",
-        "htmlcov",
-        "tmp",
-        "build",
-        "dist",
-        "__pycache__",
-        ".mypy_cache",
-        ".ruff_cache",
-        ".pytest_cache",
-        ".tox",
-        ".hatch",
-    }
-)
+def _scan_kind_for_dual(kind: SddKind, kind_dir: Path) -> list[DualEntry]:
+    """Return dual entries for one SDD subdir. Designed for parallel dispatch."""
+    entries: list[DualEntry] = []
+    for p in sorted(kind_dir.glob(kind.glob)):
+        if p.stem in kind.skip_stems:
+            continue
+        try:
+            result = _parse_marker(p.read_text(encoding="utf-8"))
+        except ValueError:
+            continue  # malformed — gate (G-01) handles this
+        if result is None:
+            entries.append(DualEntry(source=p.resolve(), dest=f"explanation/design/{kind.slug}/{p.stem}.md"))
+        elif result[0] == "dual":
+            entries.append(DualEntry(source=p.resolve(), dest=result[1]))
+        # repo-only or docs-only override: not a dual file
+    return entries
+
+
+# VCS internal directories are never listed in .gitignore — skip them unconditionally.
+_VCS_DIRS = frozenset({".git", ".hg", ".svn"})
+
+
+def _gitignore_skip_dirs(repo_root: Path) -> frozenset[str]:
+    """Return directory names to exclude from scans.
+
+    Reads ``.gitignore`` (if present) and collects simple ``dirname/`` patterns
+    — no wildcards, no path separators. Augments with :data:`_VCS_DIRS` so
+    VCS internals are always excluded even though they never appear in gitignore.
+    """
+    from pathlib import Path as _Path
+
+    dirs: set[str] = set(_VCS_DIRS)
+    gitignore = _Path(repo_root) / ".gitignore"
+    if not gitignore.is_file():
+        return frozenset(dirs)
+    for raw in gitignore.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or line.startswith("!"):
+            continue
+        # Only simple "dirname/" patterns — no wildcards, no embedded separators.
+        if line.endswith("/") and "*" not in line and "/" not in line.rstrip("/"):
+            dirs.add(line.rstrip("/"))
+    return frozenset(dirs)
 
 
 def scan_dual_files(repo_root: Path) -> Iterator[DualEntry]:
@@ -246,36 +263,32 @@ def scan_dual_files(repo_root: Path) -> Iterator[DualEntry]:
 
     Spec: DOCFRAME-001, DOCFRAME-003.
     """
+    from concurrent.futures import ThreadPoolExecutor
     from pathlib import Path as _Path
 
     repo_root = _Path(repo_root).resolve()
 
-    # SDD subdirs: directory-default dual; explicit marker can override.
-    sdd_dirs: set[Path] = set()
-    for kind in SDD_KINDS:
-        kind_dir = repo_root / kind.source_dir
-        sdd_dirs.add(kind_dir.resolve())
-        if not kind_dir.is_dir():
-            continue
-        for p in sorted(kind_dir.glob(kind.glob)):
-            if p.stem in kind.skip_stems:
-                continue
-            try:
-                result = _parse_marker(p.read_text(encoding="utf-8"))
-            except ValueError:
-                continue  # malformed — gate (G-01) handles this
-            if result is None:
-                yield DualEntry(source=p.resolve(), dest=f"explanation/design/{kind.slug}/{p.stem}.md")
-            elif result[0] == "dual":
-                yield DualEntry(source=p.resolve(), dest=result[1])
-            # repo-only or docs-only override: not a dual file
+    # SDD subdirs: scan in parallel (I/O-bound, no shared state).
+    # Collect all entries before yielding so the thread pool is released first.
+    sdd_dirs: set[Path] = {(repo_root / kind.source_dir).resolve() for kind in SDD_KINDS}
+    sdd_entries: list[DualEntry] = []
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(_scan_kind_for_dual, kind, repo_root / kind.source_dir)
+            for kind in SDD_KINDS
+            if (repo_root / kind.source_dir).is_dir()
+        ]
+        for future in futures:
+            sdd_entries.extend(future.result())
+    yield from sdd_entries
 
     # Files elsewhere: yield those with explicit dual markers.
-    # Skip build artefacts, VCS internals, and tool caches (see _RGLOB_SKIP_DIRS).
+    # Skip directories listed in .gitignore plus VCS internals.
+    skip_dirs = _gitignore_skip_dirs(repo_root)
     docs_src = (repo_root / "docs-src").resolve()
     for md in sorted(repo_root.rglob("*.md")):
         rel_parts = md.relative_to(repo_root).parts
-        if any(part in _RGLOB_SKIP_DIRS for part in rel_parts):
+        if any(part in skip_dirs for part in rel_parts):
             continue
         abs_md = md.resolve()
         if any(abs_md.is_relative_to(d) for d in sdd_dirs):
