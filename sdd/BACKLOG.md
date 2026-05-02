@@ -104,24 +104,6 @@ Existing items may be more verbose — trim on next touch.
 
 ### Docs & Tooling
 
-- [ ] **ID-175 — Author templates folder (`sdd/templates/`)**
-  Add `sdd/templates/` containing starter templates for every SDD artefact
-  kind: RFC, spec, ADR, audit, research. Templates are authoring tools, not
-  documentation — the folder gets a `repo-only` directory default in
-  `AUTHORING.md` (no per-file markers needed).
-
-  **Scope:**
-  - `sdd/templates/rfc-template.md` — move existing `sdd/rfcs/rfc-template.md` here; update any links
-  - `sdd/templates/spec-template.md`
-  - `sdd/templates/adr-template.md`
-  - `sdd/templates/audit-template.md`
-  - `sdd/templates/research-template.md`
-  - `sdd/AUTHORING.md` — add `sdd/templates/*.md` row to Directory defaults table; add a link to the folder
-
-  **Exit criteria:** templates folder exists; each file contains a usable
-  scaffold; `hatch run all` passes; `check_docs_framework.py` G-01 passes
-  (the new directory default covers all `sdd/templates/*.md` files).
-
 - [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/reference/api/index.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
   Different IR from the method-caps checker: `{symbol_name: kind}` rather

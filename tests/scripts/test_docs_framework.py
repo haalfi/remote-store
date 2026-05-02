@@ -125,6 +125,17 @@ def test_classify_file_docs_src_is_docs_only(scan_mod, tmp_path):
     assert dest is None
 
 
+@pytest.mark.spec("DOCFRAME-002")
+def test_classify_file_templates_dir_is_repo_only(scan_mod, tmp_path):
+    templates_dir = tmp_path / "sdd" / "templates"
+    templates_dir.mkdir(parents=True)
+    md = templates_dir / "rfc-template.md"
+    md.write_text("# RFC-NNNN: <Title>\n\nContent.\n")
+    klass, dest = scan_mod._classify_file(md, tmp_path)
+    assert klass == "repo-only"
+    assert dest is None
+
+
 # ---------------------------------------------------------------------------
 # DOCFRAME-001 + DOCFRAME-003: scan_dual_files / DualEntry
 # ---------------------------------------------------------------------------
@@ -165,7 +176,8 @@ def test_scan_dual_files_skip_stems_not_yielded(scan_mod, tmp_path):
     real_rfc = rfcs_dir / "rfc-0001-something.md"
     real_rfc.write_text("# RFC-0001: Something\n\nContent.\n")
 
-    entries = list(scan_mod.scan_dual_files(tmp_path))
+    kind = scan_mod.SddKind("rfcs", "sdd/rfcs", "RFCs", glob="rfc-*.md", skip_stems=frozenset({"rfc-template"}))
+    entries = scan_mod._scan_kind_for_dual(kind, rfcs_dir)
     sources = {e.source for e in entries}
     assert template.resolve() not in sources
     assert real_rfc.resolve() in sources
@@ -178,7 +190,8 @@ def test_scan_dual_files_skip_stems_with_explicit_dual_marker_is_yielded(scan_mo
     template = rfcs_dir / "rfc-template.md"
     template.write_text("<!-- doc: dual dest=explanation/design/rfcs/rfc-template.md -->\n# RFC Template\n")
 
-    entries = list(scan_mod.scan_dual_files(tmp_path))
+    kind = scan_mod.SddKind("rfcs", "sdd/rfcs", "RFCs", glob="rfc-*.md", skip_stems=frozenset({"rfc-template"}))
+    entries = scan_mod._scan_kind_for_dual(kind, rfcs_dir)
     sources = {e.source: e.dest for e in entries}
     assert template.resolve() in sources
     assert sources[template.resolve()] == "explanation/design/rfcs/rfc-template.md"
@@ -199,11 +212,13 @@ def test_scan_dual_files_skips_vcs_dirs(scan_mod, tmp_path):
 
 @pytest.mark.spec("DOCFRAME-002")
 @pytest.mark.spec("G-01")
-def test_classify_file_skip_stem_raises_G01(scan_mod, tmp_path):
+def test_classify_file_skip_stem_raises_G01(scan_mod, tmp_path, monkeypatch):
     rfcs_dir = tmp_path / "sdd" / "rfcs"
     rfcs_dir.mkdir(parents=True)
     template = rfcs_dir / "rfc-template.md"
     template.write_text("# RFC Template\n\nContent.\n")
+    kind = scan_mod.SddKind("rfcs", "sdd/rfcs", "RFCs", glob="rfc-*.md", skip_stems=frozenset({"rfc-template"}))
+    monkeypatch.setattr(scan_mod, "SDD_KINDS", (kind,))
     with pytest.raises(ValueError, match="G-01"):
         scan_mod._classify_file(template, tmp_path)
 

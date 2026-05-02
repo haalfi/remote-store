@@ -1,5 +1,4 @@
 # RFC-NNNN: <Title>
-<!-- doc: dual dest=explanation/design/rfcs/rfc-template.md -->
 
 ## Status
 

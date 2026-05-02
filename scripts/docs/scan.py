@@ -65,7 +65,7 @@ class SddKind:
 SDD_KINDS: tuple[SddKind, ...] = (
     SddKind("adrs", "sdd/adrs", "ADRs", title_prefixes=("ADR-{num}: ",), status="Accepted"),
     SddKind("specs", "sdd/specs", "Specs", title_prefixes=("Spec {num}: ", "Spec-{num}: ", "{num}: ")),
-    SddKind("rfcs", "sdd/rfcs", "RFCs", glob="rfc-*.md", skip_stems=frozenset({"rfc-template"}), status="Proposed"),
+    SddKind("rfcs", "sdd/rfcs", "RFCs", glob="rfc-*.md", status="Proposed"),
     SddKind("audits", "sdd/audits", "Audits", glob="audit-*.md", title_prefixes=("Audit {num} -- ", "Audit {num} — ")),
     SddKind(
         "research", "sdd/research", "Research", glob="research-*.md", title_prefixes=("Research: ",), numbered=False
@@ -179,6 +179,10 @@ def _classify_file(path: Path, repo_root: Path) -> tuple[str, str | None]:
         kind_dir = (repo_root / kind.source_dir).resolve()
         if path.parent == kind_dir and fnmatch.fnmatch(path.name, kind.glob) and path.stem not in kind.skip_stems:
             return "dual", f"explanation/design/{kind.slug}/{path.stem}.md"
+
+    templates_dir = (repo_root / "sdd/templates").resolve()
+    if path.is_relative_to(templates_dir):
+        return "repo-only", None
 
     docs_src = (repo_root / "docs-src").resolve()
     if path.is_relative_to(docs_src):

@@ -8,6 +8,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-175 — Author templates folder (`sdd/templates/`)**
+  `sdd/templates/` created with five starter templates: `rfc-template.md`
+  (moved from `sdd/rfcs/`), `spec-template.md`, `adr-template.md`,
+  `audit-template.md`, `research-template.md`. Directory default (repo-only)
+  added to `scan.py` and documented in `AUTHORING.md`. Links in
+  `CONTRIBUTING.md` and `CLAUDE-REFERENCE.md` updated.
+
 - [x] **BK-167b — Apply documentation framework; close audit-012 findings**
   All `.md` files classified with `<!-- doc: dual dest=... -->`,
   `<!-- doc: repo-only -->`, or `<!-- doc: docs-only -->` markers (or

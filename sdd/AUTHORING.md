@@ -108,16 +108,17 @@ is normalised; one or more spaces between tokens is accepted.
 
 When no marker is present, the file is classified by directory. The
 SDD-subdir rows follow the kind globs declared in
-`scripts/docs/scan.py:SDD_KINDS`; only RFCs have a `skip_stems`
-exclusion (`rfc-template`).
+`scripts/docs/scan.py:SDD_KINDS`. Files in [`sdd/templates/`](templates/)
+are authoring tools, not documentation, and default to repo-only.
 
 | Source pattern | Default class | Default dest |
 |---|---|---|
 | `sdd/adrs/*.md` | dual | `explanation/design/adrs/<slug>.md` |
 | `sdd/specs/*.md` | dual | `explanation/design/specs/<slug>.md` |
-| `sdd/rfcs/rfc-*.md` (not `rfc-template`) | dual | `explanation/design/rfcs/<slug>.md` |
+| `sdd/rfcs/rfc-*.md` | dual | `explanation/design/rfcs/<slug>.md` |
 | `sdd/audits/audit-*.md` | dual | `explanation/design/audits/<slug>.md` |
 | `sdd/research/research-*.md` | dual | `explanation/design/research/<slug>.md` |
+| `sdd/templates/*.md` | repo-only | — |
 | `docs-src/**/*.md` | docs-only | — |
 | anything else | requires explicit marker | — |
 
@@ -125,6 +126,7 @@ In practice:
 
 - Files added under `sdd/specs/`, `sdd/adrs/`, `sdd/rfcs/`, `sdd/audits/`,
   `sdd/research/` need no marker.
+- Files added under `sdd/templates/` need no marker (repo-only by default).
 - Files added under `docs-src/` need no marker.
 - Top-level `sdd/*.md` process docs (000-process, AUTHORING, DESIGN,
   DOCUMENTATION, TESTING, CONTENT-RULES) carry an explicit dual marker.

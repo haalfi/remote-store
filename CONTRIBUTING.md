@@ -51,7 +51,7 @@ Authoritative documents must not contain:
 
 The full SDD pipeline is described in [`sdd/000-process.md`](sdd/000-process.md). For external contributions, start here:
 
-1. **Propose**: Open a PR with an RFC in `sdd/rfcs/` (see [`rfc-template.md`](sdd/rfcs/rfc-template.md)). No code yet.
+1. **Propose**: Open a PR with an RFC in `sdd/rfcs/` (see [`rfc-template.md`](sdd/templates/rfc-template.md)). No code yet.
 2. **Review**: Maintainers and community review for design fit and completeness.
 3. **Accept**: The RFC graduates to a spec in `sdd/specs/`. It now defines the contract.
 4. **Implement**: Open a follow-up PR with tests (referencing spec IDs) and implementation.

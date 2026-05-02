@@ -108,7 +108,7 @@ Before committing, check whether your change has cross-file dependencies:
 | Find out what work is pending            | `sdd/BACKLOG.md` (active), `sdd/BACKLOG-DONE.md` (archive) |
 | Understand how a feature should behave   | `sdd/specs/` (NNN-topic.md; IDs use STORE-, S3-, ERR- etc.) |
 | Learn why a design decision was made     | `sdd/adrs/`                                          |
-| Propose a significant change             | Write an RFC in `sdd/rfcs/` (see `rfc-template.md`)  |
+| Propose a significant change             | Write an RFC in `sdd/rfcs/` (see [`sdd/templates/rfc-template.md`](templates/rfc-template.md)) |
 | Explore feasibility of an idea           | Write a research doc in `sdd/research/`              |
 | Record a new design decision             | Add an ADR in `sdd/adrs/`                            |
 | Log a bug or improvement idea            | Append to `sdd/BACKLOG.md` (Ideas section)           |
