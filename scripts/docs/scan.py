@@ -30,13 +30,13 @@ import fnmatch
 import re
 import warnings
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import yaml
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from pathlib import Path
 
 _YAML_TAIL_RE = re.compile(r"\n---\n(see_also:.*?)\Z", re.DOTALL)
 _ACRONYMS = {"Sftp": "SFTP", "Http": "HTTP", "S3": "S3", "Otel": "OTel", "Io": "IO"}
@@ -119,7 +119,7 @@ def scan_all_sdd(repo_root: Path) -> dict[str, list[SddEntry]]:
 # Permissive: captures any non-whitespace class token so unrecognised classes
 # are detected and rejected below rather than silently falling through to the
 # directory-default table.
-_MARKER_RE = re.compile(r"<!--\s+doc:\s+(\S+)(?:\s+dest=(\S+))?\s*-->")
+_MARKER_RE = re.compile(r"<!--\s*doc:\s+(\S+)(?:\s+dest=(\S+))?\s*-->")
 _VALID_CLASSES = frozenset({"dual", "repo-only", "docs-only"})
 
 
@@ -133,7 +133,7 @@ def _parse_marker(text: str) -> tuple[str, str | None] | None:
     """
     non_blank = 0
     found: list[re.Match[str]] = []
-    for line in text.split("\n"):
+    for line in text.split("\n", 50):
         if not line.strip():
             continue
         non_blank += 1
@@ -166,10 +166,8 @@ def _classify_file(path: Path, repo_root: Path) -> tuple[str, str | None]:
     Returns ``(class, dest)`` where *dest* is ``None`` for non-dual classes.
     Raises ``ValueError`` (G-01) when the file is unclassified.
     """
-    from pathlib import Path as _Path  # runtime import; Path is TYPE_CHECKING-only above
-
-    path = _Path(path).resolve()
-    repo_root = _Path(repo_root).resolve()
+    path = path.resolve()
+    repo_root = repo_root.resolve()
 
     result = _parse_marker(path.read_text(encoding="utf-8"))
     if result is not None:
@@ -203,15 +201,18 @@ class DualEntry:
 
 
 def _scan_kind_for_dual(kind: SddKind, kind_dir: Path) -> list[DualEntry]:
-    """Return dual entries for one SDD subdir. Designed for parallel dispatch."""
+    """Return dual entries for one SDD subdir."""
+    if not kind_dir.is_dir():
+        return []
     entries: list[DualEntry] = []
     for p in sorted(kind_dir.glob(kind.glob)):
         if p.stem in kind.skip_stems:
             continue
         try:
             result = _parse_marker(p.read_text(encoding="utf-8"))
-        except ValueError:
-            continue  # malformed — gate (G-01) handles this
+        except ValueError as exc:
+            warnings.warn(f"Malformed doc marker in {p.name}: {exc}; skipping", stacklevel=2)
+            continue
         if result is None:
             entries.append(DualEntry(source=p.resolve(), dest=f"explanation/design/{kind.slug}/{p.stem}.md"))
         elif result[0] == "dual":
@@ -220,84 +221,75 @@ def _scan_kind_for_dual(kind: SddKind, kind_dir: Path) -> list[DualEntry]:
     return entries
 
 
-# VCS internal directories are never listed in .gitignore — skip them unconditionally.
+# Used as fallback skip-list when git is unavailable (test fixtures, etc.).
 _VCS_DIRS = frozenset({".git", ".hg", ".svn"})
 
 
-def _gitignore_skip_dirs(repo_root: Path) -> frozenset[str]:
-    """Return directory names to exclude from scans.
+def _git_repo_markdown(repo_root: Path) -> list[Path]:
+    """Return sorted list of git-visible .md files under *repo_root*.
 
-    Reads ``.gitignore`` (if present) and collects simple ``dirname/`` patterns
-    — no wildcards, no path separators. Augments with :data:`_VCS_DIRS` so
-    VCS internals are always excluded even though they never appear in gitignore.
+    Delegates to ``git ls-files`` so the full gitignore grammar — wildcards,
+    negation patterns, nested ``.gitignore`` files — is handled by git itself.
+    Falls back to ``rglob`` skipping only :data:`_VCS_DIRS` when the tree is
+    not a git repository (test fixtures, CI sandboxes without git, etc.).
     """
-    from pathlib import Path as _Path
+    import subprocess
 
-    dirs: set[str] = set(_VCS_DIRS)
-    gitignore = _Path(repo_root) / ".gitignore"
-    if not gitignore.is_file():
-        return frozenset(dirs)
-    for raw in gitignore.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#") or line.startswith("!"):
-            continue
-        # Only simple "dirname/" patterns — no wildcards, no embedded separators.
-        if line.endswith("/") and "*" not in line and "/" not in line.rstrip("/"):
-            dirs.add(line.rstrip("/"))
-    return frozenset(dirs)
+    result = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+    )
+    if result.returncode == 0:
+        return sorted((repo_root / p).resolve() for p in result.stdout.splitlines() if p.endswith(".md"))
+    # Fallback: rglob, skipping VCS internals only.
+    return sorted(
+        md.resolve()
+        for md in repo_root.rglob("*.md")
+        if not any(part in _VCS_DIRS for part in md.relative_to(repo_root).parts)
+    )
 
 
 def scan_dual_files(repo_root: Path) -> Iterator[DualEntry]:
     """Discover all dual files in *repo_root*.
 
     Yields :class:`DualEntry` for every file whose effective classification is
-    ``dual``: SDD-subdir files (directory-default dual per
-    :data:`SDD_KINDS`) and files elsewhere that carry an explicit
-    ``<!-- doc: dual dest=... -->`` marker.
+    ``dual``: SDD-subdir files (directory-default dual per :data:`SDD_KINDS`)
+    and files elsewhere that carry an explicit ``<!-- doc: dual dest=... -->``
+    marker.
 
     **Caveat:** malformed markers (those that cause :func:`_parse_marker` to
-    raise ``ValueError``) are silently skipped — the file is omitted from the
-    output rather than surfacing an error. The gate (DOCFRAME-004) is the
-    authority for detecting and reporting G-01 violations; callers that need a
-    complete and verified source→dest map must run the gate first.
+    raise ``ValueError``) emit a :mod:`warnings` warning and are skipped.
+    The gate (DOCFRAME-004) is the authority for detecting and reporting G-01
+    violations; callers that need a complete and verified source→dest map must
+    run the gate first.
 
     Spec: DOCFRAME-001, DOCFRAME-003.
     """
-    from concurrent.futures import ThreadPoolExecutor
-    from pathlib import Path as _Path
-
-    repo_root = _Path(repo_root).resolve()
-
-    # SDD subdirs: scan in parallel (I/O-bound, no shared state).
-    # Collect all entries before yielding so the thread pool is released first.
+    repo_root = repo_root.resolve()
     sdd_dirs: set[Path] = {(repo_root / kind.source_dir).resolve() for kind in SDD_KINDS}
-    sdd_entries: list[DualEntry] = []
-    with ThreadPoolExecutor() as executor:
-        futures = [
-            executor.submit(_scan_kind_for_dual, kind, repo_root / kind.source_dir)
-            for kind in SDD_KINDS
-            if (repo_root / kind.source_dir).is_dir()
-        ]
-        for future in futures:
-            sdd_entries.extend(future.result())
-    yield from sdd_entries
+
+    # SDD subdirs: sequential scan (~5 dirs, tens of files each).
+    for kind in SDD_KINDS:
+        yield from _scan_kind_for_dual(kind, repo_root / kind.source_dir)
 
     # Files elsewhere: yield those with explicit dual markers.
-    # Skip directories listed in .gitignore plus VCS internals.
-    skip_dirs = _gitignore_skip_dirs(repo_root)
+    # git ls-files handles the full gitignore grammar; falls back to rglob in
+    # non-git trees (see _git_repo_markdown).
     docs_src = (repo_root / "docs-src").resolve()
-    for md in sorted(repo_root.rglob("*.md")):
-        rel_parts = md.relative_to(repo_root).parts
-        if any(part in skip_dirs for part in rel_parts):
-            continue
-        abs_md = md.resolve()
+    for abs_md in _git_repo_markdown(repo_root):
         if any(abs_md.is_relative_to(d) for d in sdd_dirs):
             continue
         if abs_md.is_relative_to(docs_src):
             continue
         try:
-            result = _parse_marker(md.read_text(encoding="utf-8"))
-        except ValueError:
+            result = _parse_marker(abs_md.read_text(encoding="utf-8"))
+        except ValueError as exc:
+            warnings.warn(
+                f"Malformed doc marker in {abs_md.relative_to(repo_root)}: {exc}; skipping",
+                stacklevel=2,
+            )
             continue
         if result is not None and result[0] == "dual":
             yield DualEntry(source=abs_md, dest=result[1])
