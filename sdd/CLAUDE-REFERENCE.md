@@ -96,9 +96,8 @@ Before committing, check whether your change has cross-file dependencies:
 | **process doc in `sdd/`**  | trio), `CONTRIBUTING.md` Authoritative Document Format    |
 |                            | § Scope, sibling authority docs (back-references in       |
 |                            | their Intent & Scope), `.claude/skills/*/SKILL.md`        |
-|                            | foundation lists, `docs-src/design/` wrapper + `_nav.yml`,|
-|                            | `docs-src/further/further-reading.md`, and this           |
-|                            | ripple-check table                                        |
+|                            | foundation lists, `docs-src/explanation/design/_nav.yml`, |
+|                            | and this ripple-check table                               |
 
 ---
 
@@ -147,8 +146,8 @@ sdd/                       # Specs, ADRs, RFCs, research, audits, backlog, desig
 docs-src/how-to/           # User-facing how-to guides (Diataxis)
 docs-src/how-to/backends/  # Backend configuration guides
 docs-src/explanation/      # Explanation pages (Diataxis)
+docs-src/explanation/design/ # Design docs — sdd/ dual files rendered here
 docs-src/reference/        # Reference pages, FEATURES.md, migration guide
-docs-src/further/          # Further reading
 docs-src/                  # MkDocs Material documentation source (prose + nav)
 ```
 

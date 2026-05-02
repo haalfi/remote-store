@@ -31,13 +31,13 @@ import fnmatch
 import re
 import warnings
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import yaml
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
 _YAML_TAIL_RE = re.compile(r"\n---\n(see_also:.*?)\Z", re.DOTALL)
 _ACRONYMS = {"Sftp": "SFTP", "Http": "HTTP", "S3": "S3", "Otel": "OTel", "Io": "IO"}
@@ -208,6 +208,14 @@ def _scan_kind_for_dual(kind: SddKind, kind_dir: Path) -> list[DualEntry]:
     entries: list[DualEntry] = []
     for p in sorted(kind_dir.glob(kind.glob)):
         if p.stem in kind.skip_stems:
+            # skip_stems blocks directory-default dual classification only.
+            # An explicit dual marker still yields an entry.
+            try:
+                result = _parse_marker(p.read_text(encoding="utf-8"))
+            except ValueError:
+                continue
+            if result is not None and result[0] == "dual":
+                entries.append(DualEntry(source=p.resolve(), dest=result[1]))
             continue
         try:
             result = _parse_marker(p.read_text(encoding="utf-8"))

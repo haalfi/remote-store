@@ -95,7 +95,7 @@ def build_source_map(
     *,
     sdd_entries: dict[str, list],  # kind_slug -> list[SddEntry]
     link_entries: list,  # unused after DOCFRAME-005; kept for API compat
-    include_pairs: list[tuple[Path, str]],  # (abs_source, virtual_dest)
+    include_pairs: list[tuple[Path, str]],  # unused after DOCFRAME-005; kept for API compat
 ) -> dict[Path, str]:
     """Assemble the absolute-source → virtual-dest map for the resolver."""
     source_map: dict[Path, str] = {}

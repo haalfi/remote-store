@@ -131,7 +131,7 @@ dependencies = [
 ]
 
 [tool.hatch.envs.default.scripts]
-lint = ["ruff check src/ tests/ examples/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py"]
+lint = ["ruff check src/ tests/ examples/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py"]
 format = "ruff format src/ tests/ examples/"
 format-check = "ruff format --check src/ tests/ examples/"
 typecheck = "mypy src/"
@@ -181,12 +181,13 @@ mutate-ext-format = "pytest --gremlins --gremlin-targets=src/remote_store/ext/pa
 mutate-backends-local = "pytest --gremlins --gremlin-targets=src/remote_store/backends/_local.py,src/remote_store/backends/_http.py,src/remote_store/backends/_http_httpx.py,src/remote_store/backends/_http_requests.py,src/remote_store/backends/_sqlalchemy.py tests/backends/test_local.py tests/backends/test_http.py tests/backends/test_sqlblob.py tests/backends/test_sqlquery.py"
 mutate-backends-cloud = "pytest --gremlins --gremlin-targets=src/remote_store/backends/_s3.py,src/remote_store/backends/_s3_base.py,src/remote_store/backends/_s3_pyarrow.py,src/remote_store/backends/_sftp.py,src/remote_store/backends/_azure.py tests/backends/test_s3.py tests/backends/test_s3_pyarrow.py tests/backends/test_s3_shared.py tests/backends/test_sftp.py tests/backends/test_azure.py"
 check-links = "python scripts/docs/check_links.py --root ."
+docs-check = "python scripts/check_docs_framework.py"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
-all = ["lint", "format-check", "typecheck", "test-cov", "examples", "notebooks", "check-links"]
+all = ["lint", "format-check", "typecheck", "test-cov", "examples", "notebooks", "check-links", "docs-check"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]
