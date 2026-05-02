@@ -208,6 +208,7 @@ result.
 | `test_marker_parses_repo_only_no_dest` | DOCFRAME-002 | |
 | `test_marker_absent_defaults_to_dual_in_sdd_subdir` | DOCFRAME-002 | |
 | `test_marker_absent_in_repo_root_is_an_error` | DOCFRAME-002, G-01 | |
+| `test_classify_file_templates_dir_is_repo_only` | DOCFRAME-002 | |
 | `test_scan_dual_files_yields_only_dual_class` | DOCFRAME-001, DOCFRAME-003 | |
 | `test_render_dual_pages_uses_link_resolver` | DOCFRAME-001 | DOCFRAME-004 gate (later step) |
 | `test_dest_collision_fails` | G-02 | DOCFRAME-004 gate (later step) |

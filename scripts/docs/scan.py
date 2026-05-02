@@ -65,7 +65,7 @@ class SddKind:
 SDD_KINDS: tuple[SddKind, ...] = (
     SddKind("adrs", "sdd/adrs", "ADRs", title_prefixes=("ADR-{num}: ",), status="Accepted"),
     SddKind("specs", "sdd/specs", "Specs", title_prefixes=("Spec {num}: ", "Spec-{num}: ", "{num}: ")),
-    SddKind("rfcs", "sdd/rfcs", "RFCs", glob="rfc-*.md", skip_stems=frozenset({"rfc-template"}), status="Proposed"),
+    SddKind("rfcs", "sdd/rfcs", "RFCs", glob="rfc-*.md", status="Proposed"),
     SddKind("audits", "sdd/audits", "Audits", glob="audit-*.md", title_prefixes=("Audit {num} -- ", "Audit {num} — ")),
     SddKind(
         "research", "sdd/research", "Research", glob="research-*.md", title_prefixes=("Research: ",), numbered=False
