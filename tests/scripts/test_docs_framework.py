@@ -125,6 +125,17 @@ def test_classify_file_docs_src_is_docs_only(scan_mod, tmp_path):
     assert dest is None
 
 
+@pytest.mark.spec("DOCFRAME-002")
+def test_classify_file_templates_dir_is_repo_only(scan_mod, tmp_path):
+    templates_dir = tmp_path / "sdd" / "templates"
+    templates_dir.mkdir(parents=True)
+    md = templates_dir / "rfc-template.md"
+    md.write_text("# RFC-NNNN: <Title>\n\nContent.\n")
+    klass, dest = scan_mod._classify_file(md, tmp_path)
+    assert klass == "repo-only"
+    assert dest is None
+
+
 # ---------------------------------------------------------------------------
 # DOCFRAME-001 + DOCFRAME-003: scan_dual_files / DualEntry
 # ---------------------------------------------------------------------------

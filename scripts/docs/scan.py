@@ -180,6 +180,10 @@ def _classify_file(path: Path, repo_root: Path) -> tuple[str, str | None]:
         if path.parent == kind_dir and fnmatch.fnmatch(path.name, kind.glob) and path.stem not in kind.skip_stems:
             return "dual", f"explanation/design/{kind.slug}/{path.stem}.md"
 
+    templates_dir = (repo_root / "sdd/templates").resolve()
+    if path.is_relative_to(templates_dir):
+        return "repo-only", None
+
     docs_src = (repo_root / "docs-src").resolve()
     if path.is_relative_to(docs_src):
         return "docs-only", None
