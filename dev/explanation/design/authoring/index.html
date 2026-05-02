@@ -9071,8 +9071,8 @@ is normalised; one or more spaces between tokens is accepted.</p>
 <h3 id="directory-defaults">Directory defaults<a class="headerlink" href="#directory-defaults" title="Permanent link">&para;</a></h3>
 <p>When no marker is present, the file is classified by directory. The
 SDD-subdir rows follow the kind globs declared in
-<code>scripts/docs/scan.py:SDD_KINDS</code>; only RFCs have a <code>skip_stems</code>
-exclusion (<code>rfc-template</code>).</p>
+<code>scripts/docs/scan.py:SDD_KINDS</code>. Files in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/templates"><code>sdd/templates/</code></a>
+are authoring tools, not documentation, and default to repo-only.</p>
 <table>
 <thead>
 <tr>
@@ -9093,7 +9093,7 @@ exclusion (<code>rfc-template</code>).</p>
 <td><code>explanation/design/specs/&lt;slug&gt;.md</code></td>
 </tr>
 <tr>
-<td><code>sdd/rfcs/rfc-*.md</code> (not <code>rfc-template</code>)</td>
+<td><code>sdd/rfcs/rfc-*.md</code></td>
 <td>dual</td>
 <td><code>explanation/design/rfcs/&lt;slug&gt;.md</code></td>
 </tr>
@@ -9106,6 +9106,11 @@ exclusion (<code>rfc-template</code>).</p>
 <td><code>sdd/research/research-*.md</code></td>
 <td>dual</td>
 <td><code>explanation/design/research/&lt;slug&gt;.md</code></td>
+</tr>
+<tr>
+<td><code>sdd/templates/*.md</code></td>
+<td>repo-only</td>
+<td>—</td>
 </tr>
 <tr>
 <td><code>docs-src/**/*.md</code></td>
@@ -9123,6 +9128,7 @@ exclusion (<code>rfc-template</code>).</p>
 <ul>
 <li>Files added under <code>sdd/specs/</code>, <code>sdd/adrs/</code>, <code>sdd/rfcs/</code>, <code>sdd/audits/</code>,
   <code>sdd/research/</code> need no marker.</li>
+<li>Files added under <code>sdd/templates/</code> need no marker (repo-only by default).</li>
 <li>Files added under <code>docs-src/</code> need no marker.</li>
 <li>Top-level <code>sdd/*.md</code> process docs (000-process, AUTHORING, DESIGN,
   DOCUMENTATION, TESTING, CONTENT-RULES) carry an explicit dual marker.</li>
