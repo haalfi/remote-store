@@ -7,6 +7,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-167b (partial) — check_links.py link checker**
+  `scripts/docs/check_links.py` — two-mode internal link checker (`--mode repo` for raw on-disk targets, `--mode site` for post-rewrite dual-file destinations). 11 spec-traced tests in `tests/scripts/test_check_links.py`. `hatch run check-links` script added. Remainder (classify all `.md`, wire gate, close audit-012 findings) continues in BK-167b.
+
 - [x] **BK-167 — Documentation framework defined and wired in**
   Three-doc documentation framework (placement → structure → longevity)
   established and wired into the contributor and Claude-session entry

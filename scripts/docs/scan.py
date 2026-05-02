@@ -133,7 +133,7 @@ def _parse_marker(text: str) -> tuple[str, str | None] | None:
     """
     non_blank = 0
     found: list[re.Match[str]] = []
-    for line in text.split("\n", 50):
+    for line in text.splitlines():
         if not line.strip():
             continue
         non_blank += 1

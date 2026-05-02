@@ -109,12 +109,10 @@ Existing items may be more verbose — trim on next touch.
   **Depends on:** BK-167 (framework defined and wired in).
 
 - [~] **BK-167b — Apply documentation framework; close audit-012 findings**
-  `scripts/docs/check_links.py` landed (repo-side + site-side link checker,
-  `hatch run check-links`). Remaining: classify all `.md`, wire gate, close
-  audit-012 findings. Once the framework (BK-167) and its tooling (BK-167a) are in place,
-  classify every existing `.md`, run the gate, and close the open
-  audit-012 findings. Exit criterion: framework "up & running, tested &
-  proven, documented & correct."
+  Classify all `.md`, wire the PR-time gate, and close the open audit-012
+  findings. `check_links.py` (repo-side + site-side link checker) already
+  landed — see BACKLOG-DONE.md. Exit criterion: framework "up & running,
+  tested & proven, documented & correct."
 
   **Audit-012 findings to close:**
   - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`

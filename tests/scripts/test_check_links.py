@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.os_sensitive
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS = ROOT / "scripts"
 
@@ -54,6 +56,8 @@ def test_extract_links_preserves_line_numbers(check_links_mod):
 # ---------------------------------------------------------------------------
 # check_repo_links
 # ---------------------------------------------------------------------------
+# NOTE: tmp_path is never a git repo, so all tests here exercise the rglob
+# fallback in _git_repo_markdown, not the git ls-files production path.
 
 
 def test_check_repo_links_no_broken(check_links_mod, tmp_path):
