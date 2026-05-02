@@ -8,7 +8,7 @@ are new to `remote-store`.
 
 [Getting Started](getting-started.md) is the recommended first step. It walks
 through installing `remote-store`, connecting a `Store` to a backend, and
-reading and writing files for the first time — in about ten minutes.
+reading and writing files for the first time.
 
 Every other concept in the docs builds on this foundation.
 
