@@ -2130,7 +2130,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Superseded by ID-024.
 
 - [x] **ID-024 — `ext.observe` — hooks / middleware / instrumentation**
-  [ADR-0010](adrs/0010-observe-hooks-middleware.md),
+  [ADR-0010](adrs/0010-observe-proxy-pattern.md),
   [spec 019](specs/019-ext-observe.md) (OBS-001 -- OBS-014).
 
 - [x] **ID-039 — Credential hygiene: `Secret` wrapper and central redaction**
@@ -2250,7 +2250,7 @@ Items that shipped outside a version bump, newest first.
 - [x] **ID-045 — Fill example coverage gaps for specs 003, 004, 020, 021**
 - [x] **ID-044 — Harden examples into assertion-based expectation tests**
 - [x] **ID-010 — Retry policy configuration**
-  [Spec 025](specs/025-retry-policy.md), [ADR-0011](adrs/0011-retry-policy.md).
+  [Spec 025](specs/025-retry-policy.md), [ADR-0011](adrs/0011-retry-per-backend-native.md).
 - [x] **BUG-002 — Windows drive letter case mismatch in `warnings` module**
 - [x] **BUG-001 — `get_folder_info("")` fails for empty-root stores**
 

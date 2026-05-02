@@ -20,6 +20,8 @@ from pathlib import Path
 # Same pattern as link.py: matches ](target) and ](target "title").
 _LINK_RE = re.compile(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
 _EXTERNAL_PREFIXES = ("http://", "https://", "mailto:", "ftp://")
+_FENCE_RE = re.compile(r"^(`{3,}|~{3,})")
+_INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 
 
 @dataclass(frozen=True)
@@ -34,11 +36,19 @@ class BrokenLink:
 def _extract_links(text: str) -> list[tuple[int, str]]:
     """Return (1-based line number, raw target) for internal inline links.
 
-    Skips external URLs (http/https/mailto/ftp) and anchor-only (#…) targets.
+    Skips external URLs (http/https/mailto/ftp), anchor-only (#…) targets,
+    fenced code blocks (``` / ~~~), and inline code spans (`...`).
     """
     out: list[tuple[int, str]] = []
-    for lineno, line in enumerate(text.split("\n"), 1):
-        for m in _LINK_RE.finditer(line):
+    in_fence = False
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        clean = _INLINE_CODE_RE.sub("", line)
+        for m in _LINK_RE.finditer(clean):
             raw = m.group(1)
             if any(raw.startswith(p) for p in _EXTERNAL_PREFIXES):
                 continue

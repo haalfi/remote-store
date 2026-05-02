@@ -53,6 +53,16 @@ def test_extract_links_preserves_line_numbers(check_links_mod):
     assert check_links_mod._extract_links(text) == [(3, "page.md")]
 
 
+def test_extract_links_skips_fenced_code_block(check_links_mod):
+    text = "Before.\n```\n[inside](fenced.md)\n```\n[after](real.md)\n"
+    assert check_links_mod._extract_links(text) == [(5, "real.md")]
+
+
+def test_extract_links_skips_inline_code_span(check_links_mod):
+    text = "Use `[example](inline.md)` syntax.\nSee [real](target.md).\n"
+    assert check_links_mod._extract_links(text) == [(2, "target.md")]
+
+
 # ---------------------------------------------------------------------------
 # check_repo_links
 # ---------------------------------------------------------------------------
