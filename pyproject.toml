@@ -186,7 +186,7 @@ docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
-all = ["lint", "format-check", "typecheck", "test-cov", "examples", "notebooks", "check-links", "docs-check"]
+all = ["lint", "format-check", "typecheck", "test-cov", "examples", "notebooks", "check-links", "docs-check", "docs-build"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]
