@@ -1,4 +1,5 @@
 # Testing Standards
+<!-- doc: dual dest=explanation/design/testing.md -->
 
 ## Intent & Scope
 

@@ -1,4 +1,5 @@
 # Changelog
+<!-- doc: dual dest=reference/changelog.md -->
 
 All notable changes to this project will be documented in this file.
 

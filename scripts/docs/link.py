@@ -94,7 +94,7 @@ def build_source_map(
     repo_root: Path,
     *,
     sdd_entries: dict[str, list],  # kind_slug -> list[SddEntry]
-    link_entries: list,  # list[LinkMapEntry]
+    link_entries: list,  # unused after DOCFRAME-005; kept for API compat
     include_pairs: list[tuple[Path, str]],  # (abs_source, virtual_dest)
 ) -> dict[Path, str]:
     """Assemble the absolute-source → virtual-dest map for the resolver."""
@@ -102,12 +102,12 @@ def build_source_map(
 
     for kind_slug, entries in sdd_entries.items():
         for e in entries:
-            source_map[e.source.resolve()] = f"design/{kind_slug}/{e.slug}.md"
+            source_map[e.source.resolve()] = f"explanation/design/{kind_slug}/{e.slug}.md"
 
     # RFC template: linked from CONTRIBUTING.md and others.
     rfc_template = repo_root / "sdd" / "rfcs" / "rfc-template.md"
     if rfc_template.exists():
-        source_map[rfc_template.resolve()] = "design/rfcs/rfc-template.md"
+        source_map[rfc_template.resolve()] = "explanation/design/rfcs/rfc-template.md"
 
     # Medallion showcase README is inlined as examples/medallion-dagster.md.
     medallion = repo_root / "examples" / "medallion_dagster" / "README.md"

@@ -1,4 +1,5 @@
 # SDD Process
+<!-- doc: dual dest=explanation/design/process.md -->
 
 ## Intent & Scope
 

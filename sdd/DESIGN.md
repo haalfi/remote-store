@@ -1,4 +1,5 @@
 # Code Style & Conventions
+<!-- doc: dual dest=explanation/design/design.md -->
 
 ## Intent & Scope
 

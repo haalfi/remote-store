@@ -16,9 +16,9 @@ if TYPE_CHECKING:
 
     from .link import LinkResolver
     from .scan import (
+        DualEntry,
         ExampleCategory,
         ExampleEntry,
-        LinkMapEntry,
         SddEntry,
         SddKind,
     )
@@ -69,13 +69,13 @@ def render_sdd_indexes(
     writer: Writer,
     entries_by_kind: dict[str, list[SddEntry]],
 ) -> None:
-    """Emit ``design/<kind>/index.md`` per kind, plus ``design/index.md``."""
+    """Emit ``explanation/design/<kind>/index.md`` per kind, plus ``explanation/design/index.md``."""
     for kind in SDD_KINDS:
         entries = entries_by_kind.get(kind.slug, [])
         rows = "\n".join(_index_row(kind, e) for e in entries)
         placeholder = f"{{{{ {_PLACEHOLDER_STEM[kind.slug]}_rows }}}}"
-        tmpl = docs_src / "design" / kind.slug / "_index.tmpl"
-        writer(f"design/{kind.slug}/index.md", _fill_template(tmpl, {placeholder: rows}))
+        tmpl = docs_src / "explanation" / "design" / kind.slug / "_index.tmpl"
+        writer(f"explanation/design/{kind.slug}/index.md", _fill_template(tmpl, {placeholder: rows}))
 
     landing_replacements = {
         f"{{{{ {_PLACEHOLDER_STEM[kind.slug]}_links }}}}": "\n".join(
@@ -84,51 +84,31 @@ def render_sdd_indexes(
         for kind in SDD_KINDS
     }
     writer(
-        "design/index.md",
-        _fill_template(docs_src / "design" / "_index.tmpl", landing_replacements),
+        "explanation/design/index.md",
+        _fill_template(docs_src / "explanation" / "design" / "_index.tmpl", landing_replacements),
     )
 
 
 # ---------------------------------------------------------------------------
-# Wrapper pages for sdd/ content
+# DOCFRAME-001: Bridge — render all dual files as virtual docs pages
 # ---------------------------------------------------------------------------
 
 
-def render_sdd_wrappers(
+def render_dual_pages(
     writer: Writer,
-    entries_by_kind: dict[str, list[SddEntry]],
+    dual_entries: list[DualEntry],
     resolver: LinkResolver,
 ) -> None:
-    """Emit one virtual page per entry with links resolved to docs-tree paths."""
-    for kind in SDD_KINDS:
-        for e in entries_by_kind.get(kind.slug, []):
-            dest = f"design/{kind.slug}/{e.slug}.md"
-            content = e.source.read_text(encoding="utf-8")
-            writer(dest, resolver.rewrite(content, e.source, dest))
+    """Emit one virtual page per dual entry with links resolved to docs-tree paths."""
+    for entry in dual_entries:
+        content = entry.source.read_text(encoding="utf-8")
+        writer(entry.dest, resolver.rewrite(content, entry.source, entry.dest))
 
 
 def render_rfc_template(repo_root: Path, writer: Writer, resolver: LinkResolver) -> None:
-    dest = "design/rfcs/rfc-template.md"
+    dest = "explanation/design/rfcs/rfc-template.md"
     source = repo_root / "sdd" / "rfcs" / "rfc-template.md"
     writer(dest, resolver.rewrite(source.read_text(encoding="utf-8"), source, dest))
-
-
-# ---------------------------------------------------------------------------
-# Link-rewritten pages (contributing.md, design/process.md)
-# ---------------------------------------------------------------------------
-
-
-def render_link_rewritten(
-    writer: Writer,
-    entries: list[LinkMapEntry],
-    resolver: LinkResolver,
-) -> None:
-    for entry in entries:
-        text = entry.source.read_text(encoding="utf-8")
-        text = resolver.rewrite(text, entry.source, entry.dest)
-        for old, new in entry.replacements.items():
-            text = text.replace(old, new)
-        writer(entry.dest, text)
 
 
 # ---------------------------------------------------------------------------
@@ -259,7 +239,7 @@ weather data.
 - [Dagster](../how-to/dagster.md) — Dagster integration guide
 - [Data Lake Patterns](../how-to/data-lake-patterns.md) — medallion architecture patterns
 - [Architecture: Medallion + Dagster Showcase]\
-(../design/research/research-medallion-dagster-showcase.md) — \
+(../explanation/design/research/research-medallion-dagster-showcase.md) — \
 detailed design rationale, store topology, and Dagster asset graph
 - [Source: `examples/medallion_dagster/`]\
 (https://github.com/haalfi/remote-store/tree/master/examples/medallion_dagster/)

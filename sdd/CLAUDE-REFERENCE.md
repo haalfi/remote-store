@@ -1,4 +1,5 @@
 # Claude Code Reference
+<!-- doc: repo-only -->
 
 Lookup tables and detailed procedures for Claude Code sessions.
 Scope: cross-file dependency checks, repo navigation, and layout.

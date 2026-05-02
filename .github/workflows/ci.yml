@@ -231,7 +231,7 @@ jobs:
         with:
           enable-cache: false
       - run: uv pip install -e ".[docs]"
-      - run: mkdocs build  # `--strict` deferred to BK-167b after bridge tooling (BK-167a) lands
+      - run: mkdocs build --strict
 
   package:
     needs: [changes]

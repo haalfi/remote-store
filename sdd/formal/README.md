@@ -1,4 +1,5 @@
 # Formal Verification Layer (`sdd/formal/`)
+<!-- doc: repo-only -->
 
 Machine-checkable specification artefacts — not runtime code.
 

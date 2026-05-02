@@ -4,7 +4,7 @@ Composable `BinaryIO` wrappers for progress tracking and checksum computation.
 These operate at the stream level — wrap the stream returned by `store.read()`
 or passed to `store.write()`, no proxy wrapping needed.
 
-See the [streams spec](../../design/specs/033-ext-streams.md) for invariants.
+See the [streams spec](../../explanation/design/specs/033-ext-streams.md) for invariants.
 
 ::: remote_store.ext.streams
 

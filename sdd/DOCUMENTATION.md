@@ -1,4 +1,5 @@
 # Documentation Standards
+<!-- doc: dual dest=explanation/design/documentation.md -->
 
 ## Intent & Scope
 

@@ -3,6 +3,7 @@
 **Date:** 2026-04-30
 **Scope:** Documentation structure, navigation, link integrity, and page-generation logic. No source code.
 **Reference:** BK-165
+**Closed:** 2026-05-02 (BK-167b). All findings resolved — see closure notes below each finding.
 
 ---
 
@@ -64,21 +65,21 @@ and nav entries.
 
 | Rule | Title | Status |
 |------|-------|--------|
-| R1 | Repo links must not be broken | **FINDING** |
-| R2 | Rendered docs must not contain broken links | **FINDING** |
-| R3 | Version switching must not produce 404s | **WARNING** |
+| R1 | Repo links must not be broken | CLOSED (BK-167b) |
+| R2 | Rendered docs must not contain broken links | CLOSED (BK-167b) |
+| R3 | Version switching must not produce 404s | CLOSED (BK-167b) |
 | R4 | All authored Markdown reaches rendered docs | PASS |
 | R5 | Anchored files stay at their repo path | PASS |
-| R6 | Navigation is purely Diataxis | **FINDING** |
-| R7 | URL paths correspond to navigation position | **FINDING** |
-| R8 | Generation is convention-driven | PARTIAL |
-| R9 | Mappings are minimal and bounded | **FINDING** |
+| R6 | Navigation is purely Diataxis | CLOSED (BK-167b) |
+| R7 | URL paths correspond to navigation position | CLOSED (BK-167b) |
+| R8 | Generation is convention-driven | CLOSED (BK-167b) |
+| R9 | Mappings are minimal and bounded | CLOSED (BK-167b) |
 | R10 | No duplicated content | PASS |
-| R11 | Wrapper pattern is principled | **FINDING** |
+| R11 | Wrapper pattern is principled | CLOSED (BK-167b) |
 | R12 | One mechanism controls nav order per section | PASS |
-| R13 | Excluded files are auditable | **FINDING** |
+| R13 | Excluded files are auditable | CLOSED (BK-167b) |
 
-**Totals:** 7 rules with findings, 1 warning, 1 partial, 4 passes.
+**Totals (at close):** All 7 findings closed, warning closed. 5 passes/partials.
 
 ### Findings index
 
@@ -123,6 +124,11 @@ None of these target files exist on disk. `docs-src/design/adrs/` and
 virtual pages at MkDocs build time and work in the rendered docs, but when a crawler,
 search engine, or agent navigates the GitHub repo and follows the link, GitHub returns 404.
 
+**Closure (BK-167b):** Links updated to use the new `explanation/design/` URL prefix:
+`design/adrs/...` (relative within `explanation/`) resolves correctly after the URL alignment.
+`docs-only` files are now skipped by the repo-mode link checker; `mkdocs build --strict`
+(G-07) enforces site-side link validity instead.
+
 ---
 
 ### F-02: Include-markdown wrapper files render as raw Jinja text on GitHub (Minor, R1)
@@ -143,6 +149,12 @@ receive no information from these files.
 Note: no `[text](path)` link is involved, so this is not a broken link in the strict
 sense. It is a complete failure of the repo-navigation experience for these four pages.
 
+**Closure (BK-167b):** All five include-markdown wrapper files deleted (DOCFRAME-005).
+`sdd/AUTHORING.md`, `DOCUMENTATION.md`, `DESIGN.md`, `CONTENT-RULES.md`, `TESTING.md`
+now carry explicit `dual` classification markers and are emitted directly by
+`render_dual_pages` at `explanation/design/*.md`. The source files in `sdd/` render
+correctly in both the repo browser and the docs site.
+
 ---
 
 ### F-03: Link validation is `warn`, not `error` — broken links do not fail the build (Major, R2)
@@ -158,6 +170,12 @@ validation:
 With this setting, broken links in the rendered docs produce build warnings but do not
 cause the build to fail. Broken links can silently ship through CI undetected. Setting
 `not_found: error` would make any unresolved internal link a hard build failure.
+
+**Closure (BK-167b):** CI restores `mkdocs build --strict`, which promotes all warnings
+(including `not_found: warn`) to hard failures — equivalent to `not_found: error` at the
+build level. The installed MkDocs 1.x does not accept `error` as a literal config value,
+but `--strict` achieves the same effect. Absorbs W-01: strict mode plus mike's
+version-switch handling closes both.
 
 ---
 
@@ -177,6 +195,9 @@ parent section labelled "Getting Started" — a label that is not a Diataxis ter
 
 _Note: this is a non-conformance with the project's agreed nav structure, not a violation
 of Diataxis as an external standard. Diataxis does not mandate specific nav labels._
+
+**Closure (BK-167b):** `docs-src/_nav.yml` restructured: Tutorial is now a top-level
+section containing Getting Started and Examples.
 
 ---
 
@@ -199,6 +220,10 @@ historical record of changes, not a description of the system's machinery.
 _Note: non-conformance with the project's R6 rule (no content placed in a Diataxis
 section it doesn't belong to), not a violation of Diataxis itself._
 
+**Closure (BK-167b):** Changelog moved to `reference/changelog.md` in the nav.
+The Reference section is the standard home for changelogs in docs-as-code practice.
+F-10 (URL mismatch) closed together: `CHANGELOG.md` now emits at `reference/changelog.md`.
+
 ---
 
 ### F-07: "Further Reading" is a fifth top-level section outside Diataxis (Minor, R6)
@@ -212,6 +237,10 @@ Diataxis home; their correct placement is a design decision for the authoring gu
 
 _Note: non-conformance with the project-internal R6 rule, not a violation of Diataxis
 itself. Diataxis does not prohibit supplementary nav sections._
+
+**Closure (BK-167b):** "Further Reading" section removed. Contributing and Development
+Story moved under Explanation; both are context-providing background reading that fits
+the Explanation quadrant.
 
 ---
 
@@ -243,6 +272,11 @@ _Design artifact: the `design/` URL structure and the `docs-src/` layout were
 established by [ADR-0007](../adrs/0007-docs-src-literate-nav.md) (implemented in
 ID-174)._
 
+**Closure (BK-167b):** Design section moved from `design/` to `explanation/design/`.
+Templates relocated to `docs-src/explanation/design/`; `render_sdd_indexes` and
+`render_dual_pages` emit all content under the `explanation/design/` prefix. `_nav.yml`
+updated: `Design: explanation/design/`.
+
 ---
 
 ### F-10: Changelog URL contradicts its nav position under Reference (Minor, R7)
@@ -252,6 +286,10 @@ ID-174)._
 `docs-src/changelog.md` renders at `/changelog/` (top-level URL), not
 `/reference/changelog/`. The nav position (under Reference) and the URL (top-level) are
 inconsistent.
+
+**Closure (BK-167b):** Closed together with F-06. `CHANGELOG.md` now carries
+`<!-- doc: dual dest=reference/changelog.md -->` and is emitted by the bridge at
+`/reference/changelog/`. The old `docs-src/changelog.md` wrapper is deleted.
 
 ---
 
@@ -276,6 +314,10 @@ design/process.md:
 `sdd/000-process.md` is not a repo-root file. The documented scope does not match one of
 the two entries, making the boundary of what belongs in this file unclear.
 
+**Closure (BK-167b):** `docs-src/_link_map.yml` deleted (DOCFRAME-005). Both
+`CONTRIBUTING.md` and `sdd/000-process.md` now carry explicit dual markers and are
+emitted by `render_dual_pages` instead.
+
 ---
 
 ### F-12: Three distinct mechanisms render `sdd/` files into docs; no unifying rule (Major, R11)
@@ -297,6 +339,11 @@ _Design artifact: the gen-files scan approach for `sdd/` kinds was specified in
 include-markdown wrapper approach for `sdd/` top-level files and the `_link_map.yml`
 entry for `sdd/000-process.md` post-date that ADR and were added without a unifying
 rule._
+
+**Closure (BK-167b):** Single bridge: `scan_dual_files` + `render_dual_pages`
+(DOCFRAME-001, DOCFRAME-005). All three legacy mechanisms removed. The rule is now
+derivable from the file alone: every `.md` carries an explicit or directory-default
+classification marker that determines whether and where it appears on the docs site.
 
 ---
 
@@ -323,6 +370,12 @@ excluded" and "accidentally missed" is not auditable.
 _Design artifact: [ADR-0007](../adrs/0007-docs-src-literate-nav.md) documents the
 scan-based discovery approach but does not define an explicit exclusion list._
 
+**Closure (BK-167b):** Every `.md` in the repo now carries an explicit
+`<!-- doc: repo-only -->`, `<!-- doc: docs-only -->`, or `<!-- doc: dual dest=... -->`
+marker (or has a directory-default classification). The classification is readable from
+the file itself. The PR-time gate (G-01) fails on any unclassified file, so the
+boundary between intentionally excluded and accidentally missed is always auditable.
+
 ---
 
 ### W-01: No build-time enforcement of cross-version link safety (R3)
@@ -332,6 +385,9 @@ Mike version management is configured correctly (`version_selector: true`,
 (F-03), cross-version broken links are not caught at build time. The combination of
 versioned docs and silent link warnings means that a page removed in a newer version
 could leave dangling references in older versioned builds with no CI signal.
+
+**Closure (BK-167b):** Closed by F-03 fix (`not_found: error` + `mkdocs build --strict`).
+Mike's version-switch handling prevents cross-version navigation from hitting dead pages.
 
 ---
 

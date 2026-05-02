@@ -1,4 +1,5 @@
 # Contributing to Remote Store
+<!-- doc: dual dest=explanation/contributing.md -->
 
 Scope: contributor workflow, development setup, release process, and consistency checklists for `remote-store`.
 

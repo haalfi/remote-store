@@ -1,3 +1,4 @@
+<!-- doc: dual dest=readme.md -->
 <p align="center">
   <img src="https://raw.githubusercontent.com/haalfi/remote-store/master/assets/logo.png" width="320" alt="remote-store logo">
 </p>

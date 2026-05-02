@@ -1,4 +1,5 @@
 # How We Built This Package: Human + AI Pair Programming
+<!-- doc: dual dest=explanation/development-story.md -->
 
 This document chronicles how `remote-store` was built as a collaboration between a human developer and [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Anthropic's AI coding assistant. The goal is transparency: showing what worked, what surprised us, and what others can learn from the process.
 

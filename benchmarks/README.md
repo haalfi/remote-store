@@ -1,4 +1,5 @@
 # Benchmark Suite
+<!-- doc: repo-only -->
 
 Performance benchmarks for remote-store backends, comparing remote-store,
 raw SDK calls, and fsspec implementations.

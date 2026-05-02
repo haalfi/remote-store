@@ -1,7 +1,7 @@
 """Check internal markdown links in the repo.
 
 Two modes:
-  repo  — raw on-disk targets for every repo-tracked .md file
+  repo  — raw on-disk targets for every non-docs-only repo-tracked .md file
   site  — post-rewrite (LinkResolver) targets for dual files only
   all   — both (default)
 
@@ -62,12 +62,29 @@ def _strip_fragment(target: str) -> str:
     return target.split("#")[0]
 
 
+def _is_docs_only(path: Path, docs_src: Path) -> bool:
+    """Return True if *path* is docs-only (lives under docs-src/)."""
+    try:
+        path.relative_to(docs_src)
+        return True
+    except ValueError:
+        return False
+
+
 def check_repo_links(repo_root: Path) -> list[BrokenLink]:
-    """Raw on-disk check: every internal link in every repo-tracked .md must resolve."""
+    """Raw on-disk check: every internal link in every non-docs-only .md must resolve.
+
+    Docs-only files (docs-src/**) are skipped: their links reference virtual
+    paths that exist only after the MkDocs build.  Those are verified instead
+    by ``mkdocs build --strict`` (G-07).
+    """
     from docs.scan import _git_repo_markdown  # type: ignore[import]
 
+    docs_src = (repo_root / "docs-src").resolve()
     broken: list[BrokenLink] = []
     for md in _git_repo_markdown(repo_root):
+        if _is_docs_only(md, docs_src):
+            continue
         try:
             text = md.read_text(encoding="utf-8")
         except OSError:
@@ -113,21 +130,14 @@ def check_site_links(repo_root: Path) -> list[BrokenLink]:
     the original repo-relative href does not match any known docs destination.
     """
     from docs.link import LinkResolver, build_source_map  # type: ignore[import]
-    from docs.scan import (  # type: ignore[import]
-        load_link_map,
-        scan_all_sdd,
-        scan_dual_files,
-        scan_include_wrappers,
-    )
+    from docs.scan import scan_all_sdd, scan_dual_files  # type: ignore[import]
 
-    docs_src = repo_root / "docs-src"
-    link_map_path = docs_src / "_link_map.yml"
     source_map: dict[Path, str] = dict(
         build_source_map(
             repo_root,
             sdd_entries=scan_all_sdd(repo_root),
-            link_entries=load_link_map(link_map_path, repo_root) if link_map_path.is_file() else [],
-            include_pairs=scan_include_wrappers(docs_src) if docs_src.is_dir() else [],
+            link_entries=[],
+            include_pairs=[],
         )
     )
     dual_entries = list(scan_dual_files(repo_root))

@@ -37,10 +37,10 @@ def scanned_sections_from(
     flat: dict[str, list[tuple[str, str]]] = {}
     for kind in SDD_KINDS:
         entries = sdd_entries.get(kind.slug, [])
-        flat[f"design/{kind.slug}"] = [
+        flat[f"explanation/design/{kind.slug}"] = [
             (
                 f"{e.number}: {e.title}" if kind.numbered else e.title,
-                f"design/{kind.slug}/{e.slug}.md",
+                f"explanation/design/{kind.slug}/{e.slug}.md",
             )
             for e in entries
         ]
