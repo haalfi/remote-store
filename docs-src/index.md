@@ -78,7 +78,7 @@ Narrow scope with `child()`; all paths inside are relative to the new root:
 --8<-- "examples/snippets/homepage.py:child-scoping"
 ```
 
-See [Store child scoping](examples/store-child.md) for more.
+See [Store child scoping](tutorial/examples/store-child.md) for more.
 
 ---
 
@@ -123,7 +123,7 @@ extension. The hooks are public.
 store = Store(MyBackend(...))  # works with all extensions
 ```
 
-See the [custom backend guide](how-to/custom-backend-guide.md) for a step-by-step walkthrough.
+See the [custom backend guide](guides/custom-backend-guide.md) for a step-by-step walkthrough.
 
 ---
 
@@ -142,13 +142,13 @@ store.write_text("file.txt", "hello")
 print(store.read_text("file.txt"))  # 'hello'
 ```
 
-See [Getting Started](getting-started.md) for a complete walkthrough.
+See [Getting Started](tutorial/getting-started.md) for a complete walkthrough.
 
 ---
 
 ## Where to go next
 
-- **[Getting Started](getting-started.md):** install, tutorial, and runnable examples
-- **Guides:** [Backends](how-to/backends/index.md) · [Extensions](how-to/extensions.md) · [Choosing a Backend](how-to/choosing-a-backend.md) · [and more](how-to/data-lake-patterns.md)
-- **Reference:** [API](api/index.md) · [Features](reference/FEATURES.md) · [Capabilities Matrix](reference/capabilities-matrix.md) · [Changelog](reference/changelog.md)
+- **[Getting Started](tutorial/getting-started.md):** install, tutorial, and runnable examples
+- **Guides:** [Backends](guides/backends/index.md) · [Extensions](guides/extensions.md) · [Choosing a Backend](guides/choosing-a-backend.md) · [and more](guides/data-lake-patterns.md)
+- **Reference:** [API](reference/api/index.md) · [Features](reference/FEATURES.md) · [Capabilities Matrix](reference/capabilities-matrix.md) · [Changelog](reference/changelog.md)
 - **Explanation:** [Architecture](explanation/architecture.md) · [Performance](explanation/performance.md) · [Concurrency](explanation/concurrency.md)

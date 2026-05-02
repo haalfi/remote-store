@@ -42,7 +42,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `instance.capabilities <= Cls.CAPABILITIES` for every backend; for `SQLBlobBackend`,
   `CAPABILITIES` is the upper bound and narrow-column schemas may yield a strictly
   smaller instance set. Custom backends should follow the same pattern (see
-  `docs-src/how-to/custom-backend-guide.md`).
+  `docs-src/guides/custom-backend-guide.md`).
 - **`_GATING: dict[str, Capability]` in `_store.py`** (ID-159):
   Single source of truth for the method → capability mapping read by `Store._gate()`.
   Replaces the previous scattered gate logic; the new `_BACKEND_GATING: dict[str, str]`
@@ -106,7 +106,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   (`TestAiobotocoreCreateClientBoundary` patches
   `aiobotocore.session.AioSession.create_client` and triggers `s3fs.connect()`),
   so a future variant of the same bug class fails the unit suite. New "Botocore
-  Client Tuning" section in `docs-src/how-to/backends/s3.md` documents proxies,
+  Client Tuning" section in `docs-src/guides/backends/s3.md` documents proxies,
   retries, timeouts, and MinIO path-style addressing; runnable snippets in
   `examples/snippets/s3_botocore_tuning.py` are wired into `tests/test_snippets.py`
   and the examples gate. Follow-up moto-backed e2e coverage tracked as BK-166.

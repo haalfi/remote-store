@@ -1967,7 +1967,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   capabilities. [Spec 032](specs/032-http-backend.md), 3 transports
   (urllib/requests/httpx), streaming adapters (`_HttpxStreamAdapter`,
   `_Urllib3StreamAdapter`), conformance suite capability gates, 85 tests,
-  [guide](../docs-src/how-to/backends/http.md), [example](../examples/backends/http_backend.py),
+  [guide](../docs-src/guides/backends/http.md), [example](../examples/backends/http_backend.py),
   API docs. 4 review rounds (31 threads). Resource leak fix, thread-safety
   docs, CI coverage floor adjustment (90% non-primary, 95% primary).
   [Research](research/research-readonly-http-backend.md) (§ 20: implementation plan).

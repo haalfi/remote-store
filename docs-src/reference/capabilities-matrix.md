@@ -1,13 +1,13 @@
 # Capabilities Matrix
 
 Every backend declares which operations it supports via the
-[Capability](../api/capabilities.md#remote_store.Capability) enum.
-Use [CapabilitySet](../api/capabilities.md#remote_store.CapabilitySet) to query
+[Capability](api/capabilities.md#remote_store.Capability) enum.
+Use [CapabilitySet](api/capabilities.md#remote_store.CapabilitySet) to query
 at runtime before calling an operation.
 
 ## Backend x Capability
 
-| Capability | [Local](../how-to/backends/local.md) | [Memory](../how-to/backends/memory.md) | [HTTP](../how-to/backends/http.md) | [S3](../how-to/backends/s3.md) | [S3-PyArrow](../how-to/backends/s3-pyarrow.md) | [SFTP](../how-to/backends/sftp.md) | [Azure](../how-to/backends/azure.md) | [SQLBlob](../how-to/backends/sql-blob.md) | [SQLQuery](../how-to/backends/sql-query.md) |
+| Capability | [Local](../guides/backends/local.md) | [Memory](../guides/backends/memory.md) | [HTTP](../guides/backends/http.md) | [S3](../guides/backends/s3.md) | [S3-PyArrow](../guides/backends/s3-pyarrow.md) | [SFTP](../guides/backends/sftp.md) | [Azure](../guides/backends/azure.md) | [SQLBlob](../guides/backends/sql-blob.md) | [SQLQuery](../guides/backends/sql-query.md) |
 |------------|:-----:|:------:|:----:|:--:|:----------:|:----:|:-----:|:-------:|:---------:|
 | READ           | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | WRITE          | Yes | Yes | —   | Yes | Yes | Yes | Yes | Yes | —   |
@@ -33,7 +33,7 @@ the SQL INSERT/UPDATE because BLOB columns require complete data.
 
 **Partial support:** Memory lacks native `GLOB` and `LAZY_READ` (all
 data lives in process memory; use the portable fallback
-`ext.glob.glob_files()` — see the [Glob Pattern Matching](../how-to/glob-pattern-matching.md) guide).
+`ext.glob.glob_files()` — see the [Glob Pattern Matching](../guides/glob-pattern-matching.md) guide).
 SFTP lacks both `GLOB` and `ATOMIC_MOVE`.
 Azure lacks `SEEKABLE_READ` and `ATOMIC_MOVE` (forward-only chunk iterator,
 copy-then-delete move).
@@ -90,6 +90,6 @@ else:
 
 ## See also
 
-- [Choosing a Backend](../how-to/choosing-a-backend.md) — decision tree for picking
+- [Choosing a Backend](../guides/choosing-a-backend.md) — decision tree for picking
   the right backend
-- [API Reference: Capability](../api/capabilities.md)
+- [API Reference: Capability](api/capabilities.md)

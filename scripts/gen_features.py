@@ -25,7 +25,7 @@ except ImportError:  # pragma: no cover
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 GRAPH = ROOT / "docs-src" / "_data" / "graph" / "graph.json"
-FEATURES = ROOT / "docs-src" / "reference" / "FEATURES.md"
+FEATURES = ROOT / "FEATURES.md"
 
 # Capabilities shown in the flags table rather than the main capabilities column.
 _FLAGS_CAPS: frozenset[str] = frozenset({"USER_METADATA", "WRITE_RESULT_NATIVE"})

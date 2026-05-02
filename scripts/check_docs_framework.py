@@ -1,7 +1,6 @@
 """PR-time gate for the documentation framework (DOCFRAME-004, Spec 047).
 
-Checks G-01 through G-06.  G-07 (``mkdocs build --strict``) is handled
-separately by ``hatch run docs-build``.
+Checks G-01 through G-07.
 
 Exit 0 when all checks pass.  Non-zero on failure; one line per violation
 printed to stderr, sorted by path for stable diffs.
@@ -44,8 +43,8 @@ _G01_EXCLUDE_DIRS = frozenset({".claude", ".github"})
 # Expected URL prefixes per top-level nav section.  Sections absent from this
 # table are not checked (e.g. Tutorial, Home).
 _SECTION_PREFIXES: dict[str, tuple[str, ...]] = {
-    "Guides": ("how-to/",),
-    "Reference": ("reference/", "api/"),
+    "Guides": ("guides/",),
+    "Reference": ("reference/",),
     "Explanation": ("explanation/",),
 }
 
@@ -249,6 +248,21 @@ def _check_g06(repo_root: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# G-07: legacy api/ directory must not exist
+# ---------------------------------------------------------------------------
+
+
+def _check_g07(repo_root: Path) -> list[str]:
+    legacy = repo_root / "docs-src" / "api"
+    if legacy.exists():
+        return [
+            "G-07 docs-src/api/: legacy directory exists — API reference must live "
+            "under docs-src/reference/api/ (Rule 7)"
+        ]
+    return []
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -259,6 +273,7 @@ _CHECKS = [
     ("G-04", _check_g04),
     ("G-05", _check_g05),
     ("G-06", _check_g06),
+    ("G-07", _check_g07),
 ]
 
 
@@ -275,7 +290,7 @@ def main() -> int:
             print(line, file=sys.stderr)
         return 1
 
-    print(f"docs-framework check passed ({len(_CHECKS)} checks: G-01..G-06).")
+    print(f"docs-framework check passed ({len(_CHECKS)} checks: G-01..G-07).")
     return 0
 
 

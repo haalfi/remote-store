@@ -122,7 +122,7 @@ Existing items may be more verbose — trim on next touch.
   scaffold; `hatch run all` passes; `check_docs_framework.py` G-01 passes
   (the new directory default covers all `sdd/templates/*.md` files).
 
-- [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/api/index.md`**
+- [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/reference/api/index.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
   Different IR from the method-caps checker: `{symbol_name: kind}` rather
   than `{method: caps}`; separate extractor pair, same compare pattern.
@@ -132,8 +132,9 @@ Existing items may be more verbose — trim on next touch.
   `## Backends`, etc. Compare = set diff with missing/extra symbol messages.
   Stop and confirm before implementing — this is a genuinely different IR
   (per the Phase 1 reviewers' staged-rollout preference).
+  Page target: `docs-src/reference/api/index.md`.
 
-- [ ] **ID-172 — `check_api_docs.py` — `AsyncStore`/`AsyncBackend` ↔ `docs-src/api/aio.md`**
+- [ ] **ID-172 — `check_api_docs.py` — `AsyncStore`/`AsyncBackend` ↔ `docs-src/reference/api/aio.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
   Blocked on aio rework: the `aio.md` page and `AsyncStore`/`AsyncBackend`
   classes need rework before the verifier can be wired in meaningfully.
@@ -162,7 +163,7 @@ Existing items may be more verbose — trim on next touch.
   - [Backends & capabilities](https://docs.remotestore.dev/reference/capabilities-matrix/)
   - [API reference](https://docs.remotestore.dev/api/)
   - [Migration guide](https://docs.remotestore.dev/reference/migration/)
-  - [FEATURES (authoritative)](https://github.com/haalfi/remote-store/blob/master/docs-src/reference/FEATURES.md)
+  - [FEATURES (authoritative)](https://github.com/haalfi/remote-store/blob/master/FEATURES.md)
 
   ## Source
   - [GitHub](https://github.com/haalfi/remote-store)
@@ -256,7 +257,7 @@ Existing items may be more verbose — trim on next touch.
   **Ripple checks when picked up** (per `sdd/CLAUDE-REFERENCE.md`):
   - Spec 040 SQL-BLOB-003 (capabilities list) and SQL-BLOB-020 (`read()`).
   - Spec 006 streaming-io — capability semantics already fit.
-  - `docs-src/reference/FEATURES.md` capability matrix.
+  - `FEATURES.md` capability matrix.
   - `tests/backends/test_sqlblob.py:131` asserts LAZY_READ is NOT declared —
     must split into dialect-conditional assertions.
   - Behavioral test: large blob (e.g. 50 MiB) read in 4 KiB chunks with

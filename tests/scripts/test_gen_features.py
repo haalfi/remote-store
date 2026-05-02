@@ -256,14 +256,14 @@ class TestRegionReplacement:
 
 class TestFeaturesFileIntegrity:
     def test_features_md_has_all_regions(self):
-        text = (ROOT / "docs-src" / "reference" / "FEATURES.md").read_text(encoding="utf-8")
+        text = (ROOT / "FEATURES.md").read_text(encoding="utf-8")
         for region in ("backends_main", "backends_flags", "install_extras"):
             assert f"<!-- BEGIN_GENERATED:{region} -->" in text
             assert f"<!-- END_GENERATED:{region} -->" in text
 
     def test_features_md_is_up_to_date(self, gen_features_module, graph, pyproject):
         """Generated regions in FEATURES.md must match current projection output."""
-        text = (ROOT / "docs-src" / "reference" / "FEATURES.md").read_text(encoding="utf-8")
+        text = (ROOT / "FEATURES.md").read_text(encoding="utf-8")
         text_lf = text.replace("\r\n", "\n")
         projections = gen_features_module.project_all(graph, pyproject)
         updated = gen_features_module._replace_regions(text_lf, projections)

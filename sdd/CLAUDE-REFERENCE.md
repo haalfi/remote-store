@@ -13,7 +13,7 @@ Before committing, check whether your change has cross-file dependencies:
 | If you changed…            | Also check / update                                       |
 |----------------------------|-----------------------------------------------------------|
 | **A backend**              | README backends table, `pyproject.toml` extras,           |
-|                            | `docs-src/how-to/backends/`, docs nav, `examples/`,       |
+|                            | `docs-src/guides/backends/`, docs nav, `examples/`,       |
 |                            | `sdd/specs/`, `CONTRIBUTING.md` repo structure,           |
 |                            | `src/remote_store/_registry.py` auto-registration         |
 | **An error type**          | `sdd/specs/005-error-model.md`, all backends' error       |
@@ -36,10 +36,10 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | `__init__.py` `__all__`, README examples table (if new    |
 |                            | example added), `examples/`, spec in `sdd/specs/`,        |
 |                            | guides, CHANGELOG                                         |
-| **Public API** (`__all__`) | README Store API table, `docs-src/api/*.md` directive     |
+| **Public API** (`__all__`) | README Store API table, `docs-src/reference/api/*.md` directive |
 |                            | (every `__all__` symbol needs a `:::` entry),             |
-|                            | `docs-src/api/index.md` summary table (every public       |
-|                            | class/function needs a row), `docs-src/api/_nav.yml`,     |
+|                            | `docs-src/reference/api/index.md` summary table (every public |
+|                            | class/function needs a row), `docs-src/reference/api/_nav.yml`, |
 |                            | `examples/`, user guides.                                 |
 |                            | **Check**: `backends/__init__.py` `__all__` too —         |
 |                            | secondary public API (e.g. `SFTPUtils`) needs its own     |
@@ -47,15 +47,15 @@ Before committing, check whether your change has cross-file dependencies:
 | **An extension**           | `__init__.py` exports (pure-Python only; optional-dep     |
 |                            | extensions are NOT re-exported — ADR-0013),               |
 |                            | `pyproject.toml` extras (if optional dep),                |
-|                            | README extensions table, `docs-src/api/extensions/*.md` +  |
-|                            | `api/extensions/index.md` + `api/extensions/_nav.yml`,    |
-|                            | `docs-src/how-to/`,      |
+|                            | README extensions table, `docs-src/reference/api/extensions/*.md` + |
+|                            | `reference/api/extensions/index.md` + `reference/api/extensions/_nav.yml`, |
+|                            | `docs-src/guides/`,      |
 |                            | `docs-src/` + `_nav.yml`, `examples/`,                    |
 |                            | CHANGELOG, BACKLOG                                        |
-| **An example script**      | README examples table, `docs-src/examples/*.md` wrapper,  |
+| **An example script**      | README examples table, generated `tutorial/examples/<slug>.md` |
 |                            | `tests/test_examples.py` import                           |
 | **Docs navigation**        | Per-section `_nav.yml` files in `docs-src/`,              |
-|                            | `docs-src/how-to/backends/index.md`,                      |
+|                            | `docs-src/guides/backends/index.md`,                      |
 |                            | `sdd/AUTHORING.md` Rule 1 (file classification),          |
 |                            | `sdd/DOCUMENTATION.md` § Content homes                    |
 | **An API reference page**  | `sdd/DOCUMENTATION.md` § API page building blocks         |
@@ -77,15 +77,15 @@ Before committing, check whether your change has cross-file dependencies:
 | **`CAPABILITIES` ClassVar**| `sdd/specs/003-backend-adapter-contract.md` (BE-003),     |
 | (added/changed on a backend| `tests/test_capabilities.py` (class-attr parametrize list),|
 | or ABC)                    | `tests/backends/test_conformance.py` (subset invariant),  |
-|                            | `docs-src/how-to/custom-backend-guide.md`, `examples/snippets/` |
+|                            | `docs-src/guides/custom-backend-guide.md`, `examples/snippets/` |
 | **`_GATING` dict**         | `sdd/specs/001-store-api.md` (STORE-gate entries),        |
 | (key→Capability mapping    | `tests/test_store.py` (gate-fires parametrize list),      |
-| in `_store.py`)            | `docs-src/how-to/` if a method's capability docs change.  |
-|                            | `docs-src/api/store.md` `!!! note "Requires …"`           |
+| in `_store.py`)            | `docs-src/guides/` if a method's capability docs change.  |
+|                            | `docs-src/reference/api/store.md` `!!! note "Requires …"` |
 |                            | admonitions — verified by `hatch run gen-api-check`       |
 |                            | (ID-170)                                                  |
 | **`_BACKEND_GATING` dict** | `sdd/specs/003-backend-adapter-contract.md` (BE-gate      |
-| (key→cap-name strings      | entries), `docs-src/api/backend.md` `!!! note "Requires   |
+| (key→cap-name strings      | entries), `docs-src/reference/api/backend.md` `!!! note "Requires   |
 | in `scripts/gen_graph.py`) | …"` admonitions — verified by `hatch run gen-api-check`   |
 |                            | (ID-171). Lives in gen_graph.py (static-extraction only;  |
 |                            | Backend has no runtime _gate() equivalent).               |
@@ -118,7 +118,7 @@ Before committing, check whether your change has cross-file dependencies:
 | Check or update testing quality rules    | `sdd/TESTING.md`                                     |
 | Check or update doc content quality rules | `sdd/CONTENT-RULES.md`                              |
 | Understand the full SDD workflow         | `sdd/000-process.md`                                 |
-| Add or update a backend guide            | `docs-src/how-to/backends/` + docs nav               |
+| Add or update a backend guide            | `docs-src/guides/backends/` + docs nav               |
 | Run a quick smoke test                   | `examples/` — pick one and run it                    |
 | Verify everything passes                 | `hatch run all` (lint + format-check + typecheck + test-cov + examples) |
 
@@ -143,8 +143,10 @@ tests/                     # pytest suite — spec-traced via @pytest.mark.spec(
 examples/                  # Core runnable examples (run locally, no credentials)
 examples/backends/         # Cloud backend examples (need services + credentials)
 sdd/                       # Specs, ADRs, RFCs, research, audits, backlog, design docs
-docs-src/how-to/           # User-facing how-to guides (Diataxis)
-docs-src/how-to/backends/  # Backend configuration guides
+docs-src/tutorial/         # Tutorial pages (Diataxis) — getting-started + examples
+docs-src/guides/           # User-facing guides (Diataxis)
+docs-src/guides/backends/  # Backend configuration guides
+docs-src/reference/api/    # API reference pages (mkdocstrings)
 docs-src/explanation/      # Explanation pages (Diataxis)
 docs-src/explanation/design/ # Design docs — sdd/ dual files rendered here
 docs-src/reference/        # Reference pages, FEATURES.md, migration guide

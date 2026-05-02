@@ -1,4 +1,4 @@
-"""Async write-integrity snippets — sourced by docs-src/how-to/write-integrity.md and docs-src/how-to/async.md.
+"""Async write-integrity snippets — sourced by docs-src/guides/write-integrity.md and docs-src/guides/async.md.
 
 Named regions are included via pymdownx.snippets ``--8<--`` syntax.
 Run directly (``python examples/snippets/write_integrity_async.py``) to verify.

@@ -10,7 +10,7 @@ Demonstrates:
 ---
 see_also:
   - label: Capabilities Matrix
-    url: ../reference/capabilities-matrix.md
+    url: ../../reference/capabilities-matrix.md
     note: per-backend capability reference
 """
 

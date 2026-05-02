@@ -10,7 +10,7 @@ Demonstrates:
 ---
 see_also:
   - label: PyArrow Adapter
-    url: ../how-to/pyarrow-adapter.md
+    url: ../../guides/pyarrow-adapter.md
     note: PyArrow filesystem integration guide
 """
 

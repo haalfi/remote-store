@@ -10,7 +10,7 @@ Demonstrates:
 ---
 see_also:
   - label: Transfer Operations
-    url: ../how-to/transfer-operations.md
+    url: ../../guides/transfer-operations.md
     note: upload, download, and cross-store transfer guide
 """
 

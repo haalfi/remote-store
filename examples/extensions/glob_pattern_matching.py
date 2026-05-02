@@ -10,7 +10,7 @@ Demonstrates:
 ---
 see_also:
   - label: Glob Pattern Matching
-    url: ../how-to/glob-pattern-matching.md
+    url: ../../guides/glob-pattern-matching.md
     note: pattern matching guide
 """
 

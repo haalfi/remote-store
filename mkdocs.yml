@@ -4,6 +4,10 @@ site_description: Write file storage code once. Run it against local files, S3, 
 repo_url: https://github.com/haalfi/remote-store
 repo_name: haalfi/remote-store
 
+# Documentation framework — before editing, read:
+#   sdd/AUTHORING.md      (placement: where files belong)
+#   sdd/DOCUMENTATION.md  (structure: what shape pages take)
+#   sdd/CONTENT-RULES.md  (longevity: writing that stays accurate)
 docs_dir: docs-src
 
 theme:

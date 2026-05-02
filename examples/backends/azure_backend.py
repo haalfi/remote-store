@@ -20,7 +20,7 @@ Environment variables:
 ---
 see_also:
   - label: Azure Backend
-    url: ../how-to/backends/azure.md
+    url: ../../guides/backends/azure.md
     note: backend guide
 """
 

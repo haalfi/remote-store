@@ -21,7 +21,7 @@ Environment variables:
 ---
 see_also:
   - label: S3 Backend
-    url: ../how-to/backends/s3.md
+    url: ../../guides/backends/s3.md
     note: backend guide
 """
 
