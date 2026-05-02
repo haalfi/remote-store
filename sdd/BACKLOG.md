@@ -58,7 +58,31 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **BK-168 — Lift pyarrow <24 pin; validate pyarrow 24 compatibility**
+
+  pyarrow 24.0.0 released 2026-05-02 breaks `S3PyArrowBackend` conformance tests.
+  The `<24` upper-bound pin (`s3-pyarrow`, `arrow`, `sql-query` extras) is a
+  temporary hold; this item tracks the work to lift it.
+
+  **Root cause:** `pa.fs.S3FileSystem.open_output_stream` in pyarrow 24 routes all
+  writes through multipart upload (even small files that previously used `PutObject`
+  directly). The moto 5.2.0 `ThreadedMotoServer` returns HTTP 200 OK with an empty
+  response body for `CompleteMultipartUpload`; pyarrow 24's C++ S3 client (`s3fs.cc`)
+  is now strict about embedded error parsing and treats the empty body as
+  `INTERNAL_FAILURE`. Every `s3-pyarrow` conformance write fails.
+
+  **Work required:**
+  1. Diagnose whether the fix is on the moto side (bump to moto ≥5.3 if it ships a
+     fix, or patch the moto server fixture to return valid XML) or the pyarrow side
+     (pass `write_options` to raise the multipart threshold above test file sizes).
+  2. Verify no other pyarrow 24 API breaks in `ext/arrow.py`, `ext/parquet.py`,
+     `backends/_s3_pyarrow.py`, `backends/_sqlalchemy.py`.
+  3. Update the mypy overrides in `pyproject.toml`: the `follow_imports = "skip"` for
+     `pyarrow.*` was added to dodge incomplete 24.x stubs — re-evaluate once stubs
+     stabilise. The `warn_unused_ignores = false` guards for `import-untyped` ignores
+     remain needed until those ignores are removed.
+  4. Remove the `<24` pin from all three extras and the dev dep list.
+  5. Update CHANGELOG.
 
 ---
 
