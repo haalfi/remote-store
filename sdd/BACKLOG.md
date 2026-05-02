@@ -1,4 +1,5 @@
 # Development Backlog
+<!-- doc: repo-only -->
 
 Active work items and ideas. Completed items live in
 [BACKLOG-DONE.md](BACKLOG-DONE.md).
@@ -57,108 +58,69 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [~] **BK-167a — Documentation framework tooling**
-  Builds the build-time infrastructure that enforces the framework defined
-  in BK-167. Author-facing rules (marker syntax, classification,
-  directory defaults) are normative in
-  [`AUTHORING.md`](AUTHORING.md); the tooling that enforces them is
-  specified in [spec 047](specs/047-docs-framework-tooling.md). Decision
-  rationale in [ADR-0027](adrs/0027-docs-bridge-single-mechanism.md).
+- [ ] **BK-169 — Add unit tests for DOCFRAME-004 gate (G-02 through G-06)**
 
-  **Deliverables:**
-  - **Bridge implementation**: single `scan.scan_dual_files` +
-    `render.render_dual_pages` mechanism replacing include-markdown
-    wrappers, `_link_map.yml`, and the legacy gen-files scan helpers.
-    Resolves audit-012 F-01, F-02, F-11, F-12.
-  - **File classification storage**: inline HTML-comment marker
-    (`<!-- doc: dual dest=... -->`) with directory-default rules for
-    SDD subdirs and `docs-src/`. Resolves Q4 (inline) and F-13.
-  - **PR-time gate script** (`scripts/check_docs_framework.py`): seven
-    checks G-01 through G-07 covering AUTHORING and DOCUMENTATION rules.
-    Wired into `hatch run all`. Closes F-03, W-01.
-  - **Nav/URL fixes** (folded in per design review): Diataxis-pure
-    top-level nav, `explanation/design/` URL prefix, Changelog URL under
-    Reference. Closes F-05, F-06, F-07, F-08, F-10. Verified by G-06.
+  `scripts/check_docs_framework.py` implements G-01..G-06 checks but the
+  spec-traced unit tests for G-02..G-06 are deferred (spec 047 § Tests marks
+  them "DOCFRAME-004 gate (later step)"). Test coverage for the gate logic
+  itself is missing; the gate is only exercised as an end-to-end lint pass.
 
-  **Resolved questions:**
-  - Q2 (move `sdd/`?) — no. `sdd/` paths are referenced by skills,
-    agents, and ripple-check; the bridge adapts to the canonical path.
-  - Q3 (single declarative file?) — no. Directory convention for SDD
-    subdirs plus inline markers is one declarative system without a
-    drift surface.
-  - Q4 (manifest vs inline?) — inline. Central manifest reintroduces
-    F-13's audit problem in a different location.
+  Add pytest tests in `tests/scripts/test_check_docs_framework.py` covering:
+  `test_dest_collision_fails` (G-02), `test_jinja_in_dual_file_fails` (G-03),
+  `test_include_markdown_in_docs_src_fails` (G-04),
+  `test_broken_repo_link_in_dual_fails` (G-05),
+  `test_url_nav_misalignment_fails` (G-06). Spec: DOCFRAME-004.
 
-  **Ripple coverage for spec 047 / ADR-0027:**
-  As SDD artefacts under `sdd/specs/` and `sdd/adrs/`, both files are
-  rendered by the existing `gen_pages.py` filesystem scan
-  (`render.render_sdd_wrappers`) at `design/specs/047-*.md` and
-  `design/adrs/0027-*.md`. The `sdd/CLAUDE-REFERENCE.md` ripple-check
-  row "A new authoritative process doc in `sdd/`" applies to trio-level
-  process docs (AUTHORING / DOCUMENTATION / CONTENT-RULES / DESIGN /
-  TESTING / 000-process), not SDD artefacts; its targets (CLAUDE.md
-  framework section, sibling authority back-references,
-  `docs-src/further/further-reading.md`) do not apply here. The new
-  tooling-spec category is a content distinction recorded in
-  [`000-process.md`](000-process.md) § Spec format; it does not require
-  a structural ripple-check entry. Post-bridge (DOCFRAME-005), the
-  unified scanner replaces the auto-render path; semantics unchanged.
+- [ ] **BK-168 — Lift pyarrow <24 pin; fix pyarrow 23+ multipart/moto incompatibility**
 
-  **Progress:** Step 1 landed — `_parse_marker`, `_classify_file`, `DualEntry`, `scan_dual_files` in `scripts/docs/scan.py` with five spec-traced tests (DOCFRAME-001..003).
+  `S3PyArrowBackend` moto-backed tests fail on all Python versions when pyarrow 23+ is
+  installed. Root fix: raise pyarrow's multipart threshold above test file sizes, or pin
+  `pyarrow<23`, or upgrade moto to a version that handles the empty-body response.
 
-  **Depends on:** BK-167 (framework defined and wired in).
+  **Root cause:** `pa.fs.S3FileSystem.open_output_stream` routes writes through multipart
+  upload in pyarrow 23+ regardless of Python version. moto's `ThreadedMotoServer` returns
+  HTTP 200 OK with an empty `CompleteMultipartUpload` body; pyarrow's C++ S3 client
+  (`s3fs.cc:758`) treats the empty body as `INTERNAL_FAILURE`. The `<24` pin is insufficient
+  — pyarrow 23.0.1 (the fallback) triggers the same failure on all Pythons. All moto-backed
+  s3-pyarrow tests are now skipped when `pyarrow >= 23` via `_pyarrow_ge_23()` in conftest
+  and the affected test files.
 
-- [~] **BK-167b — Apply documentation framework; close audit-012 findings**
-  Classify all `.md`, wire the PR-time gate, and close the open audit-012
-  findings. `check_links.py` (repo-side + site-side link checker) already
-  landed — see BACKLOG-DONE.md. Exit criterion: framework "up & running,
-  tested & proven, documented & correct."
-
-  **Audit-012 findings to close:**
-  - F-03: raise link validation from `warn` to `error` in `mkdocs.yml`
-    AND restore `mkdocs build --strict` in `.github/workflows/ci.yml`
-    (currently relaxed so cross-presentation links from the trio do not
-    block PRs before the bridge in BK-167a rewrites them). Absorbs W-01
-    (no build-time enforcement of cross-version link safety): `not_found:
-    error` plus mike's version-switch handling closes both.
-  - F-01/F-02: include-markdown wrappers fail in the GitHub repo browser;
-    resolved by the bridge chosen in BK-167a. The new
-    `docs-src/design/authoring.md` wrapper introduced by BK-167 is removed
-    as part of this transition.
-  - F-05/F-06/F-07/F-08: align nav structure to pure Diataxis and fix the
-    `design/` URL prefix to match its nav position under Explanation.
-  - F-10: Changelog URL `/changelog/` contradicts nav position under
-    Reference. Closed by enforcing `sdd/DOCUMENTATION.md` Rule 9 (URL
-    alignment).
-  - F-11: `_link_map.yml` comment says "repo-root files" but lists
-    `sdd/000-process.md`. Closed when the bridge unification (BK-167a)
-    replaces `_link_map.yml`.
-  - F-13: excluded files auditable (closed by the classification system
-    from BK-167 + BK-167a).
-
-  **Other follow-up (from BK-167 self-review):**
-  - F-S-6: `sdd/DOCUMENTATION.md` "API page building blocks" placement.
-    Currently under Guides per the Authoritative Document Format, but the
-    templates carry "Required" / "Optional" columns. Decide: restore as a
-    Rule, extract to a separate doc, or soften the wording.
-
-  **Open question:**
-  - Q1: Should the docstring-driven examples chain stay (single source of
-    truth, hidden machinery) or be replaced with static stubs
-    (discoverability, duplication)?
-
-  **Exit criteria:**
-  - All `.md` files classified.
-  - PR-time gate green on master.
-  - All audit-012 findings closed (or explicitly deferred with rationale).
-
-  **Depends on:** BK-167a (tooling).
+  **Work required:**
+  1. Diagnose whether the fix is on the moto side (bump to moto ≥5.3 if it ships a
+     fix, or patch the moto server fixture to return valid XML) or the pyarrow side
+     (pass `write_options` to raise the multipart threshold above test file sizes).
+  2. Verify no other pyarrow 24 API breaks in `ext/arrow.py`, `ext/parquet.py`,
+     `backends/_s3_pyarrow.py`, `backends/_sqlalchemy.py`.
+  3. Update the mypy overrides in `pyproject.toml`: the `follow_imports = "skip"` for
+     `pyarrow.*` was added to dodge incomplete 24.x stubs — re-evaluate once stubs
+     stabilise. The `warn_unused_ignores = false` guards for `import-untyped` ignores
+     remain needed until those ignores are removed.
+  4. Remove the `<24` pin from all three extras and the dev dep list.
+  5. Update CHANGELOG.
 
 ---
 
 ## Ideas
 
 ### Docs & Tooling
+
+- [ ] **ID-175 — Author templates folder (`sdd/templates/`)**
+  Add `sdd/templates/` containing starter templates for every SDD artefact
+  kind: RFC, spec, ADR, audit, research. Templates are authoring tools, not
+  documentation — the folder gets a `repo-only` directory default in
+  `AUTHORING.md` (no per-file markers needed).
+
+  **Scope:**
+  - `sdd/templates/rfc-template.md` — move existing `sdd/rfcs/rfc-template.md` here; update any links
+  - `sdd/templates/spec-template.md`
+  - `sdd/templates/adr-template.md`
+  - `sdd/templates/audit-template.md`
+  - `sdd/templates/research-template.md`
+  - `sdd/AUTHORING.md` — add `sdd/templates/*.md` row to Directory defaults table; add a link to the folder
+
+  **Exit criteria:** templates folder exists; each file contains a usable
+  scaffold; `hatch run all` passes; `check_docs_framework.py` G-01 passes
+  (the new directory default covers all `sdd/templates/*.md` files).
 
 - [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/api/index.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).

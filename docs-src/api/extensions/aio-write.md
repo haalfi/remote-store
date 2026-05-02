@@ -5,6 +5,6 @@ counterpart of [`ext.write`](write.md) — same guarantees, zero extra round
 trips, no buffering for async-iterator input.
 
 See the [Write Integrity guide](../../how-to/write-integrity.md) for usage examples
-and the [ext.write spec](../../design/specs/046-ext-write.md) for invariants.
+and the [ext.write spec](../../explanation/design/specs/046-ext-write.md) for invariants.
 
 ::: remote_store.aio.ext.write

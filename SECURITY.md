@@ -1,4 +1,5 @@
 # Security Policy
+<!-- doc: repo-only -->
 
 ## Supported Versions
 

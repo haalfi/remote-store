@@ -1,4 +1,5 @@
 # Development Backlog — Done
+<!-- doc: repo-only -->
 
 Completed items, newest first. All items must use `[x]` status.
 Active work lives in [BACKLOG.md](BACKLOG.md).
@@ -6,6 +7,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ---
 
 ## Unreleased
+
+- [x] **BK-167b — Apply documentation framework; close audit-012 findings**
+  All `.md` files classified with `<!-- doc: dual dest=... -->`,
+  `<!-- doc: repo-only -->`, or `<!-- doc: docs-only -->` markers (or
+  covered by directory defaults). Bridge (DOCFRAME-005) live: gen_pages.py
+  calls `scan_dual_files` + `render_dual_pages`; include-markdown wrappers,
+  `_link_map.yml`, `render_sdd_wrappers`, and `render_link_rewritten` all
+  removed. Nav restructured to Diataxis-pure top-level (Tutorial, Guides,
+  Reference, Explanation); `explanation/design/` URL prefix aligned;
+  Changelog moved under Reference; Further Reading section removed.
+  `mkdocs build --strict` restored in CI; `check-links` wired into
+  `hatch run all`. All 11 audit-012 findings and 1 warning closed as of
+  2026-05-02. Supersedes the partial BK-167b entry below.
+
+- [x] **BK-167a — Documentation framework tooling**
+  Single bridge mechanism (`scan.scan_dual_files` + `render.render_dual_pages`)
+  replacing include-markdown wrappers, `_link_map.yml`, and the legacy
+  gen-files scan helpers. Inline HTML-comment classification markers with
+  directory-default rules for SDD subdirs and `docs-src/`. `check_links.py`
+  two-mode link checker. Spec 047 and ADR-0027 authored. DOCFRAME checks
+  G-01 through G-07 implemented; G-01..G-06 pass as lint; unit tests for
+  G-02..G-06 deferred to BK-169. `hatch run all` gate green.
 
 - [x] **BK-167b (partial) — check_links.py link checker**
   `scripts/docs/check_links.py` — two-mode internal link checker (`--mode repo` for raw on-disk targets, `--mode site` for post-rewrite dual-file destinations). 11 spec-traced tests in `tests/scripts/test_check_links.py`. `hatch run check-links` script added. Remainder (classify all `.md`, wire gate, close audit-012 findings) continues in BK-167b.
@@ -1937,15 +1960,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (Bronze/Silver/Gold medallion architecture).
   Uses `ReadOnlyHttpBackend`, `ext.cache`, `ext.otel`,
   and `ext.dagster`.
-  [Showcase architecture](research/research-medallion-dagster-showcase.md),
-  [docs page](../docs-src/examples/medallion-dagster.md).
+  [Showcase architecture](research/research-medallion-dagster-showcase.md).
 
 - [x] **ID-082 — Read-only HTTP backend (`ReadOnlyHttpBackend`)**
   7th backend: read-only access to HTTP/HTTPS URLs with `{READ, METADATA}`
   capabilities. [Spec 032](specs/032-http-backend.md), 3 transports
   (urllib/requests/httpx), streaming adapters (`_HttpxStreamAdapter`,
   `_Urllib3StreamAdapter`), conformance suite capability gates, 85 tests,
-  [guide](../guides/backends/http.md), [example](../examples/http_backend.py),
+  [guide](../docs-src/how-to/backends/http.md), [example](../examples/backends/http_backend.py),
   API docs. 4 review rounds (31 threads). Resource leak fix, thread-safety
   docs, CI coverage floor adjustment (90% non-primary, 95% primary).
   [Research](research/research-readonly-http-backend.md) (§ 20: implementation plan).

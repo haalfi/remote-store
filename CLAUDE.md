@@ -1,4 +1,5 @@
 # Claude Code Instructions
+<!-- doc: repo-only -->
 
 ## Project
 

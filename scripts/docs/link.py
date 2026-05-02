@@ -24,6 +24,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from docs.scan import DualEntry
+
 _LINK_RE = re.compile(r"\]\(([^)\s]+)(\s+\"[^\"]*\")?\)")
 
 
@@ -94,30 +96,24 @@ def build_source_map(
     repo_root: Path,
     *,
     sdd_entries: dict[str, list],  # kind_slug -> list[SddEntry]
-    link_entries: list,  # list[LinkMapEntry]
-    include_pairs: list[tuple[Path, str]],  # (abs_source, virtual_dest)
+    dual_entries: list[DualEntry],
 ) -> dict[Path, str]:
     """Assemble the absolute-source → virtual-dest map for the resolver."""
     source_map: dict[Path, str] = {}
 
     for kind_slug, entries in sdd_entries.items():
         for e in entries:
-            source_map[e.source.resolve()] = f"design/{kind_slug}/{e.slug}.md"
+            source_map[e.source.resolve()] = f"explanation/design/{kind_slug}/{e.slug}.md"
 
-    # RFC template: linked from CONTRIBUTING.md and others.
-    rfc_template = repo_root / "sdd" / "rfcs" / "rfc-template.md"
-    if rfc_template.exists():
-        source_map[rfc_template.resolve()] = "design/rfcs/rfc-template.md"
+    # docs-src/ files are served at their path relative to docs-src/.
+    # Including them lets the resolver rewrite repo-relative links that point
+    # into docs-src/ (e.g. from dual files under examples/ or root).
+    docs_src = repo_root / "docs-src"
+    if docs_src.is_dir():
+        for md in docs_src.rglob("*.md"):
+            source_map.setdefault(md.resolve(), md.relative_to(docs_src).as_posix())
 
-    # Medallion showcase README is inlined as examples/medallion-dagster.md.
-    medallion = repo_root / "examples" / "medallion_dagster" / "README.md"
-    if medallion.exists():
-        source_map[medallion.resolve()] = "examples/medallion-dagster.md"
-
-    for entry in link_entries:
-        source_map[entry.source] = entry.dest
-
-    for src, dest in include_pairs:
-        source_map.setdefault(src, dest)
+    for entry in dual_entries:
+        source_map.setdefault(entry.source.resolve(), entry.dest)
 
     return source_map

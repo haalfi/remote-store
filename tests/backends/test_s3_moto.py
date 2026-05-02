@@ -68,6 +68,18 @@ pytest.importorskip("moto")
 pytest.importorskip("botocore")
 pytest.importorskip("boto3")
 
+
+def _pyarrow_ge_23() -> bool:
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        v = version("pyarrow")
+        major, minor = int(v.split(".")[0]), int(v.split(".")[1])
+        return (major, minor) >= (23, 0)
+    except PackageNotFoundError:
+        return False
+
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -133,7 +145,13 @@ def _load(dotted: str) -> type:
         pytest.param(
             "remote_store.backends._s3_pyarrow:S3PyArrowBackend",
             id="s3-pyarrow",
-            marks=pytest.mark.spec("S3PA-026"),
+            marks=[
+                pytest.mark.spec("S3PA-026"),
+                pytest.mark.skipif(
+                    _pyarrow_ge_23(),
+                    reason="pyarrow 23+ multipart upload incompatible with moto ThreadedMotoServer (BK-168)",
+                ),
+            ],
         ),
     ],
 )

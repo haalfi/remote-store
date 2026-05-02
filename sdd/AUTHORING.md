@@ -1,4 +1,5 @@
 # Documentation Authoring Standards
+<!-- doc: dual dest=explanation/design/authoring.md -->
 
 ## Intent & Scope
 

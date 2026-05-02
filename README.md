@@ -1,3 +1,4 @@
+<!-- doc: dual dest=readme.md -->
 <p align="center">
   <img src="https://raw.githubusercontent.com/haalfi/remote-store/master/assets/logo.png" width="320" alt="remote-store logo">
 </p>
@@ -31,6 +32,7 @@ and `azure-storage-file-datalake` do the real work.
 
 **Requires Python 3.10+.** The core API is synchronous; an async counterpart is available via `remote_store.aio`. See the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for atomicity caveats and race conditions.
 
+<!-- --8<-- [start:getting-started] -->
 ## Installation
 
 Install from [PyPI](https://pypi.org/project/remote-store/):
@@ -267,6 +269,7 @@ There are several excellent Python libraries for file I/O across backends. Here 
 *Feature sets may change as these libraries evolve. Check each project's documentation for the current state.*
 
 **In short:** `remote-store` is for teams that need more than `open()` (smart_open) but less than a full filesystem abstraction (fsspec), with streaming, SFTP, atomic writes, observability, and immutable config. Under the hood, it delegates to the same libraries you'd pick anyway (`s3fs`/`boto3`, `paramiko`, Azure SDK, PyArrow).
+<!-- --8<-- [end:getting-started] -->
 
 ## Contributing
 

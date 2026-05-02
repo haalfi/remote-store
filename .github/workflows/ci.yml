@@ -35,7 +35,7 @@ jobs:
             FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
           fi
           CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/ci\.yml$'
-          DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/(specs|adrs|rfcs)/|^\.github/workflows/ci\.yml$'
+          DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^scripts/(docs/|check_docs_framework\.py$)|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
           if echo "$FILES" | grep -qE "$DOCS_PAT"; then echo "docs=true" >> "$GITHUB_OUTPUT"
@@ -231,7 +231,8 @@ jobs:
         with:
           enable-cache: false
       - run: uv pip install -e ".[docs]"
-      - run: mkdocs build  # `--strict` deferred to BK-167b after bridge tooling (BK-167a) lands
+      - run: python scripts/check_docs_framework.py
+      - run: mkdocs build --strict
 
   package:
     needs: [changes]

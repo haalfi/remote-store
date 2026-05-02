@@ -53,15 +53,15 @@ Issues = "https://github.com/haalfi/remote-store/issues"
 [project.optional-dependencies]
 # -- Backend extras (pip install remote-store[s3], etc.) --
 s3 = ["s3fs>=2024.2.0"]
-s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
+s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0,<24"]
 sftp = ["paramiko>=2.2", "tenacity>=4.0"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 sql = ["sqlalchemy>=2.0"]
-sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0"]
+sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0,<24"]
 requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
 httpx = ["httpx>=0.24.0"]
 # -- Extension extras --
-arrow = ["pyarrow>=12.0.0"]
+arrow = ["pyarrow>=12.0.0,<24"]
 otel = ["opentelemetry-api>=1.28.0"]
 toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
@@ -83,7 +83,6 @@ docs = [
   "mkdocs>=1.6,<2",
   "mkdocs-material>=9.5",
   "mkdocstrings[python]>=0.27",
-  "mkdocs-include-markdown-plugin>=7.0",
   "mkdocs-gen-files>=0.5",
   "mkdocs-literate-nav>=0.6",
   "mkdocs-section-index>=0.3",
@@ -131,7 +130,7 @@ dependencies = [
 ]
 
 [tool.hatch.envs.default.scripts]
-lint = ["ruff check src/ tests/ examples/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py"]
+lint = ["ruff check src/ tests/ examples/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py"]
 format = "ruff format src/ tests/ examples/"
 format-check = "ruff format --check src/ tests/ examples/"
 typecheck = "mypy src/"
@@ -180,14 +179,14 @@ mutate-ext-proxy = "pytest --gremlins --gremlin-targets=src/remote_store/ext/arr
 mutate-ext-format = "pytest --gremlins --gremlin-targets=src/remote_store/ext/parquet.py,src/remote_store/ext/yaml.py,src/remote_store/ext/pydantic.py,src/remote_store/ext/dagster.py tests/test_ext_parquet.py tests/test_ext_yaml.py tests/test_ext_pydantic.py tests/test_dagster.py"
 mutate-backends-local = "pytest --gremlins --gremlin-targets=src/remote_store/backends/_local.py,src/remote_store/backends/_http.py,src/remote_store/backends/_http_httpx.py,src/remote_store/backends/_http_requests.py,src/remote_store/backends/_sqlalchemy.py tests/backends/test_local.py tests/backends/test_http.py tests/backends/test_sqlblob.py tests/backends/test_sqlquery.py"
 mutate-backends-cloud = "pytest --gremlins --gremlin-targets=src/remote_store/backends/_s3.py,src/remote_store/backends/_s3_base.py,src/remote_store/backends/_s3_pyarrow.py,src/remote_store/backends/_sftp.py,src/remote_store/backends/_azure.py tests/backends/test_s3.py tests/backends/test_s3_pyarrow.py tests/backends/test_s3_shared.py tests/backends/test_sftp.py tests/backends/test_azure.py"
-# Not in 'all': requires every .md to be classified first (BK-167b).
 check-links = "python scripts/docs/check_links.py --root ."
+docs-check = "python scripts/check_docs_framework.py"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
-all = ["lint", "format-check", "typecheck", "test-cov", "examples", "notebooks"]
+all = ["lint", "format-check", "typecheck", "test-cov", "examples", "notebooks", "check-links", "docs-check"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]

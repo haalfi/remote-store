@@ -1,5 +1,6 @@
 <!-- Generated 2026-04-12 14:54 UTC -->
 <!-- Hardware: Intel(R) Core(TM) Ultra 7 265K, Python 3.13.11, Windows -->
+<!-- doc: repo-only -->
 
 ### Local
 

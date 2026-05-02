@@ -39,15 +39,13 @@ def _binary_writer(virtual_path: str, data: bytes) -> None:
 sdd_entries = scan.scan_all_sdd(ROOT)
 categories = scan.load_categories(ROOT / "examples" / "_categories.yml")
 examples = scan.scan_examples(ROOT / "examples", categories)
-link_entries = scan.load_link_map(DOCS_SRC / "_link_map.yml", ROOT)
-include_pairs = scan.scan_include_wrappers(DOCS_SRC)
+dual_entries = list(scan.scan_dual_files(ROOT))
 
 resolver = LinkResolver(
     build_source_map(
         ROOT,
         sdd_entries=sdd_entries,
-        link_entries=link_entries,
-        include_pairs=include_pairs,
+        dual_entries=dual_entries,
     ),
     repo_root=ROOT,
     github_blob_url="https://github.com/haalfi/remote-store/blob/master",
@@ -56,12 +54,9 @@ resolver = LinkResolver(
 # --- 2. Render --------------------------------------------------------------
 
 render.render_sdd_indexes(DOCS_SRC, _writer, sdd_entries)
-render.render_sdd_wrappers(_writer, sdd_entries, resolver)
-render.render_rfc_template(ROOT, _writer, resolver)
-render.render_link_rewritten(_writer, link_entries, resolver)
+render.render_dual_pages(_writer, dual_entries, resolver)
 render.copy_assets(ROOT / "assets", _binary_writer)
 render.render_example_pages(_writer, examples)
-render.render_medallion_page(ROOT, _writer, resolver)
 render.render_example_index(_writer, examples, categories)
 
 # --- 3. Nav -----------------------------------------------------------------

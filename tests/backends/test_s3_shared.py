@@ -33,6 +33,17 @@ pytest.importorskip("s3fs", reason="s3fs not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 
+def _pyarrow_ge_23() -> bool:
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        v = version("pyarrow")
+        major, minor = int(v.split(".")[0]), int(v.split(".")[1])
+        return (major, minor) >= (23, 0)
+    except PackageNotFoundError:
+        return False
+
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
@@ -64,6 +75,8 @@ def s3_any_backend(request: pytest.FixtureRequest, moto_server: str | None) -> I
     provides its own list of ``pytest.param(..., marks=pytest.mark.spec(...))``
     values so S3-NNN and S3PA-NNN traceability is preserved per backend.
     """
+    if request.param == S3PA_CLS and _pyarrow_ge_23():
+        pytest.skip("pyarrow 23+ multipart upload incompatible with moto ThreadedMotoServer (BK-168)")
     backend_cls = _load_backend_cls(request.param)
     bucket = f"shared-{uuid.uuid4().hex[:8]}"
     client = boto3.client(

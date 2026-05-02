@@ -171,6 +171,19 @@ def test_scan_dual_files_skip_stems_not_yielded(scan_mod, tmp_path):
     assert real_rfc.resolve() in sources
 
 
+@pytest.mark.spec("DOCFRAME-003")
+def test_scan_dual_files_skip_stems_with_explicit_dual_marker_is_yielded(scan_mod, tmp_path):
+    rfcs_dir = tmp_path / "sdd" / "rfcs"
+    rfcs_dir.mkdir(parents=True)
+    template = rfcs_dir / "rfc-template.md"
+    template.write_text("<!-- doc: dual dest=explanation/design/rfcs/rfc-template.md -->\n# RFC Template\n")
+
+    entries = list(scan_mod.scan_dual_files(tmp_path))
+    sources = {e.source: e.dest for e in entries}
+    assert template.resolve() in sources
+    assert sources[template.resolve()] == "explanation/design/rfcs/rfc-template.md"
+
+
 @pytest.mark.spec("DOCFRAME-001")
 def test_scan_dual_files_skips_vcs_dirs(scan_mod, tmp_path):
     # .git/ is in _VCS_DIRS; excluded by both git ls-files and the rglob fallback.

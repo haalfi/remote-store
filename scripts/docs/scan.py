@@ -21,6 +21,7 @@ Record types:
 
 :class:`ExampleCategory`
     One row of ``examples/_categories.yml``.
+
 """
 
 from __future__ import annotations
@@ -29,14 +30,14 @@ import ast
 import fnmatch
 import re
 import warnings
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import yaml
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
 _YAML_TAIL_RE = re.compile(r"\n---\n(see_also:.*?)\Z", re.DOTALL)
 _ACRONYMS = {"Sftp": "SFTP", "Http": "HTTP", "S3": "S3", "Otel": "OTel", "Io": "IO"}
@@ -207,6 +208,15 @@ def _scan_kind_for_dual(kind: SddKind, kind_dir: Path) -> list[DualEntry]:
     entries: list[DualEntry] = []
     for p in sorted(kind_dir.glob(kind.glob)):
         if p.stem in kind.skip_stems:
+            # skip_stems blocks directory-default dual classification only.
+            # An explicit dual marker still yields an entry.
+            try:
+                result = _parse_marker(p.read_text(encoding="utf-8"))
+            except ValueError as exc:
+                warnings.warn(f"Malformed doc marker in {p.name}: {exc}; skipping", stacklevel=2)
+                continue
+            if result is not None and result[0] == "dual":
+                entries.append(DualEntry(source=p.resolve(), dest=result[1]))
             continue
         try:
             result = _parse_marker(p.read_text(encoding="utf-8"))
@@ -459,57 +469,3 @@ def load_categories(path: Path) -> list[ExampleCategory]:
     ]
     cats.sort(key=lambda c: c.order)
     return cats
-
-
-# ---------------------------------------------------------------------------
-# Link map (docs-src/_link_map.yml) and include-wrapper auto-detection
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class LinkMapEntry:
-    """Emit *source* at virtual path *dest* with link-resolved content."""
-
-    dest: str
-    source: Path
-
-    # Optional literal replacements applied AFTER link resolution. Rare — use
-    # only for patterns the resolver can't express (e.g. section anchors that
-    # changed on the other side).
-    replacements: dict[str, str] = field(default_factory=dict)
-
-
-def load_link_map(path: Path, repo_root: Path) -> list[LinkMapEntry]:
-    """Load ``docs-src/_link_map.yml``."""
-    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    return [
-        LinkMapEntry(
-            dest=dest,
-            source=(repo_root / item["source"]).resolve(),
-            replacements=dict(item.get("replacements") or {}),
-        )
-        for dest, item in raw.items()
-    ]
-
-
-_INCLUDE_RE = re.compile(r'\{%\s*include-markdown\s+"([^"]+)"\s*%\}', re.IGNORECASE)
-
-
-def scan_include_wrappers(docs_src: Path) -> list[tuple[Path, str]]:
-    """Find static ``docs-src/**/*.md`` wrappers that include-markdown an sdd file.
-
-    Returns ``(absolute_source, virtual_dest)`` pairs so the source→dest map
-    knows a repo file (e.g. ``sdd/TESTING.md``) is reachable at a docs path
-    (e.g. ``design/testing.md``).
-    """
-    pairs: list[tuple[Path, str]] = []
-    for md in docs_src.rglob("*.md"):
-        text = md.read_text(encoding="utf-8")
-        match = _INCLUDE_RE.search(text)
-        if not match:
-            continue
-        include_rel = match.group(1)
-        source = (md.parent / include_rel).resolve()
-        dest = md.relative_to(docs_src).as_posix()
-        pairs.append((source, dest))
-    return pairs

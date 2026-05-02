@@ -107,7 +107,7 @@ every PR.
 | G-04 | AUTHORING R4 | No `include-markdown` directive in any `docs-src/**/*.md`. No `_link_map.yml` exists. |
 | G-05 | AUTHORING R3 (link safety) | Every relative `](path)` link in every dual file resolves on disk in the repo. |
 | G-06 | DOCUMENTATION R7 | For every page reachable through `docs-src/_nav.yml` and its child `_nav.yml` files, the URL prefix matches the nav-section prefix (Reference → `/reference/`, Explanation → `/explanation/`, etc.). The check parses the nav source files directly; it does not rely on the generated `SUMMARY.md` (which is a build-time artifact, not a source). |
-| G-07 | DOCUMENTATION R8 | `mkdocs build --strict` succeeds with `validation.links.not_found: error`. |
+| G-07 | DOCUMENTATION R8 | `mkdocs build --strict` succeeds. (`--strict` promotes all warnings to failures; MkDocs 1.x does not accept `error` as a literal value for `validation.links.not_found`.) |
 
 **Failure output:** one line per violation, formatted
 `<check-id> <path>: <reason>`. Lines are stable across runs (sorted by
@@ -146,9 +146,10 @@ without removing is not compliance.
 
 ## DOCFRAME-006: Strict Build, Strict Links
 
-**Invariant:** `mkdocs.yml` declares `validation.links.not_found: error`
-and CI invokes `mkdocs build --strict`. A broken internal link is a
-build failure, not a warning.
+**Invariant:** CI invokes `mkdocs build --strict`. A broken internal link
+is a build failure, not a warning. MkDocs 1.x does not accept `error` as a
+literal value for `validation.links.not_found`; `--strict` promotes all
+warnings (including link warnings) to failures, achieving the same effect.
 
 **Postcondition:** Audit-012 F-03 and W-01 are closed.
 

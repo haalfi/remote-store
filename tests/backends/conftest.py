@@ -60,6 +60,16 @@ def _s3_pyarrow_available() -> bool:
         return False
 
 
+def _pyarrow_ge_23() -> bool:
+    if not _s3_pyarrow_available():
+        return False
+    from importlib.metadata import version
+
+    v = version("pyarrow")
+    major, minor = int(v.split(".")[0]), int(v.split(".")[1])
+    return (major, minor) >= (23, 0)
+
+
 def _sftp_available() -> bool:
     try:
         import paramiko  # noqa: F401
@@ -104,7 +114,13 @@ _s3_param = pytest.param(
 
 _s3_pyarrow_param = pytest.param(
     "s3-pyarrow",
-    marks=pytest.mark.skipif(not _s3_pyarrow_available(), reason="pyarrow/s3fs not installed"),
+    marks=[
+        pytest.mark.skipif(not _s3_pyarrow_available(), reason="pyarrow/s3fs not installed"),
+        pytest.mark.skipif(
+            _pyarrow_ge_23(),
+            reason="pyarrow 23+ multipart upload incompatible with moto ThreadedMotoServer (BK-168)",
+        ),
+    ],
 )
 
 _sftp_param = pytest.param(

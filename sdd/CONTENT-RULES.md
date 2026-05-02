@@ -1,4 +1,5 @@
 # Documentation Content Rules
+<!-- doc: dual dest=explanation/design/content-rules.md -->
 
 ## Intent & Scope
 
