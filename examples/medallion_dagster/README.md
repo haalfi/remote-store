@@ -105,3 +105,10 @@ no API keys required.
 
 Stations used: Bern-Zollikofen (`ber`), Zurich-Kloten (`klo`), Lugano (`lug`).
 Granularity: daily measurements.
+
+## See also
+
+- [Dagster](../../docs-src/how-to/dagster.md) — Dagster integration guide
+- [Data Lake Patterns](../../docs-src/how-to/data-lake-patterns.md) — medallion architecture patterns
+- [Architecture: Medallion + Dagster Showcase](../../sdd/research/research-medallion-dagster-showcase.md) — detailed design rationale, store topology, and Dagster asset graph
+- [Source: `examples/medallion_dagster/`](https://github.com/haalfi/remote-store/tree/master/examples/medallion_dagster/)

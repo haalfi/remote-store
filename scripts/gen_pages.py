@@ -55,13 +55,10 @@ resolver = LinkResolver(
 # --- 2. Render --------------------------------------------------------------
 
 render.render_sdd_indexes(DOCS_SRC, _writer, sdd_entries)
-# render_medallion_page handles this entry with custom transformation — exclude from bridge.
-_medallion_src = ROOT / "examples" / "medallion_dagster" / "README.md"
-render.render_dual_pages(_writer, [e for e in dual_entries if e.source != _medallion_src], resolver)
+render.render_dual_pages(_writer, dual_entries, resolver)
 render.render_rfc_template(ROOT, _writer, resolver)
 render.copy_assets(ROOT / "assets", _binary_writer)
 render.render_example_pages(_writer, examples)
-render.render_medallion_page(ROOT, _writer, resolver)
 render.render_example_index(_writer, examples, categories)
 
 # --- 3. Nav -----------------------------------------------------------------

@@ -109,6 +109,14 @@ def build_source_map(
     if rfc_template.exists():
         source_map[rfc_template.resolve()] = "explanation/design/rfcs/rfc-template.md"
 
+    # docs-src/ files are served at their path relative to docs-src/.
+    # Including them lets the resolver rewrite repo-relative links that point
+    # into docs-src/ (e.g. from dual files under examples/ or root).
+    docs_src = repo_root / "docs-src"
+    if docs_src.is_dir():
+        for md in docs_src.rglob("*.md"):
+            source_map.setdefault(md.resolve(), md.relative_to(docs_src).as_posix())
+
     for entry in link_entries:
         source_map[entry.source] = entry.dest
 
