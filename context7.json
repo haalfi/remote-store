@@ -15,6 +15,7 @@
     "FEATURES.md"
   ],
   "excludeFolders": [
+    "scripts/",
     "tests/",
     "benchmarks/",
     ".github/",
