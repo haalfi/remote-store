@@ -11748,6 +11748,10 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>BK-169: unit tests for DOCFRAME-004 gate — five spec-traced pytest tests in
+  <code>tests/scripts/test_check_docs_framework.py</code> covering G-02 (dest collision),
+  G-03 (Jinja syntax), G-04 (include-markdown), G-05 (broken relative link),
+  G-06 (nav URL misalignment)</li>
 <li>BK-168: pin <code>pyarrow&lt;24</code> across all extras pending moto/multipart compatibility fix</li>
 <li>BK-167b: docs framework bridge — <code>scan_dual_files</code> + <code>render_dual_pages</code>, <code>explanation/design/</code> URL alignment, nav restructure, <code>--strict</code> CI gate restored, audit-012 closed</li>
 <li>BK-167b: <code>check_links.py</code> — two-mode internal link checker (<code>--mode repo</code>/<code>--mode site</code>); <code>hatch run check-links</code></li>

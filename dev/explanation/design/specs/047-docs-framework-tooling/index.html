@@ -9127,7 +9127,7 @@ matching directory move under <code>docs-src/</code>. The G-06 gate verifies the
 result.</p>
 <hr />
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
-<p><code>tests/scripts/test_docs_framework.py</code>:</p>
+<p><code>tests/scripts/test_docs_framework.py</code> (parser and scanner — DOCFRAME-001..003):</p>
 <table>
 <thead>
 <tr>
@@ -9170,37 +9170,79 @@ result.</p>
 <tr>
 <td><code>test_render_dual_pages_uses_link_resolver</code></td>
 <td>DOCFRAME-001</td>
-<td>DOCFRAME-004 gate (later step)</td>
-</tr>
-<tr>
-<td><code>test_dest_collision_fails</code></td>
-<td>G-02</td>
-<td>DOCFRAME-004 gate (later step)</td>
-</tr>
-<tr>
-<td><code>test_jinja_in_dual_file_fails</code></td>
-<td>G-03</td>
-<td>DOCFRAME-004 gate (later step)</td>
-</tr>
-<tr>
-<td><code>test_include_markdown_in_docs_src_fails</code></td>
-<td>G-04</td>
-<td>DOCFRAME-004 gate (later step)</td>
-</tr>
-<tr>
-<td><code>test_broken_repo_link_in_dual_fails</code></td>
-<td>G-05</td>
-<td>DOCFRAME-004 gate (later step)</td>
-</tr>
-<tr>
-<td><code>test_url_nav_misalignment_fails</code></td>
-<td>G-06</td>
-<td>DOCFRAME-004 gate (later step)</td>
+<td>deferred</td>
 </tr>
 <tr>
 <td><code>test_mkdocs_strict_passes_after_bridge</code></td>
 <td>G-07</td>
-<td>DOCFRAME-004 gate (later step)</td>
+<td>deferred</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/scripts/test_check_docs_framework.py</code> (gate — DOCFRAME-004, G-02..G-06):</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Spec ref</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_dest_collision_fails</code></td>
+<td>G-02</td>
+<td></td>
+</tr>
+<tr>
+<td><code>test_g02_no_collision_passes</code></td>
+<td>G-02</td>
+<td>positive control</td>
+</tr>
+<tr>
+<td><code>test_jinja_in_dual_file_fails</code></td>
+<td>G-03</td>
+<td></td>
+</tr>
+<tr>
+<td><code>test_g03_no_jinja_passes</code></td>
+<td>G-03</td>
+<td>positive control</td>
+</tr>
+<tr>
+<td><code>test_include_markdown_in_docs_src_fails</code></td>
+<td>G-04</td>
+<td><code>include-markdown</code> branch</td>
+</tr>
+<tr>
+<td><code>test_link_map_yml_in_docs_src_fails</code></td>
+<td>G-04</td>
+<td><code>_link_map.yml</code> branch</td>
+</tr>
+<tr>
+<td><code>test_g04_no_violations_passes</code></td>
+<td>G-04</td>
+<td>positive control</td>
+</tr>
+<tr>
+<td><code>test_broken_repo_link_in_dual_fails</code></td>
+<td>G-05</td>
+<td></td>
+</tr>
+<tr>
+<td><code>test_g05_valid_link_passes</code></td>
+<td>G-05</td>
+<td>positive control</td>
+</tr>
+<tr>
+<td><code>test_url_nav_misalignment_fails</code></td>
+<td>G-06</td>
+<td></td>
+</tr>
+<tr>
+<td><code>test_g06_correct_prefix_passes</code></td>
+<td>G-06</td>
+<td>positive control</td>
 </tr>
 </tbody>
 </table>
