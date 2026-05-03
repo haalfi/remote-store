@@ -1,4 +1,4 @@
-"""Generate docs-src/_data/graph/graph_viz.html from graph.json (ID-165).
+"""Generate docs-src/explanation/graph_viz.html from graph.json (ID-165).
 
 Run with:  hatch run gen-graph-viz
            hatch run python scripts/gen_graph_viz.py [--check]
@@ -6,7 +6,7 @@ Run with:  hatch run gen-graph-viz
 --check exits 1 if graph_viz.html would change; use in CI or pre-commit.
 
 The output is a self-contained, single-file interactive HTML visualization
-of the RFC-0012 graph IR.  No server or build step required -- open directly
+of the project's API graph.  No server or build step required -- open directly
 in a browser.  The graph data is embedded as a JSON literal so the file is
 portable and versionable.
 
@@ -32,7 +32,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAPH = ROOT / "docs-src" / "_data" / "graph" / "graph.json"
-OUT = ROOT / "docs-src" / "_data" / "graph" / "graph_viz.html"
+OUT = ROOT / "docs-src" / "explanation" / "graph_viz.html"
 D3_VENDOR = ROOT / "docs-src" / "_data" / "graph" / "d3.v7.min.js"
 
 # ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ _TEMPLATE = (
     '<html lang="en">\n'
     "<head>\n"
     '<meta charset="UTF-8">\n'
-    "<title>remote-store graph IR — v__VERSION__</title>\n"
+    "<title>remote-store API graph — v__VERSION__</title>\n"
     "<script>__D3_INLINE__</script>\n"
     "<style>\n"
     "*{box-sizing:border-box;margin:0;padding:0}\n"
@@ -94,7 +94,7 @@ _TEMPLATE = (
     "  <div>\n"
     "    <h1>remote-store</h1>\n"
     '    <div style="font-size:10px;color:#475569;margin-top:2px;">'
-    "graph IR — v__VERSION__ &nbsp;|&nbsp; __N_NODES__ nodes"
+    "API graph — v__VERSION__ &nbsp;|&nbsp; __N_NODES__ nodes"
     " &nbsp;|&nbsp; __N_EDGES__ edges &nbsp;|&nbsp; schema __SCHEMA_VERSION__"
     "</div>\n"
     "  </div>\n"
