@@ -9,15 +9,16 @@
     "src/remote_store/",
     "docs-src/",
     "examples/",
+    "sdd/adrs/",
     "sdd/specs/",
-    "README.md"
+    "README.md",
+    "FEATURES.md"
   ],
   "excludeFolders": [
     "tests/",
     "benchmarks/",
     ".github/",
     ".claude/",
-    "sdd/adrs/",
     "sdd/audits/",
     "sdd/formal/",
     "sdd/research/",
