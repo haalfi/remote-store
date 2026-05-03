@@ -1,4 +1,4 @@
-"""Generate docs-src/_data/graph/graph_viz.html from graph.json (ID-165).
+"""Generate docs-src/explanation/graph_viz.html from graph.json (ID-165).
 
 Run with:  hatch run gen-graph-viz
            hatch run python scripts/gen_graph_viz.py [--check]
@@ -32,7 +32,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAPH = ROOT / "docs-src" / "_data" / "graph" / "graph.json"
-OUT = ROOT / "docs-src" / "_data" / "graph" / "graph_viz.html"
+OUT = ROOT / "docs-src" / "explanation" / "graph_viz.html"
 D3_VENDOR = ROOT / "docs-src" / "_data" / "graph" / "d3.v7.min.js"
 
 # ---------------------------------------------------------------------------
