@@ -12,5 +12,6 @@ hierarchy, and inspect individual nodes and their direct neighbors.
 
 ## See also
 
-- [Architecture Overview](architecture.md) — three-layer design and error hierarchy
+- [Architecture Overview](architecture.md) — three-layer design
+- [API Reference](../reference/api/index.md) — full method and capability reference
 - [Capabilities Matrix](../reference/capabilities-matrix.md) — per-backend capability support table
