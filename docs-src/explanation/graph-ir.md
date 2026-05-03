@@ -10,8 +10,10 @@ hierarchy, and inspect individual nodes and their direct neighbors.
 
 [Open visualization](graph_viz.html){ .md-button .md-button--primary }
 
+The visualization is self-contained and runs fully in the browser.
+
 ## See also
 
-- [Architecture Overview](architecture.md) — three-layer design
-- [API Reference](../reference/api/index.md) — full method and capability reference
-- [Capabilities Matrix](../reference/capabilities-matrix.md) — per-backend capability support table
+- [Architecture Overview](architecture.md): three-layer design
+- [API Reference](../reference/api/index.md): full method and capability reference
+- [Capabilities Matrix](../reference/capabilities-matrix.md): per-backend capability support table
