@@ -8,6 +8,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-170 — Host graph IR visualization in docs Explanation section**
+  `graph_viz.html` moved from `docs-src/_data/graph/` to `docs-src/explanation/`
+  by updating `OUT` in `scripts/gen_graph_viz.py`. Companion page
+  `docs-src/explanation/graph-ir.md` added and wired into `explanation/_nav.yml`
+  after Architecture Overview. `docs-src/_data/` and `graph_viz.html` excluded
+  from the Context7 index in `context7.json`.
+
 - [x] **BK-169 — Add unit tests for DOCFRAME-004 gate (G-02 through G-06)**
   Five spec-traced pytest tests added in `tests/scripts/test_check_docs_framework.py`:
   `test_dest_collision_fails` (G-02), `test_jinja_in_dual_file_fails` (G-03),
