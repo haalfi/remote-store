@@ -53,11 +53,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   in `scripts/gen_graph.py` plays the same role for `Backend`.
 - **`__mirror__: ClassVar[type[...]]` on async backends** (ID-159):
   `AsyncMemoryBackend` and `AsyncAzureBackend` now point at their sync peer via
-  `__mirror__`, enabling static extraction of `mirrors` edges in the graph IR.
-- **RFC-0012 — Documentation Graph Model** (ID-159, accepted): IR schema, snapshot
+  `__mirror__`, enabling static extraction of `mirrors` edges in the API graph.
+- **RFC-0012 — Documentation Graph Model** (ID-159, accepted): graph schema, snapshot
   rules, and projection contract for the `graph.json` artifact and downstream
   generators.
-- **Documentation graph IR generator** (`scripts/gen_graph.py`, ID-159): emits
+- **Documentation API graph generator** (`scripts/gen_graph.py`, ID-159): emits
   `docs-src/_data/graph/graph.json` with capability/class/extra/method/requirement/package
   nodes and declares/gates/of/enables/mirrors/inherits edges. Method nodes carry
   `is_abstract`, `is_async`, `file`, `line` (schema 1.1, ID-164); `mirrors` edges
@@ -66,7 +66,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   not, so the edge reports `async_only: ["LAZY_READ"]` (schema 1.2, ID-162).
   `source_version` and `snapshot` are read from `pyproject.toml`, not hardcoded
   (ID-163). `gen-graph` / `gen-graph-check` hatch scripts.
-- **`FEATURES.md` projection from graph IR** (`scripts/gen_features.py`, ID-163):
+- **`FEATURES.md` projection from API graph** (`scripts/gen_features.py`, ID-163):
   regenerates the mechanical sections (`backends_main`, `backends_flags`,
   `install_extras`) from `graph.json` between `<!-- BEGIN_GENERATED -->` /
   `<!-- END_GENERATED -->` markers; rows are sorted alphabetically (ID-169) instead
@@ -75,7 +75,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `bump-my-version`.
 - **API-docs verifier** (`scripts/check_api_docs.py`, ID-170, ID-171): walks
   `graph.json` and `docs-src/api/store.md` / `backend.md` in parallel through the
-  same canonical IR `{method: frozenset(required_capabilities)}` and flags missing
+  same canonical mapping `{method: frozenset(required_capabilities)}` and flags missing
   `:::` directives or capability admonitions that drift from `_GATING` /
   `_BACKEND_GATING`. First catch: a `!!! note "Requires Capability.GLOB"` admonition
   placed before `::: Store.glob` in `store.md` — moved per the file's own

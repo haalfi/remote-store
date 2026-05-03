@@ -44,7 +44,7 @@ _TEMPLATE = (
     '<html lang="en">\n'
     "<head>\n"
     '<meta charset="UTF-8">\n'
-    "<title>remote-store graph IR — v__VERSION__</title>\n"
+    "<title>remote-store API graph — v__VERSION__</title>\n"
     "<script>__D3_INLINE__</script>\n"
     "<style>\n"
     "*{box-sizing:border-box;margin:0;padding:0}\n"
@@ -94,7 +94,7 @@ _TEMPLATE = (
     "  <div>\n"
     "    <h1>remote-store</h1>\n"
     '    <div style="font-size:10px;color:#475569;margin-top:2px;">'
-    "graph IR — v__VERSION__ &nbsp;|&nbsp; __N_NODES__ nodes"
+    "API graph — v__VERSION__ &nbsp;|&nbsp; __N_NODES__ nodes"
     " &nbsp;|&nbsp; __N_EDGES__ edges &nbsp;|&nbsp; schema __SCHEMA_VERSION__"
     "</div>\n"
     "  </div>\n"

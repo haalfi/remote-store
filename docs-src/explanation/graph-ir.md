@@ -1,6 +1,6 @@
-# Graph IR Visualization
+# API Graph Visualization
 
-An interactive D3 force-directed map of the project's graph IR: nodes are
+An interactive D3 force-directed map of the project's API surface: nodes are
 capabilities, classes, methods, packages, extras, and requirements; edges are
 the typed relationships between them (`inherits`, `mirrors`, `enables`,
 `gates`, `of`, `declares`).

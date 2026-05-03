@@ -8,7 +8,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-- [x] **BK-170 — Host graph IR visualization in docs Explanation section**
+- [x] **BK-170 — Host API graph visualization in docs Explanation section**
   `graph_viz.html` moved from `docs-src/_data/graph/` to `docs-src/explanation/`
   by updating `OUT` in `scripts/gen_graph_viz.py`. Companion page
   `docs-src/explanation/graph-ir.md` added and wired into `explanation/_nav.yml`
