@@ -7,6 +7,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- BUG-186: render API graph viz on iOS Safari
+
 ### Added
 
 - BK-169: unit tests for DOCFRAME-004 gate — five spec-traced pytest tests in

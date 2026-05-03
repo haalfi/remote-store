@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-186 — API graph visualization blank on iOS Safari**
+  `docs-src/explanation/graph_viz.html` rendered briefly then went blank on
+  iOS Safari refresh; zoom/pan unresponsive to touch. Four root causes in
+  the `scripts/gen_graph_viz.py` template: missing `<meta name="viewport">`
+  (Safari assumed 980px desktop width and reflowed after first paint);
+  missing `touch-action: none` on the SVG (Safari hijacked touches as native
+  pinch/scroll gestures, never reaching D3's pointer handlers); missing
+  SVG `viewBox` combined with the simulation's `forceX`/`forceY` design
+  constants (W0=1200, H0=800) — on the ~107px canvas left after the 268px
+  sidebar, nodes were pulled past the right edge as the simulation ran,
+  matching the "briefly seen then disappears" symptom; `100vh` on `body`
+  was unstable under Safari's dynamic URL bar. Fix adds the viewport meta,
+  `viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet"`,
+  `touch-action: none` / `user-select: none` / `-webkit-user-select: none`
+  on the SVG, and a `100dvh` fallback alongside `100vh`. Existing golden
+  test (`tests/scripts/test_gen_graph_viz.py`) regenerated and passing;
+  desktop layout unchanged because the viewBox dimensions equal the
+  pre-existing simulation design constants.
+
 - [x] **BK-170 — Host API graph visualization in docs Explanation section**
   `graph_viz.html` moved from `docs-src/_data/graph/` to `docs-src/explanation/`
   by updating `OUT` in `scripts/gen_graph_viz.py`. Companion page
