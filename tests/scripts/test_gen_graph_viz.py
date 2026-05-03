@@ -31,7 +31,7 @@ def test_graph_viz_html_is_up_to_date(gen_graph_viz_module):
     Fails if the script was modified but the output file was not regenerated.
     Run:  hatch run gen-graph-viz
     """
-    committed = (ROOT / "docs-src" / "_data" / "graph" / "graph_viz.html").read_bytes()
+    committed = (ROOT / "docs-src" / "explanation" / "graph_viz.html").read_bytes()
     committed_lf = committed.replace(b"\r\n", b"\n")
 
     graph = json.loads((ROOT / "docs-src" / "_data" / "graph" / "graph.json").read_bytes())
