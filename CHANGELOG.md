@@ -7,6 +7,29 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- BUG-186: API graph visualization (`docs-src/explanation/graph_viz.html`) now
+  renders on iOS Safari. Previously the graph appeared briefly then went blank
+  and zoom/pan did not respond to touch. Four root causes in
+  `scripts/gen_graph_viz.py`:
+  (1) no `<meta name="viewport">` tag, so Safari laid the page out at 980px
+  desktop width and reflowed the flex container after first paint;
+  (2) no `touch-action: none` on the SVG, so Safari claimed touch gestures for
+  native scroll/pinch and never delivered them to D3's `zoom()` / `drag()`
+  pointer handlers;
+  (3) no `viewBox` on the SVG, so the simulation's design-constant bias
+  positions (`forceX(d => X_BIAS[d.kind] * 1200)`, `forceY(... * 800)`) drifted
+  the nodes off-screen on the narrow ~107px canvas left after the 268px
+  sidebar — this matched the "briefly seen then disappears" symptom (nodes
+  start near the origin, then forces pull them past the right edge);
+  (4) `100vh` on `body` was unstable under Safari's dynamic URL bar.
+  Fix adds the viewport meta, `viewBox="0 0 1200 800"
+  preserveAspectRatio="xMidYMid meet"`, `touch-action: none` /
+  `user-select: none` / `-webkit-user-select: none` on the SVG, and a
+  `100dvh` fallback alongside `100vh`. Desktop layout unchanged because the
+  viewBox dimensions equal the existing simulation design constants.
+
 ### Added
 
 - BK-169: unit tests for DOCFRAME-004 gate — five spec-traced pytest tests in

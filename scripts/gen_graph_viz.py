@@ -44,12 +44,14 @@ _TEMPLATE = (
     '<html lang="en">\n'
     "<head>\n"
     '<meta charset="UTF-8">\n'
+    '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
     "<title>remote-store API graph — v__VERSION__</title>\n"
     "<script>__D3_INLINE__</script>\n"
     "<style>\n"
     "*{box-sizing:border-box;margin:0;padding:0}\n"
     "body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;"
-    "display:flex;height:100vh;overflow:hidden}\n"
+    "display:flex;height:100vh;height:100dvh;overflow:hidden;"
+    "-webkit-tap-highlight-color:transparent}\n"
     "#sidebar{width:268px;min-width:268px;background:#1e293b;padding:14px;overflow-y:auto;"
     "border-right:1px solid #334155;display:flex;flex-direction:column;gap:13px}\n"
     "#sidebar h1{font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:.05em;"
@@ -69,7 +71,8 @@ _TEMPLATE = (
     "#detail .detail-row span{color:#e2e8f0}\n"
     "#detail .placeholder{color:#475569;font-style:italic}\n"
     "#canvas-wrap{flex:1;position:relative;overflow:hidden}\n"
-    "svg{width:100%;height:100%}\n"
+    "svg{width:100%;height:100%;display:block;touch-action:none;"
+    "-webkit-user-select:none;user-select:none}\n"
     ".node circle{stroke-width:1.5px;cursor:pointer;transition:r .12s}\n"
     ".node circle:hover{stroke-width:3px}\n"
     ".node.abstract circle{stroke-dasharray:4,2}\n"
@@ -105,7 +108,7 @@ _TEMPLATE = (
     "</div></div>\n"
     "</div>\n"
     '<div id="canvas-wrap">\n'
-    '  <svg id="graph"></svg>\n'
+    '  <svg id="graph" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet"></svg>\n'
     '  <div id="controls">\n'
     '    <button class="btn" id="btn-reset">Reset zoom</button>\n'
     '    <button class="btn" id="btn-reheat">Reheat</button>\n'
