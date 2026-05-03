@@ -1,4 +1,4 @@
 # Reference
 
-The complete one. Class signatures, capability flags, error types, what
-each install extra actually pulls in. Bring a `Ctrl-F`.
+The complete one. Precise and structured for scanning, not reading.
+Look things up here; you don't need to read it front to back.

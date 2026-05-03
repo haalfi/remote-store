@@ -1,4 +1,4 @@
 # Explanation
 
-Why `remote-store` is shaped the way it is — async vs sync, the registry,
-trust boundaries, perf trade-offs. Read these when "how" isn't enough.
+Why `remote-store` is shaped the way it is — the reasoning behind design
+choices, not just what they are. Read these when "how" isn't enough.
