@@ -2,6 +2,7 @@
 # then project meta (Contributing, Development Story),
 # then Design artifacts sub-section (ADRs, specs, RFCs, audits, research).
 - Architecture Overview: architecture.md
+- API Graph: graph-ir.md
 - Performance: performance.md
 - Concurrency: concurrency.md
 - Security Model: security-model.md
