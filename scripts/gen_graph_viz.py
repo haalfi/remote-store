@@ -6,7 +6,7 @@ Run with:  hatch run gen-graph-viz
 --check exits 1 if graph_viz.html would change; use in CI or pre-commit.
 
 The output is a self-contained, single-file interactive HTML visualization
-of the RFC-0012 graph IR.  No server or build step required -- open directly
+of the project's API graph.  No server or build step required -- open directly
 in a browser.  The graph data is embedded as a JSON literal so the file is
 portable and versionable.
 
