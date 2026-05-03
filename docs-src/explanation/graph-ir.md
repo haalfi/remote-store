@@ -10,9 +10,6 @@ hierarchy, and inspect individual nodes and their direct neighbors.
 
 [Open visualization](graph_viz.html){ .md-button .md-button--primary }
 
-The visualization is self-contained and runs fully in the browser — no server
-required. Scroll to zoom, drag to pan, click a node to highlight its neighbors.
-
 ## See also
 
 - [Architecture Overview](architecture.md) — three-layer design and error hierarchy
