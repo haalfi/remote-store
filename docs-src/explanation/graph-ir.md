@@ -1,12 +1,12 @@
 # API Graph Visualization
 
-An interactive D3 force-directed map of the project's API surface: nodes are
-capabilities, classes, methods, packages, extras, and requirements; edges are
-the typed relationships between them (`inherits`, `mirrors`, `enables`,
-`gates`, `of`, `declares`).
+An interactive force-directed map of the project's API surface. Nodes are the
+types and concepts that make up the codebase; edges are the typed relationships
+between them. The full node and edge taxonomy is defined in
+[RFC-0012](design/rfcs/rfc-0012-doc-graph-model.md).
 
-Use it to trace capability chains, explore the backend and extension class
-hierarchy, and inspect individual nodes and their direct neighbors.
+Use it to trace capability chains, explore the class hierarchy, and inspect
+individual nodes and their direct neighbors.
 
 [Open visualization](graph_viz.html){ .md-button .md-button--primary }
 
