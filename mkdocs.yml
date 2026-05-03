@@ -38,6 +38,7 @@ theme:
     - search.suggest
     - search.highlight
     - toc.follow
+    - navigation.footer
 
 plugins:
   - search
