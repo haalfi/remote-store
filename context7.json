@@ -23,12 +23,14 @@
     "sdd/audits/",
     "sdd/formal/",
     "sdd/research/",
-    "sdd/rfcs/"
+    "sdd/rfcs/",
+    "docs-src/_data/"
   ],
   "excludeFiles": [
     "pyproject.toml",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "docs-src/explanation/graph_viz.html"
   ],
   "rules": [
     "Use Store.read(path) for streaming reads, Store.write(path, content) for streaming writes (returns WriteResult), and Store.list_files(path) for directory listings.",
