@@ -58,19 +58,6 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-169 — Add unit tests for DOCFRAME-004 gate (G-02 through G-06)**
-
-  `scripts/check_docs_framework.py` implements G-01..G-06 checks but the
-  spec-traced unit tests for G-02..G-06 are deferred (spec 047 § Tests marks
-  them "DOCFRAME-004 gate (later step)"). Test coverage for the gate logic
-  itself is missing; the gate is only exercised as an end-to-end lint pass.
-
-  Add pytest tests in `tests/scripts/test_check_docs_framework.py` covering:
-  `test_dest_collision_fails` (G-02), `test_jinja_in_dual_file_fails` (G-03),
-  `test_include_markdown_in_docs_src_fails` (G-04),
-  `test_broken_repo_link_in_dual_fails` (G-05),
-  `test_url_nav_misalignment_fails` (G-06). Spec: DOCFRAME-004.
-
 - [ ] **BK-168 — Lift pyarrow <24 pin; fix pyarrow 23+ multipart/moto incompatibility**
 
   `S3PyArrowBackend` moto-backed tests fail on all Python versions when pyarrow 23+ is
