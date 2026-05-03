@@ -1,3 +1,6 @@
 # Reference
 
-The complete one. Precise and structured for looking things up. Bring a `Ctrl-F`.
+
+
+The complete one. Precise and structured for scanning, not reading.
+The complete one. Exact and searchable. Come here when you know what you need.
