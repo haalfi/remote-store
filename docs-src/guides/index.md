@@ -1,3 +1,4 @@
 # Guides
 
-How-to guides for common tasks — backends, extensions, async, and advanced patterns.
+Recipes for the things you'll actually do: pick a backend, add caching,
+stream big files, plug into PyArrow or Dagster. One page, one task.

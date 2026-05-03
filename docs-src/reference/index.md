@@ -1,3 +1,3 @@
 # Reference
 
-API reference, feature inventory, capabilities matrix, migration notes, and changelog.
+The complete one. Exact and searchable. Come here when you know what you need or like to dig into.
