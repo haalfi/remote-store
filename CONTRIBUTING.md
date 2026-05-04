@@ -156,9 +156,10 @@ External packages should use the naming convention `remote-store-<name>` and:
 ## Development Setup
 
 The default hatch env is configured with `path = ".venv"`, so `hatch run`
-creates and owns `.venv/` at the repo root via uv. No separate
-`python -m venv` or `pip install` step is needed — and using one would create
-a split state.
+creates and owns `.venv/` at the repo root via uv. A separate
+`python -m venv` or `pip install -e ".[dev]"` step duplicates the env that
+`hatch run` would build, and a stdlib-built `.venv` may not match the shape
+hatch expects.
 
 ```bash
 # Clone and enter the repo
@@ -183,8 +184,14 @@ All dev scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.
 ### Migrating an existing checkout
 
 If you previously created `.venv/` with `python -m venv` or via IDE
-auto-discovery, delete it before the first `hatch run` so hatch builds a
-clean uv-managed env:
+auto-discovery, delete it before the first `hatch run`. Hatch's behaviour
+on a pre-existing non-uv venv is not guaranteed (it may reuse, rebuild, or
+fail depending on what metadata it finds), and a reused stdlib venv will
+be missing the `dev` / `docs` / `bench` feature installs.
+
+On Windows, close any IDE / language server / running pytest that has
+file handles inside `.venv\` before deleting — otherwise the delete fails
+with WinError 32 (file in use).
 
 ```bash
 rm -rf .venv                       # Linux / macOS
