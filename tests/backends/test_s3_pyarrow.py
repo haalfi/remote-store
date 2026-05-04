@@ -20,17 +20,11 @@ pytest.importorskip("pyarrow", reason="pyarrow not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 
-def _pyarrow_ge_23() -> bool:
-    from importlib.metadata import version
-
-    v = version("pyarrow")
-    major, minor = int(v.split(".")[0]), int(v.split(".")[1])
-    return (major, minor) >= (23, 0)
-
+from tests._helpers import pyarrow_ge_24  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
-    _pyarrow_ge_23(),
-    reason="pyarrow 23+ multipart upload incompatible with moto ThreadedMotoServer (BK-168)",
+    pyarrow_ge_24(),
+    reason="moto+pyarrow 24 multipart still incompatible; coverage moves to MinIO under BK-172",
 )
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402

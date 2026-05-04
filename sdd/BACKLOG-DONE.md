@@ -8,6 +8,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-168 — Lift pyarrow `<24` pin; require moto `>=5.2.0`**
+  Pin raised from `<24` to `<25` on the `s3-pyarrow`, `sql-query`, and `arrow`
+  extras (matches dependabot #571). Dev dep `moto[server,s3]>=5.2.0` adopted —
+  5.2.0's multipart-checksum + `CompleteMultipartUpload` response-shape fixes
+  unblock pyarrow 23 against `ThreadedMotoServer` (E1 verified: 118/118 backend
+  tests pass with the previous `_pyarrow_ge_23()` skip removed). Pyarrow 24 still
+  hits `INTERNAL_FAILURE` on `CompleteMultipartUpload` against moto (E2); skip
+  marker re-added but conditioned on `_pyarrow_ge_24()` instead, with reason
+  pointing to BK-172 for the MinIO migration. Mypy `follow_imports = "skip"`
+  override on `pyarrow.*` retained — re-evaluation under E3 surfaced 33
+  attr-defined / name-defined errors (stubs still incomplete); comment updated
+  with the verification trail.
+
 - [x] **BUG-186 — API graph visualization blank on iOS Safari**
   `docs-src/explanation/graph_viz.html` rendered briefly then went blank on
   iOS Safari refresh; zoom/pan unresponsive to touch. Four root causes in

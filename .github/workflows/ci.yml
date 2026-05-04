@@ -123,6 +123,35 @@ jobs:
           pytest --cov=remote_store --cov-report=term-missing
           ${{ matrix.python-version == '3.13' && '--cov-fail-under=95' || '--cov-fail-under=90' }}
 
+  # BK-168: under pyarrow 24, verify (a) the skip helper detects pyarrow 24,
+  # (b) the moto-backed S3-PyArrow lane is fully skipped, (c) non-multipart
+  # pyarrow-24 code paths in `ext.arrow`, `ext.parquet`, and `_sqlalchemy`
+  # still pass — the default `test` matrix resolves pyarrow under `<25` to
+  # whatever pip picks (currently 23.x), so without this job both the skip
+  # and pyarrow-24 runtime compatibility are unverified. Removable once
+  # BK-172 routes the lane to MinIO.
+  pyarrow24-skip-check:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: false
+      - run: uv pip install -e ".[dev]"
+      - name: Force pyarrow 24
+        run: uv pip install "pyarrow>=24,<25"
+      - name: Verify version helper detects pyarrow 24
+        run: python -c "from tests._helpers import pyarrow_ge_24; assert pyarrow_ge_24(), 'helper failed to detect pyarrow 24'"
+      - name: Verify S3-PyArrow lane is fully skipped (exit code + -rN)
+        run: pytest tests/backends/test_s3_pyarrow.py -q -rN
+      - name: Verify non-multipart pyarrow-24 paths still pass
+        run: pytest tests/test_arrow.py tests/test_ext_parquet.py tests/backends/test_sqlquery.py tests/backends/test_sqlblob.py -q
+
   test-cross-platform:
     needs: [changes]
     if: needs.changes.outputs.code == 'true'
@@ -305,7 +334,7 @@ jobs:
           done
 
   gate:
-    needs: [changes, lint, typecheck, test, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [changes, lint, typecheck, test, pyarrow24-skip-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -321,6 +350,7 @@ jobs:
             "${{ needs.lint.result }}" \
             "${{ needs.typecheck.result }}" \
             "${{ needs.test.result }}" \
+            "${{ needs.pyarrow24-skip-check.result }}" \
             "${{ needs.test-cross-platform.result }}" \
             "${{ needs.notebooks.result }}" \
             "${{ needs.examples.result }}" \
