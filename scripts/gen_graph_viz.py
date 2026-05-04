@@ -70,6 +70,7 @@ _TEMPLATE = (
     "#detail .detail-row{color:#94a3b8}\n"
     "#detail .detail-row span{color:#e2e8f0}\n"
     "#detail .placeholder{color:#475569;font-style:italic}\n"
+    "#sidebar [data-ea-publisher]{position:sticky;bottom:0;font-size:10.5px;min-height:0}\n"
     "#canvas-wrap{flex:1;position:relative;overflow:hidden}\n"
     "svg{width:100%;height:100%;display:block;touch-action:none;"
     "-webkit-user-select:none;user-select:none}\n"
@@ -106,6 +107,7 @@ _TEMPLATE = (
     '  <div><h2>Selected node</h2><div id="detail">'
     '<span class="placeholder">Click a node to inspect it</span>'
     "</div></div>\n"
+    '  <div id="ethical-ad-placement"></div>\n'
     "</div>\n"
     '<div id="canvas-wrap">\n'
     '  <svg id="graph" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet"></svg>\n'
@@ -356,6 +358,26 @@ _TEMPLATE = (
     "\n"
     "buildLegend();\n"
     "update();\n"
+    "\n"
+    "// Reparent RTD's EthicalAds injection into the sidebar so it does not\n"
+    "// float over the canvas.  RTD appends a div[data-ea-publisher] to <body>;\n"
+    "// we move it into #sidebar and strip the 'raised' float class.\n"
+    "(function(){\n"
+    "  var sb=document.getElementById('sidebar');\n"
+    "  var obs;\n"
+    "  function adopt(n){\n"
+    "    if(n.nodeType!==1||!n.dataset||!n.dataset.eaPublisher)return;\n"
+    "    n.classList.remove('raised');\n"
+    "    n.style.marginTop='';\n"
+    "    sb.appendChild(n);\n"
+    "    if(obs)obs.disconnect();\n"
+    "  }\n"
+    "  obs=new MutationObserver(function(ms){\n"
+    "    ms.forEach(function(m){m.addedNodes.forEach(adopt);});\n"
+    "  });\n"
+    "  obs.observe(document.body,{childList:true});\n"
+    "  document.querySelectorAll('body>[data-ea-publisher]').forEach(adopt);\n"
+    "})();\n"
     "</script>\n"
     "</body>\n"
     "</html>\n"
