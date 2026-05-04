@@ -22,9 +22,9 @@ if TYPE_CHECKING:
 # and imported directly by tests/backends/test_azure.py and
 # tests/aio/test_sync_adapter_conformance.py. tests/backends/conftest.py
 # retains its own copies of _s3_available, _azure_available,
-# _azurite_reachable, and _sftp_available to stay self-contained — a
-# subdirectory conftest importing from a parent conftest is an upward import
-# that creates the same cross-boundary problem in reverse.
+# _azurite_reachable, _minio_reachable, and _sftp_available to stay
+# self-contained — a subdirectory conftest importing from a parent conftest
+# is an upward import that creates the same cross-boundary problem in reverse.
 # ---------------------------------------------------------------------------
 
 
@@ -204,6 +204,11 @@ settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "dev"))
 
 def pytest_configure(config: object) -> None:
     """Register custom markers."""
+    if os.environ.get("RS_REQUIRE_MINIO") == "1" and not _minio_reachable():
+        pytest.exit(
+            "RS_REQUIRE_MINIO=1 but MinIO is not reachable at 127.0.0.1:9000",
+            returncode=1,
+        )
     if isinstance(config, pytest.Config):
         config.addinivalue_line("markers", "spec(id): links test to a spec section ID")
         config.addinivalue_line("markers", "integration: requires external services")

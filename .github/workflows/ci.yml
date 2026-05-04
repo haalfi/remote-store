@@ -105,7 +105,7 @@ jobs:
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            cgr.dev/chainguard/minio:latest-dev server /data
+            cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84 server /data
           for i in $(seq 1 30); do
             wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
           done
@@ -140,13 +140,15 @@ jobs:
     needs: [changes]
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    env:
+      RS_REQUIRE_MINIO: "1"
     steps:
       - uses: actions/checkout@v6
       - name: Start MinIO
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            cgr.dev/chainguard/minio:latest-dev server /data
+            cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84 server /data
           for i in $(seq 1 30); do
             wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
           done
@@ -160,10 +162,12 @@ jobs:
       - run: uv pip install -e ".[dev]"
       - name: Force pyarrow 24
         run: uv pip install "pyarrow>=24,<25"
+      - name: Assert pyarrow_ge_24() detects pyarrow 24
+        run: python -c "from tests._helpers import pyarrow_ge_24; assert pyarrow_ge_24(), 'pyarrow_ge_24() returned False -- helper regressed'"
       - name: Verify S3-PyArrow routes to MinIO on pyarrow 24
         run: pytest tests/backends/test_s3_pyarrow.py -v
-      - name: Assert live S3-PyArrow tests ran against MinIO (guard against silent all-skipped)
-        run: pytest tests/backends/test_s3_pyarrow.py -k "ReadPath" -p no:skip -q
+      - name: Verify live S3-PyArrow ReadPath tests pass against MinIO (RS_REQUIRE_MINIO guards against silent skip)
+        run: pytest tests/backends/test_s3_pyarrow.py -k "ReadPath" -q
       - name: Verify pyarrow-24 paths in ext.arrow, ext.parquet, sqlalchemy
         run: pytest tests/test_arrow.py tests/test_ext_parquet.py tests/backends/test_sqlquery.py tests/backends/test_sqlblob.py -q
 
@@ -232,7 +236,7 @@ jobs:
         run: |
           docker run -d --name minio-e2e -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            cgr.dev/chainguard/minio:latest-dev server /data
+            cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84 server /data
           for i in $(seq 1 30); do
             wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
           done

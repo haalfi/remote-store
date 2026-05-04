@@ -733,6 +733,7 @@ class TestS3SharedETagAndDigest:
         b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
 
         if isinstance(s3_any_backend, _S3PA) and pyarrow_ge_24():
+            assert minio_server is not None
             endpoint, raw_key, raw_secret = minio_server, _MINIO_KEY, _MINIO_SECRET
         else:
             endpoint, raw_key, raw_secret = moto_server, "testing", "testing"

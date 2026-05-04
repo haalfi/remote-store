@@ -168,24 +168,25 @@ def _load(dotted: str) -> type:
 
 def _resolve_s3_backend(
     backend_cls: str,
-    moto_bucket: tuple[str, str],
-    minio_bucket: tuple[str, str] | None,
+    request: pytest.FixtureRequest,
 ) -> tuple[str, str, str, str]:
     """Return (endpoint, bucket, key, secret) for the backend under test.
 
-    Routes S3PyArrowBackend to MinIO on pyarrow >= 24 (moto rejects its
-    CompleteMultipartUpload response as INTERNAL_FAILURE for that version).
-    All other combinations go to moto.
+    Uses ``request.getfixturevalue`` so only the needed bucket fixture is
+    instantiated -- on pyarrow >= 24 the s3-pyarrow variant uses
+    ``minio_bucket`` and never creates a moto bucket, avoiding wasted setup.
     """
     cls = _load(backend_cls)
     from remote_store.backends._s3_pyarrow import S3PyArrowBackend as _S3PA
 
     if cls is _S3PA and pyarrow_ge_24():
-        if minio_bucket is None:
+        minio: tuple[str, str] | None = request.getfixturevalue("minio_bucket")
+        if minio is None:
             pytest.skip("MinIO not reachable; required for S3PyArrowBackend on pyarrow >= 24")
-        endpoint, bucket = minio_bucket
+        endpoint, bucket = minio
         return endpoint, bucket, _MINIO_KEY, _MINIO_SECRET
-    endpoint, bucket = moto_bucket
+    moto: tuple[str, str] = request.getfixturevalue("moto_bucket")
+    endpoint, bucket = moto
     return endpoint, bucket, "testing", "testing"
 
 
@@ -210,8 +211,7 @@ class TestS3ControlPathMoto:
     def test_full_lifecycle_with_tuned_client_options(
         self,
         backend_cls: str,
-        moto_bucket: tuple[str, str],
-        minio_bucket: tuple[str, str] | None,
+        request: pytest.FixtureRequest,
     ) -> None:
         """write -> list_files -> read -> delete with non-trivial client_options.
 
@@ -219,7 +219,7 @@ class TestS3ControlPathMoto:
         raises ``TypeError: got multiple values for keyword argument 'config'``
         from ``aiobotocore.create_client`` on the first I/O call.
         """
-        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, moto_bucket, minio_bucket)
+        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, request)
         cls = _load(backend_cls)
         # Unique key per parametrize id so cases sharing the module-scoped bucket
         # cannot clobber each other if one fails before its own delete.
@@ -251,8 +251,7 @@ class TestS3ControlPathMoto:
     def test_lifecycle_with_retry_policy(
         self,
         backend_cls: str,
-        moto_bucket: tuple[str, str],
-        minio_bucket: tuple[str, str] | None,
+        request: pytest.FixtureRequest,
     ) -> None:
         """Same lifecycle with ``RetryPolicy`` alongside the tuned client_options.
 
@@ -265,7 +264,7 @@ class TestS3ControlPathMoto:
         """
         from remote_store._config import RetryPolicy
 
-        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, moto_bucket, minio_bucket)
+        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, request)
         cls = _load(backend_cls)
         key = f"retry/sample-{cls.__name__}.bin"
         backend = cls(
@@ -296,8 +295,7 @@ class TestS3ControlPathMoto:
     def test_delete_missing_maps_to_notfound(
         self,
         backend_cls: str,
-        moto_bucket: tuple[str, str],
-        minio_bucket: tuple[str, str] | None,
+        request: pytest.FixtureRequest,
     ) -> None:
         """Failure path: ``delete(missing_key)`` under tuned config_kwargs maps to ``NotFound``.
 
@@ -314,7 +312,7 @@ class TestS3ControlPathMoto:
         """
         from remote_store._errors import NotFound
 
-        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, moto_bucket, minio_bucket)
+        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, request)
         cls = _load(backend_cls)
         key = f"never/written-{cls.__name__}.txt"
         backend = cls(

@@ -56,7 +56,7 @@ jobs:
         run: |
           docker run -d --name minio-mut -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            cgr.dev/chainguard/minio:latest-dev server /data
+            cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84 server /data
           for i in $(seq 1 30); do
             wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
           done
