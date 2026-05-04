@@ -23,7 +23,7 @@ body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-seri
 #detail .detail-row{color:#94a3b8}
 #detail .detail-row span{color:#e2e8f0}
 #detail .placeholder{color:#475569;font-style:italic}
-#sidebar [data-ea-publisher]{margin-top:auto;font-size:10.5px;min-height:0}
+#sidebar [data-ea-publisher]{position:sticky;bottom:0;font-size:10.5px;min-height:0}
 #canvas-wrap{flex:1;position:relative;overflow:hidden}
 svg{width:100%;height:100%;display:block;touch-action:none;-webkit-user-select:none;user-select:none}
 .node circle{stroke-width:1.5px;cursor:pointer;transition:r .12s}
@@ -51,7 +51,7 @@ svg{width:100%;height:100%;display:block;touch-action:none;-webkit-user-select:n
   <div><h2>Node types</h2><div id="node-legend"></div></div>
   <div><h2>Edge types</h2><div id="edge-legend"></div></div>
   <div><h2>Selected node</h2><div id="detail"><span class="placeholder">Click a node to inspect it</span></div></div>
-  <div id="ethical-ad-placement"></div>
+  <div id="ethical-ads" data-ea-publisher="readthedocs" data-ea-type="text"></div>
 </div>
 <div id="canvas-wrap">
   <svg id="graph" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet"></svg>
@@ -305,15 +305,18 @@ update();
 // we move it into #sidebar and strip the 'raised' float class.
 (function(){
   var sb=document.getElementById('sidebar');
+  var obs;
   function adopt(n){
     if(n.nodeType!==1||!n.dataset||!n.dataset.eaPublisher)return;
     n.classList.remove('raised');
-    n.style.marginTop='auto';
+    n.style.marginTop='';
     sb.appendChild(n);
+    if(obs)obs.disconnect();
   }
-  new MutationObserver(function(ms){
+  obs=new MutationObserver(function(ms){
     ms.forEach(function(m){m.addedNodes.forEach(adopt);});
-  }).observe(document.body,{childList:true});
+  });
+  obs.observe(document.body,{childList:true});
   document.querySelectorAll('body>[data-ea-publisher]').forEach(adopt);
 })();
 </script>
