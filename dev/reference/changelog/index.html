@@ -11806,7 +11806,7 @@
   <code>tests/scripts/test_check_docs_framework.py</code> covering G-02 (dest collision),
   G-03 (Jinja syntax), G-04 (include-markdown), G-05 (broken relative link),
   G-06 (nav URL misalignment)</li>
-<li>BK-168: pin <code>pyarrow&lt;24</code> across all extras pending moto/multipart compatibility fix</li>
+<li>BK-168: lift <code>pyarrow&lt;24</code> to <code>&lt;25</code> across all extras; require <code>moto[server,s3]&gt;=5.2.0</code> for multipart compatibility under pyarrow 23</li>
 <li>BK-167b: docs framework bridge — <code>scan_dual_files</code> + <code>render_dual_pages</code>, <code>explanation/design/</code> URL alignment, nav restructure, <code>--strict</code> CI gate restored, audit-012 closed</li>
 <li>BK-167b: <code>check_links.py</code> — two-mode internal link checker (<code>--mode repo</code>/<code>--mode site</code>); <code>hatch run check-links</code></li>
 <li>BK-167a (Step 1): <code>scan_dual_files</code>, <code>DualEntry</code>, <code>_parse_marker</code>, <code>_classify_file</code> in <code>scripts/docs/scan.py</code>; five spec-traced tests (DOCFRAME-001..003)</li>
