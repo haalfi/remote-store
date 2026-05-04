@@ -1,5 +1,21 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
   "url": "https://context7.com/websites/remotestore_dev_stable",
-  "public_key": "pk_RLXTOPnD0ztmnjMEWuqDN"
+  "public_key": "pk_RLXTOPnD0ztmnjMEWuqDN",
+  "projectTitle": "remote-store docs",
+  "description": "Full documentation for remote-store: tutorials, how-to guides, API reference, and design explanations. Write file storage code once, run it against local files, S3, SFTP, or Azure.",
+  "rules": [
+    "Use Store.read(path) for streaming reads, Store.write(path, content) for streaming writes (returns WriteResult), and Store.list_files(path) for directory listings.",
+    "Backends declare capabilities (LAZY_READ, ATOMIC_WRITE, ATOMIC_MOVE, METADATA, GLOB, ...). Query with store.supports(Capability.X); see FEATURES.md for the full matrix.",
+    "Install optional backends and extensions via pip extras. Backends: remote-store[s3], [s3-pyarrow], [sftp], [azure], [sql], [sql-query]. Extensions: [arrow] (PyArrow + Parquet), [otel] (tracing), [pydantic], [yaml], [dagster].",
+    "For async workloads, import AsyncStore from remote_store.aio. To cross the sync/async boundary, use SyncBackendAdapter (sync Backend in async code, via asyncio.to_thread) or AsyncBackendSyncAdapter (async Backend in sync code, daemon-thread event loop).",
+    "Built-in backends: LocalBackend, MemoryBackend, ReadOnlyHttpBackend, S3Backend, S3PyArrowBackend, SFTPBackend, AzureBackend, SQLBlobBackend, SQLQueryBackend.",
+    "Streaming reads: with store.read(path) as f: data = f.read(). Atomic writes: with store.open_atomic(path) as f: f.write(...). The destination appears only after the block exits cleanly.",
+    "Errors typed in remote_store.errors (re-exported from remote_store). Base RemoteStoreError; subclasses: NotFound, AlreadyExists, PermissionDenied, InvalidPath, CapabilityNotSupported, DirectoryNotEmpty, BackendUnavailable. SDK exceptions never leak.",
+    "Configuration loads from TOML, YAML, dict, or Pydantic models via Registry; ${ENV_VAR} placeholders are resolved and credentials are wrapped in Secret automatically.",
+    "Extensions in remote_store.ext (always available): batch, cache, glob, integrity, observe, partition, streams, transfer, write. Optional via extras: arrow (PyArrow + Parquet), otel (OpenTelemetry), pydantic, yaml, dagster (IO manager). See FEATURES.md.",
+    "Write methods return WriteResult(path, size, source, digest, etag, version_id, last_modified, metadata). source: NativeSource (write response), BasicSource (post-write stat), or SidecarSource (ext.write hash). Rich fields need WRITE_RESULT_NATIVE.",
+    "Write*() methods accept optional metadata= dict[str, str]; backend must declare USER_METADATA, otherwise non-empty raises CapabilityNotSupported. store.head(path) returns WriteResult metadata (size, etag, last_modified) without reading content.",
+    "Capabilities split into method gates (READ, WRITE, DELETE, LIST, GLOB, MOVE, COPY, ATOMIC_WRITE, METADATA, required to call) and quality flags (SEEKABLE_READ, LAZY_READ, ATOMIC_MOVE, WRITE_RESULT_NATIVE, method works either way)."
+  ]
 }
