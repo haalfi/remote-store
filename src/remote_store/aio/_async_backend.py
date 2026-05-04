@@ -104,6 +104,7 @@ class AsyncBackend(abc.ABC):
             An async iterator yielding byte chunks.
 
         Raises:
+            InvalidPath: If ``path`` names an existing directory.
             NotFound: If the file does not exist.
         """
         if False:  # pragma: no cover
@@ -120,6 +121,7 @@ class AsyncBackend(abc.ABC):
             The file content.
 
         Raises:
+            InvalidPath: If ``path`` names an existing directory.
             NotFound: If the file does not exist.
         """
 
@@ -196,6 +198,8 @@ class AsyncBackend(abc.ABC):
             missing_ok: If ``True``, do not raise when absent.
 
         Raises:
+            InvalidPath: If ``path`` names an existing file (regardless of
+                ``missing_ok`` -- a type mismatch is not a missing file).
             NotFound: If the folder is missing and ``missing_ok`` is ``False``.
             DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
         """
@@ -249,6 +253,7 @@ class AsyncBackend(abc.ABC):
             A ``FileInfo`` with size, modification time, etc.
 
         Raises:
+            InvalidPath: If ``path`` names an existing directory.
             NotFound: If the file does not exist.
         """
 
@@ -263,6 +268,7 @@ class AsyncBackend(abc.ABC):
             A ``FolderInfo`` with file count, total size, etc.
 
         Raises:
+            InvalidPath: If ``path`` names an existing file.
             NotFound: If the folder does not exist.
         """
 
@@ -270,28 +276,38 @@ class AsyncBackend(abc.ABC):
     async def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Move or rename a file.
 
+        ``src == dst`` is a no-op (the file is preserved unchanged).
+
         Args:
             src: Backend-relative source key.
             dst: Backend-relative destination key.
             overwrite: If ``True``, replace any existing file at *dst*.
 
         Raises:
+            InvalidPath: If ``src`` names a directory or ``dst`` names an
+                existing directory.
             NotFound: If ``src`` does not exist.
-            AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
+            AlreadyExists: If ``dst`` exists, ``src != dst``, and
+                ``overwrite`` is ``False``.
         """
 
     @abc.abstractmethod
     async def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy a file.
 
+        ``src == dst`` is a no-op (the file is preserved unchanged).
+
         Args:
             src: Backend-relative source key.
             dst: Backend-relative destination key.
             overwrite: If ``True``, replace any existing file at *dst*.
 
         Raises:
+            InvalidPath: If ``src`` names a directory or ``dst`` names an
+                existing directory.
             NotFound: If ``src`` does not exist.
-            AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
+            AlreadyExists: If ``dst`` exists, ``src != dst``, and
+                ``overwrite`` is ``False``.
         """
 
     # endregion

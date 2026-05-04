@@ -124,11 +124,14 @@ class AsyncMemoryBackend(AsyncBackend):
             An async iterator yielding a single byte chunk (the full content).
 
         Raises:
+            InvalidPath: If ``path`` names an existing directory.
             NotFound: If the file does not exist.
         """
         segments = _split_path(path)
         async with self._lock:
             node = self._traverse(segments)
+            if isinstance(node, _DirNode):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend="async-memory")
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="async-memory")
             snapshot = bytes(node.data)
@@ -144,11 +147,14 @@ class AsyncMemoryBackend(AsyncBackend):
             The file content.
 
         Raises:
+            InvalidPath: If ``path`` names an existing directory.
             NotFound: If the file does not exist.
         """
         segments = _split_path(path)
         async with self._lock:
             node = self._traverse(segments)
+            if isinstance(node, _DirNode):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend="async-memory")
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="async-memory")
             return bytes(node.data)
@@ -296,7 +302,8 @@ class AsyncMemoryBackend(AsyncBackend):
         Raises:
             NotFound: If the folder is missing and ``missing_ok`` is ``False``.
             DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
-            InvalidPath: If the path is empty.
+            InvalidPath: If the path is empty or names an existing file
+                (regardless of ``missing_ok``).
         """
         segments = _split_path(path)
         if not segments:
@@ -311,6 +318,8 @@ class AsyncMemoryBackend(AsyncBackend):
 
             leaf = segments[-1]
             node = parent.children.get(leaf)
+            if isinstance(node, _FileEntry):
+                raise InvalidPath(f"Not a folder: {path}", path=path, backend="async-memory")
             if node is None or not isinstance(node, _DirNode):
                 if not missing_ok:
                     raise NotFound(f"Folder not found: {path}", path=path, backend="async-memory")
@@ -436,6 +445,7 @@ class AsyncMemoryBackend(AsyncBackend):
             A ``FileInfo`` with size, modification time, etc.
 
         Raises:
+            InvalidPath: If ``path`` names an existing directory.
             NotFound: If the file does not exist.
         """
         segments = _split_path(path)
@@ -443,6 +453,8 @@ class AsyncMemoryBackend(AsyncBackend):
             raise NotFound("File not found: (empty path)", path=path, backend="async-memory")
         async with self._lock:
             node = self._traverse(segments)
+            if isinstance(node, _DirNode):
+                raise InvalidPath(f"Not a file: {path}", path=path, backend="async-memory")
             if not isinstance(node, _FileEntry):
                 raise NotFound(f"File not found: {path}", path=path, backend="async-memory")
             return FileInfo(
@@ -463,11 +475,14 @@ class AsyncMemoryBackend(AsyncBackend):
             A ``FolderInfo`` with file count, total size, etc.
 
         Raises:
+            InvalidPath: If ``path`` names an existing file.
             NotFound: If the folder does not exist.
         """
         segments = _split_path(path)
         async with self._lock:
             node = self._traverse(segments)
+            if isinstance(node, _FileEntry):
+                raise InvalidPath(f"Not a folder: {path}", path=path, backend="async-memory")
             if not isinstance(node, _DirNode):
                 raise NotFound(f"Folder not found: {path}", path=path, backend="async-memory")
             file_count = 0
@@ -512,10 +527,12 @@ class AsyncMemoryBackend(AsyncBackend):
             raise InvalidPath("Destination path must not be empty", path=dst, backend="async-memory")
 
         if src_segments == dst_segments:
-            # Verify source exists, then no-op.
+            # Verify source exists and is a file, then no-op.
             async with self._lock:
                 parent = self._traverse(src_segments[:-1])
                 leaf = parent.children.get(src_segments[-1]) if isinstance(parent, _DirNode) else None
+                if isinstance(leaf, _DirNode):
+                    raise InvalidPath(f"Source is a directory: {src}", path=src, backend="async-memory")
                 if not isinstance(leaf, _FileEntry):
                     raise NotFound(f"Source not found: {src}", path=src, backend="async-memory")
             return
@@ -527,6 +544,8 @@ class AsyncMemoryBackend(AsyncBackend):
                 raise NotFound(f"Source not found: {src}", path=src, backend="async-memory")
             src_leaf = src_segments[-1]
             entry = src_parent.children.get(src_leaf)
+            if isinstance(entry, _DirNode):
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend="async-memory")
             if not isinstance(entry, _FileEntry):
                 raise NotFound(f"Source not found: {src}", path=src, backend="async-memory")
 
@@ -575,8 +594,14 @@ class AsyncMemoryBackend(AsyncBackend):
         async with self._lock:
             # Find source
             src_node = self._traverse(src_segments)
+            if isinstance(src_node, _DirNode):
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend="async-memory")
             if not isinstance(src_node, _FileEntry):
                 raise NotFound(f"Source not found: {src}", path=src, backend="async-memory")
+
+            # Self-copy is a no-op (source already validated to be a file).
+            if src_segments == dst_segments:
+                return
 
             # Prepare destination
             dst_parent = self._ensure_parents(dst_segments)
