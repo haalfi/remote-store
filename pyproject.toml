@@ -123,6 +123,7 @@ dev = [
 
 [tool.hatch.envs.default]
 installer = "uv"
+path = ".venv"
 features = ["dev", "docs", "bench"]
 dependencies = [
   # Not in any optional-dependencies extra:
