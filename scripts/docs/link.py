@@ -124,8 +124,8 @@ def build_source_map(
     # artifacts staged under docs-src/ by build tools.
     docs_src = repo_root / "docs-src"
     if docs_src.is_dir():
-        for md in docs_src.rglob("*.md"):
-            source_map.setdefault(md.resolve(), md.relative_to(docs_src).as_posix())
+        for f in [*docs_src.rglob("*.md"), *docs_src.rglob("*.html")]:
+            source_map.setdefault(f.resolve(), f.relative_to(docs_src).as_posix())
 
     for entry in dual_entries:
         source_map.setdefault(entry.source.resolve(), entry.dest)
