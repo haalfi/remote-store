@@ -155,8 +155,7 @@ def test_link_resolver_rewrites_image_syntax_to_in_site_path(link_mod, tmp_path)
         dest="explanation/performance.md",
     )
 
-    assert "github.com" not in result
-    assert "../img/benchmarks/overhead.svg" in result
+    assert result == "![Abstraction overhead by backend](../img/benchmarks/overhead.svg)"
 
 
 @pytest.mark.spec("DOCFRAME-008")
