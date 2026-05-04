@@ -70,7 +70,14 @@ def _load_sdd_kinds() -> tuple[SddKind, ...]:
     from pathlib import Path
 
     rules_path = Path(__file__).resolve().parent.parent.parent / "docs-src" / "_path_rules.yml"
-    data = yaml.safe_load(rules_path.read_text(encoding="utf-8")) or {}
+    try:
+        text = rules_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Required config not found: {rules_path}\n"
+            "docs-src/_path_rules.yml must be present in a full repo checkout."
+        ) from None
+    data = yaml.safe_load(text) or {}
     return tuple(
         SddKind(
             slug=item["slug"],

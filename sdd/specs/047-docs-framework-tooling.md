@@ -78,12 +78,12 @@ examples) from drifting into a tooling spec authors do not read.
 **Invariant:** `scripts/docs/scan.py:DualEntry` is a frozen dataclass
 with shape:
 
-``python
+```python
 @dataclass(frozen=True)
 class DualEntry:
     source: Path        # absolute repo path
     dest: str           # virtual dest, e.g. "explanation/design/authoring.md"
-``
+```
 
 `DualEntry` carries no class field: by construction, only dual entries
 reach render input. Repo-only and docs-only files are observed by the
@@ -171,7 +171,7 @@ as the index entry).
 
 **Required `docs-src/_nav.yml` shape after this spec lands:**
 
-``yaml
+```yaml
 - Home: index.md
 - Tutorial:
     - Getting Started: getting-started.md
@@ -181,7 +181,7 @@ as the index entry).
 - Explanation:
     - ...
     - Design: explanation/design/
-``
+```
 
 Examples nest under Tutorial (the learn-by-doing quadrant). Changelog
 nests under Reference at the URL `/reference/changelog/` (closes F-10).
@@ -267,6 +267,14 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).
 | `test_check_repo_links_no_broken` | DOCFRAME-008 | positive control |
 | `test_check_repo_links_detects_broken` | DOCFRAME-008 | |
 | `test_check_repo_links_strips_fragment` | DOCFRAME-008 | anchor handling |
+
+`tests/scripts/test_mkdocs_hooks.py` (hook dispatch — DOCFRAME-008 Bridge):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_on_page_markdown_passthrough_when_abs_src_none` | DOCFRAME-008 | Branch 1: no abs_src_path |
+| `test_on_page_markdown_passthrough_outside_docs_src` | DOCFRAME-008 | Branch 2: gen-files virtual page |
+| `test_on_page_markdown_rewrites_docs_src_links` | DOCFRAME-008 | Branch 3: docs-src link rewritten |
 
 `tests/scripts/test_check_docs_framework.py` (gate — DOCFRAME-004, G-02..G-06):
 
