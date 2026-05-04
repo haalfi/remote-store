@@ -262,8 +262,16 @@ def backend(
             region_name="us-east-1",
             endpoint_url=endpoint,
         )
-        yield b
-        b.close()
+        try:
+            yield b
+        finally:
+            b.close()
+            if pyarrow_ge_24():
+                paginator = client.get_paginator("list_objects_v2")
+                for page in paginator.paginate(Bucket=bucket):
+                    for obj in page.get("Contents", []):
+                        client.delete_object(Bucket=bucket, Key=obj["Key"])
+                client.delete_bucket(Bucket=bucket)
     elif request.param == "sftp":
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 

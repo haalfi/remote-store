@@ -101,8 +101,16 @@ def s3_any_backend(
         region_name=REGION,
         endpoint_url=endpoint,
     )
-    yield backend
-    backend.close()
+    try:
+        yield backend
+    finally:
+        backend.close()
+        if request.param == S3PA_CLS and pyarrow_ge_24():
+            paginator = client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=bucket):
+                for obj in page.get("Contents", []):
+                    client.delete_object(Bucket=bucket, Key=obj["Key"])
+            client.delete_bucket(Bucket=bucket)
 
 
 _LIVE_PARAMS_FOLDER_SIMPLE = [
@@ -733,6 +741,7 @@ class TestS3SharedETagAndDigest:
         b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
 
         if isinstance(s3_any_backend, _S3PA) and pyarrow_ge_24():
+            assert minio_server is not None, "minio_server is None but s3_any_backend is on MinIO path"
             endpoint, raw_key, raw_secret = minio_server, _MINIO_KEY, _MINIO_SECRET
         else:
             endpoint, raw_key, raw_secret = moto_server, "testing", "testing"
