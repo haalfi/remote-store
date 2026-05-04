@@ -277,7 +277,6 @@ jobs:
         with:
           enable-cache: false
       - run: uv pip install -e ".[docs]"
-      - run: python scripts/docs/check_links.py --root .
       - run: python scripts/check_docs_framework.py
       - run: mkdocs build --strict
 

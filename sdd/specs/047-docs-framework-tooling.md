@@ -107,7 +107,7 @@ every PR.
 | G-02 | AUTHORING R2 | The source→dest map is injective: no two dual sources point to the same dest, no source has two dests. |
 | G-03 | AUTHORING R3 | Dual files contain no `{% ... %}` Jinja directive and no MkDocs macro syntax. The `--8<--` snippet form is permitted. |
 | G-04 | AUTHORING R4 | No `include-markdown` directive in any `docs-src/**/*.md`. No `_link_map.yml` exists. |
-| G-05 | AUTHORING R3 (link safety) | Every relative `](path)` link in every dual file resolves on disk in the repo. |
+| G-05 | AUTHORING R3 + DOCFRAME-008 | Every relative `](path)` link in every git-tracked `.md` file resolves on disk in the repo. No class-based carve-out. |
 | G-06 | DOCUMENTATION R7 | For every page reachable through `docs-src/_nav.yml` and its child `_nav.yml` files, the URL prefix matches the nav-section prefix (Reference → `/reference/`, Explanation → `/explanation/`, etc.). The check parses the nav source files directly; it does not rely on the generated `SUMMARY.md` (which is a build-time artifact, not a source). |
 | G-07 | DOCUMENTATION R8 | `mkdocs build --strict` succeeds. (`--strict` promotes all warnings to failures; MkDocs 1.x does not accept `error` as a literal value for `validation.links.not_found`.) |
 

@@ -33,7 +33,6 @@ from docs.scan import (  # noqa: E402
 
 _JINJA_RE = re.compile(r"\{[%{]")
 _INLINE_CODE_RE = re.compile(r"`[^`\n]+`")
-_LINK_RE = re.compile(r"\]\(([^)]+)\)")
 _INCLUDE_MARKDOWN_RE = re.compile(r"include-markdown")
 
 # Directories excluded from G-01: infrastructure trees outside the docs
@@ -153,35 +152,15 @@ def _check_g04(repo_root: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# G-05: relative links in dual files resolve on disk
+# G-05: every relative link in every .md resolves on disk (DOCFRAME-008)
 # ---------------------------------------------------------------------------
 
 
 def _check_g05(repo_root: Path) -> list[str]:
-    errors: list[str] = []
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        entries = list(scan_dual_files(repo_root))
-    for entry in entries:
-        text = entry.source.read_text(encoding="utf-8")
-        base = entry.source.parent
-        in_fence = False
-        for line in text.splitlines():
-            in_fence = _is_in_fence(line, in_fence)
-            if in_fence:
-                continue
-            cleaned = _strip_inline_code(line)
-            for m in _LINK_RE.finditer(cleaned):
-                target = m.group(1)
-                if target.startswith(("http://", "https://", "mailto:", "#")):
-                    continue
-                clean = target.split("#")[0]
-                if not clean:
-                    continue
-                if not (base / clean).resolve().exists():
-                    rel = entry.source.relative_to(repo_root)
-                    errors.append(f"G-05 {rel}: broken link → {target!r}")
-    return sorted(errors)
+    from docs.check_links import check_repo_links
+
+    broken = check_repo_links(repo_root)
+    return sorted(f"G-05 {b.source.relative_to(repo_root)}:{b.line}: broken link → {b.raw!r}" for b in broken)
 
 
 # ---------------------------------------------------------------------------
