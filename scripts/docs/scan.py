@@ -83,6 +83,9 @@ def _load_sdd_kinds(rules_path: Path | None = None) -> tuple[SddKind, ...]:
             "docs-src/_path_rules.yml must be present in a full repo checkout."
         ) from None
     data = yaml.safe_load(text) or {}
+    items = data.get("sdd_kinds")
+    if items is None:
+        raise KeyError(f"_path_rules.yml at {rules_path} is missing the required 'sdd_kinds' key")
     return tuple(
         SddKind(
             slug=item["slug"],
@@ -94,7 +97,7 @@ def _load_sdd_kinds(rules_path: Path | None = None) -> tuple[SddKind, ...]:
             status=item.get("status"),
             numbered=item.get("numbered", True),
         )
-        for item in data.get("sdd_kinds", ())
+        for item in items
     )
 
 

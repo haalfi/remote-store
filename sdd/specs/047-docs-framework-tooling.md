@@ -270,6 +270,7 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).
 | `test_check_repo_links_no_broken` | DOCFRAME-008 | positive control |
 | `test_check_repo_links_detects_broken` | DOCFRAME-008 | |
 | `test_check_repo_links_strips_fragment` | DOCFRAME-008 | anchor handling |
+| `test_check_repo_links_against_live_repo` | DOCFRAME-008 | live repo: exercises git ls-files path |
 
 `tests/scripts/test_scan_sdd_kinds.py` (YAML loader — DOCFRAME-008 Source map):
 

@@ -36,6 +36,11 @@ def test_load_sdd_kinds_positive(scan_mod):
     slugs = {k.slug for k in kinds}
     assert slugs == {"adrs", "specs", "rfcs", "audits", "research"}
     assert len(kinds) == 5
+    by_slug = {k.slug: k for k in kinds}
+    assert by_slug["adrs"].status == "Accepted"
+    assert by_slug["rfcs"].status == "Proposed"
+    assert by_slug["audits"].glob == "audit-*.md"
+    assert by_slug["research"].numbered is False
 
 
 @pytest.mark.spec("DOCFRAME-008")

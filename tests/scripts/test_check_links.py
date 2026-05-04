@@ -134,3 +134,23 @@ def test_check_repo_links_resolves_cross_tree_on_disk_target(check_links_mod, tm
     (sdd_dir / "0001-foo.md").write_text("# ADR-0001\n")
     (docs_src / "architecture.md").write_text("[ADR-0001](../../sdd/adrs/0001-foo.md)\n")
     assert check_links_mod.check_repo_links(tmp_path) == []
+
+
+@pytest.mark.spec("DOCFRAME-008")
+def test_check_repo_links_against_live_repo(check_links_mod):
+    """No broken on-disk links in the live repository (positive control).
+
+    Exercises the git ls-files code path (unlike tmp_path tests which use rglob).
+    Skipped when ROOT is not a git checkout.
+    """
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        cwd=ROOT,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        pytest.skip("not a git checkout")
+    broken = check_links_mod.check_repo_links(ROOT)
+    assert broken == [], "\n".join(f"{b.source.relative_to(ROOT)}:{b.line}: {b.raw}" for b in broken)

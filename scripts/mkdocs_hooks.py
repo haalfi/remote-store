@@ -39,6 +39,12 @@ if str(SCRIPTS) not in sys.path:
 _resolver = None
 
 
+def on_pre_build(config: MkDocsConfig) -> None:
+    """Reset the resolver cache so ``mkdocs serve`` picks up source changes."""
+    global _resolver
+    _resolver = None
+
+
 def _get_resolver():
     global _resolver
     if _resolver is None:
@@ -83,6 +89,8 @@ def on_page_markdown(
         src_path.relative_to(DOCS_SRC.resolve())
     except ValueError:
         # Outside docs-src/: gen-files virtual pages, pre-rewritten upstream.
+        # Assumes gen-files uses a temp dir outside docs-src/ (its default
+        # cache_dir). A custom cache_dir inside docs-src/ would break this.
         return markdown
     dest = page.file.src_uri
     return _get_resolver().rewrite(markdown, src_path, dest)

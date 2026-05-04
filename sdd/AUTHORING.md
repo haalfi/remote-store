@@ -22,7 +22,7 @@ framework](../CLAUDE.md#documentation-framework)): structure →
 2. **Single home.** Each `.md` lives at exactly one path. Other
    presentations are derived from that path, never copied.
 
-3. **Every link is on-disk.** Every relative `](path)` link in every
+3. **On-disk links.** Every relative `](path)` link in every
    `.md` must resolve to a real on-disk file in the repo. External URLs
    and pure anchors are exempt. The bridge (Rule 4) rewrites on-disk
    targets to docs-site URLs at build time so both presentations render
