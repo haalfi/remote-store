@@ -215,7 +215,7 @@ repository. The two-mode (`--mode repo` vs `--mode site`) interface is
 removed; the script takes only `--root`.
 
 **Bridge:** Authors write on-disk paths everywhere. At build time, the mkdocs
-hook `mkdocs_hooks.py::on_page_markdown` applies
+hook `scripts/mkdocs_hooks.py::on_page_markdown` applies
 :class:`~scripts.docs.link.LinkResolver` to every `docs-src/` file so that
 on-disk links into `sdd/`, repo-root duals (`CHANGELOG.md`,
 `CONTRIBUTING.md`, ...), and `examples/*.py` get rewritten to the
@@ -226,11 +226,14 @@ and passes through.
 
 **Source map:** `scripts/docs/link.py:build_source_map` accepts an
 `example_entries` iterable so that `examples/<subdir>/<stem>.py` paths
-resolve to `tutorial/examples/<slug>.md` URLs. SDD subdir rules are
-loaded from `docs-src/_path_rules.yml` via `scripts/docs/scan.py`;
-per-file `<!-- doc: dual dest=... -->` markers retain their existing
-override role for one-off files (`CHANGELOG.md`, `sdd/AUTHORING.md`,
-etc.).
+resolve to `tutorial/examples/<slug>.md` URLs. SDD kind source
+directories (e.g. `sdd/adrs/`) are mapped to their generated index pages
+(`explanation/design/<kind>/index.md`) so that docs-src links pointing at
+a kind directory get rewritten to the in-site index URL rather than
+falling through to a GitHub blob URL. SDD subdir rules are loaded from
+`docs-src/_path_rules.yml` via `scripts/docs/scan.py`; per-file
+`<!-- doc: dual dest=... -->` markers retain their existing override role
+for one-off files (`CHANGELOG.md`, `sdd/AUTHORING.md`, etc.).
 
 **Closes:** Audit-012 F-01 substantively (BK-167b's closure left docs-only
 link validation to `mkdocs build --strict`, which validates rendered URLs
@@ -267,6 +270,15 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).
 | `test_check_repo_links_no_broken` | DOCFRAME-008 | positive control |
 | `test_check_repo_links_detects_broken` | DOCFRAME-008 | |
 | `test_check_repo_links_strips_fragment` | DOCFRAME-008 | anchor handling |
+
+`tests/scripts/test_scan_sdd_kinds.py` (YAML loader — DOCFRAME-008 Source map):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_load_sdd_kinds_positive` | DOCFRAME-008 | positive control: real file, expected slugs |
+| `test_load_sdd_kinds_filenotfound` | DOCFRAME-008 | missing file: friendly error |
+| `test_load_sdd_kinds_missing_required_field` | DOCFRAME-008 | missing slug: KeyError |
+| `test_load_sdd_kinds_empty_returns_empty_tuple` | DOCFRAME-008 | empty sdd_kinds: () |
 
 `tests/scripts/test_mkdocs_hooks.py` (hook dispatch — DOCFRAME-008 Bridge):
 

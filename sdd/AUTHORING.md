@@ -44,9 +44,11 @@ framework](../CLAUDE.md#documentation-framework)): structure →
    [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules)).
 
 4. **One bridge mechanism.** The bridge is the mechanism that takes dual
-   files from their repo path and presents them on the docs site. Exactly
-   one bridge applies; new mechanisms are not added to handle special
-   cases. The bridge implementation lives in the build tooling.
+   files from their repo path and presents them on the docs site, and
+   that rewrites on-disk links in docs-only files to docs-site URLs at
+   build time. Exactly one bridge applies; new mechanisms are not added
+   to handle special cases. The bridge implementation lives in the build
+   tooling.
 
 5. **PR-time enforcement.** A PR-blocking check verifies that every rule
    in the documentation framework is satisfied. Failures block merge.

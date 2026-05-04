@@ -17,13 +17,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+SCRIPTS = ROOT / "scripts"
 DOCS_SRC = ROOT / "docs-src"
 
 
 @pytest.fixture(scope="module")
 def hooks_mod():
-    if str(ROOT) not in sys.path:
-        sys.path.insert(0, str(ROOT))
+    if str(SCRIPTS) not in sys.path:
+        sys.path.insert(0, str(SCRIPTS))
     import mkdocs_hooks as mod
 
     return mod

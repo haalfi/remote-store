@@ -26,8 +26,8 @@ if TYPE_CHECKING:
     from mkdocs.structure.files import Files
     from mkdocs.structure.pages import Page
 
-ROOT = Path(__file__).resolve().parent
-SCRIPTS = ROOT / "scripts"
+ROOT = Path(__file__).resolve().parent.parent  # scripts/ → repo root
+SCRIPTS = Path(__file__).resolve().parent  # scripts/
 DOCS_SRC = ROOT / "docs-src"
 
 if str(SCRIPTS) not in sys.path:

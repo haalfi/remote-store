@@ -62,14 +62,19 @@ class SddKind:
     numbered: bool = True  # False → use title in place of number
 
 
-def _load_sdd_kinds() -> tuple[SddKind, ...]:
+def _load_sdd_kinds(rules_path: Path | None = None) -> tuple[SddKind, ...]:
     """Load SDD kind definitions from ``docs-src/_path_rules.yml``.
 
     Spec: DOCFRAME-008.
-    """
-    from pathlib import Path
 
-    rules_path = Path(__file__).resolve().parent.parent.parent / "docs-src" / "_path_rules.yml"
+    Args:
+        rules_path: Path to the YAML file. Defaults to the canonical repo
+            location ``docs-src/_path_rules.yml`` relative to this module.
+    """
+    from pathlib import Path as _Path
+
+    if rules_path is None:
+        rules_path = _Path(__file__).resolve().parent.parent.parent / "docs-src" / "_path_rules.yml"
     try:
         text = rules_path.read_text(encoding="utf-8")
     except FileNotFoundError:

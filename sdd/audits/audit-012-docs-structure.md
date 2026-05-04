@@ -133,7 +133,7 @@ repo-browser presentation of every `docs-src/` file.
 BK-171 closes F-01 honestly: every relative link in every git-tracked
 `.md` (including `docs-src/**`) must resolve on disk. Authors write
 on-disk paths everywhere; the mkdocs hook
-([`mkdocs_hooks.py`](../../mkdocs_hooks.py)) rewrites them to docs-site
+([`scripts/mkdocs_hooks.py`](../../scripts/mkdocs_hooks.py)) rewrites them to docs-site
 URLs at build time. The 76 docs-src links that previously pointed at
 virtual destinations (e.g. `(../design/adrs/0002-...md)`) were migrated
 to on-disk source paths (e.g. `(../../sdd/adrs/0002-...md)`). The

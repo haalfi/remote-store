@@ -42,7 +42,7 @@ theme:
 
 # BK-171: rewrite on-disk repo paths in docs-src/ links to docs-site URLs.
 hooks:
-  - mkdocs_hooks.py
+  - scripts/mkdocs_hooks.py
 
 plugins:
   - search

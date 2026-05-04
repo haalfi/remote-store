@@ -106,6 +106,12 @@ def build_source_map(
     for kind_slug, entries in sdd_entries.items():
         for e in entries:
             source_map[e.source.resolve()] = f"explanation/design/{kind_slug}/{e.slug}.md"
+        # Map the kind's source directory to its generated index page so that
+        # docs-src links pointing at the directory (e.g. ../../sdd/adrs) get
+        # rewritten to the in-site index URL rather than falling through to GitHub.
+        if entries:
+            kind_dir = entries[0].source.resolve().parent
+            source_map.setdefault(kind_dir, f"explanation/design/{kind_slug}/index.md")
 
     # docs-src/ files are served at their path relative to docs-src/.
     # Including them lets the resolver rewrite repo-relative links that point
