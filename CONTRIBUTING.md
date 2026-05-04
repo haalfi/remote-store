@@ -155,19 +155,23 @@ External packages should use the naming convention `remote-store-<name>` and:
 
 ## Development Setup
 
+The default hatch env is configured with `path = ".venv"`, so `hatch run`
+creates and owns `.venv/` at the repo root via uv. A separate
+`python -m venv` or `pip install -e ".[dev]"` step duplicates the env that
+`hatch run` would build, and a stdlib-built `.venv` may not match the shape
+hatch expects.
+
 ```bash
 # Clone and enter the repo
 git clone https://github.com/haalfi/remote-store.git
 cd remote-store
 
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+# Install hatch (skip if you already have it). Any of these work:
+uv tool install hatch    # recommended if you use uv
+pipx install hatch
+pip install --user hatch
 
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Verify everything works
+# Run any hatch script — .venv/ is auto-built on first invocation:
 hatch run all    # or run individual steps:
 hatch run lint
 hatch run typecheck
@@ -176,6 +180,23 @@ hatch run examples
 ```
 
 All dev scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.scripts]`. Run `hatch run` to see available commands.
+
+### Migrating an existing checkout
+
+If you previously created `.venv/` with `python -m venv` or via IDE
+auto-discovery, delete it before the first `hatch run`. Hatch's behaviour
+on a pre-existing non-uv venv is not guaranteed (it may reuse, rebuild, or
+fail depending on what metadata it finds), and a reused stdlib venv will
+be missing the `dev` / `docs` / `bench` feature installs.
+
+On Windows, close any IDE / language server / running pytest that has
+file handles inside `.venv\` before deleting — otherwise the delete fails
+with WinError 32 (file in use).
+
+```bash
+rm -rf .venv                       # Linux / macOS
+Remove-Item -Recurse -Force .venv  # PowerShell
+```
 
 ## Commit Signing
 
