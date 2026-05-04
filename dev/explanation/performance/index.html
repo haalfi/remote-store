@@ -9175,7 +9175,7 @@ your workloads.</p>
 <p>The chart below shows remote-store's overhead (%) versus raw SDK calls for
 each backend. Negative values mean remote-store is <em>faster</em> than calling
 the SDK directly (often due to connection pooling and caching).</p>
-<p><img alt="Abstraction overhead by backend" src="../../img/benchmarks/overhead.svg" /></p>
+<p><img alt="Abstraction overhead by backend" src="https://github.com/haalfi/remote-store/blob/master/docs-src/img/benchmarks/overhead.svg" /></p>
 <p>Patterns from Docker benchmarks (MinIO, Azurite, OpenSSH):</p>
 <ul>
 <li><strong>S3</strong>: reads and writes add modest overhead over raw boto3; listing is
@@ -9193,7 +9193,7 @@ the SDK directly (often due to connection pooling and caching).</p>
 <h2 id="what-happens-under-real-latency">What Happens Under Real Latency<a class="headerlink" href="#what-happens-under-real-latency" title="Permanent link">&para;</a></h2>
 <p>Under realistic network round-trip times (20–100 ms), overhead as a percentage
 shrinks. For example, a 1 ms overhead on a 100 ms round trip is 1%.</p>
-<p><img alt="Overhead vs RTT" src="../../img/benchmarks/overhead-vs-rtt.svg" /></p>
+<p><img alt="Overhead vs RTT" src="https://github.com/haalfi/remote-store/blob/master/docs-src/img/benchmarks/overhead-vs-rtt.svg" /></p>
 <p>The benchmark suite simulates latency using <a href="https://github.com/Shopify/toxiproxy">Toxiproxy</a>
 with four named profiles:</p>
 <table>
@@ -9234,14 +9234,14 @@ with four named profiles:</p>
 </table>
 <h2 id="throughput-by-file-size">Throughput by File Size<a class="headerlink" href="#throughput-by-file-size" title="Permanent link">&para;</a></h2>
 <p>How throughput scales with file size, comparing remote-store to raw SDK:</p>
-<p><img alt="Throughput by file size" src="../../img/benchmarks/throughput.svg" /></p>
+<p><img alt="Throughput by file size" src="https://github.com/haalfi/remote-store/blob/master/docs-src/img/benchmarks/throughput.svg" /></p>
 <p>At larger file sizes, throughput converges as the fixed per-operation overhead
 is amortized across more bytes.</p>
 <h2 id="s3-vs-s3-pyarrow">S3 vs S3-PyArrow<a class="headerlink" href="#s3-vs-s3-pyarrow" title="Permanent link">&para;</a></h2>
 <p>Both S3 backends connect to the same service. S3 uses s3fs (Python), S3-PyArrow
 uses PyArrow's C++ <code>S3FileSystem</code> for data-path operations. The chart below
 compares their absolute latencies:</p>
-<p><img alt="S3 vs S3-PyArrow" src="../../img/benchmarks/s3-comparison.svg" /></p>
+<p><img alt="S3 vs S3-PyArrow" src="https://github.com/haalfi/remote-store/blob/master/docs-src/img/benchmarks/s3-comparison.svg" /></p>
 <p>S3-PyArrow reads are slower for sequential workloads because the C++ data path
 adds connection management and metadata overhead per call. The S3-PyArrow
 backend's advantage is native <a href="../../guides/pyarrow-adapter/">PyArrow integration</a> — Tier 1

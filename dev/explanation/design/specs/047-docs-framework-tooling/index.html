@@ -8793,6 +8793,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#docframe-008-universal-on-disk-link-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DOCFRAME-008: Universal On-Disk Link Rule
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8939,6 +8950,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#docframe-008-universal-on-disk-link-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DOCFRAME-008: Universal On-Disk Link Rule
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8983,7 +9005,9 @@ selects the single-bridge architecture and inline-marker classification.
 three-tier <code>docs-src/</code> + gen-files + source-dirs split; this spec
 narrows ADR-0007's "build hook" tier to one bridge mechanism.</p>
 <p><strong>Tracks:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-167a</a>. <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-167b</a>
-applies the framework and closes the remaining audit-012 findings.</p>
+applies the framework and closes the remaining audit-012 findings.
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-171</a> collapses link validation into a single on-disk
+gate (DOCFRAME-008).</p>
 <hr />
 <h2 id="docframe-001-single-bridge-mechanism">DOCFRAME-001: Single Bridge Mechanism<a class="headerlink" href="#docframe-001-single-bridge-mechanism" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Exactly one mechanism in <code>scripts/docs/</code> discovers the
@@ -9072,8 +9096,8 @@ every PR.</p>
 </tr>
 <tr>
 <td>G-05</td>
-<td>AUTHORING R3 (link safety)</td>
-<td>Every relative <code>](https://github.com/haalfi/remote-store/blob/master/sdd/specs/path)</code> link in every dual file resolves on disk in the repo.</td>
+<td>AUTHORING R3 + DOCFRAME-008</td>
+<td>Every relative <code>](https://github.com/haalfi/remote-store/blob/master/sdd/specs/path)</code> link in every git-tracked <code>.md</code> file resolves on disk in the repo. No class-based carve-out.</td>
 </tr>
 <tr>
 <td>G-06</td>
@@ -9154,6 +9178,43 @@ scope. Each finding's nav/URL fix is a one-line <code>_nav.yml</code> edit plus
 matching directory move under <code>docs-src/</code>. The G-06 gate verifies the
 result.</p>
 <hr />
+<h2 id="docframe-008-universal-on-disk-link-rule">DOCFRAME-008: Universal On-Disk Link Rule<a class="headerlink" href="#docframe-008-universal-on-disk-link-rule" title="Permanent link">&para;</a></h2>
+<p><strong>Scope:</strong> BK-171.</p>
+<p><strong>Invariant:</strong> Every relative <code>](https://github.com/haalfi/remote-store/blob/master/sdd/specs/path)</code> link in every git-tracked <code>.md</code>
+file in the repository resolves to an on-disk file in the repository. This
+applies uniformly to repo-only, dual, and docs-only files: no class-based
+carve-out exists. External URLs (<code>http://</code>, <code>https://</code>, <code>mailto:</code>,
+<code>ftp://</code>) and pure anchors (<code>#section</code>) are exempt.</p>
+<p><strong>Postcondition:</strong> <code>hatch run check-links</code> exits 0 against the live
+repository. The two-mode (<code>--mode repo</code> vs <code>--mode site</code>) interface is
+removed; the script takes only <code>--root</code>.</p>
+<p><strong>Bridge:</strong> Authors write on-disk paths everywhere. At build time, the mkdocs
+hook <code>scripts/mkdocs_hooks.py::on_page_markdown</code> applies
+:class:<code>~scripts.docs.link.LinkResolver</code> to every <code>docs-src/</code> file so that
+on-disk links into <code>sdd/</code>, repo-root duals (<code>CHANGELOG.md</code>,
+<code>CONTRIBUTING.md</code>, ...), and <code>examples/*.py</code> get rewritten to the
+corresponding docs-site URLs. The rewrite pass for dual virtual pages
+emitted by <code>render_dual_pages</code> is unchanged: the hook detects them by
+<code>page.file.abs_src_path</code> (outside <code>docs-src/</code> ⇒ already pre-rewritten)
+and passes through.</p>
+<p><strong>Source map:</strong> <code>scripts/docs/link.py:build_source_map</code> accepts an
+<code>example_entries</code> iterable so that <code>examples/&lt;subdir&gt;/&lt;stem&gt;.py</code> paths
+resolve to <code>tutorial/examples/&lt;slug&gt;.md</code> URLs. SDD kind source
+directories (e.g. <code>sdd/adrs/</code>) are mapped to their generated index pages
+(<code>explanation/design/&lt;kind&gt;/index.md</code>) so that docs-src links pointing at
+a kind directory get rewritten to the in-site index URL rather than
+falling through to a GitHub blob URL. SDD subdir rules are loaded from
+<code>docs-src/_path_rules.yml</code> via <code>scripts/docs/scan.py</code>; per-file
+<code>&lt;!-- doc: dual dest=... --&gt;</code> markers retain their existing override role
+for one-off files (<code>CHANGELOG.md</code>, <code>sdd/AUTHORING.md</code>, etc.).</p>
+<p><strong>Closes:</strong> Audit-012 F-01 substantively (BK-167b's closure left docs-only
+link validation to <code>mkdocs build --strict</code>, which validates rendered URLs
+not GitHub-browser presentation; BK-171 enforces R1 honestly).</p>
+<p><strong>Implementation note:</strong> The pre-BK-171 <code>check_links.py</code> skipped
+<code>docs-src/**</code> files in <code>--mode repo</code> and only validated dual entries in
+<code>--mode site</code>. This mode split is removed: a single walker over
+<code>_git_repo_markdown(repo_root)</code> checks every link in every file.</p>
+<hr />
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
 <p><code>tests/scripts/test_docs_framework.py</code> (parser and scanner — DOCFRAME-001..003):</p>
 <table>
@@ -9204,6 +9265,134 @@ result.</p>
 <td><code>test_mkdocs_strict_passes_after_bridge</code></td>
 <td>G-07</td>
 <td>deferred</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/scripts/test_check_links.py</code> (link gate — DOCFRAME-008):</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Spec ref</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_check_repo_links_includes_docs_only_files</code></td>
+<td>DOCFRAME-008</td>
+<td>docs-src no carve-out</td>
+</tr>
+<tr>
+<td><code>test_check_repo_links_resolves_cross_tree_on_disk_target</code></td>
+<td>DOCFRAME-008</td>
+<td>on-disk repo path passes</td>
+</tr>
+<tr>
+<td><code>test_check_repo_links_no_broken</code></td>
+<td>DOCFRAME-008</td>
+<td>positive control</td>
+</tr>
+<tr>
+<td><code>test_check_repo_links_detects_broken</code></td>
+<td>DOCFRAME-008</td>
+<td></td>
+</tr>
+<tr>
+<td><code>test_check_repo_links_strips_fragment</code></td>
+<td>DOCFRAME-008</td>
+<td>anchor handling</td>
+</tr>
+<tr>
+<td><code>test_check_repo_links_against_live_repo</code></td>
+<td>DOCFRAME-008</td>
+<td>live repo: exercises git ls-files path</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/scripts/test_scan_sdd_kinds.py</code> (YAML loader — DOCFRAME-008 Source map):</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Spec ref</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_load_sdd_kinds_positive</code></td>
+<td>DOCFRAME-008</td>
+<td>positive control: real file, expected slugs</td>
+</tr>
+<tr>
+<td><code>test_load_sdd_kinds_filenotfound</code></td>
+<td>DOCFRAME-008</td>
+<td>missing file: friendly error</td>
+</tr>
+<tr>
+<td><code>test_load_sdd_kinds_missing_required_field</code></td>
+<td>DOCFRAME-008</td>
+<td>missing slug: KeyError</td>
+</tr>
+<tr>
+<td><code>test_load_sdd_kinds_empty_list_raises</code></td>
+<td>DOCFRAME-008</td>
+<td>empty sdd_kinds list: ValueError</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/scripts/test_link.py</code> (build_source_map — DOCFRAME-008 Source map):</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Spec ref</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_build_source_map_includes_sdd_kind_dirs</code></td>
+<td>DOCFRAME-008</td>
+<td>kind_dir → index.md</td>
+</tr>
+<tr>
+<td><code>test_build_source_map_kind_dir_unconditional</code></td>
+<td>DOCFRAME-008</td>
+<td>kind_dir added even with empty entries</td>
+</tr>
+<tr>
+<td><code>test_build_source_map_includes_example_sources</code></td>
+<td>DOCFRAME-008</td>
+<td>examples/*.py → tutorial wrapper</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/scripts/test_mkdocs_hooks.py</code> (hook dispatch — DOCFRAME-008 Bridge):</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Spec ref</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_on_page_markdown_passthrough_when_abs_src_none</code></td>
+<td>DOCFRAME-008</td>
+<td>Branch 1: no abs_src_path</td>
+</tr>
+<tr>
+<td><code>test_on_page_markdown_passthrough_outside_docs_src</code></td>
+<td>DOCFRAME-008</td>
+<td>Branch 2: gen-files virtual page</td>
+</tr>
+<tr>
+<td><code>test_on_page_markdown_rewrites_docs_src_links</code></td>
+<td>DOCFRAME-008</td>
+<td>Branch 3: docs-src link rewritten</td>
 </tr>
 </tbody>
 </table>

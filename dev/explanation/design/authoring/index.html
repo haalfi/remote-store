@@ -8991,39 +8991,34 @@ framework</a>): structure →
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>File classification.</strong> Every <code>.md</code> belongs to exactly one class:
-   repo-only (appears only in the repo), docs-only (appears only on the docs
-   site), or dual (must read correctly in both). Each file is classified by
-   one of two routes: an explicit HTML-comment marker on the file itself,
-   or a directory-default rule when no marker is present. A file that
-   carries no marker AND matches no directory default is unclassified;
-   the gate (G-01) fails on unclassified files. Marker syntax, the three
-   classes, and the directory-default table are normative in
-   <em>Classification markers</em> and <em>Directory defaults</em> below. The class is
-   not inferred from path alone or from build behavior.</p>
+<p><strong>File classification.</strong> Every <code>.md</code> belongs to exactly one class.
+   Classification follows a marker on the file or a directory default
+   when no marker is present. A file with no marker and no matching
+   default is unclassified and fails G-01. See <em>Classification markers</em>
+   and <em>Directory defaults</em> below.</p>
 </li>
 <li>
 <p><strong>Single home.</strong> Each <code>.md</code> lives at exactly one path. Other
    presentations are derived from that path, never copied.</p>
 </li>
 <li>
-<p><strong>Dual files use plain Markdown.</strong> Dual files contain only plain
-   Markdown: no Jinja directives, no MkDocs plugin macros (the
-   <code>pymdownx.snippets</code> <code>--8&lt;--</code> form is the one exception, per
-   <a href="../content-rules/#rules"><code>sdd/CONTENT-RULES.md</code> Rule 6</a>), no links
-   to build-time virtual paths (paths resolvable only after MkDocs
-   renders, e.g. into gen-files outputs). The docs build adapts to dual
-   files; dual files do not adapt to the docs build.</p>
+<p><strong>On-disk links.</strong> Every relative <code>](https://github.com/haalfi/remote-store/blob/master/sdd/path)</code> link in every
+   <code>.md</code> must resolve to a real on-disk file in the repo. External URLs
+   and pure anchors are exempt. The bridge (Rule 4) rewrites on-disk
+   targets to docs-site URLs at build time so both presentations render
+   correctly. Dual files additionally use only plain Markdown; see
+   <a href="../content-rules/#rules"><code>sdd/CONTENT-RULES.md</code> Rule 6</a> for the
+   one snippet exception.</p>
 </li>
 <li>
-<p><strong>One bridge mechanism.</strong> The bridge is the mechanism that takes dual
-   files from their repo path and presents them on the docs site. Exactly
-   one bridge applies; new mechanisms are not added to handle special
-   cases. The bridge implementation lives in the build tooling.</p>
+<p><strong>One bridge mechanism.</strong> The bridge presents dual files on the docs
+   site and rewrites on-disk links in docs-only files to docs-site URLs
+   at build time. Exactly one bridge applies; new mechanisms are not
+   added. The implementation lives in the build tooling.</p>
 </li>
 <li>
-<p><strong>PR-time enforcement.</strong> A PR-blocking check verifies that every rule
-   in the documentation framework is satisfied. Failures block merge.</p>
+<p><strong>PR-time enforcement.</strong> A PR-blocking check verifies every framework
+   rule. Failures block merge.</p>
 </li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
@@ -9099,8 +9094,10 @@ is normalised; one or more spaces between tokens is accepted.</p>
 <h3 id="directory-defaults">Directory defaults<a class="headerlink" href="#directory-defaults" title="Permanent link">&para;</a></h3>
 <p>When no marker is present, the file is classified by directory. The
 SDD-subdir rows follow the kind globs declared in
-<code>scripts/docs/scan.py:SDD_KINDS</code>. Files in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/templates"><code>sdd/templates/</code></a>
-are authoring tools, not documentation, and default to repo-only.</p>
+<a href="https://github.com/haalfi/remote-store/blob/master/docs-src/_path_rules.yml"><code>docs-src/_path_rules.yml</code></a> (loaded by
+<code>scripts/docs/scan.py:SDD_KINDS</code>). Files in
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/templates"><code>sdd/templates/</code></a> are authoring tools, not documentation,
+and default to repo-only.</p>
 <table>
 <thead>
 <tr>
@@ -9152,30 +9149,22 @@ are authoring tools, not documentation, and default to repo-only.</p>
 </tr>
 </tbody>
 </table>
-<p>In practice:</p>
+<p>Files not covered by the table require explicit markers. Common cases:</p>
 <ul>
-<li>Files added under <code>sdd/specs/</code>, <code>sdd/adrs/</code>, <code>sdd/rfcs/</code>, <code>sdd/audits/</code>,
-  <code>sdd/research/</code> need no marker.</li>
-<li>Files added under <code>sdd/templates/</code> need no marker (repo-only by default).</li>
-<li>Files added under <code>docs-src/</code> need no marker.</li>
-<li>Top-level <code>sdd/*.md</code> process docs (000-process, AUTHORING, DESIGN,
-  DOCUMENTATION, TESTING, CONTENT-RULES) carry an explicit dual marker.</li>
-<li>Internal <code>sdd/*.md</code> files (BACKLOG, BACKLOG-DONE, CLAUDE-REFERENCE)
-  carry an explicit repo-only marker.</li>
-<li>Repo-root dual files (CHANGELOG, CONTRIBUTING, DEVELOPMENT_STORY,
-  FEATURES) carry an explicit dual marker. <code>FEATURES.md</code> lives at
-  the repo root (not under <code>docs-src/reference/</code>) — the dual bridge
-  renders it at <code>reference/FEATURES.md</code>. Its peers (capabilities-matrix,
-  migration) live under <code>docs-src/reference/</code> as docs-only files.</li>
-<li>Repo-root repo-only files (CLAUDE, CODE_OF_CONDUCT, README, SECURITY)
-  carry an explicit repo-only marker. <code>README.md</code> is repo-only; its
-  quick-start content is served on the docs site via
-  <code>docs-src/tutorial/getting-started.md</code> instead.</li>
+<li>Top-level <code>sdd/*.md</code> process docs (AUTHORING, DESIGN, etc.) carry an
+  explicit dual marker.</li>
+<li>Internal <code>sdd/*.md</code> files (BACKLOG, CLAUDE-REFERENCE, etc.) carry an
+  explicit repo-only marker.</li>
+<li>Repo-root dual files (CHANGELOG, CONTRIBUTING, etc.) carry an explicit
+  dual marker.</li>
+<li>Repo-root repo-only files (CLAUDE, README, etc.) carry an explicit
+  repo-only marker.</li>
 <li>Example directories (<code>examples/&lt;name&gt;/README.md</code>, etc.): no directory
-  default. Each example README declares its own marker. The medallion
-  showcase's docs-side page is rendered separately and is not a default
-  dual mapping.</li>
+  default. Each declares its own marker.</li>
 </ul>
+<p>For the complete path map see
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md"><code>sdd/CLAUDE-REFERENCE.md</code></a> and
+<a href="../../contributing/"><code>CONTRIBUTING.md</code> § Authoritative Document Format</a>.</p>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>&lt;!-- A new guide. docs-src/ is docs-only by default; no marker needed. --&gt;
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="gh"># Streaming reads</span>

@@ -9606,10 +9606,20 @@ are unchanged to preserve external references.</em></p>
 <code>docs-src/design/specs/</code> each contain only <code>_index.tmpl</code>. The links resolve to gen-files
 virtual pages at MkDocs build time and work in the rendered docs, but when a crawler,
 search engine, or agent navigates the GitHub repo and follows the link, GitHub returns 404.</p>
-<p><strong>Closure (BK-167b):</strong> Links updated to use the new <code>explanation/design/</code> URL prefix:
-<code>design/adrs/...</code> (relative within <code>explanation/</code>) resolves correctly after the URL alignment.
-<code>docs-only</code> files are now skipped by the repo-mode link checker; <code>mkdocs build --strict</code>
-(G-07) enforces site-side link validity instead.</p>
+<p><strong>Closure (BK-167b → BK-171):</strong> BK-167b updated the links to use the
+<code>explanation/design/</code> URL prefix and exempted <code>docs-only</code> files from the
+repo-mode link checker, deferring R1 enforcement on <code>docs-src/</code> to
+<code>mkdocs build --strict</code>. That closure left R1 unverified for the GitHub
+repo-browser presentation of every <code>docs-src/</code> file.</p>
+<p>BK-171 closes F-01 honestly: every relative link in every git-tracked
+<code>.md</code> (including <code>docs-src/**</code>) must resolve on disk. Authors write
+on-disk paths everywhere; the mkdocs hook
+(<a href="https://github.com/haalfi/remote-store/blob/master/scripts/mkdocs_hooks.py"><code>scripts/mkdocs_hooks.py</code></a>) rewrites them to docs-site
+URLs at build time. The 76 docs-src links that previously pointed at
+virtual destinations (e.g. <code>(../design/adrs/0002-...md)</code>) were migrated
+to on-disk source paths (e.g. <code>(../../sdd/adrs/0002-...md)</code>). The
+repo-mode/site-mode split in <code>check-links</code> is removed in favour of one
+on-disk-only rule (DOCFRAME-008).</p>
 <hr />
 <h3 id="f-02-include-markdown-wrapper-files-render-as-raw-jinja-text-on-github-minor-r1">F-02: Include-markdown wrapper files render as raw Jinja text on GitHub (Minor, R1)<a class="headerlink" href="#f-02-include-markdown-wrapper-files-render-as-raw-jinja-text-on-github-minor-r1" title="Permanent link">&para;</a></h3>
 <p><strong>Affected files:</strong> <code>docs-src/design/content-rules.md</code>, <code>docs-src/design/design.md</code>,
