@@ -13,6 +13,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- BK-172: route S3-PyArrow conformance tests to MinIO on pyarrow ≥ 24; lift `pyarrow<25` cap on `s3-pyarrow` extra
 - BK-169: unit tests for DOCFRAME-004 gate — five spec-traced pytest tests in
   `tests/scripts/test_check_docs_framework.py` covering G-02 (dest collision),
   G-03 (Jinja syntax), G-04 (include-markdown), G-05 (broken relative link),

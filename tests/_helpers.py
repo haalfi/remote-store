@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+MINIO_KEY = "minioadmin"
+MINIO_SECRET = "minioadmin"
+
 
 def pyarrow_ge_24() -> bool:
     """Return True if pyarrow is installed and its major version is >= 24."""

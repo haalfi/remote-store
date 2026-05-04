@@ -1,7 +1,8 @@
 """S3-PyArrow hybrid backend tests -- covers S3PA-xxx spec items.
 
-Requires: moto[server,s3], s3fs, pyarrow, boto3 (test dependencies).
-All tests are skipped if dependencies are not installed.
+Requires: s3fs, pyarrow, boto3 (test dependencies).
+On pyarrow < 24: uses moto ThreadedMotoServer. On pyarrow ≥ 24: uses MinIO.
+All tests are skipped if the required backend is unavailable.
 """
 
 from __future__ import annotations
@@ -14,20 +15,15 @@ from unittest.mock import patch
 import pytest
 
 # Guard: skip entire module if dependencies are missing
-pytest.importorskip("moto", reason="moto not installed")
 pytest.importorskip("s3fs", reason="s3fs not installed")
 pytest.importorskip("pyarrow", reason="pyarrow not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 
-from tests._helpers import pyarrow_ge_24  # noqa: E402
-
-pytestmark = pytest.mark.skipif(
-    pyarrow_ge_24(),
-    reason="moto+pyarrow 24 multipart still incompatible; coverage moves to MinIO under BK-172",
-)
-
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
+from tests._helpers import MINIO_KEY as _MINIO_KEY  # noqa: E402
+from tests._helpers import MINIO_SECRET as _MINIO_SECRET  # noqa: E402
+from tests._helpers import pyarrow_ge_24  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -39,14 +35,25 @@ REGION = "us-east-1"
 
 
 @pytest.fixture
-def s3pa_backend(moto_server: str) -> Iterator[Backend]:
-    """Create an S3PyArrowBackend against moto's mock S3 service."""
+def s3pa_backend(moto_server: str | None, minio_server: str | None) -> Iterator[Backend]:
+    """Create an S3PyArrowBackend against moto (pyarrow < 24) or MinIO (pyarrow ≥ 24)."""
+    if pyarrow_ge_24():
+        if minio_server is None:
+            pytest.skip("MinIO not reachable; required for S3-PyArrow on pyarrow ≥ 24")
+        endpoint = minio_server
+        key, secret = _MINIO_KEY, _MINIO_SECRET
+    else:
+        if moto_server is None:
+            pytest.skip("moto server not available")
+        endpoint = moto_server
+        key, secret = "testing", "testing"
+
     bucket = f"test-pa-{uuid.uuid4().hex[:8]}"
     client = boto3.client(
         "s3",
-        endpoint_url=moto_server,
-        aws_access_key_id="testing",
-        aws_secret_access_key="testing",
+        endpoint_url=endpoint,
+        aws_access_key_id=key,
+        aws_secret_access_key=secret,
         region_name=REGION,
     )
     client.create_bucket(Bucket=bucket)
@@ -55,13 +62,23 @@ def s3pa_backend(moto_server: str) -> Iterator[Backend]:
 
     backend = S3PyArrowBackend(
         bucket=bucket,
-        key="testing",
-        secret="testing",
+        key=key,
+        secret=secret,
         region_name=REGION,
-        endpoint_url=moto_server,
+        endpoint_url=endpoint,
     )
-    yield backend
-    backend.close()
+    try:
+        yield backend
+    finally:
+        backend.close()
+        if pyarrow_ge_24():
+            # MinIO is persistent; drain and delete the per-test bucket.
+            # Moto resets on server stop so cleanup is not needed there.
+            paginator = client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=bucket):
+                for obj in page.get("Contents", []):
+                    client.delete_object(Bucket=bucket, Key=obj["Key"])
+            client.delete_bucket(Bucket=bucket)
 
 
 # region: Construction (S3PA-002, S3PA-003)
@@ -344,6 +361,30 @@ class TestS3PyArrowRetryNonDefaultParams:
             _ = backend._pa_fs
             assert mock_retry_cls.call_args.kwargs == {"max_attempts": 5}
         assert any("only max_attempts is used" in rec.message for rec in caplog.records)
+
+
+# endregion
+
+
+# region: MinIO routing sentinel
+
+
+class TestS3PyArrowMinIOSentinel:
+    """Sentinel: confirm s3pa_backend uses MinIO (not moto) when pyarrow ≥ 24.
+
+    Guards against a routing regression where pyarrow_ge_24() returns False
+    under pyarrow 24 -- which would silently fall back to moto and pass CI
+    without ever exercising the MinIO path.
+    """
+
+    def test_backend_endpoint_is_minio_when_pyarrow_ge_24(self, s3pa_backend: Backend) -> None:
+        """On pyarrow ≥ 24, s3pa_backend must route to MinIO at 127.0.0.1:9000."""
+        if not pyarrow_ge_24():
+            return
+        assert s3pa_backend._endpoint_url is not None
+        assert s3pa_backend._endpoint_url.startswith("http://127.0.0.1:9000"), (
+            f"pyarrow_ge_24() is True but backend is not on MinIO: {s3pa_backend._endpoint_url!r}"
+        )
 
 
 # endregion

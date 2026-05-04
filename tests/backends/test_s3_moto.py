@@ -53,6 +53,13 @@ excluded from ``hatch run test`` / ``hatch run all`` via
 runs in-process and is fast, so this file must run in the default suite
 to actually catch regressions; that was exactly the gap BUG-178 and
 BUG-185 fell through.
+
+Why MinIO for S3PyArrowBackend on pyarrow >= 24: pyarrow 24's C++ S3
+client rejects moto's CompleteMultipartUpload response shape as
+INTERNAL_FAILURE -- even for small payloads, because PyArrow always uses
+multipart upload regardless of file size. MinIO returns a conformant
+response, so S3PyArrowBackend tests on pyarrow >= 24 use a real MinIO
+instance (port 9000) instead of moto.
 """
 
 from __future__ import annotations
@@ -62,14 +69,16 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from tests._helpers import MINIO_KEY as _MINIO_KEY
+from tests._helpers import MINIO_SECRET as _MINIO_SECRET
+from tests._helpers import pyarrow_ge_24
+
 pytest.importorskip("s3fs")
 pytest.importorskip("aiobotocore")
 pytest.importorskip("moto")
 pytest.importorskip("botocore")
 pytest.importorskip("boto3")
 
-
-from tests._helpers import pyarrow_ge_24  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -118,11 +127,66 @@ def moto_bucket(moto_server: str | None) -> Iterator[tuple[str, str]]:
         client.delete_bucket(Bucket=bucket)
 
 
+@pytest.fixture(scope="module")
+def minio_bucket(minio_server: str | None) -> Iterator[tuple[str, str] | None]:
+    """Create one bucket on MinIO for S3PyArrowBackend tests on pyarrow >= 24.
+
+    Yields ``(endpoint_url, bucket_name)`` when MinIO is reachable, else
+    ``None`` (the routing helper will skip the test).
+    """
+    if minio_server is None:
+        yield None
+        return
+    import boto3
+
+    bucket = f"bk166-minio-{uuid.uuid4().hex[:8]}"
+    client = boto3.client(
+        "s3",
+        endpoint_url=minio_server,
+        aws_access_key_id=_MINIO_KEY,
+        aws_secret_access_key=_MINIO_SECRET,
+        region_name="us-east-1",
+    )
+    client.create_bucket(Bucket=bucket)
+    try:
+        yield minio_server, bucket
+    finally:
+        paginator = client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=bucket):
+            for obj in page.get("Contents", []):
+                client.delete_object(Bucket=bucket, Key=obj["Key"])
+        client.delete_bucket(Bucket=bucket)
+
+
 def _load(dotted: str) -> type:
     import importlib
 
     module_path, cls_name = dotted.split(":")
     return getattr(importlib.import_module(module_path), cls_name)
+
+
+def _resolve_s3_backend(
+    backend_cls: str,
+    request: pytest.FixtureRequest,
+) -> tuple[str, str, str, str]:
+    """Return (endpoint, bucket, key, secret) for the backend under test.
+
+    Uses ``request.getfixturevalue`` so only the needed bucket fixture is
+    instantiated -- on pyarrow >= 24 the s3-pyarrow variant uses
+    ``minio_bucket`` and never creates a moto bucket, avoiding wasted setup.
+    """
+    cls = _load(backend_cls)
+    from remote_store.backends._s3_pyarrow import S3PyArrowBackend as _S3PA
+
+    if cls is _S3PA and pyarrow_ge_24():
+        minio: tuple[str, str] | None = request.getfixturevalue("minio_bucket")
+        if minio is None:
+            pytest.skip("MinIO not reachable; required for S3PyArrowBackend on pyarrow >= 24")
+        endpoint, bucket = minio
+        return endpoint, bucket, _MINIO_KEY, _MINIO_SECRET
+    moto: tuple[str, str] = request.getfixturevalue("moto_bucket")
+    endpoint, bucket = moto
+    return endpoint, bucket, "testing", "testing"
 
 
 @pytest.mark.parametrize(
@@ -136,27 +200,25 @@ def _load(dotted: str) -> type:
         pytest.param(
             "remote_store.backends._s3_pyarrow:S3PyArrowBackend",
             id="s3-pyarrow",
-            marks=[
-                pytest.mark.spec("S3PA-026"),
-                pytest.mark.skipif(
-                    pyarrow_ge_24(),
-                    reason="moto+pyarrow 24 multipart still incompatible; coverage moves to MinIO under BK-172",
-                ),
-            ],
+            marks=pytest.mark.spec("S3PA-026"),
         ),
     ],
 )
 class TestS3ControlPathMoto:
     """BK-166: drive the full backend lifecycle through real s3fs + aiobotocore."""
 
-    def test_full_lifecycle_with_tuned_client_options(self, backend_cls: str, moto_bucket: tuple[str, str]) -> None:
+    def test_full_lifecycle_with_tuned_client_options(
+        self,
+        backend_cls: str,
+        request: pytest.FixtureRequest,
+    ) -> None:
         """write -> list_files -> read -> delete with non-trivial client_options.
 
         Mirrors the user's MinIO scenario from BUG-185. A pre-fix regression
         raises ``TypeError: got multiple values for keyword argument 'config'``
         from ``aiobotocore.create_client`` on the first I/O call.
         """
-        endpoint, bucket = moto_bucket
+        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, request)
         cls = _load(backend_cls)
         # Unique key per parametrize id so cases sharing the module-scoped bucket
         # cannot clobber each other if one fails before its own delete.
@@ -164,8 +226,8 @@ class TestS3ControlPathMoto:
         backend = cls(
             bucket=bucket,
             endpoint_url=endpoint,
-            key="testing",
-            secret="testing",
+            key=key_cred,
+            secret=secret,
             region_name="us-east-1",
             client_options=_FULL_CLIENT_OPTIONS,
         )
@@ -185,7 +247,11 @@ class TestS3ControlPathMoto:
         finally:
             backend.close()
 
-    def test_lifecycle_with_retry_policy(self, backend_cls: str, moto_bucket: tuple[str, str]) -> None:
+    def test_lifecycle_with_retry_policy(
+        self,
+        backend_cls: str,
+        request: pytest.FixtureRequest,
+    ) -> None:
         """Same lifecycle with ``RetryPolicy`` alongside the tuned client_options.
 
         ``RetryPolicy`` replaces the ``config_kwargs['retries']`` entry
@@ -197,14 +263,14 @@ class TestS3ControlPathMoto:
         """
         from remote_store._config import RetryPolicy
 
-        endpoint, bucket = moto_bucket
+        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, request)
         cls = _load(backend_cls)
         key = f"retry/sample-{cls.__name__}.bin"
         backend = cls(
             bucket=bucket,
             endpoint_url=endpoint,
-            key="testing",
-            secret="testing",
+            key=key_cred,
+            secret=secret,
             region_name="us-east-1",
             client_options=_FULL_CLIENT_OPTIONS,
             retry=RetryPolicy(max_attempts=2),
@@ -225,7 +291,11 @@ class TestS3ControlPathMoto:
         finally:
             backend.close()
 
-    def test_delete_missing_maps_to_notfound(self, backend_cls: str, moto_bucket: tuple[str, str]) -> None:
+    def test_delete_missing_maps_to_notfound(
+        self,
+        backend_cls: str,
+        request: pytest.FixtureRequest,
+    ) -> None:
         """Failure path: ``delete(missing_key)`` under tuned config_kwargs maps to ``NotFound``.
 
         Real moto returns a 404; the s3fs control path routes it through
@@ -241,14 +311,14 @@ class TestS3ControlPathMoto:
         """
         from remote_store._errors import NotFound
 
-        endpoint, bucket = moto_bucket
+        endpoint, bucket, key_cred, secret = _resolve_s3_backend(backend_cls, request)
         cls = _load(backend_cls)
         key = f"never/written-{cls.__name__}.txt"
         backend = cls(
             bucket=bucket,
             endpoint_url=endpoint,
-            key="testing",
-            secret="testing",
+            key=key_cred,
+            secret=secret,
             region_name="us-east-1",
             client_options=_FULL_CLIENT_OPTIONS,
         )

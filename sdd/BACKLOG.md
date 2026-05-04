@@ -58,15 +58,6 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-172 — Run S3-PyArrow tests against MinIO when pyarrow ≥ 24**
-
-  Restore S3-PyArrow conformance coverage on pyarrow ≥ 24 by routing the lane
-  to MinIO (already in `benchmarks/infra/docker-compose.yml`) instead of the
-  moto `ThreadedMotoServer`, which returns a `CompleteMultipartUpload` response
-  shape that pyarrow 24's C++ S3 client rejects as `INTERNAL_FAILURE`. moto's
-  multipart edge-case history (#677, #313, #8417) suggests the upstream fix is
-  not imminent.
-
 - [ ] **BK-171 — Reliable link validation for docs-only files in both repo and docs-site presentations**
   `check-links` skips docs-only files in repo mode; `docs-build` validates them only
   against the built site. Links in `docs-src/` that target virtual (bridge-generated)

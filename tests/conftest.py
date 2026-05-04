@@ -22,9 +22,9 @@ if TYPE_CHECKING:
 # and imported directly by tests/backends/test_azure.py and
 # tests/aio/test_sync_adapter_conformance.py. tests/backends/conftest.py
 # retains its own copies of _s3_available, _azure_available,
-# _azurite_reachable, and _sftp_available to stay self-contained — a
-# subdirectory conftest importing from a parent conftest is an upward import
-# that creates the same cross-boundary problem in reverse.
+# _azurite_reachable, _minio_reachable, and _sftp_available to stay
+# self-contained — a subdirectory conftest importing from a parent conftest
+# is an upward import that creates the same cross-boundary problem in reverse.
 # ---------------------------------------------------------------------------
 
 
@@ -71,6 +71,15 @@ def _azurite_reachable() -> bool:
         return False
 
 
+def _minio_reachable() -> bool:
+    try:
+        s = socket.create_connection(("127.0.0.1", 9000), timeout=1)
+        s.close()
+        return True
+    except OSError:
+        return False
+
+
 _AZURITE_CONN_STR = (
     "DefaultEndpointsProtocol=http;"
     "AccountName=devstoreaccount1;"
@@ -98,6 +107,15 @@ def moto_server() -> Iterator[str | None]:
     server.start()
     yield f"http://127.0.0.1:{port}"
     server.stop()
+
+
+@pytest.fixture(scope="session")
+def minio_server() -> Iterator[str | None]:
+    """Provide MinIO endpoint URL if reachable on 127.0.0.1:9000."""
+    if _minio_reachable():
+        yield "http://127.0.0.1:9000"
+    else:
+        yield None
 
 
 @pytest.fixture(scope="session")
@@ -186,6 +204,11 @@ settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "dev"))
 
 def pytest_configure(config: object) -> None:
     """Register custom markers."""
+    if os.environ.get("RS_REQUIRE_MINIO") == "1" and not _minio_reachable():
+        pytest.exit(
+            "RS_REQUIRE_MINIO=1 but MinIO is not reachable at 127.0.0.1:9000",
+            returncode=1,
+        )
     if isinstance(config, pytest.Config):
         config.addinivalue_line("markers", "spec(id): links test to a spec section ID")
         config.addinivalue_line("markers", "integration: requires external services")
