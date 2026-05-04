@@ -106,6 +106,7 @@ _TEMPLATE = (
     '  <div><h2>Selected node</h2><div id="detail">'
     '<span class="placeholder">Click a node to inspect it</span>'
     "</div></div>\n"
+    '  <div data-ea-publisher="readthedocs" data-ea-type="image" style="margin-top:auto"></div>\n'
     "</div>\n"
     '<div id="canvas-wrap">\n'
     '  <svg id="graph" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet"></svg>\n'
