@@ -9367,6 +9367,21 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).</p>
 <td>DOCFRAME-008</td>
 <td>examples/*.py → tutorial wrapper</td>
 </tr>
+<tr>
+<td><code>test_build_source_map_includes_docs_src_html</code></td>
+<td>DOCFRAME-008</td>
+<td>docs-src *.html → in-site path</td>
+</tr>
+<tr>
+<td><code>test_build_source_map_includes_docs_src_images</code></td>
+<td>DOCFRAME-008</td>
+<td>docs-src image assets → in-site path</td>
+</tr>
+<tr>
+<td><code>test_link_resolver_rewrites_image_syntax_to_in_site_path</code></td>
+<td>DOCFRAME-008</td>
+<td>image <code>![…](https://github.com/haalfi/remote-store/blob/master/sdd/specs/…)</code> rewrites to in-site path, not GitHub blob</td>
+</tr>
 </tbody>
 </table>
 <p><code>tests/scripts/test_mkdocs_hooks.py</code> (hook dispatch — DOCFRAME-008 Bridge):</p>
