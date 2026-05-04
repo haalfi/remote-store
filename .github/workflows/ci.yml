@@ -123,6 +123,42 @@ jobs:
           pytest --cov=remote_store --cov-report=term-missing
           ${{ matrix.python-version == '3.13' && '--cov-fail-under=95' || '--cov-fail-under=90' }}
 
+  # BK-168: confirm the pyarrow >= 24 skip on the moto-backed S3-PyArrow
+  # lane actually fires. The default `test` matrix resolves pyarrow under
+  # `<25` to whatever pip picks (currently 23.x), so without this job the
+  # skip is unverified — an off-by-one or import error in the helper would
+  # silently land. Removable once BK-172 routes the lane to MinIO.
+  pyarrow24-skip-check:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: false
+      - run: uv pip install -e ".[dev]"
+      - name: Force pyarrow 24
+        run: uv pip install "pyarrow>=24,<25"
+      - name: Verify pyarrow major version
+        run: |
+          python -c "from importlib.metadata import version; v=int(version('pyarrow').split('.')[0]); assert v >= 24, f'expected pyarrow >= 24, got {v}'"
+      - name: Verify S3-PyArrow lane is fully skipped
+        run: |
+          set -o pipefail
+          pytest tests/backends/test_s3_pyarrow.py -v --no-header 2>&1 | tee /tmp/pa24.txt
+          if grep -E "PASSED|FAILED|ERROR" /tmp/pa24.txt; then
+            echo "::error::Expected every test to be SKIPPED on pyarrow 24"
+            exit 1
+          fi
+          if ! grep -qE "skipped" /tmp/pa24.txt; then
+            echo "::error::Expected SKIPPED entries; found none"
+            exit 1
+          fi
+
   test-cross-platform:
     needs: [changes]
     if: needs.changes.outputs.code == 'true'
@@ -305,7 +341,7 @@ jobs:
           done
 
   gate:
-    needs: [changes, lint, typecheck, test, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [changes, lint, typecheck, test, pyarrow24-skip-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -321,6 +357,7 @@ jobs:
             "${{ needs.lint.result }}" \
             "${{ needs.typecheck.result }}" \
             "${{ needs.test.result }}" \
+            "${{ needs.pyarrow24-skip-check.result }}" \
             "${{ needs.test-cross-platform.result }}" \
             "${{ needs.notebooks.result }}" \
             "${{ needs.examples.result }}" \

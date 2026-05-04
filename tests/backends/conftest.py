@@ -11,6 +11,7 @@ import pytest
 
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
+from tests.backends._helpers import pyarrow_ge_24
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -60,16 +61,6 @@ def _s3_pyarrow_available() -> bool:
         return False
 
 
-def _pyarrow_ge_23() -> bool:
-    if not _s3_pyarrow_available():
-        return False
-    from importlib.metadata import version
-
-    v = version("pyarrow")
-    major, minor = int(v.split(".")[0]), int(v.split(".")[1])
-    return (major, minor) >= (23, 0)
-
-
 def _sftp_available() -> bool:
     try:
         import paramiko  # noqa: F401
@@ -117,8 +108,8 @@ _s3_pyarrow_param = pytest.param(
     marks=[
         pytest.mark.skipif(not _s3_pyarrow_available(), reason="pyarrow/s3fs not installed"),
         pytest.mark.skipif(
-            _pyarrow_ge_23(),
-            reason="pyarrow 23+ multipart upload incompatible with moto ThreadedMotoServer (BK-168)",
+            pyarrow_ge_24(),
+            reason="moto+pyarrow 24 multipart still incompatible; coverage moves to MinIO under BK-172",
         ),
     ],
 )

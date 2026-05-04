@@ -58,38 +58,34 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-172 — Run S3-PyArrow tests against MinIO when pyarrow ≥ 24**
+
+  BK-168 lifted the `<24` pin but moto's `ThreadedMotoServer` still returns a
+  `CompleteMultipartUpload` response that pyarrow 24's C++ S3 client rejects as
+  `INTERNAL_FAILURE`. The S3-PyArrow lane is currently skipped under
+  `_pyarrow_ge_24()` in `tests/backends/conftest.py`, `test_s3_pyarrow.py`,
+  `test_s3_shared.py`, and `test_s3_moto.py`. moto's multipart edge-case history
+  (#677, #313, #8417) suggests the upstream fix is not imminent.
+
+  **Goal:** restore S3-PyArrow conformance coverage on pyarrow ≥ 24 by routing
+  the lane to MinIO (already in `benchmarks/infra/docker-compose.yml`, port 9000)
+  while keeping moto for the cases it handles fine.
+
+  **Work required:**
+  1. Add a `_minio_reachable()` socket probe in `tests/backends/conftest.py`
+     mirroring the existing `_azurite_reachable()` pattern.
+  2. New fixture that points `S3PyArrowBackend` at MinIO when `_pyarrow_ge_24()`,
+     keeping moto for `S3Backend` and pyarrow ≤ 23.
+  3. Wire MinIO into `.github/workflows/ci.yml` (the compose file already exists).
+  4. Skip on no-Docker so claude.ai/code stays usable; mirror the Azurite skip
+     pattern.
+  5. Remove the `_pyarrow_ge_24()` skip blocks once MinIO covers the lane.
+
 - [ ] **BK-171 — Reliable link validation for docs-only files in both repo and docs-site presentations**
   `check-links` skips docs-only files in repo mode; `docs-build` validates them only
   against the built site. Links in `docs-src/` that target virtual (bridge-generated)
   paths are unverified in the repo/GitHub view. Needs a single gate that catches broken
   links in both presentations for all file classes.
-
-- [ ] **BK-168 — Lift pyarrow <24 pin; fix pyarrow 23+ multipart/moto incompatibility**
-
-  `S3PyArrowBackend` moto-backed tests fail on all Python versions when pyarrow 23+ is
-  installed. Root fix: raise pyarrow's multipart threshold above test file sizes, or pin
-  `pyarrow<23`, or upgrade moto to a version that handles the empty-body response.
-
-  **Root cause:** `pa.fs.S3FileSystem.open_output_stream` routes writes through multipart
-  upload in pyarrow 23+ regardless of Python version. moto's `ThreadedMotoServer` returns
-  HTTP 200 OK with an empty `CompleteMultipartUpload` body; pyarrow's C++ S3 client
-  (`s3fs.cc:758`) treats the empty body as `INTERNAL_FAILURE`. The `<24` pin is insufficient
-  — pyarrow 23.0.1 (the fallback) triggers the same failure on all Pythons. All moto-backed
-  s3-pyarrow tests are now skipped when `pyarrow >= 23` via `_pyarrow_ge_23()` in conftest
-  and the affected test files.
-
-  **Work required:**
-  1. Diagnose whether the fix is on the moto side (bump to moto ≥5.3 if it ships a
-     fix, or patch the moto server fixture to return valid XML) or the pyarrow side
-     (pass `write_options` to raise the multipart threshold above test file sizes).
-  2. Verify no other pyarrow 24 API breaks in `ext/arrow.py`, `ext/parquet.py`,
-     `backends/_s3_pyarrow.py`, `backends/_sqlalchemy.py`.
-  3. Update the mypy overrides in `pyproject.toml`: the `follow_imports = "skip"` for
-     `pyarrow.*` was added to dodge incomplete 24.x stubs — re-evaluate once stubs
-     stabilise. The `warn_unused_ignores = false` guards for `import-untyped` ignores
-     remain needed until those ignores are removed.
-  4. Remove the `<24` pin from all three extras and the dev dep list.
-  5. Update CHANGELOG.
 
 ---
 

@@ -17,7 +17,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `tests/scripts/test_check_docs_framework.py` covering G-02 (dest collision),
   G-03 (Jinja syntax), G-04 (include-markdown), G-05 (broken relative link),
   G-06 (nav URL misalignment)
-- BK-168: pin `pyarrow<24` across all extras pending moto/multipart compatibility fix
+- BK-168: lift `pyarrow<24` to `<25` across all extras; require `moto[server,s3]>=5.2.0` for multipart compatibility under pyarrow 23
 - BK-167b: docs framework bridge — `scan_dual_files` + `render_dual_pages`, `explanation/design/` URL alignment, nav restructure, `--strict` CI gate restored, audit-012 closed
 - BK-167b: `check_links.py` — two-mode internal link checker (`--mode repo`/`--mode site`); `hatch run check-links`
 - BK-167a (Step 1): `scan_dual_files`, `DualEntry`, `_parse_marker`, `_classify_file` in `scripts/docs/scan.py`; five spec-traced tests (DOCFRAME-001..003)
