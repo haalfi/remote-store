@@ -101,6 +101,30 @@ def test_build_source_map_includes_example_sources(link_mod, scan_mod, tmp_path)
 
 
 @pytest.mark.spec("DOCFRAME-008")
+def test_build_source_map_includes_docs_src_images(link_mod, tmp_path):
+    """Image assets under docs-src/ are included in the source map.
+
+    The LinkResolver hook rewrites every ``](…)`` token, including image
+    syntax ``![alt](path)``. Image files must appear in the source map so
+    they resolve to their in-site path rather than falling back to a GitHub
+    blob URL, which renders as a broken image.
+    """
+    img_dir = tmp_path / "docs-src" / "img" / "benchmarks"
+    img_dir.mkdir(parents=True)
+    svg_file = img_dir / "overhead.svg"
+    svg_file.write_text("<svg></svg>")
+
+    result = link_mod.build_source_map(
+        tmp_path,
+        sdd_entries={},
+        dual_entries=[],
+    )
+
+    assert svg_file.resolve() in result
+    assert result[svg_file.resolve()] == "img/benchmarks/overhead.svg"
+
+
+@pytest.mark.spec("DOCFRAME-008")
 def test_build_source_map_includes_docs_src_html(link_mod, tmp_path):
     """HTML files under docs-src/ are included in the source map.
 

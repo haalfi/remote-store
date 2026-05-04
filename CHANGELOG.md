@@ -9,6 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- BUG-188: benchmark SVG images no longer broken on the performance docs page
 - BUG-187: EthicalAds ad no longer floats over graph viz canvas
 - BUG-186: render API graph viz on iOS Safari
 
