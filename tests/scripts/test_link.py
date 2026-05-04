@@ -98,3 +98,26 @@ def test_build_source_map_includes_example_sources(link_mod, scan_mod, tmp_path)
 
     assert py_file.resolve() in result
     assert result[py_file.resolve()] == "tutorial/examples/quickstart.md"
+
+
+@pytest.mark.spec("DOCFRAME-008")
+def test_build_source_map_includes_docs_src_html(link_mod, tmp_path):
+    """HTML files under docs-src/ are included in the source map.
+
+    Regression guard: graph_viz.html was rewritten to a GitHub blob URL after
+    BK-171 because only *.md files were indexed. Non-Markdown static assets
+    served from docs-src/ must resolve to their in-site path.
+    """
+    docs_src = tmp_path / "docs-src" / "explanation"
+    docs_src.mkdir(parents=True)
+    html_file = docs_src / "graph_viz.html"
+    html_file.write_text("<html></html>")
+
+    result = link_mod.build_source_map(
+        tmp_path,
+        sdd_entries={},
+        dual_entries=[],
+    )
+
+    assert html_file.resolve() in result
+    assert result[html_file.resolve()] == "explanation/graph_viz.html"
