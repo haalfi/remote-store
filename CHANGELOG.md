@@ -15,6 +15,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- ID-176: `docs-src/context7.json` — claims `https://docs.remotestore.dev/stable/` on context7 and supplies the full `rules` array so AI tools surface correct usage context from the rendered docs site.
 - BK-171: Reliable link validation for docs-only files — universal on-disk
   link rule (DOCFRAME-008). `mkdocs_hooks.py` applies `LinkResolver` to
   every docs-src file at build time so authors write on-disk paths
