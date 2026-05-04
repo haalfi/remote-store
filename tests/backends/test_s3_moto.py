@@ -69,6 +69,8 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from tests._helpers import MINIO_KEY as _MINIO_KEY
+from tests._helpers import MINIO_SECRET as _MINIO_SECRET
 from tests._helpers import pyarrow_ge_24
 
 pytest.importorskip("s3fs")
@@ -80,9 +82,6 @@ pytest.importorskip("boto3")
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-
-_MINIO_KEY = "minioadmin"
-_MINIO_SECRET = "minioadmin"
 
 
 # Mirror the user's MinIO scenario: path-style addressing, proxies cleared

@@ -11,7 +11,7 @@ import pytest
 
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
-from tests._helpers import pyarrow_ge_24
+from tests._helpers import MINIO_KEY, MINIO_SECRET, pyarrow_ge_24
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -236,11 +236,13 @@ def backend(
         from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         if pyarrow_ge_24():
-            assert minio_server is not None, "MinIO required for S3-PyArrow on pyarrow ≥ 24"
+            if minio_server is None:
+                pytest.skip("MinIO not reachable; required for S3-PyArrow on pyarrow ≥ 24")
             endpoint = minio_server
-            aws_key, aws_secret = "minioadmin", "minioadmin"
+            aws_key, aws_secret = MINIO_KEY, MINIO_SECRET
         else:
-            assert moto_server is not None, "moto_server required for S3-PyArrow on pyarrow < 24"
+            if moto_server is None:
+                pytest.skip("moto_server not available; required for S3-PyArrow on pyarrow < 24")
             endpoint = moto_server
             aws_key, aws_secret = "testing", "testing"
 

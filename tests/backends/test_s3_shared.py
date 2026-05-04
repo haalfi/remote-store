@@ -33,6 +33,8 @@ pytest.importorskip("s3fs", reason="s3fs not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 
+from tests._helpers import MINIO_KEY as _MINIO_KEY  # noqa: E402
+from tests._helpers import MINIO_SECRET as _MINIO_SECRET  # noqa: E402
 from tests._helpers import pyarrow_ge_24  # noqa: E402
 
 if TYPE_CHECKING:
@@ -42,8 +44,6 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 REGION = "us-east-1"
-_MINIO_KEY = "minioadmin"
-_MINIO_SECRET = "minioadmin"
 
 
 def _load_backend_cls(dotted: str) -> type:
@@ -733,7 +733,6 @@ class TestS3SharedETagAndDigest:
         b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
 
         if isinstance(s3_any_backend, _S3PA) and pyarrow_ge_24():
-            assert minio_server is not None
             endpoint, raw_key, raw_secret = minio_server, _MINIO_KEY, _MINIO_SECRET
         else:
             endpoint, raw_key, raw_secret = moto_server, "testing", "testing"

@@ -21,6 +21,8 @@ boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
+from tests._helpers import MINIO_KEY as _MINIO_KEY  # noqa: E402
+from tests._helpers import MINIO_SECRET as _MINIO_SECRET  # noqa: E402
 from tests._helpers import pyarrow_ge_24  # noqa: E402
 
 if TYPE_CHECKING:
@@ -30,8 +32,6 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 REGION = "us-east-1"
-_MINIO_KEY = "minioadmin"
-_MINIO_SECRET = "minioadmin"
 
 
 @pytest.fixture
@@ -67,8 +67,18 @@ def s3pa_backend(moto_server: str | None, minio_server: str | None) -> Iterator[
         region_name=REGION,
         endpoint_url=endpoint,
     )
-    yield backend
-    backend.close()
+    try:
+        yield backend
+    finally:
+        backend.close()
+        if pyarrow_ge_24():
+            # MinIO is persistent; drain and delete the per-test bucket.
+            # Moto resets on server stop so cleanup is not needed there.
+            paginator = client.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=bucket):
+                for obj in page.get("Contents", []):
+                    client.delete_object(Bucket=bucket, Key=obj["Key"])
+            client.delete_bucket(Bucket=bucket)
 
 
 # region: Construction (S3PA-002, S3PA-003)
