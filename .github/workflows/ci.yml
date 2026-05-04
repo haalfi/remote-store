@@ -101,6 +101,15 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v6
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+            cgr.dev/chainguard/minio:latest-dev server /data
+          for i in $(seq 1 30); do
+            wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
+          done
+          wget -qO /dev/null http://127.0.0.1:9000/minio/health/live || { echo "::error::MinIO failed to start"; exit 1; }
       - name: Start Azurite
         run: |
           docker run -d --name azurite -p 10000:10000 \
@@ -123,19 +132,25 @@ jobs:
           pytest --cov=remote_store --cov-report=term-missing
           ${{ matrix.python-version == '3.13' && '--cov-fail-under=95' || '--cov-fail-under=90' }}
 
-  # BK-168: under pyarrow 24, verify (a) the skip helper detects pyarrow 24,
-  # (b) the moto-backed S3-PyArrow lane is fully skipped, (c) non-multipart
-  # pyarrow-24 code paths in `ext.arrow`, `ext.parquet`, and `_sqlalchemy`
-  # still pass — the default `test` matrix resolves pyarrow under `<25` to
-  # whatever pip picks (currently 23.x), so without this job both the skip
-  # and pyarrow-24 runtime compatibility are unverified. Removable once
-  # BK-172 routes the lane to MinIO.
-  pyarrow24-skip-check:
+  # BK-172: verify that S3-PyArrow tests run (not skip) against MinIO when
+  # pyarrow ≥ 24 is installed, and that other pyarrow-24 code paths still pass.
+  # The main `test` matrix resolves pyarrow to whatever pip picks; this job
+  # pins pyarrow 24 explicitly to confirm the MinIO routing works end-to-end.
+  pyarrow24-check:
     needs: [changes]
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+            cgr.dev/chainguard/minio:latest-dev server /data
+          for i in $(seq 1 30); do
+            wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
+          done
+          wget -qO /dev/null http://127.0.0.1:9000/minio/health/live || { echo "::error::MinIO failed to start"; exit 1; }
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
@@ -145,11 +160,9 @@ jobs:
       - run: uv pip install -e ".[dev]"
       - name: Force pyarrow 24
         run: uv pip install "pyarrow>=24,<25"
-      - name: Verify version helper detects pyarrow 24
-        run: python -c "from tests._helpers import pyarrow_ge_24; assert pyarrow_ge_24(), 'helper failed to detect pyarrow 24'"
-      - name: Verify S3-PyArrow lane is fully skipped (exit code + -rN)
-        run: pytest tests/backends/test_s3_pyarrow.py -q -rN
-      - name: Verify non-multipart pyarrow-24 paths still pass
+      - name: Verify S3-PyArrow routes to MinIO on pyarrow 24
+        run: pytest tests/backends/test_s3_pyarrow.py -v
+      - name: Verify pyarrow-24 paths in ext.arrow, ext.parquet, sqlalchemy
         run: pytest tests/test_arrow.py tests/test_ext_parquet.py tests/backends/test_sqlquery.py tests/backends/test_sqlblob.py -q
 
   test-cross-platform:
@@ -334,7 +347,7 @@ jobs:
           done
 
   gate:
-    needs: [changes, lint, typecheck, test, pyarrow24-skip-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [changes, lint, typecheck, test, pyarrow24-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -350,7 +363,7 @@ jobs:
             "${{ needs.lint.result }}" \
             "${{ needs.typecheck.result }}" \
             "${{ needs.test.result }}" \
-            "${{ needs.pyarrow24-skip-check.result }}" \
+            "${{ needs.pyarrow24-check.result }}" \
             "${{ needs.test-cross-platform.result }}" \
             "${{ needs.notebooks.result }}" \
             "${{ needs.examples.result }}" \

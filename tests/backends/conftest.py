@@ -52,13 +52,17 @@ def _s3_available() -> bool:
 
 def _s3_pyarrow_available() -> bool:
     try:
-        import moto  # noqa: F401
         import pyarrow  # noqa: F401
         import s3fs  # noqa: F401
-
-        return True
     except ImportError:
         return False
+    if pyarrow_ge_24():
+        return _minio_reachable()
+    try:
+        import moto  # noqa: F401
+    except ImportError:
+        return False
+    return True
 
 
 def _sftp_available() -> bool:
@@ -98,6 +102,16 @@ def _azurite_reachable() -> bool:
         return False
 
 
+def _minio_reachable() -> bool:
+    """Check if MinIO is reachable on 127.0.0.1:9000 (started externally via Docker)."""
+    try:
+        s = socket.create_connection(("127.0.0.1", 9000), timeout=1)
+        s.close()
+        return True
+    except OSError:
+        return False
+
+
 _s3_param = pytest.param(
     "s3",
     marks=pytest.mark.skipif(not _s3_available(), reason="moto/s3fs not installed"),
@@ -105,13 +119,10 @@ _s3_param = pytest.param(
 
 _s3_pyarrow_param = pytest.param(
     "s3-pyarrow",
-    marks=[
-        pytest.mark.skipif(not _s3_pyarrow_available(), reason="pyarrow/s3fs not installed"),
-        pytest.mark.skipif(
-            pyarrow_ge_24(),
-            reason="moto+pyarrow 24 multipart still incompatible; coverage moves to MinIO under BK-172",
-        ),
-    ],
+    marks=pytest.mark.skipif(
+        not _s3_pyarrow_available(),
+        reason="pyarrow/s3fs not installed, moto missing (pyarrow < 24), or MinIO unreachable (pyarrow ≥ 24)",
+    ),
 )
 
 _sftp_param = pytest.param(
@@ -184,6 +195,7 @@ _sqlblob_param = pytest.param(
 def backend(
     request: pytest.FixtureRequest,
     moto_server: str | None,
+    minio_server: str | None,
     sftp_server: tuple[int, str] | None,
     azurite_server: str | None,
     http_server: object | None,
@@ -223,22 +235,30 @@ def backend(
 
         from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
-        assert moto_server is not None
+        if pyarrow_ge_24():
+            assert minio_server is not None, "MinIO required for S3-PyArrow on pyarrow ≥ 24"
+            endpoint = minio_server
+            aws_key, aws_secret = "minioadmin", "minioadmin"
+        else:
+            assert moto_server is not None, "moto_server required for S3-PyArrow on pyarrow < 24"
+            endpoint = moto_server
+            aws_key, aws_secret = "testing", "testing"
+
         bucket = f"conformance-pa-{uuid.uuid4().hex[:8]}"
         client = boto3.client(
             "s3",
-            endpoint_url=moto_server,
-            aws_access_key_id="testing",
-            aws_secret_access_key="testing",
+            endpoint_url=endpoint,
+            aws_access_key_id=aws_key,
+            aws_secret_access_key=aws_secret,
             region_name="us-east-1",
         )
         client.create_bucket(Bucket=bucket)
         b = S3PyArrowBackend(
             bucket=bucket,
-            key="testing",
-            secret="testing",
+            key=aws_key,
+            secret=aws_secret,
             region_name="us-east-1",
-            endpoint_url=moto_server,
+            endpoint_url=endpoint,
         )
         yield b
         b.close()

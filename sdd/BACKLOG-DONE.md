@@ -8,6 +8,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-172 — Run S3-PyArrow tests against MinIO when pyarrow ≥ 24**
+  On pyarrow ≥ 24, `S3PyArrowBackend` routes to MinIO instead of
+  `ThreadedMotoServer` — which returns a `CompleteMultipartUpload` response
+  shape that pyarrow 24's C++ S3 client rejects as `INTERNAL_FAILURE`.
+  Changes: `minio_server` session fixture added to `tests/conftest.py`;
+  `_s3_pyarrow_available()` in `tests/backends/conftest.py` checks MinIO
+  reachability when pyarrow ≥ 24; `backend` fixture routes `s3-pyarrow` to
+  MinIO on pyarrow ≥ 24; `test_s3_pyarrow.py` module-level skip removed,
+  `s3pa_backend` fixture routes accordingly; `pyarrow<25` cap lifted on the
+  `s3-pyarrow` extra; `test` CI job starts MinIO alongside Azurite;
+  `pyarrow24-skip-check` job renamed to `pyarrow24-check` and now verifies
+  the MinIO route runs end-to-end. Restores S3-PyArrow conformance coverage
+  (96.36% → ~98%).
+
 - [x] **BK-168 — Lift pyarrow `<24` pin; require moto `>=5.2.0`**
   Pin raised from `<24` to `<25` on the `s3-pyarrow`, `sql-query`, and `arrow`
   extras (matches dependabot #571). Dev dep `moto[server,s3]>=5.2.0` adopted —

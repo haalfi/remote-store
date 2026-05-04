@@ -71,6 +71,15 @@ def _azurite_reachable() -> bool:
         return False
 
 
+def _minio_reachable() -> bool:
+    try:
+        s = socket.create_connection(("127.0.0.1", 9000), timeout=1)
+        s.close()
+        return True
+    except OSError:
+        return False
+
+
 _AZURITE_CONN_STR = (
     "DefaultEndpointsProtocol=http;"
     "AccountName=devstoreaccount1;"
@@ -98,6 +107,15 @@ def moto_server() -> Iterator[str | None]:
     server.start()
     yield f"http://127.0.0.1:{port}"
     server.stop()
+
+
+@pytest.fixture(scope="session")
+def minio_server() -> Iterator[str | None]:
+    """Provide MinIO endpoint URL if reachable on 127.0.0.1:9000."""
+    if _minio_reachable():
+        yield "http://127.0.0.1:9000"
+    else:
+        yield None
 
 
 @pytest.fixture(scope="session")
