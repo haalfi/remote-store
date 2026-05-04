@@ -8,6 +8,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-188 — Benchmark SVG images broken on performance docs page**
+  `build_source_map` indexed only `*.md` and `*.html` under `docs-src/`.
+  The BK-171 `LinkResolver` hook rewrites every `](…)` token — including
+  image syntax `![alt](path)` — so SVG assets fell through to the GitHub
+  blob URL fallback and rendered as broken images. Fix: index every served
+  file under `docs-src/` (excluding `_`-prefixed names, which are MkDocs
+  infrastructure not served as pages) so no asset type can silently regress.
+  Regression tests: `test_build_source_map_includes_docs_src_images`,
+  `test_link_resolver_rewrites_image_syntax_to_in_site_path`.
+
 - [x] **BK-171 — Reliable link validation for docs-only files in both repo and docs-site presentations**
   Universal on-disk link rule (DOCFRAME-008). `mkdocs_hooks.py` registers an
   `on_page_markdown` hook that applies `LinkResolver` to every `docs-src/`

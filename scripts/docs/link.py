@@ -117,15 +117,17 @@ def build_source_map(
             source_map[e.source.resolve()] = f"explanation/design/{kind_slug}/{e.slug}.md"
 
     # docs-src/ files are served at their path relative to docs-src/.
-    # Including them lets the resolver rewrite repo-relative links that point
-    # into docs-src/ (e.g. from dual files under examples/ or root).
-    # Note: rglob is unfiltered — setdefault guards existing entries, but
-    # future tightening to git-tracked files only would exclude any generated
-    # artifacts staged under docs-src/ by build tools.
+    # Index every served file so any asset type referenced via ](…) syntax
+    # resolves to its in-site path rather than falling back to a GitHub blob URL.
+    # Files where any path component starts with "_" are MkDocs infrastructure
+    # (nav config, path rules, templates) and are not served as site pages.
+    # setdefault guards existing entries (SDD kinds, dual files, examples).
     docs_src = repo_root / "docs-src"
     if docs_src.is_dir():
-        for f in [*docs_src.rglob("*.md"), *docs_src.rglob("*.html")]:
-            source_map.setdefault(f.resolve(), f.relative_to(docs_src).as_posix())
+        for f in docs_src.rglob("*"):
+            rel = f.relative_to(docs_src)
+            if f.is_file() and not any(part.startswith("_") for part in rel.parts):
+                source_map.setdefault(f.resolve(), rel.as_posix())
 
     for entry in dual_entries:
         source_map.setdefault(entry.source.resolve(), entry.dest)
