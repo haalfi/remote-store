@@ -33,7 +33,7 @@ pytest.importorskip("s3fs", reason="s3fs not installed")
 boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 
-from tests.backends._helpers import pyarrow_ge_24  # noqa: E402
+from tests._helpers import pyarrow_ge_24  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

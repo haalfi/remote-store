@@ -60,26 +60,12 @@ Existing items may be more verbose — trim on next touch.
 
 - [ ] **BK-172 — Run S3-PyArrow tests against MinIO when pyarrow ≥ 24**
 
-  BK-168 lifted the `<24` pin but moto's `ThreadedMotoServer` still returns a
-  `CompleteMultipartUpload` response that pyarrow 24's C++ S3 client rejects as
-  `INTERNAL_FAILURE`. The S3-PyArrow lane is currently skipped under
-  `_pyarrow_ge_24()` in `tests/backends/conftest.py`, `test_s3_pyarrow.py`,
-  `test_s3_shared.py`, and `test_s3_moto.py`. moto's multipart edge-case history
-  (#677, #313, #8417) suggests the upstream fix is not imminent.
-
-  **Goal:** restore S3-PyArrow conformance coverage on pyarrow ≥ 24 by routing
-  the lane to MinIO (already in `benchmarks/infra/docker-compose.yml`, port 9000)
-  while keeping moto for the cases it handles fine.
-
-  **Work required:**
-  1. Add a `_minio_reachable()` socket probe in `tests/backends/conftest.py`
-     mirroring the existing `_azurite_reachable()` pattern.
-  2. New fixture that points `S3PyArrowBackend` at MinIO when `_pyarrow_ge_24()`,
-     keeping moto for `S3Backend` and pyarrow ≤ 23.
-  3. Wire MinIO into `.github/workflows/ci.yml` (the compose file already exists).
-  4. Skip on no-Docker so claude.ai/code stays usable; mirror the Azurite skip
-     pattern.
-  5. Remove the `_pyarrow_ge_24()` skip blocks once MinIO covers the lane.
+  Restore S3-PyArrow conformance coverage on pyarrow ≥ 24 by routing the lane
+  to MinIO (already in `benchmarks/infra/docker-compose.yml`) instead of the
+  moto `ThreadedMotoServer`, which returns a `CompleteMultipartUpload` response
+  shape that pyarrow 24's C++ S3 client rejects as `INTERNAL_FAILURE`. moto's
+  multipart edge-case history (#677, #313, #8417) suggests the upstream fix is
+  not imminent.
 
 - [ ] **BK-171 — Reliable link validation for docs-only files in both repo and docs-site presentations**
   `check-links` skips docs-only files in repo mode; `docs-build` validates them only

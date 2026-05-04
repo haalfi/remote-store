@@ -69,7 +69,7 @@ pytest.importorskip("botocore")
 pytest.importorskip("boto3")
 
 
-from tests.backends._helpers import pyarrow_ge_24  # noqa: E402
+from tests._helpers import pyarrow_ge_24  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

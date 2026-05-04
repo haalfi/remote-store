@@ -11,7 +11,7 @@ import pytest
 
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
-from tests.backends._helpers import pyarrow_ge_24
+from tests._helpers import pyarrow_ge_24
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
