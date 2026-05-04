@@ -119,12 +119,8 @@ and default to repo-only.
 | `docs-src/**/*.md` | docs-only | — |
 | anything else | requires explicit marker | — |
 
-In practice:
+Files not covered by the table require explicit markers. Common cases:
 
-- Files added under `sdd/specs/`, `sdd/adrs/`, `sdd/rfcs/`, `sdd/audits/`,
-  `sdd/research/` need no marker.
-- Files added under `sdd/templates/` need no marker (repo-only by default).
-- Files added under `docs-src/` need no marker.
 - Top-level `sdd/*.md` process docs (000-process, AUTHORING, DESIGN,
   DOCUMENTATION, TESTING, CONTENT-RULES) carry an explicit dual marker.
 - Internal `sdd/*.md` files (BACKLOG, BACKLOG-DONE, CLAUDE-REFERENCE)
