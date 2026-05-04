@@ -9,6 +9,12 @@
 .md-typeset .doc-section-item.field-body p { margin: .1em 0; }
 .md-typeset .doc-section-item.field-body .doc-md-description { margin-top: .1em; }
 
+/* Tighter bullet/numbered list items -- inter-item gap smaller than inter-paragraph */
+.md-typeset ul li,
+.md-typeset ol li {
+  margin-bottom: .2em;
+}
+
 /* Docs spacing */
 
 /* Table rows (overview tables) */
