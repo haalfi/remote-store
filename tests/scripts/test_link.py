@@ -125,6 +125,41 @@ def test_build_source_map_includes_docs_src_images(link_mod, tmp_path):
 
 
 @pytest.mark.spec("DOCFRAME-008")
+def test_link_resolver_rewrites_image_syntax_to_in_site_path(link_mod, tmp_path):
+    """Image syntax rewrites to an in-site relative path, not a GitHub blob URL.
+
+    The LinkResolver processes every ``](…)`` token including ``![alt](path)``.
+    Without image types in the source map the rewriter falls through to the
+    GitHub blob URL fallback; this test exercises that exact code path so the
+    bug cannot silently re-emerge from a future change to ``_LINK_RE`` or the
+    source map assembly.
+    """
+    docs_src = tmp_path / "docs-src"
+    img_dir = docs_src / "img" / "benchmarks"
+    img_dir.mkdir(parents=True)
+    (img_dir / "overhead.svg").write_text("<svg></svg>")
+    src_file = docs_src / "explanation" / "performance.md"
+    src_file.parent.mkdir(parents=True)
+    src_file.write_text("")
+
+    source_map = link_mod.build_source_map(tmp_path, sdd_entries={}, dual_entries=[])
+    resolver = link_mod.LinkResolver(
+        source_map=source_map,
+        repo_root=tmp_path,
+        github_blob_url="https://github.com/owner/repo/blob/master",
+    )
+
+    result = resolver.rewrite(
+        "![Abstraction overhead by backend](../img/benchmarks/overhead.svg)",
+        source=src_file,
+        dest="explanation/performance.md",
+    )
+
+    assert "github.com" not in result
+    assert "../img/benchmarks/overhead.svg" in result
+
+
+@pytest.mark.spec("DOCFRAME-008")
 def test_build_source_map_includes_docs_src_html(link_mod, tmp_path):
     """HTML files under docs-src/ are included in the source map.
 

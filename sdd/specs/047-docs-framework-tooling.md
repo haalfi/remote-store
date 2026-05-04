@@ -288,6 +288,9 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).
 | `test_build_source_map_includes_sdd_kind_dirs` | DOCFRAME-008 | kind_dir → index.md |
 | `test_build_source_map_kind_dir_unconditional` | DOCFRAME-008 | kind_dir added even with empty entries |
 | `test_build_source_map_includes_example_sources` | DOCFRAME-008 | examples/*.py → tutorial wrapper |
+| `test_build_source_map_includes_docs_src_html` | DOCFRAME-008 | docs-src *.html → in-site path |
+| `test_build_source_map_includes_docs_src_images` | DOCFRAME-008 | docs-src image assets → in-site path |
+| `test_link_resolver_rewrites_image_syntax_to_in_site_path` | DOCFRAME-008 | image `![…](…)` rewrites to in-site path, not GitHub blob |
 
 `tests/scripts/test_mkdocs_hooks.py` (hook dispatch — DOCFRAME-008 Bridge):
 
