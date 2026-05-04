@@ -13,45 +13,30 @@ framework](../CLAUDE.md#documentation-framework)): structure →
 
 ## Rules
 
-1. **File classification.** Every `.md` belongs to exactly one class:
-   repo-only (appears only in the repo), docs-only (appears only on the docs
-   site), or dual (must read correctly in both). Each file is classified by
-   one of two routes: an explicit HTML-comment marker on the file itself,
-   or a directory-default rule when no marker is present. A file that
-   carries no marker AND matches no directory default is unclassified;
-   the gate (G-01) fails on unclassified files. Marker syntax, the three
-   classes, and the directory-default table are normative in
-   _Classification markers_ and _Directory defaults_ below. The class is
-   not inferred from path alone or from build behavior.
+1. **File classification.** Every `.md` belongs to exactly one class.
+   Classification follows a marker on the file or a directory default
+   when no marker is present. A file with no marker and no matching
+   default is unclassified and fails G-01. See _Classification markers_
+   and _Directory defaults_ below.
 
 2. **Single home.** Each `.md` lives at exactly one path. Other
    presentations are derived from that path, never copied.
 
-3. **Every link is on-disk.** In every `.md` file in the repository
-   (repo-only, dual, and docs-only alike), every relative `](path)` link
-   must resolve to a real on-disk file in the repo. No links to
-   build-time virtual paths (paths resolvable only after MkDocs renders,
-   e.g. into gen-files outputs). External URLs (`http://`, `https://`,
-   `mailto:`, `ftp://`) and pure anchors (`#section`) are exempt.
-   The docs build rewrites on-disk targets to docs-site URLs at build
-   time via the bridge (Rule 4) so both presentations render correctly.
-   Authors author one set of links — relative to existing repo files —
-   and the build adapts.
+3. **Every link is on-disk.** Every relative `](path)` link in every
+   `.md` must resolve to a real on-disk file in the repo. External URLs
+   and pure anchors are exempt. The bridge (Rule 4) rewrites on-disk
+   targets to docs-site URLs at build time so both presentations render
+   correctly. Dual files additionally use only plain Markdown — see
+   [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules) for the
+   one snippet exception.
 
-   Dual files additionally use only plain Markdown: no Jinja directives
-   and no MkDocs plugin macros (the `pymdownx.snippets` `--8<--` form
-   is the one exception, per
-   [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules)).
+4. **One bridge mechanism.** The bridge presents dual files on the docs
+   site and rewrites on-disk links in docs-only files to docs-site URLs
+   at build time. Exactly one bridge applies; new mechanisms are not
+   added. The implementation lives in the build tooling.
 
-4. **One bridge mechanism.** The bridge is the mechanism that takes dual
-   files from their repo path and presents them on the docs site, and
-   that rewrites on-disk links in docs-only files to docs-site URLs at
-   build time. Exactly one bridge applies; new mechanisms are not added
-   to handle special cases. The bridge implementation lives in the build
-   tooling.
-
-5. **PR-time enforcement.** A PR-blocking check verifies that every rule
-   in the documentation framework is satisfied. Failures block merge.
+5. **PR-time enforcement.** A PR-blocking check verifies every framework
+   rule. Failures block merge.
 
 ## Guides
 
