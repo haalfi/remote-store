@@ -42,6 +42,8 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 REGION = "us-east-1"
+_MINIO_KEY = "minioadmin"
+_MINIO_SECRET = "minioadmin"
 
 
 def _load_backend_cls(dotted: str) -> type:
@@ -59,31 +61,45 @@ S3PA_CLS = "remote_store.backends._s3_pyarrow:S3PyArrowBackend"
 
 
 @pytest.fixture
-def s3_any_backend(request: pytest.FixtureRequest, moto_server: str | None) -> Iterator[Backend]:
+def s3_any_backend(
+    request: pytest.FixtureRequest,
+    moto_server: str | None,
+    minio_server: str | None,
+) -> Iterator[Backend]:
     """Live backend fixture driven by ``@pytest.mark.parametrize(..., indirect=True)``.
 
     The parameter value is a ``module:ClassName`` dotted path. Each test
     provides its own list of ``pytest.param(..., marks=pytest.mark.spec(...))``
     values so S3-NNN and S3PA-NNN traceability is preserved per backend.
+    On pyarrow ≥ 24, the S3PyArrowBackend param routes to MinIO (moto rejects
+    pyarrow 24's CompleteMultipartUpload response shape).
     """
     if request.param == S3PA_CLS and pyarrow_ge_24():
-        pytest.skip("moto+pyarrow 24 multipart still incompatible; coverage moves to MinIO under BK-172")
+        if minio_server is None:
+            pytest.skip("MinIO not reachable; required for S3-PyArrow on pyarrow ≥ 24")
+        endpoint = minio_server
+        key, secret = _MINIO_KEY, _MINIO_SECRET
+    else:
+        if moto_server is None:
+            pytest.skip("moto server not available")
+        endpoint = moto_server
+        key, secret = "testing", "testing"
     backend_cls = _load_backend_cls(request.param)
     bucket = f"shared-{uuid.uuid4().hex[:8]}"
     client = boto3.client(
         "s3",
-        endpoint_url=moto_server,
-        aws_access_key_id="testing",
-        aws_secret_access_key="testing",
+        endpoint_url=endpoint,
+        aws_access_key_id=key,
+        aws_secret_access_key=secret,
         region_name=REGION,
     )
     client.create_bucket(Bucket=bucket)
     backend = backend_cls(
         bucket=bucket,
-        key="testing",
-        secret="testing",
+        key=key,
+        secret=secret,
         region_name=REGION,
-        endpoint_url=moto_server,
+        endpoint_url=endpoint,
     )
     yield backend
     backend.close()
@@ -703,21 +719,29 @@ class TestS3SharedETagAndDigest:
         assert fi.etag == fi.etag.lower()
 
     @pytest.mark.parametrize("s3_any_backend", _LIVE_PARAMS_DIGEST_SHA256, indirect=True)
-    def test_get_file_info_has_digest_sha256(self, s3_any_backend: Backend, moto_server: str) -> None:
+    def test_get_file_info_has_digest_sha256(
+        self, s3_any_backend: Backend, moto_server: str | None, minio_server: str | None
+    ) -> None:
         import base64
         import hashlib
 
         from remote_store._models import ContentDigest
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend as _S3PA
 
         content = b"hello checksum"
         expected_hex = hashlib.sha256(content).hexdigest()
         b64 = base64.b64encode(hashlib.sha256(content).digest()).decode()
 
+        if isinstance(s3_any_backend, _S3PA) and pyarrow_ge_24():
+            endpoint, raw_key, raw_secret = minio_server, _MINIO_KEY, _MINIO_SECRET
+        else:
+            endpoint, raw_key, raw_secret = moto_server, "testing", "testing"
+
         raw_client = boto3.client(
             "s3",
-            endpoint_url=moto_server,
-            aws_access_key_id="testing",
-            aws_secret_access_key="testing",
+            endpoint_url=endpoint,
+            aws_access_key_id=raw_key,
+            aws_secret_access_key=raw_secret,
             region_name=REGION,
         )
         raw_client.put_object(
