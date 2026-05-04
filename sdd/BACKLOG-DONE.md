@@ -50,6 +50,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   attr-defined / name-defined errors (stubs still incomplete); comment updated
   with the verification trail.
 
+- [x] **BUG-187 — EthicalAds floats over graph viz canvas on RTD**
+  `graph_viz.html` is a standalone `<!DOCTYPE html>` document, so RTD's
+  EthicalAds client had no MkDocs Material sidebar to anchor to and injected
+  a `div.raised[data-ea-publisher]` at `<body>` level, floating it over the
+  canvas. Fix in `scripts/gen_graph_viz.py`: add `<div id="ethical-ad-placement">`
+  inside `#sidebar` (the official RTD custom-placement hook), a `MutationObserver`
+  fallback that reparents any body-level injection and strips the `raised` class,
+  and a `#sidebar [data-ea-publisher]` CSS rule so the ad renders inline.
+
 - [x] **BUG-186 — API graph visualization blank on iOS Safari**
   `docs-src/explanation/graph_viz.html` rendered briefly then went blank on
   iOS Safari refresh; zoom/pan unresponsive to touch. Four root causes in
