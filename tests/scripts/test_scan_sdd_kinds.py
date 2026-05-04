@@ -1,8 +1,8 @@
 """Tests for scripts/docs/scan.py:_load_sdd_kinds failure modes and shape.
 
 The YAML-loader hoist (BK-171) replaced a hardcoded tuple with a runtime
-config read. This file covers the three failure modes the hoist introduced:
-FileNotFoundError, missing required field (KeyError), and the empty-result
+config read. This file covers the failure modes the hoist introduced:
+FileNotFoundError, missing required field (KeyError), and the empty-list
 case, plus a positive-control that guards against shape regressions in
 ``docs-src/_path_rules.yml`` itself.
 
@@ -61,8 +61,9 @@ def test_load_sdd_kinds_missing_required_field(scan_mod, tmp_path):
 
 
 @pytest.mark.spec("DOCFRAME-008")
-def test_load_sdd_kinds_empty_returns_empty_tuple(scan_mod, tmp_path):
-    """Empty sdd_kinds list returns () without error."""
+def test_load_sdd_kinds_empty_list_raises(scan_mod, tmp_path):
+    """Empty sdd_kinds list raises ValueError (misconfiguration, not valid state)."""
     empty = tmp_path / "_path_rules.yml"
     empty.write_text("sdd_kinds: []\n", encoding="utf-8")
-    assert scan_mod._load_sdd_kinds(empty) == ()
+    with pytest.raises(ValueError, match="sdd_kinds"):
+        scan_mod._load_sdd_kinds(empty)

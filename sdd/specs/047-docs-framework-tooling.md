@@ -279,7 +279,15 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).
 | `test_load_sdd_kinds_positive` | DOCFRAME-008 | positive control: real file, expected slugs |
 | `test_load_sdd_kinds_filenotfound` | DOCFRAME-008 | missing file: friendly error |
 | `test_load_sdd_kinds_missing_required_field` | DOCFRAME-008 | missing slug: KeyError |
-| `test_load_sdd_kinds_empty_returns_empty_tuple` | DOCFRAME-008 | empty sdd_kinds: () |
+| `test_load_sdd_kinds_empty_list_raises` | DOCFRAME-008 | empty sdd_kinds list: ValueError |
+
+`tests/scripts/test_link.py` (build_source_map — DOCFRAME-008 Source map):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_build_source_map_includes_sdd_kind_dirs` | DOCFRAME-008 | kind_dir → index.md |
+| `test_build_source_map_kind_dir_unconditional` | DOCFRAME-008 | kind_dir added even with empty entries |
+| `test_build_source_map_includes_example_sources` | DOCFRAME-008 | examples/*.py → tutorial wrapper |
 
 `tests/scripts/test_mkdocs_hooks.py` (hook dispatch — DOCFRAME-008 Bridge):
 

@@ -57,6 +57,24 @@ def test_build_source_map_includes_sdd_kind_dirs(link_mod, scan_mod, tmp_path):
 
 
 @pytest.mark.spec("DOCFRAME-008")
+def test_build_source_map_kind_dir_unconditional(link_mod, tmp_path):
+    """Kind-dir mapping is added even when the kind has no entries.
+
+    Regression guard for the entries-gated ``if entries:`` pattern: a kind
+    directory that exists but contains no matching files must still resolve
+    to its generated index page rather than falling through to GitHub.
+    """
+    kind_dir = (tmp_path / "sdd" / "adrs").resolve()
+    result = link_mod.build_source_map(
+        tmp_path,
+        sdd_entries={"adrs": []},
+        dual_entries=[],
+    )
+    assert kind_dir in result
+    assert result[kind_dir] == "explanation/design/adrs/index.md"
+
+
+@pytest.mark.spec("DOCFRAME-008")
 def test_build_source_map_includes_example_sources(link_mod, scan_mod, tmp_path):
     """Example .py sources map to their wrapper page at tutorial/examples/<slug>.md."""
     py_file = tmp_path / "quickstart.py"

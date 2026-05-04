@@ -101,21 +101,27 @@ def build_source_map(
     example_entries: Iterable[ExampleEntry] = (),
 ) -> dict[Path, str]:
     """Assemble the absolute-source → virtual-dest map for the resolver."""
+    from docs.scan import SDD_KINDS
+
     source_map: dict[Path, str] = {}
+
+    # Map every kind's source directory to its generated index page
+    # unconditionally — independent of whether any entries exist in the
+    # directory, so directory links work for freshly-created or empty kinds.
+    for kind in SDD_KINDS:
+        kind_dir = (repo_root / kind.source_dir).resolve()
+        source_map.setdefault(kind_dir, f"explanation/design/{kind.slug}/index.md")
 
     for kind_slug, entries in sdd_entries.items():
         for e in entries:
             source_map[e.source.resolve()] = f"explanation/design/{kind_slug}/{e.slug}.md"
-        # Map the kind's source directory to its generated index page so that
-        # docs-src links pointing at the directory (e.g. ../../sdd/adrs) get
-        # rewritten to the in-site index URL rather than falling through to GitHub.
-        if entries:
-            kind_dir = entries[0].source.resolve().parent
-            source_map.setdefault(kind_dir, f"explanation/design/{kind_slug}/index.md")
 
     # docs-src/ files are served at their path relative to docs-src/.
     # Including them lets the resolver rewrite repo-relative links that point
     # into docs-src/ (e.g. from dual files under examples/ or root).
+    # Note: rglob is unfiltered — setdefault guards existing entries, but
+    # future tightening to git-tracked files only would exclude any generated
+    # artifacts staged under docs-src/ by build tools.
     docs_src = repo_root / "docs-src"
     if docs_src.is_dir():
         for md in docs_src.rglob("*.md"):

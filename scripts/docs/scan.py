@@ -86,6 +86,10 @@ def _load_sdd_kinds(rules_path: Path | None = None) -> tuple[SddKind, ...]:
     items = data.get("sdd_kinds")
     if items is None:
         raise KeyError(f"_path_rules.yml at {rules_path} is missing the required 'sdd_kinds' key")
+    if not items:
+        raise ValueError(
+            f"_path_rules.yml at {rules_path} has an empty 'sdd_kinds' list; at least one SDD kind must be declared"
+        )
     return tuple(
         SddKind(
             slug=item["slug"],
