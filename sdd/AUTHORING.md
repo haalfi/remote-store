@@ -26,7 +26,7 @@ framework](../CLAUDE.md#documentation-framework)): structure →
    `.md` must resolve to a real on-disk file in the repo. External URLs
    and pure anchors are exempt. The bridge (Rule 4) rewrites on-disk
    targets to docs-site URLs at build time so both presentations render
-   correctly. Dual files additionally use only plain Markdown — see
+   correctly. Dual files additionally use only plain Markdown; see
    [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules) for the
    one snippet exception.
 
