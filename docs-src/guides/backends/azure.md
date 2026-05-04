@@ -209,7 +209,7 @@ Note: Azurite does not support Hierarchical Namespace. HNS-specific features (at
 
 - [Capabilities matrix](../../reference/capabilities-matrix.md)
 - [API reference](../../reference/api/store.md)
-- [Example script](../../tutorial/examples/azure-backend.md)
+- [Example script](../../../examples/backends/azure_backend.py)
 
 ## API Reference
 

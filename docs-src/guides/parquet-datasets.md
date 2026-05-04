@@ -175,6 +175,6 @@ except ManifestCorrupted as e:
 ## See also
 
 - [ext.parquet API reference](../reference/api/extensions/parquet.md) — full class and method docs
-- [Parquet Dataset example](../tutorial/examples/parquet-dataset.md) — runnable example
+- [Parquet Dataset example](../../examples/integrations/parquet_dataset.py) — runnable example
 - [PyArrow Adapter](pyarrow-adapter.md) — lower-level Store-as-FileSystem bridge
 - [Data Lake Patterns](data-lake-patterns.md) — medallion architecture patterns

@@ -8,6 +8,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-171 — Reliable link validation for docs-only files in both repo and docs-site presentations**
+  Universal on-disk link rule (DOCFRAME-008). `mkdocs_hooks.py` registers an
+  `on_page_markdown` hook that applies `LinkResolver` to every `docs-src/`
+  file at build time, so authors write on-disk repo paths everywhere — links
+  resolve in the GitHub repo browser by construction and get rewritten to
+  docs-site URLs at render time. The 76 docs-src class-3 links (virtual-URL
+  form like `(../design/adrs/0002-…md)`) migrated to on-disk source form
+  (`(../../sdd/adrs/0002-…md)`). `check-links` collapsed to a single mode
+  that walks every git-tracked `.md`; `--mode repo`/`--mode site` interface
+  removed; `check_site_links` deleted. SDD kind rules hoisted from
+  hardcoded Python to [`docs-src/_path_rules.yml`](../docs-src/_path_rules.yml);
+  `build_source_map` extended to include `examples/<subdir>/<stem>.py` →
+  `tutorial/examples/<slug>.md` so docs-src files can link to runnable
+  example sources. Closes audit-012 F-01 honestly (BK-167b's closure had
+  exempted `docs-src/` from R1).
 - [x] **BK-172 — Run S3-PyArrow tests against MinIO when pyarrow ≥ 24**
   On pyarrow ≥ 24, `S3PyArrowBackend` routes to MinIO instead of
   `ThreadedMotoServer` — which returns a `CompleteMultipartUpload` response

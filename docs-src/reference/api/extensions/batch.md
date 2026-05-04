@@ -5,4 +5,4 @@
 ## See also
 
 - [Batch Operations](../../../guides/batch-operations.md) — guide to bulk delete, copy, and exists
-- [Batch Operations example](../../../tutorial/examples/batch-operations.md) — batch operations in action
+- [Batch Operations example](../../../../examples/extensions/batch_operations.py) — batch operations in action

@@ -19,4 +19,4 @@
 ## See also
 
 - [Troubleshooting](../../guides/troubleshooting.md) — diagnosing and resolving common errors
-- [Error Handling example](../../tutorial/examples/error-handling.md) — catching and handling store errors
+- [Error Handling example](../../../examples/errors/error_handling.py) — catching and handling store errors

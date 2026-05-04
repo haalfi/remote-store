@@ -174,4 +174,4 @@ async counterpart of `remote_store.ext.write.write_with_hash`. See the
 - [Azure Backend](backends/azure.md) — sync Azure backend configuration and usage
 - [Health Check](health-check.md) — `ping()` and `check_health()` details
 - [Concurrency](../explanation/concurrency.md) — thread safety, atomicity, and `overwrite=False` semantics
-- [Example: Async Store](../tutorial/examples/async-store.md) — runnable async demo
+- [Example: Async Store](../../examples/advanced/async_store.py) — runnable async demo

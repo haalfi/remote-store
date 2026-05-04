@@ -7,4 +7,4 @@
 ## See also
 
 - [Choosing a Backend](../../guides/choosing-a-backend.md) — backend selection and registry usage
-- [Configuration example](../../tutorial/examples/configuration.md) — registry-based store creation
+- [Configuration example](../../../examples/configuration/configuration.py) — registry-based store creation

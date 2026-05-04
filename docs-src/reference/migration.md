@@ -147,4 +147,4 @@ exported from `remote_store.__init__`.
 ## See also
 
 - [CHANGELOG](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
-- [Contributing](../explanation/contributing.md) — stability tiers and versioning policy
+- [Contributing](../../CONTRIBUTING.md) — stability tiers and versioning policy

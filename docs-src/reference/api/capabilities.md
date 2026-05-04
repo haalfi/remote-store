@@ -16,4 +16,4 @@
 ## See also
 
 - [Capabilities Matrix](../capabilities-matrix.md) — per-backend capability comparison
-- [Capabilities & Errors example](../../tutorial/examples/capabilities-and-errors.md) — checking capabilities at runtime
+- [Capabilities & Errors example](../../../examples/errors/capabilities_and_errors.py) — checking capabilities at runtime

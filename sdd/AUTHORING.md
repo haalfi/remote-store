@@ -27,13 +27,21 @@ framework](../CLAUDE.md#documentation-framework)): structure →
 2. **Single home.** Each `.md` lives at exactly one path. Other
    presentations are derived from that path, never copied.
 
-3. **Dual files use plain Markdown.** Dual files contain only plain
-   Markdown: no Jinja directives, no MkDocs plugin macros (the
-   `pymdownx.snippets` `--8<--` form is the one exception, per
-   [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules)), no links
-   to build-time virtual paths (paths resolvable only after MkDocs
-   renders, e.g. into gen-files outputs). The docs build adapts to dual
-   files; dual files do not adapt to the docs build.
+3. **Every link is on-disk.** In every `.md` file in the repository
+   (repo-only, dual, and docs-only alike), every relative `](path)` link
+   must resolve to a real on-disk file in the repo. No links to
+   build-time virtual paths (paths resolvable only after MkDocs renders,
+   e.g. into gen-files outputs). External URLs (`http://`, `https://`,
+   `mailto:`, `ftp://`) and pure anchors (`#section`) are exempt.
+   The docs build rewrites on-disk targets to docs-site URLs at build
+   time via the bridge (Rule 4) so both presentations render correctly.
+   Authors author one set of links — relative to existing repo files —
+   and the build adapts.
+
+   Dual files additionally use only plain Markdown: no Jinja directives
+   and no MkDocs plugin macros (the `pymdownx.snippets` `--8<--` form
+   is the one exception, per
+   [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules)).
 
 4. **One bridge mechanism.** The bridge is the mechanism that takes dual
    files from their repo path and presents them on the docs site. Exactly
@@ -108,8 +116,10 @@ is normalised; one or more spaces between tokens is accepted.
 
 When no marker is present, the file is classified by directory. The
 SDD-subdir rows follow the kind globs declared in
-`scripts/docs/scan.py:SDD_KINDS`. Files in [`sdd/templates/`](templates/)
-are authoring tools, not documentation, and default to repo-only.
+[`docs-src/_path_rules.yml`](../docs-src/_path_rules.yml) (loaded by
+`scripts/docs/scan.py:SDD_KINDS`). Files in
+[`sdd/templates/`](templates/) are authoring tools, not documentation,
+and default to repo-only.
 
 | Source pattern | Default class | Default dest |
 |---|---|---|

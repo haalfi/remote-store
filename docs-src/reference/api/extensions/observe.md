@@ -5,4 +5,4 @@
 ## See also
 
 - [Observe](../../../guides/observe.md) — guide to callback hooks for store operations
-- [Observe Hooks example](../../../tutorial/examples/observe-hooks.md) — observe hooks in action
+- [Observe Hooks example](../../../../examples/extensions/observe_hooks.py) — observe hooks in action

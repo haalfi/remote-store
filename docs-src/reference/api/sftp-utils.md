@@ -29,4 +29,4 @@
 ## See also
 
 - [SFTP Backend Guide](../../guides/backends/sftp.md) — connection setup, host key verification, and Key Vault integration
-- [SFTP Backend example](../../tutorial/examples/sftp-backend.md) — end-to-end SFTP usage
+- [SFTP Backend example](../../../examples/backends/sftp_backend.py) — end-to-end SFTP usage

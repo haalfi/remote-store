@@ -361,4 +361,4 @@ relying on these in production.
 
 - [Getting Started](../../tutorial/getting-started.md) — step-by-step guide to reading and writing files
 - [Concurrency](../../explanation/concurrency.md) — thread safety, atomic writes, and move semantics
-- [Quickstart example](../../tutorial/examples/quickstart.md) — minimal config, write, and read
+- [Quickstart example](../../../examples/getting_started/quickstart.py) — minimal config, write, and read

@@ -225,9 +225,9 @@ Requires `pip install "remote-store[dagster,arrow]"`.
 ## See also
 
 - [ext.dagster API reference](../reference/api/extensions/dagster.md) — full API docs
-- [Dagster v2 resource example](../tutorial/examples/dagster-v2-resource.md) — config-driven
+- [Dagster v2 resource example](../../examples/integrations/dagster_v2_resource.py) — config-driven
   Store construction with `RemoteStoreIOManager`
-- [Medallion + Dagster Showcase](../tutorial/examples/medallion-dagster.md) — end-to-end
+- [Medallion + Dagster Showcase](../../examples/medallion_dagster/README.md) — end-to-end
   Bronze/Silver/Gold pipeline demonstrating extensions over live MeteoSwiss data
 - [Data Lake Patterns](data-lake-patterns.md) — medallion architecture with
   `Store.child()` and PyArrow, complementary to Dagster orchestration

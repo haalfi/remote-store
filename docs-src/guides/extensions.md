@@ -7,22 +7,22 @@ on top of the core Store API.
 
 | Module | Extra | Description | Guide | Example |
 |--------|-------|-------------|-------|---------|
-| [`ext.batch`](../reference/api/extensions/batch.md) | *(none)* | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](../tutorial/examples/batch-operations.md) |
-| [`ext.cache`](../reference/api/extensions/cache.md) | *(none)* | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](../tutorial/examples/caching.md) |
-| [`ext.glob`](../reference/api/extensions/glob.md) | *(none)* | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](../tutorial/examples/glob-pattern-matching.md) |
+| [`ext.batch`](../reference/api/extensions/batch.md) | *(none)* | Bulk delete, copy, and exists operations | [Guide](batch-operations.md) | [Example](../../examples/extensions/batch_operations.py) |
+| [`ext.cache`](../reference/api/extensions/cache.md) | *(none)* | Store-level caching with TTL and auto-invalidation | [Guide](cache.md) | [Example](../../examples/extensions/caching.py) |
+| [`ext.glob`](../reference/api/extensions/glob.md) | *(none)* | Portable glob pattern matching for file listing | [Guide](glob-pattern-matching.md) | [Example](../../examples/extensions/glob_pattern_matching.py) |
 | [`ext.integrity`](../reference/api/extensions/integrity.md) | *(none)* | Checksum computation and verification helpers | — | — |
-| [`ext.observe`](../reference/api/extensions/observe.md) | *(none)* | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](../tutorial/examples/observe-hooks.md) |
+| [`ext.observe`](../reference/api/extensions/observe.md) | *(none)* | Callback-based observability hooks for Store operations | [Guide](observe.md) | [Example](../../examples/extensions/observe_hooks.py) |
 | [`ext.partition`](../reference/api/extensions/partition.md) | *(none)* | Hive-style partition path helpers | — | — |
 | [`ext.streams`](../reference/api/extensions/streams.md) | *(none)* | Composable BinaryIO wrappers for progress and checksums | — | — |
-| [`ext.transfer`](../reference/api/extensions/transfer.md) | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](../tutorial/examples/transfer-operations.md) |
+| [`ext.transfer`](../reference/api/extensions/transfer.md) | *(none)* | Upload, download, and cross-store transfer | [Guide](transfer-operations.md) | [Example](../../examples/extensions/transfer_operations.py) |
 | [`ext.write`](../reference/api/extensions/write.md) | *(none)* | Write helpers with guaranteed client-side content hashing | [Guide](write-integrity.md) | — |
 | [`aio.ext.write`](../reference/api/extensions/aio-write.md) | *(none)* | Async write helpers with guaranteed client-side content hashing | [Guide](write-integrity.md) | — |
-| [`ext.arrow`](../reference/api/extensions/arrow.md) | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](../tutorial/examples/pyarrow-adapter.md) |
-| [`ext.parquet`](../reference/api/extensions/parquet.md) | `arrow` | Managed Parquet datasets with manifests and completion markers | [Guide](parquet-datasets.md) | [Example](../tutorial/examples/parquet-dataset.md) |
-| [`ext.otel`](../reference/api/extensions/otel.md) | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](../tutorial/examples/otel-tracing.md) |
-| [`ext.pydantic`](../reference/api/extensions/pydantic.md) | `pydantic` | Pydantic BaseModel/BaseSettings adapter | — | [Example](../tutorial/examples/config-loaders.md) |
-| [`ext.yaml`](../reference/api/extensions/yaml.md) | `yaml` | YAML config file loader | — | [Example](../tutorial/examples/config-loaders.md) |
-| [`ext.dagster`](../reference/api/extensions/dagster.md) | `dagster` | Dagster IO Manager adapter | [Guide](dagster.md) | [Example](../tutorial/examples/dagster-io-manager.md) |
+| [`ext.arrow`](../reference/api/extensions/arrow.md) | `arrow` | PyArrow FileSystem adapter | [Guide](pyarrow-adapter.md) | [Example](../../examples/integrations/pyarrow_adapter.py) |
+| [`ext.parquet`](../reference/api/extensions/parquet.md) | `arrow` | Managed Parquet datasets with manifests and completion markers | [Guide](parquet-datasets.md) | [Example](../../examples/integrations/parquet_dataset.py) |
+| [`ext.otel`](../reference/api/extensions/otel.md) | `otel` | OpenTelemetry tracing and metrics bridge | [Guide](observe.md) | [Example](../../examples/extensions/otel_tracing.py) |
+| [`ext.pydantic`](../reference/api/extensions/pydantic.md) | `pydantic` | Pydantic BaseModel/BaseSettings adapter | — | [Example](../../examples/configuration/config_loaders.py) |
+| [`ext.yaml`](../reference/api/extensions/yaml.md) | `yaml` | YAML config file loader | — | [Example](../../examples/configuration/config_loaders.py) |
+| [`ext.dagster`](../reference/api/extensions/dagster.md) | `dagster` | Dagster IO Manager adapter | [Guide](dagster.md) | [Example](../../examples/integrations/dagster_io_manager.py) |
 
 ## Using Extensions
 

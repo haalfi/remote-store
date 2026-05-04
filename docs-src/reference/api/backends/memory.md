@@ -10,4 +10,4 @@ structure. No filesystem access, no network. Ideal for testing and prototyping.
 ## See also
 
 - [Memory Backend Guide](../../../guides/backends/memory.md) — usage patterns, configuration, and examples
-- [Memory Backend example](../../../tutorial/examples/memory-backend.md) — in-memory backend in action
+- [Memory Backend example](../../../../examples/advanced/memory_backend.py) — in-memory backend in action

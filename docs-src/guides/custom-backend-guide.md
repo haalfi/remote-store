@@ -356,7 +356,7 @@ what existing backends happen to do."  See [`sdd/formal/README.md`](https://gith
 ### Registering in the conformance fixture (contributing backends)
 
 If you are contributing a backend to remote-store, this is step 3 of
-[CONTRIBUTING.md § Adding a New Backend](../explanation/contributing.md#adding-a-new-backend).
+[CONTRIBUTING.md § Adding a New Backend](../../CONTRIBUTING.md#adding-a-new-backend).
 Add your backend to
 [`tests/backends/conftest.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conftest.py);
 the entire conformance suite then runs against it automatically.
@@ -612,7 +612,7 @@ are generally thread-safe, so our example doesn't need explicit locking.
 
 - [Backend API reference](../reference/api/backend.md) — full method documentation
 - [Error types API reference](../reference/api/errors.md) — all error classes
-- [Backend Adapter Contract](../explanation/design/specs/003-backend-adapter-contract.md) — formal spec
+- [Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md) — formal spec
 - [Capabilities Matrix](../reference/capabilities-matrix.md) — all backends and their capabilities
 - [Choosing a Backend](choosing-a-backend.md) — decision guide for built-in backends
 - [Architecture Overview](../explanation/architecture.md) — how Store, Backend, and extensions fit together

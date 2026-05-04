@@ -13,6 +13,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- BK-171: Reliable link validation for docs-only files — universal on-disk
+  link rule (DOCFRAME-008). `mkdocs_hooks.py` applies `LinkResolver` to
+  every docs-src file at build time so authors write on-disk paths
+  everywhere; `check-links` collapses to a single mode that walks every
+  git-tracked `.md`. SDD kind rules hoisted to
+  `docs-src/_path_rules.yml`. Closes audit-012 F-01 honestly.
 - BK-172: route S3-PyArrow conformance tests to MinIO on pyarrow ≥ 24; lift `pyarrow<25` cap on `s3-pyarrow` extra
 - BK-169: unit tests for DOCFRAME-004 gate — five spec-traced pytest tests in
   `tests/scripts/test_check_docs_framework.py` covering G-02 (dest collision),

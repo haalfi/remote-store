@@ -5,4 +5,4 @@
 ## See also
 
 - [Transfer Operations](../../../guides/transfer-operations.md) — guide to upload, download, and cross-store transfer
-- [Transfer Operations example](../../../tutorial/examples/transfer-operations.md) — transfer operations in action
+- [Transfer Operations example](../../../../examples/extensions/transfer_operations.py) — transfer operations in action

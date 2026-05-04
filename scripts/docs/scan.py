@@ -62,15 +62,31 @@ class SddKind:
     numbered: bool = True  # False → use title in place of number
 
 
-SDD_KINDS: tuple[SddKind, ...] = (
-    SddKind("adrs", "sdd/adrs", "ADRs", title_prefixes=("ADR-{num}: ",), status="Accepted"),
-    SddKind("specs", "sdd/specs", "Specs", title_prefixes=("Spec {num}: ", "Spec-{num}: ", "{num}: ")),
-    SddKind("rfcs", "sdd/rfcs", "RFCs", glob="rfc-*.md", status="Proposed"),
-    SddKind("audits", "sdd/audits", "Audits", glob="audit-*.md", title_prefixes=("Audit {num} -- ", "Audit {num} — ")),
-    SddKind(
-        "research", "sdd/research", "Research", glob="research-*.md", title_prefixes=("Research: ",), numbered=False
-    ),
-)
+def _load_sdd_kinds() -> tuple[SddKind, ...]:
+    """Load SDD kind definitions from ``docs-src/_path_rules.yml``.
+
+    Spec: DOCFRAME-008.
+    """
+    from pathlib import Path
+
+    rules_path = Path(__file__).resolve().parent.parent.parent / "docs-src" / "_path_rules.yml"
+    data = yaml.safe_load(rules_path.read_text(encoding="utf-8")) or {}
+    return tuple(
+        SddKind(
+            slug=item["slug"],
+            source_dir=item["source_dir"],
+            nav_label=item["nav_label"],
+            glob=item.get("glob", "*.md"),
+            skip_stems=frozenset(item.get("skip_stems", ())),
+            title_prefixes=tuple(item.get("title_prefixes", ())),
+            status=item.get("status"),
+            numbered=item.get("numbered", True),
+        )
+        for item in data.get("sdd_kinds", ())
+    )
+
+
+SDD_KINDS: tuple[SddKind, ...] = _load_sdd_kinds()
 
 
 @dataclass(frozen=True)

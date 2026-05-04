@@ -3,7 +3,7 @@
 An interactive force-directed map of the project's API surface. Nodes are the
 types and concepts that make up the codebase; edges are the typed relationships
 between them. The full node and edge taxonomy is defined in
-[RFC-0012](design/rfcs/rfc-0012-doc-graph-model.md).
+[RFC-0012](../../sdd/rfcs/rfc-0012-doc-graph-model.md).
 
 Use it to trace capability chains, explore the class hierarchy, and inspect
 individual nodes and their direct neighbors.

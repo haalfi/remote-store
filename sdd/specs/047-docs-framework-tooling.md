@@ -21,6 +21,8 @@ narrows ADR-0007's "build hook" tier to one bridge mechanism.
 
 **Tracks:** [BK-167a](../BACKLOG.md). [BK-167b](../BACKLOG.md)
 applies the framework and closes the remaining audit-012 findings.
+[BK-171](../BACKLOG.md) collapses link validation into a single on-disk
+gate (DOCFRAME-008).
 
 ---
 
@@ -76,12 +78,12 @@ examples) from drifting into a tooling spec authors do not read.
 **Invariant:** `scripts/docs/scan.py:DualEntry` is a frozen dataclass
 with shape:
 
-```python
+``python
 @dataclass(frozen=True)
 class DualEntry:
     source: Path        # absolute repo path
     dest: str           # virtual dest, e.g. "explanation/design/authoring.md"
-```
+``
 
 `DualEntry` carries no class field: by construction, only dual entries
 reach render input. Repo-only and docs-only files are observed by the
@@ -169,7 +171,7 @@ as the index entry).
 
 **Required `docs-src/_nav.yml` shape after this spec lands:**
 
-```yaml
+``yaml
 - Home: index.md
 - Tutorial:
     - Getting Started: getting-started.md
@@ -179,7 +181,7 @@ as the index entry).
 - Explanation:
     - ...
     - Design: explanation/design/
-```
+``
 
 Examples nest under Tutorial (the learn-by-doing quadrant). Changelog
 nests under Reference at the URL `/reference/changelog/` (closes F-10).
@@ -198,6 +200,49 @@ result.
 
 ---
 
+## DOCFRAME-008: Universal On-Disk Link Rule
+
+**Scope:** BK-171.
+
+**Invariant:** Every relative `](path)` link in every git-tracked `.md`
+file in the repository resolves to an on-disk file in the repository. This
+applies uniformly to repo-only, dual, and docs-only files: no class-based
+carve-out exists. External URLs (`http://`, `https://`, `mailto:`,
+`ftp://`) and pure anchors (`#section`) are exempt.
+
+**Postcondition:** `hatch run check-links` exits 0 against the live
+repository. The two-mode (`--mode repo` vs `--mode site`) interface is
+removed; the script takes only `--root`.
+
+**Bridge:** Authors write on-disk paths everywhere. At build time, the mkdocs
+hook `mkdocs_hooks.py::on_page_markdown` applies
+:class:`~scripts.docs.link.LinkResolver` to every `docs-src/` file so that
+on-disk links into `sdd/`, repo-root duals (`CHANGELOG.md`,
+`CONTRIBUTING.md`, ...), and `examples/*.py` get rewritten to the
+corresponding docs-site URLs. The rewrite pass for dual virtual pages
+emitted by `render_dual_pages` is unchanged: the hook detects them by
+`page.file.abs_src_path` (outside `docs-src/` ⇒ already pre-rewritten)
+and passes through.
+
+**Source map:** `scripts/docs/link.py:build_source_map` accepts an
+`example_entries` iterable so that `examples/<subdir>/<stem>.py` paths
+resolve to `tutorial/examples/<slug>.md` URLs. SDD subdir rules are
+loaded from `docs-src/_path_rules.yml` via `scripts/docs/scan.py`;
+per-file `<!-- doc: dual dest=... -->` markers retain their existing
+override role for one-off files (`CHANGELOG.md`, `sdd/AUTHORING.md`,
+etc.).
+
+**Closes:** Audit-012 F-01 substantively (BK-167b's closure left docs-only
+link validation to `mkdocs build --strict`, which validates rendered URLs
+not GitHub-browser presentation; BK-171 enforces R1 honestly).
+
+**Implementation note:** The pre-BK-171 `check_links.py` skipped
+`docs-src/**` files in `--mode repo` and only validated dual entries in
+`--mode site`. This mode split is removed: a single walker over
+`_git_repo_markdown(repo_root)` checks every link in every file.
+
+---
+
 ## Tests
 
 `tests/scripts/test_docs_framework.py` (parser and scanner — DOCFRAME-001..003):
@@ -212,6 +257,16 @@ result.
 | `test_scan_dual_files_yields_only_dual_class` | DOCFRAME-001, DOCFRAME-003 | |
 | `test_render_dual_pages_uses_link_resolver` | DOCFRAME-001 | deferred |
 | `test_mkdocs_strict_passes_after_bridge` | G-07 | deferred |
+
+`tests/scripts/test_check_links.py` (link gate — DOCFRAME-008):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_check_repo_links_includes_docs_only_files` | DOCFRAME-008 | docs-src no carve-out |
+| `test_check_repo_links_resolves_cross_tree_on_disk_target` | DOCFRAME-008 | on-disk repo path passes |
+| `test_check_repo_links_no_broken` | DOCFRAME-008 | positive control |
+| `test_check_repo_links_detects_broken` | DOCFRAME-008 | |
+| `test_check_repo_links_strips_fragment` | DOCFRAME-008 | anchor handling |
 
 `tests/scripts/test_check_docs_framework.py` (gate — DOCFRAME-004, G-02..G-06):
 

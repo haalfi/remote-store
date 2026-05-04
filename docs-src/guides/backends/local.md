@@ -43,7 +43,7 @@ See the [Concurrency and Atomicity Guarantees](../../explanation/concurrency.md)
 
 - [Capabilities matrix](../../reference/capabilities-matrix.md)
 - [API reference](../../reference/api/store.md)
-- [Example script](../../tutorial/examples/quickstart.md)
+- [Example script](../../../examples/getting_started/quickstart.py)
 
 ## API Reference
 

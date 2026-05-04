@@ -22,9 +22,10 @@ import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
-    from docs.scan import DualEntry
+    from docs.scan import DualEntry, ExampleEntry
 
 _LINK_RE = re.compile(r"\]\(([^)\s]+)(\s+\"[^\"]*\")?\)")
 
@@ -97,6 +98,7 @@ def build_source_map(
     *,
     sdd_entries: dict[str, list],  # kind_slug -> list[SddEntry]
     dual_entries: list[DualEntry],
+    example_entries: Iterable[ExampleEntry] = (),
 ) -> dict[Path, str]:
     """Assemble the absolute-source → virtual-dest map for the resolver."""
     source_map: dict[Path, str] = {}
@@ -115,5 +117,12 @@ def build_source_map(
 
     for entry in dual_entries:
         source_map.setdefault(entry.source.resolve(), entry.dest)
+
+    # Example .py scripts render as wrapper pages at tutorial/examples/<slug>.md.
+    # Including them lets docs-src files link to the on-disk .py source and have
+    # the link rewritten to the wrapper URL on the docs site (BK-171).
+    for example in example_entries:
+        if example.source is not None:
+            source_map.setdefault(example.source.resolve(), f"tutorial/examples/{example.slug}.md")
 
     return source_map
