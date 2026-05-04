@@ -13,35 +13,30 @@ framework](../CLAUDE.md#documentation-framework)): structure →
 
 ## Rules
 
-1. **File classification.** Every `.md` belongs to exactly one class:
-   repo-only (appears only in the repo), docs-only (appears only on the docs
-   site), or dual (must read correctly in both). Each file is classified by
-   one of two routes: an explicit HTML-comment marker on the file itself,
-   or a directory-default rule when no marker is present. A file that
-   carries no marker AND matches no directory default is unclassified;
-   the gate (G-01) fails on unclassified files. Marker syntax, the three
-   classes, and the directory-default table are normative in
-   _Classification markers_ and _Directory defaults_ below. The class is
-   not inferred from path alone or from build behavior.
+1. **File classification.** Every `.md` belongs to exactly one class.
+   Classification follows a marker on the file or a directory default
+   when no marker is present. A file with no marker and no matching
+   default is unclassified and fails G-01. See _Classification markers_
+   and _Directory defaults_ below.
 
 2. **Single home.** Each `.md` lives at exactly one path. Other
    presentations are derived from that path, never copied.
 
-3. **Dual files use plain Markdown.** Dual files contain only plain
-   Markdown: no Jinja directives, no MkDocs plugin macros (the
-   `pymdownx.snippets` `--8<--` form is the one exception, per
-   [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules)), no links
-   to build-time virtual paths (paths resolvable only after MkDocs
-   renders, e.g. into gen-files outputs). The docs build adapts to dual
-   files; dual files do not adapt to the docs build.
+3. **On-disk links.** Every relative `](path)` link in every
+   `.md` must resolve to a real on-disk file in the repo. External URLs
+   and pure anchors are exempt. The bridge (Rule 4) rewrites on-disk
+   targets to docs-site URLs at build time so both presentations render
+   correctly. Dual files additionally use only plain Markdown; see
+   [`sdd/CONTENT-RULES.md` Rule 6](CONTENT-RULES.md#rules) for the
+   one snippet exception.
 
-4. **One bridge mechanism.** The bridge is the mechanism that takes dual
-   files from their repo path and presents them on the docs site. Exactly
-   one bridge applies; new mechanisms are not added to handle special
-   cases. The bridge implementation lives in the build tooling.
+4. **One bridge mechanism.** The bridge presents dual files on the docs
+   site and rewrites on-disk links in docs-only files to docs-site URLs
+   at build time. Exactly one bridge applies; new mechanisms are not
+   added. The implementation lives in the build tooling.
 
-5. **PR-time enforcement.** A PR-blocking check verifies that every rule
-   in the documentation framework is satisfied. Failures block merge.
+5. **PR-time enforcement.** A PR-blocking check verifies every framework
+   rule. Failures block merge.
 
 ## Guides
 
@@ -108,8 +103,10 @@ is normalised; one or more spaces between tokens is accepted.
 
 When no marker is present, the file is classified by directory. The
 SDD-subdir rows follow the kind globs declared in
-`scripts/docs/scan.py:SDD_KINDS`. Files in [`sdd/templates/`](templates/)
-are authoring tools, not documentation, and default to repo-only.
+[`docs-src/_path_rules.yml`](../docs-src/_path_rules.yml) (loaded by
+`scripts/docs/scan.py:SDD_KINDS`). Files in
+[`sdd/templates/`](templates/) are authoring tools, not documentation,
+and default to repo-only.
 
 | Source pattern | Default class | Default dest |
 |---|---|---|
@@ -122,29 +119,22 @@ are authoring tools, not documentation, and default to repo-only.
 | `docs-src/**/*.md` | docs-only | — |
 | anything else | requires explicit marker | — |
 
-In practice:
+Files not covered by the table require explicit markers. Common cases:
 
-- Files added under `sdd/specs/`, `sdd/adrs/`, `sdd/rfcs/`, `sdd/audits/`,
-  `sdd/research/` need no marker.
-- Files added under `sdd/templates/` need no marker (repo-only by default).
-- Files added under `docs-src/` need no marker.
-- Top-level `sdd/*.md` process docs (000-process, AUTHORING, DESIGN,
-  DOCUMENTATION, TESTING, CONTENT-RULES) carry an explicit dual marker.
-- Internal `sdd/*.md` files (BACKLOG, BACKLOG-DONE, CLAUDE-REFERENCE)
-  carry an explicit repo-only marker.
-- Repo-root dual files (CHANGELOG, CONTRIBUTING, DEVELOPMENT_STORY,
-  FEATURES) carry an explicit dual marker. `FEATURES.md` lives at
-  the repo root (not under `docs-src/reference/`) — the dual bridge
-  renders it at `reference/FEATURES.md`. Its peers (capabilities-matrix,
-  migration) live under `docs-src/reference/` as docs-only files.
-- Repo-root repo-only files (CLAUDE, CODE_OF_CONDUCT, README, SECURITY)
-  carry an explicit repo-only marker. `README.md` is repo-only; its
-  quick-start content is served on the docs site via
-  `docs-src/tutorial/getting-started.md` instead.
+- Top-level `sdd/*.md` process docs (AUTHORING, DESIGN, etc.) carry an
+  explicit dual marker.
+- Internal `sdd/*.md` files (BACKLOG, CLAUDE-REFERENCE, etc.) carry an
+  explicit repo-only marker.
+- Repo-root dual files (CHANGELOG, CONTRIBUTING, etc.) carry an explicit
+  dual marker.
+- Repo-root repo-only files (CLAUDE, README, etc.) carry an explicit
+  repo-only marker.
 - Example directories (`examples/<name>/README.md`, etc.): no directory
-  default. Each example README declares its own marker. The medallion
-  showcase's docs-side page is rendered separately and is not a default
-  dual mapping.
+  default. Each declares its own marker.
+
+For the complete path map see
+[`sdd/CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md) and
+[`CONTRIBUTING.md` § Authoritative Document Format](../CONTRIBUTING.md).
 
 ### Examples
 

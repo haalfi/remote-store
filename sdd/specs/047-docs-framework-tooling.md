@@ -21,6 +21,8 @@ narrows ADR-0007's "build hook" tier to one bridge mechanism.
 
 **Tracks:** [BK-167a](../BACKLOG.md). [BK-167b](../BACKLOG.md)
 applies the framework and closes the remaining audit-012 findings.
+[BK-171](../BACKLOG.md) collapses link validation into a single on-disk
+gate (DOCFRAME-008).
 
 ---
 
@@ -105,7 +107,7 @@ every PR.
 | G-02 | AUTHORING R2 | The source→dest map is injective: no two dual sources point to the same dest, no source has two dests. |
 | G-03 | AUTHORING R3 | Dual files contain no `{% ... %}` Jinja directive and no MkDocs macro syntax. The `--8<--` snippet form is permitted. |
 | G-04 | AUTHORING R4 | No `include-markdown` directive in any `docs-src/**/*.md`. No `_link_map.yml` exists. |
-| G-05 | AUTHORING R3 (link safety) | Every relative `](path)` link in every dual file resolves on disk in the repo. |
+| G-05 | AUTHORING R3 + DOCFRAME-008 | Every relative `](path)` link in every git-tracked `.md` file resolves on disk in the repo. No class-based carve-out. |
 | G-06 | DOCUMENTATION R7 | For every page reachable through `docs-src/_nav.yml` and its child `_nav.yml` files, the URL prefix matches the nav-section prefix (Reference → `/reference/`, Explanation → `/explanation/`, etc.). The check parses the nav source files directly; it does not rely on the generated `SUMMARY.md` (which is a build-time artifact, not a source). |
 | G-07 | DOCUMENTATION R8 | `mkdocs build --strict` succeeds. (`--strict` promotes all warnings to failures; MkDocs 1.x does not accept `error` as a literal value for `validation.links.not_found`.) |
 
@@ -198,6 +200,52 @@ result.
 
 ---
 
+## DOCFRAME-008: Universal On-Disk Link Rule
+
+**Scope:** BK-171.
+
+**Invariant:** Every relative `](path)` link in every git-tracked `.md`
+file in the repository resolves to an on-disk file in the repository. This
+applies uniformly to repo-only, dual, and docs-only files: no class-based
+carve-out exists. External URLs (`http://`, `https://`, `mailto:`,
+`ftp://`) and pure anchors (`#section`) are exempt.
+
+**Postcondition:** `hatch run check-links` exits 0 against the live
+repository. The two-mode (`--mode repo` vs `--mode site`) interface is
+removed; the script takes only `--root`.
+
+**Bridge:** Authors write on-disk paths everywhere. At build time, the mkdocs
+hook `scripts/mkdocs_hooks.py::on_page_markdown` applies
+:class:`~scripts.docs.link.LinkResolver` to every `docs-src/` file so that
+on-disk links into `sdd/`, repo-root duals (`CHANGELOG.md`,
+`CONTRIBUTING.md`, ...), and `examples/*.py` get rewritten to the
+corresponding docs-site URLs. The rewrite pass for dual virtual pages
+emitted by `render_dual_pages` is unchanged: the hook detects them by
+`page.file.abs_src_path` (outside `docs-src/` ⇒ already pre-rewritten)
+and passes through.
+
+**Source map:** `scripts/docs/link.py:build_source_map` accepts an
+`example_entries` iterable so that `examples/<subdir>/<stem>.py` paths
+resolve to `tutorial/examples/<slug>.md` URLs. SDD kind source
+directories (e.g. `sdd/adrs/`) are mapped to their generated index pages
+(`explanation/design/<kind>/index.md`) so that docs-src links pointing at
+a kind directory get rewritten to the in-site index URL rather than
+falling through to a GitHub blob URL. SDD subdir rules are loaded from
+`docs-src/_path_rules.yml` via `scripts/docs/scan.py`; per-file
+`<!-- doc: dual dest=... -->` markers retain their existing override role
+for one-off files (`CHANGELOG.md`, `sdd/AUTHORING.md`, etc.).
+
+**Closes:** Audit-012 F-01 substantively (BK-167b's closure left docs-only
+link validation to `mkdocs build --strict`, which validates rendered URLs
+not GitHub-browser presentation; BK-171 enforces R1 honestly).
+
+**Implementation note:** The pre-BK-171 `check_links.py` skipped
+`docs-src/**` files in `--mode repo` and only validated dual entries in
+`--mode site`. This mode split is removed: a single walker over
+`_git_repo_markdown(repo_root)` checks every link in every file.
+
+---
+
 ## Tests
 
 `tests/scripts/test_docs_framework.py` (parser and scanner — DOCFRAME-001..003):
@@ -212,6 +260,42 @@ result.
 | `test_scan_dual_files_yields_only_dual_class` | DOCFRAME-001, DOCFRAME-003 | |
 | `test_render_dual_pages_uses_link_resolver` | DOCFRAME-001 | deferred |
 | `test_mkdocs_strict_passes_after_bridge` | G-07 | deferred |
+
+`tests/scripts/test_check_links.py` (link gate — DOCFRAME-008):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_check_repo_links_includes_docs_only_files` | DOCFRAME-008 | docs-src no carve-out |
+| `test_check_repo_links_resolves_cross_tree_on_disk_target` | DOCFRAME-008 | on-disk repo path passes |
+| `test_check_repo_links_no_broken` | DOCFRAME-008 | positive control |
+| `test_check_repo_links_detects_broken` | DOCFRAME-008 | |
+| `test_check_repo_links_strips_fragment` | DOCFRAME-008 | anchor handling |
+| `test_check_repo_links_against_live_repo` | DOCFRAME-008 | live repo: exercises git ls-files path |
+
+`tests/scripts/test_scan_sdd_kinds.py` (YAML loader — DOCFRAME-008 Source map):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_load_sdd_kinds_positive` | DOCFRAME-008 | positive control: real file, expected slugs |
+| `test_load_sdd_kinds_filenotfound` | DOCFRAME-008 | missing file: friendly error |
+| `test_load_sdd_kinds_missing_required_field` | DOCFRAME-008 | missing slug: KeyError |
+| `test_load_sdd_kinds_empty_list_raises` | DOCFRAME-008 | empty sdd_kinds list: ValueError |
+
+`tests/scripts/test_link.py` (build_source_map — DOCFRAME-008 Source map):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_build_source_map_includes_sdd_kind_dirs` | DOCFRAME-008 | kind_dir → index.md |
+| `test_build_source_map_kind_dir_unconditional` | DOCFRAME-008 | kind_dir added even with empty entries |
+| `test_build_source_map_includes_example_sources` | DOCFRAME-008 | examples/*.py → tutorial wrapper |
+
+`tests/scripts/test_mkdocs_hooks.py` (hook dispatch — DOCFRAME-008 Bridge):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_on_page_markdown_passthrough_when_abs_src_none` | DOCFRAME-008 | Branch 1: no abs_src_path |
+| `test_on_page_markdown_passthrough_outside_docs_src` | DOCFRAME-008 | Branch 2: gen-files virtual page |
+| `test_on_page_markdown_rewrites_docs_src_links` | DOCFRAME-008 | Branch 3: docs-src link rewritten |
 
 `tests/scripts/test_check_docs_framework.py` (gate — DOCFRAME-004, G-02..G-06):
 

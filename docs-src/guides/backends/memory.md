@@ -87,7 +87,7 @@ def test_write_and_read(store):
 
 - [Capabilities matrix](../../reference/capabilities-matrix.md)
 - [API reference](../../reference/api/store.md)
-- [Example script](../../tutorial/examples/memory-backend.md)
+- [Example script](../../../examples/advanced/memory_backend.py)
 
 ## API Reference
 

@@ -22,9 +22,10 @@ import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
-    from docs.scan import DualEntry
+    from docs.scan import DualEntry, ExampleEntry
 
 _LINK_RE = re.compile(r"\]\(([^)\s]+)(\s+\"[^\"]*\")?\)")
 
@@ -97,9 +98,19 @@ def build_source_map(
     *,
     sdd_entries: dict[str, list],  # kind_slug -> list[SddEntry]
     dual_entries: list[DualEntry],
+    example_entries: Iterable[ExampleEntry] = (),
 ) -> dict[Path, str]:
     """Assemble the absolute-source → virtual-dest map for the resolver."""
+    from docs.scan import SDD_KINDS
+
     source_map: dict[Path, str] = {}
+
+    # Map every kind's source directory to its generated index page
+    # unconditionally — independent of whether any entries exist in the
+    # directory, so directory links work for freshly-created or empty kinds.
+    for kind in SDD_KINDS:
+        kind_dir = (repo_root / kind.source_dir).resolve()
+        source_map.setdefault(kind_dir, f"explanation/design/{kind.slug}/index.md")
 
     for kind_slug, entries in sdd_entries.items():
         for e in entries:
@@ -108,6 +119,9 @@ def build_source_map(
     # docs-src/ files are served at their path relative to docs-src/.
     # Including them lets the resolver rewrite repo-relative links that point
     # into docs-src/ (e.g. from dual files under examples/ or root).
+    # Note: rglob is unfiltered — setdefault guards existing entries, but
+    # future tightening to git-tracked files only would exclude any generated
+    # artifacts staged under docs-src/ by build tools.
     docs_src = repo_root / "docs-src"
     if docs_src.is_dir():
         for md in docs_src.rglob("*.md"):
@@ -115,5 +129,12 @@ def build_source_map(
 
     for entry in dual_entries:
         source_map.setdefault(entry.source.resolve(), entry.dest)
+
+    # Example .py scripts render as wrapper pages at tutorial/examples/<slug>.md.
+    # Including them lets docs-src files link to the on-disk .py source and have
+    # the link rewritten to the wrapper URL on the docs site (BK-171).
+    for example in example_entries:
+        if example.source is not None:
+            source_map.setdefault(example.source.resolve(), f"tutorial/examples/{example.slug}.md")
 
     return source_map

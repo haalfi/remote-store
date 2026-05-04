@@ -22,6 +22,6 @@
 
 - [Retry](../../guides/retry.md) — configuring retry policies
 - [Security Model](../../explanation/security-model.md) — credential handling and secret redaction
-- [Configuration example](../../tutorial/examples/configuration.md) — backend and store configuration
-- [Retry Policy example](../../tutorial/examples/retry-policy.md) — retry policy in action
-- [Config Loaders example](../../tutorial/examples/config-loaders.md) — TOML, YAML, Pydantic, and env-var interpolation
+- [Configuration example](../../../examples/configuration/configuration.py) — backend and store configuration
+- [Retry Policy example](../../../examples/advanced/retry_policy.py) — retry policy in action
+- [Config Loaders example](../../../examples/configuration/config_loaders.py) — TOML, YAML, Pydantic, and env-var interpolation

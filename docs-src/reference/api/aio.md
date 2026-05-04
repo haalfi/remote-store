@@ -329,7 +329,7 @@ counterpart.
 ## See also
 
 - [Async Store Guide](../../guides/async.md) — usage patterns, streaming, FastAPI integration
-- [Example: Async Store](../../tutorial/examples/async-store.md) — runnable demo script
+- [Example: Async Store](../../../examples/advanced/async_store.py) — runnable demo script
 - [Store](store.md) — synchronous counterpart
 - [Concurrency](../../explanation/concurrency.md) — thread safety and atomicity semantics
 - [aio.ext.write](extensions/aio-write.md) — async write helpers with client-side hashing

@@ -58,11 +58,7 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-171 — Reliable link validation for docs-only files in both repo and docs-site presentations**
-  `check-links` skips docs-only files in repo mode; `docs-build` validates them only
-  against the built site. Links in `docs-src/` that target virtual (bridge-generated)
-  paths are unverified in the repo/GitHub view. Needs a single gate that catches broken
-  links in both presentations for all file classes.
+*(none)*
 
 ---
 

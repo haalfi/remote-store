@@ -115,7 +115,7 @@ The primary value of making HTTP a backend (vs. standalone code):
 
 ## See also
 
-- [Example script](../../tutorial/examples/http-backend.md)
+- [Example script](../../../examples/backends/http_backend.py)
 - [Capabilities matrix](../../reference/capabilities-matrix.md)
 - [API reference](../../reference/api/store.md)
 

@@ -44,5 +44,5 @@
 ## See also
 
 - [Getting Started](../../tutorial/getting-started.md) — using FileInfo and metadata in Store operations
-- [File Operations example](../../tutorial/examples/file-operations.md) — reading, writing, and inspecting files
+- [File Operations example](../../../examples/getting_started/file_operations.py) — reading, writing, and inspecting files
 - [Store.resolve()](store.md#introspection) — returns a ResolutionPlan for key introspection

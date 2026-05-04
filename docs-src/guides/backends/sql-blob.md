@@ -157,7 +157,7 @@ Folders are virtual (prefix-based), not explicit nodes:
 
 ## See also
 
-- [Example script](../../tutorial/examples/sql-blob-backend.md)
+- [Example script](../../../examples/backends/sql_blob_backend.py)
 - [Capabilities matrix](../../reference/capabilities-matrix.md)
 - [API reference](../../reference/api/store.md)
 

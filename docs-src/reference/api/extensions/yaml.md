@@ -5,4 +5,4 @@
 ## See also
 
 - [Extensions](../../../guides/extensions.md) — overview of all extension modules
-- [Config Loaders example](../../../tutorial/examples/config-loaders.md) — YAML config loader in action
+- [Config Loaders example](../../../../examples/configuration/config_loaders.py) — YAML config loader in action

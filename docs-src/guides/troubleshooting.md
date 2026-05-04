@@ -182,4 +182,4 @@ invalid JSON or is missing required fields.
 
 - [Getting Started](../tutorial/getting-started.md) — installation and quick start
 - [Choosing a Backend](choosing-a-backend.md) — picking the right backend
-- [Error Handling example](../tutorial/examples/error-handling.md)
+- [Error Handling example](../../examples/errors/error_handling.py)

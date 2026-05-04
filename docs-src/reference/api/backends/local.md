@@ -10,4 +10,4 @@ Built-in, no extra dependencies required.
 ## See also
 
 - [Local Backend Guide](../../../guides/backends/local.md) — usage patterns, configuration, and examples
-- [File Operations example](../../../tutorial/examples/file-operations.md) — full Store API demo using LocalBackend
+- [File Operations example](../../../../examples/getting_started/file_operations.py) — full Store API demo using LocalBackend

@@ -5,4 +5,4 @@
 ## See also
 
 - [PyArrow Adapter](../../../guides/pyarrow-adapter.md) — guide to using Store as a PyArrow filesystem
-- [PyArrow Adapter example](../../../tutorial/examples/pyarrow-adapter.md) — PyArrow adapter in action
+- [PyArrow Adapter example](../../../../examples/integrations/pyarrow_adapter.py) — PyArrow adapter in action

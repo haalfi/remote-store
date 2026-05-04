@@ -145,7 +145,7 @@ sftp_client.listdir_attr("/custom/path")
 
 - [Capabilities matrix](../../reference/capabilities-matrix.md)
 - [API reference](../../reference/api/store.md)
-- [Example script](../../tutorial/examples/sftp-backend.md)
+- [Example script](../../../examples/backends/sftp_backend.py)
 
 ## API Reference
 

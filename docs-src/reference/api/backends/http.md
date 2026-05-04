@@ -17,4 +17,4 @@ HTTP/HTTPS. Supports `READ` and `METADATA` capabilities only.
 ## See also
 
 - [HTTP Backend Guide](../../../guides/backends/http.md) — usage patterns, configuration, and examples
-- [HTTP Backend example](../../../tutorial/examples/http-backend.md) — read-only HTTP access in action
+- [HTTP Backend example](../../../../examples/backends/http_backend.py) — read-only HTTP access in action

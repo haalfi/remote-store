@@ -124,10 +124,21 @@ None of these target files exist on disk. `docs-src/design/adrs/` and
 virtual pages at MkDocs build time and work in the rendered docs, but when a crawler,
 search engine, or agent navigates the GitHub repo and follows the link, GitHub returns 404.
 
-**Closure (BK-167b):** Links updated to use the new `explanation/design/` URL prefix:
-`design/adrs/...` (relative within `explanation/`) resolves correctly after the URL alignment.
-`docs-only` files are now skipped by the repo-mode link checker; `mkdocs build --strict`
-(G-07) enforces site-side link validity instead.
+**Closure (BK-167b → BK-171):** BK-167b updated the links to use the
+`explanation/design/` URL prefix and exempted `docs-only` files from the
+repo-mode link checker, deferring R1 enforcement on `docs-src/` to
+`mkdocs build --strict`. That closure left R1 unverified for the GitHub
+repo-browser presentation of every `docs-src/` file.
+
+BK-171 closes F-01 honestly: every relative link in every git-tracked
+`.md` (including `docs-src/**`) must resolve on disk. Authors write
+on-disk paths everywhere; the mkdocs hook
+([`scripts/mkdocs_hooks.py`](../../scripts/mkdocs_hooks.py)) rewrites them to docs-site
+URLs at build time. The 76 docs-src links that previously pointed at
+virtual destinations (e.g. `(../design/adrs/0002-...md)`) were migrated
+to on-disk source paths (e.g. `(../../sdd/adrs/0002-...md)`). The
+repo-mode/site-mode split in `check-links` is removed in favour of one
+on-disk-only rule (DOCFRAME-008).
 
 ---
 

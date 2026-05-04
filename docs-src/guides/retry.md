@@ -155,5 +155,5 @@ transient failures that benefit from retry.
 
 ## See also
 
-- [Retry policy example](../tutorial/examples/retry-policy.md) — runnable script
+- [Retry policy example](../../examples/advanced/retry_policy.py) — runnable script
 - [Backend guides](backends/index.md) — per-backend configuration details

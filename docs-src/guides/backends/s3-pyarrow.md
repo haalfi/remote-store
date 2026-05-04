@@ -116,7 +116,7 @@ See the [Concurrency and Atomicity Guarantees](../../explanation/concurrency.md)
 
 - [Capabilities matrix](../../reference/capabilities-matrix.md)
 - [API reference](../../reference/api/store.md)
-- [Example script](../../tutorial/examples/s3-pyarrow-backend.md)
+- [Example script](../../../examples/backends/s3_pyarrow_backend.py)
 
 ## API Reference
 

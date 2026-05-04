@@ -56,6 +56,7 @@ resolver = LinkResolver(
         ROOT,
         sdd_entries=sdd_entries,
         dual_entries=dual_entries,
+        example_entries=examples,
     ),
     repo_root=ROOT,
     github_blob_url="https://github.com/haalfi/remote-store/blob/master",
