@@ -10827,6 +10827,13 @@ declare this capability. Most backends declare it.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names an existing directory.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
@@ -10893,6 +10900,13 @@ file. Without it, the backend may buffer content before returning the stream.</p
 
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names an existing directory.</p>
+          </div>
+        </li>
         <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
@@ -11309,6 +11323,14 @@ declare this capability.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names an existing file (regardless of
+<code>missing_ok</code> -- a type mismatch is not a missing file).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
@@ -11691,6 +11713,13 @@ or <code>Capability.LIST</code> when <code>max_depth</code> is set.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names an existing directory.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
@@ -11767,6 +11796,13 @@ or <code>Capability.LIST</code> when <code>max_depth</code> is set.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names an existing file.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
@@ -11812,6 +11848,7 @@ Each raises <code>CapabilityNotSupported</code> on backends that do not declare 
     <div class="doc doc-contents first">
 
         <p>Move or rename a file.</p>
+<p><code>src == dst</code> is a no-op (the file is preserved unchanged).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11848,6 +11885,14 @@ Each raises <code>CapabilityNotSupported</code> on backends that do not declare 
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>src</code> names a directory or <code>dst</code> names an
+existing directory.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
@@ -11858,7 +11903,8 @@ Each raises <code>CapabilityNotSupported</code> on backends that do not declare 
               <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>dst</code> exists and <code>overwrite</code> is <code>False</code>.</p>
+            <p>If <code>dst</code> exists, <code>src != dst</code>, and
+<code>overwrite</code> is <code>False</code>.</p>
           </div>
         </li>
     </ul>
@@ -11898,6 +11944,7 @@ Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query at runtime.</
     <div class="doc doc-contents first">
 
         <p>Copy a file.</p>
+<p><code>src == dst</code> is a no-op (the file is preserved unchanged).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11934,6 +11981,14 @@ Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query at runtime.</
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>src</code> names a directory or <code>dst</code> names an
+existing directory.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
@@ -11944,7 +11999,8 @@ Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query at runtime.</
               <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
-            <p>If <code>dst</code> exists and <code>overwrite</code> is <code>False</code>.</p>
+            <p>If <code>dst</code> exists, <code>src != dst</code>, and
+<code>overwrite</code> is <code>False</code>.</p>
           </div>
         </li>
     </ul>

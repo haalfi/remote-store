@@ -11798,6 +11798,19 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>BUG-189: <code>AsyncMemoryBackend</code> now mirrors the sync <code>MemoryBackend</code> error
+  fidelity for type-mismatched paths. <code>read</code>, <code>read_bytes</code>, and
+  <code>get_file_info</code> raise <code>InvalidPath</code> (not <code>NotFound</code>) when the path names
+  an existing directory; <code>get_folder_info</code> raises <code>InvalidPath</code> when the
+  path names an existing file; <code>delete_folder</code> raises <code>InvalidPath</code> when
+  the path is a file (regardless of <code>missing_ok</code>); <code>move</code>/<code>copy</code> raise
+  <code>InvalidPath</code> when the source is a directory; <code>copy(src, src,
+  overwrite=False)</code> is now a no-op instead of raising <code>AlreadyExists</code>.
+  Discovered by porting the extended conformance suite to async (see
+  <code>tests/aio/test_async_conformance_extended.py</code>); <code>AsyncBackend</code> ABC
+  docstrings updated to document the <code>InvalidPath</code> paths
+  (ASYNC-006 / ASYNC-007 / ASYNC-013 / ASYNC-016 / ASYNC-017 / ASYNC-018 /
+  ASYNC-019).</li>
 <li>BUG-188: benchmark SVG images no longer broken on the performance docs page</li>
 <li>BUG-187: EthicalAds ad no longer floats over graph viz canvas</li>
 <li>BUG-186: render API graph viz on iOS Safari</li>
