@@ -1375,7 +1375,7 @@ class TestAzureWriteResultIntegration:
 
 
 # =============================================================================
-# HNS directory path guard — write / write_atomic (BE-008, BE-010, BE-021)
+# HNS directory path guard — write / write_atomic / open_atomic (BE-008, BE-010, BE-021)
 # =============================================================================
 
 
@@ -1408,7 +1408,7 @@ def _setup_hns_write_backend() -> tuple[AzureBackend, MagicMock, MagicMock]:
 
 
 class TestAzureWriteOnHnsDirectory:
-    """BE-021: write/write_atomic on an HNS directory path must raise InvalidPath."""
+    """BE-021: write/write_atomic/open_atomic on an HNS directory path must raise InvalidPath."""
 
     @pytest.mark.spec("BE-021")
     @pytest.mark.spec("BE-008")
@@ -1463,5 +1463,41 @@ class TestAzureWriteOnHnsDirectory:
         backend._fs_instance.get_file_client.side_effect = [tmp_fc, dst_fc]
         result = backend.write_atomic("new.txt", b"data")
         assert result is not None
+        tmp_fc.upload_data.assert_called_once()
+        tmp_fc.rename_file.assert_called_once_with("test/new.txt")
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("overwrite", [False, True])
+    def test_open_atomic_raises_invalid_path_on_hns_dir(self, overwrite: bool) -> None:
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.return_value = _make_hns_blob_props()
+        with (
+            pytest.raises(InvalidPath, match="exists as a directory"),
+            backend.open_atomic("mydir", overwrite=overwrite),
+        ):
+            pass
+
+    @pytest.mark.spec("BE-021")
+    def test_open_atomic_regular_file_not_affected(self) -> None:
+        """A normal (non-dir) blob at the path should still raise AlreadyExists."""
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.return_value = _make_hns_blob_props(metadata={})
+        with pytest.raises(AlreadyExists, match="already exists|Already exists"), backend.open_atomic("file.txt"):
+            pass
+
+    @pytest.mark.spec("BE-021")
+    def test_open_atomic_path_not_found_proceeds(self) -> None:
+        """When the blob doesn't exist, open_atomic should not raise — proceed to temp+rename."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
+        tmp_fc = MagicMock(spec=DataLakeFileClient)
+        tmp_fc.upload_data.return_value = None
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+        with backend.open_atomic("new.txt") as f:
+            f.write(b"data")
+        assert tmp_fc.upload_data.call_count == 1
+        assert tmp_fc.rename_file.call_count == 1
         tmp_fc.upload_data.assert_called_once()
         tmp_fc.rename_file.assert_called_once_with("test/new.txt")

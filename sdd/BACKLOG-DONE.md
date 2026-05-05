@@ -8,6 +8,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-192 — `AzureBackend.open_atomic` HNS branch missing `InvalidPath` guard for directory paths**
+  Same pre-fix pattern as `write`/`write_atomic` before BUG-190: the HNS branch probed `get_blob_properties()` only under `overwrite=False` and never checked `hdi_isfolder`, causing `AlreadyExists` on `overwrite=False` or silent fall-through on `overwrite=True`. Fixed by applying the same unified probe pattern: check `hdi_isfolder` first and raise `InvalidPath`; fall through to the `AlreadyExists` guard only for regular files. Removed stale `# pragma: no cover` annotations from the now-covered HNS probe and yield/rename blocks. Added three HNS-mocked unit tests (`test_open_atomic_raises_invalid_path_on_hns_dir`, `test_open_atomic_regular_file_not_affected`, `test_open_atomic_path_not_found_proceeds`). Spec: BE-021.
+
 - [x] **BUG-190 — Azure `write`/`write_atomic` on a directory path does not raise `InvalidPath` per BE-021/ASYNC-024**
   `AzureBackend` and `AsyncAzureBackend` violated BE-021/ASYNC-024 for `write` and `write_atomic` on HNS directory paths: `bc.get_blob_properties()` succeeded for HNS dirs (returning `hdi_isfolder=true` metadata), causing `AlreadyExists` on `overwrite=False` or a silent upload on `overwrite=True`. Fixed by unifying the blob-properties probe for both `overwrite` modes: check `hdi_isfolder` first and raise `InvalidPath`; fall through to the `AlreadyExists` guard only for regular files. Added HNS-mocked unit tests for sync and async (`TestAzureWriteOnHnsDirectory`, `TestAsyncAzureWriteOnHnsDirectory`). Spec: BE-008, BE-010, ASYNC-008, ASYNC-010, BE-021, ASYNC-024.
 

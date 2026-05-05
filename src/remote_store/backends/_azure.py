@@ -531,16 +531,23 @@ class AzureBackend(Backend):
             # HNS: write to temp file via DFS, then atomic rename -- SAW-011
             from azure.core.exceptions import ResourceNotFoundError
 
-            with self._errors(path):  # pragma: no cover -- HNS only
+            with self._errors(path):
                 bc = self._blob_client(path)
-                if not overwrite:
-                    try:
-                        bc.get_blob_properties()
+                try:
+                    props = bc.get_blob_properties()
+                    blob_meta = getattr(props, "metadata", None) or {}
+                    if blob_meta.get("hdi_isfolder"):
+                        raise InvalidPath(
+                            f"Cannot write — '{path}' exists as a directory",
+                            path=path,
+                            backend=self.name,
+                        )
+                    if not overwrite:
                         raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                    except AlreadyExists:
-                        raise
-                    except ResourceNotFoundError:
-                        pass
+                except (InvalidPath, AlreadyExists):
+                    raise
+                except ResourceNotFoundError:
+                    pass
 
                 azure_path = self._azure_path(path)
                 basename = azure_path.rsplit("/", 1)[-1] if "/" in azure_path else azure_path
@@ -552,7 +559,7 @@ class AzureBackend(Backend):
             buf_hns: tempfile.SpooledTemporaryFile[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
                 max_size=8 * 1024 * 1024,
             )
-            try:  # pragma: no cover -- HNS only
+            try:
                 yield cast(BinaryIO, buf_hns)  # noqa: TC006
                 buf_hns.seek(0)
                 with self._errors(path):
