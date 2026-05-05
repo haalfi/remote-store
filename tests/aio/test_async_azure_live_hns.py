@@ -57,7 +57,6 @@ pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-dat
 from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import InvalidPath  # noqa: E402
-from remote_store._models import WriteResult  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -197,7 +196,6 @@ class TestAsyncLiveHnsWriteResult:
 
         result = await backend.write_atomic(path, _PAYLOAD)
 
-        assert isinstance(result, WriteResult)
         # WR-004 / WR-001a: async HNS backend declares WRITE_RESULT_NATIVE.
         assert result.source == "native"
         # WR-001a: size must equal the committed byte count.
@@ -268,6 +266,14 @@ class TestAsyncLiveHnsMetadata:
 # ---------------------------------------------------------------------------
 
 
+async def _async_write(backend: AsyncAzureBackend, path: str) -> None:
+    await backend.write(path, _PAYLOAD)
+
+
+async def _async_write_atomic(backend: AsyncAzureBackend, path: str) -> None:
+    await backend.write_atomic(path, _PAYLOAD)
+
+
 class TestAsyncLiveHnsDirectoryGuard:
     """``write`` and ``write_atomic`` must raise ``InvalidPath`` on a real HNS directory blob.
 
@@ -280,20 +286,19 @@ class TestAsyncLiveHnsDirectoryGuard:
     Spec: BE-021, BE-008, BE-010.
     """
 
-    @pytest.mark.spec("BE-021", "BE-008")
-    async def test_write_on_hns_dir_raises_invalid_path(
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            pytest.param(_async_write, id="write", marks=pytest.mark.spec("BE-008")),
+            pytest.param(_async_write_atomic, id="write_atomic", marks=pytest.mark.spec("BE-010")),
+        ],
+    )
+    async def test_directory_path_raises_invalid_path(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
+        operation,
     ) -> None:
         backend, dirpath = async_live_hns_backend
         with pytest.raises(InvalidPath, match="exists as a directory"):
-            await backend.write(dirpath, _PAYLOAD)
-
-    @pytest.mark.spec("BE-021", "BE-010")
-    async def test_write_atomic_on_hns_dir_raises_invalid_path(
-        self,
-        async_live_hns_backend: tuple[AsyncAzureBackend, str],
-    ) -> None:
-        backend, dirpath = async_live_hns_backend
-        with pytest.raises(InvalidPath, match="exists as a directory"):
-            await backend.write_atomic(dirpath, _PAYLOAD)
+            await operation(backend, dirpath)

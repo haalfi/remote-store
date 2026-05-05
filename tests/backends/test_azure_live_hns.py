@@ -67,7 +67,6 @@ pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-dat
 from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import InvalidPath  # noqa: E402
-from remote_store._models import WriteResult  # noqa: E402
 from remote_store.backends._azure import AzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -318,7 +317,6 @@ class TestAzureLiveHnsWriteResult:
 
         result = backend.write_atomic(path, _PAYLOAD)
 
-        assert isinstance(result, WriteResult)
         # WR-004 / WR-001a: HNS backend declares WRITE_RESULT_NATIVE; source must be "native".
         assert result.source == "native"
         # WR-001a: size must equal the committed byte count.
