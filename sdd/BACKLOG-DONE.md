@@ -8,6 +8,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-176 — Wire stable docs site to context7**
+  Added `docs-src/context7.json` to claim `https://docs.remotestore.dev/stable/`
+  on context7 (`https://context7.com/websites/remotestore_dev_stable`). MkDocs
+  copies non-Markdown files verbatim into the build output, so the file is
+  present at the correct URL in every RTD stable build with no workflow changes.
+  Includes `projectTitle`, `description`, and website-specific `rules` that
+  guide LLMs toward the rendered Diataxis structure (tutorial/, guides/,
+  reference/, explanation/) and key page URLs, rather than repeating source-code
+  facts. Intentionally differs from the repo-level `context7.json`.
+
 - [x] **BUG-188 — Benchmark SVG images broken on performance docs page**
   `build_source_map` indexed only `*.md` and `*.html` under `docs-src/`.
   The BK-171 `LinkResolver` hook rewrites every `](…)` token — including
