@@ -255,6 +255,7 @@ class AsyncMemoryBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If the path is empty or conflicts with a directory.
         """
         return await self.write(path, content, overwrite=overwrite, metadata=metadata)
 
