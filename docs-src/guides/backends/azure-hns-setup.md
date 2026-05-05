@@ -170,22 +170,41 @@ Add the resulting line to `.env`:
 AZURE_STORAGE_CONNECTION_STRING=<paste here>
 ```
 
-To opt into the live HNS test class
-(`tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS`), also set:
+To opt into live HNS coverage, also set:
 
 ```bash
 RS_TEST_LIVE_HNS=1
 RS_TEST_LIVE_HNS_CONTAINER=<FILESYSTEM_NAME>
 ```
 
-!!! note "Live HNS fixture wiring is in progress"
-    Today, the test class is gated only on `RS_TEST_LIVE_HNS`. Its
-    fixture (`async_azure_backend`) still provisions an Azurite container,
-    so even with the gate set the HNS rename path is not exercised
-    against a real account. `RS_TEST_LIVE_HNS_CONTAINER` is documented
-    here so that contributor environments are ready when the follow-up
-    work routes the fixture to the real connection string. Track that
-    work under BUG-182 in `sdd/BACKLOG.md`.
+`tests/backends/test_azure_live_hns.py::TestAzureLiveHnsDirectoryGuard`
+carries the `live` pytest marker and exercises the `InvalidPath`
+directory-path guards on `write`, `write_atomic`, and `open_atomic`
+against a real HNS directory blob. `live`-marked tests are excluded by
+default `addopts` and have to be opted into explicitly:
+
+```bash
+hatch run pytest -m live tests/backends/test_azure_live_hns.py
+```
+
+`tests/conftest.py` loads `.env` via `python-dotenv` when a `live` mark
+expression is in play, so dropping all three variables above into `.env`
+once is enough — a plain `hatch run pytest -m live …` picks them up.
+`override=False` keeps any value already set in the shell or by CI
+authoritative, and a regular `hatch run test` (with the default
+`-m 'not live'`) never loads `.env`.
+
+If `RS_TEST_LIVE_HNS=1` is set but `AZURE_STORAGE_CONNECTION_STRING` is
+missing, empty, or points at the Azurite local emulator, the suite fails
+loud with a `pytest.fail` message rather than silently skipping. Azurite
+does not emulate Hierarchical Namespace, so an Azurite-backed run cannot
+validate HNS-specific behaviour.
+
+The async live HNS class
+(`tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS`) is gated
+only on `RS_TEST_LIVE_HNS` today and still uses the Azurite-backed
+`async_azure_backend` fixture. BUG-182 in `sdd/BACKLOG.md` tracks
+re-wiring it to the real account and adding the `live` marker.
 
 `.env` is gitignored. Do not commit the connection string.
 

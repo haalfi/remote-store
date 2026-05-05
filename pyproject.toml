@@ -254,7 +254,10 @@ testpaths = ["tests"]
 pythonpath = ["."]
 # Exclude e2e by default — they need Docker services running.
 # Run them explicitly with: hatch run e2e
-addopts = "--ignore=tests/e2e"
+# Exclude `live` tests by default — they need a real cloud account.
+# Run them explicitly with: hatch run pytest -m live (env vars must be set;
+# see e.g. docs-src/guides/backends/azure-hns-setup.md).
+addopts = "--ignore=tests/e2e -m 'not live'"
 filterwarnings = [
   "error",
   # SQLAlchemy's connection pool on SQLite may leave DBAPI connections for GC to
@@ -272,6 +275,7 @@ markers = [
   "os_sensitive: exercises OS-specific behaviour (paths, atomic writes, local filesystem); run on macOS and Windows CI",
   "pbt: property-based test using Hypothesis",
   "extended_conformance: extended conformance suite derived from Dafny postconditions",
+  "live: requires a real cloud account; opt-in via gating env vars (excluded by default addopts)",
 ]
 
 [tool.pytest-gremlins]

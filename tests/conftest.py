@@ -16,6 +16,40 @@ from remote_store.backends._memory import MemoryBackend
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+
+def _maybe_load_dotenv_for_live(config: pytest.Config) -> None:
+    """Load the project ``.env`` when a ``live`` marker selection is in play.
+
+    Live-marked tests carry module-level ``skipif`` gates (e.g.
+    ``RS_TEST_LIVE_HNS != "1"``) that fire at collection time, before any
+    fixture body runs. If the gating env var sits in ``.env`` and is not
+    exported by the shell, a fixture-local ``load_dotenv`` arrives too
+    late and the test silently skips — the doc contract "drop the gate
+    var into ``.env`` once" would not hold. Loading ``.env`` from
+    ``pytest_configure`` (before collection) closes that gap.
+
+    The load is conditional on the mark expression so a regular
+    ``hatch run test`` (default ``addopts`` ``-m 'not live'``) does not
+    pull credentials into its environment. ``override=False`` keeps any
+    value already set in the shell or by CI authoritative.
+    """
+    # Pass an explicit default so that programmatic invocations or
+    # plugin-phase ordering where ``-m`` has not yet been registered
+    # don't raise ``ValueError`` from ``getoption``. In a normal
+    # ``hatch run pytest`` flow this never fires.
+    markexpr = (config.getoption("-m", default="") or "").strip()
+    # Tokenize on whitespace and parens, then look for ``live`` used as
+    # an inclusion (i.e. not preceded by ``not``). Catches ``live``,
+    # ``live or extended_conformance``, ``foo and live``; rejects
+    # ``not live`` (the default).
+    tokens = markexpr.replace("(", " ").replace(")", " ").split()
+    is_live_inclusion = any(t == "live" and (i == 0 or tokens[i - 1] != "not") for i, t in enumerate(tokens))
+    if is_live_inclusion:
+        from dotenv import load_dotenv  # noqa: PLC0415 -- intentional lazy import
+
+        load_dotenv(override=False)
+
+
 # ---------------------------------------------------------------------------
 # Shared availability / reachability helpers
 # Used by fixtures in this file (moto_server, azurite_server, sftp_server)
@@ -210,6 +244,7 @@ def pytest_configure(config: object) -> None:
             returncode=1,
         )
     if isinstance(config, pytest.Config):
+        _maybe_load_dotenv_for_live(config)
         config.addinivalue_line("markers", "spec(id): links test to a spec section ID")
         config.addinivalue_line("markers", "integration: requires external services")
         config.addinivalue_line("markers", "requires_docker: test needs Docker services (e.g. Azurite)")

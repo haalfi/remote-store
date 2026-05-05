@@ -9,6 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- BUG-191: live ADLS Gen2 (HNS) integration test class covering the `write`/`write_atomic`/`open_atomic` directory-path guards on a real account, complementing the mock-only coverage from BUG-190/BUG-192. Gated by the new `live` pytest marker (excluded by default `addopts`), `RS_TEST_LIVE_HNS=1`, and a non-Azurite `AZURE_STORAGE_CONNECTION_STRING` (BE-021, BE-008, BE-010, SAW-001).
 - BUG-192: `AzureBackend.open_atomic` now raises `InvalidPath` (not `AlreadyExists`) when the target is an HNS directory; both `overwrite=False` and `overwrite=True` are covered (BE-021).
 - BUG-190: `AzureBackend` and `AsyncAzureBackend` now raise `InvalidPath` (not `AlreadyExists`) when `write` or `write_atomic` targets an HNS directory path; both `overwrite=False` and `overwrite=True` are covered (BE-008, BE-010, ASYNC-008, ASYNC-010, BE-021, ASYNC-024).
 - BK-174: document `InvalidPath` on async `write`/`write_atomic` across the `AsyncBackend` ABC, `SyncBackendAdapter`, and `AsyncMemoryBackend.write_atomic`; bundle the matching `--` → `—` swap in `AsyncBackend.delete_folder` and add `write_atomic(dir)` regression coverage (ASYNC-010) to the async conformance suite. `AsyncAzureBackend` carved out as **BUG-190** — runtime does not uphold the canonical mapping on HNS directories.
