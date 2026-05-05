@@ -9233,11 +9233,13 @@ and place it in your project <code>.env</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nv">RS_TEST_LIVE_HNS_CONTAINER</span><span class="o">=</span>&lt;FILESYSTEM_NAME&gt;
 </code></pre></div>
-<p><code>tests/backends/test_azure_live_hns.py::TestAzureLiveHnsDirectoryGuard</code>
-carries the <code>live</code> pytest marker and exercises the <code>InvalidPath</code>
-directory-path guards on <code>write</code>, <code>write_atomic</code>, and <code>open_atomic</code>
-against a real HNS directory blob. <code>live</code>-marked tests are excluded by
-default <code>addopts</code> and have to be opted into explicitly:</p>
+<p><code>tests/backends/test_azure_live_hns.py</code> carries the <code>live</code> pytest marker
+and exercises sync HNS semantics that mocks cannot reach: the
+<code>InvalidPath</code> directory-path guards on <code>write</code>, <code>write_atomic</code>, and
+<code>open_atomic</code> against a real HNS directory blob, and that user metadata
+passed to <code>write_atomic</code> survives ADLS Gen2's atomic-rename commit
+(round-tripped via <code>get_file_info</code>). <code>live</code>-marked tests are excluded
+by default <code>addopts</code> and have to be opted into explicitly:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>tests/backends/test_azure_live_hns.py
 </code></pre></div>
 <p><code>tests/conftest.py</code> loads <code>.env</code> via <code>python-dotenv</code> when a <code>live</code> mark
@@ -9254,8 +9256,9 @@ validate HNS-specific behaviour.</p>
 <p>The async live HNS class
 (<code>tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS</code>) is gated
 only on <code>RS_TEST_LIVE_HNS</code> today and still uses the Azurite-backed
-<code>async_azure_backend</code> fixture. BUG-182 in <code>sdd/BACKLOG.md</code> tracks
-re-wiring it to the real account and adding the <code>live</code> marker.</p>
+<code>async_azure_backend</code> fixture, so its body executes on Azurite even when
+<code>RS_TEST_LIVE_HNS=1</code> is set; the suite therefore does not currently
+validate HNS-specific async behaviour against a real account.</p>
 <p><code>.env</code> is gitignored. Do not commit the connection string.</p>
 <h2 id="smoke-test">Smoke test<a class="headerlink" href="#smoke-test" title="Permanent link">&para;</a></h2>
 <p>A round-trip via <code>az storage blob</code> confirms the account is usable:</p>
