@@ -467,12 +467,14 @@ class TestMoveCopyErrorFidelity:
     async def test_destination_is_directory_raises_error(
         self, async_backend: AsyncBackend, op: str, cap: Capability
     ) -> None:
-        """IsFile(src) && IsDir(dst) ==> InvalidPath."""
+        """IsFile(src) && IsDir(dst) ==> InvalidPath(dst)."""
         _require(async_backend, cap, Capability.WRITE)
         _skip_flat_namespace(async_backend)
         await async_backend.write(f"mcdd/{op}_src.txt", b"src")
         await async_backend.write(f"mcdd/{op}_dstdir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match=f"mcdd/{op}"):
+        # match= pinned to the dst-only fragment so a regression that flipped
+        # the error to be about src would not silently pass.
+        with pytest.raises(InvalidPath, match=f"mcdd/{op}_dstdir"):
             await _do_op(async_backend, op, f"mcdd/{op}_src.txt", f"mcdd/{op}_dstdir")
 
     @pytest.mark.spec("ASYNC-018")

@@ -58,17 +58,37 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-173 — Parametrize self-op tests in `tests/backends/test_conformance_extended.py`**
-  `TestMoveCopySelfOperation` in the sync extended-conformance suite has five
-  near-duplicate methods that differ only in `op ∈ {move, copy}` and
-  `overwrite ∈ {True, False}` — a TESTING.md Rule 7 violation. The async mirror
-  was parametrized in the BUG-189 follow-up (PR #580) over `(op, cap)` ×
-  `overwrite`, collapsing five tests into two. Apply the same shape to the sync
-  file. The async parametrization also added the previously-missing
-  self-move-missing-NotFound case; mirror that on the sync side too. No spec
-  change; the markers `BE-018 / BE-019 / ASYNC-047` (or the sync equivalents)
-  stay on each parametrized method. Verify behavior unchanged via
-  `hatch run pytest tests/backends/test_conformance_extended.py -k SelfOperation`.
+- [ ] **BK-174 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
+  `AsyncMemoryBackend.get_file_info` returns
+  `FileInfo(... content_type=node.content_type)` without
+  `metadata=node.metadata`, while sync `MemoryBackend.get_file_info`
+  (`src/remote_store/backends/_memory.py:331`) passes it through. The same
+  asymmetry exists at the other `FileInfo`-constructing sites in
+  `src/remote_store/aio/backends/_memory.py`: `list_files` non-recursive
+  (~L374), `iter_children` (~L427), `_collect_files_from_snapshot` (~L769).
+  Out-of-scope from BUG-189 (which targeted error fidelity only). Add
+  `metadata=node.metadata` to all four sites and a parametrized regression
+  test that round-trips `metadata={"k": "v"}` through `write` →
+  `get_file_info` and through `write` → `list_files` for the native async
+  backend. Spec: ASYNC-016 § metadata round-trip.
+
+- [ ] **BK-173 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/test_conformance_extended.py`**
+  Two TESTING.md alignments to apply on the sync extended-conformance suite,
+  mirroring fixes that landed in the async mirror via PR #580:
+  1. **Parametrize `TestMoveCopySelfOperation`.** The sync class has five
+     near-duplicate methods that differ only in `op ∈ {move, copy}` and
+     `overwrite ∈ {True, False}` — a TESTING.md Rule 7 violation. The async
+     side was parametrized over `(op, cap)` × `overwrite`, collapsing five
+     tests into two and adding the previously-missing self-move-missing-NotFound
+     case. Apply the same shape on the sync side.
+  2. **Tighten `match=` in `test_destination_is_directory_raises_error`.** The
+     current `match=f"mcdd/{op}"` matches both src and dst fragments because
+     they share the prefix; pin to `match=f"mcdd/{op}_dstdir"` so a regression
+     that flipped the error from dst to src would not silently pass. The
+     async mirror was tightened in PR #580.
+  No spec change; marker tags (`BE-018`, `BE-019`, the BE counterpart of
+  `ASYNC-047`) stay on the parametrized methods. Verify behavior unchanged
+  via `hatch run pytest tests/backends/test_conformance_extended.py -k SelfOperation`.
 
 ---
 
