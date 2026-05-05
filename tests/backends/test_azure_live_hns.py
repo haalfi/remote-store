@@ -251,8 +251,7 @@ class TestAzureLiveHnsMetadataSurvivesRename:
     real account can confirm it.
     """
 
-    @pytest.mark.spec("WR-013")
-    @pytest.mark.spec("BE-010")
+    @pytest.mark.spec("WR-013", "BE-010")
     def test_write_atomic_metadata_survives_rename(
         self,
         live_hns_backend: tuple[AzureBackend, str],

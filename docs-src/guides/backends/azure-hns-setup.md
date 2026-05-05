@@ -178,11 +178,9 @@ RS_TEST_LIVE_HNS_CONTAINER=<FILESYSTEM_NAME>
 ```
 
 `tests/backends/test_azure_live_hns.py` carries the `live` pytest marker
-and exercises sync HNS semantics that mocks cannot reach:
-`TestAzureLiveHnsDirectoryGuard` confirms the `InvalidPath`
-directory-path guards on `write`, `write_atomic`, and `open_atomic`
-against a real HNS directory blob, and
-`TestAzureLiveHnsMetadataSurvivesRename` confirms that user metadata
+and exercises sync HNS semantics that mocks cannot reach: the
+`InvalidPath` directory-path guards on `write`, `write_atomic`, and
+`open_atomic` against a real HNS directory blob, and that user metadata
 passed to `write_atomic` survives ADLS Gen2's atomic-rename commit
 (round-tripped via `get_file_info`). `live`-marked tests are excluded
 by default `addopts` and have to be opted into explicitly:
