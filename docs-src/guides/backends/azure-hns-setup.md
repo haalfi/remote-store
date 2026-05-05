@@ -170,22 +170,34 @@ Add the resulting line to `.env`:
 AZURE_STORAGE_CONNECTION_STRING=<paste here>
 ```
 
-To opt into the live HNS test class
-(`tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS`), also set:
+To opt into the live HNS test suites, also set:
 
 ```bash
 RS_TEST_LIVE_HNS=1
 RS_TEST_LIVE_HNS_CONTAINER=<FILESYSTEM_NAME>
 ```
 
-!!! note "Live HNS fixture wiring is in progress"
-    Today, the test class is gated only on `RS_TEST_LIVE_HNS`. Its
-    fixture (`async_azure_backend`) still provisions an Azurite container,
-    so even with the gate set the HNS rename path is not exercised
-    against a real account. `RS_TEST_LIVE_HNS_CONTAINER` is documented
-    here so that contributor environments are ready when the follow-up
-    work routes the fixture to the real connection string. Track that
-    work under BUG-182 in `sdd/BACKLOG.md`.
+These two variables, combined with the `live` pytest marker, gate the
+HNS-only test classes:
+
+- `tests/backends/test_azure_live_hns.py::TestAzureLiveHnsDirectoryGuard`
+  — exercises the `InvalidPath` directory-path guards on `write`,
+  `write_atomic`, and `open_atomic` against a real HNS directory blob.
+- `tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS` — exercises
+  the async `write_atomic` rename path on HNS.
+
+`live`-marked tests are excluded by `addopts` and have to be opted into
+explicitly:
+
+```bash
+hatch run pytest -m live tests/backends/test_azure_live_hns.py
+```
+
+If `RS_TEST_LIVE_HNS=1` is set but `AZURE_STORAGE_CONNECTION_STRING` is
+missing, empty, or points at Azurite (`UseDevelopmentStorage=true` /
+`127.0.0.1` / `localhost`), the suite fails loud rather than silently
+skipping. Azurite does not emulate Hierarchical Namespace, so an
+Azurite-backed run cannot validate HNS-specific behaviour.
 
 `.env` is gitignored. Do not commit the connection string.
 

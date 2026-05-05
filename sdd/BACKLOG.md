@@ -45,23 +45,16 @@ Existing items may be more verbose — trim on next touch.
 ## Bugs
 
 
-- [ ] **BUG-191 — Add `azure-hns` to conformance fixture for `write`/`write_atomic`/`open_atomic` directory-path guard**
-  BUG-190 and BUG-192 added unit-mocked tests for `InvalidPath` on HNS directory paths. The mocked tests
-  verify code logic but rely on the same `hdi_isfolder` assumption that the code uses. An
-  integration-level conformance test against a real Azurite HNS endpoint would provide
-  independent evidence that the precondition fires in practice. Follow the
-  BUG-170/175/176 pattern: add an `azure-hns` backend fixture entry to
-  `tests/backends/conftest.py` and ensure the extended conformance suite exercises
-  `write`, `write_atomic`, and `open_atomic` on a real directory blob.
-
-- [ ] **BUG-182 — (Candidate) Verify HNS `write_atomic` metadata survives rename in integration**
+- [ ] **BUG-182 — Verify HNS `write_atomic` metadata survives rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
   forwarded to `upload_data` on the temp file and that `WriteResult.metadata` echoes the
   caller's mapping by construction (WR-012). It cannot verify that ADLS Gen2 atomic rename
   preserves user-defined metadata on the live file (a filesystem-level semantics concern).
-  When HNS integration tests are available: add `test_write_atomic_hns_metadata_survives_rename`
-  — write with `metadata={"k": "v"}`; assert `get_file_properties()` on the final path
-  returns `metadata["k"] == "v"`.
+  Now unblocked by BUG-191 (live HNS fixture wiring at
+  `tests/backends/test_azure_live_hns.py`): add `test_write_atomic_hns_metadata_survives_rename`
+  to that file — write with `metadata={"k": "v"}`; assert `get_file_properties()` on the
+  final path returns `metadata["k"] == "v"`. Reuse the existing `live`/`RS_TEST_LIVE_HNS`
+  gating; keep payload at 1 KiB to honour the live-cost discipline established for that file.
   Spec: WR-013, ASYNC-010.
 
 ---
