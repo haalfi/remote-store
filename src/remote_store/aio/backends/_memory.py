@@ -509,6 +509,8 @@ class AsyncMemoryBackend(AsyncBackend):
     async def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Move or rename a file.
 
+        ``src == dst`` is a no-op (the file is preserved unchanged).
+
         Args:
             src: Backend-relative source key.
             dst: Backend-relative destination key.
@@ -516,8 +518,10 @@ class AsyncMemoryBackend(AsyncBackend):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
-            InvalidPath: If source or destination path is empty.
+            AlreadyExists: If ``dst`` exists, ``src != dst``, and
+                ``overwrite`` is ``False``.
+            InvalidPath: If ``src`` or ``dst`` is empty, ``src`` names a
+                directory, or ``dst`` names an existing directory.
         """
         src_segments = _split_path(src)
         dst_segments = _split_path(dst)
@@ -574,6 +578,8 @@ class AsyncMemoryBackend(AsyncBackend):
     async def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy a file.
 
+        ``src == dst`` is a no-op (the file is preserved unchanged).
+
         Args:
             src: Backend-relative source key.
             dst: Backend-relative destination key.
@@ -581,8 +587,10 @@ class AsyncMemoryBackend(AsyncBackend):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
-            InvalidPath: If source or destination path is empty.
+            AlreadyExists: If ``dst`` exists, ``src != dst``, and
+                ``overwrite`` is ``False``.
+            InvalidPath: If ``src`` or ``dst`` is empty, ``src`` names a
+                directory, or ``dst`` names an existing directory.
         """
         src_segments = _split_path(src)
         dst_segments = _split_path(dst)

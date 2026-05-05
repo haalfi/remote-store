@@ -223,6 +223,16 @@ class TestDeleteFolderErrorFidelity:
             await async_backend.delete_folder("dffile.txt")
 
     @pytest.mark.spec("ASYNC-013")
+    async def test_delete_folder_on_file_missing_ok_still_raises(self, async_backend: AsyncBackend) -> None:
+        """IsFile(path) && missing_ok ==> InvalidPath (type mismatch is not 'missing')."""
+        _require(async_backend, Capability.DELETE, Capability.WRITE)
+        _skip_flat_namespace(async_backend, "flat-namespace backends cannot distinguish file vs folder")
+        await async_backend.write("dffile_mok.txt", b"x")
+        with pytest.raises(InvalidPath, match="dffile_mok"):
+            await async_backend.delete_folder("dffile_mok.txt", missing_ok=True)
+        assert await async_backend.exists("dffile_mok.txt"), "file silently deleted under missing_ok=True"
+
+    @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_on_file_no_native_leak(self, async_backend: AsyncBackend) -> None:
         """Flat-namespace backends: delete_folder(file) must not leak native exceptions."""
         _require(async_backend, Capability.DELETE, Capability.WRITE)
@@ -505,6 +515,7 @@ class TestMoveCopySelfOperation:
     """ASYNC-047 / BE-018 / BE-019: self-move/self-copy must not lose data."""
 
     @pytest.mark.spec("ASYNC-019")
+    @pytest.mark.spec("ASYNC-047")
     async def test_self_copy_preserves_data(self, async_backend: AsyncBackend) -> None:
         """copy(src, src, overwrite=True) must not lose data."""
         _require(async_backend, Capability.COPY, Capability.WRITE)
@@ -515,6 +526,7 @@ class TestMoveCopySelfOperation:
         assert await async_backend.read_bytes("selfcp.txt") == b"data"
 
     @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.spec("ASYNC-047")
     async def test_self_move_preserves_data(self, async_backend: AsyncBackend) -> None:
         """move(src, src, overwrite=True) must not lose data."""
         _require(async_backend, Capability.MOVE, Capability.WRITE)
@@ -525,6 +537,7 @@ class TestMoveCopySelfOperation:
         assert await async_backend.read_bytes("selfmv.txt") == b"data"
 
     @pytest.mark.spec("ASYNC-019")
+    @pytest.mark.spec("ASYNC-047")
     async def test_self_copy_no_overwrite_preserves_data(self, async_backend: AsyncBackend) -> None:
         """copy(src, src, overwrite=False) is a no-op -- must not raise AlreadyExists."""
         _require(async_backend, Capability.COPY, Capability.WRITE)
@@ -535,6 +548,7 @@ class TestMoveCopySelfOperation:
         assert await async_backend.read_bytes("selfcp2.txt") == b"data"
 
     @pytest.mark.spec("ASYNC-019")
+    @pytest.mark.spec("ASYNC-047")
     async def test_self_copy_missing_raises_not_found(self, async_backend: AsyncBackend) -> None:
         """copy(src, src) where src does not exist must raise NotFound."""
         _require(async_backend, Capability.COPY)
@@ -544,6 +558,7 @@ class TestMoveCopySelfOperation:
             await async_backend.copy("sc_missing.txt", "sc_missing.txt")
 
     @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.spec("ASYNC-047")
     async def test_self_move_no_overwrite_preserves_data(self, async_backend: AsyncBackend) -> None:
         """move(src, src, overwrite=False) is a no-op -- must not raise AlreadyExists."""
         _require(async_backend, Capability.MOVE, Capability.WRITE)
