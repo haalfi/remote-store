@@ -6,14 +6,14 @@
   "description": "Full documentation for remote-store: tutorials, how-to guides, API reference, and design explanations. Write file storage code once, run it against local files, S3, SFTP, or Azure.",
   "rules": [
     "Docs follow the Diataxis framework: /stable/tutorial/ for learning by doing, /stable/guides/ for task-focused how-tos, /stable/reference/ for API reference, /stable/explanation/ for architecture and design rationale.",
-    "Use Store.read(path) for streaming reads, Store.write(path, content) for streaming writes (returns WriteResult), and Store.list_files(path) for directory listings. All backends share this interface — swap config only, not code.",
-    "Backends declare capabilities (LAZY_READ, ATOMIC_WRITE, ATOMIC_MOVE, METADATA, GLOB, …). Query store.supports(Capability.X) before calling a capability-gated method. The full capability matrix is at /stable/reference/features/.",
-    "Backends are swapped by config alone — same Store API calls, different backend= argument or Registry entry. Available backends and required pip extras are at /stable/reference/features/.",
-    "For async workloads, import AsyncStore from remote_store.aio. To cross the sync/async boundary, use SyncBackendAdapter (sync Backend in async code) or AsyncBackendSyncAdapter (async Backend in sync code). See /stable/guides/async-sync-bridges/.",
-    "Streaming reads: with store.read(path) as f: data = f.read(). Atomic writes: with store.open_atomic(path) as f: f.write(...). The destination file appears only after the block exits cleanly.",
-    "Errors are typed in remote_store.errors (re-exported from remote_store). SDK exceptions never leak through the Store API. Catch specific subclasses: NotFound, AlreadyExists, PermissionDenied, CapabilityNotSupported, BackendUnavailable.",
-    "Configuration loads from TOML, YAML, dict, or Pydantic models via Registry. ${ENV_VAR} placeholders are resolved and credentials are wrapped in Secret automatically.",
-    "Write methods return WriteResult(path, size, digest, etag, last_modified, metadata). Rich fields require WRITE_RESULT_NATIVE capability. store.head(path) returns metadata without reading content.",
-    "Extensions augment the Store API without backend changes — composable batching, caching, integrity, and streaming helpers are always available. Optional extras add PyArrow, OpenTelemetry, Pydantic, YAML, and Dagster. See /stable/guides/extensions/."
+    "Tutorial (/stable/tutorial/): the hands-on intro to remote-store. By the end you'll have a working Store reading and writing files, and the rest of the docs will make sense.",
+    "Guides (/stable/guides/): recipes for the things you'll actually do — pick a backend, add caching, stream big files, plug into PyArrow or Dagster. One page, one task.",
+    "Reference (/stable/reference/): the complete one — exact and searchable. Come here when you know what you need or like to dig into.",
+    "Explanation (/stable/explanation/): why remote-store is shaped the way it is — the reasoning behind design choices, not just what they are. Read when 'how' isn't enough.",
+    "Guide: Build Your Own Backend (/stable/guides/custom-backend-guide/) walks through implementing a custom Backend (Redis example) that plugs into Store, Registry, and every extension in the ecosystem.",
+    "Guide: Data Lake Patterns (/stable/guides/data-lake-patterns/) — remote-store as the I/O layer under Delta Lake, Iceberg, and Parquet. Develop against MemoryBackend locally, deploy to S3 or Azure without changing application code.",
+    "Guide: Parquet Datasets (/stable/guides/parquet-datasets/) — managed Parquet datasets with manifests, completion markers, and multi-part layouts using ext.parquet.ParquetDatasetStore.",
+    "Extensions (/stable/guides/extensions/): ext.batch for bulk ops, ext.cache for TTL caching, ext.observe for I/O hooks, ext.transfer for cross-store copy, ext.arrow as a PyArrow FileSystem adapter — no backend changes needed.",
+    "RetryPolicy (/stable/guides/retry/) provides unified retry configuration across backends; each backend maps it to its native retry mechanism, avoiding retry multiplication."
   ]
 }
