@@ -67,6 +67,7 @@ pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-dat
 from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import InvalidPath  # noqa: E402
+from remote_store._models import WriteResult  # noqa: E402
 from remote_store.backends._azure import AzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -252,7 +253,7 @@ class TestAzureLiveHnsMetadataSurvivesRename:
     real account can confirm it.
     """
 
-    @pytest.mark.spec("WR-013", "BE-010")
+    @pytest.mark.spec("WR-012", "WR-013", "BE-010")
     def test_write_atomic_metadata_survives_rename(
         self,
         live_hns_backend: tuple[AzureBackend, str],
@@ -265,7 +266,14 @@ class TestAzureLiveHnsMetadataSurvivesRename:
         path = f"{prefix}/meta-{uuid.uuid4().hex[:8]}.txt"
         metadata = {"env": "prod", "owner": "team-a"}
 
-        backend.write_atomic(path, _PAYLOAD, metadata=metadata)
+        result = backend.write_atomic(path, _PAYLOAD, metadata=metadata)
+
+        # WR-012: WriteResult.metadata must echo the caller's mapping exactly —
+        # the backend must not wait for a round-trip to populate this field.
+        assert result.metadata == metadata
+        # WR-001a: size and source are always populated on the HNS write_atomic path.
+        assert result.size == len(_PAYLOAD)
+        assert result.source == "native"
 
         info = backend.get_file_info(path)
         assert info.metadata is not None, "expected metadata round-trip via get_file_info"
@@ -275,3 +283,66 @@ class TestAzureLiveHnsMetadataSurvivesRename:
         # is that user-supplied keys round-trip with their values.
         assert info.metadata.get("env") == "prod"
         assert info.metadata.get("owner") == "team-a"
+
+
+# ---------------------------------------------------------------------------
+# WR-001a / WR-004 — WriteResult native fields on real HNS account
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsWriteResult:
+    """WriteResult from write_atomic on a real HNS account must be fully native-sourced.
+
+    The HNS write_atomic path (temp upload + rename_file) populates etag and
+    last_modified from a post-rename ``get_file_properties()`` call, not from the
+    upload response. Mock-only suites cannot confirm that this secondary read succeeds
+    and returns a usable, normalised ETag.
+
+    The etag cross-check (``WriteResult.etag`` vs ``FileInfo.etag``) is the uniquely
+    live assertion: the backend reads etag via two distinct SDK paths (post-rename
+    ``get_file_properties`` vs ``get_blob_properties`` inside ``get_file_info``), and
+    normalisation inconsistency between them only surfaces against a real account.
+
+    Spec: WR-001a (WriteResult native fields), WR-004 (source matches capability),
+    BE-010 (write_atomic), AZ-034 (ETag normalisation).
+    """
+
+    @pytest.mark.spec("WR-001a", "WR-004", "BE-010", "AZ-034")
+    def test_write_atomic_hns_write_result_fully_native(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/wr-native-{uuid.uuid4().hex[:8]}.txt"
+
+        result = backend.write_atomic(path, _PAYLOAD)
+
+        assert isinstance(result, WriteResult)
+        # WR-004 / WR-001a: HNS backend declares WRITE_RESULT_NATIVE; source must be "native".
+        assert result.source == "native"
+        # WR-001a: size must equal the committed byte count.
+        assert result.size == len(_PAYLOAD)
+        # WR-001a / AZ-034: etag must be non-empty, quote-stripped, and lowercased.
+        # On HNS this comes from post-rename get_file_properties — only a real account
+        # confirms that call succeeds and the ETag is in a usable form.
+        assert result.etag is not None, (
+            "HNS write_atomic must populate WriteResult.etag from post-rename get_file_properties"
+        )
+        assert result.etag != ""
+        assert '"' not in result.etag, f"etag must be quote-stripped; got {result.etag!r}"
+        assert result.etag == result.etag.lower(), f"etag must be lowercased; got {result.etag!r}"
+        # WR-001a: last_modified from the same post-rename read must be timezone-aware.
+        assert result.last_modified is not None, (
+            "HNS write_atomic must populate WriteResult.last_modified from post-rename get_file_properties"
+        )
+        assert result.last_modified.tzinfo is not None, "last_modified must be timezone-aware"
+        # AZ-034 consistency: WriteResult.etag and FileInfo.etag must agree.
+        # A normalisation bug that affects one SDK read path but not the other only
+        # surfaces here.
+        fi = backend.get_file_info(path)
+        assert fi.etag is not None
+        assert fi.etag == result.etag, (
+            f"WriteResult.etag {result.etag!r} != FileInfo.etag {fi.etag!r}: "
+            "normalisation inconsistent between post-rename get_file_properties and get_file_info"
+        )
