@@ -7,9 +7,9 @@ argument-hint: "[PR number]"
 
 PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
-## Step 1: Fetch comments and rebase
+## Step 1: Fetch comments
 
-Check out the PR's head branch. Run `git fetch origin master`, then rebase onto `origin/master` if behind (`git rebase origin/master`) — parallel PRs may have merged since this branch was created. Use `origin/master`, not local `master`, so the rebase target is current.
+Check out the PR's head branch.
 
 For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads):
 use `github-pat` first (read+write), fall back to `MCP_DOCKER` for reads only.
