@@ -11,6 +11,13 @@ PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
 Check out the PR's head branch.
 
+**Freshness check:** Run `git fetch origin master`, then
+`git rev-list --count origin/master ^HEAD`. If the count is non-zero, the
+branch is behind `origin/master`. Stop and ask the user whether to rebase
+(`git rebase origin/master` + force-push) before continuing. Do not rebase
+silently — a pushed branch requires `--force-with-lease`, which is
+destructive to anyone tracking the branch.
+
 For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads):
 use `github-pat` first (read+write), fall back to `MCP_DOCKER` for reads only.
 When both servers expose the same tool name, always prefer `github-pat`.
