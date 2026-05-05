@@ -11798,6 +11798,7 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>BK-174: document <code>InvalidPath</code> on async <code>write</code>/<code>write_atomic</code> across the <code>AsyncBackend</code> ABC, <code>SyncBackendAdapter</code>, and <code>AsyncMemoryBackend.write_atomic</code>; bundle the matching <code>--</code> → <code>—</code> swap in <code>AsyncBackend.delete_folder</code> and add <code>write_atomic(dir)</code> regression coverage (ASYNC-010) to the async conformance suite. <code>AsyncAzureBackend</code> carved out as <strong>BUG-190</strong> — runtime does not uphold the canonical mapping on HNS directories.</li>
 <li>BK-173: complete the four-layer async docstring ripple by adding <code>Raises:</code> clauses to nine I/O methods on <code>SyncBackendAdapter</code>, mirrored from the <code>AsyncBackend</code> ABC; surfaces in <code>help()</code> and IDE hover today.</li>
 <li>BUG-189: <code>AsyncMemoryBackend</code> now mirrors the sync <code>MemoryBackend</code> error
   fidelity for type-mismatched paths. <code>read</code>, <code>read_bytes</code>, and
