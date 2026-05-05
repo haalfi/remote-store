@@ -4,9 +4,9 @@ Mirrors ``tests/backends/test_conformance_extended.py`` for the async side.
 The fixture ``async_backend`` is parametrized across all backends that have
 explicit directory entries:
 
-* ``AsyncMemoryBackend`` -- native async implementation with ``_DirNode`` objects.
-* ``SyncBackendAdapter(MemoryBackend())`` -- adapter wrapping the sync reference.
-* ``SyncBackendAdapter(LocalBackend())`` -- adapter over a real filesystem.
+* ``AsyncMemoryBackend``: native async implementation with ``_DirNode`` objects.
+* ``SyncBackendAdapter(MemoryBackend())``: adapter wrapping the sync reference.
+* ``SyncBackendAdapter(LocalBackend())``: adapter over a real filesystem.
 
 Flat-namespace backends (S3, Azure Blob, HTTP, SQL-blob) have no real directory
 entries and are excluded from error-fidelity tests by ``_skip_flat_namespace``.
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 # Helpers (mirror tests/backends/test_conformance_extended.py)
 # ---------------------------------------------------------------------------
 
-# Backends that use flat/virtual namespace -- no real directory entries.
+# Backends that use flat/virtual namespace: no real directory entries.
 # Update this set when adding a new flat-namespace async backend to the
 # fixture below.
 _FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})
@@ -122,7 +122,7 @@ def async_backend(request: pytest.FixtureRequest, tmp_path: Path) -> AsyncBacken
 
 
 # ===========================================================================
-# §1  Error Fidelity -- Dafny §6 postconditions on error paths
+# §1  Error Fidelity: Dafny §6 postconditions on error paths
 # ===========================================================================
 
 
@@ -140,7 +140,7 @@ class TestReadErrorFidelity:
 
     @pytest.mark.spec("ASYNC-007")
     async def test_read_bytes_on_directory_raises_error(self, async_backend: AsyncBackend) -> None:
-        """read_bytes(dir) -- same contract as read()."""
+        """read_bytes(dir): same contract as read()."""
         _require(async_backend, Capability.WRITE)
         _skip_flat_namespace(async_backend)
         await async_backend.write("rbdir/file.txt", b"x")
@@ -189,8 +189,8 @@ class TestDeleteErrorFidelity:
     """``delete(dir_path)`` raises ``InvalidPath`` regardless of ``missing_ok``.
 
     Mirrors ``test_conformance_extended.py::TestDeleteErrorFidelity``.
-    The ``missing_ok`` flag tolerates a *missing file*, not a type mismatch --
-    a directory path must raise ``InvalidPath`` unconditionally (BE-012,
+    The ``missing_ok`` flag tolerates a *missing file*, not a type mismatch.
+    A directory path must raise ``InvalidPath`` unconditionally (BE-012,
     Dafny: ``Delete: IsDir -> InvalidPath`` unconditionally).
     """
 
@@ -237,7 +237,7 @@ class TestDeleteFolderErrorFidelity:
         """Flat-namespace backends: delete_folder(file) must not leak native exceptions."""
         _require(async_backend, Capability.DELETE, Capability.WRITE)
         if async_backend.name not in _FLAT_NAMESPACE_BACKENDS:
-            pytest.skip("hierarchical backend -- covered by test_delete_folder_on_file_raises_error")
+            pytest.skip("hierarchical backend: covered by test_delete_folder_on_file_raises_error")
         await async_backend.write("dffile_flat.txt", b"x")
         with contextlib.suppress(RemoteStoreError):
             await async_backend.delete_folder("dffile_flat.txt")
@@ -337,7 +337,7 @@ class TestGetFolderInfoAggregates:
     @pytest.mark.spec("ASYNC-017")
     @pytest.mark.spec("ID-134")
     async def test_get_folder_info_counts_recursive_children(self, async_backend: AsyncBackend) -> None:
-        """ChildFiles is the full recursive set -- subdirectory files are counted."""
+        """ChildFiles is the full recursive set: subdirectory files are counted."""
         _require(async_backend, Capability.WRITE)
         await _seed(async_backend, {"gfr/a.txt": b"aaa", "gfr/sub/b.txt": b"bb"})
         fi = await async_backend.get_folder_info("gfr")
@@ -346,7 +346,7 @@ class TestGetFolderInfoAggregates:
 
 
 # ===========================================================================
-# §2  Listing -- ASYNC-014 / ASYNC-015 postconditions
+# §2  Listing: ASYNC-014 / ASYNC-015 postconditions
 # ===========================================================================
 
 
@@ -441,7 +441,7 @@ class TestListFoldersCompleteness:
 
 
 # ===========================================================================
-# §3  Move/Copy -- ASYNC-018 / ASYNC-019 postconditions
+# §3  Move/Copy: ASYNC-018 / ASYNC-019 postconditions
 # ===========================================================================
 
 
@@ -539,7 +539,7 @@ class TestMoveCopySelfOperation:
     @pytest.mark.spec("ASYNC-019")
     @pytest.mark.spec("ASYNC-047")
     async def test_self_copy_no_overwrite_preserves_data(self, async_backend: AsyncBackend) -> None:
-        """copy(src, src, overwrite=False) is a no-op -- must not raise AlreadyExists."""
+        """copy(src, src, overwrite=False) is a no-op. Must not raise AlreadyExists."""
         _require(async_backend, Capability.COPY, Capability.WRITE)
         if async_backend.name in _NO_SELF_OP_BACKENDS:
             pytest.skip(f"Backend {async_backend.name!r} does not handle self-copy yet")
@@ -560,7 +560,7 @@ class TestMoveCopySelfOperation:
     @pytest.mark.spec("ASYNC-018")
     @pytest.mark.spec("ASYNC-047")
     async def test_self_move_no_overwrite_preserves_data(self, async_backend: AsyncBackend) -> None:
-        """move(src, src, overwrite=False) is a no-op -- must not raise AlreadyExists."""
+        """move(src, src, overwrite=False) is a no-op. Must not raise AlreadyExists."""
         _require(async_backend, Capability.MOVE, Capability.WRITE)
         if async_backend.name in _NO_SELF_OP_BACKENDS:
             pytest.skip(f"Backend {async_backend.name!r} does not handle self-move yet")
@@ -587,7 +587,7 @@ class TestCopyPostState:
 
     @pytest.mark.spec("ASYNC-019")
     async def test_copy_preserves_source(self, async_backend: AsyncBackend) -> None:
-        """IsFile(fs, src) -- source still exists after copy."""
+        """IsFile(fs, src): source still exists after copy."""
         _require(async_backend, Capability.COPY, Capability.WRITE)
         await async_backend.write("cpps_src.txt", b"data")
         await async_backend.copy("cpps_src.txt", "cpps_dst.txt")
@@ -596,7 +596,7 @@ class TestCopyPostState:
 
 
 # ===========================================================================
-# §4  Write-Read round-trip -- mirrors WriteReadConsistency lemma
+# §4  Write-Read round-trip: mirrors WriteReadConsistency lemma
 # ===========================================================================
 
 
@@ -621,7 +621,7 @@ class TestWriteReadRoundTrip:
 
 
 # ===========================================================================
-# §5  Streaming-read consumption -- ASYNC-020 (async analogue of SIO-001)
+# §5  Streaming-read consumption: ASYNC-020 (async analogue of SIO-001)
 # ===========================================================================
 
 
@@ -670,7 +670,7 @@ class TestAsyncReadStream:
         assert first_chunk is not None
         assert len(first_chunk) > 0
         await stream.aclose()
-        # Second aclose() is a documented no-op for async generators -- must not raise.
+        # Second aclose() is a documented no-op for async generators. Must not raise.
         await stream.aclose()
         # After aclose, further iteration yields nothing (StopAsyncIteration).
         remaining = [chunk async for chunk in stream]
@@ -678,7 +678,7 @@ class TestAsyncReadStream:
 
 
 # ===========================================================================
-# §6  Operational consistency -- ASYNC-004 / ASYNC-008 / ASYNC-012 / ASYNC-014
+# §6  Operational consistency: ASYNC-004 / ASYNC-008 / ASYNC-012 / ASYNC-014
 # ===========================================================================
 
 
