@@ -178,8 +178,8 @@ RS_TEST_LIVE_HNS_CONTAINER=<FILESYSTEM_NAME>
 ```
 
 `tests/backends/test_azure_live_hns.py` carries the `live` pytest marker
-and exercises sync HNS semantics that mocks cannot reach. Two suites
-ship today: `TestAzureLiveHnsDirectoryGuard` confirms the `InvalidPath`
+and exercises sync HNS semantics that mocks cannot reach:
+`TestAzureLiveHnsDirectoryGuard` confirms the `InvalidPath`
 directory-path guards on `write`, `write_atomic`, and `open_atomic`
 against a real HNS directory blob, and
 `TestAzureLiveHnsMetadataSurvivesRename` confirms that user metadata

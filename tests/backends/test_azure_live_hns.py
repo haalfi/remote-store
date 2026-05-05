@@ -1,29 +1,28 @@
 """Live ADLS Gen2 (HNS) integration tests for ``AzureBackend``.
 
-Two semantics-focused suites that need a real ADLS Gen2 account because
-mocks cannot reproduce them:
+Covers HNS semantics that mock-only suites cannot reproduce.
 
-1. **Directory-path guards.** ``TestAzureWriteOnHnsDirectory`` in
-   :mod:`tests.backends.test_azure` fabricates ``hdi_isfolder=true``
-   metadata on a mocked :class:`~azure.storage.blob.BlobProperties` and
-   relies on the same probe the production code uses, so it verifies
-   code logic but not real-account behaviour.
-   ``TestAzureLiveHnsDirectoryGuard`` here asserts the sync API raises
-   :class:`~remote_store._errors.InvalidPath` when the target is an HNS
-   directory blob created via the real
-   :class:`~azure.storage.filedatalake.DataLakeServiceClient`.
+**Directory-path guards.** ``TestAzureWriteOnHnsDirectory`` in
+:mod:`tests.backends.test_azure` fabricates ``hdi_isfolder=true``
+metadata on a mocked :class:`~azure.storage.blob.BlobProperties` and
+relies on the same probe the production code uses, so it verifies
+code logic but not real-account behaviour.
+``TestAzureLiveHnsDirectoryGuard`` here asserts the sync API raises
+:class:`~remote_store._errors.InvalidPath` when the target is an HNS
+directory blob created via the real
+:class:`~azure.storage.filedatalake.DataLakeServiceClient`.
 
-2. **`write_atomic` metadata-survives-rename.**
-   ``test_write_atomic_hns_metadata_preserved`` in
-   :mod:`tests.aio.test_async_azure` only verifies that ``metadata=`` is
-   forwarded to ``upload_data`` on the temp file and that
-   ``WriteResult.metadata`` echoes the caller's mapping by construction
-   (WR-012). It cannot verify that ADLS Gen2's ``rename_file`` preserves
-   user-defined metadata on the renamed final file — a filesystem-level
-   semantics concern only the real service can answer.
-   ``TestAzureLiveHnsMetadataSurvivesRename`` writes 1 KiB through
-   ``write_atomic`` with metadata and asserts the round-trip via
-   ``get_file_info`` after the temp-then-rename has committed.
+**`write_atomic` metadata-survives-rename.**
+``test_write_atomic_hns_metadata_preserved`` in
+:mod:`tests.aio.test_async_azure` only verifies that ``metadata=`` is
+forwarded to ``upload_data`` on the temp file and that
+``WriteResult.metadata`` echoes the caller's mapping by construction
+(WR-012). It cannot verify that ADLS Gen2's ``rename_file`` preserves
+user-defined metadata on the renamed final file, a filesystem-level
+semantics concern only the real service can answer.
+``TestAzureLiveHnsMetadataSurvivesRename`` writes a small payload through
+``write_atomic`` with metadata and asserts the round-trip via
+``get_file_info`` after the temp-then-rename has committed.
 
 Spec: BE-021 (directory-path guard) for BE-008 (``write``),
 BE-010 (``write_atomic``), SAW-001 (``open_atomic``);
