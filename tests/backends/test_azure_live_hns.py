@@ -57,7 +57,7 @@ from remote_store._errors import InvalidPath  # noqa: E402
 from remote_store.backends._azure import AzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
 
 _LOG = logging.getLogger(__name__)
@@ -157,6 +157,19 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
 _PAYLOAD = b"x" * 1024
 
 
+def _do_write(backend: AzureBackend, path: str) -> None:
+    backend.write(path, _PAYLOAD)
+
+
+def _do_write_atomic(backend: AzureBackend, path: str) -> None:
+    backend.write_atomic(path, _PAYLOAD)
+
+
+def _do_open_atomic(backend: AzureBackend, path: str) -> None:
+    with backend.open_atomic(path):
+        pass
+
+
 class TestAzureLiveHnsDirectoryGuard:
     """``write`` / ``write_atomic`` / ``open_atomic`` must raise ``InvalidPath`` on a real HNS directory.
 
@@ -167,34 +180,19 @@ class TestAzureLiveHnsDirectoryGuard:
     """
 
     @pytest.mark.spec("BE-021")
-    @pytest.mark.spec("BE-008")
-    def test_write_raises_invalid_path_on_hns_dir(
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            pytest.param(_do_write, id="write", marks=pytest.mark.spec("BE-008")),
+            pytest.param(_do_write_atomic, id="write_atomic", marks=pytest.mark.spec("BE-010")),
+            pytest.param(_do_open_atomic, id="open_atomic", marks=pytest.mark.spec("SAW-001")),
+        ],
+    )
+    def test_directory_path_raises_invalid_path(
         self,
         live_hns_backend: tuple[AzureBackend, str],
+        operation: Callable[[AzureBackend, str], None],
     ) -> None:
         backend, dirpath = live_hns_backend
         with pytest.raises(InvalidPath, match="exists as a directory"):
-            backend.write(dirpath, _PAYLOAD)
-
-    @pytest.mark.spec("BE-021")
-    @pytest.mark.spec("BE-010")
-    def test_write_atomic_raises_invalid_path_on_hns_dir(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        with pytest.raises(InvalidPath, match="exists as a directory"):
-            backend.write_atomic(dirpath, _PAYLOAD)
-
-    @pytest.mark.spec("BE-021")
-    @pytest.mark.spec("SAW-001")
-    def test_open_atomic_raises_invalid_path_on_hns_dir(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        with (
-            pytest.raises(InvalidPath, match="exists as a directory"),
-            backend.open_atomic(dirpath),
-        ):
-            pass
+            operation(backend, dirpath)
