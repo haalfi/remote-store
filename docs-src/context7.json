@@ -14,6 +14,6 @@
     "Errors are typed in remote_store.errors (re-exported from remote_store). SDK exceptions never leak through the Store API. Catch specific subclasses: NotFound, AlreadyExists, PermissionDenied, CapabilityNotSupported, BackendUnavailable.",
     "Configuration loads from TOML, YAML, dict, or Pydantic models via Registry. ${ENV_VAR} placeholders are resolved and credentials are wrapped in Secret automatically.",
     "Write methods return WriteResult(path, size, digest, etag, last_modified, metadata). Rich fields require WRITE_RESULT_NATIVE capability. store.head(path) returns metadata without reading content.",
-    "Extensions augment the Store API without backend changes — composable operations like batching, caching, integrity checking, and streaming helpers. Optional extras add PyArrow/Parquet, OpenTelemetry, Pydantic, YAML, and Dagster integrations. See /stable/guides/extensions/."
+    "Extensions augment the Store API without backend changes — composable batching, caching, integrity, and streaming helpers are always available. Optional extras add PyArrow, OpenTelemetry, Pydantic, YAML, and Dagster. See /stable/guides/extensions/."
   ]
 }
