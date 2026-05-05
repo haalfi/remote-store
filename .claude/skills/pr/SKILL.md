@@ -17,18 +17,26 @@ See CLAUDE.md § GitHub operations for the full priority chain.
 1. **Pre-check:** Verify not on master, working tree clean, branch pushed to remote.
    Push with `-u` if needed.
 
+   **Freshness check:** Run `git fetch origin master`, then
+   `git rev-list --count origin/master ^HEAD`. If the count is non-zero, the
+   branch is behind `origin/master`. Stop and ask the user whether to rebase
+   (`git rebase origin/master` + force-push) before continuing. Do not rebase
+   silently — a pushed branch requires `--force-with-lease`, which is
+   destructive to anyone tracking the branch.
+
 2a. **Testing gate:** Do the changed tests follow the rules in `sdd/TESTING.md`?
     Report violations before drafting the PR.
 
 2b. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
     Report violations before drafting the PR.
 
-2c. **Coverage gate:** Check `git diff master...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
+2c. **Coverage gate:** Check `git diff origin/master...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
     - If any match: run `hatch run test-cov` (requires 95%). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
     - If none match (docs/config-only): skip coverage.
 
-3. **Gather context:** `git log master..HEAD --oneline` and `git diff master...HEAD`
-   to understand all changes (not just the latest commit).
+3. **Gather context:** `git log origin/master..HEAD --oneline` and `git diff origin/master...HEAD`
+   to understand all changes (not just the latest commit). Use `origin/master`,
+   not local `master`, so context does not depend on a stale local ref.
 
 4. **Draft PR:** Title (<70 chars) + body. Read `.github/PULL_REQUEST_TEMPLATE.md`
    and fill each section from gathered context: summary bullets from commits,
