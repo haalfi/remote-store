@@ -437,7 +437,7 @@ class AzureBackend(Backend):
             except (InvalidPath, AlreadyExists):
                 raise
             except ResourceNotFoundError:
-                pass
+                pass  # Blob doesn't exist yet; proceed to temp upload + atomic rename
 
             azure_path = self._azure_path(path)
             basename = azure_path.rsplit("/", 1)[-1] if "/" in azure_path else azure_path
