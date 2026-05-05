@@ -201,10 +201,10 @@ precedence over `.env` (`override=False`) so test-runner secrets stay
 authoritative.
 
 If `RS_TEST_LIVE_HNS=1` is set but `AZURE_STORAGE_CONNECTION_STRING` is
-missing, empty, or points at Azurite (`UseDevelopmentStorage=true` /
-`127.0.0.1` / `localhost`), the suite fails loud rather than silently
-skipping. Azurite does not emulate Hierarchical Namespace, so an
-Azurite-backed run cannot validate HNS-specific behaviour.
+missing, empty, or points at the Azurite local emulator, the suite fails
+loud with a `pytest.fail` message rather than silently skipping. Azurite
+does not emulate Hierarchical Namespace, so an Azurite-backed run cannot
+validate HNS-specific behaviour.
 
 `.env` is gitignored. Do not commit the connection string.
 
