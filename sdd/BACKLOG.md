@@ -45,14 +45,14 @@ Existing items may be more verbose — trim on next touch.
 ## Bugs
 
 
-- [ ] **BUG-191 — Add `azure-hns` to conformance fixture for `write`/`write_atomic` directory-path guard**
-  BUG-190 added unit-mocked tests for `InvalidPath` on HNS directory paths. The mocked tests
+- [ ] **BUG-191 — Add `azure-hns` to conformance fixture for `write`/`write_atomic`/`open_atomic` directory-path guard**
+  BUG-190 and BUG-192 added unit-mocked tests for `InvalidPath` on HNS directory paths. The mocked tests
   verify code logic but rely on the same `hdi_isfolder` assumption that the code uses. An
   integration-level conformance test against a real Azurite HNS endpoint would provide
   independent evidence that the precondition fires in practice. Follow the
   BUG-170/175/176 pattern: add an `azure-hns` backend fixture entry to
   `tests/backends/conftest.py` and ensure the extended conformance suite exercises
-  `write` and `write_atomic` on a real directory blob.
+  `write`, `write_atomic`, and `open_atomic` on a real directory blob.
 
 - [ ] **BUG-182 — (Candidate) Verify HNS `write_atomic` metadata survives rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is

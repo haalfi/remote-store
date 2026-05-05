@@ -1498,6 +1498,4 @@ class TestAzureWriteOnHnsDirectory:
         with backend.open_atomic("new.txt") as f:
             f.write(b"data")
         assert tmp_fc.upload_data.call_count == 1
-        assert tmp_fc.rename_file.call_count == 1
-        tmp_fc.upload_data.assert_called_once()
         tmp_fc.rename_file.assert_called_once_with("test/new.txt")
