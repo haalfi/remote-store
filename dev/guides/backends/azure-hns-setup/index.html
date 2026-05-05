@@ -9229,38 +9229,50 @@ and place it in your project <code>.env</code>:</p>
 <p>Add the resulting line to <code>.env</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">AZURE_STORAGE_CONNECTION_STRING</span><span class="o">=</span>&lt;paste<span class="w"> </span>here&gt;
 </code></pre></div>
-<p>To opt into the live HNS test class
-(<code>tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS</code>), also set:</p>
+<p>To opt into live HNS coverage, also set:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nv">RS_TEST_LIVE_HNS_CONTAINER</span><span class="o">=</span>&lt;FILESYSTEM_NAME&gt;
 </code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Live HNS fixture wiring is in progress</p>
-<p>Today, the test class is gated only on <code>RS_TEST_LIVE_HNS</code>. Its
-fixture (<code>async_azure_backend</code>) still provisions an Azurite container,
-so even with the gate set the HNS rename path is not exercised
-against a real account. <code>RS_TEST_LIVE_HNS_CONTAINER</code> is documented
-here so that contributor environments are ready when the follow-up
-work routes the fixture to the real connection string. Track that
-work under BUG-182 in <code>sdd/BACKLOG.md</code>.</p>
-</div>
+<p><code>tests/backends/test_azure_live_hns.py::TestAzureLiveHnsDirectoryGuard</code>
+carries the <code>live</code> pytest marker and exercises the <code>InvalidPath</code>
+directory-path guards on <code>write</code>, <code>write_atomic</code>, and <code>open_atomic</code>
+against a real HNS directory blob. <code>live</code>-marked tests are excluded by
+default <code>addopts</code> and have to be opted into explicitly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>tests/backends/test_azure_live_hns.py
+</code></pre></div>
+<p><code>tests/conftest.py</code> loads <code>.env</code> via <code>python-dotenv</code> when a <code>live</code> mark
+expression is in play, so dropping all three variables above into <code>.env</code>
+once is enough — a plain <code>hatch run pytest -m live …</code> picks them up.
+<code>override=False</code> keeps any value already set in the shell or by CI
+authoritative, and a regular <code>hatch run test</code> (with the default
+<code>-m 'not live'</code>) never loads <code>.env</code>.</p>
+<p>If <code>RS_TEST_LIVE_HNS=1</code> is set but <code>AZURE_STORAGE_CONNECTION_STRING</code> is
+missing, empty, or points at the Azurite local emulator, the suite fails
+loud with a <code>pytest.fail</code> message rather than silently skipping. Azurite
+does not emulate Hierarchical Namespace, so an Azurite-backed run cannot
+validate HNS-specific behaviour.</p>
+<p>The async live HNS class
+(<code>tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS</code>) is gated
+only on <code>RS_TEST_LIVE_HNS</code> today and still uses the Azurite-backed
+<code>async_azure_backend</code> fixture. BUG-182 in <code>sdd/BACKLOG.md</code> tracks
+re-wiring it to the real account and adding the <code>live</code> marker.</p>
 <p><code>.env</code> is gitignored. Do not commit the connection string.</p>
 <h2 id="smoke-test">Smoke test<a class="headerlink" href="#smoke-test" title="Permanent link">&para;</a></h2>
 <p>A round-trip via <code>az storage blob</code> confirms the account is usable:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>az<span class="w"> </span>storage<span class="w"> </span>blob<span class="w"> </span>upload<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>--container-name<span class="w"> </span>&lt;FILESYSTEM_NAME&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>--name<span class="w"> </span>smoke/hello.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span>--file<span class="w"> </span>pyproject.toml<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span>--overwrite
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>az<span class="w"> </span>storage<span class="w"> </span>blob<span class="w"> </span>list<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">  </span>--container-name<span class="w"> </span>&lt;FILESYSTEM_NAME&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">  </span>--prefix<span class="w"> </span>smoke/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">  </span>-o<span class="w"> </span>table
-<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>
-<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>az<span class="w"> </span>storage<span class="w"> </span>blob<span class="w"> </span>delete<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">  </span>--container-name<span class="w"> </span>&lt;FILESYSTEM_NAME&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="w">  </span>--name<span class="w"> </span>smoke/hello.txt
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>az<span class="w"> </span>storage<span class="w"> </span>blob<span class="w"> </span>upload<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>--container-name<span class="w"> </span>&lt;FILESYSTEM_NAME&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>--name<span class="w"> </span>smoke/hello.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span>--file<span class="w"> </span>pyproject.toml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span>--overwrite
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>az<span class="w"> </span>storage<span class="w"> </span>blob<span class="w"> </span>list<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">  </span>--container-name<span class="w"> </span>&lt;FILESYSTEM_NAME&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">  </span>--prefix<span class="w"> </span>smoke/<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">  </span>-o<span class="w"> </span>table
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>az<span class="w"> </span>storage<span class="w"> </span>blob<span class="w"> </span>delete<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">  </span>--container-name<span class="w"> </span>&lt;FILESYSTEM_NAME&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="w">  </span>--name<span class="w"> </span>smoke/hello.txt
 </code></pre></div>
 <p>If the upload returns an <code>etag</code> and the list shows the blob, the account
 is ready for <code>remote-store</code> tests.</p>
@@ -9271,10 +9283,10 @@ credit; consult the <a href="https://azure.microsoft.com/en-us/pricing/details/s
 for current rates.</p>
 <p>When you are done, delete the resource group to remove the account and
 all containers in one step:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>az<span class="w"> </span>group<span class="w"> </span>delete<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>--name<span class="w"> </span>&lt;RESOURCE_GROUP&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>--yes<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span>--no-wait
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>az<span class="w"> </span>group<span class="w"> </span>delete<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>--name<span class="w"> </span>&lt;RESOURCE_GROUP&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--yes<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--no-wait
 </code></pre></div>
 <p><code>--no-wait</code> returns immediately; the deletion completes asynchronously in
 about a minute.</p>
@@ -9282,16 +9294,16 @@ about a minute.</p>
 <p>If the connection string is exposed (committed accidentally, pasted into a
 shared transcript, or copied to a less-trusted machine), rotate the key
 and re-pull the connection string:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>az<span class="w"> </span>storage<span class="w"> </span>account<span class="w"> </span>keys<span class="w"> </span>renew<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>--account-name<span class="w"> </span>&lt;ACCOUNT_NAME&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--resource-group<span class="w"> </span>&lt;RESOURCE_GROUP&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--key<span class="w"> </span>key1
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>az<span class="w"> </span>storage<span class="w"> </span>account<span class="w"> </span>show-connection-string<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">  </span>--name<span class="w"> </span>&lt;ACCOUNT_NAME&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">  </span>--resource-group<span class="w"> </span>&lt;RESOURCE_GROUP&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">  </span>--query<span class="w"> </span>connectionString<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">  </span>-o<span class="w"> </span>tsv
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>az<span class="w"> </span>storage<span class="w"> </span>account<span class="w"> </span>keys<span class="w"> </span>renew<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span>--account-name<span class="w"> </span>&lt;ACCOUNT_NAME&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>--resource-group<span class="w"> </span>&lt;RESOURCE_GROUP&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span>--key<span class="w"> </span>key1
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>az<span class="w"> </span>storage<span class="w"> </span>account<span class="w"> </span>show-connection-string<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">  </span>--name<span class="w"> </span>&lt;ACCOUNT_NAME&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span>--resource-group<span class="w"> </span>&lt;RESOURCE_GROUP&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span>--query<span class="w"> </span>connectionString<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">  </span>-o<span class="w"> </span>tsv
 </code></pre></div>
 <p>Update <code>.env</code> with the new connection string. Any session that already
 holds the old key continues to work until you rotate <code>key2</code> as well.</p>
