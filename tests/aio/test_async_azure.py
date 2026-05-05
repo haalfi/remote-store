@@ -446,6 +446,7 @@ class TestAsyncAzureReadWrite:
     @pytest.mark.spec("ASYNC-008")
     async def test_write_overwrite(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
         bc.upload_blob = AsyncMock()
 
         await backend.write("file.txt", b"data", overwrite=True)
@@ -1354,10 +1355,11 @@ class TestAsyncAzureHNSPaths:
         assert result.metadata == {"k": "v"}
 
     @pytest.mark.spec("ASYNC-010")
-    async def test_write_atomic_hns_overwrite_true_skips_existence_check(self) -> None:
-        """overwrite=True skips the get_blob_properties existence check."""
+    async def test_write_atomic_hns_overwrite_true_does_not_raise_already_exists(self) -> None:
+        """overwrite=True: HNS dir check still runs but AlreadyExists is not raised for a regular file."""
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
         backend._cc_instance.get_blob_client.return_value = bc
 
         tmp_fc = AsyncMock(spec=DataLakeFileClient)
@@ -1368,7 +1370,7 @@ class TestAsyncAzureHNSPaths:
 
         await backend.write_atomic("dir/file.txt", b"data", overwrite=True)
 
-        bc.get_blob_properties.assert_not_called()
+        bc.get_blob_properties.assert_awaited_once()
         assert tmp_fc.upload_data.call_count == 1
 
     @pytest.mark.spec("ASYNC-010")
@@ -1824,6 +1826,7 @@ class TestAsyncAzureWriteAtomicIterator:
         """write_atomic forwards the async iterator to upload_blob without
         materializing (non-HNS path). See BUG-165."""
         backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
 
         captured: list[bytes] = []
 
@@ -1899,5 +1902,84 @@ class TestAsyncAzureDelCleanup:
     def test_del_is_safe_when_no_clients(self) -> None:
         """__del__ does not raise or warn when no clients have been opened."""
         backend = _make_backend()
-        result = backend.__del__()
-        assert result is None
+        assert backend.__del__() is None
+
+
+# =============================================================================
+# HNS directory path guard — write / write_atomic (ASYNC-008, ASYNC-010, ASYNC-024)
+# =============================================================================
+
+
+def _setup_hns_write_backend_async() -> tuple[AsyncAzureBackend, AsyncMock, AsyncMock]:
+    """Return (backend, container_client, blob_client) with HNS enabled."""
+    backend = _make_backend()
+    backend._hns_enabled = True
+    cc = AsyncMock(spec=ContainerClient)
+    backend._cc_instance = cc
+    bc = AsyncMock(spec=BlobClient)
+    cc.get_blob_client.return_value = bc
+    backend._blob_service_instance = AsyncMock(spec=BlobServiceClient)
+    fs = AsyncMock(spec=FileSystemClient)
+    backend._fs_instance = fs
+    return backend, cc, bc
+
+
+class TestAsyncAzureWriteOnHnsDirectory:
+    """ASYNC-024: write/write_atomic on an HNS directory path must raise InvalidPath."""
+
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_no_overwrite_raises_invalid_path(self) -> None:
+        from remote_store._errors import InvalidPath
+
+        backend, _cc, bc = _setup_hns_write_backend_async()
+        bc.get_blob_properties.return_value = _mock_blob_props(metadata={"hdi_isfolder": "true"})
+        with pytest.raises(InvalidPath):
+            await backend.write("mydir", b"data")
+
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_overwrite_true_raises_invalid_path(self) -> None:
+        from remote_store._errors import InvalidPath
+
+        backend, _cc, bc = _setup_hns_write_backend_async()
+        bc.get_blob_properties.return_value = _mock_blob_props(metadata={"hdi_isfolder": "true"})
+        with pytest.raises(InvalidPath):
+            await backend.write("mydir", b"data", overwrite=True)
+
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_no_overwrite_raises_invalid_path(self) -> None:
+        from remote_store._errors import InvalidPath
+
+        backend, _cc, bc = _setup_hns_write_backend_async()
+        bc.get_blob_properties.return_value = _mock_blob_props(metadata={"hdi_isfolder": "true"})
+        with pytest.raises(InvalidPath):
+            await backend.write_atomic("mydir", b"data")
+
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_overwrite_true_raises_invalid_path(self) -> None:
+        from remote_store._errors import InvalidPath
+
+        backend, _cc, bc = _setup_hns_write_backend_async()
+        bc.get_blob_properties.return_value = _mock_blob_props(metadata={"hdi_isfolder": "true"})
+        with pytest.raises(InvalidPath):
+            await backend.write_atomic("mydir", b"data", overwrite=True)
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_regular_file_not_affected(self) -> None:
+        """A normal (non-dir) blob at the path should still raise AlreadyExists."""
+        backend, _cc, bc = _setup_hns_write_backend_async()
+        bc.get_blob_properties.return_value = _mock_blob_props(metadata={})
+        with pytest.raises(AlreadyExists):
+            await backend.write("file.txt", b"data")
+
+    @pytest.mark.spec("ASYNC-008")
+    async def test_write_path_not_found_proceeds(self) -> None:
+        """When the blob doesn't exist (ResourceNotFoundError), write should not raise."""
+        backend, _cc, bc = _setup_hns_write_backend_async()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
+        bc.upload_blob.return_value = {"etag": '"abc"', "last_modified": None, "version_id": None, "content_md5": None}
+        result = await backend.write("new.txt", b"data")
+        assert result is not None

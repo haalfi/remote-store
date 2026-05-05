@@ -15,6 +15,7 @@ from remote_store._errors import (
     AlreadyExists,
     CapabilityNotSupported,
     DirectoryNotEmpty,
+    InvalidPath,
     NotFound,
     RemoteStoreError,
 )
@@ -425,14 +426,17 @@ class AsyncAzureBackend(AsyncBackend):
 
         async with self._errors(path):
             bc = self._blob_client(path)
-            if not overwrite:
-                try:
-                    await bc.get_blob_properties()
+            try:
+                props = await bc.get_blob_properties()
+                blob_meta = getattr(props, "metadata", None) or {}
+                if blob_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Cannot write — '{path}' is a directory", path=path, backend=self.name)
+                if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                except AlreadyExists:
-                    raise
-                except ResourceNotFoundError:
-                    pass  # Blob doesn't exist, proceed
+            except (InvalidPath, AlreadyExists):
+                raise
+            except ResourceNotFoundError:
+                pass  # Blob doesn't exist, proceed
             # BUG-165: pass async iter straight to upload_blob — the SDK streams
             # AsyncIterable[bytes] in bounded memory; materializing would break
             # the streaming promise (SIO-003/ASYNC-021) for large payloads.
@@ -495,14 +499,17 @@ class AsyncAzureBackend(AsyncBackend):
 
         async with self._errors(path):
             bc = self._blob_client(path)
-            if not overwrite:
-                try:
-                    await bc.get_blob_properties()
+            try:
+                props = await bc.get_blob_properties()
+                blob_meta = getattr(props, "metadata", None) or {}
+                if blob_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Cannot write — '{path}' is a directory", path=path, backend=self.name)
+                if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                except AlreadyExists:
-                    raise
-                except ResourceNotFoundError:
-                    pass
+            except (InvalidPath, AlreadyExists):
+                raise
+            except ResourceNotFoundError:
+                pass
 
             ap = _azure_path_fn(path)
             basename = ap.rsplit("/", 1)[-1] if "/" in ap else ap

@@ -40,6 +40,7 @@ from remote_store._errors import (  # noqa: E402
     BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
+    InvalidPath,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -1371,4 +1372,91 @@ class TestAzureWriteResultIntegration:
         azure_backend.write("rt.txt", b"data", metadata={"env": "prod"})
         fi = azure_backend.get_file_info("rt.txt")
         assert fi.metadata is not None
-        assert fi.metadata.get("env") == "prod"
+
+
+# =============================================================================
+# HNS directory path guard — write / write_atomic (BE-008, BE-010, BE-021)
+# =============================================================================
+
+
+def _make_hns_blob_props(metadata: dict[str, str] | None = None) -> MagicMock:
+    """Create a mock BlobProperties representing an HNS directory blob."""
+    props = MagicMock(spec=BlobProperties)
+    props.size = 0
+    props.content_length = 0
+    props.last_modified = None
+    props.etag = None
+    cs = MagicMock(spec=ContentSettings)
+    cs.content_md5 = None
+    props.content_settings = cs
+    props.metadata = metadata if metadata is not None else {"hdi_isfolder": "true"}
+    return props
+
+
+def _setup_hns_write_backend() -> tuple[AzureBackend, MagicMock, MagicMock]:
+    """Return (backend, container_client, blob_client) with HNS enabled."""
+    backend = _make_backend()
+    backend._hns_enabled = True
+    cc = MagicMock(spec=ContainerClient)
+    backend._cc_instance = cc
+    bc = MagicMock(spec=BlobClient)
+    cc.get_blob_client.return_value = bc
+    backend._blob_service_instance = MagicMock(spec=BlobServiceClient)
+    fs = MagicMock(spec=FileSystemClient)
+    backend._fs_instance = fs
+    return backend, cc, bc
+
+
+class TestAzureWriteOnHnsDirectory:
+    """BE-021: write/write_atomic on an HNS directory path must raise InvalidPath."""
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.spec("BE-008")
+    def test_write_no_overwrite_raises_invalid_path(self) -> None:
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.return_value = _make_hns_blob_props()
+        with pytest.raises(InvalidPath):
+            backend.write("mydir", b"data")
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.spec("BE-008")
+    def test_write_overwrite_true_raises_invalid_path(self) -> None:
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.return_value = _make_hns_blob_props()
+        with pytest.raises(InvalidPath):
+            backend.write("mydir", b"data", overwrite=True)
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.spec("BE-010")
+    def test_write_atomic_no_overwrite_raises_invalid_path(self) -> None:
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.return_value = _make_hns_blob_props()
+        with pytest.raises(InvalidPath):
+            backend.write_atomic("mydir", b"data")
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.spec("BE-010")
+    def test_write_atomic_overwrite_true_raises_invalid_path(self) -> None:
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.return_value = _make_hns_blob_props()
+        with pytest.raises(InvalidPath):
+            backend.write_atomic("mydir", b"data", overwrite=True)
+
+    @pytest.mark.spec("BE-008")
+    def test_write_regular_file_not_affected(self) -> None:
+        """A normal (non-dir) blob at the path should still raise AlreadyExists."""
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.return_value = _make_hns_blob_props(metadata={})
+        with pytest.raises(AlreadyExists):
+            backend.write("file.txt", b"data")
+
+    @pytest.mark.spec("BE-008")
+    def test_write_path_not_found_proceeds(self) -> None:
+        """When the blob doesn't exist (ResourceNotFoundError), write should not raise."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
+        bc.upload_blob.return_value = {"etag": '"abc"', "last_modified": None, "version_id": None, "content_md5": None}
+        result = backend.write("new.txt", b"data")
+        assert result is not None

@@ -8,6 +8,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-190 — Azure `write`/`write_atomic` on a directory path does not raise `InvalidPath` per BE-021/ASYNC-024**
+  `AzureBackend` and `AsyncAzureBackend` violated BE-021/ASYNC-024 for `write` and `write_atomic` on HNS directory paths: `bc.get_blob_properties()` succeeded for HNS dirs (returning `hdi_isfolder=true` metadata), causing `AlreadyExists` on `overwrite=False` or a silent upload on `overwrite=True`. Fixed by unifying the blob-properties probe for both `overwrite` modes: check `hdi_isfolder` first and raise `InvalidPath`; fall through to the `AlreadyExists` guard only for regular files. Added HNS-mocked unit tests for sync and async (`TestAzureWriteOnHnsDirectory`, `TestAsyncAzureWriteOnHnsDirectory`). Spec: BE-008, BE-010, ASYNC-008, ASYNC-010, BE-021, ASYNC-024.
+
 - [x] **BK-174 — Document `InvalidPath` on async `write`/`write_atomic` across the verified ripple layers**
   Follow-up to BK-173. The canonical error mapping
   ([BE-021](specs/003-backend-adapter-contract.md), cross-referenced from
