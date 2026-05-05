@@ -14,8 +14,8 @@ The current parametrization does not include any such backend, but the helper
 is preserved so future fixture extensions stay correct.
 
 Spec coverage: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008,
-ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017, ASYNC-018,
-ASYNC-019, ASYNC-020, ASYNC-024 (mirroring BE-004..BE-021 and SIO-001).
+ASYNC-010, ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017,
+ASYNC-018, ASYNC-019, ASYNC-020, ASYNC-024 (mirroring BE-004..BE-021 and SIO-001).
 """
 
 from __future__ import annotations
@@ -167,14 +167,13 @@ class TestWriteErrorFidelity:
     shares BE-008 precondition order via BE-010.
     """
 
-    @pytest.mark.spec("ASYNC-008", "ASYNC-010")
     @pytest.mark.parametrize(
         ("method", "overwrite"),
         [
-            pytest.param("write", False, id="write-no-overwrite"),
-            pytest.param("write", True, id="write-overwrite"),
-            pytest.param("write_atomic", False, id="write_atomic-no-overwrite"),
-            pytest.param("write_atomic", True, id="write_atomic-overwrite"),
+            pytest.param("write", False, id="write-no-overwrite", marks=pytest.mark.spec("ASYNC-008")),
+            pytest.param("write", True, id="write-overwrite", marks=pytest.mark.spec("ASYNC-008")),
+            pytest.param("write_atomic", False, id="write_atomic-no-overwrite", marks=pytest.mark.spec("ASYNC-010")),
+            pytest.param("write_atomic", True, id="write_atomic-overwrite", marks=pytest.mark.spec("ASYNC-010")),
         ],
     )
     async def test_write_on_directory_raises_error(
