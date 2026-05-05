@@ -177,11 +177,15 @@ RS_TEST_LIVE_HNS=1
 RS_TEST_LIVE_HNS_CONTAINER=<FILESYSTEM_NAME>
 ```
 
-`tests/backends/test_azure_live_hns.py::TestAzureLiveHnsDirectoryGuard`
-carries the `live` pytest marker and exercises the `InvalidPath`
+`tests/backends/test_azure_live_hns.py` carries the `live` pytest marker
+and exercises sync HNS semantics that mocks cannot reach. Two suites
+ship today: `TestAzureLiveHnsDirectoryGuard` confirms the `InvalidPath`
 directory-path guards on `write`, `write_atomic`, and `open_atomic`
-against a real HNS directory blob. `live`-marked tests are excluded by
-default `addopts` and have to be opted into explicitly:
+against a real HNS directory blob, and
+`TestAzureLiveHnsMetadataSurvivesRename` confirms that user metadata
+passed to `write_atomic` survives ADLS Gen2's atomic-rename commit
+(round-tripped via `get_file_info`). `live`-marked tests are excluded
+by default `addopts` and have to be opted into explicitly:
 
 ```bash
 hatch run pytest -m live tests/backends/test_azure_live_hns.py
@@ -203,8 +207,9 @@ validate HNS-specific behaviour.
 The async live HNS class
 (`tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS`) is gated
 only on `RS_TEST_LIVE_HNS` today and still uses the Azurite-backed
-`async_azure_backend` fixture. BUG-182 in `sdd/BACKLOG.md` tracks
-re-wiring it to the real account and adding the `live` marker.
+`async_azure_backend` fixture, so its body executes on Azurite even when
+`RS_TEST_LIVE_HNS=1` is set; the suite therefore does not currently
+validate HNS-specific async behaviour against a real account.
 
 `.env` is gitignored. Do not commit the connection string.
 

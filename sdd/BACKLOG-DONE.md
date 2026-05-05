@@ -8,6 +8,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-182 — Verify HNS `write_atomic` user metadata survives the atomic rename in integration**
+  `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
+  forwarded to `upload_data` on the temp file and that `WriteResult.metadata` echoes the
+  caller's mapping by construction (WR-012). The harder property — ADLS Gen2's `rename_file`
+  preserves user-defined metadata on the renamed final file — is a service-side semantics
+  concern only a real account can answer. Added
+  `tests/backends/test_azure_live_hns.py::TestAzureLiveHnsMetadataSurvivesRename` (one
+  parametrized-free test, 1 KiB payload, sibling file under the existing module-scoped
+  session prefix) that writes via `write_atomic(path, payload, metadata=...)` against a
+  real ADLS Gen2 account and asserts the metadata round-trips via `get_file_info(path)`.
+  Production code was already correct (the live test passed on first run, confirming
+  BUG-181's docstring claim); this closes the verification gap rather than fixing a
+  defect. Sync-only scope per BACKLOG-defined boundary; the `TestAsyncAzureLiveHNS` class
+  in `tests/aio/test_async_azure_live.py` still uses the Azurite-backed fixture and is
+  not re-wired here — the docs guide describes that gap factually instead of forwarding
+  to a closed BUG. Spec: WR-013, BE-010.
+
 - [x] **BUG-191 — Add live HNS test class for `write`/`write_atomic`/`open_atomic` directory-path guard**
   BUG-190 and BUG-192 added unit-mocked tests that fabricate `hdi_isfolder=true` on a mocked `BlobProperties` to verify the `InvalidPath` precondition. The mocks rely on the same probe assumption the code uses, so they verify code logic but not real-account behaviour. Added a focused live integration suite at `tests/backends/test_azure_live_hns.py::TestAzureLiveHnsDirectoryGuard` (three tests, 1 KiB payload, module-scoped fixture creating one HNS directory via `DataLakeServiceClient.create_directory`) that exercises the same three guards against a real ADLS Gen2 account. Gated on the new `live` pytest marker (excluded by default `addopts`) plus `RS_TEST_LIVE_HNS=1` plus a real-account `AZURE_STORAGE_CONNECTION_STRING` (Azurite-shaped values fail loud rather than silently skip). Setup guide updated to describe the new gating layer. Followed the BUG-170/175/176 verification intent (real backend, not mocks) but kept the scope narrow to the three guards rather than the full extended-conformance suite, since live cloud tests bear real cost. Spec: BE-021, BE-008, BE-010, SAW-001.
 
@@ -704,7 +721,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `version_id` and `digest` confirmed `None` on HNS (ADLS Gen2 `PathProperties` does not
   surface `content_md5` or `version_id` via `get_file_properties()`);
   `metadata=` kwarg forwarded to the pre-rename `upload_data` call; `WriteResult.metadata`
-  echo is by construction per WR-012 (post-rename preservation on the live file deferred — see BUG-182); `overwrite=True`
+  echo is by construction per WR-012 (post-rename preservation on the live file covered by BUG-182); `overwrite=True`
   skips the existence check; `overwrite=False` with existing file raises `AlreadyExists`.
   Removed stale `# pragma: no cover` from the HNS `write_atomic` block.
   Spec: WR-004, WR-010, WR-012, ASYNC-010.
