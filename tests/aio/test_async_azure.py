@@ -47,6 +47,7 @@ from remote_store._errors import (  # noqa: E402
     BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
+    InvalidPath,
     NotFound,
     PermissionDenied,
     RemoteStoreError,
@@ -1929,50 +1930,28 @@ class TestAsyncAzureWriteOnHnsDirectory:
 
     @pytest.mark.spec("ASYNC-024")
     @pytest.mark.spec("ASYNC-008")
-    async def test_write_no_overwrite_raises_invalid_path(self) -> None:
-        from remote_store._errors import InvalidPath
-
+    @pytest.mark.parametrize("overwrite", [False, True])
+    async def test_write_raises_invalid_path_on_hns_dir(self, overwrite: bool) -> None:
         backend, _cc, bc = _setup_hns_write_backend_async()
         bc.get_blob_properties.return_value = _mock_blob_props(metadata={"hdi_isfolder": "true"})
-        with pytest.raises(InvalidPath):
-            await backend.write("mydir", b"data")
-
-    @pytest.mark.spec("ASYNC-024")
-    @pytest.mark.spec("ASYNC-008")
-    async def test_write_overwrite_true_raises_invalid_path(self) -> None:
-        from remote_store._errors import InvalidPath
-
-        backend, _cc, bc = _setup_hns_write_backend_async()
-        bc.get_blob_properties.return_value = _mock_blob_props(metadata={"hdi_isfolder": "true"})
-        with pytest.raises(InvalidPath):
-            await backend.write("mydir", b"data", overwrite=True)
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            await backend.write("mydir", b"data", overwrite=overwrite)
 
     @pytest.mark.spec("ASYNC-024")
     @pytest.mark.spec("ASYNC-010")
-    async def test_write_atomic_no_overwrite_raises_invalid_path(self) -> None:
-        from remote_store._errors import InvalidPath
-
+    @pytest.mark.parametrize("overwrite", [False, True])
+    async def test_write_atomic_raises_invalid_path_on_hns_dir(self, overwrite: bool) -> None:
         backend, _cc, bc = _setup_hns_write_backend_async()
         bc.get_blob_properties.return_value = _mock_blob_props(metadata={"hdi_isfolder": "true"})
-        with pytest.raises(InvalidPath):
-            await backend.write_atomic("mydir", b"data")
-
-    @pytest.mark.spec("ASYNC-024")
-    @pytest.mark.spec("ASYNC-010")
-    async def test_write_atomic_overwrite_true_raises_invalid_path(self) -> None:
-        from remote_store._errors import InvalidPath
-
-        backend, _cc, bc = _setup_hns_write_backend_async()
-        bc.get_blob_properties.return_value = _mock_blob_props(metadata={"hdi_isfolder": "true"})
-        with pytest.raises(InvalidPath):
-            await backend.write_atomic("mydir", b"data", overwrite=True)
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            await backend.write_atomic("mydir", b"data", overwrite=overwrite)
 
     @pytest.mark.spec("ASYNC-008")
     async def test_write_regular_file_not_affected(self) -> None:
         """A normal (non-dir) blob at the path should still raise AlreadyExists."""
         backend, _cc, bc = _setup_hns_write_backend_async()
         bc.get_blob_properties.return_value = _mock_blob_props(metadata={})
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="already exists|Already exists"):
             await backend.write("file.txt", b"data")
 
     @pytest.mark.spec("ASYNC-008")

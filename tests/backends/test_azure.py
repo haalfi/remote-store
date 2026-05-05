@@ -1412,42 +1412,28 @@ class TestAzureWriteOnHnsDirectory:
 
     @pytest.mark.spec("BE-021")
     @pytest.mark.spec("BE-008")
-    def test_write_no_overwrite_raises_invalid_path(self) -> None:
+    @pytest.mark.parametrize("overwrite", [False, True])
+    def test_write_raises_invalid_path_on_hns_dir(self, overwrite: bool) -> None:
         backend, _cc, bc = _setup_hns_write_backend()
         bc.get_blob_properties.return_value = _make_hns_blob_props()
-        with pytest.raises(InvalidPath):
-            backend.write("mydir", b"data")
-
-    @pytest.mark.spec("BE-021")
-    @pytest.mark.spec("BE-008")
-    def test_write_overwrite_true_raises_invalid_path(self) -> None:
-        backend, _cc, bc = _setup_hns_write_backend()
-        bc.get_blob_properties.return_value = _make_hns_blob_props()
-        with pytest.raises(InvalidPath):
-            backend.write("mydir", b"data", overwrite=True)
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            backend.write("mydir", b"data", overwrite=overwrite)
 
     @pytest.mark.spec("BE-021")
     @pytest.mark.spec("BE-010")
-    def test_write_atomic_no_overwrite_raises_invalid_path(self) -> None:
+    @pytest.mark.parametrize("overwrite", [False, True])
+    def test_write_atomic_raises_invalid_path_on_hns_dir(self, overwrite: bool) -> None:
         backend, _cc, bc = _setup_hns_write_backend()
         bc.get_blob_properties.return_value = _make_hns_blob_props()
-        with pytest.raises(InvalidPath):
-            backend.write_atomic("mydir", b"data")
-
-    @pytest.mark.spec("BE-021")
-    @pytest.mark.spec("BE-010")
-    def test_write_atomic_overwrite_true_raises_invalid_path(self) -> None:
-        backend, _cc, bc = _setup_hns_write_backend()
-        bc.get_blob_properties.return_value = _make_hns_blob_props()
-        with pytest.raises(InvalidPath):
-            backend.write_atomic("mydir", b"data", overwrite=True)
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            backend.write_atomic("mydir", b"data", overwrite=overwrite)
 
     @pytest.mark.spec("BE-008")
     def test_write_regular_file_not_affected(self) -> None:
         """A normal (non-dir) blob at the path should still raise AlreadyExists."""
         backend, _cc, bc = _setup_hns_write_backend()
         bc.get_blob_properties.return_value = _make_hns_blob_props(metadata={})
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="already exists|Already exists"):
             backend.write("file.txt", b"data")
 
     @pytest.mark.spec("BE-008")
