@@ -5,5 +5,6 @@
 - S3-PyArrow: s3-pyarrow.md
 - SFTP: sftp.md
 - Azure: azure.md
+- Azure HNS Setup: azure-hns-setup.md
 - SQL Blob: sql-blob.md
 - SQL Query: sql-query.md
