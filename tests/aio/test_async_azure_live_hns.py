@@ -269,15 +269,25 @@ class TestAsyncLiveHnsMetadata:
 
 
 class TestAsyncLiveHnsDirectoryGuard:
-    """``write_atomic`` must raise ``InvalidPath`` when targeting a real HNS directory blob.
+    """``write`` and ``write_atomic`` must raise ``InvalidPath`` on a real HNS directory blob.
 
     Async companion to ``TestAzureLiveHnsDirectoryGuard`` in
-    :mod:`tests.backends.test_azure_live_hns`. Confirms that the ``hdi_isfolder``
-    probe fires against a directory blob created by the DataLake service, not just
-    one whose metadata was fabricated in a mock.
+    :mod:`tests.backends.test_azure_live_hns`. Both async methods carry the same
+    ``hdi_isfolder`` probe; only a real account confirms the marker is set by the
+    DataLake service rather than fabricated in a mock. ``AsyncAzureBackend`` has no
+    ``open_atomic``; the two write methods are the full async guard surface.
 
-    Spec: BE-021, BE-010.
+    Spec: BE-021, BE-008, BE-010.
     """
+
+    @pytest.mark.spec("BE-021", "BE-008")
+    async def test_write_on_hns_dir_raises_invalid_path(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            await backend.write(dirpath, _PAYLOAD)
 
     @pytest.mark.spec("BE-021", "BE-010")
     async def test_write_atomic_on_hns_dir_raises_invalid_path(
