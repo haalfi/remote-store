@@ -44,6 +44,25 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
+- [ ] **BUG-190 — Azure `write`/`write_atomic` on a directory path does not raise `InvalidPath` per BE-021/ASYNC-024**
+  Surfaced during PR #582 review. The canonical error mapping
+  ([BE-021](specs/003-backend-adapter-contract.md), cross-referenced from
+  [ASYNC-024](specs/029-async-store-backend-api.md)) requires file
+  operations on a directory path to raise `InvalidPath`. `AsyncAzureBackend`
+  (and the sync `AzureBackend`) currently violate this for `write` and
+  `write_atomic` on HNS: the code path calls `bc.get_blob_properties()`,
+  which on an HNS directory returns success rather than `ResourceNotFoundError`,
+  so the backend either raises `AlreadyExists` (when `overwrite=False`)
+  or proceeds to upload. `classify_azure_error` in
+  `src/remote_store/backends/_azure_common.py:67-113` has no mapping that
+  produces `InvalidPath`. Likely fix: add an explicit `IsDir(path)` check
+  in `write`/`write_atomic` (sync and async) before the existence probe,
+  raising `InvalidPath` when true; mirror the sync `LocalBackend` /
+  `MemoryBackend` precondition order. Add HNS-mocked unit tests for both
+  backends; consider adding `azure-hns` to the conformance fixture per
+  the BUG-170/175/176 fixture-coverage gap pattern. Spec: BE-008, BE-010,
+  ASYNC-008, ASYNC-010, BE-021, ASYNC-024.
+
 - [ ] **BUG-182 — (Candidate) Verify HNS `write_atomic` metadata survives rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
   forwarded to `upload_data` on the temp file and that `WriteResult.metadata` echoes the

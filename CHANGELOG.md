@@ -9,6 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- BK-174: document `InvalidPath` on async `write`/`write_atomic` across the `AsyncBackend` ABC, `SyncBackendAdapter`, and `AsyncMemoryBackend.write_atomic`; bundle the matching `--` → `—` swap in `AsyncBackend.delete_folder` and add `write_atomic(dir)` regression coverage (ASYNC-010) to the async conformance suite. `AsyncAzureBackend` carved out as **BUG-190** — runtime does not uphold the canonical mapping on HNS directories.
 - BK-173: complete the four-layer async docstring ripple by adding `Raises:` clauses to nine I/O methods on `SyncBackendAdapter`, mirrored from the `AsyncBackend` ABC; surfaces in `help()` and IDE hover today.
 - BUG-189: `AsyncMemoryBackend` now mirrors the sync `MemoryBackend` error
   fidelity for type-mismatched paths. `read`, `read_bytes`, and
