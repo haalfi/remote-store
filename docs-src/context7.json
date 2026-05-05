@@ -5,15 +5,15 @@
   "projectTitle": "remote-store docs",
   "description": "Full documentation for remote-store: tutorials, how-to guides, API reference, and design explanations. Write file storage code once, run it against local files, S3, SFTP, or Azure.",
   "rules": [
-    "Docs follow the Diataxis framework: /stable/tutorial/ for learning by doing, /stable/guides/ for task-focused how-tos, /stable/reference/ for API reference, /stable/explanation/ for architecture and design rationale.",
-    "Tutorial (/stable/tutorial/): the hands-on intro to remote-store. By the end you'll have a working Store reading and writing files, and the rest of the docs will make sense.",
-    "Guides (/stable/guides/): recipes for the things you'll actually do — pick a backend, add caching, stream big files, plug into PyArrow or Dagster. One page, one task.",
-    "Reference (/stable/reference/): the complete one — exact and searchable. Come here when you know what you need or like to dig into.",
-    "Explanation (/stable/explanation/): why remote-store is shaped the way it is — the reasoning behind design choices, not just what they are. Read when 'how' isn't enough.",
-    "Guide: Build Your Own Backend (/stable/guides/custom-backend-guide/) walks through implementing a custom Backend (Redis example) that plugs into Store, Registry, and every extension in the ecosystem.",
-    "Guide: Data Lake Patterns (/stable/guides/data-lake-patterns/) — remote-store as the I/O layer under Delta Lake, Iceberg, and Parquet. Develop against MemoryBackend locally, deploy to S3 or Azure without changing application code.",
-    "Guide: Parquet Datasets (/stable/guides/parquet-datasets/) — managed Parquet datasets with manifests, completion markers, and multi-part layouts using ext.parquet.ParquetDatasetStore.",
-    "Extensions (/stable/guides/extensions/): ext.batch for bulk ops, ext.cache for TTL caching, ext.observe for I/O hooks, ext.transfer for cross-store copy, ext.arrow as a PyArrow FileSystem adapter — no backend changes needed.",
-    "RetryPolicy (/stable/guides/retry/) provides unified retry configuration across backends; each backend maps it to its native retry mechanism, avoiding retry multiplication."
+    "Docs follow the Diataxis framework: tutorials for learning by doing, guides for task-focused how-tos, reference for API detail, explanation for architecture and design rationale.",
+    "Tutorial: the hands-on intro to remote-store. By the end you'll have a working Store reading and writing files, and the rest of the docs will make sense.",
+    "Guides: recipes for the things you'll actually do — pick a backend, add caching, stream big files, plug into PyArrow or Dagster. One page, one task.",
+    "Reference: the complete one — exact and searchable. Come here when you know what you need or like to dig into.",
+    "Explanation: why remote-store is shaped the way it is — the reasoning behind design choices, not just what they are. Read when 'how' isn't enough.",
+    "Guide: Build Your Own Backend walks through implementing a custom Backend (Redis example) that plugs into Store, Registry, and every extension in the ecosystem.",
+    "Guide: Data Lake Patterns — remote-store as the I/O layer under Delta Lake, Iceberg, and Parquet. Develop against MemoryBackend locally, deploy to S3 or Azure without changing application code.",
+    "Guide: Parquet Datasets — managed Parquet datasets with manifests, completion markers, and multi-part layouts using ext.parquet.ParquetDatasetStore.",
+    "Extensions guide: ext.batch for bulk ops, ext.cache for TTL caching, ext.observe for I/O hooks, ext.transfer for cross-store copy, ext.arrow as a PyArrow FileSystem adapter — no backend changes needed.",
+    "RetryPolicy provides unified retry configuration across backends; each backend maps it to its native retry mechanism, avoiding retry multiplication."
   ]
 }
