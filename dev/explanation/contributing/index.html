@@ -2230,6 +2230,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/backends/azure-hns-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Azure HNS Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/backends/sql-blob/" class="md-nav__link">
         
   
@@ -9822,6 +9850,9 @@ traceability and test-per-spec obligations are in
 <li>Run <code>pytest -m spec</code> to verify all spec-derived tests pass</li>
 <li>Run <code>pytest --cov=remote_store</code> for coverage reports</li>
 </ul>
+<p>Tests gated on <code>RS_TEST_LIVE_HNS=1</code> require a real Azure Data Lake Storage
+Gen2 account. See <a href="../../guides/backends/azure-hns-setup/">Azure HNS account setup</a>
+for the provisioning recipe.</p>
 <h2 id="examples-and-notebooks">Examples and Notebooks<a class="headerlink" href="#examples-and-notebooks" title="Permanent link">&para;</a></h2>
 <p>The <code>examples/</code> directory contains runnable Python scripts that are validated in CI. Example scripts must remain self-contained and use <code>tempfile.TemporaryDirectory</code> for cleanup.</p>
 <p>Jupyter notebooks in <code>examples/notebooks/</code> are validated in CI via
