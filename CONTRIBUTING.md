@@ -249,6 +249,10 @@ traceability and test-per-spec obligations are in
 - Run `pytest -m spec` to verify all spec-derived tests pass
 - Run `pytest --cov=remote_store` for coverage reports
 
+Tests gated on `RS_TEST_LIVE_HNS=1` require a real Azure Data Lake Storage
+Gen2 account. See [Azure HNS account setup](docs-src/guides/backends/azure-hns-setup.md)
+for the provisioning recipe.
+
 ## Examples and Notebooks
 
 The `examples/` directory contains runnable Python scripts that are validated in CI. Example scripts must remain self-contained and use `tempfile.TemporaryDirectory` for cleanup.

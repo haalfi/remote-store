@@ -203,7 +203,7 @@ backend = AzureBackend(
 )
 ```
 
-Note: Azurite does not support Hierarchical Namespace. HNS-specific features (atomic rename, real directories) are tested with mocked SDK objects.
+Note: Azurite does not support Hierarchical Namespace. HNS-specific features (atomic rename, real directories) are tested with mocked SDK objects. To validate against a live ADLS Gen2 account, see [Azure HNS account setup](azure-hns-setup.md).
 
 ## See also
 
