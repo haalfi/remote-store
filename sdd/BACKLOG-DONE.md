@@ -8,6 +8,37 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-193 — Async HNS live test suite missing; sync HNS live tests lacking `WriteResult` assertions**
+  `TestAsyncAzureLiveHNS` in `tests/aio/test_async_azure_live.py` (added by BUG-182) used the
+  Azurite-backed `async_azure_backend` fixture. Azurite does not emulate HNS, so `_ensure_hns()`
+  returned `False` and `write_atomic` silently delegated to `write` — the temp-file + rename
+  path was never exercised. The sole assertion (`isinstance(result, WriteResult)`) violated
+  TESTING.md Rule 2. The class also inherited the module-level
+  `skipif(not _azurite_reachable())` guard, blocking it in real-ADLS-Gen2-only CI even when
+  `RS_TEST_LIVE_HNS=1` was set.
+
+  Separately, the sync `test_write_atomic_metadata_survives_rename` (BUG-182) discarded the
+  `write_atomic` return value entirely, missing WR-012 (metadata echo in
+  `WriteResult.metadata`), WR-001a (size, source), and the uniquely-live cross-check that
+  `WriteResult.etag` (from the post-rename `get_file_properties` call) matches
+  `get_file_info().etag` (independent SDK read — the only assertion that surfaces normalisation
+  drift between two distinct SDK paths on a real account).
+
+  Fixed:
+  1. Removed `TestAsyncAzureLiveHNS`; added `tests/aio/test_async_azure_live_hns.py` — a
+     dedicated file with a real-ADLS-Gen2 fixture, no Azurite dependency, and explicit
+     separation from the Azurite-gated module. Three classes: `TestAsyncLiveHnsWriteResult`
+     (WR-001a, WR-004, AZ-034 — source, size, etag normalisation, last_modified, etag
+     cross-check vs `get_file_info`), `TestAsyncLiveHnsMetadata` (WR-012, WR-013),
+     `TestAsyncLiveHnsDirectoryGuard` (BE-021, BE-008, BE-010 — `write` and `write_atomic`;
+     `open_atomic` absent from the async API, noted in docstring).
+  2. Enhanced `TestAzureLiveHnsMetadataSurvivesRename` with `WriteResult` field assertions
+     (WR-012 echo, WR-001a size/source).
+  3. Added `TestAzureLiveHnsWriteResult` with the etag cross-check (WR-001a, WR-004, AZ-034).
+  4. Updated `azure-hns-setup.md` guide: replaced stale "gap still open" paragraph with a
+     positive description of the new file.
+  PR: #590. Spec: WR-001a, WR-004, WR-012, WR-013, AZ-034, BE-008, BE-010, BE-021.
+
 - [x] **BUG-182 — Verify HNS `write_atomic` user metadata survives the atomic rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
   forwarded to `upload_data` on the temp file and that `WriteResult.metadata` echoes the
