@@ -15,6 +15,7 @@ from remote_store._errors import (
     AlreadyExists,
     CapabilityNotSupported,
     DirectoryNotEmpty,
+    InvalidPath,
     NotFound,
     RemoteStoreError,
 )
@@ -420,12 +421,27 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory.
         """
         from azure.core.exceptions import ResourceNotFoundError
 
         async with self._errors(path):
             bc = self._blob_client(path)
-            if not overwrite:
+            if await self._ensure_hns():
+                try:
+                    props = await bc.get_blob_properties()
+                    blob_meta = getattr(props, "metadata", None) or {}
+                    if blob_meta.get("hdi_isfolder"):
+                        raise InvalidPath(
+                            f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name
+                        )
+                    if not overwrite:
+                        raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                except (InvalidPath, AlreadyExists):
+                    raise
+                except ResourceNotFoundError:
+                    pass  # Blob doesn't exist, proceed
+            elif not overwrite:
                 try:
                     await bc.get_blob_properties()
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
@@ -485,6 +501,7 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory.
         """
         if not await self._ensure_hns():
             # non-HNS: direct upload is atomic (PUT semantics)
@@ -495,14 +512,17 @@ class AsyncAzureBackend(AsyncBackend):
 
         async with self._errors(path):
             bc = self._blob_client(path)
-            if not overwrite:
-                try:
-                    await bc.get_blob_properties()
+            try:
+                props = await bc.get_blob_properties()
+                blob_meta = getattr(props, "metadata", None) or {}
+                if blob_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
+                if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                except AlreadyExists:
-                    raise
-                except ResourceNotFoundError:
-                    pass
+            except (InvalidPath, AlreadyExists):
+                raise
+            except ResourceNotFoundError:
+                pass  # Blob doesn't exist yet; proceed to temp upload + atomic rename
 
             ap = _azure_path_fn(path)
             basename = ap.rsplit("/", 1)[-1] if "/" in ap else ap

@@ -18,6 +18,7 @@ from remote_store._errors import (
     AlreadyExists,
     CapabilityNotSupported,
     DirectoryNotEmpty,
+    InvalidPath,
     NotFound,
     RemoteStoreError,
 )
@@ -384,7 +385,21 @@ class AzureBackend(Backend):
 
         with self._errors(path):
             bc = self._blob_client(path)
-            if not overwrite:
+            if self._hns:
+                try:
+                    props = bc.get_blob_properties()
+                    blob_meta = getattr(props, "metadata", None) or {}
+                    if blob_meta.get("hdi_isfolder"):
+                        raise InvalidPath(
+                            f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name
+                        )
+                    if not overwrite:
+                        raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                except (InvalidPath, AlreadyExists):
+                    raise
+                except ResourceNotFoundError:
+                    pass  # Blob doesn't exist, proceed
+            elif not overwrite:
                 try:
                     bc.get_blob_properties()
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
@@ -421,16 +436,19 @@ class AzureBackend(Backend):
         # HNS: write to temp file via DFS, then atomic rename
         from azure.core.exceptions import ResourceNotFoundError
 
-        with self._errors(path):  # pragma: no cover -- HNS only
+        with self._errors(path):
             bc = self._blob_client(path)
-            if not overwrite:
-                try:
-                    bc.get_blob_properties()
+            try:
+                props = bc.get_blob_properties()
+                blob_meta = getattr(props, "metadata", None) or {}
+                if blob_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
+                if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-                except AlreadyExists:
-                    raise
-                except ResourceNotFoundError:
-                    pass
+            except (InvalidPath, AlreadyExists):
+                raise
+            except ResourceNotFoundError:
+                pass  # Blob doesn't exist yet; proceed to temp upload + atomic rename
 
             azure_path = self._azure_path(path)
             basename = azure_path.rsplit("/", 1)[-1] if "/" in azure_path else azure_path
