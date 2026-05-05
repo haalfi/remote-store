@@ -212,6 +212,7 @@ class SyncBackendAdapter(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory.
         """
         raw = await _materialize(content)
         return await asyncio.to_thread(self._sync.write, path, raw, overwrite=overwrite, metadata=metadata)
@@ -229,6 +230,7 @@ class SyncBackendAdapter(AsyncBackend):
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory.
         """
         raw = await _materialize(content)
         return await asyncio.to_thread(self._sync.write_atomic, path, raw, overwrite=overwrite, metadata=metadata)

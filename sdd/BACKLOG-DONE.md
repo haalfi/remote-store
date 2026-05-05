@@ -8,6 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-174 — Document `InvalidPath` on async `write`/`write_atomic` across the four-layer ripple**
+  Follow-up to BK-173. The canonical error mapping ([BE-021](specs/003-backend-adapter-contract.md))
+  cross-referenced from [ASYNC-024](specs/029-async-store-backend-api.md)
+  requires `write` and `write_atomic` to raise `InvalidPath` when ``path``
+  names a directory, but the docstrings for `AsyncBackend.write`/`write_atomic`
+  (the ABC), `AsyncAzureBackend.write`/`write_atomic`, and
+  `SyncBackendAdapter.write`/`write_atomic` only documented `AlreadyExists`.
+  `AsyncMemoryBackend` already documented it, and the existing
+  `TestWriteErrorFidelity` covered `write(dir)` (ASYNC-008) but not
+  `write_atomic(dir)`. Aligned the three docstring layers (sync `Store`
+  layer matches sync convention — Store-layer documents only Store-layer
+  validation, so `AsyncStore` is unchanged for parity), and added two
+  conformance tests for `write_atomic(dir)` mirroring the existing
+  `write(dir)` tests, traced to ASYNC-010. Also bundled the matching
+  `--` → `—` (U+2014) swap in `AsyncBackend.delete_folder`'s `Raises:`
+  clause that was deferred from BK-173 to keep the verbatim-mirror property
+  between the ABC and `SyncBackendAdapter` holding character-for-character.
+
 - [x] **BK-173 — Complete the four-layer async docstring ripple at `SyncBackendAdapter`**
   PR #580 (BUG-189) review surfaced that the four-layer ripple chain
   (concrete backend → ABC → `AsyncStore` → `SyncBackendAdapter`) was applied

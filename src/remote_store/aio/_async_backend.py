@@ -147,6 +147,7 @@ class AsyncBackend(abc.ABC):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory.
         """
 
     @abc.abstractmethod
@@ -172,6 +173,7 @@ class AsyncBackend(abc.ABC):
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory.
         """
 
     @abc.abstractmethod
@@ -199,7 +201,7 @@ class AsyncBackend(abc.ABC):
 
         Raises:
             InvalidPath: If ``path`` names an existing file (regardless of
-                ``missing_ok`` -- a type mismatch is not a missing file).
+                ``missing_ok`` — a type mismatch is not a missing file).
             NotFound: If the folder is missing and ``missing_ok`` is ``False``.
             DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
         """

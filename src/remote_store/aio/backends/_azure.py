@@ -420,6 +420,8 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory (HNS only;
+                flat-namespace blob accounts have no directory entries).
         """
         from azure.core.exceptions import ResourceNotFoundError
 
@@ -485,6 +487,8 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory (HNS only;
+                flat-namespace blob accounts have no directory entries).
         """
         if not await self._ensure_hns():
             # non-HNS: direct upload is atomic (PUT semantics)

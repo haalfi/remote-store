@@ -160,7 +160,10 @@ class TestReadErrorFidelity:
 
 
 class TestWriteErrorFidelity:
-    """ASYNC-008 (mirrors BE-008): write(dir) ==> InvalidPath unconditionally."""
+    """ASYNC-008 / ASYNC-010 (mirrors BE-008 / BE-010).
+
+    write(dir) and write_atomic(dir) ==> InvalidPath unconditionally.
+    """
 
     @pytest.mark.spec("ASYNC-008")
     async def test_write_on_directory_raises_error(self, async_backend: AsyncBackend) -> None:
@@ -182,6 +185,24 @@ class TestWriteErrorFidelity:
         await async_backend.write("wdir2/file.txt", b"x")
         with pytest.raises(InvalidPath, match="wdir2"):
             await async_backend.write("wdir2", b"data", overwrite=True)
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_on_directory_raises_error(self, async_backend: AsyncBackend) -> None:
+        """IsDir(path) ==> InvalidPath. write_atomic shares BE-008 precondition order via BE-010."""
+        _require(async_backend, Capability.WRITE, Capability.ATOMIC_WRITE)
+        _skip_flat_namespace(async_backend)
+        await async_backend.write("wadir/file.txt", b"x")
+        with pytest.raises(InvalidPath, match="wadir"):
+            await async_backend.write_atomic("wadir", b"data")
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_on_directory_overwrite_still_raises_error(self, async_backend: AsyncBackend) -> None:
+        """IsDir(path) ==> InvalidPath even with overwrite=True."""
+        _require(async_backend, Capability.WRITE, Capability.ATOMIC_WRITE)
+        _skip_flat_namespace(async_backend)
+        await async_backend.write("wadir2/file.txt", b"x")
+        with pytest.raises(InvalidPath, match="wadir2"):
+            await async_backend.write_atomic("wadir2", b"data", overwrite=True)
 
 
 @pytest.mark.spec("ASYNC-012")
