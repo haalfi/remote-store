@@ -1,8 +1,8 @@
 # Audit 013 — Docstring Style Compliance
 
 **Date:** 2026-05-05
-**Scope:** All Python docstrings in `src/`, `tests/`, and `scripts/` at HEAD of
-`claude/azure-hns-directory-tests-lTL0m`.
+**Scope:** All Python docstrings in `src/`, `tests/`, and `scripts/` at
+`master` `f5c8c37`.
 **Method:** Agent-assisted full read of every `.py` file; each docstring
 cross-checked against the three rules extracted below.
 
