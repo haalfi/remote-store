@@ -16,31 +16,12 @@ cross-checked against the three rules extracted below.
 
 ### DESIGN.md § 4 — Docstrings
 
-> Google style (`Args:`, `Returns:`, `Raises:`). Short and purpose-focused:
->
-> ```python
-> def write(self, path: str, content: WritableContent, *, overwrite: bool = False) -> None:
->     """Write content to a file.
->
->     Args:
->         path: Relative path within the store.
->         content: Bytes or binary stream to write.
->         overwrite: If ``True``, replace existing file.
->
->     Raises:
->         AlreadyExists: If file exists and ``overwrite`` is ``False``.
->
->     ```python
->     store.write("data/report.csv", b"hello", overwrite=True)
->     ```
->     """
-> ```
+> Google style (`Args:`, `Returns:`, `Raises:`). Short and purpose-focused.
 
-No RST cross-reference roles are defined or valid in Google-style docstrings.
-Roles such as `:class:`, `:mod:`, `:meth:`, `:func:`, `:data:`, `:exc:` and
-the `~`-prefix shorthand render as literal punctuation-laden text in every
-renderer that does not process RST (plain GitHub, mkdocstrings in Google mode,
-IDEs).
+RST cross-reference roles (`:class:`, `:mod:`, `:meth:`, `:func:`, `:data:`,
+`:exc:`, `~`-prefix) are not defined in Google style. They render as literal
+punctuation-laden text in every renderer that does not process RST (plain
+GitHub, mkdocstrings in Google mode, IDEs).
 
 ### DOCUMENTATION.md § 3 — Docstring completeness
 
