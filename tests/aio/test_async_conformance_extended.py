@@ -514,59 +514,37 @@ class TestMoveCopyOverwrite:
 class TestMoveCopySelfOperation:
     """ASYNC-047 / BE-018 / BE-019: self-move/self-copy must not lose data."""
 
+    @pytest.mark.spec("ASYNC-018")
     @pytest.mark.spec("ASYNC-019")
     @pytest.mark.spec("ASYNC-047")
-    async def test_self_copy_preserves_data(self, async_backend: AsyncBackend) -> None:
-        """copy(src, src, overwrite=True) must not lose data."""
-        _require(async_backend, Capability.COPY, Capability.WRITE)
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    async def test_self_op_preserves_data(
+        self, async_backend: AsyncBackend, op: str, cap: Capability, overwrite: bool
+    ) -> None:
+        """{move,copy}(src, src, overwrite={True,False}) is a no-op: source content preserved."""
+        _require(async_backend, cap, Capability.WRITE)
         if async_backend.name in _NO_SELF_OP_BACKENDS:
-            pytest.skip(f"Backend {async_backend.name!r} does not handle self-copy yet")
-        await async_backend.write("selfcp.txt", b"data")
-        await async_backend.copy("selfcp.txt", "selfcp.txt", overwrite=True)
-        assert await async_backend.read_bytes("selfcp.txt") == b"data"
+            pytest.skip(f"Backend {async_backend.name!r} does not handle self-{op} yet")
+        path = f"self_{op}_ow{overwrite}.txt"
+        await async_backend.write(path, b"data")
+        await _do_op(async_backend, op, path, path, overwrite=overwrite)
+        assert await async_backend.read_bytes(path) == b"data"
 
     @pytest.mark.spec("ASYNC-018")
-    @pytest.mark.spec("ASYNC-047")
-    async def test_self_move_preserves_data(self, async_backend: AsyncBackend) -> None:
-        """move(src, src, overwrite=True) must not lose data."""
-        _require(async_backend, Capability.MOVE, Capability.WRITE)
-        if async_backend.name in _NO_SELF_OP_BACKENDS:
-            pytest.skip(f"Backend {async_backend.name!r} does not handle self-move yet")
-        await async_backend.write("selfmv.txt", b"data")
-        await async_backend.move("selfmv.txt", "selfmv.txt", overwrite=True)
-        assert await async_backend.read_bytes("selfmv.txt") == b"data"
-
     @pytest.mark.spec("ASYNC-019")
     @pytest.mark.spec("ASYNC-047")
-    async def test_self_copy_no_overwrite_preserves_data(self, async_backend: AsyncBackend) -> None:
-        """copy(src, src, overwrite=False) is a no-op. Must not raise AlreadyExists."""
-        _require(async_backend, Capability.COPY, Capability.WRITE)
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    async def test_self_op_missing_raises_not_found(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        """{move,copy}(src, src) where src does not exist raises NotFound."""
+        _require(async_backend, cap)
         if async_backend.name in _NO_SELF_OP_BACKENDS:
-            pytest.skip(f"Backend {async_backend.name!r} does not handle self-copy yet")
-        await async_backend.write("selfcp2.txt", b"data")
-        await async_backend.copy("selfcp2.txt", "selfcp2.txt", overwrite=False)
-        assert await async_backend.read_bytes("selfcp2.txt") == b"data"
-
-    @pytest.mark.spec("ASYNC-019")
-    @pytest.mark.spec("ASYNC-047")
-    async def test_self_copy_missing_raises_not_found(self, async_backend: AsyncBackend) -> None:
-        """copy(src, src) where src does not exist must raise NotFound."""
-        _require(async_backend, Capability.COPY)
-        if async_backend.name in _NO_SELF_OP_BACKENDS:
-            pytest.skip(f"Backend {async_backend.name!r} does not handle self-copy yet")
-        with pytest.raises(NotFound, match="sc_missing"):
-            await async_backend.copy("sc_missing.txt", "sc_missing.txt")
-
-    @pytest.mark.spec("ASYNC-018")
-    @pytest.mark.spec("ASYNC-047")
-    async def test_self_move_no_overwrite_preserves_data(self, async_backend: AsyncBackend) -> None:
-        """move(src, src, overwrite=False) is a no-op. Must not raise AlreadyExists."""
-        _require(async_backend, Capability.MOVE, Capability.WRITE)
-        if async_backend.name in _NO_SELF_OP_BACKENDS:
-            pytest.skip(f"Backend {async_backend.name!r} does not handle self-move yet")
-        await async_backend.write("selfmv2.txt", b"data")
-        await async_backend.move("selfmv2.txt", "selfmv2.txt", overwrite=False)
-        assert await async_backend.read_bytes("selfmv2.txt") == b"data"
+            pytest.skip(f"Backend {async_backend.name!r} does not handle self-{op} yet")
+        path = f"sm_{op}_missing.txt"
+        with pytest.raises(NotFound, match=f"sm_{op}_missing"):
+            await _do_op(async_backend, op, path, path)
 
 
 class TestMovePostState:

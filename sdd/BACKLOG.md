@@ -58,7 +58,17 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-*(none)*
+- [ ] **BK-173 — Parametrize self-op tests in `tests/backends/test_conformance_extended.py`**
+  `TestMoveCopySelfOperation` in the sync extended-conformance suite has five
+  near-duplicate methods that differ only in `op ∈ {move, copy}` and
+  `overwrite ∈ {True, False}` — a TESTING.md Rule 7 violation. The async mirror
+  was parametrized in the BUG-189 follow-up (PR #580) over `(op, cap)` ×
+  `overwrite`, collapsing five tests into two. Apply the same shape to the sync
+  file. The async parametrization also added the previously-missing
+  self-move-missing-NotFound case; mirror that on the sync side too. No spec
+  change; the markers `BE-018 / BE-019 / ASYNC-047` (or the sync equivalents)
+  stay on each parametrized method. Verify behavior unchanged via
+  `hatch run pytest tests/backends/test_conformance_extended.py -k SelfOperation`.
 
 ---
 
