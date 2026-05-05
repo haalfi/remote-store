@@ -7,9 +7,17 @@ argument-hint: "[PR number]"
 
 PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
 
-## Step 1: Fetch comments and rebase
+## Step 1: Prepare branch and fetch comments
 
-Check out the PR's head branch. Rebase onto master if behind (`git rebase master`) — parallel PRs may have merged since this branch was created.
+Check out the PR's head branch.
+
+**Freshness check:** Run `git fetch origin master`, then
+`git rev-list --count origin/master ^HEAD`. If the count is non-zero, the
+branch is behind `origin/master`. Stop and ask the user whether to rebase.
+If approved: `git rebase origin/master` then immediately
+`git push --force-with-lease origin <current-branch>`, so Step 6's push is a
+plain fast-forward. Do not rebase silently — `--force-with-lease` is
+destructive to anyone tracking the branch.
 
 For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads):
 use `github-pat` first (read+write), fall back to `MCP_DOCKER` for reads only.
