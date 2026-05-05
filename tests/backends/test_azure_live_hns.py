@@ -62,18 +62,23 @@ if TYPE_CHECKING:
 
 _LOG = logging.getLogger(__name__)
 
-# Connection-string fragment that unambiguously indicates Azurite (the
+# Connection-string fragments that unambiguously indicate Azurite (the
 # local emulator). Azurite does not emulate Hierarchical Namespace, so a
 # connection string pointing at it cannot validate the HNS directory-path
 # guards. See docs-src/guides/backends/azure-hns-setup.md.
 #
-# Heuristic intentionally narrow: a real Azure account routed through a
-# localhost tunnel or service-mesh sidecar may legitimately contain
-# ``127.0.0.1`` or ``localhost`` in the BlobEndpoint, so those tokens are
-# not used as Azurite signatures. Connection strings that target Azurite
-# via explicit endpoint URLs without this shortcut will fail downstream
-# at ``create_directory`` (no DFS endpoint), which is informative enough.
-_AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true",)
+# Both forms are caught:
+#  - The shorthand ``UseDevelopmentStorage=true`` token.
+#  - The explicit-endpoint form (used by the repo's own
+#    ``_AZURITE_CONN_STR`` in ``tests/conftest.py``), which omits the
+#    shorthand but always carries ``AccountName=devstoreaccount1`` —
+#    Azurite's well-known emulator account, globally reserved and
+#    unclaimable on real Azure.
+#
+# A real Azure account routed through a localhost tunnel or service-mesh
+# sidecar may legitimately contain ``127.0.0.1`` or ``localhost`` in the
+# BlobEndpoint, so those tokens are NOT used as Azurite signatures.
+_AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "AccountName=devstoreaccount1")
 
 
 pytestmark = [
@@ -128,10 +133,15 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
     :meth:`~azure.storage.filedatalake.FileSystemClient.create_directory`.
     The directory and its contents are best-effort deleted on teardown.
 
-    Module-scoped because creating an HNS directory is a real round trip
-    against Azure; the three tests that share it cannot interfere with
-    each other (they only read directory metadata via ``get_blob_properties``
-    and never mutate the directory blob).
+    Module-scoped because creating an HNS directory is a real round
+    trip against Azure. Each test issues a write-path operation
+    (``write`` / ``write_atomic`` / ``open_atomic``) against ``dirpath``
+    and asserts the call raises ``InvalidPath`` before any data lands —
+    the production probe of ``hdi_isfolder`` fires first. So in the
+    happy path no test mutates the directory and the tests cannot
+    interfere with each other; if the guard regresses (the case the
+    suite exists to catch) a write may land and the test will fail
+    loudly. Teardown deletes the prefix in either case.
     """
     conn, fs_name = _require_live_env()
 

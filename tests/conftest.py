@@ -33,7 +33,11 @@ def _maybe_load_dotenv_for_live(config: pytest.Config) -> None:
     pull credentials into its environment. ``override=False`` keeps any
     value already set in the shell or by CI authoritative.
     """
-    markexpr = (config.getoption("-m") or "").strip()
+    # Pass an explicit default so that programmatic invocations or
+    # plugin-phase ordering where ``-m`` has not yet been registered
+    # don't raise ``ValueError`` from ``getoption``. In a normal
+    # ``hatch run pytest`` flow this never fires.
+    markexpr = (config.getoption("-m", default="") or "").strip()
     # Tokenize on whitespace and parens, then look for ``live`` used as
     # an inclusion (i.e. not preceded by ``not``). Catches ``live``,
     # ``live or extended_conformance``, ``foo and live``; rejects
