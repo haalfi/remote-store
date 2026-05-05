@@ -9,6 +9,19 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- BUG-189: `AsyncMemoryBackend` now mirrors the sync `MemoryBackend` error
+  fidelity for type-mismatched paths. `read`, `read_bytes`, and
+  `get_file_info` raise `InvalidPath` (not `NotFound`) when the path names
+  an existing directory; `get_folder_info` raises `InvalidPath` when the
+  path names an existing file; `delete_folder` raises `InvalidPath` when
+  the path is a file (regardless of `missing_ok`); `move`/`copy` raise
+  `InvalidPath` when the source is a directory; `copy(src, src,
+  overwrite=False)` is now a no-op instead of raising `AlreadyExists`.
+  Discovered by porting the extended conformance suite to async (see
+  `tests/aio/test_async_conformance_extended.py`); `AsyncBackend` ABC
+  docstrings updated to document the `InvalidPath` paths
+  (ASYNC-006 / ASYNC-007 / ASYNC-013 / ASYNC-016 / ASYNC-017 / ASYNC-018 /
+  ASYNC-019).
 - BUG-188: benchmark SVG images no longer broken on the performance docs page
 - BUG-187: EthicalAds ad no longer floats over graph viz canvas
 - BUG-186: render API graph viz on iOS Safari

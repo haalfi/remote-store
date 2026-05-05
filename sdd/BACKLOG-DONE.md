@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-189 — `AsyncMemoryBackend` did not mirror sync error fidelity for type-mismatched paths**
+  The native `AsyncMemoryBackend` raised `NotFound` in several cases where
+  the sync `MemoryBackend` (and the Dafny contract) require `InvalidPath`:
+  `read`/`read_bytes`/`get_file_info` on a directory path,
+  `get_folder_info` on a file path, `delete_folder` on a file path
+  (including with `missing_ok=True` — type mismatch is not "missing"), and
+  `move`/`copy` with a directory `src`. `copy(src, src, overwrite=False)`
+  also incorrectly raised `AlreadyExists` instead of being a no-op like
+  the sync backend (and like async `move(src, src)`). Discovered by
+  porting the extended conformance suite from
+  `tests/backends/test_conformance_extended.py` to the async side as
+  classes mirroring BE-006..BE-021. Fix: align `_memory.py` branches with
+  the canonical sync logic; document `InvalidPath` on the `AsyncBackend`
+  ABC for `read`, `read_bytes`, `delete_folder`, `get_file_info`,
+  `get_folder_info`, `move`, `copy`. Spec coverage added: ASYNC-004,
+  ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008, ASYNC-013, ASYNC-014,
+  ASYNC-015, ASYNC-016, ASYNC-017, ASYNC-018, ASYNC-019, ASYNC-020,
+  ASYNC-024 (in addition to the existing ASYNC-012 stub).
+
 - [x] **ID-176 — Wire stable docs site to context7**
   Added `docs-src/context7.json` to claim `https://docs.remotestore.dev/stable/`
   on context7 (`https://context7.com/websites/remotestore_dev_stable`). MkDocs
