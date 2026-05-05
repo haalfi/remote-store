@@ -157,7 +157,7 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
     """
     conn, fs_name = _require_live_env()
 
-    prefix = f"bug191/{uuid.uuid4().hex[:8]}"
+    prefix = f"live-hns/{uuid.uuid4().hex[:8]}"
     dirpath = f"{prefix}/dirblob"
 
     # Each acquired resource is paired with its teardown via a nested
@@ -188,8 +188,9 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
 # ---------------------------------------------------------------------------
 
 
-# 1 KiB cap (BUG-191 cost discipline). The guards fire on path shape, not
-# content; a single KiB is sufficient to demonstrate the exception path.
+# 1 KiB cap keeps the live-cost footprint small. Tests in this module
+# exercise path-shape and metadata semantics; payload content is
+# irrelevant to either contract.
 _PAYLOAD = b"x" * 1024
 
 
