@@ -60,7 +60,7 @@ from remote_store._errors import InvalidPath  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator
+    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 
 _LOG = logging.getLogger(__name__)
 
@@ -297,7 +297,7 @@ class TestAsyncLiveHnsDirectoryGuard:
     async def test_directory_path_raises_invalid_path(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
-        operation,
+        operation: Callable[[AsyncAzureBackend, str], Awaitable[None]],
     ) -> None:
         backend, dirpath = async_live_hns_backend
         with pytest.raises(InvalidPath, match="exists as a directory"):

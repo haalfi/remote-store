@@ -324,6 +324,9 @@ class TestAzureLiveHnsWriteResult:
         # WR-001a / AZ-034: etag must be non-empty, quote-stripped, and lowercased.
         # On HNS this comes from post-rename get_file_properties — only a real account
         # confirms that call succeeds and the ETag is in a usable form.
+        # BUG-173 allows etag=None when get_file_properties() fails post-rename (the
+        # rename committed; the read is best-effort). That path is a transient fallback;
+        # this test targets the normal path where the read succeeds.
         assert result.etag is not None, (
             "HNS write_atomic must populate WriteResult.etag from post-rename get_file_properties"
         )

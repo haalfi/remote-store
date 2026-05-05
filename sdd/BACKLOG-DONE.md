@@ -37,6 +37,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   3. Added `TestAzureLiveHnsWriteResult` with the etag cross-check (WR-001a, WR-004, AZ-034).
   4. Updated `azure-hns-setup.md` guide: replaced stale "gap still open" paragraph with a
      positive description of the new file.
+  Follow-up gap: the async `write_atomic` HNS path (`aio/backends/_azure.py:559`) calls
+  `get_file_properties()` without the BUG-173 try/except fallback the sync path carries.
+  A post-rename read failure on async propagates as a write-call exception rather than
+  returning `WriteResult(etag=None)`. No `src/` change in this PR; defer to a follow-up.
   PR: #590. Spec: WR-001a, WR-004, WR-012, WR-013, AZ-034, BE-008, BE-010, BE-021.
 
 - [x] **BUG-182 — Verify HNS `write_atomic` user metadata survives the atomic rename in integration**
