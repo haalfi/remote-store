@@ -1456,9 +1456,12 @@ class TestAzureWriteOnHnsDirectory:
         bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
         tmp_fc = MagicMock(spec=DataLakeFileClient)
         tmp_fc.upload_data.return_value = None
-        tmp_fc.get_file_properties.return_value = MagicMock(
+        dst_fc = MagicMock(spec=DataLakeFileClient)
+        dst_fc.get_file_properties.return_value = MagicMock(
             spec=["etag", "last_modified"], etag=None, last_modified=None
         )
-        backend._fs_instance.get_file_client.return_value = tmp_fc
+        backend._fs_instance.get_file_client.side_effect = [tmp_fc, dst_fc]
         result = backend.write_atomic("new.txt", b"data")
         assert result is not None
+        tmp_fc.upload_data.assert_called_once()
+        tmp_fc.rename_file.assert_called_once_with("test/new.txt")

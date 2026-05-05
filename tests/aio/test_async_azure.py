@@ -1976,3 +1976,5 @@ class TestAsyncAzureWriteOnHnsDirectory:
         backend._fs_instance.get_file_client.return_value = tmp_fc
         result = await backend.write_atomic("new.txt", b"data")
         assert result is not None
+        tmp_fc.upload_data.assert_awaited_once()
+        tmp_fc.rename_file.assert_awaited_once_with("test/new.txt")
