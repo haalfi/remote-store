@@ -2,7 +2,9 @@
 
 **Date:** 2026-05-05
 **Scope:** All Python docstrings in `src/`, `tests/`, and `scripts/` at
-`master` `f5c8c37`.
+`master` `f5c8c37`. (The one subsequent master commit before the PR base
+`ed3df448` is `#589` — a skills/config change with no Python source edits;
+the Python file set is identical between the two SHAs.)
 **Method:** Agent-assisted full read of every `.py` file; each docstring
 cross-checked against the three rules extracted below.
 
@@ -49,8 +51,8 @@ Use `Example:` (not `Usage:`). For module-level docstrings use `!!! example` adm
 
 | ID | Line(s) | Symbol | Violation |
 |---|---|---|---|
-| 1 | 3, 6 | module | `:class:` × 2 (`Backend`, `AsyncBackend`) |
-| 2 | 209, 215, 228 | `unwrap` | `:class:` × 2, `:meth:` (with `~`) |
+| 1 | 3, 4, 6 | module | `:class:` × 3 (`Backend`, `AsyncBackend`, `SyncBackendAdapter`) |
+| 2 | 209, 214, 215, 220, 228 | `unwrap` | `:class:` × 3, `:meth:` × 2 (both with `~`) |
 | 3 | 289 | `check_health` | `:class:` with `~` |
 | 4 | 329 | `read` | `:class:` (`io.RawIOBase`) |
 
@@ -144,3 +146,4 @@ File added in BUG-191/BUG-182; RST introduced despite doc-system rules being in 
 - **Double-backtick `` ``foo`` ``** — valid Google-style inline code, not an RST role. Not flagged.
 - **Em dashes in summary lines** — within CLAUDE.md convention (`—`, sparingly). Not flagged.
 - **Test methods without docstrings** — DESIGN.md § 11 does not require prose on every test method. Not flagged.
+- **`_async_to_sync_adapter.py` module docstring (9 lines, 3 sentences)** — Borderline against the 1-2 sentence rule. The third sentence is a cross-reference cluster (ADR-0012, ADR-0025, spec 029 range) with no narrative content. The `test_azure_live_hns.py` Low finding (ID 15) is flagged because it contains five distinct prose sections totalling 54 lines; the asymmetry is intentional. Not flagged.
