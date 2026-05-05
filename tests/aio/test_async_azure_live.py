@@ -21,7 +21,7 @@ async event loop just to provision a container.
 
 Azurite does not emulate Hierarchical Namespace. HNS-specific live tests
 (write_atomic temp+rename, metadata survival, directory guard) live in
-:mod:`tests.aio.test_async_azure_live_hns` and are gated on
+``tests.aio.test_async_azure_live_hns`` and are gated on
 ``RS_TEST_LIVE_HNS=1``.
 """
 

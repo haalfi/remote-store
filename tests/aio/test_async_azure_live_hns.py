@@ -13,7 +13,7 @@ the upload response. Only a real ADLS Gen2 account can confirm that:
   blob created by the DataLake service — not one fabricated in a mock.
 
 This file is intentionally **not** co-located with the Azurite-backed async live
-tests in :mod:`tests.aio.test_async_azure_live`. That file carries a module-level
+tests in ``tests.aio.test_async_azure_live``. That file carries a module-level
 ``skipif(not _azurite_reachable())`` guard; real ADLS Gen2 tests must not be blocked
 by Azurite availability.
 
@@ -82,7 +82,7 @@ _PAYLOAD = b"x" * 1024
 def _require_live_hns_env() -> tuple[str, str]:
     """Return (connection_string, filesystem) or fail loud.
 
-    Mirrors the same helper in :mod:`tests.backends.test_azure_live_hns`.
+    Mirrors the same helper in ``tests.backends.test_azure_live_hns``.
     Kept local rather than shared to avoid a cross-package test import; the
     logic is a one-off env-var validation, not infrastructure worth sharing.
     """
@@ -278,7 +278,7 @@ class TestAsyncLiveHnsDirectoryGuard:
     """``write`` and ``write_atomic`` must raise ``InvalidPath`` on a real HNS directory blob.
 
     Async companion to ``TestAzureLiveHnsDirectoryGuard`` in
-    :mod:`tests.backends.test_azure_live_hns`. Both async methods carry the same
+    ``tests.backends.test_azure_live_hns``. Both async methods carry the same
     ``hdi_isfolder`` probe; only a real account confirms the marker is set by the
     DataLake service rather than fabricated in a mock. ``AsyncAzureBackend`` has no
     ``open_atomic``; the two write methods are the full async guard surface.

@@ -3,18 +3,18 @@
 Covers HNS semantics that mock-only suites cannot reproduce.
 
 **Directory-path guards.** ``TestAzureWriteOnHnsDirectory`` in
-:mod:`tests.backends.test_azure` fabricates ``hdi_isfolder=true``
-metadata on a mocked :class:`~azure.storage.blob.BlobProperties` and
+``tests.backends.test_azure`` fabricates ``hdi_isfolder=true``
+metadata on a mocked ``BlobProperties`` and
 relies on the same probe the production code uses, so it verifies
 code logic but not real-account behaviour.
 ``TestAzureLiveHnsDirectoryGuard`` here asserts the sync API raises
-:class:`~remote_store._errors.InvalidPath` when the target is an HNS
+``InvalidPath`` when the target is an HNS
 directory blob created via the real
-:class:`~azure.storage.filedatalake.DataLakeServiceClient`.
+``DataLakeServiceClient``.
 
 **`write_atomic` metadata-survives-rename.**
 ``test_write_atomic_hns_metadata_preserved`` in
-:mod:`tests.aio.test_async_azure` only verifies that ``metadata=`` is
+``tests.aio.test_async_azure`` only verifies that ``metadata=`` is
 forwarded to ``upload_data`` on the temp file and that
 ``WriteResult.metadata`` echoes the caller's mapping by construction
 (WR-012). It cannot verify that ADLS Gen2's ``rename_file`` preserves
@@ -143,7 +143,7 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
 
     Yields ``(backend, dirpath)`` where ``dirpath`` is the in-filesystem
     path of an HNS directory created via
-    :meth:`~azure.storage.filedatalake.FileSystemClient.create_directory`.
+    ``create_directory()``.
     The directory and its contents are best-effort deleted on teardown.
 
     Module-scoped because creating an HNS directory is a real round
