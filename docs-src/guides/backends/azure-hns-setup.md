@@ -8,7 +8,7 @@ their own ADLS Gen2 provisioning against `remote-store` before production.
 If you only need flat blob storage, the [Azure backend guide](azure.md)
 covers Azurite for local emulation. Azurite does not emulate Hierarchical
 Namespace, so HNS-specific paths (atomic rename, real directories) require
-a real account — that is what this guide sets up.
+a real account. That is what this guide sets up.
 
 The shell snippets below are not executed in CI because they require
 authenticated Azure access. Treat them as a recipe to copy line by line,
@@ -17,7 +17,7 @@ not as exact reproducible output.
 ## Prerequisites
 
 - An Azure subscription. The free trial credit, the always-free tier, and
-  any paid subscription all work — no specific SKU is required.
+  any paid subscription all work. No specific SKU is required.
 - The [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
   (`az`) version 2.x.
 
@@ -178,6 +178,15 @@ RS_TEST_LIVE_HNS=1
 RS_TEST_LIVE_HNS_CONTAINER=<FILESYSTEM_NAME>
 ```
 
+!!! note "Live HNS fixture wiring is in progress"
+    Today, the test class is gated only on `RS_TEST_LIVE_HNS`. Its
+    fixture (`async_azure_backend`) still provisions an Azurite container,
+    so even with the gate set the HNS rename path is not exercised
+    against a real account. `RS_TEST_LIVE_HNS_CONTAINER` is documented
+    here so that contributor environments are ready when the follow-up
+    work routes the fixture to the real connection string. Track that
+    work under BUG-182 in `sdd/BACKLOG.md`.
+
 `.env` is gitignored. Do not commit the connection string.
 
 ## Smoke test
@@ -269,5 +278,7 @@ account and re-run on a single line.
 ## See also
 
 - [Azure backend guide](azure.md) — using the account from `remote-store`
+- [`AzureBackend` API reference](../../reference/api/backends/azure.md) — backend constructor options and method index
+- [`AsyncStore` API reference](../../reference/api/aio.md) — async surface that the live HNS test suite exercises
 - [Azure Storage Account documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview)
 - [Hierarchical namespace overview](https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-namespace)
