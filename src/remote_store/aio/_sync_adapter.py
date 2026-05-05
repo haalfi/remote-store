@@ -169,7 +169,7 @@ class SyncBackendAdapter(AsyncBackend):
 
         Raises:
             InvalidPath: If ``path`` names an existing file (regardless of
-                ``missing_ok`` -- a type mismatch is not a missing file).
+                ``missing_ok`` — a type mismatch is not a missing file).
             NotFound: If the folder is missing and ``missing_ok`` is ``False``.
             DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
         """
@@ -208,7 +208,11 @@ class SyncBackendAdapter(AsyncBackend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        """Write content to a file."""
+        """Write content to a file.
+
+        Raises:
+            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+        """
         raw = await _materialize(content)
         return await asyncio.to_thread(self._sync.write, path, raw, overwrite=overwrite, metadata=metadata)
 
@@ -220,7 +224,12 @@ class SyncBackendAdapter(AsyncBackend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        """Write content atomically via temp file + rename."""
+        """Write content atomically via temp file + rename.
+
+        Raises:
+            CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
+            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+        """
         raw = await _materialize(content)
         return await asyncio.to_thread(self._sync.write_atomic, path, raw, overwrite=overwrite, metadata=metadata)
 

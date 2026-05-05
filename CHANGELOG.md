@@ -9,6 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- BK-173: complete the four-layer async docstring ripple by adding `Raises:` clauses to nine I/O methods on `SyncBackendAdapter`, mirrored from the `AsyncBackend` ABC; surfaces in `help()` and IDE hover today.
 - BUG-189: `AsyncMemoryBackend` now mirrors the sync `MemoryBackend` error
   fidelity for type-mismatched paths. `read`, `read_bytes`, and
   `get_file_info` raise `InvalidPath` (not `NotFound`) when the path names
