@@ -202,12 +202,10 @@ loud with a `pytest.fail` message rather than silently skipping. Azurite
 does not emulate Hierarchical Namespace, so an Azurite-backed run cannot
 validate HNS-specific behaviour.
 
-The async live HNS class
-(`tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS`) is gated
-only on `RS_TEST_LIVE_HNS` today and still uses the Azurite-backed
-`async_azure_backend` fixture, so its body executes on Azurite even when
-`RS_TEST_LIVE_HNS=1` is set; the suite therefore does not currently
-validate HNS-specific async behaviour against a real account.
+Async HNS coverage lives in `tests/aio/test_async_azure_live_hns.py`,
+which uses the same three-layer gate and a dedicated real-account fixture —
+it is explicitly **not** co-located with the Azurite-backed async live
+tests to avoid the Azurite reachability guard blocking real-ADLS-Gen2 CI.
 
 `.env` is gitignored. Do not commit the connection string.
 

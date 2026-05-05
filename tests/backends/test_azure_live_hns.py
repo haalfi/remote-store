@@ -35,8 +35,8 @@ Three layers, all required:
 
 1. ``pytest.mark.live`` at module level. Default ``addopts`` is
    ``-m 'not live'``, so plain ``hatch run test`` skips the file entirely.
-2. ``RS_TEST_LIVE_HNS=1`` env var (matches the existing async live HNS gate
-   at :class:`tests.aio.test_async_azure_live.TestAsyncAzureLiveHNS`).
+2. ``RS_TEST_LIVE_HNS=1`` env var (matches the async live HNS gate in
+   :mod:`tests.aio.test_async_azure_live_hns`).
 3. ``AZURE_STORAGE_CONNECTION_STRING`` and ``RS_TEST_LIVE_HNS_CONTAINER``
    pointing at a *real* ADLS Gen2 account. If layer 2 is enabled but
    either of these is missing or points at Azurite, the fixture raises
