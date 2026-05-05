@@ -34,10 +34,10 @@ Cost discipline
 ---------------
 
 The whole point of this file is "is the precondition observed against a
-real account?" Three deterministic test cases, 1 KiB payloads, one HNS
-directory per session shared across the three tests. Fixture teardown
-deletes the per-session prefix on a best-effort basis so a teardown race
-does not turn a green test red.
+real account?" Test bodies stay deterministic, payloads stay small, and
+one HNS directory is provisioned per session and shared across the
+parametrized cases. Fixture teardown deletes the per-session prefix on
+a best-effort basis so a teardown race does not turn a green test red.
 """
 
 from __future__ import annotations
@@ -136,11 +136,10 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
     Module-scoped because creating an HNS directory is a real round
     trip against Azure. Each test issues a write-path operation
     (``write`` / ``write_atomic`` / ``open_atomic``) against ``dirpath``
-    and asserts the call raises ``InvalidPath`` before any data lands —
-    the production probe of ``hdi_isfolder`` fires first. So in the
-    happy path no test mutates the directory and the tests cannot
-    interfere with each other; if the guard regresses (the case the
-    suite exists to catch) a write may land and the test will fail
+    and asserts the call raises ``InvalidPath`` before any data lands.
+    So in the happy path no test mutates the directory and the tests
+    cannot interfere with each other; if the guard regresses (the case
+    the suite exists to catch) a write may land and the test will fail
     loudly. Teardown deletes the prefix in either case.
     """
     conn, fs_name = _require_live_env()
