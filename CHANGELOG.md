@@ -9,6 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- BUG-182: live ADLS Gen2 (HNS) integration test confirming `AzureBackend.write_atomic` user metadata survives the atomic-rename commit (`tests/backends/test_azure_live_hns.py::TestAzureLiveHnsMetadataSurvivesRename`); closes the verification gap left by BUG-181's mock-only coverage (WR-013, BE-010).
 - BUG-191: live ADLS Gen2 (HNS) integration test class covering the `write`/`write_atomic`/`open_atomic` directory-path guards on a real account, complementing the mock-only coverage from BUG-190/BUG-192. Gated by the new `live` pytest marker (excluded by default `addopts`), `RS_TEST_LIVE_HNS=1`, and a non-Azurite `AZURE_STORAGE_CONNECTION_STRING` (BE-021, BE-008, BE-010, SAW-001).
 - BUG-192: `AzureBackend.open_atomic` now raises `InvalidPath` (not `AlreadyExists`) when the target is an HNS directory; both `overwrite=False` and `overwrite=True` are covered (BE-021).
 - BUG-190: `AzureBackend` and `AsyncAzureBackend` now raise `InvalidPath` (not `AlreadyExists`) when `write` or `write_atomic` targets an HNS directory path; both `overwrite=False` and `overwrite=True` are covered (BE-008, BE-010, ASYNC-008, ASYNC-010, BE-021, ASYNC-024).

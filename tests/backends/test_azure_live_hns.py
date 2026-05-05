@@ -1,19 +1,32 @@
-"""Live ADLS Gen2 (HNS) integration tests for ``AzureBackend`` directory-path guards.
+"""Live ADLS Gen2 (HNS) integration tests for ``AzureBackend``.
 
-The mock-only suite in :mod:`tests.backends.test_azure` (``TestAzureWriteOnHnsDirectory``)
-asserts that ``write`` / ``write_atomic`` / ``open_atomic`` raise
-:class:`~remote_store._errors.InvalidPath` when the target path is an HNS
-directory blob. Those tests fabricate ``hdi_isfolder=true`` metadata on a
-mocked :class:`~azure.storage.blob.BlobProperties` and rely on the same
-probe the production code uses, so they verify code logic but not the
-real-account behaviour. This module fills that gap by running against a
-real Azure Data Lake Storage Gen2 account: the fixture creates a real HNS
-directory via :class:`~azure.storage.filedatalake.DataLakeServiceClient`,
-and each test asserts the public sync API raises ``InvalidPath`` when
-targeting that directory path.
+Covers HNS semantics that mock-only suites cannot reproduce.
+
+**Directory-path guards.** ``TestAzureWriteOnHnsDirectory`` in
+:mod:`tests.backends.test_azure` fabricates ``hdi_isfolder=true``
+metadata on a mocked :class:`~azure.storage.blob.BlobProperties` and
+relies on the same probe the production code uses, so it verifies
+code logic but not real-account behaviour.
+``TestAzureLiveHnsDirectoryGuard`` here asserts the sync API raises
+:class:`~remote_store._errors.InvalidPath` when the target is an HNS
+directory blob created via the real
+:class:`~azure.storage.filedatalake.DataLakeServiceClient`.
+
+**`write_atomic` metadata-survives-rename.**
+``test_write_atomic_hns_metadata_preserved`` in
+:mod:`tests.aio.test_async_azure` only verifies that ``metadata=`` is
+forwarded to ``upload_data`` on the temp file and that
+``WriteResult.metadata`` echoes the caller's mapping by construction
+(WR-012). It cannot verify that ADLS Gen2's ``rename_file`` preserves
+user-defined metadata on the renamed final file, a filesystem-level
+semantics concern only the real service can answer.
+``TestAzureLiveHnsMetadataSurvivesRename`` writes a small payload through
+``write_atomic`` with metadata and asserts the round-trip via
+``get_file_info`` after the temp-then-rename has committed.
 
 Spec: BE-021 (directory-path guard) for BE-008 (``write``),
-BE-010 (``write_atomic``), SAW-001 (``open_atomic``).
+BE-010 (``write_atomic``), SAW-001 (``open_atomic``);
+WR-013 (user-metadata round-trip).
 
 Gating
 ------
@@ -134,17 +147,17 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
     The directory and its contents are best-effort deleted on teardown.
 
     Module-scoped because creating an HNS directory is a real round
-    trip against Azure. Each test issues a write-path operation
-    (``write`` / ``write_atomic`` / ``open_atomic``) against ``dirpath``
-    and asserts the call raises ``InvalidPath`` before any data lands.
-    So in the happy path no test mutates the directory and the tests
-    cannot interfere with each other; if the guard regresses (the case
-    the suite exists to catch) a write may land and the test will fail
-    loudly. Teardown deletes the prefix in either case.
+    trip against Azure. Tests share the fixture by either targeting
+    ``dirpath`` directly (directory-path guards) or writing a fresh
+    sibling file under the session prefix (rename / metadata semantics);
+    each rename-path test uses a unique uuid-suffixed name so concurrent
+    or repeated runs cannot collide. Teardown deletes the entire prefix
+    recursively, so any data that lands during a regression is also
+    cleaned up.
     """
     conn, fs_name = _require_live_env()
 
-    prefix = f"bug191/{uuid.uuid4().hex[:8]}"
+    prefix = f"live-hns/{uuid.uuid4().hex[:8]}"
     dirpath = f"{prefix}/dirblob"
 
     # Each acquired resource is paired with its teardown via a nested
@@ -175,8 +188,9 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
 # ---------------------------------------------------------------------------
 
 
-# 1 KiB cap (BUG-191 cost discipline). The guards fire on path shape, not
-# content; a single KiB is sufficient to demonstrate the exception path.
+# 1 KiB cap keeps the live-cost footprint small. Tests in this module
+# exercise path-shape and metadata semantics; payload content is
+# irrelevant to either contract.
 _PAYLOAD = b"x" * 1024
 
 
@@ -219,3 +233,45 @@ class TestAzureLiveHnsDirectoryGuard:
         backend, dirpath = live_hns_backend
         with pytest.raises(InvalidPath, match="exists as a directory"):
             operation(backend, dirpath)
+
+
+# ---------------------------------------------------------------------------
+# WR-013 — user metadata survives the HNS atomic-rename commit
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsMetadataSurvivesRename:
+    """``write_atomic`` user metadata must survive ADLS Gen2's atomic rename.
+
+    Companion to ``test_write_atomic_hns_metadata_preserved`` in
+    :mod:`tests.aio.test_async_azure`, which mocks ``upload_data`` and
+    asserts the ``metadata=`` kwarg reaches it on the temp file. The
+    mocks cannot answer the harder question: *does the subsequent
+    ``rename_file`` preserve that metadata on the renamed final file?*
+    That is a service-side semantics property of ADLS Gen2 and only a
+    real account can confirm it.
+    """
+
+    @pytest.mark.spec("WR-013", "BE-010")
+    def test_write_atomic_metadata_survives_rename(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        # Write a sibling file under the session prefix (alongside the
+        # directory blob the guard tests target). A unique suffix keeps
+        # repeated runs from colliding even though the prefix is shared.
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/meta-{uuid.uuid4().hex[:8]}.txt"
+        metadata = {"env": "prod", "owner": "team-a"}
+
+        backend.write_atomic(path, _PAYLOAD, metadata=metadata)
+
+        info = backend.get_file_info(path)
+        assert info.metadata is not None, "expected metadata round-trip via get_file_info"
+        # Compare key-by-key rather than equality: ADLS Gen2 may surface
+        # internal markers (e.g. hdi_isfolder) alongside user metadata,
+        # and the production code is allowed to strip them. The contract
+        # is that user-supplied keys round-trip with their values.
+        assert info.metadata.get("env") == "prod"
+        assert info.metadata.get("owner") == "team-a"
