@@ -37,8 +37,8 @@ Use `Example:` (not `Usage:`). For module-level docstrings use `!!! example` adm
 
 | Severity | Count | Description |
 |---|---|---|
-| High | 8 | RST roles in `src/` — render as literal text on the published docs site |
-| Medium | 5 | RST roles in `tests/`/`scripts/` — style violation, not published |
+| High | 10 | RST roles in `src/` — render as literal text on the published docs site |
+| Medium | 9 | RST roles in `tests/`/`scripts/` — style violation, not published |
 | Low | 1 | Module docstring far exceeds the 1-2 sentence guideline |
 
 ---
@@ -78,28 +78,64 @@ Use `Example:` (not `Usage:`). For module-level docstrings use `!!! example` adm
 |---|---|---|---|
 | 8 | 47, 50 | `SyncBackendAdapter` | `:class:` × 2, `:func:` (`asyncio.to_thread`) |
 
+### `src/remote_store/backends/_sftp.py` — 1 High
+
+| ID | Line(s) | Symbol | Violation |
+|---|---|---|---|
+| 9 | 175 | `SFTPBackend` Warning block | `:class:` with `~` (`SyncBackendAdapter`) |
+
+### `src/remote_store/ext/yaml.py` — 1 High
+
+| ID | Line(s) | Symbol | Violation |
+|---|---|---|---|
+| 10 | 71 | `from_yaml` | `:func:` with `~` (`remote_store.resolve_env`) |
+
+### `tests/aio/_doubles.py` — 1 Medium
+
+| ID | Line(s) | Symbol | Violation |
+|---|---|---|---|
+| 11 | 9, 10, 13, 17, 18 | module | `:class:` × 5 (`_HangingAsyncBackend`, `asyncio.Event`, `_RaisingAsyncBackend`, `AsyncBackend`, `AsyncBackendSyncAdapter`) |
+
 ### `tests/backends/test_azure_live_hns.py` — 3 Medium, 1 Low
 
 File added in BUG-191/BUG-182; RST introduced despite doc-system rules being in scope.
 
 | ID | Line(s) | Symbol | Violation | Sev |
 |---|---|---|---|---|
-| 9 | 6, 7, 11, 13, 17, 39 | module | `:mod:` × 2, `:class:` × 4 (incl. `~`) | Medium |
-| 10 | 147 | `live_hns_backend` fixture | `:meth:` with `~` | Medium |
-| 11 | 247 | `TestAzureLiveHnsMetadataSurvivesRename` | `:mod:` | Medium |
-| 12 | 1–54 | module | 54-line docstring vs 1-2 sentence rule; rationale belongs in section comments | Low |
+| 12 | 6, 7, 11, 13, 17, 39 | module | `:mod:` × 2, `:class:` × 4 (incl. `~`) | Medium |
+| 13 | 147 | `live_hns_backend` fixture | `:meth:` with `~` | Medium |
+| 14 | 247 | `TestAzureLiveHnsMetadataSurvivesRename` | `:mod:` | Medium |
+| 15 | 1–54 | module | 54-line docstring vs 1-2 sentence rule; rationale belongs in section comments | Low |
+
+### `scripts/docs/__init__.py` — 1 Medium
+
+| ID | Line(s) | Symbol | Violation |
+|---|---|---|---|
+| 16 | 6, 8, 10, 12 | module | `:mod:` × 4, `:func:` (`build`) |
+
+### `scripts/docs/link.py` — 1 Medium
+
+| ID | Line(s) | Symbol | Violation |
+|---|---|---|---|
+| 17 | 4 | module | `:class:` (`LinkResolver`) |
+
+### `scripts/docs/scan.py` — 1 Medium
+
+| ID | Line(s) | Symbol | Violation |
+|---|---|---|---|
+| 18 | 5, 6, 10, 14, 16, 18, 22 | module | `:class:` × 5, `:data:` (`SDD_KINDS`), `:func:` (`scan_dual_files`) |
 
 ### `scripts/gen_pages.py` — 1 Medium
 
 | ID | Line(s) | Symbol | Violation |
 |---|---|---|---|
-| 13 | 8, 15 | module | `:func:` with `~`, `:mod:` |
+| 19 | 8, 15 | module | `:func:` with `~`, `:mod:` |
 
 ### `scripts/mkdocs_hooks.py` — 1 Medium
 
 | ID | Line(s) | Symbol | Violation |
 |---|---|---|---|
-| 14 | 1 | module | `:class:` (`LinkResolver`) |
+| 20 | 1 | module | `:class:` (`LinkResolver`) |
 
 ---
 
