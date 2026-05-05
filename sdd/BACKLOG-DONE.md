@@ -8,6 +8,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-173 — Complete the four-layer async docstring ripple at `SyncBackendAdapter`**
+  PR #580 (BUG-189) review surfaced that the four-layer ripple chain
+  (concrete backend → ABC → `AsyncStore` → `SyncBackendAdapter`) was applied
+  through layer 3 but left the adapter's I/O methods silent. This item
+  closes layer 4: nine previously silent methods (`read`, `read_bytes`,
+  `delete_folder`, `get_file_info`, `get_folder_info`, `move`, `copy`,
+  `write`, `write_atomic`) now carry `Raises:` clauses mirrored verbatim
+  from the `AsyncBackend` ABC. User-facing via `help()` and IDE hover
+  today; rendered docs site will surface them once the planned `aio.md`
+  rework drops `members: false` (or adds explicit `:::` method blocks)
+  on the four concrete async classes that currently render as empty
+  headings (`SyncBackendAdapter`, `AsyncBackendSyncAdapter`,
+  `AsyncMemoryBackend`, `AsyncAzureBackend`).
+
 - [x] **BUG-189 — `AsyncMemoryBackend` did not mirror sync error fidelity for type-mismatched paths**
   The native `AsyncMemoryBackend` raised `NotFound` in several cases where
   the sync `MemoryBackend` (and the Dafny contract) require `InvalidPath`:

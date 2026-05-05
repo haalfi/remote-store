@@ -104,23 +104,54 @@ class SyncBackendAdapter(AsyncBackend):
         return await asyncio.to_thread(self._sync.is_folder, path)
 
     async def read_bytes(self, path: str) -> bytes:
-        """Read the full content of a file as bytes."""
+        """Read the full content of a file as bytes.
+
+        Raises:
+            InvalidPath: If ``path`` names an existing directory.
+            NotFound: If the file does not exist.
+        """
         return await asyncio.to_thread(self._sync.read_bytes, path)
 
     async def get_file_info(self, path: str) -> FileInfo:
-        """Get metadata for a file."""
+        """Get metadata for a file.
+
+        Raises:
+            InvalidPath: If ``path`` names an existing directory.
+            NotFound: If the file does not exist.
+        """
         return await asyncio.to_thread(self._sync.get_file_info, path)
 
     async def get_folder_info(self, path: str) -> FolderInfo:
-        """Get metadata for a folder."""
+        """Get metadata for a folder.
+
+        Raises:
+            InvalidPath: If ``path`` names an existing file.
+            NotFound: If the folder does not exist.
+        """
         return await asyncio.to_thread(self._sync.get_folder_info, path)
 
     async def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        """Move or rename a file."""
+        """Move or rename a file.
+
+        Raises:
+            InvalidPath: If ``src`` names a directory or ``dst`` names an
+                existing directory.
+            NotFound: If ``src`` does not exist.
+            AlreadyExists: If ``dst`` exists, ``src != dst``, and
+                ``overwrite`` is ``False``.
+        """
         await asyncio.to_thread(self._sync.move, src, dst, overwrite=overwrite)
 
     async def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        """Copy a file."""
+        """Copy a file.
+
+        Raises:
+            InvalidPath: If ``src`` names a directory or ``dst`` names an
+                existing directory.
+            NotFound: If ``src`` does not exist.
+            AlreadyExists: If ``dst`` exists, ``src != dst``, and
+                ``overwrite`` is ``False``.
+        """
         await asyncio.to_thread(self._sync.copy, src, dst, overwrite=overwrite)
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
@@ -134,7 +165,14 @@ class SyncBackendAdapter(AsyncBackend):
         await asyncio.to_thread(self._sync.delete, path, missing_ok=missing_ok)
 
     async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
-        """Delete a folder."""
+        """Delete a folder.
+
+        Raises:
+            InvalidPath: If ``path`` names an existing file (regardless of
+                ``missing_ok`` — a type mismatch is not a missing file).
+            NotFound: If the folder is missing and ``missing_ok`` is ``False``.
+            DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
+        """
         await asyncio.to_thread(self._sync.delete_folder, path, recursive=recursive, missing_ok=missing_ok)
 
     async def check_health(self) -> None:
@@ -144,7 +182,12 @@ class SyncBackendAdapter(AsyncBackend):
     # -- Streaming read (ASYNC-033) ----------------------------------------
 
     async def read(self, path: str) -> AsyncIterator[bytes]:
-        """Open a file for reading and yield chunks asynchronously."""
+        """Open a file for reading and yield chunks asynchronously.
+
+        Raises:
+            InvalidPath: If ``path`` names an existing directory.
+            NotFound: If the file does not exist.
+        """
         stream = await asyncio.to_thread(self._sync.read, path)
         try:
             while True:
@@ -165,7 +208,11 @@ class SyncBackendAdapter(AsyncBackend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        """Write content to a file."""
+        """Write content to a file.
+
+        Raises:
+            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+        """
         raw = await _materialize(content)
         return await asyncio.to_thread(self._sync.write, path, raw, overwrite=overwrite, metadata=metadata)
 
@@ -177,7 +224,12 @@ class SyncBackendAdapter(AsyncBackend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        """Write content atomically via temp file + rename."""
+        """Write content atomically via temp file + rename.
+
+        Raises:
+            CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
+            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+        """
         raw = await _materialize(content)
         return await asyncio.to_thread(self._sync.write_atomic, path, raw, overwrite=overwrite, metadata=metadata)
 
