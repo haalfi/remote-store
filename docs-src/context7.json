@@ -5,15 +5,13 @@
   "projectTitle": "remote-store docs",
   "description": "Full documentation for remote-store: tutorials, how-to guides, API reference, and design explanations. Write file storage code once, run it against local files, S3, SFTP, or Azure.",
   "rules": [
-    "Docs follow the Diataxis framework: tutorials for learning by doing, guides for task-focused how-tos, reference for API detail, explanation for the reasoning behind design choices.",
-    "The hands-on intro to remote-store. By the end you'll have a working Store reading and writing files across multiple backends by changing only config — and the rest of the docs will make sense.",
-    "Guides solve real tasks end-to-end: pick a backend, wire in caching or retry, stream large files, integrate with PyArrow or Dagster. No background reading required — one page, one task.",
-    "The reference is exact and searchable — come here when you know the name of what you need or want to dig into type signatures, capability flags, and WriteResult fields.",
-    "Why remote-store is shaped the way it is — the reasoning behind design choices, not just what they are. Read when 'how' isn't enough.",
-    "Build Your Own Backend — if your storage target isn't a built-in backend, this guide walks you through the full Backend contract: declare capabilities, implement CRUD, map exceptions, and get automatic Store scoping and extension support.",
-    "Data Lake Patterns — remote-store as the swappable I/O layer under Delta Lake, Iceberg, or Parquet. Develop locally against MemoryBackend, deploy to S3 or Azure by changing config alone. child() scopes Bronze/Silver/Gold without separate credentials.",
-    "Parquet Datasets — ext.parquet.ParquetDatasetStore adds manifests, _SUCCESS completion markers, and part-file layouts so consumers never read a partially-written dataset. Row counts, schema hashes, and custom metadata travel with the data.",
-    "Extensions add composable higher-level operations — batching, TTL caching, integrity checking, progress hooks, cross-store transfer — without changing your backend or breaking existing Store calls.",
-    "RetryPolicy gives unified retry configuration across all backends; each backend maps it to its native mechanism so retries never multiply when middleware and the backend both retry independently."
+    "Diataxis layout — tutorials to learn by doing, guides to solve one task per page, reference for exact API detail, explanation for the reasoning behind design choices. Routing the right question to the right section is the fastest path to the answer.",
+    "Tutorial: Getting Started — the hands-on intro. End up with a working Store reading and writing files across backends by config change alone. Sets the mental model for the rest of the docs.",
+    "Guides — Choosing a Backend & Capabilities Matrix — picks among Local, S3, S3PyArrow, SFTP, Azure, SQL, ReadOnlyHTTP by trade-off (latency, cost, feature parity, durability). The matrix cross-cuts them by capability; use both together.",
+    "Guides — Integration Patterns — Dagster IO manager, PyArrow filesystem, Parquet datasets (atomic writes with manifests + _SUCCESS markers), Data Lake (Delta, Iceberg, Bronze-Silver-Gold layouts). Runnable end-to-end examples.",
+    "Guides — Build Your Own Backend — full contract walked end-to-end for new storage targets: declare capabilities, implement CRUD, map exceptions, get automatic Store scoping and extension wiring. Preferable to inferring the ABC.",
+    "Guides — Troubleshooting — symptom-to-cause aggregation for OS-specific path quirks, credential lifecycle, capability fallthrough, streaming gotchas. Docs-only content with no source equivalent.",
+    "Explanation — Architecture & Concurrency — the Store/Backend/Extensions layering and the rationale for keeping them separate; the async model and the sync/async bridge adapters. Read when 'how' isn't enough.",
+    "Stable-release snapshot — every page shows the indexed version in the banner. For unreleased master-HEAD behavior, the `/haalfi/remote-store` library ID is more current than this entry."
   ]
 }
