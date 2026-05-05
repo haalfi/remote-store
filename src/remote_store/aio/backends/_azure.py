@@ -421,22 +421,34 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory.
         """
         from azure.core.exceptions import ResourceNotFoundError
 
         async with self._errors(path):
             bc = self._blob_client(path)
-            try:
-                props = await bc.get_blob_properties()
-                blob_meta = getattr(props, "metadata", None) or {}
-                if blob_meta.get("hdi_isfolder"):
-                    raise InvalidPath(f"Cannot write — '{path}' is a directory", path=path, backend=self.name)
-                if not overwrite:
+            if await self._ensure_hns():
+                try:
+                    props = await bc.get_blob_properties()
+                    blob_meta = getattr(props, "metadata", None) or {}
+                    if blob_meta.get("hdi_isfolder"):
+                        raise InvalidPath(
+                            f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name
+                        )
+                    if not overwrite:
+                        raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
+                except (InvalidPath, AlreadyExists):
+                    raise
+                except ResourceNotFoundError:
+                    pass  # Blob doesn't exist, proceed
+            elif not overwrite:
+                try:
+                    await bc.get_blob_properties()
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
-            except (InvalidPath, AlreadyExists):
-                raise
-            except ResourceNotFoundError:
-                pass  # Blob doesn't exist, proceed
+                except AlreadyExists:
+                    raise
+                except ResourceNotFoundError:
+                    pass  # Blob doesn't exist, proceed
             # BUG-165: pass async iter straight to upload_blob — the SDK streams
             # AsyncIterable[bytes] in bounded memory; materializing would break
             # the streaming promise (SIO-003/ASYNC-021) for large payloads.
@@ -489,6 +501,7 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
+            InvalidPath: If ``path`` names a directory.
         """
         if not await self._ensure_hns():
             # non-HNS: direct upload is atomic (PUT semantics)
@@ -503,7 +516,7 @@ class AsyncAzureBackend(AsyncBackend):
                 props = await bc.get_blob_properties()
                 blob_meta = getattr(props, "metadata", None) or {}
                 if blob_meta.get("hdi_isfolder"):
-                    raise InvalidPath(f"Cannot write — '{path}' is a directory", path=path, backend=self.name)
+                    raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
                 if not overwrite:
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             except (InvalidPath, AlreadyExists):
