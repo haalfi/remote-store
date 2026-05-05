@@ -86,6 +86,15 @@ def _require_live_env() -> tuple[str, str]:
     not a reason to skip — silent skips defeat the whole point of running
     a live test.
     """
+    # Lazy-load the project .env so the gate vars resolve without an
+    # explicit shell wrapper. Function-scoped so a regular
+    # ``hatch run test`` (without ``-m live``) does not pull credentials
+    # into its environment. override=False keeps shell/CI values
+    # authoritative when both are present.
+    from dotenv import load_dotenv  # noqa: PLC0415 -- intentional lazy import
+
+    load_dotenv(override=False)
+
     conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
     fs = os.environ.get("RS_TEST_LIVE_HNS_CONTAINER")
     if not conn:

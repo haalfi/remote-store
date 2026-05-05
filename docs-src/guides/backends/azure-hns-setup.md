@@ -187,11 +187,18 @@ HNS-only test classes:
   the async `write_atomic` rename path on HNS.
 
 `live`-marked tests are excluded by `addopts` and have to be opted into
-explicitly:
+explicitly. Drop `RS_TEST_LIVE_HNS=1` and `RS_TEST_LIVE_HNS_CONTAINER`
+into `.env` once and the suite runs from a plain shell:
 
 ```bash
-hatch run pytest -m live tests/backends/test_azure_live_hns.py
+RS_TEST_LIVE_HNS=1 hatch run pytest -m live tests/backends/test_azure_live_hns.py
 ```
+
+The fixture lazy-loads `.env` via `python-dotenv` only when a live test is
+actually about to run, so a regular `hatch run test` invocation does not
+pull credentials into its environment. The shell or CI environment takes
+precedence over `.env` (`override=False`) so test-runner secrets stay
+authoritative.
 
 If `RS_TEST_LIVE_HNS=1` is set but `AZURE_STORAGE_CONNECTION_STRING` is
 missing, empty, or points at Azurite (`UseDevelopmentStorage=true` /
