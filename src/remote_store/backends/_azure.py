@@ -436,7 +436,7 @@ class AzureBackend(Backend):
         # HNS: write to temp file via DFS, then atomic rename
         from azure.core.exceptions import ResourceNotFoundError
 
-        with self._errors(path):  # pragma: no cover -- HNS only
+        with self._errors(path):
             bc = self._blob_client(path)
             try:
                 props = bc.get_blob_properties()

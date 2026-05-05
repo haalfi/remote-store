@@ -44,6 +44,16 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
+- [ ] **BUG-192 — `AzureBackend.open_atomic` HNS branch missing `InvalidPath` guard for directory paths**
+  Same pre-fix pattern as `write`/`write_atomic` before BUG-190: the HNS branch of
+  `open_atomic` (sync only — async backend has no `open_atomic`) probes
+  `get_blob_properties()` only under `overwrite=False` and never checks `hdi_isfolder`.
+  Calling `open_atomic("mydir", overwrite=False)` raises `AlreadyExists`; `overwrite=True`
+  falls through to the temp-upload+rename path. Spec requires `InvalidPath` (BE-021,
+  `_backend.py` line 253). Fix: apply the same `hdi_isfolder` probe pattern used in
+  `write`/`write_atomic`. The HNS `open_atomic` path is under `# pragma: no cover`
+  (no unit tests yet), so add mocked tests alongside the fix.
+
 - [ ] **BUG-191 — Add `azure-hns` to conformance fixture for `write`/`write_atomic` directory-path guard**
   BUG-190 added unit-mocked tests for `InvalidPath` on HNS directory paths. The mocked tests
   verify code logic but rely on the same `hdi_isfolder` assumption that the code uses. An

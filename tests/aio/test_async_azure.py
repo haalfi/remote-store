@@ -1983,3 +1983,17 @@ class TestAsyncAzureWriteOnHnsDirectory:
         bc.upload_blob.return_value = {"etag": '"abc"', "last_modified": None, "version_id": None, "content_md5": None}
         result = await backend.write("new.txt", b"data")
         assert result is not None
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_path_not_found_proceeds(self) -> None:
+        """When the blob doesn't exist, write_atomic should not raise — proceed to temp+rename."""
+        backend, _cc, bc = _setup_hns_write_backend_async()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        tmp_fc.upload_data.return_value = None
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc.get_file_properties = AsyncMock(return_value={})
+        tmp_fc.rename_file.return_value = final_fc
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+        result = await backend.write_atomic("new.txt", b"data")
+        assert result is not None

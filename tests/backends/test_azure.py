@@ -1460,3 +1460,19 @@ class TestAzureWriteOnHnsDirectory:
         bc.upload_blob.return_value = {"etag": '"abc"', "last_modified": None, "version_id": None, "content_md5": None}
         result = backend.write("new.txt", b"data")
         assert result is not None
+
+    @pytest.mark.spec("BE-010")
+    def test_write_atomic_path_not_found_proceeds(self) -> None:
+        """When the blob doesn't exist, write_atomic should not raise — proceed to temp+rename."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend, _cc, bc = _setup_hns_write_backend()
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
+        tmp_fc = MagicMock(spec=DataLakeFileClient)
+        tmp_fc.upload_data.return_value = None
+        tmp_fc.get_file_properties.return_value = MagicMock(
+            spec=["etag", "last_modified"], etag=None, last_modified=None
+        )
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+        result = backend.write_atomic("new.txt", b"data")
+        assert result is not None
