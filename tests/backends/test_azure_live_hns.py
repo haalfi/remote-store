@@ -62,11 +62,18 @@ if TYPE_CHECKING:
 
 _LOG = logging.getLogger(__name__)
 
-# Connection-string fragments that indicate Azurite (the local emulator).
-# Azurite does not emulate Hierarchical Namespace, so a connection string
-# pointing at it cannot validate the HNS directory-path guards. See
-# docs-src/guides/backends/azure-hns-setup.md.
-_AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "127.0.0.1", "localhost")
+# Connection-string fragment that unambiguously indicates Azurite (the
+# local emulator). Azurite does not emulate Hierarchical Namespace, so a
+# connection string pointing at it cannot validate the HNS directory-path
+# guards. See docs-src/guides/backends/azure-hns-setup.md.
+#
+# Heuristic intentionally narrow: a real Azure account routed through a
+# localhost tunnel or service-mesh sidecar may legitimately contain
+# ``127.0.0.1`` or ``localhost`` in the BlobEndpoint, so those tokens are
+# not used as Azurite signatures. Connection strings that target Azurite
+# via explicit endpoint URLs without this shortcut will fail downstream
+# at ``create_directory`` (no DFS endpoint), which is informative enough.
+_AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true",)
 
 
 pytestmark = [
@@ -86,11 +93,14 @@ def _require_live_env() -> tuple[str, str]:
     not a reason to skip — silent skips defeat the whole point of running
     a live test.
     """
-    # Lazy-load the project .env so the gate vars resolve without an
-    # explicit shell wrapper. Function-scoped so a regular
-    # ``hatch run test`` (without ``-m live``) does not pull credentials
-    # into its environment. override=False keeps shell/CI values
-    # authoritative when both are present.
+    # Backstop ``.env`` load. The primary path is ``pytest_configure`` in
+    # ``tests/conftest.py``, which loads ``.env`` before collection when
+    # the mark expression includes ``live`` — that is the path the doc
+    # contract relies on. This call covers the niche case where someone
+    # runs the file with ``RS_TEST_LIVE_HNS=1`` exported in the shell but
+    # without ``-m live`` (so ``pytest_configure``'s heuristic skips the
+    # load), letting ``.env`` still supply the connection string and
+    # container. override=False keeps shell/CI values authoritative.
     from dotenv import load_dotenv  # noqa: PLC0415 -- intentional lazy import
 
     load_dotenv(override=False)
@@ -128,23 +138,27 @@ def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
     prefix = f"bug191/{uuid.uuid4().hex[:8]}"
     dirpath = f"{prefix}/dirblob"
 
+    # Each acquired resource is paired with its teardown via a nested
+    # try/finally so that failures during setup (after one resource
+    # succeeded but before the next) still trigger cleanup of what was
+    # already provisioned.
     service = DataLakeServiceClient.from_connection_string(conn)
-    fs_client = service.get_file_system_client(fs_name)
-    dir_client = fs_client.get_directory_client(dirpath)
-    dir_client.create_directory()
-
-    backend = AzureBackend(container=fs_name, connection_string=conn)
     try:
-        yield backend, dirpath
-    finally:
+        fs_client = service.get_file_system_client(fs_name)
+        fs_client.get_directory_client(dirpath).create_directory()
         try:
-            backend.close()
+            backend = AzureBackend(container=fs_name, connection_string=conn)
+            try:
+                yield backend, dirpath
+            finally:
+                backend.close()
         finally:
             try:
                 fs_client.get_directory_client(prefix).delete_directory()
             except Exception:  # noqa: BLE001 -- teardown is best-effort
                 _LOG.warning("failed to delete live HNS test prefix %s", prefix, exc_info=True)
-            service.close()
+    finally:
+        service.close()
 
 
 # ---------------------------------------------------------------------------

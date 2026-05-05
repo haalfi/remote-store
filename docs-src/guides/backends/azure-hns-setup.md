@@ -170,41 +170,41 @@ Add the resulting line to `.env`:
 AZURE_STORAGE_CONNECTION_STRING=<paste here>
 ```
 
-To opt into the live HNS test suites, also set:
+To opt into live HNS coverage, also set:
 
 ```bash
 RS_TEST_LIVE_HNS=1
 RS_TEST_LIVE_HNS_CONTAINER=<FILESYSTEM_NAME>
 ```
 
-These two variables, combined with the `live` pytest marker, gate the
-HNS-only test classes:
-
-- `tests/backends/test_azure_live_hns.py::TestAzureLiveHnsDirectoryGuard`
-  — exercises the `InvalidPath` directory-path guards on `write`,
-  `write_atomic`, and `open_atomic` against a real HNS directory blob.
-- `tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS` — exercises
-  the async `write_atomic` rename path on HNS.
-
-`live`-marked tests are excluded by `addopts` and have to be opted into
-explicitly. Drop `RS_TEST_LIVE_HNS=1` and `RS_TEST_LIVE_HNS_CONTAINER`
-into `.env` once and the suite runs from a plain shell:
+`tests/backends/test_azure_live_hns.py::TestAzureLiveHnsDirectoryGuard`
+carries the `live` pytest marker and exercises the `InvalidPath`
+directory-path guards on `write`, `write_atomic`, and `open_atomic`
+against a real HNS directory blob. `live`-marked tests are excluded by
+default `addopts` and have to be opted into explicitly:
 
 ```bash
-RS_TEST_LIVE_HNS=1 hatch run pytest -m live tests/backends/test_azure_live_hns.py
+hatch run pytest -m live tests/backends/test_azure_live_hns.py
 ```
 
-The fixture lazy-loads `.env` via `python-dotenv` only when a live test is
-actually about to run, so a regular `hatch run test` invocation does not
-pull credentials into its environment. The shell or CI environment takes
-precedence over `.env` (`override=False`) so test-runner secrets stay
-authoritative.
+`tests/conftest.py` loads `.env` via `python-dotenv` when a `live` mark
+expression is in play, so dropping all three variables above into `.env`
+once is enough — a plain `hatch run pytest -m live …` picks them up.
+`override=False` keeps any value already set in the shell or by CI
+authoritative, and a regular `hatch run test` (with the default
+`-m 'not live'`) never loads `.env`.
 
 If `RS_TEST_LIVE_HNS=1` is set but `AZURE_STORAGE_CONNECTION_STRING` is
 missing, empty, or points at the Azurite local emulator, the suite fails
 loud with a `pytest.fail` message rather than silently skipping. Azurite
 does not emulate Hierarchical Namespace, so an Azurite-backed run cannot
 validate HNS-specific behaviour.
+
+The async live HNS class
+(`tests/aio/test_async_azure_live.py::TestAsyncAzureLiveHNS`) is gated
+only on `RS_TEST_LIVE_HNS` today and still uses the Azurite-backed
+`async_azure_backend` fixture. BUG-182 in `sdd/BACKLOG.md` tracks
+re-wiring it to the real account and adding the `live` marker.
 
 `.env` is gitignored. Do not commit the connection string.
 
