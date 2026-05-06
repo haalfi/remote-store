@@ -1386,7 +1386,7 @@
       "line": 46,
       "role": "backend",
       "runtime": "async",
-      "summary": "Wraps a synchronous :class:`Backend` as an :class:`AsyncBackend`."
+      "summary": "Wraps a synchronous ``Backend`` as an ``AsyncBackend``."
     },
     {
       "file": "src/remote_store/aio/backends/_azure.py",
