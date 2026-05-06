@@ -8,6 +8,68 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-194 — `AsyncAzureBackend.write_atomic` broken for all payloads on real ADLS Gen2**
+  `_count_and_pass_hns` wrapped bytes in an async generator to count bytes while
+  streaming. On the HNS code path, `upload_data` was called with that generator; the
+  Azure SDK's `get_length()` returns `None` for async generators, so
+  `flush_data(position=None)` omitted the required DFS query parameter and Azure returned
+  `MissingRequiredQueryParameter`. The bug was latent since the HNS path was introduced:
+  Azurite tolerates a missing `position` while real ADLS Gen2 does not, so no existing
+  Azurite-backed test caught it. Isolated with `tmp/probe_dfs.py` (steps 1–7 rule out
+  SDK issues; step 5 — `upload_data(async generator)` — reproduced the failure).
+
+  **Initial fix** (during PR #590 development): `AsyncIterator` payloads were buffered to
+  a `bytes` object so `upload_data` could receive a known-size argument. This resolved the
+  `MissingRequiredQueryParameter` error but violated SIO-003/ASYNC-021 — the same
+  streaming anti-pattern BUG-165 introduced and later fixed in the non-HNS path. Caught
+  in PR review.
+
+  **Final fix**: bytes input passes directly to `upload_data` (SDK's `get_length(bytes)`
+  returns `len()`; no regression). `AsyncIterator` input drives the DFS append protocol
+  directly: `create_file`, then `append_data(chunk, offset=position, length=chunk_len)`
+  per chunk, then `flush_data(position)` with the final byte count. Memory is bounded to
+  one chunk at a time (SIO-003, ASYNC-021 preserved). No current framework caller passes
+  an `AsyncIterator` to async `write_atomic` for HNS, so the streaming regression was
+  latent, not active.
+
+  The async HNS live suite (`tests/aio/test_async_azure_live_hns.py`, added by BUG-193)
+  confirmed the fix — all 9 live tests pass against a real ADLS Gen2 account.
+  PR: #590. Spec: WR-001a, WR-004, AZ-034, ASYNC-010, SIO-003, ASYNC-021.
+
+- [x] **BUG-193 — Async HNS live test suite missing; sync HNS live tests lacking `WriteResult` assertions**
+  `TestAsyncAzureLiveHNS` in `tests/aio/test_async_azure_live.py` (added by BUG-182) used the
+  Azurite-backed `async_azure_backend` fixture. Azurite does not emulate HNS, so `_ensure_hns()`
+  returned `False` and `write_atomic` silently delegated to `write` — the temp-file + rename
+  path was never exercised. The sole assertion (`isinstance(result, WriteResult)`) violated
+  TESTING.md Rule 2. The class also inherited the module-level
+  `skipif(not _azurite_reachable())` guard, blocking it in real-ADLS-Gen2-only CI even when
+  `RS_TEST_LIVE_HNS=1` was set.
+
+  Separately, the sync `test_write_atomic_metadata_survives_rename` (BUG-182) discarded the
+  `write_atomic` return value entirely, missing WR-012 (metadata echo in
+  `WriteResult.metadata`), WR-001a (size, source), and the uniquely-live cross-check that
+  `WriteResult.etag` (from the post-rename `get_file_properties` call) matches
+  `get_file_info().etag` (independent SDK read — the only assertion that surfaces normalisation
+  drift between two distinct SDK paths on a real account).
+
+  Fixed:
+  1. Removed `TestAsyncAzureLiveHNS`; added `tests/aio/test_async_azure_live_hns.py` — a
+     dedicated file with a real-ADLS-Gen2 fixture, no Azurite dependency, and explicit
+     separation from the Azurite-gated module. Three classes: `TestAsyncLiveHnsWriteResult`
+     (WR-001a, WR-004, AZ-034 — source, size, etag normalisation, last_modified, etag
+     cross-check vs `get_file_info`), `TestAsyncLiveHnsMetadata` (WR-012, WR-013),
+     `TestAsyncLiveHnsDirectoryGuard` (BE-021, BE-008, BE-010 — `write` and `write_atomic`;
+     `open_atomic` absent from the async API, noted in docstring).
+  2. Enhanced `TestAzureLiveHnsMetadataSurvivesRename` with `WriteResult` field assertions
+     (WR-012 echo, WR-001a size/source).
+  3. Added `TestAzureLiveHnsWriteResult` with the etag cross-check (WR-001a, WR-004, AZ-034).
+  4. Updated `azure-hns-setup.md` guide: replaced stale "gap still open" paragraph with a
+     positive description of the new file.
+  Follow-up tracked as **BUG-196** in `sdd/BACKLOG.md`: the async `write_atomic` HNS path
+  (`aio/backends/_azure.py:578`) calls `get_file_properties()` without the BUG-173 try/except
+  fallback the sync path carries.
+  PR: #590. Spec: WR-001a, WR-004, WR-012, WR-013, AZ-034, BE-008, BE-010, BE-021.
+
 - [x] **BUG-182 — Verify HNS `write_atomic` user metadata survives the atomic rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
   forwarded to `upload_data` on the temp file and that `WriteResult.metadata` echoes the

@@ -1237,11 +1237,14 @@ class TestAsyncAzureHNSPaths:
 
     @pytest.mark.spec("ASYNC-010", "ASYNC-021")
     async def test_write_atomic_hns_streams_async_chunks(self) -> None:
-        """HNS write_atomic forwards the async iterator to upload_data without
-        materializing (BUG-165).
+        """HNS write_atomic streams AsyncIterator payloads via create_file + append_data + flush_data.
 
-        DataLakeFileClient.upload_data accepts AsyncIterable[bytes]; the
-        backend must not collapse the stream into a bytes buffer first.
+        upload_data passes length=None for async generators, so the SDK omits the
+        required ``?position=`` query parameter on real ADLS Gen2, returning
+        MissingRequiredQueryParameter (BUG-194).  The fix: drive the DFS append
+        protocol directly — one append_data call per chunk with the cumulative offset,
+        then flush_data with the final byte count.  Memory is bounded to one chunk at
+        a time (SIO-003, ASYNC-021); upload_data is NOT called for AsyncIterator input.
         """
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
@@ -1251,13 +1254,6 @@ class TestAsyncAzureHNSPaths:
         tmp_fc = AsyncMock(spec=DataLakeFileClient)
         backend._fs_instance.get_file_client.return_value = tmp_fc
 
-        captured: list[bytes] = []
-
-        async def _fake_upload(data, **_kwargs):  # noqa: ANN001, ANN202
-            async for chunk in data:
-                captured.append(chunk)
-
-        tmp_fc.upload_data = AsyncMock(side_effect=_fake_upload)
         final_fc = AsyncMock(spec=DataLakeFileClient)
         final_fc.get_file_properties = AsyncMock(return_value={})
         tmp_fc.rename_file.return_value = final_fc
@@ -1268,9 +1264,53 @@ class TestAsyncAzureHNSPaths:
 
         agen = chunk_gen()
         await backend.write_atomic("dir/file.txt", agen)
-        tmp_fc.upload_data.assert_awaited_once()
-        assert captured == [b"hello ", b"world"]
+
+        # AsyncIterator path: create_file → append_data per chunk → flush_data.
+        # Pin the metadata kwarg explicitly: a future refactor that drops the
+        # metadata= argument from create_file would still pass assert_awaited_once().
+        tmp_fc.create_file.assert_awaited_once_with(metadata=None)
+        assert tmp_fc.append_data.await_count == 2
+        tmp_fc.append_data.assert_any_await(b"hello ", offset=0, length=6)
+        tmp_fc.append_data.assert_any_await(b"world", offset=6, length=5)
+        tmp_fc.flush_data.assert_awaited_once_with(11)
         assert tmp_fc.rename_file.call_count == 1
+        # upload_data must NOT be called for AsyncIterator input (BUG-194 regression guard).
+        tmp_fc.upload_data.assert_not_awaited()
+
+    @pytest.mark.spec("ASYNC-010", "WR-012")
+    async def test_write_atomic_hns_async_iterator_metadata_reaches_create_file(self) -> None:
+        """AsyncIterator + metadata routes the kwarg to create_file, not upload_data.
+
+        BUG-194's AsyncIterator branch drives the DFS protocol directly: metadata is
+        passed to ``create_file`` (which sets it on the temp file before the chunks
+        are appended), not to ``upload_data`` (which is not awaited on this path).
+        A future refactor that drops the metadata kwarg from ``create_file`` would
+        silently lose user metadata on streaming HNS writes.
+        """
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc.get_file_properties = AsyncMock(return_value={})
+        tmp_fc.rename_file.return_value = final_fc
+
+        async def chunk_gen():  # noqa: ANN202
+            yield b"hello "
+            yield b"world"
+
+        result = await backend.write_atomic("dir/file.txt", chunk_gen(), metadata={"k": "v"})
+
+        # WR-012: metadata must reach create_file on the AsyncIterator path.
+        tmp_fc.create_file.assert_awaited_once_with(metadata={"k": "v"})
+        # upload_data must NOT be called for AsyncIterator input.
+        tmp_fc.upload_data.assert_not_awaited()
+        # WR-012: WriteResult.metadata still echoes the caller's mapping.
+        assert result.metadata == {"k": "v"}
 
     @pytest.mark.spec("ASYNC-010")
     async def test_write_atomic_hns_cleans_up_on_failure(self) -> None:
@@ -1307,12 +1347,7 @@ class TestAsyncAzureHNSPaths:
         tmp_fc.rename_file.return_value = final_fc
         backend._fs_instance.get_file_client.return_value = tmp_fc
 
-        # _consume must iterate the generator to trigger _count_and_pass_hns byte counting.
-        async def _consume(data, **_kw):  # noqa: ANN001, ANN202
-            async for _ in data:
-                pass
-
-        tmp_fc.upload_data = AsyncMock(side_effect=_consume)
+        tmp_fc.upload_data = AsyncMock(return_value=None)
 
         result = await backend.write_atomic("file.txt", b"content")
 
@@ -1344,11 +1379,7 @@ class TestAsyncAzureHNSPaths:
         tmp_fc.rename_file.return_value = final_fc
         backend._fs_instance.get_file_client.return_value = tmp_fc
 
-        async def _consume(data, **_kw):  # noqa: ANN001, ANN202
-            async for _ in data:
-                pass
-
-        tmp_fc.upload_data = AsyncMock(side_effect=_consume)
+        tmp_fc.upload_data = AsyncMock(return_value=None)
 
         result = await backend.write_atomic("dir/file.txt", b"data", metadata={"k": "v"})
 

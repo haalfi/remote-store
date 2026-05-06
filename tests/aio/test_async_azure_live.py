@@ -19,14 +19,14 @@ Container setup/teardown reuses the **sync** ``BlobServiceClient`` (via
 ``azurite_server`` from ``tests/conftest.py``) which avoids spinning up an
 async event loop just to provision a container.
 
-Azurite does not emulate Hierarchical Namespace; the HNS test class is
-gated on the ``RS_TEST_LIVE_HNS=1`` env var so it activates only against a
-real ADLS Gen2 account and never asserts on Azurite responses.
+Azurite does not emulate Hierarchical Namespace. HNS-specific live tests
+(write_atomic temp+rename, metadata survival, directory guard) live in
+``tests.aio.test_async_azure_live_hns`` and are gated on
+``RS_TEST_LIVE_HNS=1``.
 """
 
 from __future__ import annotations
 
-import os
 import uuid
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
@@ -40,7 +40,6 @@ from azure.storage.blob import BlobServiceClient  # noqa: E402
 from azure.storage.blob.aio import BlobClient as AsyncBlobClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, NotFound, RemoteStoreError  # noqa: E402
-from remote_store._models import WriteResult  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 from remote_store.backends._azure_common import classify_azure_error  # noqa: E402
 from tests.conftest import _azurite_reachable  # noqa: E402
@@ -405,33 +404,3 @@ class TestAsyncAzureLiveErrorMapping:
         assert isinstance(mapped, RemoteStoreError)
         assert mapped.backend == "async-azure"
         assert getattr(exc_info.value, "status_code", None) == 412
-
-
-# ---------------------------------------------------------------------------
-# HNS conditional coverage
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.skipif(
-    os.environ.get("RS_TEST_LIVE_HNS") != "1",
-    reason="HNS test requires real ADLS Gen2; set RS_TEST_LIVE_HNS=1 to enable",
-)
-class TestAsyncAzureLiveHNS:
-    """HNS-specific behaviour, only exercised against a real ADLS Gen2 account.
-
-    Spec: AZ-014 (Atomic Write — HNS rename path).
-
-    Azurite does not currently emulate Hierarchical Namespace. The class is
-    gated on the ``RS_TEST_LIVE_HNS=1`` env var so it activates only against
-    a real ADLS Gen2 fixture (an env-var gate rather than a private-method
-    probe satisfies TESTING.md Rule 8: renaming ``_ensure_hns`` must not
-    break the test).
-    """
-
-    @pytest.mark.spec("AZ-014")
-    async def test_write_atomic_hns_round_trip(self, async_azure_backend: AsyncAzureBackend) -> None:
-        # Reachable only against a real ADLS Gen2 account; provides regression
-        # surface for the temp-file + rename path in write_atomic.
-        result = await async_azure_backend.write_atomic("hns/dir/file.txt", b"hns-payload")
-        assert isinstance(result, WriteResult)
-        assert await async_azure_backend.read_bytes("hns/dir/file.txt") == b"hns-payload"

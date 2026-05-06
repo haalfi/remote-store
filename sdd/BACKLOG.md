@@ -44,11 +44,111 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-*(none)*
+- [ ] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)**
+  BE-021 requires file-API operations on a directory path to raise `InvalidPath`.
+  `write`/`write_atomic`/`open_atomic` enforce this via the `hdi_isfolder` probe
+  (BUG-190/BUG-192). `read_bytes` and `delete` do not — neither path probes for the
+  directory marker before invoking the SDK. Confirmed live on a real ADLS Gen2 account:
+  - `AzureBackend.read_bytes(hns_dir)` and `AsyncAzureBackend.read_bytes(hns_dir)`:
+    silently return `b""` (0 bytes) instead of raising `InvalidPath`.
+  - `AzureBackend.delete(hns_dir)` and `AsyncAzureBackend.delete(hns_dir)`:
+    silently delete the directory marker, leaving `exists()` returning `False`.
+    **This is a data-loss defect**: calling the file-API `delete()` on what the
+    caller believed was a file but is actually a directory destroys the directory
+    silently. Stronger consequence than BUG-190/BUG-192 (which just chose the wrong
+    error class) — this one mutates account state.
+  Live tests freeze the actual behaviour in `tests/backends/test_azure_live_hns.py::
+  TestAzureLiveHnsFileApiOnDirectory` and the async sibling; they must be flipped
+  back to assert `InvalidPath` once the fix lands. Fix: extend the existing
+  `hdi_isfolder` probe pattern from `write_atomic`/`open_atomic` to `read`,
+  `read_bytes`, `read_seekable`, and `delete` on both sync and async backends.
+  Spec: BE-021, BE-013, BE-014, ASYNC-013.
+
+- [ ] **BUG-196 — Async `write_atomic` HNS path lacks BUG-173 try/except fallback around `get_file_properties()`**
+  `src/remote_store/aio/backends/_azure.py:578` calls `await final_fc.get_file_properties()`
+  *after* the rename has committed but does not wrap it in try/except. The sync sibling at
+  `src/remote_store/backends/_azure.py:484-503` (BUG-173) deliberately catches an `Exception`,
+  logs a warning, and returns `WriteResult(etag=None, last_modified=None)` — the rename
+  already succeeded, so a transient post-rename read failure must not surface as a write
+  failure. WR-001a lists both fields as `Optional`. Surfaced by the new
+  `tests/aio/test_async_azure_live_hns.py::TestAsyncLiveHnsWriteResult` assertion
+  `result.etag is not None` (only path the async backend supports today). Fix: mirror the
+  sync try/except + log + `_build_azure_write_result(path, size, None, metadata)` shape, then
+  weaken the live-test assertion to allow the fallback path. Spec: WR-001a, WR-004, AZ-034.
+
+- [ ] **BUG-195 — `get_file_info` on an HNS directory raises `NotFound` instead of `InvalidPath` (sync + async)**
+  BE-016 specifies "`InvalidPath` if the path names a directory (Dafny:
+  `GetFileInfo: IsDir → InvalidPath`)" and ASYNC-016 inherits the same contract. Both
+  `AzureBackend.get_file_info` and `AsyncAzureBackend.get_file_info` currently raise
+  `NotFound` when the target is an HNS directory blob (marker `hdi_isfolder=true`). New live
+  tests `tests/backends/test_azure_live_hns.py::TestAzureLiveHnsGetFileInfoOnDirectory` and
+  `tests/aio/test_async_azure_live_hns.py::TestAsyncLiveHnsGetFileInfoOnDirectory` confirm
+  the runtime behaviour and document the deviation. Same defect shape as BUG-190 (write on
+  HNS directory) and BUG-192 (open_atomic on HNS directory): the `hdi_isfolder` probe is
+  missing. Fix: detect `hdi_isfolder` in the `get_file_info` HNS branch and raise
+  `InvalidPath`; update both live tests to assert `InvalidPath`. Spec: BE-016, ASYNC-016,
+  BE-021.
 
 ---
 
 ## Backlog (Prioritized)
+
+- [ ] **BK-175 — Live HNS test architecture: parametrized conformance + record/replay layer**
+  The hand-written `test_azure_live_hns.py` / `test_async_azure_live_hns.py` suites
+  drifted into ~40% overlap with the conformance suite running against Azurite
+  (`tests/backends/conftest.py` `azure` parametrize). The HNS suite hand-rolls
+  contracts (NotFound family, copy/delete happy paths, exists True/False on files,
+  move-existing-dst guards) where the production code has no `_ensure_hns()` branch
+  — exercising the same lines as conformance, just on a different account. Going
+  forward this duplication will grow with every new contract added to conformance.
+
+  **Goal:** eliminate the duplication systematically and let conformance be the
+  single source of truth for cross-backend behavioural contracts; live HNS files
+  shrink to *only* HNS-unique tests (DataLake DFS protocol, `hdi_isfolder` directory
+  semantics, etag normalisation across SDK paths, BUG-194/195/197 deviation guards).
+
+  **Two pieces to design:**
+
+  1. **Live conformance parametrize.** Add an `azure-live-hns` (and async equivalent)
+     option to `tests/backends/conftest.py` that instantiates `AzureBackend` /
+     `AsyncAzureBackend` against a real ADLS Gen2 connection string instead of
+     Azurite. Gated by the existing `live` marker + `RS_TEST_LIVE_HNS=1` so default
+     CI is unaffected. The full conformance + conformance-extended suite then runs
+     against the real HNS account automatically — every future contract addition
+     gets HNS coverage for free. Cost: ~140 conformance tests × HNS = ~5–10× current
+     live transactions, still under $0.05/run.
+
+  2. **Record/replay abstraction layer.** Wrap the SDK transport so
+     live tests record real request/response pairs to YAML cassettes; replay mode
+     reads from cassettes when no credentials are present. Implementation candidates:
+     `pytest-recording` (vcrpy) for the HTTP layer, or a custom transport adapter
+     in front of the Azure SDK pipeline policies. Per-test cassette files committed
+     under `tests/cassettes/hns/`. Lets contributors run the full HNS conformance
+     suite offline without credentials; CI runs in replay mode by default.
+
+     Open design questions:
+     - Cassette scrubbing for SAS tokens, account keys, request IDs.
+     - Cassette invalidation policy when SDK request shapes change.
+     - Whether to record per-test (simple, larger storage) or per-fixture (compact,
+       harder to debug single-test failures).
+     - Async-pipeline coverage — vcrpy supports it but needs validation against
+       `azure.storage.filedatalake.aio`.
+
+  **What stays as hand-written live tests:**
+  - HNS-unique paths conformance can't reach: AsyncIterator DFS protocol (BUG-194
+    regression guard), etag normalisation cross-check (`get_file_properties` vs
+    `get_file_info` agreement), directory-blob `hdi_isfolder` probes.
+  - Active deviation guards (BUG-195, BUG-197) until the underlying code is fixed.
+
+  **Approach should not be designed in this PR** (PR #590, "improve HNS live tests")
+  — that PR's scope was to extend coverage, and it succeeded (32 → 58 tests, surfaced
+  BUG-194 / BUG-195 / BUG-196 / BUG-197). This BK is the follow-up to consolidate
+  the architecture before the suite grows further.
+
+  **Exit criteria:** RFC for the parametrize + cassette design; conformance runs
+  against real HNS in a gated CI job; `tests/(aio/)test_azure_live_hns.py` shrinks
+  to HNS-unique cases only; recording/replay procedure documented in
+  `CONTRIBUTING.md` § Live tests.
 
 - [ ] **BK-174 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   `AsyncMemoryBackend.get_file_info` returns
