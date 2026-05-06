@@ -419,7 +419,7 @@ class TestAzureLiveHnsContentRoundTrip:
         path = f"{prefix}/noover-{uuid.uuid4().hex[:8]}.txt"
 
         backend.write_atomic(path, _PAYLOAD)
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="already exists"):
             backend.write_atomic(path, _PAYLOAD, overwrite=False)
 
 
@@ -455,7 +455,7 @@ class TestAzureLiveHnsMove:
         backend.move(src, dst)
 
         assert backend.read_bytes(dst) == payload
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="(?i)not found"):
             backend.read_bytes(src)
 
     @pytest.mark.spec("BE-018")
@@ -479,7 +479,7 @@ class TestAzureLiveHnsMove:
         backend.write_atomic(src, b"src")
         backend.write_atomic(dst, b"dst-original")
 
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="already exists"):
             backend.move(src, dst)
         # Both blobs must remain unchanged after the failed move.
         assert backend.read_bytes(dst) == b"dst-original"
@@ -517,7 +517,7 @@ class TestAzureLiveHnsGetFileInfoOnDirectory:
         live_hns_backend: tuple[AzureBackend, str],
     ) -> None:
         backend, dirpath = live_hns_backend
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="(?i)not found"):
             backend.get_file_info(dirpath)
 
 
@@ -558,6 +558,23 @@ class TestAzureLiveHnsOpenAtomicSuccess:
 # ---------------------------------------------------------------------------
 
 
+def _read_bytes_missing(backend: AzureBackend, prefix: str) -> None:
+    backend.read_bytes(f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt")
+
+
+def _get_file_info_missing(backend: AzureBackend, prefix: str) -> None:
+    backend.get_file_info(f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt")
+
+
+def _delete_missing(backend: AzureBackend, prefix: str) -> None:
+    backend.delete(f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt")
+
+
+def _move_missing_src(backend: AzureBackend, prefix: str) -> None:
+    uid = uuid.uuid4().hex[:8]
+    backend.move(f"{prefix}/missing-src-{uid}.txt", f"{prefix}/missing-dst-{uid}.txt")
+
+
 class TestAzureLiveHnsNotFound:
     """Operations on missing HNS paths must raise ``NotFound`` on a real account.
 
@@ -569,38 +586,24 @@ class TestAzureLiveHnsNotFound:
     Spec: BE-013 (read), BE-014 (delete), BE-016 (get_file_info), BE-018 (move).
     """
 
-    @pytest.mark.spec("BE-013")
-    def test_read_bytes_missing_raises_not_found(
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            pytest.param(_read_bytes_missing, id="read_bytes", marks=pytest.mark.spec("BE-013")),
+            pytest.param(_get_file_info_missing, id="get_file_info", marks=pytest.mark.spec("BE-016")),
+            pytest.param(_delete_missing, id="delete", marks=pytest.mark.spec("BE-014")),
+            pytest.param(_move_missing_src, id="move", marks=pytest.mark.spec("BE-018")),
+        ],
+    )
+    def test_operation_on_missing_path_raises_not_found(
         self,
         live_hns_backend: tuple[AzureBackend, str],
+        operation: Callable[[AzureBackend, str], None],
     ) -> None:
         backend, dirpath = live_hns_backend
         prefix = dirpath.rsplit("/", 1)[0]
-        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
-        with pytest.raises(NotFound):
-            backend.read_bytes(missing)
-
-    @pytest.mark.spec("BE-016")
-    def test_get_file_info_missing_raises_not_found(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
-        with pytest.raises(NotFound):
-            backend.get_file_info(missing)
-
-    @pytest.mark.spec("BE-014")
-    def test_delete_missing_without_missing_ok_raises_not_found(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
-        with pytest.raises(NotFound):
-            backend.delete(missing)
+        with pytest.raises(NotFound, match="(?i)not found"):
+            operation(backend, prefix)
 
     @pytest.mark.spec("BE-014")
     def test_delete_missing_with_missing_ok_is_silent(
@@ -614,19 +617,6 @@ class TestAzureLiveHnsNotFound:
         # Returning normally is the assertion: missing_ok=True must not raise.
         result = backend.delete(missing, missing_ok=True)
         assert result is None
-
-    @pytest.mark.spec("BE-018")
-    def test_move_missing_src_raises_not_found(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        uid = uuid.uuid4().hex[:8]
-        src = f"{prefix}/missing-src-{uid}.txt"
-        dst = f"{prefix}/missing-dst-{uid}.txt"
-        with pytest.raises(NotFound):
-            backend.move(src, dst)
 
 
 # ---------------------------------------------------------------------------
@@ -794,7 +784,7 @@ class TestAzureLiveHnsDelete:
         backend.delete(path)
 
         assert backend.exists(path) is False
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="(?i)not found"):
             backend.read_bytes(path)
 
 
@@ -847,7 +837,7 @@ class TestAzureLiveHnsCopy:
         backend.write_atomic(src, b"src")
         backend.write_atomic(dst, b"dst-original")
 
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="already exists"):
             backend.copy(src, dst)
         # The failed copy must not have touched the destination.
         assert backend.read_bytes(dst) == b"dst-original"

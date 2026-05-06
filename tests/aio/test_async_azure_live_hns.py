@@ -387,7 +387,7 @@ class TestAsyncLiveHnsContentRoundTrip:
         path = f"{prefix}/noover-{uuid.uuid4().hex[:8]}.txt"
 
         await backend.write_atomic(path, _PAYLOAD)
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="already exists"):
             await backend.write_atomic(path, _PAYLOAD, overwrite=False)
 
 
@@ -421,7 +421,7 @@ class TestAsyncLiveHnsMove:
         await backend.move(src, dst)
 
         assert await backend.read_bytes(dst) == payload
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="(?i)not found"):
             await backend.read_bytes(src)
 
     @pytest.mark.spec("ASYNC-018")
@@ -439,7 +439,7 @@ class TestAsyncLiveHnsMove:
         await backend.write_atomic(src, b"src")
         await backend.write_atomic(dst, b"dst-original")
 
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="already exists"):
             await backend.move(src, dst)
         # Both blobs must remain unchanged after the failed move.
         assert await backend.read_bytes(dst) == b"dst-original"
@@ -474,7 +474,7 @@ class TestAsyncLiveHnsGetFileInfoOnDirectory:
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
     ) -> None:
         backend, dirpath = async_live_hns_backend
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="(?i)not found"):
             await backend.get_file_info(dirpath)
 
 
@@ -565,6 +565,23 @@ class TestAsyncLiveHnsWriteAtomicAsyncIterator:
 # ---------------------------------------------------------------------------
 
 
+async def _async_read_bytes_missing(backend: AsyncAzureBackend, prefix: str) -> None:
+    await backend.read_bytes(f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt")
+
+
+async def _async_get_file_info_missing(backend: AsyncAzureBackend, prefix: str) -> None:
+    await backend.get_file_info(f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt")
+
+
+async def _async_delete_missing(backend: AsyncAzureBackend, prefix: str) -> None:
+    await backend.delete(f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt")
+
+
+async def _async_move_missing_src(backend: AsyncAzureBackend, prefix: str) -> None:
+    uid = uuid.uuid4().hex[:8]
+    await backend.move(f"{prefix}/missing-src-{uid}.txt", f"{prefix}/missing-dst-{uid}.txt")
+
+
 class TestAsyncLiveHnsNotFound:
     """Operations on missing HNS paths must raise ``NotFound`` on a real account.
 
@@ -573,41 +590,27 @@ class TestAsyncLiveHnsNotFound:
     actually raises it for the shapes the production code probes (blob client
     vs file client paths can differ).
 
-    Spec: BE-013 (read), BE-014 (delete), BE-018 (move), ASYNC-016 (get_file_info).
+    Spec: ASYNC-016 (read / get_file_info), BE-014 (delete), ASYNC-018 (move).
     """
 
-    @pytest.mark.spec("ASYNC-016")
-    async def test_read_bytes_missing_raises_not_found(
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            pytest.param(_async_read_bytes_missing, id="read_bytes", marks=pytest.mark.spec("ASYNC-016")),
+            pytest.param(_async_get_file_info_missing, id="get_file_info", marks=pytest.mark.spec("ASYNC-016")),
+            pytest.param(_async_delete_missing, id="delete", marks=pytest.mark.spec("BE-014")),
+            pytest.param(_async_move_missing_src, id="move", marks=pytest.mark.spec("ASYNC-018")),
+        ],
+    )
+    async def test_operation_on_missing_path_raises_not_found(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
+        operation: Callable[[AsyncAzureBackend, str], Awaitable[None]],
     ) -> None:
         backend, dirpath = async_live_hns_backend
         prefix = dirpath.rsplit("/", 1)[0]
-        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
-        with pytest.raises(NotFound):
-            await backend.read_bytes(missing)
-
-    @pytest.mark.spec("ASYNC-016")
-    async def test_get_file_info_missing_raises_not_found(
-        self,
-        async_live_hns_backend: tuple[AsyncAzureBackend, str],
-    ) -> None:
-        backend, dirpath = async_live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
-        with pytest.raises(NotFound):
-            await backend.get_file_info(missing)
-
-    @pytest.mark.spec("BE-014")
-    async def test_delete_missing_without_missing_ok_raises_not_found(
-        self,
-        async_live_hns_backend: tuple[AsyncAzureBackend, str],
-    ) -> None:
-        backend, dirpath = async_live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
-        with pytest.raises(NotFound):
-            await backend.delete(missing)
+        with pytest.raises(NotFound, match="(?i)not found"):
+            await operation(backend, prefix)
 
     @pytest.mark.spec("BE-014")
     async def test_delete_missing_with_missing_ok_is_silent(
@@ -621,19 +624,6 @@ class TestAsyncLiveHnsNotFound:
         # Returning normally is the assertion: missing_ok=True must not raise.
         result = await backend.delete(missing, missing_ok=True)
         assert result is None
-
-    @pytest.mark.spec("ASYNC-018")
-    async def test_move_missing_src_raises_not_found(
-        self,
-        async_live_hns_backend: tuple[AsyncAzureBackend, str],
-    ) -> None:
-        backend, dirpath = async_live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        uid = uuid.uuid4().hex[:8]
-        src = f"{prefix}/missing-src-{uid}.txt"
-        dst = f"{prefix}/missing-dst-{uid}.txt"
-        with pytest.raises(NotFound):
-            await backend.move(src, dst)
 
 
 # ---------------------------------------------------------------------------
@@ -794,7 +784,7 @@ class TestAsyncLiveHnsDelete:
         await backend.delete(path)
 
         assert await backend.exists(path) is False
-        with pytest.raises(NotFound):
+        with pytest.raises(NotFound, match="(?i)not found"):
             await backend.read_bytes(path)
 
 
@@ -843,7 +833,7 @@ class TestAsyncLiveHnsCopy:
         await backend.write_atomic(src, b"src")
         await backend.write_atomic(dst, b"dst-original")
 
-        with pytest.raises(AlreadyExists):
+        with pytest.raises(AlreadyExists, match="already exists"):
             await backend.copy(src, dst)
         assert await backend.read_bytes(dst) == b"dst-original"
 
