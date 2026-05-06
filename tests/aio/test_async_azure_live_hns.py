@@ -411,6 +411,27 @@ class TestAsyncLiveHnsMove:
         with pytest.raises(NotFound):
             await backend.read_bytes(src)
 
+    @pytest.mark.spec("ASYNC-018")
+    async def test_move_existing_dst_overwrite_false_raises_already_exists(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        """Async ``move`` must guard against silent overwrite when ``overwrite=False``."""
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/move-src-exists-{uid}.txt"
+        dst = f"{prefix}/move-dst-exists-{uid}.txt"
+
+        await backend.write_atomic(src, b"src")
+        await backend.write_atomic(dst, b"dst-original")
+
+        with pytest.raises(AlreadyExists):
+            await backend.move(src, dst)
+        # Both blobs must remain unchanged after the failed move.
+        assert await backend.read_bytes(dst) == b"dst-original"
+        assert await backend.read_bytes(src) == b"src"
+
 
 # ---------------------------------------------------------------------------
 # ASYNC-016 — get_file_info on an HNS directory blob (async path)
@@ -727,3 +748,155 @@ class TestAsyncLiveHnsIterChildren:
 
         assert sorted(files) == [f"{sub}/a.txt", f"{sub}/b.txt"]
         assert sorted(folders) == [f"{sub}/nested"]
+
+
+# ---------------------------------------------------------------------------
+# BE-014 — delete happy path on a real HNS account (async)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsDelete:
+    """Async ``delete`` must remove the file from the account.
+
+    Async companion to ``TestAzureLiveHnsDelete``. Mocks confirm the SDK call;
+    only a real account confirms the file actually vanishes.
+
+    Spec: BE-014 (delete).
+    """
+
+    @pytest.mark.spec("BE-014")
+    async def test_delete_removes_file_from_account(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/delete-{uuid.uuid4().hex[:8]}.txt"
+        await backend.write_atomic(path, _PAYLOAD)
+        assert await backend.exists(path) is True
+
+        await backend.delete(path)
+
+        assert await backend.exists(path) is False
+        with pytest.raises(NotFound):
+            await backend.read_bytes(path)
+
+
+# ---------------------------------------------------------------------------
+# BE-019 — copy on a real HNS account (async)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsCopy:
+    """Async ``copy`` must create an independent blob; respect overwrite semantics.
+
+    Async companion to ``TestAzureLiveHnsCopy``.
+
+    Spec: BE-019 (copy).
+    """
+
+    @pytest.mark.spec("BE-019")
+    async def test_copy_creates_independent_blob(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/copy-src-{uid}.txt"
+        dst = f"{prefix}/copy-dst-{uid}.txt"
+        payload = b"copy-content-" + uuid.uuid4().bytes
+
+        await backend.write_atomic(src, payload)
+        await backend.copy(src, dst)
+
+        assert await backend.read_bytes(src) == payload
+        assert await backend.read_bytes(dst) == payload
+
+    @pytest.mark.spec("BE-019")
+    async def test_copy_overwrite_false_existing_dst_raises_already_exists(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/copy-src-exists-{uid}.txt"
+        dst = f"{prefix}/copy-dst-exists-{uid}.txt"
+
+        await backend.write_atomic(src, b"src")
+        await backend.write_atomic(dst, b"dst-original")
+
+        with pytest.raises(AlreadyExists):
+            await backend.copy(src, dst)
+        assert await backend.read_bytes(dst) == b"dst-original"
+
+    @pytest.mark.spec("BE-019")
+    async def test_copy_overwrite_true_replaces_dst(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/copy-src-over-{uid}.txt"
+        dst = f"{prefix}/copy-dst-over-{uid}.txt"
+
+        await backend.write_atomic(src, b"new-content")
+        await backend.write_atomic(dst, b"old-content")
+
+        await backend.copy(src, dst, overwrite=True)
+        assert await backend.read_bytes(dst) == b"new-content"
+
+
+# ---------------------------------------------------------------------------
+# BE-021 — file-API operations on an HNS directory must raise InvalidPath (async)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsFileApiOnDirectory:
+    """Async ``read_bytes`` and ``delete`` on HNS directory blobs — actual live behaviour.
+
+    Async companion to ``TestAzureLiveHnsFileApiOnDirectory``. Same defect class
+    on both sync and async paths — neither probes ``hdi_isfolder`` before the
+    file-API SDK call. Tracked as **BUG-197** in ``sdd/BACKLOG.md``; tests must
+    be flipped to assert ``InvalidPath`` when that fix lands.
+
+    Spec: BE-021, ASYNC-013 (read), BE-014 (delete).
+    """
+
+    @pytest.mark.spec("BE-021", "ASYNC-013")
+    async def test_read_bytes_on_hns_directory_returns_empty_bytes(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        """BUG-197: should raise ``InvalidPath`` per BE-021; currently returns ``b""``."""
+        backend, dirpath = async_live_hns_backend
+        result = await backend.read_bytes(dirpath)
+        assert result == b""
+
+    @pytest.mark.spec("BE-021", "BE-014")
+    async def test_delete_on_hns_directory_silently_removes_directory(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        """BUG-197: should raise ``InvalidPath`` per BE-021; currently destroys the directory.
+
+        Uses an isolated per-test directory (not the module-shared one) — a
+        successful delete actually mutates the account.
+        """
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        scratch_dir = f"{prefix}/scratch-dir-{uuid.uuid4().hex[:8]}"
+        conn = os.environ["AZURE_STORAGE_CONNECTION_STRING"]
+        fs_name = os.environ["RS_TEST_LIVE_HNS_CONTAINER"]
+        service = DataLakeServiceClient.from_connection_string(conn)
+        try:
+            fs_client = service.get_file_system_client(fs_name)
+            fs_client.get_directory_client(scratch_dir).create_directory()
+
+            assert await backend.exists(scratch_dir) is True
+            await backend.delete(scratch_dir)
+            assert await backend.exists(scratch_dir) is False
+        finally:
+            service.close()

@@ -44,6 +44,26 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
+- [ ] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)**
+  BE-021 requires file-API operations on a directory path to raise `InvalidPath`.
+  `write`/`write_atomic`/`open_atomic` enforce this via the `hdi_isfolder` probe
+  (BUG-190/BUG-192). `read_bytes` and `delete` do not — neither path probes for the
+  directory marker before invoking the SDK. Confirmed live on a real ADLS Gen2 account:
+  - `AzureBackend.read_bytes(hns_dir)` and `AsyncAzureBackend.read_bytes(hns_dir)`:
+    silently return `b""` (0 bytes) instead of raising `InvalidPath`.
+  - `AzureBackend.delete(hns_dir)` and `AsyncAzureBackend.delete(hns_dir)`:
+    silently delete the directory marker, leaving `exists()` returning `False`.
+    **This is a data-loss defect**: calling the file-API `delete()` on what the
+    caller believed was a file but is actually a directory destroys the directory
+    silently. Stronger consequence than BUG-190/BUG-192 (which just chose the wrong
+    error class) — this one mutates account state.
+  Live tests freeze the actual behaviour in `tests/backends/test_azure_live_hns.py::
+  TestAzureLiveHnsFileApiOnDirectory` and the async sibling; they must be flipped
+  back to assert `InvalidPath` once the fix lands. Fix: extend the existing
+  `hdi_isfolder` probe pattern from `write_atomic`/`open_atomic` to `read`,
+  `read_bytes`, `read_seekable`, and `delete` on both sync and async backends.
+  Spec: BE-021, BE-013, BE-014, ASYNC-013.
+
 - [ ] **BUG-196 — Async `write_atomic` HNS path lacks BUG-173 try/except fallback around `get_file_properties()`**
   `src/remote_store/aio/backends/_azure.py:578` calls `await final_fc.get_file_properties()`
   *after* the rename has committed but does not wrap it in try/except. The sync sibling at

@@ -446,6 +446,33 @@ class TestAzureLiveHnsMove:
         with pytest.raises(NotFound):
             backend.read_bytes(src)
 
+    @pytest.mark.spec("BE-018")
+    def test_move_existing_dst_overwrite_false_raises_already_exists(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        """``move`` must guard against silent overwrite when ``overwrite=False``.
+
+        On HNS the underlying ``rename_file`` could silently clobber the destination;
+        the production code interposes a ``get_blob_properties`` probe to raise
+        ``AlreadyExists`` first. Only a real account confirms the probe + raise
+        sequence on actual HNS resources.
+        """
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/move-src-exists-{uid}.txt"
+        dst = f"{prefix}/move-dst-exists-{uid}.txt"
+
+        backend.write_atomic(src, b"src")
+        backend.write_atomic(dst, b"dst-original")
+
+        with pytest.raises(AlreadyExists):
+            backend.move(src, dst)
+        # Both blobs must remain unchanged after the failed move.
+        assert backend.read_bytes(dst) == b"dst-original"
+        assert backend.read_bytes(src) == b"src"
+
 
 # ---------------------------------------------------------------------------
 # BE-016 — get_file_info on an HNS directory blob
@@ -720,3 +747,175 @@ class TestAzureLiveHnsIterChildren:
 
         assert sorted(files) == [f"{sub}/a.txt", f"{sub}/b.txt"]
         assert sorted(folders) == [f"{sub}/nested"]
+
+
+# ---------------------------------------------------------------------------
+# BE-014 — delete happy path on a real HNS account
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsDelete:
+    """``delete`` must remove the file from the account.
+
+    The production code calls ``delete_blob`` on the blob client; on HNS the
+    SDK routes this through the DataLake layer. Mocks confirm the SDK call;
+    only a real account confirms the file actually vanishes (``exists`` flips
+    to ``False``, subsequent reads raise ``NotFound``).
+
+    Spec: BE-014 (delete).
+    """
+
+    @pytest.mark.spec("BE-014")
+    def test_delete_removes_file_from_account(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/delete-{uuid.uuid4().hex[:8]}.txt"
+        backend.write_atomic(path, _PAYLOAD)
+        assert backend.exists(path) is True
+
+        backend.delete(path)
+
+        assert backend.exists(path) is False
+        with pytest.raises(NotFound):
+            backend.read_bytes(path)
+
+
+# ---------------------------------------------------------------------------
+# BE-019 — copy on a real HNS account
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsCopy:
+    """``copy`` must create an independent blob; respect overwrite semantics.
+
+    Production code uses ``start_copy_from_url`` (no HNS-specific branch), but
+    running it against an HNS account confirms the blob layer remains usable
+    on HNS resources and that the ``get_blob_properties`` overwrite probe
+    correctly detects existing destinations.
+
+    Spec: BE-019 (copy).
+    """
+
+    @pytest.mark.spec("BE-019")
+    def test_copy_creates_independent_blob(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/copy-src-{uid}.txt"
+        dst = f"{prefix}/copy-dst-{uid}.txt"
+        payload = b"copy-content-" + uuid.uuid4().bytes
+
+        backend.write_atomic(src, payload)
+        backend.copy(src, dst)
+
+        # Both must be readable after copy — src is preserved, dst is independent.
+        assert backend.read_bytes(src) == payload
+        assert backend.read_bytes(dst) == payload
+
+    @pytest.mark.spec("BE-019")
+    def test_copy_overwrite_false_existing_dst_raises_already_exists(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/copy-src-exists-{uid}.txt"
+        dst = f"{prefix}/copy-dst-exists-{uid}.txt"
+
+        backend.write_atomic(src, b"src")
+        backend.write_atomic(dst, b"dst-original")
+
+        with pytest.raises(AlreadyExists):
+            backend.copy(src, dst)
+        # The failed copy must not have touched the destination.
+        assert backend.read_bytes(dst) == b"dst-original"
+
+    @pytest.mark.spec("BE-019")
+    def test_copy_overwrite_true_replaces_dst(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/copy-src-over-{uid}.txt"
+        dst = f"{prefix}/copy-dst-over-{uid}.txt"
+
+        backend.write_atomic(src, b"new-content")
+        backend.write_atomic(dst, b"old-content")
+
+        backend.copy(src, dst, overwrite=True)
+        assert backend.read_bytes(dst) == b"new-content"
+
+
+# ---------------------------------------------------------------------------
+# BE-021 — file-API operations on an HNS directory must raise InvalidPath
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsFileApiOnDirectory:
+    """``read_bytes`` and ``delete`` on HNS directory blobs — actual live behaviour.
+
+    BE-021 mandates that file-API operations on a directory path raise
+    ``InvalidPath``. ``write``/``write_atomic``/``open_atomic`` enforce this via
+    the ``hdi_isfolder`` probe (BUG-190/BUG-192); ``read_bytes`` and ``delete``
+    do not. These tests document the actual live behaviour:
+
+    - ``read_bytes(hns_dir)`` silently returns ``b""`` (0 bytes).
+    - ``delete(hns_dir)`` silently deletes the directory marker — a data-loss
+      defect, since the caller invoked the *file*-API ``delete()``.
+
+    Both deviations are tracked as **BUG-197** in ``sdd/BACKLOG.md``. The tests
+    must be flipped back to ``with pytest.raises(InvalidPath):`` when that fix
+    lands — they then become regression guards for the spec contract.
+
+    Spec: BE-021 (directory-path guard), BE-013 (read), BE-014 (delete).
+    """
+
+    @pytest.mark.spec("BE-021", "BE-013")
+    def test_read_bytes_on_hns_directory_returns_empty_bytes(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        """BUG-197: should raise ``InvalidPath`` per BE-021; currently returns ``b""``."""
+        backend, dirpath = live_hns_backend
+        result = backend.read_bytes(dirpath)
+        assert result == b""
+
+    @pytest.mark.spec("BE-021", "BE-014")
+    def test_delete_on_hns_directory_silently_removes_directory(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        """BUG-197: should raise ``InvalidPath`` per BE-021; currently destroys the directory.
+
+        Uses an isolated, per-test directory (not the module-shared one) because
+        a successful delete actually mutates the account: a shared directory
+        would be gone for all subsequent tests in the module.
+        """
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        # Provision a fresh directory just for this destructive test.
+        scratch_dir = f"{prefix}/scratch-dir-{uuid.uuid4().hex[:8]}"
+        # Use the underlying DataLake client to create the directory; the backend
+        # API has no create_directory method.
+        conn = os.environ["AZURE_STORAGE_CONNECTION_STRING"]
+        fs_name = os.environ["RS_TEST_LIVE_HNS_CONTAINER"]
+        service = DataLakeServiceClient.from_connection_string(conn)
+        try:
+            fs_client = service.get_file_system_client(fs_name)
+            fs_client.get_directory_client(scratch_dir).create_directory()
+
+            assert backend.exists(scratch_dir) is True
+            backend.delete(scratch_dir)
+            # The directory marker is gone — this is the data-loss surface.
+            assert backend.exists(scratch_dir) is False
+        finally:
+            service.close()
