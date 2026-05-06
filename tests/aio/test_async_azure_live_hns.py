@@ -438,3 +438,161 @@ class TestAsyncLiveHnsGetFileInfoOnDirectory:
         backend, dirpath = async_live_hns_backend
         with pytest.raises(NotFound):
             await backend.get_file_info(dirpath)
+
+
+# ---------------------------------------------------------------------------
+# ASYNC-010 / SIO-003 — write_atomic with AsyncIterator on a real HNS account
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsWriteAtomicAsyncIterator:
+    """``write_atomic`` with ``AsyncIterator[bytes]`` payload must succeed on a real HNS account.
+
+    BUG-194 was a streaming bug that only manifested live: ``upload_data`` invoked
+    with an async generator caused the SDK's ``get_length()`` to return ``None``,
+    which dropped the required ``?position=`` query parameter from ``flush_data``
+    and Azure returned ``MissingRequiredQueryParameter``. Azurite tolerated the
+    missing parameter so no Azurite-backed test caught it. The shipped fix drives
+    the DFS append protocol directly: ``create_file``, then per-chunk
+    ``append_data(offset=cumulative)``, then ``flush_data(total)``.
+
+    A mock-level regression guard exists in
+    ``tests/aio/test_async_azure.py::test_write_atomic_hns_streams_async_chunks``;
+    this live test closes the loop end-to-end against real ADLS Gen2 — the only
+    place the original bug surfaced.
+
+    Spec: ASYNC-010 (write_atomic), SIO-003 (streaming contract), WR-001a, WR-012.
+    """
+
+    @pytest.mark.spec("ASYNC-010", "SIO-003", "WR-001a")
+    async def test_write_atomic_async_iterator_drives_dfs_protocol(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/aiter-{uuid.uuid4().hex[:8]}.txt"
+        # Three uneven chunks ensure cumulative-offset arithmetic is exercised
+        # (a buggy fix that ignored chunk_len would still pass with one chunk).
+        chunks = [b"chunk-one-", b"chunk-two-and-some-extra-", b"final-chunk"]
+        expected = b"".join(chunks)
+
+        async def aiter_payload() -> AsyncIterator[bytes]:
+            for chunk in chunks:
+                yield chunk
+
+        result = await backend.write_atomic(path, aiter_payload())
+
+        # WR-001a: size is the cumulative byte count from the per-chunk loop.
+        assert result.size == len(expected)
+        assert result.source == "native"
+        # The full payload reaches the final blob after rename — confirms
+        # create_file → append_data per chunk → flush_data → rename_file all ran.
+        assert await backend.read_bytes(path) == expected
+
+    @pytest.mark.spec("ASYNC-010", "WR-012", "WR-013")
+    async def test_write_atomic_async_iterator_with_metadata(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        """Metadata on the AsyncIterator branch flows through ``create_file(metadata=)``.
+
+        Companion to the unit test
+        ``test_write_atomic_hns_async_iterator_metadata_reaches_create_file`` —
+        confirms the ``create_file`` metadata kwarg actually persists on the temp
+        file and survives ``rename_file`` end-to-end.
+        """
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/aiter-meta-{uuid.uuid4().hex[:8]}.txt"
+        metadata = {"branch": "async_iterator", "owner": "team-a"}
+
+        async def aiter_payload() -> AsyncIterator[bytes]:
+            yield b"hello "
+            yield b"world"
+
+        result = await backend.write_atomic(path, aiter_payload(), metadata=metadata)
+
+        # WR-012: WriteResult.metadata echoes the caller's mapping.
+        assert result.metadata == metadata
+        # WR-013: metadata applied via create_file must survive rename_file.
+        fi = await backend.get_file_info(path)
+        assert fi.metadata is not None
+        assert fi.metadata.get("branch") == "async_iterator"
+        assert fi.metadata.get("owner") == "team-a"
+
+
+# ---------------------------------------------------------------------------
+# BE-013 / BE-014 / BE-018 — NotFound on real HNS account (read / delete / move)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsNotFound:
+    """Operations on missing HNS paths must raise ``NotFound`` on a real account.
+
+    The most common error path in real usage. Mock suites stub
+    ``ResourceNotFoundError`` directly; only a real account confirms the SDK
+    actually raises it for the shapes the production code probes (blob client
+    vs file client paths can differ).
+
+    Spec: BE-013 (read), BE-014 (delete), BE-018 (move), ASYNC-016 (get_file_info).
+    """
+
+    @pytest.mark.spec("ASYNC-016")
+    async def test_read_bytes_missing_raises_not_found(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        with pytest.raises(NotFound):
+            await backend.read_bytes(missing)
+
+    @pytest.mark.spec("ASYNC-016")
+    async def test_get_file_info_missing_raises_not_found(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        with pytest.raises(NotFound):
+            await backend.get_file_info(missing)
+
+    @pytest.mark.spec("BE-014")
+    async def test_delete_missing_without_missing_ok_raises_not_found(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        with pytest.raises(NotFound):
+            await backend.delete(missing)
+
+    @pytest.mark.spec("BE-014")
+    async def test_delete_missing_with_missing_ok_is_silent(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        """``missing_ok=True`` is the contract for idempotent delete; live confirms."""
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        # Returning normally is the assertion: missing_ok=True must not raise.
+        result = await backend.delete(missing, missing_ok=True)
+        assert result is None
+
+    @pytest.mark.spec("ASYNC-018")
+    async def test_move_missing_src_raises_not_found(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/missing-src-{uid}.txt"
+        dst = f"{prefix}/missing-dst-{uid}.txt"
+        with pytest.raises(NotFound):
+            await backend.move(src, dst)

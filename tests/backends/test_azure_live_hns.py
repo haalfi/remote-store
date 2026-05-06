@@ -508,3 +508,79 @@ class TestAzureLiveHnsOpenAtomicSuccess:
             fh.write(payload)
 
         assert backend.read_bytes(path) == payload
+
+
+# ---------------------------------------------------------------------------
+# BE-013 / BE-014 / BE-018 — NotFound on real HNS account (read / delete / move)
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsNotFound:
+    """Operations on missing HNS paths must raise ``NotFound`` on a real account.
+
+    The most common error path in real usage. Mock suites stub
+    ``ResourceNotFoundError`` directly; only a real account confirms the SDK
+    actually raises it for the shapes the production code probes (blob client
+    vs file client paths can differ between flat-blob and HNS).
+
+    Spec: BE-013 (read), BE-014 (delete), BE-016 (get_file_info), BE-018 (move).
+    """
+
+    @pytest.mark.spec("BE-013")
+    def test_read_bytes_missing_raises_not_found(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        with pytest.raises(NotFound):
+            backend.read_bytes(missing)
+
+    @pytest.mark.spec("BE-016")
+    def test_get_file_info_missing_raises_not_found(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        with pytest.raises(NotFound):
+            backend.get_file_info(missing)
+
+    @pytest.mark.spec("BE-014")
+    def test_delete_missing_without_missing_ok_raises_not_found(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        with pytest.raises(NotFound):
+            backend.delete(missing)
+
+    @pytest.mark.spec("BE-014")
+    def test_delete_missing_with_missing_ok_is_silent(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        """``missing_ok=True`` is the contract for idempotent delete; live confirms."""
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        # Returning normally is the assertion: missing_ok=True must not raise.
+        result = backend.delete(missing, missing_ok=True)
+        assert result is None
+
+    @pytest.mark.spec("BE-018")
+    def test_move_missing_src_raises_not_found(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/missing-src-{uid}.txt"
+        dst = f"{prefix}/missing-dst-{uid}.txt"
+        with pytest.raises(NotFound):
+            backend.move(src, dst)
