@@ -242,6 +242,19 @@ Existing items may be more verbose — trim on next touch.
 
 ### Testing & Verification
 
+- [ ] **ID-175 — Record live ADLS Gen2 HNS responses as VCR cassettes for offline mocking**
+  The HNS live test suite (`tests/backends/test_azure_live_hns.py`,
+  `tests/aio/test_async_azure_live_hns.py`) requires a real ADLS Gen2 account.
+  Use `pytest-recording` (wraps `vcrpy`) to capture real SDK HTTP exchanges as
+  YAML cassettes during a live run, then replay them without credentials in CI.
+  Each live test would record once (or on demand with `--record-mode=new_episodes`)
+  and run in playback mode by default, covering the actual DFS wire protocol
+  (`create_file` / `append_data` / `flush_data` / `rename_file`) that Azurite
+  cannot emulate.
+  Exit criteria: cassettes committed to `tests/cassettes/hns/`; CI runs the
+  HNS classes without `RS_TEST_LIVE_HNS=1`; recording instructions in
+  `CONTRIBUTING.md` § Live tests.
+
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
   ID-147 on 2026-04-19. Per `sdd/formal/README.md` § Authoring rules (3),
