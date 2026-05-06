@@ -1237,13 +1237,14 @@ class TestAsyncAzureHNSPaths:
 
     @pytest.mark.spec("ASYNC-010", "ASYNC-021")
     async def test_write_atomic_hns_streams_async_chunks(self) -> None:
-        """HNS write_atomic accepts an async generator and buffers it to bytes before upload_data.
+        """HNS write_atomic streams AsyncIterator payloads via create_file + append_data + flush_data.
 
-        The DFS flush_data REST call requires ``position=<total bytes>``; upload_data
-        passes ``length=None`` for async generators, so the SDK would omit the required
-        query parameter and Azure returns MissingRequiredQueryParameter (BUG-194).
-        The fix: buffer all chunks to bytes before calling upload_data, so the total
-        length is known upfront.  The caller's chunks are assembled in order.
+        upload_data passes length=None for async generators, so the SDK omits the
+        required ``?position=`` query parameter on real ADLS Gen2, returning
+        MissingRequiredQueryParameter (BUG-194).  The fix: drive the DFS append
+        protocol directly — one append_data call per chunk with the cumulative offset,
+        then flush_data with the final byte count.  Memory is bounded to one chunk at
+        a time (SIO-003, ASYNC-021); upload_data is NOT called for AsyncIterator input.
         """
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
@@ -1263,11 +1264,16 @@ class TestAsyncAzureHNSPaths:
 
         agen = chunk_gen()
         await backend.write_atomic("dir/file.txt", agen)
-        tmp_fc.upload_data.assert_awaited_once()
-        # Chunks are buffered and joined before upload_data; the call receives bytes.
-        upload_arg = tmp_fc.upload_data.call_args[0][0]
-        assert upload_arg == b"hello world"
+
+        # AsyncIterator path: create_file → append_data per chunk → flush_data.
+        tmp_fc.create_file.assert_awaited_once()
+        assert tmp_fc.append_data.await_count == 2
+        tmp_fc.append_data.assert_any_await(b"hello ", offset=0, length=6)
+        tmp_fc.append_data.assert_any_await(b"world", offset=6, length=5)
+        tmp_fc.flush_data.assert_awaited_once_with(11)
         assert tmp_fc.rename_file.call_count == 1
+        # upload_data must NOT be called for AsyncIterator input (BUG-194 regression guard).
+        tmp_fc.upload_data.assert_not_awaited()
 
     @pytest.mark.spec("ASYNC-010")
     async def test_write_atomic_hns_cleans_up_on_failure(self) -> None:

@@ -24,15 +24,19 @@ WR-012 (metadata echo), WR-013 (metadata round-trip), AZ-034 (ETag normalisation
 Gating
 ------
 
-Three layers, all required:
+Two skip-gates (both required to run):
 
 1. ``pytest.mark.live`` at module level. Default ``addopts`` is ``-m 'not live'``,
    so plain ``hatch run test`` skips the file entirely.
 2. ``RS_TEST_LIVE_HNS=1`` env var — same gate as
    ``tests.backends.test_azure_live_hns``.
-3. ``AZURE_STORAGE_CONNECTION_STRING`` and ``RS_TEST_LIVE_HNS_CONTAINER`` pointing
-   at a *real* ADLS Gen2 account. Azurite-pointing strings are rejected with
-   ``pytest.fail`` rather than a silent skip.
+
+Fixture-time precondition (fails loudly, does not skip):
+
+3. ``AZURE_STORAGE_CONNECTION_STRING`` and ``RS_TEST_LIVE_HNS_CONTAINER`` must
+   point at a *real* ADLS Gen2 account. ``_require_live_hns_env()`` calls
+   ``pytest.fail`` (not ``pytest.skip``) for missing or Azurite-pointing strings —
+   a silent skip here would mean "I thought I tested it" but didn't.
 
 Cost discipline
 ---------------
@@ -202,6 +206,10 @@ class TestAsyncLiveHnsWriteResult:
         assert result.size == len(_PAYLOAD)
         # WR-001a / AZ-034: etag from post-rename get_file_properties must be
         # non-empty, quote-stripped, and lowercased.
+        # Note: the async path lacks the BUG-173 try/except fallback the sync path
+        # carries, so a post-rename read failure propagates as a write error rather
+        # than returning etag=None.  This assertion therefore exercises the only path
+        # the async backend supports.  See BUG-193 BACKLOG-DONE for the follow-up.
         assert result.etag is not None, (
             "async HNS write_atomic must populate WriteResult.etag from post-rename get_file_properties"
         )

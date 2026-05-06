@@ -9,20 +9,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **BUG-194 — `AsyncAzureBackend.write_atomic` broken for all payloads on real ADLS Gen2**
-  `_count_and_pass_hns` wrapped bytes in an async generator so it could count bytes
-  via `size_ref[0]`. On the HNS code path `upload_data` was called with that generator;
-  the Azure SDK's `get_length()` returns `None` for async generators, so
+  `_count_and_pass_hns` wrapped bytes in an async generator to count bytes while
+  streaming. On the HNS code path, `upload_data` was called with that generator; the
+  Azure SDK's `get_length()` returns `None` for async generators, so
   `flush_data(position=None)` omitted the required DFS query parameter and Azure returned
   `MissingRequiredQueryParameter`. The bug was latent since the HNS path was introduced:
   Azurite tolerates a missing `position` while real ADLS Gen2 does not, so no existing
   Azurite-backed test caught it. Isolated with `tmp/probe_dfs.py` (steps 1–7 rule out
   SDK issues; step 5 — `upload_data(async generator)` — reproduced the failure).
-  Fixed by splitting the upload path: bytes are passed directly to `upload_data` (SDK's
-  `get_length(bytes)` returns `len()`); `AsyncIterator` payloads are buffered to bytes
-  before the call so the total length is known upfront. The async HNS live suite
-  (`tests/aio/test_async_azure_live_hns.py`, added by BUG-193) confirmed the fix —
-  all 9 live tests pass against a real ADLS Gen2 account.
-  PR: #590. Spec: WR-001a, WR-004, AZ-034, ASYNC-010.
+
+  **Initial fix** (during PR #590 development): `AsyncIterator` payloads were buffered to
+  a `bytes` object so `upload_data` could receive a known-size argument. This resolved the
+  `MissingRequiredQueryParameter` error but violated SIO-003/ASYNC-021 — the same
+  streaming anti-pattern BUG-165 introduced and later fixed in the non-HNS path. Caught
+  in PR review.
+
+  **Final fix**: bytes input passes directly to `upload_data` (SDK's `get_length(bytes)`
+  returns `len()`; no regression). `AsyncIterator` input drives the DFS append protocol
+  directly: `create_file`, then `append_data(chunk, offset=position, length=chunk_len)`
+  per chunk, then `flush_data(position)` with the final byte count. Memory is bounded to
+  one chunk at a time (SIO-003, ASYNC-021 preserved). No current framework caller passes
+  an `AsyncIterator` to async `write_atomic` for HNS, so the streaming regression was
+  latent, not active.
+
+  The async HNS live suite (`tests/aio/test_async_azure_live_hns.py`, added by BUG-193)
+  confirmed the fix — all 9 live tests pass against a real ADLS Gen2 account.
+  PR: #590. Spec: WR-001a, WR-004, AZ-034, ASYNC-010, SIO-003, ASYNC-021.
 
 - [x] **BUG-193 — Async HNS live test suite missing; sync HNS live tests lacking `WriteResult` assertions**
   `TestAsyncAzureLiveHNS` in `tests/aio/test_async_azure_live.py` (added by BUG-182) used the

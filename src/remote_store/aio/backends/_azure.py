@@ -530,40 +530,53 @@ class AsyncAzureBackend(AsyncBackend):
             tmp_name = f".~tmp.{basename}.{uuid.uuid4().hex[:8]}"
             tmp_path = f"{parent}/{tmp_name}" if parent else tmp_name
 
-            # DFS flush_data requires position=<total bytes>.  upload_data passes
-            # length=None for async generators, so the SDK omits the required query
-            # parameter and Azure returns MissingRequiredQueryParameter.  Bytes: pass
-            # directly so get_length() returns len().  AsyncIterator: buffer to bytes
-            # so the total is known before upload_data is called; the DFS append
-            # protocol has no streaming path for unknown-size payloads.
-            upload_src: Any
-            if isinstance(content, bytes):
-                size_ref = [len(content)]
-                upload_src = content
-            else:
-                buf: list[bytes] = []
-                async for chunk in content:
-                    buf.append(chunk)
-                upload_src = b"".join(buf)
-                size_ref = [len(upload_src)]
-
+            # DFS flush_data requires position=<total bytes> (BUG-194).
+            # upload_data passes length=None for async generators, so the SDK
+            # omits the required query parameter on real ADLS Gen2
+            # (MissingRequiredQueryParameter).
+            #
+            # Bytes: upload_data resolves length via len(); no extra protocol.
+            # AsyncIterator: drive the DFS append protocol directly —
+            # create_file, then append_data per chunk (tracking cumulative
+            # position), then flush_data with the final byte count.  One chunk
+            # at a time; memory is bounded to a single chunk (SIO-003,
+            # ASYNC-021).
             tmp_fc = self._fs.get_file_client(tmp_path)
-            try:
-                await tmp_fc.upload_data(
-                    upload_src,
-                    overwrite=True,
-                    max_concurrency=self._max_concurrency,
-                    metadata=metadata or None,
-                )
-                new_name = f"{self._container}/{ap}"
-                final_fc = await tmp_fc.rename_file(new_name)
-            except Exception:
-                with contextlib.suppress(Exception):
-                    await tmp_fc.delete_file()
-                raise
+            new_name = f"{self._container}/{ap}"
+            size: int
+
+            if isinstance(content, bytes):
+                size = len(content)
+                try:
+                    await tmp_fc.upload_data(
+                        content,
+                        overwrite=True,
+                        max_concurrency=self._max_concurrency,
+                        metadata=metadata or None,
+                    )
+                    final_fc = await tmp_fc.rename_file(new_name)
+                except Exception:
+                    with contextlib.suppress(Exception):
+                        await tmp_fc.delete_file()
+                    raise
+            else:
+                try:
+                    await tmp_fc.create_file(metadata=metadata or None)
+                    position = 0
+                    async for chunk in content:
+                        chunk_len = len(chunk)
+                        await tmp_fc.append_data(chunk, offset=position, length=chunk_len)
+                        position += chunk_len
+                    await tmp_fc.flush_data(position)
+                    size = position
+                    final_fc = await tmp_fc.rename_file(new_name)
+                except Exception:
+                    with contextlib.suppress(Exception):
+                        await tmp_fc.delete_file()
+                    raise
 
             props = await final_fc.get_file_properties()
-            return _build_azure_write_result(path, size_ref[0], props, metadata)
+            return _build_azure_write_result(path, size, props, metadata)
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.
