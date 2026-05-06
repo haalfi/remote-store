@@ -530,21 +530,27 @@ class AsyncAzureBackend(AsyncBackend):
             tmp_name = f".~tmp.{basename}.{uuid.uuid4().hex[:8]}"
             tmp_path = f"{parent}/{tmp_name}" if parent else tmp_name
 
-            size_ref = [0]
-
-            async def _count_and_pass_hns(src: AsyncWritableContent) -> AsyncIterator[bytes]:
-                if isinstance(src, bytes):
-                    size_ref[0] = len(src)
-                    yield src
-                else:
-                    async for chunk in src:
-                        size_ref[0] += len(chunk)
-                        yield chunk
+            # DFS flush_data requires position=<total bytes>.  upload_data passes
+            # length=None for async generators, so the SDK omits the required query
+            # parameter and Azure returns MissingRequiredQueryParameter.  Bytes: pass
+            # directly so get_length() returns len().  AsyncIterator: buffer to bytes
+            # so the total is known before upload_data is called; the DFS append
+            # protocol has no streaming path for unknown-size payloads.
+            upload_src: Any
+            if isinstance(content, bytes):
+                size_ref = [len(content)]
+                upload_src = content
+            else:
+                buf: list[bytes] = []
+                async for chunk in content:
+                    buf.append(chunk)
+                upload_src = b"".join(buf)
+                size_ref = [len(upload_src)]
 
             tmp_fc = self._fs.get_file_client(tmp_path)
             try:
                 await tmp_fc.upload_data(
-                    _count_and_pass_hns(content),
+                    upload_src,
                     overwrite=True,
                     max_concurrency=self._max_concurrency,
                     metadata=metadata or None,
