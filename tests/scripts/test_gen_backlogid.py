@@ -2,25 +2,18 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 from pathlib import Path
 
-_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "gen_backlogid.py"
+ROOT = Path(__file__).resolve().parents[2]
+SCRIPTS = ROOT / "scripts"
 
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
 
-def _load_module():
-    spec = importlib.util.spec_from_file_location("gen_backlogid", _SCRIPT)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules.setdefault("gen_backlogid", module)
-    spec.loader.exec_module(module)
-    return module
+import gen_backlogid as _mod  # noqa: E402
 
-
-_mod = _load_module()
 _extract_ids = _mod._extract_ids
 _max_numeric = _mod._max_numeric
 _PREFIXES = _mod._PREFIXES
@@ -159,7 +152,7 @@ class TestCheck:
         _write_json(id_file, json_data)
         return done, active, id_file
 
-    def test_clean_returns_zero(self, tmp_path, monkeypatch):
+    def test_clean_returns_zero(self, tmp_path, monkeypatch, capsys):
         done, active, id_file = self._setup(
             tmp_path,
             _DONE_BLOCK,
@@ -170,7 +163,11 @@ class TestCheck:
         monkeypatch.setattr(_mod, "BACKLOG", active)
         monkeypatch.setattr(_mod, "ID_FILE", id_file)
         monkeypatch.setattr(_mod, "ROOT", tmp_path)
-        assert _mod._check() == 0
+        result = _mod._check()
+        assert result == 0
+        out = capsys.readouterr().out
+        assert "BK=178" in out
+        assert "No ID collisions." in out
 
     def test_collision_returns_one(self, tmp_path, monkeypatch, capsys):
         collision_active = f"- [ ] **BK-174 {_EM} Duplicate item**\n"
