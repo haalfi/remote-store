@@ -70,6 +70,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   fallback the sync path carries.
   PR: #590. Spec: WR-001a, WR-004, WR-012, WR-013, AZ-034, BE-008, BE-010, BE-021.
 
+- [x] **BK-178 — Fix all RST cross-reference roles flagged in audit-013 (docstring style)**
+  Replaced all 20 RST role violations (`:class:`, `:meth:`, `:func:`, `:data:`, `:mod:`)
+  with double-backtick inline code in 10 files (`src/` × 6, `tests/` × 2, `scripts/` × 4).
+  No spec change; no CHANGELOG entry (internal style, not user-facing).
+  Audit: `sdd/audits/audit-013-docstring-style.md`.
+
 - [x] **BUG-182 — Verify HNS `write_atomic` user metadata survives the atomic rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is
   forwarded to `upload_data` on the temp file and that `WriteResult.metadata` echoes the

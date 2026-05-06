@@ -1,9 +1,9 @@
 """AsyncBackendSyncAdapter -- bridges async backends into the sync world.
 
-Implements the sync :class:`Backend` ABC by delegating to an
-:class:`AsyncBackend` running on a private event loop in a dedicated
+Implements the sync ``Backend`` ABC by delegating to an
+``AsyncBackend`` running on a private event loop in a dedicated
 background thread.  Mirror of
-:class:`remote_store.aio.SyncBackendAdapter` (ADR-0012); decision record
+``SyncBackendAdapter`` (ADR-0012); decision record
 for this direction is ADR-0025, invariants pinned in spec 029
 § AsyncBackendSyncAdapter (ASYNC-080..093).
 """
@@ -206,18 +206,18 @@ class AsyncBackendSyncAdapter(Backend):
     def unwrap(self, type_hint: type[T]) -> T:
         """Return a sync-safe native handle if the wrapped backend provides one.
 
-        By default raises :class:`~remote_store._errors.CapabilityNotSupported`
+        By default raises ``CapabilityNotSupported``
         because async-SDK handles are bound to the adapter's private event loop
         and cannot be used safely from the caller's thread.
 
         Wrapped backends that can expose a sync-safe handle should implement
-        :class:`_SyncSafeHandleProvider` and return it from
-        :meth:`~_SyncSafeHandleProvider.sync_safe_unwrap`
+        ``_SyncSafeHandleProvider`` and return it from
+        ``_SyncSafeHandleProvider.sync_safe_unwrap``
         (spec 029 § ASYNC-086).
 
         Args:
             type_hint: The type of handle to retrieve; passed through to
-                :meth:`~_SyncSafeHandleProvider.sync_safe_unwrap` for backends
+                ``_SyncSafeHandleProvider.sync_safe_unwrap`` for backends
                 that support the exemption.
 
         Returns:
@@ -225,7 +225,7 @@ class AsyncBackendSyncAdapter(Backend):
 
         Raises:
             CapabilityNotSupported: If the wrapped backend does not implement
-                :class:`_SyncSafeHandleProvider`.
+                ``_SyncSafeHandleProvider``.
 
         Example:
             ```python
@@ -286,7 +286,7 @@ class AsyncBackendSyncAdapter(Backend):
         """Submit a connectivity probe to the wrapped async backend.
 
         Not a no-op: the probe is forwarded to the wrapped
-        :class:`~remote_store.aio.AsyncBackend`, and any connectivity error
+        ``AsyncBackend``, and any connectivity error
         it raises reaches the sync caller unchanged (spec 029 § ASYNC-093).
 
         Returns:
@@ -326,7 +326,7 @@ class AsyncBackendSyncAdapter(Backend):
             path: Backend-relative key of the file to read.
 
         Returns:
-            A forward-only :class:`io.RawIOBase` stream over the file
+            A forward-only ``io.RawIOBase`` stream over the file
             contents.
 
         Raises:

@@ -402,7 +402,7 @@ def resolve_env(
 
     Args:
         data: Config dict (typically parsed from YAML/TOML).
-        environ: Variable source. Defaults to :data:`os.environ`.
+        environ: Variable source. Defaults to ``os.environ``.
 
     Returns:
         A new dict with all placeholder strings resolved.

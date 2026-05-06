@@ -6,16 +6,16 @@ are reachable without patching third-party internals
 (``sdd/TESTING.md`` Rule 6). The authoritative invariants they help
 exercise live in spec 029 § AsyncBackendSyncAdapter.
 
-- :class:`_HangingAsyncBackend` never returns from any I/O method.
-  Every coroutine awaits an :class:`asyncio.Event` that never gets set,
+- ``_HangingAsyncBackend`` never returns from any I/O method.
+  Every coroutine awaits an ``asyncio.Event`` that never gets set,
   so the adapter's drain / close / cancellation paths can be exercised
   deterministically.
-- :class:`_RaisingAsyncBackend` raises a preconfigured exception from
+- ``_RaisingAsyncBackend`` raises a preconfigured exception from
   every I/O method (and optionally from ``aclose``), for driving
   verbatim error propagation and mid-stream failure tests.
 
-Both classes are concrete :class:`AsyncBackend` subclasses so they can
-be passed to :class:`AsyncBackendSyncAdapter` unchanged once it lands
+Both classes are concrete ``AsyncBackend`` subclasses so they can
+be passed to ``AsyncBackendSyncAdapter`` unchanged once it lands
 (see ADR-0025). Intended for unit-test use only.
 """
 

@@ -32,7 +32,7 @@ class ExtensionInfo(TypedDict):
 
 
 class InfoResult(TypedDict):
-    """Structured result of :func:`info`."""
+    """Structured result of the ``info`` function."""
 
     version: str
     backends: dict[str, BackendInfo]

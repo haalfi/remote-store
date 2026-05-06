@@ -2,24 +2,24 @@
 
 Record types:
 
-:class:`SddKind`
-    One row in :data:`SDD_KINDS`. Declarative config for each sdd subdir
+``SddKind``
+    One row in ``SDD_KINDS``. Declarative config for each sdd subdir
     (adrs, specs, rfcs, audits, research): where to look, how to title,
     whether entries are numbered, optional status column.
 
-:class:`SddEntry`
+``SddEntry``
     One spec/ADR/RFC/audit/research document discovered under
     ``sdd/<kind.source_dir>/``.
 
-:class:`DualEntry`
+``DualEntry``
     One dual file: absolute repo source path and its virtual docs dest.
-    Produced by :func:`scan_dual_files`.
+    Produced by ``scan_dual_files``.
 
-:class:`ExampleEntry`
+``ExampleEntry``
     One example script discovered under ``examples/<category>/``. Title,
     description, and optional ``see_also`` come from the module docstring.
 
-:class:`ExampleCategory`
+``ExampleCategory``
     One row of ``examples/_categories.yml``.
 
 """

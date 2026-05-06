@@ -172,7 +172,7 @@ class SFTPBackend(Backend):
         **Not thread-safe for concurrent access.** This backend maintains a
         single SSH/SFTP connection (paramiko ``SFTPClient``), which is not
         safe to call from multiple threads simultaneously. Concurrent calls
-        via :class:`~remote_store.aio.SyncBackendAdapter` and
+        via ``SyncBackendAdapter`` and
         ``asyncio.gather`` will race on the shared socket and may hang or
         corrupt responses. Create one ``SFTPBackend`` instance per thread if
         you need parallel operations.

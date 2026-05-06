@@ -78,7 +78,7 @@ class AsyncStore:
         return self._read_chunks(self._require_file_path(path))
 
     async def _read_chunks(self, resolved: str) -> AsyncIterator[bytes]:
-        """Inner generator for :meth:`read` — yields chunks from backend."""
+        """Inner generator for ``read`` — yields chunks from backend."""
         async for chunk in self._backend.read(resolved):
             yield chunk
 

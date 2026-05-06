@@ -95,6 +95,18 @@ _LOG = logging.getLogger(__name__)
 _AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "AccountName=devstoreaccount1")
 
 
+# Gating — three layers, all required:
+#   1. ``pytest.mark.live`` below. Default addopts is ``-m 'not live'``,
+#      so plain ``hatch run test`` skips the file entirely.
+#   2. ``RS_TEST_LIVE_HNS=1`` env var.
+#   3. ``AZURE_STORAGE_CONNECTION_STRING`` + ``RS_TEST_LIVE_HNS_CONTAINER``
+#      pointing at a real ADLS Gen2 account. Azurite-shaped values raise
+#      rather than skip — a silent skip defeats the point of a live test.
+#
+# Cost discipline: test bodies stay deterministic, payloads stay small,
+# and one HNS directory is provisioned per session and shared across
+# parametrized cases. Teardown deletes the prefix on a best-effort basis
+# so a teardown race does not turn a green test red.
 pytestmark = [
     pytest.mark.live,
     pytest.mark.skipif(

@@ -68,7 +68,7 @@ def from_yaml(
     Args:
         path: Path to the YAML file.
         resolve_env_vars: When ``True``, resolve ``${VAR}`` placeholders
-            via :func:`~remote_store.resolve_env` before constructing
+            via ``resolve_env`` before constructing
             the config.
 
     Returns:

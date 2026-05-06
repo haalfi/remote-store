@@ -156,6 +156,23 @@ and the highest ID already in this file, then take the next integer. Run
   to HNS-unique cases only; recording/replay procedure documented in
   `CONTRIBUTING.md` § Live tests.
 
+- [ ] **ID-174 — Design and set up long-term docstring style enforcement**
+  Audit-013 found 20 RST-role violations introduced over time with no automated
+  gate. This item covers the design and CI wiring of a preventive check so the
+  same class of violations cannot silently re-enter the codebase.
+  Options to evaluate:
+  1. **`pydoclint` + custom rule** — pydoclint already runs in `hatch run lint`;
+     check whether a plugin or config flag can flag `:role:` patterns.
+  2. **`griffe` RST-role detector** — `griffe` parses docstrings and can report
+     Google vs RST mismatches; a small script could fail on any `:word:`text``
+     pattern found in public symbols.
+  3. **`grep`-based pre-commit hook** — simplest: `grep -rn ':\w\+:``' src/`
+     fails CI if any RST role is present; zero external dependencies.
+  Decision criteria: false-positive rate, maintenance burden, integration with
+  existing `hatch run lint` gate. Output: ADR or brief decision note + the
+  enforcement wired into `hatch run lint` or a pre-commit hook, plus docs in
+  `sdd/DESIGN.md` § 4 noting the automated gate.
+
 - [ ] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   `AsyncMemoryBackend.get_file_info` returns
   `FileInfo(... content_type=node.content_type)` without
