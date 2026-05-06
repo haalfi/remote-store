@@ -462,7 +462,8 @@ class TestAzureLiveHnsGetFileInfoOnDirectory:
 
     Note: BE-016 specifies ``InvalidPath`` for directory paths, but the current
     implementation raises ``NotFound``. This test documents the actual live
-    behaviour.
+    behaviour; the deviation is tracked as **BUG-195** in ``sdd/BACKLOG.md`` and
+    must be flipped to ``InvalidPath`` when that fix lands.
 
     Spec: BE-016 (get_file_info).
     """

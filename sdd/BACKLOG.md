@@ -44,7 +44,30 @@ Existing items may be more verbose — trim on next touch.
 
 ## Bugs
 
-*(none)*
+- [ ] **BUG-196 — Async `write_atomic` HNS path lacks BUG-173 try/except fallback around `get_file_properties()`**
+  `src/remote_store/aio/backends/_azure.py:578` calls `await final_fc.get_file_properties()`
+  *after* the rename has committed but does not wrap it in try/except. The sync sibling at
+  `src/remote_store/backends/_azure.py:484-503` (BUG-173) deliberately catches an `Exception`,
+  logs a warning, and returns `WriteResult(etag=None, last_modified=None)` — the rename
+  already succeeded, so a transient post-rename read failure must not surface as a write
+  failure. WR-001a lists both fields as `Optional`. Surfaced by the new
+  `tests/aio/test_async_azure_live_hns.py::TestAsyncLiveHnsWriteResult` assertion
+  `result.etag is not None` (only path the async backend supports today). Fix: mirror the
+  sync try/except + log + `_build_azure_write_result(path, size, None, metadata)` shape, then
+  weaken the live-test assertion to allow the fallback path. Spec: WR-001a, WR-004, AZ-034.
+
+- [ ] **BUG-195 — `get_file_info` on an HNS directory raises `NotFound` instead of `InvalidPath` (sync + async)**
+  BE-016 specifies "`InvalidPath` if the path names a directory (Dafny:
+  `GetFileInfo: IsDir → InvalidPath`)" and ASYNC-016 inherits the same contract. Both
+  `AzureBackend.get_file_info` and `AsyncAzureBackend.get_file_info` currently raise
+  `NotFound` when the target is an HNS directory blob (marker `hdi_isfolder=true`). New live
+  tests `tests/backends/test_azure_live_hns.py::TestAzureLiveHnsGetFileInfoOnDirectory` and
+  `tests/aio/test_async_azure_live_hns.py::TestAsyncLiveHnsGetFileInfoOnDirectory` confirm
+  the runtime behaviour and document the deviation. Same defect shape as BUG-190 (write on
+  HNS directory) and BUG-192 (open_atomic on HNS directory): the `hdi_isfolder` probe is
+  missing. Fix: detect `hdi_isfolder` in the `get_file_info` HNS branch and raise
+  `InvalidPath`; update both live tests to assert `InvalidPath`. Spec: BE-016, ASYNC-016,
+  BE-021.
 
 ---
 

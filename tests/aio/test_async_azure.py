@@ -1275,6 +1275,41 @@ class TestAsyncAzureHNSPaths:
         # upload_data must NOT be called for AsyncIterator input (BUG-194 regression guard).
         tmp_fc.upload_data.assert_not_awaited()
 
+    @pytest.mark.spec("ASYNC-010", "WR-012")
+    async def test_write_atomic_hns_async_iterator_metadata_reaches_create_file(self) -> None:
+        """AsyncIterator + metadata routes the kwarg to create_file, not upload_data.
+
+        BUG-194's AsyncIterator branch drives the DFS protocol directly: metadata is
+        passed to ``create_file`` (which sets it on the temp file before the chunks
+        are appended), not to ``upload_data`` (which is not awaited on this path).
+        A future refactor that drops the metadata kwarg from ``create_file`` would
+        silently lose user metadata on streaming HNS writes.
+        """
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc.get_file_properties = AsyncMock(return_value={})
+        tmp_fc.rename_file.return_value = final_fc
+
+        async def chunk_gen():  # noqa: ANN202
+            yield b"hello "
+            yield b"world"
+
+        result = await backend.write_atomic("dir/file.txt", chunk_gen(), metadata={"k": "v"})
+
+        # WR-012: metadata must reach create_file on the AsyncIterator path.
+        tmp_fc.create_file.assert_awaited_once_with(metadata={"k": "v"})
+        # upload_data must NOT be called for AsyncIterator input.
+        tmp_fc.upload_data.assert_not_awaited()
+        # WR-012: WriteResult.metadata still echoes the caller's mapping.
+        assert result.metadata == {"k": "v"}
+
     @pytest.mark.spec("ASYNC-010")
     async def test_write_atomic_hns_cleans_up_on_failure(self) -> None:
         """HNS write_atomic deletes temp file when rename fails."""

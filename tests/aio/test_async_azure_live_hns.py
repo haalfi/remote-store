@@ -209,7 +209,7 @@ class TestAsyncLiveHnsWriteResult:
         # Note: the async path lacks the BUG-173 try/except fallback the sync path
         # carries, so a post-rename read failure propagates as a write error rather
         # than returning etag=None.  This assertion therefore exercises the only path
-        # the async backend supports.  See BUG-193 BACKLOG-DONE for the follow-up.
+        # the async backend supports.  Tracked as BUG-196 in sdd/BACKLOG.md.
         assert result.etag is not None, (
             "async HNS write_atomic must populate WriteResult.etag from post-rename get_file_properties"
         )
@@ -236,8 +236,10 @@ class TestAsyncLiveHnsWriteResult:
 class TestAsyncLiveHnsMetadata:
     """Metadata must be echoed in WriteResult (WR-012) and survive the async HNS rename (WR-013).
 
-    The async ``write_atomic`` HNS path uploads to a temp file with ``metadata=``
-    then renames. Mocks verify the kwarg reaches ``upload_data``; only a real account
+    The async ``write_atomic`` HNS path attaches metadata to the temp file at
+    creation — via ``upload_data(metadata=)`` for ``bytes`` payloads, via
+    ``create_file(metadata=)`` for ``AsyncIterator`` payloads (BUG-194) — then
+    renames. Mocks verify the kwarg reaches the right SDK call; only a real account
     confirms ``rename_file`` does not drop the metadata.
     """
 
@@ -320,10 +322,12 @@ class TestAsyncLiveHnsDirectoryGuard:
 class TestAsyncLiveHnsContentRoundTrip:
     """Bytes written via async write_atomic must survive the HNS temp-upload + rename_file commit.
 
-    Async companion to ``TestAzureLiveHnsContentRoundTrip``. The async HNS path
-    buffers the payload to bytes before ``upload_data`` (BUG-194 fix for the
-    ``flush_data(position=None)`` regression). This round-trip confirms the full
-    payload reaches the final blob after the DFS rename.
+    Async companion to ``TestAzureLiveHnsContentRoundTrip``. After the BUG-194 fix,
+    the async HNS path routes ``bytes`` directly to ``upload_data`` (length resolved
+    via ``len()``) and routes ``AsyncIterator`` payloads through ``create_file`` +
+    per-chunk ``append_data`` + ``flush_data`` — neither path materialises the
+    payload to a single buffer (SIO-003, ASYNC-021 preserved). This round-trip
+    confirms the bytes payload reaches the final blob after the DFS rename.
 
     Spec: BE-010 (write_atomic), WR-001a (WriteResult size).
     """
@@ -419,7 +423,9 @@ class TestAsyncLiveHnsGetFileInfoOnDirectory:
     account confirms the ``hdi_isfolder`` marker is set by the DataLake service.
 
     Note: ASYNC-016 specifies ``InvalidPath`` for directory paths, but the current
-    implementation raises ``NotFound``. This test documents the actual live behaviour.
+    implementation raises ``NotFound``. This test documents the actual live behaviour;
+    the deviation is tracked as **BUG-195** in ``sdd/BACKLOG.md`` and must be flipped to
+    ``InvalidPath`` when that fix lands.
 
     Spec: ASYNC-016 (get_file_info).
     """
