@@ -139,6 +139,18 @@ def _require_live_env() -> tuple[str, str]:
 
 
 @pytest.fixture(scope="module")
+def live_hns_env() -> tuple[str, str]:
+    """Module-scoped accessor for the validated ``(connection_string, filesystem)``.
+
+    Centralises the env-var lookup so individual tests do not re-read
+    ``os.environ`` directly — direct access bypasses ``_require_live_env``'s
+    fail-loud handling and would raise ``KeyError`` on misconfiguration
+    instead of the descriptive ``pytest.fail`` message.
+    """
+    return _require_live_env()
+
+
+@pytest.fixture(scope="module")
 def live_hns_backend() -> Iterator[tuple[AzureBackend, str]]:
     """Provision an ``AzureBackend`` against a real ADLS Gen2 account with one HNS directory.
 
@@ -496,6 +508,9 @@ class TestAzureLiveHnsGetFileInfoOnDirectory:
     Spec: BE-016 (get_file_info).
     """
 
+    # BUG-195: marks the spec target, not the current behaviour. BE-016 specifies
+    # InvalidPath but the runtime raises NotFound; this test documents the deviation
+    # and must be flipped to pytest.raises(InvalidPath) when BUG-195 is fixed.
     @pytest.mark.spec("BE-016")
     def test_get_file_info_on_hns_directory_raises_not_found(
         self,
@@ -893,6 +908,7 @@ class TestAzureLiveHnsFileApiOnDirectory:
     def test_delete_on_hns_directory_silently_removes_directory(
         self,
         live_hns_backend: tuple[AzureBackend, str],
+        live_hns_env: tuple[str, str],
     ) -> None:
         """BUG-197: should raise ``InvalidPath`` per BE-021; currently destroys the directory.
 
@@ -901,13 +917,14 @@ class TestAzureLiveHnsFileApiOnDirectory:
         would be gone for all subsequent tests in the module.
         """
         backend, dirpath = live_hns_backend
+        # Reuse the env values already validated by _require_live_env() in the
+        # fixture chain; direct os.environ access here would raise KeyError instead
+        # of the descriptive pytest.fail message on misconfiguration.
+        conn, fs_name = live_hns_env
         prefix = dirpath.rsplit("/", 1)[0]
-        # Provision a fresh directory just for this destructive test.
+        # Provision a fresh directory just for this destructive test. The backend
+        # API has no create_directory method, so use the underlying DataLake client.
         scratch_dir = f"{prefix}/scratch-dir-{uuid.uuid4().hex[:8]}"
-        # Use the underlying DataLake client to create the directory; the backend
-        # API has no create_directory method.
-        conn = os.environ["AZURE_STORAGE_CONNECTION_STRING"]
-        fs_name = os.environ["RS_TEST_LIVE_HNS_CONTAINER"]
         service = DataLakeServiceClient.from_connection_string(conn)
         try:
             fs_client = service.get_file_system_client(fs_name)

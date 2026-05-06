@@ -575,6 +575,11 @@ class AsyncAzureBackend(AsyncBackend):
                         await tmp_fc.delete_file()
                     raise
 
+            # BUG-196: this call is intentionally unguarded today, asymmetric with
+            # the sync path at backends/_azure.py:484-503 which wraps the same call
+            # in try/except (BUG-173) and returns WriteResult(etag=None) on a
+            # transient post-rename read failure. Mirroring that fallback here is
+            # tracked as BUG-196 in sdd/BACKLOG.md.
             props = await final_fc.get_file_properties()
             return _build_azure_write_result(path, size, props, metadata)
 

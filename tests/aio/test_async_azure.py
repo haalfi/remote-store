@@ -1266,7 +1266,9 @@ class TestAsyncAzureHNSPaths:
         await backend.write_atomic("dir/file.txt", agen)
 
         # AsyncIterator path: create_file → append_data per chunk → flush_data.
-        tmp_fc.create_file.assert_awaited_once()
+        # Pin the metadata kwarg explicitly: a future refactor that drops the
+        # metadata= argument from create_file would still pass assert_awaited_once().
+        tmp_fc.create_file.assert_awaited_once_with(metadata=None)
         assert tmp_fc.append_data.await_count == 2
         tmp_fc.append_data.assert_any_await(b"hello ", offset=0, length=6)
         tmp_fc.append_data.assert_any_await(b"world", offset=6, length=5)

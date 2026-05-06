@@ -144,6 +144,19 @@ def _live_hns_setup() -> Iterator[tuple[str, str, str, str]]:
         service.close()
 
 
+@pytest.fixture(scope="module")
+def live_hns_env(_live_hns_setup: tuple[str, str, str, str]) -> tuple[str, str]:
+    """Module-scoped accessor for the validated ``(connection_string, filesystem)``.
+
+    Sibling of the sync ``live_hns_env`` in ``tests.backends.test_azure_live_hns``.
+    Centralises env-var lookup so individual tests do not re-read ``os.environ``
+    directly — direct access bypasses ``_require_live_hns_env``'s fail-loud
+    handling and would raise ``KeyError`` on misconfiguration.
+    """
+    conn, fs_name, _, _ = _live_hns_setup
+    return conn, fs_name
+
+
 @pytest.fixture
 async def async_live_hns_backend(
     _live_hns_setup: tuple[str, str, str, str],
@@ -452,6 +465,9 @@ class TestAsyncLiveHnsGetFileInfoOnDirectory:
     Spec: ASYNC-016 (get_file_info).
     """
 
+    # BUG-195: marks the spec target, not the current behaviour. ASYNC-016 specifies
+    # InvalidPath but the runtime raises NotFound; this test documents the deviation
+    # and must be flipped to pytest.raises(InvalidPath) when BUG-195 is fixed.
     @pytest.mark.spec("ASYNC-016")
     async def test_get_file_info_on_hns_directory_raises_not_found(
         self,
@@ -879,6 +895,7 @@ class TestAsyncLiveHnsFileApiOnDirectory:
     async def test_delete_on_hns_directory_silently_removes_directory(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
+        live_hns_env: tuple[str, str],
     ) -> None:
         """BUG-197: should raise ``InvalidPath`` per BE-021; currently destroys the directory.
 
@@ -886,10 +903,12 @@ class TestAsyncLiveHnsFileApiOnDirectory:
         successful delete actually mutates the account.
         """
         backend, dirpath = async_live_hns_backend
+        # Reuse the env values already validated by _require_live_hns_env() in the
+        # fixture chain; direct os.environ access here would raise KeyError instead
+        # of the descriptive pytest.fail message on misconfiguration.
+        conn, fs_name = live_hns_env
         prefix = dirpath.rsplit("/", 1)[0]
         scratch_dir = f"{prefix}/scratch-dir-{uuid.uuid4().hex[:8]}"
-        conn = os.environ["AZURE_STORAGE_CONNECTION_STRING"]
-        fs_name = os.environ["RS_TEST_LIVE_HNS_CONTAINER"]
         service = DataLakeServiceClient.from_connection_string(conn)
         try:
             fs_client = service.get_file_system_client(fs_name)
