@@ -29,7 +29,7 @@ Three layers, all required:
 1. ``pytest.mark.live`` at module level. Default ``addopts`` is ``-m 'not live'``,
    so plain ``hatch run test`` skips the file entirely.
 2. ``RS_TEST_LIVE_HNS=1`` env var — same gate as
-   :mod:`tests.backends.test_azure_live_hns`.
+   ``tests.backends.test_azure_live_hns``.
 3. ``AZURE_STORAGE_CONNECTION_STRING`` and ``RS_TEST_LIVE_HNS_CONTAINER`` pointing
    at a *real* ADLS Gen2 account. Azurite-pointing strings are rejected with
    ``pytest.fail`` rather than a silent skip.
@@ -56,7 +56,7 @@ pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-dat
 
 from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
-from remote_store._errors import InvalidPath  # noqa: E402
+from remote_store._errors import AlreadyExists, InvalidPath, NotFound  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -302,3 +302,125 @@ class TestAsyncLiveHnsDirectoryGuard:
         backend, dirpath = async_live_hns_backend
         with pytest.raises(InvalidPath, match="exists as a directory"):
             await operation(backend, dirpath)
+
+
+# ---------------------------------------------------------------------------
+# BE-010 — content round-trip and overwrite on the async HNS write_atomic path
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsContentRoundTrip:
+    """Bytes written via async write_atomic must survive the HNS temp-upload + rename_file commit.
+
+    Async companion to ``TestAzureLiveHnsContentRoundTrip``. The async HNS path
+    buffers the payload to bytes before ``upload_data`` (BUG-194 fix for the
+    ``flush_data(position=None)`` regression). This round-trip confirms the full
+    payload reaches the final blob after the DFS rename.
+
+    Spec: BE-010 (write_atomic), WR-001a (WriteResult size).
+    """
+
+    @pytest.mark.spec("BE-010", "WR-001a")
+    async def test_write_atomic_content_survives_hns_rename(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/roundtrip-{uuid.uuid4().hex[:8]}.txt"
+        payload = b"roundtrip-" + uuid.uuid4().bytes
+
+        result = await backend.write_atomic(path, payload)
+
+        assert result.size == len(payload)
+        assert await backend.read_bytes(path) == payload
+
+    @pytest.mark.spec("BE-010")
+    async def test_write_atomic_overwrite_replaces_content(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/overwrite-{uuid.uuid4().hex[:8]}.txt"
+        original = b"original-content"
+        replacement = b"replaced-content"
+
+        await backend.write_atomic(path, original)
+        await backend.write_atomic(path, replacement, overwrite=True)
+
+        assert await backend.read_bytes(path) == replacement
+
+    @pytest.mark.spec("BE-010")
+    async def test_write_atomic_overwrite_false_raises_already_exists(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/noover-{uuid.uuid4().hex[:8]}.txt"
+
+        await backend.write_atomic(path, _PAYLOAD)
+        with pytest.raises(AlreadyExists):
+            await backend.write_atomic(path, _PAYLOAD, overwrite=False)
+
+
+# ---------------------------------------------------------------------------
+# ASYNC-018 — move uses rename_file on HNS accounts (async path)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsMove:
+    """Async ``move`` must use ``rename_file`` on an HNS account for atomic relocation.
+
+    Async companion to ``TestAzureLiveHnsMove``. Only a real account confirms the
+    async ``rename_file`` path executes correctly end-to-end.
+
+    Spec: ASYNC-018 (move).
+    """
+
+    @pytest.mark.spec("ASYNC-018")
+    async def test_move_hns_src_content_reaches_dst(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        uid = uuid.uuid4().hex[:8]
+        src = f"{prefix}/move-src-{uid}.txt"
+        dst = f"{prefix}/move-dst-{uid}.txt"
+        payload = b"move-content-" + uuid.uuid4().bytes
+
+        await backend.write_atomic(src, payload)
+        await backend.move(src, dst)
+
+        assert await backend.read_bytes(dst) == payload
+        with pytest.raises(NotFound):
+            await backend.read_bytes(src)
+
+
+# ---------------------------------------------------------------------------
+# ASYNC-016 — get_file_info on an HNS directory blob (async path)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsGetFileInfoOnDirectory:
+    """Async ``get_file_info`` on an HNS directory blob must raise ``NotFound``.
+
+    Async companion to ``TestAzureLiveHnsGetFileInfoOnDirectory``. Only a real
+    account confirms the ``hdi_isfolder`` marker is set by the DataLake service.
+
+    Note: ASYNC-016 specifies ``InvalidPath`` for directory paths, but the current
+    implementation raises ``NotFound``. This test documents the actual live behaviour.
+
+    Spec: ASYNC-016 (get_file_info).
+    """
+
+    @pytest.mark.spec("ASYNC-016")
+    async def test_get_file_info_on_hns_directory_raises_not_found(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        with pytest.raises(NotFound):
+            await backend.get_file_info(dirpath)
