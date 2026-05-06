@@ -34,6 +34,10 @@ Existing items may be more verbose — trim on next touch.
 | `BUG-NNN` | Confirmed defect with reproduction steps. |
 | `ID-NNN` | Idea — not evaluated, not committed to. |
 
+**Assigning a new ID:** check `sdd/backlogid.json` (max per prefix from BACKLOG-DONE.md)
+and the highest ID already in this file, then increment. `hatch run lint` keeps the JSON
+current and flags collisions.
+
 ---
 
 ## Release Blockers
@@ -150,7 +154,7 @@ Existing items may be more verbose — trim on next touch.
   to HNS-unique cases only; recording/replay procedure documented in
   `CONTRIBUTING.md` § Live tests.
 
-- [ ] **BK-174 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
+- [ ] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   `AsyncMemoryBackend.get_file_info` returns
   `FileInfo(... content_type=node.content_type)` without
   `metadata=node.metadata`, while sync `MemoryBackend.get_file_info`
@@ -164,7 +168,7 @@ Existing items may be more verbose — trim on next touch.
   `get_file_info` and through `write` → `list_files` for the native async
   backend. Spec: ASYNC-016 § metadata round-trip.
 
-- [ ] **BK-173 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/test_conformance_extended.py`**
+- [ ] **BK-177 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/test_conformance_extended.py`**
   Two TESTING.md alignments to apply on the sync extended-conformance suite,
   mirroring fixes that landed in the async mirror via PR #580:
   1. **Parametrize `TestMoveCopySelfOperation`.** The sync class has five
@@ -402,7 +406,7 @@ Existing items may be more verbose — trim on next touch.
 
 Deferred indefinitely — revisit only if demand or circumstances change.
 
-- [ ] **BK-139b — Implement remaining bug prevention measures from research**
+- [ ] **BK-178 — Implement remaining bug prevention measures from research**
   Items 1–3 shipped as BK-139a; items 4, 5, 7 shipped as BK-139b (see
   BACKLOG-DONE.md). Only item 6 remains: `scripts/check_error_handling.py`
   (~80 lines) — an AST script flagging broad exception handlers that silently
