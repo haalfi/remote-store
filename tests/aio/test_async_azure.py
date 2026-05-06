@@ -1237,11 +1237,13 @@ class TestAsyncAzureHNSPaths:
 
     @pytest.mark.spec("ASYNC-010", "ASYNC-021")
     async def test_write_atomic_hns_streams_async_chunks(self) -> None:
-        """HNS write_atomic forwards the async iterator to upload_data without
-        materializing (BUG-165).
+        """HNS write_atomic accepts an async generator and buffers it to bytes before upload_data.
 
-        DataLakeFileClient.upload_data accepts AsyncIterable[bytes]; the
-        backend must not collapse the stream into a bytes buffer first.
+        The DFS flush_data REST call requires ``position=<total bytes>``; upload_data
+        passes ``length=None`` for async generators, so the SDK would omit the required
+        query parameter and Azure returns MissingRequiredQueryParameter (BUG-194).
+        The fix: buffer all chunks to bytes before calling upload_data, so the total
+        length is known upfront.  The caller's chunks are assembled in order.
         """
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
@@ -1251,13 +1253,6 @@ class TestAsyncAzureHNSPaths:
         tmp_fc = AsyncMock(spec=DataLakeFileClient)
         backend._fs_instance.get_file_client.return_value = tmp_fc
 
-        captured: list[bytes] = []
-
-        async def _fake_upload(data, **_kwargs):  # noqa: ANN001, ANN202
-            async for chunk in data:
-                captured.append(chunk)
-
-        tmp_fc.upload_data = AsyncMock(side_effect=_fake_upload)
         final_fc = AsyncMock(spec=DataLakeFileClient)
         final_fc.get_file_properties = AsyncMock(return_value={})
         tmp_fc.rename_file.return_value = final_fc
@@ -1269,7 +1264,9 @@ class TestAsyncAzureHNSPaths:
         agen = chunk_gen()
         await backend.write_atomic("dir/file.txt", agen)
         tmp_fc.upload_data.assert_awaited_once()
-        assert captured == [b"hello ", b"world"]
+        # Chunks are buffered and joined before upload_data; the call receives bytes.
+        upload_arg = tmp_fc.upload_data.call_args[0][0]
+        assert upload_arg == b"hello world"
         assert tmp_fc.rename_file.call_count == 1
 
     @pytest.mark.spec("ASYNC-010")
@@ -1307,12 +1304,7 @@ class TestAsyncAzureHNSPaths:
         tmp_fc.rename_file.return_value = final_fc
         backend._fs_instance.get_file_client.return_value = tmp_fc
 
-        # _consume must iterate the generator to trigger _count_and_pass_hns byte counting.
-        async def _consume(data, **_kw):  # noqa: ANN001, ANN202
-            async for _ in data:
-                pass
-
-        tmp_fc.upload_data = AsyncMock(side_effect=_consume)
+        tmp_fc.upload_data = AsyncMock(return_value=None)
 
         result = await backend.write_atomic("file.txt", b"content")
 
@@ -1344,11 +1336,7 @@ class TestAsyncAzureHNSPaths:
         tmp_fc.rename_file.return_value = final_fc
         backend._fs_instance.get_file_client.return_value = tmp_fc
 
-        async def _consume(data, **_kw):  # noqa: ANN001, ANN202
-            async for _ in data:
-                pass
-
-        tmp_fc.upload_data = AsyncMock(side_effect=_consume)
+        tmp_fc.upload_data = AsyncMock(return_value=None)
 
         result = await backend.write_atomic("dir/file.txt", b"data", metadata={"k": "v"})
 
