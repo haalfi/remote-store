@@ -406,7 +406,7 @@ current and flags collisions.
 
 Deferred indefinitely — revisit only if demand or circumstances change.
 
-- [ ] **BK-178 — Implement remaining bug prevention measures from research**
+- [ ] **BK-139d — Implement remaining bug prevention measures from research**
   Items 1–3 shipped as BK-139a; items 4, 5, 7 shipped as BK-139b (see
   BACKLOG-DONE.md). Only item 6 remains: `scripts/check_error_handling.py`
   (~80 lines) — an AST script flagging broad exception handlers that silently
