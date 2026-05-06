@@ -93,7 +93,7 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-175 — Live HNS test architecture: parametrized conformance + record/replay layer (supersedes ID-175)**
+- [ ] **BK-175 — Live HNS test architecture: parametrized conformance + record/replay layer**
   The hand-written `test_azure_live_hns.py` / `test_async_azure_live_hns.py` suites
   drifted into ~40% overlap with the conformance suite running against Azurite
   (`tests/backends/conftest.py` `azure` parametrize). The HNS suite hand-rolls
@@ -118,7 +118,7 @@ Existing items may be more verbose — trim on next touch.
      gets HNS coverage for free. Cost: ~140 conformance tests × HNS = ~5–10× current
      live transactions, still under $0.05/run.
 
-  2. **Record/replay abstraction layer (was ID-175).** Wrap the SDK transport so
+  2. **Record/replay abstraction layer.** Wrap the SDK transport so
      live tests record real request/response pairs to YAML cassettes; replay mode
      reads from cassettes when no credentials are present. Implementation candidates:
      `pytest-recording` (vcrpy) for the HTTP layer, or a custom transport adapter
@@ -148,7 +148,7 @@ Existing items may be more verbose — trim on next touch.
   **Exit criteria:** RFC for the parametrize + cassette design; conformance runs
   against real HNS in a gated CI job; `tests/(aio/)test_azure_live_hns.py` shrinks
   to HNS-unique cases only; recording/replay procedure documented in
-  `CONTRIBUTING.md` § Live tests. Spec: ID-175 (cassettes) folded in.
+  `CONTRIBUTING.md` § Live tests.
 
 - [ ] **BK-174 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   `AsyncMemoryBackend.get_file_info` returns
@@ -341,12 +341,6 @@ Existing items may be more verbose — trim on next touch.
   **reads** only — writes remain eager).
 
 ### Testing & Verification
-
-- [ ] **ID-175 — Record live ADLS Gen2 HNS responses as VCR cassettes for offline mocking**
-  **Superseded by BK-175** — folded into the broader "live HNS test architecture"
-  design as one of the implementation tactics for the record/replay layer. The
-  cassette-only approach is preserved as a design option there alongside the
-  parametrized live-conformance harness.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
