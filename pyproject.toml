@@ -131,7 +131,7 @@ dependencies = [
 ]
 
 [tool.hatch.envs.default.scripts]
-lint = ["ruff check src/ tests/ examples/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/check_backlog_ids.py"]
+lint = ["ruff check src/ tests/ examples/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check"]
 format = "ruff format src/ tests/ examples/"
 format-check = "ruff format --check src/ tests/ examples/"
 typecheck = "mypy src/"
@@ -168,6 +168,8 @@ gen-features = "python scripts/gen_features.py"
 gen-features-check = "python scripts/gen_features.py --check"
 gen-graph-viz = "python scripts/gen_graph_viz.py"
 gen-graph-viz-check = "python scripts/gen_graph_viz.py --check"
+gen-backlogid = "python scripts/gen_backlogid.py"
+gen-backlogid-check = "python scripts/gen_backlogid.py --check"
 gen-api-check = "python scripts/check_api_docs.py"
 check-test-placement = "python scripts/check_test_placement.py tests"
 check-test-quality = ["python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests"]

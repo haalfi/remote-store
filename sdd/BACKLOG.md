@@ -29,14 +29,16 @@ Existing items may be more verbose — trim on next touch.
 
 | Prefix | Meaning |
 |--------|---------|
-| `BL-NNN` | Release blocker — must resolve before next PyPI publish. |
+| `BL-NNN` | Release blocker — must resolve before next PyPI publish. Monotonic, not reset per release. |
 | `BK-NNN` | Committed backlog work, queued behind blockers. |
 | `BUG-NNN` | Confirmed defect with reproduction steps. |
 | `ID-NNN` | Idea — not evaluated, not committed to. |
+| `AF-NNN` | Audit finding (retired — use `BUG` or `BK` for new items). |
 
 **Assigning a new ID:** check `sdd/backlogid.json` (max per prefix from BACKLOG-DONE.md)
-and the highest ID already in this file, then increment. `hatch run lint` keeps the JSON
-current and flags collisions.
+and the highest ID already in this file, then take the next integer. Run
+`hatch run gen-backlogid` after moving items to BACKLOG-DONE.md to keep the JSON current.
+`hatch run lint` flags drift and collisions.
 
 ---
 
