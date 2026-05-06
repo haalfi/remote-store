@@ -67,6 +67,7 @@ pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-dat
 from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound  # noqa: E402
+from remote_store._models import FileInfo  # noqa: E402
 from remote_store.backends._azure import AzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -584,3 +585,138 @@ class TestAzureLiveHnsNotFound:
         dst = f"{prefix}/missing-dst-{uid}.txt"
         with pytest.raises(NotFound):
             backend.move(src, dst)
+
+
+# ---------------------------------------------------------------------------
+# BE-015 — exists() on a real HNS account
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsExists:
+    """``exists`` must return True for present files and HNS directories, False for missing.
+
+    Most-hit predicate in real usage. The HNS path probes the blob client first;
+    on miss it falls back to a DataLake directory probe (`_ensure_hns()` branch).
+    Mock suites stub each branch in isolation; only a real account confirms the
+    fallback chain works end-to-end on actual HNS resources.
+
+    Spec: BE-015 (exists).
+    """
+
+    @pytest.mark.spec("BE-015")
+    def test_exists_returns_true_for_present_file(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/exists-{uuid.uuid4().hex[:8]}.txt"
+        backend.write_atomic(path, _PAYLOAD)
+        assert backend.exists(path) is True
+
+    @pytest.mark.spec("BE-015")
+    def test_exists_returns_false_for_missing_path(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        assert backend.exists(missing) is False
+
+    @pytest.mark.spec("BE-015")
+    def test_exists_returns_true_for_hns_directory(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        """The DataLake directory-probe fallback fires only on a real HNS account."""
+        backend, dirpath = live_hns_backend
+        assert backend.exists(dirpath) is True
+
+
+# ---------------------------------------------------------------------------
+# BE-022 — list_files on an HNS prefix (recursive vs non-recursive)
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsListFiles:
+    """``list_files`` traverses HNS prefixes via ``DataLakeFileSystemClient.get_paths``.
+
+    Non-recursive must yield only immediate files (filtering out the ``is_directory``
+    entries); recursive must yield files in nested subdirectories. The HNS path
+    differs structurally from the flat-blob ``walk_blobs`` / ``list_blobs`` path —
+    only a real ADLS Gen2 account exercises ``get_paths`` with real ``is_directory``
+    markers.
+
+    Spec: BE-022 (list_files).
+    """
+
+    @pytest.mark.spec("BE-022")
+    def test_list_files_non_recursive_yields_immediate_files_only(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        sub = f"{prefix}/listroot-{uuid.uuid4().hex[:8]}"
+        backend.write_atomic(f"{sub}/a.txt", b"a")
+        backend.write_atomic(f"{sub}/b.txt", b"b")
+        backend.write_atomic(f"{sub}/nested/c.txt", b"c")
+
+        files = sorted(str(fi.path) for fi in backend.list_files(sub))
+        assert files == [f"{sub}/a.txt", f"{sub}/b.txt"]
+
+    @pytest.mark.spec("BE-022")
+    def test_list_files_recursive_yields_nested_files(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        sub = f"{prefix}/listrec-{uuid.uuid4().hex[:8]}"
+        backend.write_atomic(f"{sub}/a.txt", b"a")
+        backend.write_atomic(f"{sub}/b.txt", b"b")
+        backend.write_atomic(f"{sub}/nested/c.txt", b"c")
+
+        files = sorted(str(fi.path) for fi in backend.list_files(sub, recursive=True))
+        assert files == [f"{sub}/a.txt", f"{sub}/b.txt", f"{sub}/nested/c.txt"]
+
+
+# ---------------------------------------------------------------------------
+# BE-024 — iter_children on an HNS prefix yields both files and folders
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsIterChildren:
+    """``iter_children`` must yield ``FileInfo`` for files and ``FolderEntry`` for subdirs.
+
+    On HNS, ``get_paths(recursive=False)`` returns both regular files and directory
+    blobs (marked ``is_directory=True``); the production code routes them to the
+    correct dataclass. Mock suites can fabricate the marker; only a real account
+    confirms the marker shape on a directory created via ``DataLakeServiceClient``.
+
+    Spec: BE-024 (iter_children).
+    """
+
+    @pytest.mark.spec("BE-024")
+    def test_iter_children_yields_files_and_folders(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        sub = f"{prefix}/iterchild-{uuid.uuid4().hex[:8]}"
+        backend.write_atomic(f"{sub}/a.txt", b"a")
+        backend.write_atomic(f"{sub}/b.txt", b"b")
+        backend.write_atomic(f"{sub}/nested/c.txt", b"c")
+
+        files: list[str] = []
+        folders: list[str] = []
+        for entry in backend.iter_children(sub):
+            if isinstance(entry, FileInfo):
+                files.append(str(entry.path))
+            else:
+                folders.append(str(entry.path))
+
+        assert sorted(files) == [f"{sub}/a.txt", f"{sub}/b.txt"]
+        assert sorted(folders) == [f"{sub}/nested"]

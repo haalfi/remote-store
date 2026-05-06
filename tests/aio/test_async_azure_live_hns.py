@@ -61,6 +61,7 @@ pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-dat
 from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound  # noqa: E402
+from remote_store._models import FileInfo  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -596,3 +597,133 @@ class TestAsyncLiveHnsNotFound:
         dst = f"{prefix}/missing-dst-{uid}.txt"
         with pytest.raises(NotFound):
             await backend.move(src, dst)
+
+
+# ---------------------------------------------------------------------------
+# ASYNC-015 — exists() on a real HNS account
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsExists:
+    """Async ``exists`` must return True for present files and HNS directories, False for missing.
+
+    Async companion to ``TestAzureLiveHnsExists``. The HNS branch falls back from the
+    blob client to a DataLake directory probe; only a real account exercises the
+    fallback chain on actual HNS resources.
+
+    Spec: ASYNC-015 (exists).
+    """
+
+    @pytest.mark.spec("ASYNC-015")
+    async def test_exists_returns_true_for_present_file(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        path = f"{prefix}/exists-{uuid.uuid4().hex[:8]}.txt"
+        await backend.write_atomic(path, _PAYLOAD)
+        assert await backend.exists(path) is True
+
+    @pytest.mark.spec("ASYNC-015")
+    async def test_exists_returns_false_for_missing_path(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
+        assert await backend.exists(missing) is False
+
+    @pytest.mark.spec("ASYNC-015")
+    async def test_exists_returns_true_for_hns_directory(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        """The DataLake directory-probe fallback fires only on a real HNS account."""
+        backend, dirpath = async_live_hns_backend
+        assert await backend.exists(dirpath) is True
+
+
+# ---------------------------------------------------------------------------
+# ASYNC-022 — list_files on an HNS prefix (recursive vs non-recursive)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsListFiles:
+    """Async ``list_files`` traverses HNS prefixes via ``DataLakeFileSystemClient.get_paths``.
+
+    Async companion to ``TestAzureLiveHnsListFiles``. Non-recursive must yield only
+    immediate files; recursive must include nested files.
+
+    Spec: ASYNC-022 (list_files).
+    """
+
+    @pytest.mark.spec("ASYNC-022")
+    async def test_list_files_non_recursive_yields_immediate_files_only(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        sub = f"{prefix}/listroot-{uuid.uuid4().hex[:8]}"
+        await backend.write_atomic(f"{sub}/a.txt", b"a")
+        await backend.write_atomic(f"{sub}/b.txt", b"b")
+        await backend.write_atomic(f"{sub}/nested/c.txt", b"c")
+
+        files = sorted([str(fi.path) async for fi in backend.list_files(sub)])
+        assert files == [f"{sub}/a.txt", f"{sub}/b.txt"]
+
+    @pytest.mark.spec("ASYNC-022")
+    async def test_list_files_recursive_yields_nested_files(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        sub = f"{prefix}/listrec-{uuid.uuid4().hex[:8]}"
+        await backend.write_atomic(f"{sub}/a.txt", b"a")
+        await backend.write_atomic(f"{sub}/b.txt", b"b")
+        await backend.write_atomic(f"{sub}/nested/c.txt", b"c")
+
+        files = sorted([str(fi.path) async for fi in backend.list_files(sub, recursive=True)])
+        assert files == [f"{sub}/a.txt", f"{sub}/b.txt", f"{sub}/nested/c.txt"]
+
+
+# ---------------------------------------------------------------------------
+# ASYNC-024 — iter_children on an HNS prefix yields both files and folders
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsIterChildren:
+    """Async ``iter_children`` yields ``FileInfo`` for files and ``FolderEntry`` for subdirs.
+
+    Async companion to ``TestAzureLiveHnsIterChildren``. The HNS branch uses
+    ``get_paths(recursive=False)`` and routes ``is_directory`` entries to
+    ``FolderEntry``; only a real account confirms the marker shape.
+
+    Spec: ASYNC-024 (iter_children).
+    """
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_iter_children_yields_files_and_folders(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        prefix = dirpath.rsplit("/", 1)[0]
+        sub = f"{prefix}/iterchild-{uuid.uuid4().hex[:8]}"
+        await backend.write_atomic(f"{sub}/a.txt", b"a")
+        await backend.write_atomic(f"{sub}/b.txt", b"b")
+        await backend.write_atomic(f"{sub}/nested/c.txt", b"c")
+
+        files: list[str] = []
+        folders: list[str] = []
+        async for entry in backend.iter_children(sub):
+            if isinstance(entry, FileInfo):
+                files.append(str(entry.path))
+            else:
+                folders.append(str(entry.path))
+
+        assert sorted(files) == [f"{sub}/a.txt", f"{sub}/b.txt"]
+        assert sorted(folders) == [f"{sub}/nested"]
