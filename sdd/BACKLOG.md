@@ -93,6 +93,63 @@ Existing items may be more verbose — trim on next touch.
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-175 — Live HNS test architecture: parametrized conformance + record/replay layer (supersedes ID-175)**
+  The hand-written `test_azure_live_hns.py` / `test_async_azure_live_hns.py` suites
+  drifted into ~40% overlap with the conformance suite running against Azurite
+  (`tests/backends/conftest.py` `azure` parametrize). The HNS suite hand-rolls
+  contracts (NotFound family, copy/delete happy paths, exists True/False on files,
+  move-existing-dst guards) where the production code has no `_ensure_hns()` branch
+  — exercising the same lines as conformance, just on a different account. Going
+  forward this duplication will grow with every new contract added to conformance.
+
+  **Goal:** eliminate the duplication systematically and let conformance be the
+  single source of truth for cross-backend behavioural contracts; live HNS files
+  shrink to *only* HNS-unique tests (DataLake DFS protocol, `hdi_isfolder` directory
+  semantics, etag normalisation across SDK paths, BUG-194/195/197 deviation guards).
+
+  **Two pieces to design:**
+
+  1. **Live conformance parametrize.** Add an `azure-live-hns` (and async equivalent)
+     option to `tests/backends/conftest.py` that instantiates `AzureBackend` /
+     `AsyncAzureBackend` against a real ADLS Gen2 connection string instead of
+     Azurite. Gated by the existing `live` marker + `RS_TEST_LIVE_HNS=1` so default
+     CI is unaffected. The full conformance + conformance-extended suite then runs
+     against the real HNS account automatically — every future contract addition
+     gets HNS coverage for free. Cost: ~140 conformance tests × HNS = ~5–10× current
+     live transactions, still under $0.05/run.
+
+  2. **Record/replay abstraction layer (was ID-175).** Wrap the SDK transport so
+     live tests record real request/response pairs to YAML cassettes; replay mode
+     reads from cassettes when no credentials are present. Implementation candidates:
+     `pytest-recording` (vcrpy) for the HTTP layer, or a custom transport adapter
+     in front of the Azure SDK pipeline policies. Per-test cassette files committed
+     under `tests/cassettes/hns/`. Lets contributors run the full HNS conformance
+     suite offline without credentials; CI runs in replay mode by default.
+
+     Open design questions:
+     - Cassette scrubbing for SAS tokens, account keys, request IDs.
+     - Cassette invalidation policy when SDK request shapes change.
+     - Whether to record per-test (simple, larger storage) or per-fixture (compact,
+       harder to debug single-test failures).
+     - Async-pipeline coverage — vcrpy supports it but needs validation against
+       `azure.storage.filedatalake.aio`.
+
+  **What stays as hand-written live tests:**
+  - HNS-unique paths conformance can't reach: AsyncIterator DFS protocol (BUG-194
+    regression guard), etag normalisation cross-check (`get_file_properties` vs
+    `get_file_info` agreement), directory-blob `hdi_isfolder` probes.
+  - Active deviation guards (BUG-195, BUG-197) until the underlying code is fixed.
+
+  **Approach should not be designed in this PR** (PR #590, "improve HNS live tests")
+  — that PR's scope was to extend coverage, and it succeeded (32 → 58 tests, surfaced
+  BUG-194 / BUG-195 / BUG-196 / BUG-197). This BK is the follow-up to consolidate
+  the architecture before the suite grows further.
+
+  **Exit criteria:** RFC for the parametrize + cassette design; conformance runs
+  against real HNS in a gated CI job; `tests/(aio/)test_azure_live_hns.py` shrinks
+  to HNS-unique cases only; recording/replay procedure documented in
+  `CONTRIBUTING.md` § Live tests. Spec: ID-175 (cassettes) folded in.
+
 - [ ] **BK-174 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   `AsyncMemoryBackend.get_file_info` returns
   `FileInfo(... content_type=node.content_type)` without
@@ -286,17 +343,10 @@ Existing items may be more verbose — trim on next touch.
 ### Testing & Verification
 
 - [ ] **ID-175 — Record live ADLS Gen2 HNS responses as VCR cassettes for offline mocking**
-  The HNS live test suite (`tests/backends/test_azure_live_hns.py`,
-  `tests/aio/test_async_azure_live_hns.py`) requires a real ADLS Gen2 account.
-  Use `pytest-recording` (wraps `vcrpy`) to capture real SDK HTTP exchanges as
-  YAML cassettes during a live run, then replay them without credentials in CI.
-  Each live test would record once (or on demand with `--record-mode=new_episodes`)
-  and run in playback mode by default, covering the actual DFS wire protocol
-  (`create_file` / `append_data` / `flush_data` / `rename_file`) that Azurite
-  cannot emulate.
-  Exit criteria: cassettes committed to `tests/cassettes/hns/`; CI runs the
-  HNS classes without `RS_TEST_LIVE_HNS=1`; recording instructions in
-  `CONTRIBUTING.md` § Live tests.
+  **Superseded by BK-175** — folded into the broader "live HNS test architecture"
+  design as one of the implementation tactics for the record/replay layer. The
+  cassette-only approach is preserved as a design option there alongside the
+  parametrized live-conformance harness.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
