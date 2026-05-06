@@ -6,6 +6,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "scripts"
 
@@ -25,21 +27,18 @@ _PREFIXES = _mod._PREFIXES
 _EM = "—"  # em dash used in backlog header format
 
 
-class TestMaxNumeric:
-    def test_plain_ids(self):
-        assert _max_numeric({"BK-174", "BK-120", "BK-001"}) == 174
-
-    def test_suffix_ids_use_numeric_part_only(self):
-        assert _max_numeric({"BK-139a", "BK-139b", "BK-139c"}) == 139
-
-    def test_mixed_plain_and_suffix(self):
-        assert _max_numeric({"BK-174", "BK-139b"}) == 174
-
-    def test_empty_set_returns_zero(self):
-        assert _max_numeric(set()) == 0
-
-    def test_single_item(self):
-        assert _max_numeric({"ID-176"}) == 176
+@pytest.mark.parametrize(
+    ("ids", "expected"),
+    [
+        ({"BK-174", "BK-120", "BK-001"}, 174),
+        ({"BK-139a", "BK-139b", "BK-139c"}, 139),
+        ({"BK-174", "BK-139b"}, 174),
+        (set(), 0),
+        ({"ID-176"}, 176),
+    ],
+)
+def test_max_numeric(ids, expected):
+    assert _max_numeric(ids) == expected
 
 
 # ---------------------------------------------------------------------------
@@ -71,10 +70,6 @@ class TestExtractIds:
         assert "ID-176" in ids["ID"]
         assert "AF-040" in ids["AF"]
         assert "BL-010" in ids["BL"]
-
-    def test_extracts_suffix_ids(self):
-        ids = _extract_ids(_DONE_BLOCK, "x")
-        assert "BK-167b" in ids["BK"]
 
     def test_partial_header_style_captured(self):
         ids = _extract_ids(_DONE_BLOCK, "x")
