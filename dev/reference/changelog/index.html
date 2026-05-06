@@ -11854,6 +11854,8 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>BUG-194: async <code>AsyncAzureBackend.write_atomic</code> broken for all payloads on real ADLS Gen2</li>
+<li>BUG-193: completed the async HNS live test gap deferred by BUG-182 and added <code>WriteResult</code> assertions on the sync HNS live tests</li>
 <li>BUG-182: live ADLS Gen2 (HNS) integration test confirming <code>AzureBackend.write_atomic</code> user metadata survives the atomic-rename commit (<code>tests/backends/test_azure_live_hns.py::TestAzureLiveHnsMetadataSurvivesRename</code>); closes the verification gap left by BUG-181's mock-only coverage (WR-013, BE-010).</li>
 <li>BUG-191: live ADLS Gen2 (HNS) integration test class covering the <code>write</code>/<code>write_atomic</code>/<code>open_atomic</code> directory-path guards on a real account, complementing the mock-only coverage from BUG-190/BUG-192. Gated by the new <code>live</code> pytest marker (excluded by default <code>addopts</code>), <code>RS_TEST_LIVE_HNS=1</code>, and a non-Azurite <code>AZURE_STORAGE_CONNECTION_STRING</code> (BE-021, BE-008, BE-010, SAW-001).</li>
 <li>BUG-192: <code>AzureBackend.open_atomic</code> now raises <code>InvalidPath</code> (not <code>AlreadyExists</code>) when the target is an HNS directory; both <code>overwrite=False</code> and <code>overwrite=True</code> are covered (BE-021).</li>
