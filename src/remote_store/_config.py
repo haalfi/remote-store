@@ -310,7 +310,7 @@ class RegistryConfig:
             table: Dotted table path to extract config from.
                 For ``pyproject.toml`` use ``table=("tool", "remote-store")``.
             resolve_env_vars: When ``True``, resolve ``${VAR}`` placeholders
-                via :func:`resolve_env` before constructing the config.
+                via ``resolve_env`` before constructing the config.
 
         Raises:
             ModuleNotFoundError: If ``tomllib`` is unavailable and

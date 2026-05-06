@@ -66,30 +66,30 @@ class _HangingAsyncBackend(AsyncBackend):
     that need to observe the adapter's behaviour while the wrapped
     backend never makes progress.
 
-    Note on async generators: :meth:`read`, :meth:`list_files`, and
-    :meth:`list_folders` are declared ``async def ... -> AsyncIterator``
+    Note on async generators: ``read``, ``list_files``, and
+    ``list_folders`` are declared ``async def ... -> AsyncIterator``
     with a reachable ``yield`` inside a guarded branch, so calling them
     returns an async generator synchronously; the hang fires on the
     first ``__anext__``, not at call site.
 
-    The hang is implemented with an :class:`asyncio.Event` that is
+    The hang is implemented with an ``asyncio.Event`` that is
     never set. Tests that need the hang to release deliberately call
-    :meth:`release`.
+    ``release``.
 
     ``asyncio.Event`` is not thread-safe, and the event lazily binds to
     the loop that first awaits it — which for
     ``AsyncBackendSyncAdapter`` coverage is the adapter's private loop
     on its background thread. To allow cross-thread release, tests call
-    :meth:`bind_loop` with the adapter's private loop before calling
-    :meth:`release`; :meth:`release` then uses
+    ``bind_loop`` with the adapter's private loop before calling
+    ``release``; ``release`` then uses
     ``loop.call_soon_threadsafe`` to set the event on the owning loop.
     When no loop has been bound (single-threaded tests running the
-    double directly), :meth:`release` falls back to ``event.set()``.
+    double directly), ``release`` falls back to ``event.set()``.
 
-    Precondition for :meth:`release`: at least one coroutine must have
+    Precondition for ``release``: at least one coroutine must have
     begun awaiting the event (e.g. the hang-method has been scheduled
     onto the bound loop and reached ``self._get_event().wait()``).
-    Calling :meth:`release` before any coroutine awaits is a no-op and
+    Calling ``release`` before any coroutine awaits is a no-op and
     will not wake a subsequently scheduled coroutine.
     """
 
@@ -124,7 +124,7 @@ class _HangingAsyncBackend(AsyncBackend):
     def release(self) -> None:
         """Unblock every suspended coroutine (test-only helper).
 
-        Thread-safe when :meth:`bind_loop` has been called with the
+        Thread-safe when ``bind_loop`` has been called with the
         loop that owns the event; otherwise falls back to a direct
         ``event.set()`` for same-thread tests.
         """
@@ -243,13 +243,13 @@ class _RaisingAsyncBackend(AsyncBackend):
     tests that need to drive a specific exception through the adapter's
     ``Future``-based bridge.
 
-    The default error is :class:`NotFound` (a realistic mapped error);
+    The default error is ``NotFound`` (a realistic mapped error);
     tests that need a different type pass ``error=`` at construction.
     If ``aclose_error`` is provided, ``aclose()`` raises it (for
     shutdown-drain coverage); otherwise ``aclose()`` is a no-op.
 
     ``read_chunks_before_raise`` controls only the byte-stream iterator
-    returned from :meth:`read`: with a positive value, :meth:`read`
+    returned from ``read``: with a positive value, ``read``
     yields N dummy chunks before raising, which drives mid-stream
     byte-stream failure tests. The listing iterators (``list_files`` /
     ``list_folders``) always raise on first pull — they cannot yield

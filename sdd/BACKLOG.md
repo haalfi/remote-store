@@ -156,7 +156,7 @@ and the highest ID already in this file, then take the next integer. Run
   to HNS-unique cases only; recording/replay procedure documented in
   `CONTRIBUTING.md` § Live tests.
 
-- [ ] **ID-174 — Design and set up long-term docstring style enforcement**
+- [ ] **ID-177 — Design and set up long-term docstring style enforcement**
   Audit-013 found 20 RST-role violations introduced over time with no automated
   gate. This item covers the design and CI wiring of a preventive check so the
   same class of violations cannot silently re-enter the codebase.

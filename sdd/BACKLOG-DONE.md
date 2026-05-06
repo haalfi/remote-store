@@ -8,6 +8,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+<<<<<<< HEAD
 - [x] **BUG-194 — `AsyncAzureBackend.write_atomic` broken for all payloads on real ADLS Gen2**
   `_count_and_pass_hns` wrapped bytes in an async generator to count bytes while
   streaming. On the HNS code path, `upload_data` was called with that generator; the
@@ -70,11 +71,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   fallback the sync path carries.
   PR: #590. Spec: WR-001a, WR-004, WR-012, WR-013, AZ-034, BE-008, BE-010, BE-021.
 
-- [x] **BK-178 — Fix all RST cross-reference roles flagged in audit-013 (docstring style)**
-  Replaced all 20 RST role violations (`:class:`, `:meth:`, `:func:`, `:data:`, `:mod:`)
-  with double-backtick inline code in 10 files (`src/` × 6, `tests/` × 2, `scripts/` × 4).
-  No spec change; no CHANGELOG entry (internal style, not user-facing).
-  Audit: `sdd/audits/audit-013-docstring-style.md`.
+- [x] **BK-178 — Fix all RST cross-reference roles in audit-013-touched files (docstring style)**
+  Replaced RST role violations (`:class:`, `:meth:`, `:func:`, `:data:`, `:mod:`)
+  with double-backtick inline code in the 10 files touched by audit-013.
+  Initial pass fixed the 20 audit-flagged sites; PR review (#591) found audit-013
+  was incomplete — the same files held additional RST roles in non-flagged
+  docstrings (class/method/function bodies). Per CLAUDE.md principle 2
+  ("verify beyond the diff"), widened the scope: also fixed
+  `_async_to_sync_adapter.py` × 13 (class + helper docstrings),
+  `_info.py:85`, `_config.py:313` (TOML loader, parallel to the audit-flagged
+  YAML loader), `aio/_async_store.py` × 4 (sibling inner-generator docstrings),
+  `tests/aio/_doubles.py` × 13 (class docstrings), and `scripts/docs/scan.py` × 6
+  (function/class docstrings). Verified the touched files now contain zero
+  `:role:`...`` patterns. No spec change; no CHANGELOG entry (internal
+  style, not user-facing). Audit: `sdd/audits/audit-013-docstring-style.md`.
+  Follow-up: ID-177 tracks the long-term enforcement gate; auditing the
+  remaining repo files for RST roles is left for that gate to surface.
 
 - [x] **BUG-182 — Verify HNS `write_atomic` user metadata survives the atomic rename in integration**
   `test_write_atomic_hns_metadata_preserved` (BUG-181) only verifies that `metadata=` is

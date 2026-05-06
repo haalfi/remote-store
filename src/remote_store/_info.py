@@ -82,7 +82,7 @@ def info() -> InfoResult:
     extension for availability in the current environment.
 
     Returns:
-        A :class:`InfoResult` with keys ``version``, ``backends``, and
+        An ``InfoResult`` with keys ``version``, ``backends``, and
         ``extensions``.
     """
     from remote_store import __version__
