@@ -1621,8 +1621,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   5. Extended conformance suite — 42 test functions derived from Dafny
      postconditions (`@pytest.mark.extended_conformance`)
   7. `ResourceWarning` safety net — `__del__` on SFTP, Azure, AsyncAzure
-  Item 6 (`check_error_handling.py` AST script) deferred; see BK-139b
-  remainder in BACKLOG.md.
+  Item 6 (`check_error_handling.py` AST script) deferred; see BK-139d in BACKLOG.md.
 
 - [x] **BK-139a — Bug prevention: `_safe_wrap` + PBT (deliverables 1–3)**
   From [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md):
