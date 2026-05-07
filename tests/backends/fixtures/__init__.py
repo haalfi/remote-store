@@ -38,11 +38,15 @@ def _load_all() -> None:
     at :mod:`tests.backends` calls this once at session start.
     """
     from tests.backends.fixtures import (  # noqa: F401 -- import-side-effect registration
+        azurite,
         dafny_oracle,
         http,
         local,
         memory,
         s3_moto,
+        s3_pyarrow_minio,
+        s3_pyarrow_moto,
+        sftp_docker,
         sftp_inproc,
         sqlblob,
     )

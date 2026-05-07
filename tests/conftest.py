@@ -115,6 +115,15 @@ def _minio_reachable() -> bool:
         return False
 
 
+def _sftp_docker_reachable() -> bool:
+    try:
+        s = socket.create_connection(("127.0.0.1", 2222), timeout=1)
+        s.close()
+        return True
+    except OSError:
+        return False
+
+
 _AZURITE_CONN_STR = (
     "DefaultEndpointsProtocol=http;"
     "AccountName=devstoreaccount1;"
@@ -149,6 +158,21 @@ def minio_server() -> Iterator[str | None]:
     """Provide MinIO endpoint URL if reachable on 127.0.0.1:9000."""
     if _minio_reachable():
         yield "http://127.0.0.1:9000"
+    else:
+        yield None
+
+
+@pytest.fixture(scope="session")
+def sftp_docker_server() -> Iterator[int | None]:
+    """Provide the Dockerised SFTP server port if reachable on 127.0.0.1:2222.
+
+    The container is the ``atmoz/sftp:alpine`` service published on port
+    2222 by ``benchmarks/infra/docker-compose.yml`` and the CI ``test``
+    job. When unreachable, fixtures depending on this yield ``None``
+    skip via factory-level ``pytest.skip(...)`` per spec 048 / TEST-006.
+    """
+    if _sftp_docker_reachable():
+        yield 2222
     else:
         yield None
 

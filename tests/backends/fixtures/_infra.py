@@ -33,6 +33,7 @@ def _populate_infra(
     moto_server: str | None,
     minio_server: str | None,
     sftp_server: tuple[int, str] | None,
+    sftp_docker_server: int | None,
     azurite_server: str | None,
     http_server: object | None,
 ) -> Iterator[None]:
@@ -47,6 +48,7 @@ def _populate_infra(
     INFRA.minio_url = minio_server
     if sftp_server is not None:
         INFRA.sftp_inproc_port, INFRA.sftp_inproc_host_key = sftp_server
+    INFRA.sftp_docker_port = sftp_docker_server
     INFRA.azurite_conn_str = azurite_server
     INFRA.http_server = http_server
     yield
