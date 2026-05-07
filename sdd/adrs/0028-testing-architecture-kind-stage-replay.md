@@ -117,8 +117,9 @@ job before any empirical drift data exists. Spec contracts in TEST-009.
 
 ## Consequences
 
-Adding a backend that satisfies the `Backend` ABC and registers a
-fixture extends conformance coverage without rewriting any test.
+Adding a backend that satisfies the `Backend` or `AsyncBackend` ABC
+and registers a fixture extends conformance coverage without
+rewriting any test.
 
 Bug fixes for behaviour that is only observable on a real account
 land in `tests/backends/<backend>/<topic>.py` against the live fixture

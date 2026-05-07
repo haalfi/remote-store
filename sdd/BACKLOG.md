@@ -121,7 +121,9 @@ and the highest ID already in this file, then take the next integer. Run
   account keys, and per-run request IDs. Wire `--record` mode for
   `pytest --stage=3 --record` and document the refresh procedure. Cassettes
   live under `tests/cassettes/<backend>/`. Missing cassette ⇒ replay-fixture
-  skip (TEST-007). Spec: TEST-007, TEST-008, TEST-009.
+  skip (TEST-007). Sequencing: depends on BK-179 (registry) and
+  BK-180 (live fixtures the recording mode runs against). Spec: TEST-007,
+  TEST-008, TEST-009.
 
 - [ ] **BK-180 — Implement Spec 048 Phase 2: live conformance fixtures**
   Add `azure_live` (Stage 3, kind `real-live`) to the registry per
@@ -134,6 +136,9 @@ and the highest ID already in this file, then take the next integer. Run
   TEST-004, TEST-006.
 
 - [ ] **BK-179 — Implement Spec 048 Phase 1: fixture registry + conformance reorganisation**
+  **Execute-first prerequisite for BK-180, BK-181, BK-182.** The four-item
+  group is listed newest-first per BACKLOG ordering convention; execution
+  order runs BK-179 → BK-180 → BK-181 → BK-182.
   Foundational refactor before any new fixtures or replay layer. Introduce
   `tests/fixtures/registry.py` per spec [TEST-004](specs/048-testing-architecture.md);
   migrate existing backend fixtures (Memory, Local, Azurite, MinIO,
