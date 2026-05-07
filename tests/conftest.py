@@ -12,6 +12,7 @@ from hypothesis import HealthCheck, settings
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
+from tests.backends.fixtures._state import set_current_stage
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -236,8 +237,55 @@ settings.register_profile("nightly", max_examples=1000, suppress_health_check=[H
 settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "dev"))
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Register the ``--stage=N`` CLI option (spec 048 / TEST-006).
+
+    ``N`` selects which fixture tier participates in the session.
+    Each stage includes all lower stages, so ``--stage=2`` runs Stage 1
+    plus Stage 2. Default is auto-detected: Stage 2 when a Docker daemon
+    is reachable, Stage 1 otherwise. Stage 3 (live cloud) is never
+    implicit; it requires per-backend env vars on top of the explicit
+    flag.
+    """
+    parser.addoption(
+        "--stage",
+        action="store",
+        type=int,
+        choices=[1, 2, 3],
+        default=None,
+        help="Test stage: 1 (repo-only), 2 (Docker), 3 (live cloud). "
+        "Default: auto-detect (2 if Docker reachable, else 1).",
+    )
+
+
+def _docker_daemon_reachable() -> bool:
+    """Return True when ``docker info`` succeeds within a 5-second budget.
+
+    Used by stage auto-detection. We probe the daemon directly rather
+    than relying on a specific service port (Azurite, MinIO, ...) because
+    those can be stopped while the daemon is still up; a developer with
+    Docker available should default to Stage 2 even before starting any
+    container.
+    """
+    import shutil
+    import subprocess
+
+    if shutil.which("docker") is None:
+        return False
+    try:
+        result = subprocess.run(  # noqa: S603 -- fixed argv, no shell
+            ["docker", "info"],
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return False
+    return result.returncode == 0
+
+
 def pytest_configure(config: object) -> None:
-    """Register custom markers."""
+    """Register custom markers and set the active stage."""
     if os.environ.get("RS_REQUIRE_MINIO") == "1" and not _minio_reachable():
         pytest.exit(
             "RS_REQUIRE_MINIO=1 but MinIO is not reachable at 127.0.0.1:9000",
@@ -245,6 +293,10 @@ def pytest_configure(config: object) -> None:
         )
     if isinstance(config, pytest.Config):
         _maybe_load_dotenv_for_live(config)
+        stage = config.getoption("--stage")
+        if stage is None:
+            stage = 2 if _docker_daemon_reachable() else 1
+        set_current_stage(stage)
         config.addinivalue_line("markers", "spec(id): links test to a spec section ID")
         config.addinivalue_line("markers", "integration: requires external services")
         config.addinivalue_line("markers", "requires_docker: test needs Docker services (e.g. Azurite)")
