@@ -135,15 +135,18 @@ def _is_already_parametrized(metafunc: pytest.Metafunc, argname: str) -> bool:
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
-    """Auto-parametrise tests requesting ``backend`` over the registry.
+    """Auto-parametrise tests requesting ``backend`` / ``async_backend`` over the registry.
 
     Tests that already carry an explicit
-    ``@pytest.mark.parametrize("backend", ...)`` are left alone --
-    the registry-walk fallback is for legacy tests that have not yet
-    migrated to capability-filtered parametrize (TEST-005).
+    ``@pytest.mark.parametrize("backend", ...)`` (or async equivalent)
+    are left alone -- the registry-walk fallback is for legacy tests
+    that have not yet migrated to capability-filtered parametrize
+    (TEST-005).
     """
     if "backend" in metafunc.fixturenames and not _is_already_parametrized(metafunc, "backend"):
         metafunc.parametrize("backend", fixture_params(is_async=False), indirect=True)
+    if "async_backend" in metafunc.fixturenames and not _is_already_parametrized(metafunc, "async_backend"):
+        metafunc.parametrize("async_backend", fixture_params(is_async=True), indirect=True)
 
 
 @pytest.fixture
@@ -158,6 +161,21 @@ def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
     instance = fixture.factory()
     try:
         yield instance  # type: ignore[misc]
+    finally:
+        if fixture.cleanup is not None:
+            fixture.cleanup(instance)
+
+
+@pytest.fixture
+def async_backend(request: pytest.FixtureRequest) -> Iterator[object]:
+    """Indirect async fixture: build an AsyncBackend from a :class:`BackendFixture` record.
+
+    Mirrors :func:`backend` for ``is_async=True`` registry entries.
+    """
+    fixture: BackendFixture = request.param
+    instance = fixture.factory()
+    try:
+        yield instance
     finally:
         if fixture.cleanup is not None:
             fixture.cleanup(instance)

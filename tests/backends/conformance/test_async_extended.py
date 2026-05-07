@@ -33,13 +33,8 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
-from remote_store.aio import AsyncMemoryBackend, SyncBackendAdapter
-from remote_store.backends._local import LocalBackend
-from remote_store.backends._memory import MemoryBackend
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from remote_store.aio._async_backend import AsyncBackend
 
 
@@ -103,22 +98,12 @@ _MOVE_COPY_PARAMS = [
 
 pytestmark = pytest.mark.extended_conformance
 
-
-@pytest.fixture(
-    params=[
-        "native-memory",
-        "adapted-memory",
-        pytest.param("adapted-local", marks=pytest.mark.os_sensitive),
-    ],
-    ids=["native-memory", "adapted-memory", "adapted-local"],
-)
-def async_backend(request: pytest.FixtureRequest, tmp_path: Path) -> AsyncBackend:
-    """Async backend parametrized over native and adapted hierarchical implementations."""
-    if request.param == "native-memory":
-        return AsyncMemoryBackend()
-    if request.param == "adapted-memory":
-        return SyncBackendAdapter(MemoryBackend())
-    return SyncBackendAdapter(LocalBackend(root=str(tmp_path)))
+# ``async_backend`` is parametrized by the registry-driven hook in
+# ``tests/backends/conftest.py``; the legacy local fixture override
+# (native-memory / adapted-memory / adapted-local) is replaced by the
+# registry entries memory_async_native, memory_async_adapted, and
+# local_async_adapted -- see tests/backends/fixtures/{memory_async,
+# local_async}.py.
 
 
 # ===========================================================================
