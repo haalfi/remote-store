@@ -29,12 +29,6 @@ that spec is the canonical reference.
 | End-to-end workflow tests (require Docker services) | `tests/e2e/` |
 | `scripts/` utilities and build tooling | `tests/scripts/` |
 
-Backend isolation rule (TEST-010 postcondition): only files inside the
-backend subtree may import from the fixture registry. A concrete
-backend's name appears only inside that backend's own home, in
-registry/fixture/cassette files dedicated to it, or in registry code
-that enumerates all backends.
-
 Tests that load modules from `scripts/` via `sys.path` manipulation must live
 in `tests/scripts/`. The `check-test-placement` lint enforces this for `sys.path`
 patterns; tests using `importlib.util.spec_from_file_location` are review-enforced.
