@@ -37,6 +37,11 @@ def demo(store):
     for folder in store.list_folders(""):
         print(f"  {folder.name}/")
 
+    # --- Pattern-filtered folder listing ---
+    print("\nFolders matching 'd*':")
+    for folder in store.list_folders("", pattern="d*"):
+        print(f"  {folder.name}/")
+
     # --- Depth-limited folder listing (BFS traversal) ---
     print("\nFolders up to 1 level deep:")
     for folder in store.list_folders("", max_depth=1):

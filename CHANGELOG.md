@@ -36,6 +36,12 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- ID-178: `Store.list_folders` and `AsyncStore.list_folders` now accept a
+  `pattern=` keyword — a glob string matched against each folder's **name**
+  (basename only) via `fnmatch.fnmatch`.  Mirrors `list_files(pattern=…)`
+  (STORE-014).  Composes naturally with `max_depth=`: BFS traversal runs first,
+  pattern filters what is yielded.  No backend changes required (STORE-017,
+  DEPTH-002).
 - Azure HNS account setup guide (`docs-src/guides/backends/azure-hns-setup.md`): step-by-step `az` CLI recipe for provisioning an ADLS Gen2 account suitable for the live HNS test suite, with cross-links from the Azure backend guide and `CONTRIBUTING.md`.
 - ID-176: `docs-src/context7.json` — claims `https://docs.remotestore.dev/stable/` on context7 and supplies the full `rules` array so AI tools surface correct usage context from the rendered docs site.
 - BK-171: Reliable link validation for docs-only files — universal on-disk

@@ -146,6 +146,15 @@ class TestListDelegation:
         names = {f.name for f in folders}
         assert "dir" in names
 
+    @pytest.mark.spec("STORE-017")
+    def test_list_folders_pattern(self, proxy: _TestProxy) -> None:
+        matched = list(proxy.list_folders("", pattern="dir"))
+        assert len(matched) == 1
+        assert matched[0].name == "dir"
+        # If pattern were silently dropped, this would also yield "dir" instead of [].
+        no_match = list(proxy.list_folders("", pattern="nonexistent"))
+        assert no_match == []
+
     def test_iter_children(self, proxy: _TestProxy) -> None:
         children = list(proxy.iter_children(""))
         assert len(children) >= 2

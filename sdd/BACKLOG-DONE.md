@@ -8,6 +8,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-178 — `list_folders(pattern=…)` — name-based glob filter**
+  `Store.list_folders` and `AsyncStore.list_folders` accept an optional
+  `pattern` keyword mirroring `list_files(pattern=…)` (STORE-014). When set,
+  `FolderEntry` items whose `.name` does not match the pattern via
+  `fnmatch.fnmatch` are excluded. Filtering is Store-level, applied after
+  BFS traversal and path rebasing; `pattern=` does not prune traversal.
+  Composes with `max_depth=`: depth governs which folders are visited,
+  pattern governs what is yielded. `ProxyStore`, `ObservedStore`, and
+  `CachedStore` forward the parameter (cache key extended from a 3-tuple to
+  a 4-tuple — pre-upgrade entries become unreachable, no collision). No
+  Backend ABC change. Originally filed as ID-175; renumbered after a
+  collision with `ID-175 — Author templates folder` was caught by the
+  `gen_backlogid.py --check` lint gate. Design: RFC-0013. Specs: STORE-017
+  added in `sdd/specs/001-store-api.md`; DEPTH-002 amended in
+  `sdd/specs/037-depth-limited-listing.md`.
+
 - [x] **BK-178 — Fix all RST cross-reference roles in audit-013-touched files (docstring style)**
   Replaced RST role violations (`:class:`, `:meth:`, `:func:`, `:data:`, `:mod:`)
   with double-backtick inline code in the 10 files touched by audit-013.

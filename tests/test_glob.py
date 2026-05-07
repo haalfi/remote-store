@@ -132,6 +132,74 @@ class TestListFilesPattern:
 
 
 # ===========================================================================
+# Tier 1b: list_folders(pattern=...) -- STORE-017
+# ===========================================================================
+
+_FOLDER_TREE_FILES: dict[str, bytes] = {
+    "raw/a.txt": b"a",
+    "raw/nested/b.txt": b"b",
+    "processed/c.txt": b"c",
+    "archive_2024/d.txt": b"d",
+    "archive_2025/e.txt": b"e",
+    "logs/f.txt": b"f",
+}
+
+
+@pytest.fixture
+def folder_store() -> Store:
+    """Populated MemoryBackend store for list_folders pattern tests."""
+    store = Store(backend=MemoryBackend(), root_path="data")
+    for path, data in _FOLDER_TREE_FILES.items():
+        store.write(path, data)
+    return store
+
+
+class TestListFoldersPattern:
+    """STORE-017: list_folders pattern parameter with fnmatch filtering."""
+
+    @pytest.mark.spec("STORE-017")
+    @pytest.mark.parametrize(
+        ("folder", "pattern", "expected_names"),
+        [
+            pytest.param("", "raw", ["raw"], id="exact_match"),
+            pytest.param("", "archive_*", ["archive_2024", "archive_2025"], id="wildcard_suffix"),
+            pytest.param("", "*.txt", [], id="no_matches_extension"),
+            pytest.param("", "r?w", ["raw"], id="question_mark"),
+            pytest.param("", None, ["archive_2024", "archive_2025", "logs", "processed", "raw"], id="none_returns_all"),
+        ],
+    )
+    def test_pattern_filtering(
+        self,
+        folder_store: Store,
+        folder: str,
+        pattern: str | None,
+        expected_names: list[str],
+    ) -> None:
+        results = sorted(f.name for f in folder_store.list_folders(folder, pattern=pattern))
+        assert results == expected_names
+
+    @pytest.mark.spec("STORE-017")
+    def test_pattern_none_equals_no_pattern(self, folder_store: Store) -> None:
+        without = list(folder_store.list_folders(""))
+        with_none = list(folder_store.list_folders("", pattern=None))
+        assert sorted(f.name for f in without) == sorted(f.name for f in with_none)
+
+    @pytest.mark.spec("STORE-017")
+    def test_pattern_with_max_depth_composes(self, folder_store: Store) -> None:
+        # max_depth=1 traverses into immediate children; pattern filters names at all levels.
+        # No level-0 folder matches "nested" — a non-empty result proves traversal is
+        # not pruned by pattern (only yielding is filtered).
+        results = sorted(f.name for f in folder_store.list_folders("", pattern="nested", max_depth=1))
+        assert results == ["nested"]
+
+    @pytest.mark.spec("STORE-017")
+    def test_pattern_works_with_local_backend(self, pop_local: Store) -> None:
+        # pop_local has docs/, logs/ subfolders under its root_path "data"
+        results = [f.name for f in pop_local.list_folders("", pattern="logs")]
+        assert results == ["logs"]
+
+
+# ===========================================================================
 # Tier 2: Capability.GLOB, Backend.glob(), Store.glob() -- GLOB-002..008
 # ===========================================================================
 

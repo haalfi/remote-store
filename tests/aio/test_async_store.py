@@ -331,6 +331,31 @@ class TestAsyncStoreListFolders:
         assert folders[0].name == "sub"
         assert str(folders[0].path) == "sub"
 
+    @pytest.mark.spec("STORE-017")
+    @pytest.mark.parametrize(
+        ("pattern", "expected_names"),
+        [
+            pytest.param("sub1", ["sub1"], id="exact_match"),
+            pytest.param("sub*", ["sub1", "sub2"], id="wildcard"),
+            pytest.param("no_match", [], id="no_match"),
+        ],
+    )
+    async def test_list_folders_pattern_filters(
+        self, async_store: AsyncStore, pattern: str, expected_names: list[str]
+    ) -> None:
+        await async_store.write("lfp/sub1/a.txt", b"a")
+        await async_store.write("lfp/sub2/b.txt", b"b")
+        results = [f async for f in async_store.list_folders("lfp", pattern=pattern)]
+        assert sorted(f.name for f in results) == sorted(expected_names)
+
+    @pytest.mark.spec("STORE-017")
+    async def test_list_folders_pattern_with_max_depth(self, async_store: AsyncStore) -> None:
+        await async_store.write("lfp2/a/b/c.txt", b"x")
+        filtered = [f async for f in async_store.list_folders("lfp2", pattern="b", max_depth=1)]
+        assert [f.name for f in filtered] == ["b"]
+        unfiltered = [f async for f in async_store.list_folders("lfp2", max_depth=1)]
+        assert {f.name for f in unfiltered} == {"a", "b"}
+
 
 class TestAsyncStoreIterChildren:
     """ASYNC-046: iter_children yields files and folders."""

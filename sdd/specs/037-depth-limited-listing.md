@@ -59,8 +59,8 @@ data/raw/2026/file_c.csv -> depth 2  excluded (2 > 1)
 
 ## DEPTH-002: list_folders(max_depth=N)
 
-**Invariant:** `list_folders(path, *, max_depth=None)` accepts an optional
-`max_depth` keyword controlling how many levels of subfolders to return:
+**Invariant:** `list_folders(path, *, pattern=None, max_depth=None)` accepts an
+optional `max_depth` keyword controlling how many levels of subfolders to return:
 
 - `max_depth=None` or `max_depth=0`: immediate children only (current behavior).
 - `max_depth=N` (N > 0): subfolders up to N levels deep via BFS traversal using
@@ -71,6 +71,10 @@ data/raw/2026/file_c.csv -> depth 2  excluded (2 > 1)
 **Implementation (Phase 1):** BFS at the Store level. Each BFS step calls the
 existing `Backend.list_folders()` for one level. Cost is O(total folders within
 depth), not O(depth). No Backend ABC change.
+
+**Filtering order:** BFS traversal runs first; `pattern` filtering is applied to
+each `FolderEntry` after rebasing. The two compose naturally — depth controls
+which folders are visited, pattern filters what is yielded. See STORE-017.
 
 ---
 

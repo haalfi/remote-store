@@ -410,10 +410,12 @@ class ObservedStore(ProxyStore):
         with self._observe_op("glob", pattern, {"pattern": pattern}):
             return iter(list(self._inner.glob(pattern)))
 
-    def list_folders(self, path: str, *, max_depth: int | None = None) -> Iterator[FolderEntry]:
+    def list_folders(
+        self, path: str, *, pattern: str | None = None, max_depth: int | None = None
+    ) -> Iterator[FolderEntry]:
         # Materialize: see list_files comment.
-        with self._observe_op("list_folders", path, {"max_depth": max_depth}):
-            return iter(list(self._inner.list_folders(path, max_depth=max_depth)))
+        with self._observe_op("list_folders", path, {"pattern": pattern, "max_depth": max_depth}):
+            return iter(list(self._inner.list_folders(path, pattern=pattern, max_depth=max_depth)))
 
     def get_file_info(self, path: str) -> FileInfo:
         with self._observe_op("get_file_info", path, {}):
