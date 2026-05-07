@@ -1,42 +1,63 @@
-r"""Fail if any Python file under src/ contains an RST inline role.
+"""Fail if any Python file in the scanned directories contains an RST inline role.
 
-RST roles (:class:`Foo`, :func:`bar`, :meth:`baz`, etc.) are RST-specific
-syntax incompatible with the Google-style docstrings used in this project.
-This check prevents Audit-013-class violations from silently re-entering.
+RST cross-reference syntax (colon-word-colon-single-backtick) is incompatible with
+the Google-style docstrings used in this project.  Double-backtick literals like
+``:class:``​`` `` are not flagged — those are inline code, not roles.
 
-Pattern: :\w+:` (colon, word, colon, single backtick).
-Double-backtick code like :class:`` is allowed — that is inline code, not a role.
+Wired into ``hatch run lint`` and the ``no-rst-roles`` pre-commit hook.
+
+Usage:
+    python scripts/check_rst_roles.py [dir ...]
+    Defaults to src/, tests/, and scripts/ when no arguments are given.
 """
 
 import re
 import sys
 from pathlib import Path
 
-# :\w+:` where the backtick is NOT immediately followed by another backtick.
+# Colon, one-or-more word chars, colon, single backtick NOT followed by another backtick.
 RST_ROLE = re.compile(r":\w+:`(?!`)")
 
-SRC_DIR = Path(__file__).resolve().parent.parent / "src"
+_ROOT = Path(__file__).resolve().parent.parent
+_DEFAULT_DIRS = ["src", "tests", "scripts"]
 
-if not SRC_DIR.is_dir():
-    sys.exit(f"error: {SRC_DIR} not found")
 
-violations: list[str] = []
-
-for py_file in sorted(SRC_DIR.glob("**/*.py")):
+def scan_file(path: Path) -> list[str]:
+    """Return one violation string per RST-role match in *path*."""
     try:
-        text = py_file.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8")
     except (UnicodeDecodeError, OSError) as exc:
-        sys.stderr.write(f"Skipping {py_file}: {type(exc).__name__}\n")
-        continue
-    for lineno, line in enumerate(text.splitlines(), 1):
-        if RST_ROLE.search(line):
-            violations.append(f"{py_file}:{lineno}: RST role found")
+        sys.stderr.write(f"Skipping {path}: {type(exc).__name__}\n")
+        return []
+    return [
+        f"{path}:{lineno}: RST role found" for lineno, line in enumerate(text.splitlines(), 1) if RST_ROLE.search(line)
+    ]
 
-if violations:
-    for v in violations:
-        sys.stderr.write(f"error: {v}\n")
-    sys.stderr.write(
-        "\nRST inline roles (:word:`...`) conflict with Google-style docstrings.\n"
-        "Use plain text or ``double backticks`` for inline code instead.\n"
-    )
-    sys.exit(1)
+
+def main(dirs: list[str] | None = None) -> int:
+    """Scan *dirs* for RST roles; return 0 if clean, 1 on violations."""
+    targets = [_ROOT / d for d in _DEFAULT_DIRS] if dirs is None else [Path(d) for d in dirs]
+    missing = [str(t) for t in targets if not t.is_dir()]
+    if missing:
+        for m in missing:
+            sys.stderr.write(f"error: directory not found: {m}\n")
+        return 1
+
+    violations: list[str] = []
+    for target in targets:
+        for py_file in sorted(target.glob("**/*.py")):
+            violations.extend(scan_file(py_file))
+
+    if violations:
+        for v in violations:
+            sys.stderr.write(f"error: {v}\n")
+        sys.stderr.write(
+            "\nRST inline roles (colon-word-colon-backtick) conflict with Google-style docstrings.\n"
+            "Use plain text or ``double backticks`` for inline code instead.\n"
+        )
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:] or None))

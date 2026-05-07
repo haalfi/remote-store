@@ -22,8 +22,8 @@ repos:
         types: [python]
         files: ^(src/|examples/)
       - id: no-rst-roles
-        name: no RST inline roles in src/
+        name: no RST inline roles in src/ tests/ scripts/
         language: pygrep
         entry: ':\w+:`(?!`)'
         types: [python]
-        files: ^src/
+        files: ^(src|tests|scripts)/

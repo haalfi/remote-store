@@ -62,10 +62,10 @@ def write(self, path: str, content: WritableContent, *, overwrite: bool = False)
     """
 ```
 
-RST inline roles (`:class:`Foo``, `:func:`bar``, etc.) are banned.
-`scripts/check_rst_roles.py` enforces this in `hatch run lint` and via the
-`no-rst-roles` pre-commit hook. Use plain text or ``double backticks`` for
-inline code.
+RST inline roles (colon-word-colon-backtick patterns) are banned.
+`scripts/check_rst_roles.py` enforces this in `hatch run lint` (scanning
+`src/`, `tests/`, and `scripts/`) and via the `no-rst-roles` pre-commit
+pygrep hook. Use plain text or ``double backticks`` for inline code.
 
 ### 5. Code Organisation Comments
 
