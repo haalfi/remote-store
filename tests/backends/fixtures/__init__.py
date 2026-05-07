@@ -57,7 +57,6 @@ def _load_all() -> None:
 __all__ = [
     "AnyBackend",
     "BackendFixture",
-    "_load_all",
     "all_fixtures",
     "fixture_params",
     "fixtures",

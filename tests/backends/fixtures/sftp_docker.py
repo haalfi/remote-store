@@ -24,6 +24,11 @@ from tests.backends.fixtures.registry import BackendFixture, register
 if TYPE_CHECKING:
     from remote_store._backend import Backend
 
+# id(backend) -> base_path on the server, used by _cleanup to remove the
+# pre-created directory. Keyed by object id so the backend instance itself
+# stays free of test-only attributes.
+_BASE_PATHS: dict[int, str] = {}
+
 
 def _factory() -> Backend:
     if INFRA.sftp_docker_port is None:
@@ -56,7 +61,7 @@ def _factory() -> Backend:
     finally:
         transport.close()
 
-    return SFTPBackend(
+    backend = SFTPBackend(
         host="127.0.0.1",
         port=INFRA.sftp_docker_port,
         username="benchuser",
@@ -65,10 +70,63 @@ def _factory() -> Backend:
         host_key_policy=HostKeyPolicy.AUTO_ADD,
         connect_kwargs={"allow_agent": False, "look_for_keys": False},
     )
+    _BASE_PATHS[id(backend)] = base_path
+    return backend
 
 
 def _cleanup(backend: Backend) -> None:
+    """Close the backend and remove the pre-created base_path on the server.
+
+    Without this teardown, every conformance iteration would leave an
+    orphaned ``/upload/test_<uuid>/`` directory on the atmoz/sftp container.
+    A short-lived paramiko client mirrors the pre-creation pattern in
+    ``_factory`` and walks any residual files before removing the dir.
+    """
     backend.close()
+    base_path = _BASE_PATHS.pop(id(backend), None)
+    if base_path is None or INFRA.sftp_docker_port is None:
+        return
+    try:
+        import paramiko
+    except ImportError:
+        return
+    transport = paramiko.Transport(("127.0.0.1", INFRA.sftp_docker_port))
+    try:
+        transport.connect(username="benchuser", password="benchpass")
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        if sftp is None:
+            return
+        try:
+            _rmtree(sftp, base_path)
+        finally:
+            sftp.close()
+    except OSError:
+        # Cleanup is best-effort; never fail a test on teardown.
+        pass
+    finally:
+        transport.close()
+
+
+def _rmtree(sftp: object, path: str) -> None:
+    """Recursively remove ``path`` via the supplied paramiko SFTP client."""
+    import contextlib
+
+    import paramiko
+
+    assert isinstance(sftp, paramiko.SFTPClient)
+    try:
+        entries = sftp.listdir_attr(path)
+    except OSError:
+        return
+    for entry in entries:
+        child = f"{path}/{entry.filename}"
+        if entry.st_mode is not None and (entry.st_mode & 0o040000):
+            _rmtree(sftp, child)
+        else:
+            with contextlib.suppress(OSError):
+                sftp.remove(child)
+    with contextlib.suppress(OSError):
+        sftp.rmdir(path)
 
 
 def _capabilities() -> frozenset:

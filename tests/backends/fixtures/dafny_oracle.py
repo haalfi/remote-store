@@ -1,10 +1,9 @@
 """``dafny_oracle`` fixture: Dafny-derived MemoryBackend conformance oracle.
 
 Stage 1, real-local. The oracle implementation lives at
-``tests/backends/dafny_oracle.py`` (relocated to
-``tests/backends/dafny/_helpers.py`` in Commit 9 of BK-179). It runs
-entirely in-process; the conformance suite uses it as a second
-in-memory implementation to cross-check semantic divergence.
+``tests/backends/dafny/_helpers.py``. It runs entirely in-process; the
+conformance suite uses it as a second in-memory implementation to
+cross-check semantic divergence.
 """
 
 from __future__ import annotations
