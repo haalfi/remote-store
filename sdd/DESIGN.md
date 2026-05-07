@@ -62,6 +62,11 @@ def write(self, path: str, content: WritableContent, *, overwrite: bool = False)
     """
 ```
 
+RST inline roles (`:class:`Foo``, `:func:`bar``, etc.) are banned.
+`scripts/check_rst_roles.py` enforces this in `hatch run lint` and via the
+`no-rst-roles` pre-commit hook. Use plain text or ``double backticks`` for
+inline code.
+
 ### 5. Code Organisation Comments
 
 Two styles for structuring large files, each with a distinct purpose.
