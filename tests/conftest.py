@@ -270,6 +270,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     is reachable, Stage 1 otherwise. Stage 3 (live cloud) is never
     implicit; it requires per-backend env vars on top of the explicit
     flag.
+
+    The ``RS_TEST_STAGE`` env var (1, 2, or 3) overrides auto-detection
+    without requiring the explicit flag. Useful on developer machines
+    where Docker is installed but the daemon is paused or slow -- the
+    ``docker info`` probe takes up to 5 s before falling back to Stage 1
+    on every invocation; the env var short-circuits the probe.
     """
     parser.addoption(
         "--stage",
@@ -278,7 +284,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         choices=[1, 2, 3],
         default=None,
         help="Test stage: 1 (repo-only), 2 (Docker), 3 (live cloud). "
-        "Default: auto-detect (2 if Docker reachable, else 1).",
+        "Default: auto-detect (2 if Docker reachable, else 1). "
+        "Override via RS_TEST_STAGE env var to skip the docker info probe.",
     )
 
 
@@ -319,7 +326,22 @@ def pytest_configure(config: object) -> None:
         _maybe_load_dotenv_for_live(config)
         stage = config.getoption("--stage")
         if stage is None:
-            stage = 2 if _docker_daemon_reachable() else 1
+            env_override = os.environ.get("RS_TEST_STAGE")
+            if env_override is not None:
+                try:
+                    stage = int(env_override)
+                except ValueError:
+                    pytest.exit(
+                        f"RS_TEST_STAGE must be 1, 2, or 3 (got {env_override!r})",
+                        returncode=1,
+                    )
+                if stage not in (1, 2, 3):
+                    pytest.exit(
+                        f"RS_TEST_STAGE must be 1, 2, or 3 (got {stage})",
+                        returncode=1,
+                    )
+            else:
+                stage = 2 if _docker_daemon_reachable() else 1
         set_current_stage(stage)
         config.addinivalue_line("markers", "spec(id): links test to a spec section ID")
         config.addinivalue_line("markers", "integration: requires external services")

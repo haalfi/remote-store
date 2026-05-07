@@ -135,6 +135,20 @@ and the highest ID already in this file, then take the next integer. Run
   AWS S3 (separate env var; cost-controlled). No legacy live-test deletion
   yet — that is BK-182. Spec: TEST-001, TEST-004, TEST-006.
 
+  **Carried in from BK-179 review (#597):** the async indirect fixture
+  in `tests/backends/conformance/conftest.py` calls `cleanup` synchronously
+  (`Callable[[AnyBackend], None]`). Today's async fixtures
+  (`memory_async_native`/`memory_async_adapted` set `cleanup=None`;
+  `local_async_adapted` only does `tmp.cleanup()`) don't need an awaitable
+  teardown, so the gap is dormant. The first live async backend that owns a
+  real network pool (e.g. `AsyncAzureBackend` with an HTTP session, async
+  S3 if added later) must close it via `await backend.aclose()`. Decide
+  the channel before adding such a fixture: either extend `BackendFixture`
+  with an optional `aclose: Callable[[AnyBackend], Awaitable[None]] | None`
+  field and have the indirect fixture `await` it when present, or rely on
+  the backend's `__del__` / weak-finalizer (less reliable). Pin the
+  decision in this BK item before the first async live fixture lands.
+
 - [ ] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   `AsyncMemoryBackend.get_file_info` returns
   `FileInfo(... content_type=node.content_type)` without
