@@ -1,25 +1,17 @@
-"""Backend test fixtures, registry-driven (spec 048 / TEST-004 / TEST-006).
+"""Backend test infrastructure (spec 048).
 
-The legacy parametrized ``backend`` fixture is replaced by a registry-
-driven indirect fixture. ``pytest_generate_tests`` walks the registry
-once per test that requests ``backend`` and parametrises over the active
-stage's fixtures. Tests that need capability filtering should mark
-themselves with::
+Loads the fixture registry, publishes session infrastructure into
+``INFRA``, and hosts the HTTP server fixture used by the registry's
+``http`` factory.
 
-    @pytest.mark.parametrize(
-        "backend",
-        fixture_params(Capability.WRITE),
-        indirect=True,
-    )
-
-The hook below skips auto-parametrising whenever the test already
-declares its own parametrize, so explicit markers and the auto-walk
-cohabit cleanly.
-
-The ``http_server`` and ``httpserver_listen_address`` session fixtures
-remain here because the HTTP fixture's factory in
-:mod:`tests.backends.fixtures.http` reads the live server from
-``INFRA.http_server``.
+Registry-driven parametrize (the auto-walk over :func:`fixture_params`)
+lives in :mod:`tests.backends.conformance.conftest` rather than here.
+Per-backend tests under ``tests/backends/<backend>/`` define their own
+local fixtures with names like ``backend`` typed to the concrete class
+(e.g. ``backend: SQLQueryBackend``); auto-parametrising those would
+multiply each test by every registered backend, which is wrong.
+Confining the auto-walk to the conformance subtree keeps both worlds
+working.
 """
 
 from __future__ import annotations
@@ -28,13 +20,11 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.backends.fixtures import BackendFixture, _load_all, fixture_params
+from tests.backends.fixtures import _load_all
 from tests.backends.fixtures._state import INFRA
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-
-    from remote_store._backend import Backend
 
 
 # Trigger registration. Idempotent because the registry rejects duplicate names.
@@ -115,67 +105,3 @@ def http_server() -> Iterator[object | None]:
     server.clear()
     if server.is_running():
         server.stop()
-
-
-# ---------------------------------------------------------------------------
-# Backend indirect fixture + auto-parametrize
-# ---------------------------------------------------------------------------
-
-
-def _is_already_parametrized(metafunc: pytest.Metafunc, argname: str) -> bool:
-    """Return True if ``argname`` is already parametrized via a marker."""
-    for marker in metafunc.definition.iter_markers("parametrize"):
-        if not marker.args:
-            continue
-        argnames = marker.args[0]
-        names = [n.strip() for n in argnames.split(",")] if isinstance(argnames, str) else list(argnames)
-        if argname in names:
-            return True
-    return False
-
-
-def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
-    """Auto-parametrise tests requesting ``backend`` / ``async_backend`` over the registry.
-
-    Tests that already carry an explicit
-    ``@pytest.mark.parametrize("backend", ...)`` (or async equivalent)
-    are left alone -- the registry-walk fallback is for legacy tests
-    that have not yet migrated to capability-filtered parametrize
-    (TEST-005).
-    """
-    if "backend" in metafunc.fixturenames and not _is_already_parametrized(metafunc, "backend"):
-        metafunc.parametrize("backend", fixture_params(is_async=False), indirect=True)
-    if "async_backend" in metafunc.fixturenames and not _is_already_parametrized(metafunc, "async_backend"):
-        metafunc.parametrize("async_backend", fixture_params(is_async=True), indirect=True)
-
-
-@pytest.fixture
-def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
-    """Indirect fixture: build a Backend from a :class:`BackendFixture` record.
-
-    Receives the registry record via ``request.param``, calls
-    ``factory()`` to produce a fresh instance, yields it to the test,
-    then runs ``cleanup`` on teardown.
-    """
-    fixture: BackendFixture = request.param
-    instance = fixture.factory()
-    try:
-        yield instance  # type: ignore[misc]
-    finally:
-        if fixture.cleanup is not None:
-            fixture.cleanup(instance)
-
-
-@pytest.fixture
-def async_backend(request: pytest.FixtureRequest) -> Iterator[object]:
-    """Indirect async fixture: build an AsyncBackend from a :class:`BackendFixture` record.
-
-    Mirrors :func:`backend` for ``is_async=True`` registry entries.
-    """
-    fixture: BackendFixture = request.param
-    instance = fixture.factory()
-    try:
-        yield instance
-    finally:
-        if fixture.cleanup is not None:
-            fixture.cleanup(instance)

@@ -1,0 +1,81 @@
+"""Conformance-only registry-driven parametrize (spec 048 / TEST-005).
+
+This conftest is scoped to ``tests/backends/conformance/``. It hosts the
+``backend`` and ``async_backend`` indirect fixtures and the
+``pytest_generate_tests`` hook that auto-parametrises any conformance
+test taking those arguments over :func:`fixture_params`.
+
+The hook lives here -- not in ``tests/backends/conftest.py`` -- because
+per-backend tests under ``tests/backends/<backend>/`` use parameter
+names like ``backend: SQLQueryBackend`` for their own local fixtures.
+A repository-wide auto-walk would multiply each per-backend test by
+every registered backend.
+
+Tests can still opt in to capability filtering at the class level::
+
+    @pytest.mark.parametrize(
+        "backend",
+        fixture_params(Capability.WRITE),
+        indirect=True,
+    )
+
+The hook detects an explicit ``parametrize`` and skips its own walk in
+that case, so explicit markers and the auto-walk cohabit cleanly.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import pytest
+
+from tests.backends.fixtures import BackendFixture, fixture_params
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from remote_store._backend import Backend
+
+
+def _is_already_parametrized(metafunc: pytest.Metafunc, argname: str) -> bool:
+    """Return True if ``argname`` is already parametrized via a marker."""
+    for marker in metafunc.definition.iter_markers("parametrize"):
+        if not marker.args:
+            continue
+        argnames = marker.args[0]
+        names = [n.strip() for n in argnames.split(",")] if isinstance(argnames, str) else list(argnames)
+        if argname in names:
+            return True
+    return False
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    """Auto-parametrise conformance tests requesting ``backend`` / ``async_backend``."""
+    if "backend" in metafunc.fixturenames and not _is_already_parametrized(metafunc, "backend"):
+        metafunc.parametrize("backend", fixture_params(is_async=False), indirect=True)
+    if "async_backend" in metafunc.fixturenames and not _is_already_parametrized(metafunc, "async_backend"):
+        metafunc.parametrize("async_backend", fixture_params(is_async=True), indirect=True)
+
+
+@pytest.fixture
+def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
+    """Indirect fixture: build a Backend from a :class:`BackendFixture` record."""
+    fixture: BackendFixture = request.param
+    instance = fixture.factory()
+    try:
+        yield instance  # type: ignore[misc]
+    finally:
+        if fixture.cleanup is not None:
+            fixture.cleanup(instance)
+
+
+@pytest.fixture
+def async_backend(request: pytest.FixtureRequest) -> Iterator[object]:
+    """Indirect async fixture: build an AsyncBackend from a :class:`BackendFixture` record."""
+    fixture: BackendFixture = request.param
+    instance = fixture.factory()
+    try:
+        yield instance
+    finally:
+        if fixture.cleanup is not None:
+            fixture.cleanup(instance)
