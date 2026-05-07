@@ -12400,9 +12400,9 @@ root (filesystem path, bucket prefix, base_path) override this.</p>
 
 
 
-        <p>Wraps a synchronous :class:<code>Backend</code> as an :class:<code>AsyncBackend</code>.</p>
+        <p>Wraps a synchronous <code>Backend</code> as an <code>AsyncBackend</code>.</p>
 <p>Every blocking call is dispatched to the default executor via
-:func:<code>asyncio.to_thread</code>, keeping the event loop responsive.</p>
+<code>asyncio.to_thread</code>, keeping the event loop responsive.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12466,14 +12466,14 @@ root (filesystem path, bucket prefix, base_path) override this.</p>
 
 
 
-        <p>Wraps an :class:<code>AsyncBackend</code> as a synchronous :class:<code>Backend</code>.</p>
+        <p>Wraps an <code>AsyncBackend</code> as a synchronous <code>Backend</code>.</p>
 <p>One private <code>asyncio</code> event loop per adapter instance, running on
 a dedicated daemon thread for the adapter's lifetime.  Sync methods
-submit coroutines via :func:<code>asyncio.run_coroutine_threadsafe</code> and
-block on the returned :class:<code>concurrent.futures.Future</code>.</p>
+submit coroutines via <code>asyncio.run_coroutine_threadsafe</code> and
+block on the returned <code>concurrent.futures.Future</code>.</p>
 <p>Construction does not enter the wrapped backend's async context
 manager -- callers that need <code>__aenter__</code> semantics should use
-:class:<code>remote_store.aio.AsyncStore</code> directly.</p>
+<code>AsyncStore</code> directly.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
