@@ -5,8 +5,7 @@
 
 Authoritative source for test **quality** rules and top-level
 **placement** of test files in `tests/`. Companion to
-[`sdd/DESIGN.md` § 11 (test style)](DESIGN.md#11-test-style). Derived
-from [`sdd/research/research-testing-best-practices.md`](research/research-testing-best-practices.md).
+[`sdd/DESIGN.md` § 11 (test style)](DESIGN.md#11-test-style).
 
 For test **architecture** (the shape of the test tree and how backends
 are wired into it), see
@@ -127,3 +126,7 @@ haven't thought of. See rules 9–11.
 | PT011 | `pytest.raises()` without `match=` |
 | PT018 | Composite assertions — use multiple `assert` statements |
 | PT006/PT007 | Inconsistent `@pytest.mark.parametrize` style |
+
+### Provenance
+
+Derived from [`sdd/research/research-testing-best-practices.md`](research/research-testing-best-practices.md).
