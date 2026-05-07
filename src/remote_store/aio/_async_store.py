@@ -420,7 +420,13 @@ class AsyncStore:
                 continue
             yield rebased
 
-    def list_folders(self, path: str, *, max_depth: int | None = None) -> AsyncIterator[FolderEntry]:
+    def list_folders(
+        self,
+        path: str,
+        *,
+        pattern: str | None = None,
+        max_depth: int | None = None,
+    ) -> AsyncIterator[FolderEntry]:
         """Yield subfolders of *path* as ``FolderEntry`` objects.
 
         Validation (capability check, max_depth) happens eagerly
@@ -428,9 +434,15 @@ class AsyncStore:
 
         Args:
             path: Store-relative folder path.
+            pattern: Glob pattern to filter folder names
+                (e.g. ``"raw_*"``).  Matched against each folder's **name**
+                (basename only) via ``fnmatch.fnmatch``.  Filters yielded
+                results only — does **not** prune BFS traversal, so
+                non-matching folders are still descended into.
             max_depth: Maximum folder depth to include.  ``None`` or ``0``
                 returns immediate children only (default).  ``1`` adds
-                grandchildren, and so on.
+                grandchildren, and so on.  BFS traversal runs first;
+                *pattern* filters what is yielded.
 
         Returns:
             Async iterator of ``FolderEntry`` with ``.name`` and ``.path`` (store-relative).
@@ -443,16 +455,19 @@ class AsyncStore:
             raise ValueError(msg)
         _bk = self._backend.name
         log.debug(
-            "list_folders path=%r max_depth=%r",
+            "list_folders path=%r pattern=%r max_depth=%r",
             path,
+            pattern,
             max_depth,
             extra={"op": "list_folders", "path": path, "backend": _bk},
         )
         self._backend.capabilities.require(Capability.LIST, backend=_bk)
         effective_depth = max_depth if max_depth is not None else 0
-        return self._list_folders_inner(self._full_path(path), effective_depth=effective_depth)
+        return self._list_folders_inner(self._full_path(path), effective_depth=effective_depth, pattern=pattern)
 
-    async def _list_folders_inner(self, full_path: str, *, effective_depth: int) -> AsyncIterator[FolderEntry]:
+    async def _list_folders_inner(
+        self, full_path: str, *, effective_depth: int, pattern: str | None
+    ) -> AsyncIterator[FolderEntry]:
         """Inner generator for ``list_folders`` — BFS traversal."""
         current_level: list[str] = [full_path]
         for level in range(effective_depth + 1):
@@ -460,7 +475,8 @@ class AsyncStore:
             for folder_path in current_level:
                 async for entry in self._backend.list_folders(folder_path):
                     rebased = self._rebase_folder_entry(entry)
-                    yield rebased
+                    if pattern is None or fnmatch.fnmatch(rebased.name, pattern):
+                        yield rebased
                     if level < effective_depth:
                         next_level.append(str(entry.path))
             current_level = next_level

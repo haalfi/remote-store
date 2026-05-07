@@ -97,6 +97,12 @@
 **Rationale:** Covers dataset discovery and shallow inventory without fetching the full recursive tree.
 **See also:** [037-depth-limited-listing.md](037-depth-limited-listing.md) (DEPTH-001, DEPTH-002).
 
+### STORE-017: list_folders(pattern=…)
+
+**Invariant:** `list_folders(path, *, pattern=None, max_depth=None)` accepts an optional `pattern` keyword. When set, `FolderEntry` items whose `.name` does not match the pattern (via `fnmatch.fnmatch`) are excluded from results. Filtering is applied at the Store level after BFS traversal and path rebasing. `max_depth` controls traversal depth; `pattern` filters the yielded results — the two compose naturally.
+**Rationale:** Mirrors STORE-014. Covers the "find all folders named `raw`" or "skip `archive_*`" use case without new capabilities or backend changes.
+**See also:** STORE-014 (list_files pattern), [037-depth-limited-listing.md](037-depth-limited-listing.md) (DEPTH-002), [RFC-0013](../rfcs/rfc-0013-list-folders-pattern.md) (design rationale).
+
 ---
 
 ## Metadata Models

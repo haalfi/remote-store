@@ -458,13 +458,16 @@ class CachedStore(ProxyStore):
             self._cache.set(key, result, self._ttl)
         return iter(result)
 
-    def list_folders(self, path: str, *, max_depth: int | None = None) -> Iterator[FolderEntry]:
+    def list_folders(
+        self, path: str, *, pattern: str | None = None, max_depth: int | None = None
+    ) -> Iterator[FolderEntry]:
+        pattern_key = pattern if pattern is not None else "\x00"
         depth_key = str(max_depth) if max_depth is not None else "\x00"
-        key = ("list_folders", path, depth_key)
+        key = ("list_folders", path, pattern_key, depth_key)
         cached = self._cache_get(key)
         if cached is not _MISSING:
             return iter(cached)
-        result = tuple(self._inner.list_folders(path, max_depth=max_depth))
+        result = tuple(self._inner.list_folders(path, pattern=pattern, max_depth=max_depth))
         if self._max_listing_size is None or len(result) <= self._max_listing_size:
             self._cache.set(key, result, self._ttl)
         return iter(result)

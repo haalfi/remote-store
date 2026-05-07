@@ -572,6 +572,19 @@ def test_proxy_glob(tmp_path: Any) -> None:
     assert any(e.operation == "glob" for e in events)
 
 
+@pytest.mark.spec("STORE-017")
+def test_proxy_list_folders_pattern_forwarded() -> None:
+    store = _populated_store("sub/a.txt", "other/b.txt")
+    events, kwargs = _collect_events()
+    observed = observe(store, **kwargs)
+    results = list(observed.list_folders("", pattern="sub"))
+    assert len(results) == 1
+    assert results[0].name == "sub"
+    list_event = next(e for e in events if e.operation == "list_folders")
+    assert list_event.metadata["pattern"] == "sub"
+    assert list_event.metadata["max_depth"] is None
+
+
 def test_proxy_unwrap() -> None:
     store = _make_store()
     events, kwargs = _collect_events()

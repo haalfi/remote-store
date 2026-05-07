@@ -321,6 +321,29 @@ class TestCachedReads:
         assert cached.stats.misses == 1
         assert cached.stats.hits == 1
 
+    @pytest.mark.spec("STORE-017", "CACHE-006")
+    def test_list_folders_pattern_forwarded(self) -> None:
+        s = Store(MemoryBackend())
+        s.write("raw/a.txt", b"a")
+        s.write("processed/b.txt", b"b")
+        cs = cache(s, ttl=60.0)
+        results = list(cs.list_folders("", pattern="raw"))
+        assert len(results) == 1
+        assert results[0].name == "raw"
+
+    @pytest.mark.spec("STORE-017", "CACHE-006")
+    def test_list_folders_different_patterns_separate_keys(self) -> None:
+        s = Store(MemoryBackend())
+        s.write("raw/a.txt", b"a")
+        s.write("processed/b.txt", b"b")
+        cs = cache(s, ttl=60.0)
+        list(cs.list_folders("", pattern="raw"))
+        list(cs.list_folders("", pattern="processed"))
+        assert cs.stats.misses == 2
+        assert cs.stats.hits == 0
+        list(cs.list_folders("", pattern="raw"))
+        assert cs.stats.hits == 1
+
     @pytest.mark.spec("CACHE-006")
     @pytest.mark.parametrize(
         ("max_size", "expected_hits"),

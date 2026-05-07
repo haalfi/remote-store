@@ -472,14 +472,26 @@ class Store:
                 continue
             yield rebased
 
-    def list_folders(self, path: str, *, max_depth: int | None = None) -> Iterator[FolderEntry]:
+    def list_folders(
+        self,
+        path: str,
+        *,
+        pattern: str | None = None,
+        max_depth: int | None = None,
+    ) -> Iterator[FolderEntry]:
         """Yield subfolders of *path* as ``FolderEntry`` objects.
 
         Args:
             path: Store-relative folder path.
+            pattern: Glob pattern to filter folder names
+                (e.g. ``"raw_*"``).  Matched against each folder's **name**
+                (basename only) via ``fnmatch.fnmatch``.  Filters yielded
+                results only — does **not** prune BFS traversal, so
+                non-matching folders are still descended into.
             max_depth: Maximum folder depth to include.  ``None`` or ``0``
                 returns immediate children only (default).  ``1`` adds
-                grandchildren, and so on.
+                grandchildren, and so on.  BFS traversal runs first;
+                *pattern* filters what is yielded.
 
         Returns:
             Iterator of ``FolderEntry`` with ``.name`` and ``.path`` (store-relative).
@@ -492,8 +504,9 @@ class Store:
             raise ValueError(msg)
         _bk = self._backend.name
         log.debug(
-            "list_folders path=%r max_depth=%r",
+            "list_folders path=%r pattern=%r max_depth=%r",
             path,
+            pattern,
             max_depth,
             extra={"op": "list_folders", "path": path, "backend": _bk},
         )
@@ -509,7 +522,8 @@ class Store:
             for folder_path in current_level:
                 for entry in self._backend.list_folders(folder_path):
                     rebased = self._rebase_folder_entry(entry)
-                    yield rebased
+                    if pattern is None or fnmatch.fnmatch(rebased.name, pattern):
+                        yield rebased
                     if level < effective_depth:
                         next_level.append(str(entry.path))
             current_level = next_level

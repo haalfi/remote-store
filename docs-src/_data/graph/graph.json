@@ -1637,7 +1637,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 594,
+      "line": 608,
       "summary": "copy"
     },
     {
@@ -1664,7 +1664,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 664,
+      "line": 678,
       "summary": "get_file_info"
     },
     {
@@ -1673,7 +1673,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 683,
+      "line": 697,
       "summary": "get_folder_info"
     },
     {
@@ -1682,7 +1682,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 539,
+      "line": 553,
       "summary": "glob"
     },
     {
@@ -1691,7 +1691,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 748,
+      "line": 762,
       "summary": "head"
     },
     {
@@ -1700,7 +1700,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 517,
+      "line": 531,
       "summary": "iter_children"
     },
     {
@@ -1727,7 +1727,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 563,
+      "line": 577,
       "summary": "move"
     },
     {
