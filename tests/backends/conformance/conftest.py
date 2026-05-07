@@ -6,10 +6,10 @@ This conftest is scoped to ``tests/backends/conformance/``. It hosts the
 test taking those arguments over :func:`fixture_params`.
 
 The hook lives here -- not in ``tests/backends/conftest.py`` -- because
-per-backend tests under ``tests/backends/<backend>/`` use parameter
-names like ``backend: SQLQueryBackend`` for their own local fixtures.
-A repository-wide auto-walk would multiply each per-backend test by
-every registered backend.
+per-backend tests under ``tests/backends/<backend>/`` use a ``backend``
+parameter typed to their own concrete backend class for their own local
+fixtures. A repository-wide auto-walk would multiply each per-backend
+test by every registered backend.
 
 Tests can still opt in to capability filtering at the class level::
 
