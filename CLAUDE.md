@@ -90,12 +90,6 @@ spec tracing). Applies to all new or changed tests.
 
 ## GitHub operations
 
-**Primary:** `github-pat` MCP server (fine-grained PAT, read+write).
-**Fallback:** `MCP_DOCKER` (Docker OAuth token — writes return 404/403 in local CLI; may work on claude.ai). Use for reads only.
-**Last resort:** `gh` CLI — needed for thread resolution (`gh api graphql`).
-
-Priority: try `github-pat` first for all operations (read and write). Fall back to `MCP_DOCKER` for reads, then `gh` CLI.
-
 PR workflows are codified as skills: `/pr`, `/review-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.
 Use `/review-pr` for PR reviews, not the built-in `/review` CLI command.
 

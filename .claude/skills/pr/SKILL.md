@@ -11,9 +11,8 @@ Repo: `haalfi/remote-store`.
 Throughout this skill, **`<BASE>`** is `$ARGUMENTS` if provided, else `master`.
 Substitute it in every command and reference below.
 
-For all GitHub API calls in this skill: use `github-pat` first (read+write), fall back to `MCP_DOCKER` for reads only.
-When both servers expose the same tool name, always prefer `github-pat`.
-See CLAUDE.md § GitHub operations for the full priority chain.
+For all GitHub API calls in this skill, use the configured GitHub MCP server.
+Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 ## Steps
 

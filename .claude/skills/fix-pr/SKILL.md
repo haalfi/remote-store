@@ -19,10 +19,8 @@ If approved: `git rebase origin/master` then immediately
 plain fast-forward. Do not rebase silently — `--force-with-lease` is
 destructive to anyone tracking the branch.
 
-For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads):
-use `github-pat` first (read+write), fall back to `MCP_DOCKER` for reads only.
-When both servers expose the same tool name, always prefer `github-pat`.
-See CLAUDE.md § GitHub operations for the full priority chain.
+For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads),
+use the configured GitHub MCP server. Use `gh api graphql` for thread resolve/unresolve.
 
 Fetch **all four** comment sources (`owner: "haalfi"`, `repo: "remote-store"`):
 
