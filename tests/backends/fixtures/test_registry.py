@@ -181,7 +181,7 @@ class TestLayoutBoundary:
         because that subtree is the source of truth for the rule. The
         ``test_sync_adapter_conformance.py`` file is exempt because its
         ``live_adapted_backend`` fixture wraps real backends inside
-        ``SyncBackendAdapter`` -- registry integration for that fixture is
+        ``SyncBackendAdapter``; registry integration for that fixture is
         a deliberate follow-up to BK-179, not a Phase 1 commitment.
         """
         conformance_root = _BACKENDS_ROOT / "conformance"

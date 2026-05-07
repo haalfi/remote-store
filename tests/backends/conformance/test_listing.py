@@ -69,7 +69,7 @@ class TestBackendListing:
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.LIST), indirect=True)
 class TestBackendIterChildren:
-    """ITER-004, ITER-005: iter_children() -- combined file+folder listing."""
+    """ITER-004, ITER-005: iter_children() combined file and folder listing."""
 
     @pytest.mark.spec("ITER-004")
     def test_iter_children(self, backend: Backend) -> None:

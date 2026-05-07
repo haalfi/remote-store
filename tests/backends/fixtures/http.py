@@ -1,7 +1,7 @@
 """``http`` fixture: ReadOnlyHttpBackend over a session pytest-httpserver.
 
 Stage 1, real-local. The HTTP server itself is a session fixture in
-:mod:`tests.backends.conftest`; ``INFRA.http_server`` carries the live
+``tests.backends.conftest``; ``INFRA.http_server`` carries the live
 instance. Each factory call clears handlers and installs a 404
 default so individual tests start with a clean slate.
 """

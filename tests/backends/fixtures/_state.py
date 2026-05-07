@@ -3,15 +3,15 @@
 This module holds two pieces of process-global state that the registry
 consults at parametrize time:
 
-* ``_CURRENT_STAGE`` -- the active ``--stage=N`` value, set once by
+* ``_CURRENT_STAGE``: the active ``--stage=N`` value, set once by
   ``pytest_configure`` in ``tests/conftest.py``. ``current_stage()``
-  is read by :func:`tests.backends.fixtures.fixtures` to filter the
+  is read by ``tests.backends.fixtures.fixtures`` to filter the
   registry.
 
-* ``INFRA`` -- a mutable dataclass holding session-scoped infrastructure
+* ``INFRA``: a mutable dataclass holding session-scoped infrastructure
   endpoints (moto URL, Azurite connection string, SFTP ports, ...).
   Populated by the autouse ``_populate_infra`` session fixture in
-  :mod:`tests.backends.conftest`. Per-backend factory modules read
+  ``tests.backends.conftest``. Per-backend factory modules read
   ``INFRA`` at call time.
 
 Both are module-level singletons. Pytest is single-process per worker;
@@ -32,7 +32,7 @@ def current_stage() -> int:
     """Return the active stage tier (1, 2, or 3).
 
     Defaults to 1 until ``pytest_configure`` calls
-    :func:`set_current_stage`. The default keeps ``fixtures()`` safe to
+    ``set_current_stage``. The default keeps ``fixtures()`` safe to
     call before pytest configuration has finished (e.g. from doctest
     runners or ad-hoc imports).
     """
@@ -55,7 +55,7 @@ class InfraState:
     """Session-scoped service endpoints, populated once per pytest run.
 
     The fields default to ``None``; the autouse ``_populate_infra``
-    session fixture in :mod:`tests.backends.conftest` writes the live
+    session fixture in ``tests.backends.conftest`` writes the live
     values after the underlying service fixtures (``moto_server``,
     ``azurite_server``, ...) have started. Factories observe the
     populated fields when they are called from a test setup, never

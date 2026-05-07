@@ -4,14 +4,13 @@ Loads the fixture registry, publishes session infrastructure into
 ``INFRA``, and hosts the HTTP server fixture used by the registry's
 ``http`` factory.
 
-Registry-driven parametrize (the auto-walk over :func:`fixture_params`)
-lives in :mod:`tests.backends.conformance.conftest` rather than here.
+Registry-driven parametrize (the auto-walk over ``fixture_params``)
+lives in ``tests.backends.conformance.conftest`` rather than here.
 Per-backend tests under ``tests/backends/<backend>/`` define their own
-local fixtures with names like ``backend`` typed to the concrete class
-(e.g. ``backend: SQLQueryBackend``); auto-parametrising those would
-multiply each test by every registered backend, which is wrong.
-Confining the auto-walk to the conformance subtree keeps both worlds
-working.
+local fixtures with a ``backend`` parameter typed to their concrete
+class; auto-parametrising those would multiply each test by every
+registered backend, which is wrong. Confining the auto-walk to the
+conformance subtree keeps both worlds working.
 """
 
 from __future__ import annotations
@@ -42,7 +41,7 @@ def _populate_infra(
 ) -> Iterator[None]:
     """Copy session infrastructure endpoints into ``INFRA``.
 
-    Per-backend factory modules in :mod:`tests.backends.fixtures` read
+    Per-backend factory modules in ``tests.backends.fixtures`` read
     from ``INFRA`` at call time. This autouse session fixture forces the
     underlying service fixtures to start (or detect-and-skip) before any
     test setup runs, then publishes the live values into ``INFRA`` for

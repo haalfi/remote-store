@@ -50,7 +50,7 @@ class TestReadErrorFidelity:
 
     @pytest.mark.spec("BE-007")
     def test_read_bytes_on_directory_raises_error(self, backend: Backend) -> None:
-        """read_bytes(dir) -- same contract as read()."""
+        """read_bytes(dir): same contract as read()."""
         _skip_flat_namespace(backend)
         backend.write("rbdir/file.txt", b"x")
         with pytest.raises(InvalidPath, match="rbdir"):
@@ -129,7 +129,7 @@ class TestDeleteFolderErrorFidelity:
         """Flat-namespace backends: delete_folder(file) must not leak native exceptions."""
         _require(backend, Capability.WRITE)
         if backend.name not in _FLAT_NAMESPACE_BACKENDS:
-            pytest.skip("hierarchical backend -- covered by test_delete_folder_on_file_raises_error")
+            pytest.skip("hierarchical backend; covered by test_delete_folder_on_file_raises_error")
         backend.write("dffile_flat.txt", b"x")
         with contextlib.suppress(RemoteStoreError):
             backend.delete_folder("dffile_flat.txt")

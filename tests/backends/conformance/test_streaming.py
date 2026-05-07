@@ -41,7 +41,7 @@ class TestStreamingConformance:
         backend.write("lazy_test.bin", b"lazy read test")
         stream = backend.read("lazy_test.bin")
         # Peel every layer of buffering until we reach a stream with no further
-        # `.raw` attribute -- this guards against multi-level wrappers such as
+        # `.raw` attribute. This guards against multi-level wrappers such as
         # BufferedReader(CustomWrapper(BytesIO(...))).
         inner = stream
         while hasattr(inner, "raw"):
@@ -88,7 +88,7 @@ class TestStreamingConformance:
         content = b"readinto test data"
         backend.write("readinto_test.bin", content)
         stream = backend.read("readinto_test.bin")
-        # Reach the raw layer for readinto() -- BufferedReader handles readinto
+        # Reach the raw layer for readinto(); BufferedReader handles readinto
         # at the buffered level, but we want to exercise the raw stream.
         raw = stream
         while hasattr(raw, "raw"):

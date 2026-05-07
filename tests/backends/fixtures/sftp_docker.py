@@ -62,7 +62,7 @@ def _factory() -> Backend:
         transport.close()
 
     # If SFTPBackend(...) raises after mkdir succeeded (host-key check, network
-    # blip, credential mismatch), the orphan directory must still be removed --
+    # blip, credential mismatch), the orphan directory must still be removed:
     # _BASE_PATHS would never get the registration and _cleanup would have no
     # path to follow. Roll back the mkdir on ctor failure before re-raising.
     try:
@@ -100,7 +100,7 @@ def _remove_base_path(base_path: str) -> None:
 
     Used by both ``_cleanup`` (normal teardown) and ``_factory`` (rollback when
     the SFTPBackend constructor raises after ``mkdir(base_path)`` already
-    succeeded). Never raises -- a teardown failure must not mask the underlying
+    succeeded). Never raises; a teardown failure must not mask the underlying
     test result.
     """
     if INFRA.sftp_docker_port is None:

@@ -4,7 +4,7 @@ The capability-filter parametrise decorator is the primary gating
 mechanism (TEST-005); a fixture lacking a required capability is absent
 from the test session entirely. ``_require`` here is retained as a
 defensive runtime gate for tests whose finer-grained capability needs
-diverge from the class-level filter -- it is a no-op whenever the
+diverge from the class-level filter; it is a no-op whenever the
 parametrise filter already excluded the fixture.
 
 ``_skip_flat_namespace`` and the ``_FLAT_NAMESPACE_BACKENDS`` /
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 
-# Backends with a flat / virtual namespace -- no real directory entries.
+# Backends with a flat or virtual namespace: no real directory entries.
 # Update this set when adding a new flat-namespace backend.
 _FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})
 
@@ -37,8 +37,8 @@ def _require(backend: Backend, *caps: Capability) -> None:
     """Skip the test if the backend lacks any of the given capabilities.
 
     Defensive runtime fallback. Tests should prefer the class-level
-    capability filter via ``fixture_params(*caps)`` -- this helper
-    only fires when a test inside a coarsely-filtered class needs a
+    capability filter via ``fixture_params(*caps)``; this helper only
+    fires when a test inside a coarsely-filtered class needs a
     stricter capability than its siblings.
     """
     for cap in caps:

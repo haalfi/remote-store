@@ -337,7 +337,7 @@ class TestMoveCopySelfOperation:
 
     @pytest.mark.spec("BE-019")
     def test_self_copy_no_overwrite_preserves_data(self, backend: Backend) -> None:
-        """copy(src, src, overwrite=False) is a no-op -- must not raise AlreadyExists."""
+        """copy(src, src, overwrite=False) is a no-op; must not raise AlreadyExists."""
         _require(backend, Capability.COPY)
         if backend.name in _NO_SELF_OP_BACKENDS:
             pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
@@ -356,7 +356,7 @@ class TestMoveCopySelfOperation:
 
     @pytest.mark.spec("BE-018")
     def test_self_move_no_overwrite_preserves_data(self, backend: Backend) -> None:
-        """move(src, src, overwrite=False) is a no-op -- must not raise AlreadyExists."""
+        """move(src, src, overwrite=False) is a no-op; must not raise AlreadyExists."""
         _require(backend, Capability.MOVE)
         if backend.name in _NO_SELF_OP_BACKENDS:
             pytest.skip(f"Backend {backend.name!r} does not handle self-move yet")
@@ -386,7 +386,7 @@ class TestCopyPostState:
 
     @pytest.mark.spec("BE-019")
     def test_copy_preserves_source(self, backend: Backend) -> None:
-        """IsFile(fs, src) -- source still exists after copy."""
+        """IsFile(fs, src): source still exists after copy."""
         backend.write("cpps_src.txt", b"data")
         backend.copy("cpps_src.txt", "cpps_dst.txt")
         assert backend.read_bytes("cpps_src.txt") == b"data"

@@ -84,7 +84,7 @@ class TestGetFolderInfoAggregates:
     @pytest.mark.spec("BE-017")
     @pytest.mark.spec("ID-134")
     def test_get_folder_info_counts_recursive_children(self, backend: Backend) -> None:
-        """ChildFiles is the full recursive set -- subdirectory files are counted."""
+        """ChildFiles is the full recursive set: subdirectory files are counted."""
         _seed(backend, {"gfr/a.txt": b"aaa", "gfr/sub/b.txt": b"bb"})
         fi = backend.get_folder_info("gfr")
         assert fi.file_count == 2

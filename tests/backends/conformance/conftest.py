@@ -3,9 +3,9 @@
 This conftest is scoped to ``tests/backends/conformance/``. It hosts the
 ``backend`` and ``async_backend`` indirect fixtures and the
 ``pytest_generate_tests`` hook that auto-parametrises any conformance
-test taking those arguments over :func:`fixture_params`.
+test taking those arguments over ``fixture_params``.
 
-The hook lives here -- not in ``tests/backends/conftest.py`` -- because
+The hook lives here, not in ``tests/backends/conftest.py``, because
 per-backend tests under ``tests/backends/<backend>/`` use a ``backend``
 parameter typed to their own concrete backend class for their own local
 fixtures. A repository-wide auto-walk would multiply each per-backend
@@ -59,7 +59,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 @pytest.fixture
 def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
-    """Indirect fixture: build a Backend from a :class:`BackendFixture` record."""
+    """Indirect fixture: build a Backend from a ``BackendFixture`` record."""
     fixture: BackendFixture = request.param
     instance = fixture.factory()
     try:
@@ -71,7 +71,7 @@ def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
 
 @pytest.fixture
 def async_backend(request: pytest.FixtureRequest) -> Iterator[object]:
-    """Indirect async fixture: build an AsyncBackend from a :class:`BackendFixture` record."""
+    """Indirect async fixture: build an AsyncBackend from a ``BackendFixture`` record."""
     fixture: BackendFixture = request.param
     instance = fixture.factory()
     try:

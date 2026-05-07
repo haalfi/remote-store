@@ -13,10 +13,10 @@ subset whose ``stage <= current_stage()``, ``is_async`` matches the
 requested mode, and whose capabilities cover ``caps``.
 
 Fixture-side state (the active stage, session-scoped infra URLs) lives
-in :mod:`tests.backends.fixtures._state`. Per-backend factory modules
+in ``tests.backends.fixtures._state``. Per-backend factory modules
 (``memory``, ``local``, ``azurite``, ...) each register one or more
-:class:`BackendFixture` records by appending to ``_FIXTURES`` in
-:mod:`tests.backends.fixtures.registry`.
+``BackendFixture`` records by appending to ``_FIXTURES`` in
+``tests.backends.fixtures.registry``.
 """
 
 from __future__ import annotations
@@ -35,9 +35,9 @@ def _load_all() -> None:
 
     Each module appends to the registry at import time, so this is the
     single place that decides which backends are registered. The conftest
-    at :mod:`tests.backends` calls this once at session start.
+    at ``tests.backends`` calls this once at session start.
     """
-    from tests.backends.fixtures import (  # noqa: F401 -- import-side-effect registration
+    from tests.backends.fixtures import (  # noqa: F401 — import-side-effect registration
         azurite,
         dafny_oracle,
         http,

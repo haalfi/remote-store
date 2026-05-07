@@ -1,7 +1,7 @@
 """``sftp_inproc`` fixture: SFTPBackend against an in-process paramiko server.
 
 Stage 1, real-local. The paramiko server is started by the
-``sftp_server`` session fixture in :mod:`tests.conftest`. It is a real
+``sftp_server`` session fixture in ``tests.conftest``. It is a real
 SFTP service (binary SSH wire protocol) running in a thread of the
 test process; no Docker required.
 

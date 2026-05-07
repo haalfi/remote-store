@@ -1,19 +1,18 @@
 """Fixture registry per spec 048 / TEST-004.
 
-The registry is a flat list of :class:`BackendFixture` records. Each
-record names a fixture, ties it to a backend family, and declares the
-stage tier, kind, capabilities, and async/sync mode the fixture
-operates in.
+The registry is a flat list of ``BackendFixture`` records. Each record
+names a fixture, ties it to a backend family, and declares the stage
+tier, kind, capabilities, and async/sync mode the fixture operates in.
 
-Conformance tests parametrise via :func:`fixtures`, which filters the
+Conformance tests parametrise via ``fixtures``, which filters the
 registry by stage (TEST-006), async mode, and capability set
 (TEST-005). Backend-specific tests typically filter by a single
 ``backend == "<x>"`` predicate; do that with a list comprehension
-over :func:`all_fixtures` -- there is no per-backend helper because
-that would invite re-implementing the filter in every site.
+over ``all_fixtures``. There is no per-backend helper because that
+would invite re-implementing the filter in every site.
 
-Per-backend factory modules append :class:`BackendFixture` entries to
-``_FIXTURES`` at import time. The conftest at :mod:`tests.backends`
+Per-backend factory modules append ``BackendFixture`` entries to
+``_FIXTURES`` at import time. The conftest at ``tests.backends``
 imports each module so that import-side effects run before any test
 collection.
 """
@@ -36,10 +35,10 @@ if TYPE_CHECKING:
 
 
 AnyBackend = Backend | AsyncBackend
-"""Type alias spanning sync :class:`Backend` and :class:`AsyncBackend`.
+"""Type alias spanning sync ``Backend`` and ``AsyncBackend``.
 
-The ``is_async`` flag on :class:`BackendFixture` disambiguates the
-union for parametrize callers; per-test indirect fixtures cast to the
+The ``is_async`` flag on ``BackendFixture`` disambiguates the union
+for parametrize callers; per-test indirect fixtures cast to the
 concrete type they need.
 """
 
@@ -66,9 +65,9 @@ class BackendFixture:
     """Pytest marks applied to this fixture's parametrize entry.
 
     Carries CI-runtime selectors that should ride along with the fixture
-    name -- e.g. ``pytest.mark.os_sensitive`` on the ``local`` fixture so
-    that LocalBackend conformance is included in the macOS/Windows CI
-    matrix that selects ``-m "os_sensitive"``.
+    name. For example, ``pytest.mark.os_sensitive`` on the ``local``
+    fixture so that LocalBackend conformance is included in the
+    macOS/Windows CI matrix that selects ``-m "os_sensitive"``.
     """
 
 
@@ -91,7 +90,7 @@ def all_fixtures() -> list[BackendFixture]:
     """Return every registered fixture, unfiltered.
 
     Useful for tests that walk the full registry (e.g. layout
-    invariant checks). Most call sites want :func:`fixtures` instead.
+    invariant checks). Most call sites want ``fixtures`` instead.
     """
     return list(_FIXTURES)
 
@@ -101,12 +100,12 @@ def fixtures(*caps: Capability, is_async: bool = False) -> list[BackendFixture]:
 
     Filters applied (in order):
 
-    1. ``stage <= current_stage()`` -- TEST-006 stage selection. Each
+    1. ``stage <= current_stage()`` for TEST-006 stage selection. Each
        stage includes all lower stages.
-    2. ``is_async == is_async`` -- sync vs async parametrize callers
+    2. ``is_async == is_async``: sync and async parametrize callers
        see disjoint subsets.
-    3. ``caps <= fixture.capabilities`` -- TEST-005 capability id-
-       filtering. A fixture lacking any requested capability is
+    3. ``caps <= fixture.capabilities`` for TEST-005 capability
+       id-filtering. A fixture lacking any requested capability is
        absent from the returned list (no ``SKIPPED`` entry is emitted
        at runtime because the test was never parametrised over it).
 
@@ -121,7 +120,7 @@ def fixtures(*caps: Capability, is_async: bool = False) -> list[BackendFixture]:
 
 
 def fixture_params(*caps: Capability, is_async: bool = False) -> list[Any]:
-    """Wrap :func:`fixtures` results as ``pytest.param`` entries.
+    """Wrap ``fixtures`` results as ``pytest.param`` entries.
 
     Each entry carries the fixture's ``name`` as the parametrize id and
     its ``marks`` (e.g. ``os_sensitive`` on local). Pass directly to

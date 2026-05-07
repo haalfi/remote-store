@@ -154,7 +154,7 @@ class TestAtomicMoveCapability:
     """CAP-001: ATOMIC_MOVE capability declared by backends with atomic move semantics.
 
     Classification is by ``BackendFixture.backend`` (registry family
-    name), not by the live ``backend.name`` property -- the registry's
+    name), not by the live ``backend.name`` property; the registry's
     family field is what's stable across same-backend fixture pairs.
     sql-query is not parametrised here; it has its own test module.
     """

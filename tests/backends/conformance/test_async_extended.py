@@ -2,7 +2,7 @@
 
 Async sibling of the sync conformance topic files in this directory. The
 ``async_backend`` fixture is parametrised by the registry-driven hook in
-:mod:`tests.backends.conformance.conftest` over every registry entry whose
+``tests.backends.conformance.conftest`` over every registry entry whose
 ``is_async=True``.
 
 Flat-namespace backends (S3, Azure Blob, HTTP, SQL-blob) have no real
@@ -101,7 +101,7 @@ pytestmark = pytest.mark.extended_conformance
 # ``tests/backends/conformance/conftest.py``; the legacy local fixture
 # override (native-memory / adapted-memory / adapted-local) is replaced
 # by the registry entries memory_async_native, memory_async_adapted, and
-# local_async_adapted -- see tests/backends/fixtures/{memory_async,
+# local_async_adapted; see tests/backends/fixtures/{memory_async,
 # local_async}.py.
 
 

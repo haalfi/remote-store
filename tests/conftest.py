@@ -273,7 +273,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
     The ``RS_TEST_STAGE`` env var (1, 2, or 3) overrides auto-detection
     without requiring the explicit flag. Useful on developer machines
-    where Docker is installed but the daemon is paused or slow -- the
+    where Docker is installed but the daemon is paused or slow: the
     ``docker info`` probe takes up to 5 s before falling back to Stage 1
     on every invocation; the env var short-circuits the probe.
     """
