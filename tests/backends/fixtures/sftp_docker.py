@@ -101,7 +101,10 @@ def _remove_base_path(base_path: str) -> None:
     Used by both ``_cleanup`` (normal teardown) and ``_factory`` (rollback when
     the SFTPBackend constructor raises after ``mkdir(base_path)`` already
     succeeded). Never raises; a teardown failure must not mask the underlying
-    test result.
+    test result. The except clause catches ``Exception`` (not ``OSError``) on
+    purpose: ``paramiko.Transport.connect`` raises ``paramiko.SSHException``
+    on auth failure or connection refusal, and ``SSHException`` does not
+    inherit from ``OSError``.
     """
     if INFRA.sftp_docker_port is None:
         return
@@ -119,8 +122,7 @@ def _remove_base_path(base_path: str) -> None:
             _rmtree(sftp, base_path)
         finally:
             sftp.close()
-    except OSError:
-        # Cleanup is best-effort; never fail a test on teardown.
+    except Exception:  # noqa: BLE001 — best-effort teardown, never fail a test
         pass
     finally:
         transport.close()

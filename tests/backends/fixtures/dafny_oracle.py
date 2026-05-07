@@ -21,6 +21,17 @@ def _factory() -> Backend:
     return DafnyOracleBackend()
 
 
+def _cleanup(backend: Backend) -> None:
+    """Call ``backend.close()`` for parity with the other fixtures.
+
+    ``DafnyOracleBackend`` does not override ``close()``; it inherits the
+    ``Backend`` ABC default (a no-op). Wiring ``cleanup`` here exercises
+    BE-020's idempotency contract on every conformance iteration and
+    makes future overrides safe by construction.
+    """
+    backend.close()
+
+
 register(
     BackendFixture(
         name="dafny_oracle",
@@ -30,6 +41,6 @@ register(
         kind="real-local",
         capabilities=frozenset(DafnyOracleBackend.CAPABILITIES),
         is_async=False,
-        cleanup=None,
+        cleanup=_cleanup,
     )
 )
