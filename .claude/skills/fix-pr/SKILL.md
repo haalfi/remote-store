@@ -20,7 +20,7 @@ plain fast-forward. Do not rebase silently — `--force-with-lease` is
 destructive to anyone tracking the branch.
 
 For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads),
-use the configured GitHub MCP server. Use `gh api graphql` for thread resolve/unresolve.
+use the configured GitHub MCP server. Fall back to `gh api graphql` for thread resolve/unresolve.
 
 Fetch **all four** comment sources (`owner: "haalfi"`, `repo: "remote-store"`):
 
