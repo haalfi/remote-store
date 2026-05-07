@@ -1,22 +1,78 @@
-"""Backend test fixtures -- parameterized for conformance testing."""
+"""Backend test fixtures, registry-driven (spec 048 / TEST-004 / TEST-006).
+
+The legacy parametrized ``backend`` fixture is replaced by a registry-
+driven indirect fixture. ``pytest_generate_tests`` walks the registry
+once per test that requests ``backend`` and parametrises over the active
+stage's fixtures. Tests that need capability filtering should mark
+themselves with::
+
+    @pytest.mark.parametrize(
+        "backend",
+        fixture_params(Capability.WRITE),
+        indirect=True,
+    )
+
+The hook below skips auto-parametrising whenever the test already
+declares its own parametrize, so explicit markers and the auto-walk
+cohabit cleanly.
+
+The ``http_server`` and ``httpserver_listen_address`` session fixtures
+remain here because the HTTP fixture's factory in
+:mod:`tests.backends.fixtures.http` reads the live server from
+``INFRA.http_server``.
+"""
 
 from __future__ import annotations
 
-import socket
-import tempfile
-import uuid
 from typing import TYPE_CHECKING
 
 import pytest
 
-from remote_store.backends._local import LocalBackend
-from remote_store.backends._memory import MemoryBackend
-from tests._helpers import MINIO_KEY, MINIO_SECRET, pyarrow_ge_24
+from tests.backends.fixtures import BackendFixture, _load_all, fixture_params
+from tests.backends.fixtures._state import INFRA
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from remote_store._backend import Backend
+
+
+# Trigger registration. Idempotent because the registry rejects duplicate names.
+_load_all()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _populate_infra(
+    moto_server: str | None,
+    minio_server: str | None,
+    sftp_server: tuple[int, str] | None,
+    sftp_docker_server: int | None,
+    azurite_server: str | None,
+    http_server: object | None,
+) -> Iterator[None]:
+    """Copy session infrastructure endpoints into ``INFRA``.
+
+    Per-backend factory modules in :mod:`tests.backends.fixtures` read
+    from ``INFRA`` at call time. This autouse session fixture forces the
+    underlying service fixtures to start (or detect-and-skip) before any
+    test setup runs, then publishes the live values into ``INFRA`` for
+    the registry to consume.
+    """
+    INFRA.moto_url = moto_server
+    INFRA.minio_url = minio_server
+    if sftp_server is not None:
+        INFRA.sftp_inproc_port, INFRA.sftp_inproc_host_key = sftp_server
+    INFRA.sftp_docker_port = sftp_docker_server
+    INFRA.azurite_conn_str = azurite_server
+    INFRA.http_server = http_server
+    yield
+    INFRA.moto_url = None
+    INFRA.minio_url = None
+    INFRA.sftp_inproc_port = None
+    INFRA.sftp_inproc_host_key = None
+    INFRA.sftp_docker_port = None
+    INFRA.azurite_conn_str = None
+    INFRA.http_server = None
 
 
 # ---------------------------------------------------------------------------
@@ -40,114 +96,6 @@ def _http_server_available() -> bool:
         return False
 
 
-def _s3_available() -> bool:
-    try:
-        import moto  # noqa: F401
-        import s3fs  # noqa: F401
-
-        return True
-    except ImportError:
-        return False
-
-
-def _s3_pyarrow_available() -> bool:
-    try:
-        import pyarrow  # noqa: F401
-        import s3fs  # noqa: F401
-    except ImportError:
-        return False
-    if pyarrow_ge_24():
-        return _minio_reachable()
-    try:
-        import moto  # noqa: F401
-    except ImportError:
-        return False
-    return True
-
-
-def _sftp_available() -> bool:
-    try:
-        import paramiko  # noqa: F401
-
-        return True
-    except ImportError:
-        return False
-
-
-def _azure_available() -> bool:
-    try:
-        import azure.storage.filedatalake  # noqa: F401
-
-        return True
-    except ImportError:
-        return False
-
-
-def _sqlblob_available() -> bool:
-    try:
-        import sqlalchemy  # noqa: F401
-
-        return True
-    except ImportError:
-        return False
-
-
-def _azurite_reachable() -> bool:
-    """Check if Azurite is reachable (started externally via Docker)."""
-    try:
-        s = socket.create_connection(("127.0.0.1", 10000), timeout=1)
-        s.close()
-        return True
-    except OSError:
-        return False
-
-
-def _minio_reachable() -> bool:
-    """Check if MinIO is reachable on 127.0.0.1:9000 (started externally via Docker)."""
-    try:
-        s = socket.create_connection(("127.0.0.1", 9000), timeout=1)
-        s.close()
-        return True
-    except OSError:
-        return False
-
-
-_s3_param = pytest.param(
-    "s3",
-    marks=pytest.mark.skipif(not _s3_available(), reason="moto/s3fs not installed"),
-)
-
-_s3_pyarrow_param = pytest.param(
-    "s3-pyarrow",
-    marks=pytest.mark.skipif(
-        not _s3_pyarrow_available(),
-        reason="pyarrow/s3fs not installed, moto missing (pyarrow < 24), or MinIO unreachable (pyarrow ≥ 24)",
-    ),
-)
-
-_sftp_param = pytest.param(
-    "sftp",
-    marks=pytest.mark.skipif(not _sftp_available(), reason="paramiko not installed"),
-)
-
-_azure_param = pytest.param(
-    "azure",
-    marks=[
-        pytest.mark.requires_docker,
-        pytest.mark.skipif(
-            not _azure_available() or not _azurite_reachable(),
-            reason="azure SDK not installed or Azurite not reachable",
-        ),
-    ],
-)
-
-
-_http_param = pytest.param(
-    "http",
-    marks=pytest.mark.skipif(not _http_server_available(), reason="pytest-httpserver not installed"),
-)
-
-
 @pytest.fixture(scope="session")
 def http_server() -> Iterator[object | None]:
     """Start a long-lived HTTP server for conformance tests.
@@ -169,168 +117,47 @@ def http_server() -> Iterator[object | None]:
         server.stop()
 
 
-_local_param = pytest.param("local", marks=pytest.mark.os_sensitive)
-_memory_param = pytest.param("memory")
-_dafny_oracle_param = pytest.param("dafny-oracle")
-
-_sqlblob_param = pytest.param(
-    "sql-blob",
-    marks=pytest.mark.skipif(not _sqlblob_available(), reason="sqlalchemy not installed"),
-)
+# ---------------------------------------------------------------------------
+# Backend indirect fixture + auto-parametrize
+# ---------------------------------------------------------------------------
 
 
-@pytest.fixture(
-    params=[
-        _local_param,
-        _memory_param,
-        _http_param,
-        _s3_param,
-        _s3_pyarrow_param,
-        _sftp_param,
-        _azure_param,
-        _sqlblob_param,
-        _dafny_oracle_param,
-    ]
-)
-def backend(
-    request: pytest.FixtureRequest,
-    moto_server: str | None,
-    minio_server: str | None,
-    sftp_server: tuple[int, str] | None,
-    azurite_server: str | None,
-    http_server: object | None,
-) -> Iterator[Backend]:
-    """Parameterized backend fixture. Add new backends here."""
-    if request.param == "local":
-        with tempfile.TemporaryDirectory() as tmp:
-            yield LocalBackend(root=tmp)
-    elif request.param == "memory":
-        yield MemoryBackend()
-    elif request.param == "s3":
-        import boto3
+def _is_already_parametrized(metafunc: pytest.Metafunc, argname: str) -> bool:
+    """Return True if ``argname`` is already parametrized via a marker."""
+    for marker in metafunc.definition.iter_markers("parametrize"):
+        if not marker.args:
+            continue
+        argnames = marker.args[0]
+        names = [n.strip() for n in argnames.split(",")] if isinstance(argnames, str) else list(argnames)
+        if argname in names:
+            return True
+    return False
 
-        from remote_store.backends._s3 import S3Backend
 
-        assert moto_server is not None
-        bucket = f"conformance-{uuid.uuid4().hex[:8]}"
-        client = boto3.client(
-            "s3",
-            endpoint_url=moto_server,
-            aws_access_key_id="testing",
-            aws_secret_access_key="testing",
-            region_name="us-east-1",
-        )
-        client.create_bucket(Bucket=bucket)
-        b = S3Backend(
-            bucket=bucket,
-            key="testing",
-            secret="testing",
-            region_name="us-east-1",
-            endpoint_url=moto_server,
-        )
-        yield b
-        b.close()
-    elif request.param == "s3-pyarrow":
-        import boto3
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    """Auto-parametrise tests requesting ``backend`` over the registry.
 
-        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+    Tests that already carry an explicit
+    ``@pytest.mark.parametrize("backend", ...)`` are left alone --
+    the registry-walk fallback is for legacy tests that have not yet
+    migrated to capability-filtered parametrize (TEST-005).
+    """
+    if "backend" in metafunc.fixturenames and not _is_already_parametrized(metafunc, "backend"):
+        metafunc.parametrize("backend", fixture_params(is_async=False), indirect=True)
 
-        if pyarrow_ge_24():
-            if minio_server is None:
-                pytest.skip("MinIO not reachable; required for S3-PyArrow on pyarrow ≥ 24")
-            endpoint = minio_server
-            aws_key, aws_secret = MINIO_KEY, MINIO_SECRET
-        else:
-            if moto_server is None:
-                pytest.skip("moto_server not available; required for S3-PyArrow on pyarrow < 24")
-            endpoint = moto_server
-            aws_key, aws_secret = "testing", "testing"
 
-        bucket = f"conformance-pa-{uuid.uuid4().hex[:8]}"
-        client = boto3.client(
-            "s3",
-            endpoint_url=endpoint,
-            aws_access_key_id=aws_key,
-            aws_secret_access_key=aws_secret,
-            region_name="us-east-1",
-        )
-        client.create_bucket(Bucket=bucket)
-        b = S3PyArrowBackend(
-            bucket=bucket,
-            key=aws_key,
-            secret=aws_secret,
-            region_name="us-east-1",
-            endpoint_url=endpoint,
-        )
-        try:
-            yield b
-        finally:
-            b.close()
-            if pyarrow_ge_24():
-                paginator = client.get_paginator("list_objects_v2")
-                for page in paginator.paginate(Bucket=bucket):
-                    for obj in page.get("Contents", []):
-                        client.delete_object(Bucket=bucket, Key=obj["Key"])
-                client.delete_bucket(Bucket=bucket)
-    elif request.param == "sftp":
-        from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+@pytest.fixture
+def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
+    """Indirect fixture: build a Backend from a :class:`BackendFixture` record.
 
-        assert sftp_server is not None
-        port, host_key_entry = sftp_server
-        base_path = f"/test_{uuid.uuid4().hex[:8]}"
-        b = SFTPBackend(
-            host="127.0.0.1",
-            port=port,
-            username="testuser",
-            password="testpass",
-            base_path=base_path,
-            host_key_policy=HostKeyPolicy.AUTO_ADD,
-            connect_kwargs={"allow_agent": False, "look_for_keys": False},
-        )
-        yield b
-        b.close()
-    elif request.param == "http":
-        from pytest_httpserver import HTTPServer
-        from werkzeug.wrappers import Response as WerkzeugResponse
-
-        from remote_store.backends._http import ReadOnlyHttpBackend
-
-        assert isinstance(http_server, HTTPServer)
-        # Clear handlers from previous test, set 404 default
-        http_server.clear()
-        http_server.respond_nohandler = lambda request, extra_message="": WerkzeugResponse(  # type: ignore[assignment]
-            b"Not Found", status=404
-        )
-        b = ReadOnlyHttpBackend(base_url=http_server.url_for("/conformance/"), http_client="urllib")
-        yield b
-        b.close()
-    elif request.param == "dafny-oracle":
-        from tests.backends.dafny_oracle import DafnyOracleBackend
-
-        yield DafnyOracleBackend()
-    elif request.param == "sql-blob":
-        from remote_store.backends._sqlalchemy import SQLBlobBackend
-
-        b = SQLBlobBackend(url="sqlite:///:memory:")
-        yield b
-        b.close()
-    elif request.param == "azure":
-        from remote_store.backends._azure import AzureBackend
-
-        assert azurite_server is not None
-        container = f"conformance-{uuid.uuid4().hex[:8]}"
-        from azure.storage.blob import BlobServiceClient
-
-        service = BlobServiceClient.from_connection_string(azurite_server)
-        try:
-            service.create_container(container)
-        except Exception:  # noqa: BLE001
-            service.close()
-            raise
-        b = AzureBackend(container=container, connection_string=azurite_server)
-        yield b
-        b.close()
-        service.delete_container(container)
-        service.close()
-    else:
-        pytest.skip(f"Unknown backend: {request.param}")
+    Receives the registry record via ``request.param``, calls
+    ``factory()`` to produce a fresh instance, yields it to the test,
+    then runs ``cleanup`` on teardown.
+    """
+    fixture: BackendFixture = request.param
+    instance = fixture.factory()
+    try:
+        yield instance  # type: ignore[misc]
+    finally:
+        if fixture.cleanup is not None:
+            fixture.cleanup(instance)
