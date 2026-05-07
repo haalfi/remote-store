@@ -95,13 +95,18 @@ _LOG = logging.getLogger(__name__)
 _AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "AccountName=devstoreaccount1")
 
 
-# Gating — three layers, all required:
+# Gating — four layers, all required:
 #   1. ``pytest.mark.live`` below. Default addopts is ``-m 'not live'``,
 #      so plain ``hatch run test`` skips the file entirely.
 #   2. ``RS_TEST_LIVE_HNS=1`` env var.
 #   3. ``AZURE_STORAGE_CONNECTION_STRING`` + ``RS_TEST_LIVE_HNS_CONTAINER``
 #      pointing at a real ADLS Gen2 account. Azurite-shaped values raise
 #      rather than skip — a silent skip defeats the point of a live test.
+#   4. ``.env`` pre-load via ``pytest_configure`` in ``tests/conftest.py``
+#      (``_maybe_load_dotenv_for_live``). Loads ``.env`` before collection
+#      so the layer-2 ``skipif`` sees the env var when it lives in ``.env``
+#      but is not exported in the shell. Without this, ``skipif`` fires at
+#      collection time before any fixture can call ``load_dotenv``.
 #
 # Cost discipline: test bodies stay deterministic, payloads stay small,
 # and one HNS directory is provisioned per session and shared across

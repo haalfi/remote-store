@@ -3,7 +3,7 @@
 Implements the sync ``Backend`` ABC by delegating to an
 ``AsyncBackend`` running on a private event loop in a dedicated
 background thread.  Mirror of
-``SyncBackendAdapter`` (ADR-0012); decision record
+``remote_store.aio.SyncBackendAdapter`` (ADR-0012); decision record
 for this direction is ADR-0025, invariants pinned in spec 029
 § AsyncBackendSyncAdapter (ASYNC-080..093).
 """
