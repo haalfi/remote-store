@@ -181,6 +181,10 @@
          <lastmod>2026-05-07</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/adrs/0028-testing-architecture-kind-stage-replay/</loc>
+         <lastmod>2026-05-07</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/audits/</loc>
          <lastmod>2026-05-07</lastmod>
     </url>
@@ -614,6 +618,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/specs/047-docs-framework-tooling/</loc>
+         <lastmod>2026-05-07</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/specs/048-testing-architecture/</loc>
          <lastmod>2026-05-07</lastmod>
     </url>
     <url>
