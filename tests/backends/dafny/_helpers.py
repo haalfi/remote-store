@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # Import the compiled Dafny module
 # ---------------------------------------------------------------------------
-_DAFNY_PY_DIR = str(Path(__file__).resolve().parent.parent.parent / "sdd" / "formal" / "MemoryBackend-py")
+_DAFNY_PY_DIR = str(Path(__file__).resolve().parent.parent.parent.parent / "sdd" / "formal" / "MemoryBackend-py")
 if _DAFNY_PY_DIR not in sys.path:
     sys.path.insert(0, _DAFNY_PY_DIR)
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tests.backends.dafny_oracle import DafnyOracleBackend
+from tests.backends.dafny._helpers import DafnyOracleBackend
 from tests.backends.fixtures.registry import BackendFixture, register
 
 if TYPE_CHECKING:

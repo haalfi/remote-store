@@ -196,7 +196,7 @@ def sftp_server() -> Iterator[tuple[int, str] | None]:
     import shutil
     import tempfile
 
-    from tests.backends.sftp_server import start_sftp_server, stop_sftp_server
+    from tests.backends.sftp._helpers import start_sftp_server, stop_sftp_server
 
     tmpdir = tempfile.mkdtemp(prefix="sftp_test_")
     thread, port, host_key, stop_event, server_socket = start_sftp_server(root=tmpdir, host="127.0.0.1")
