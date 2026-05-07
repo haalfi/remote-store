@@ -9297,6 +9297,21 @@
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="sd">    ```</span>
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div>
+<p>RST inline roles (colon-word-colon-backtick patterns) are banned;
+<code>scripts/check_rst_roles.py</code> enforces this in <code>hatch run lint</code> and via the
+<code>no-rst-roles</code> pre-commit hook.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># bad — RST role; fails the lint gate</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">store_type</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the :class:`Store` class.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># good — plain text</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">store_type</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the Store class.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># good — double backticks for inline code (not a role)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">store_type</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ``Store`` class.&quot;&quot;&quot;</span>
+</code></pre></div>
 <h3 id="5-code-organisation-comments">5. Code Organisation Comments<a class="headerlink" href="#5-code-organisation-comments" title="Permanent link">&para;</a></h3>
 <p>Two styles for structuring large files, each with a distinct purpose.</p>
 <table>
@@ -9335,23 +9350,23 @@ Paired markers that IDEs can fold. Use for items that are not individually
 collapsible as a group (e.g. several methods that together form "read
 operations"). <strong>Never</strong> wrap a single class or function — those are already
 collapsible on their own.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># region: BE-006 through BE-007: read operations</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="o">...</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">read_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="o">...</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># endregion</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># region: BE-006 through BE-007: read operations</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="o">...</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">read_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="o">...</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># endregion</span>
 </code></pre></div>
 <p><strong>Headlines</strong> (box dividers) — introduce a new section at module level.
 Single marker (not paired) before a top-level definition or group of
 definitions. Purely visual; no IDE folding behaviour.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># ---------------------------------------------------------------------------</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># Convenience factory</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># ---------------------------------------------------------------------------</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">pyarrow_fs</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pafs</span><span class="o">.</span><span class="n">PyFileSystem</span><span class="p">:</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="o">...</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># Convenience factory</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">pyarrow_fs</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pafs</span><span class="o">.</span><span class="n">PyFileSystem</span><span class="p">:</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="o">...</span>
 </code></pre></div>
 <p>Use headlines in modules with multiple top-level classes or logical sections
 (extensions, tests, benchmarks, scripts). Do not use inside classes — use
@@ -9377,20 +9392,20 @@ regions there instead.</p>
 <p>Declared only in public-facing <code>__init__.py</code> modules. Internal modules (<code>_errors.py</code>, etc.) do not need <code>__all__</code> — the underscore prefix signals "internal".</p>
 <h3 id="10-error-messages">10. Error Messages<a class="headerlink" href="#10-error-messages" title="Permanent link">&para;</a></h3>
 <p>f-strings with context for human-readable tracebacks. Structured attributes for programmatic access:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="11-test-style">11. Test Style<a class="headerlink" href="#11-test-style" title="Permanent link">&para;</a></h3>
 <p>Tests are grouped into classes by spec aspect. The class docstring references the spec IDs covered:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestRemotePathNormalization</span><span class="p">:</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;PATH-002 through PATH-006: normalization rules.&quot;&quot;&quot;</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-002&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_backslash_to_forward_slash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a</span><span class="se">\\</span><span class="s2">b</span><span class="se">\\</span><span class="s2">c&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b/c&quot;</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-005&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_collapse_consecutive_slashes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a///b&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestRemotePathNormalization</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;PATH-002 through PATH-006: normalization rules.&quot;&quot;&quot;</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-002&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_backslash_to_forward_slash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a</span><span class="se">\\</span><span class="s2">b</span><span class="se">\\</span><span class="s2">c&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b/c&quot;</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-005&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_collapse_consecutive_slashes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a///b&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
 </code></pre></div>
 <p>Each test method carries a <code>@pytest.mark.spec("ID")</code> marker for traceability.</p>
 <p>For test <strong>quality</strong> rules (assertions, mocking, coverage), see <code>sdd/TESTING.md</code>.</p>
