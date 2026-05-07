@@ -63,18 +63,18 @@ A linear collapse hides real options. Replay is a real-SDK code path
 that runs at Stage 1 cost; a single-axis ordering cannot express that
 combination.
 
-### Conformance as the cross-backend spine; backend-specific in `tests/backends/<x>/`
+### Conformance as the cross-backend spine; backend-specific tests isolated per backend
 
 Conformance is one parametrised test set referencing only the public
-`Store` and `Backend` API. Every backend that exposes the API runs the
-full suite. Behaviour that only one backend exhibits, whether protocol
-quirks, storage-model semantics, or vendor configuration, lives in
-`tests/backends/<backend>/`, isolated from the spine.
+`Store` and `Backend` API. Every backend that exposes the API runs
+the full suite. Behaviour that only one backend exhibits, whether
+protocol quirks, storage-model semantics, or vendor configuration, is
+isolated to that backend's own home, separate from the spine.
 
 Two consequences follow at once. "Add a backend, get conformance for
-free" becomes the literal mechanism. And backend-specific tests gain a
-home that is not interleaved with the cross-backend suite. Spec
-contracts in TEST-002 and TEST-003.
+free" becomes the literal mechanism. And backend-specific tests gain
+a home that is not interleaved with the cross-backend suite. Spec
+contracts in TEST-002 and TEST-003. Layout in TEST-010.
 
 ### HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends
 
@@ -122,7 +122,7 @@ and registers a fixture extends conformance coverage without
 rewriting any test.
 
 Bug fixes for behaviour that is only observable on a real account
-land in `tests/backends/<backend>/<topic>.py` against the live fixture
+land in the affected backend's own home, against the live fixture
 (authoritative) and the replay fixture (regression guard). The
 hand-written live file shrinks to behaviour that conformance cannot
 express. The duplicated cases are deleted.
@@ -173,8 +173,9 @@ backend awareness into every test. Declaring on fixtures keeps tests
 backend-agnostic and lets a new fixture inherit the correct test
 inclusion automatically.
 
-**Move all backend-specific tests under `tests/backends/<x>/` without
-separating conformance.** Rejected. Keeps the duplication problem.
-Without a dedicated `tests/backends/conformance/` tree, the rule that
-conformance is parametrised cross-backend has no enforced home, and
-re-derivation under deadline pressure is the path of least resistance.
+**Bundle all backend tests in one tree without a dedicated
+cross-backend conformance subtree.** Rejected. Keeps the duplication
+problem. Without a separate enforced home for cross-backend
+conformance, the rule that conformance is parametrised across
+backends has no anchor, and re-derivation under deadline pressure is
+the path of least resistance.
