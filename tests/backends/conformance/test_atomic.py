@@ -21,7 +21,6 @@ from tests.backends.conformance._helpers import (
     _do_op,
     _require,
     _seed,
-    _skip_flat_namespace,
 )
 from tests.backends.fixtures import fixture_params
 
@@ -392,7 +391,3 @@ class TestCopyPostState:
         backend.copy("cpps_src.txt", "cpps_dst.txt")
         assert backend.read_bytes("cpps_src.txt") == b"data"
         assert backend.read_bytes("cpps_dst.txt") == b"data"
-
-
-# Reference unused helper to satisfy ruff F401 if its import drops.
-_ = _skip_flat_namespace

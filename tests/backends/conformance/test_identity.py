@@ -8,13 +8,13 @@ from the legacy ``test_conformance.py``.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import CapabilityNotSupported
-from tests.backends.fixtures import fixture_params
+from tests.backends.fixtures import BackendFixture, all_fixtures, fixture_params
 
 if TYPE_CHECKING:
     from remote_store._backend import Backend
@@ -131,27 +131,50 @@ class TestBackendResolveDefault:
         assert plan.native_path == backend.native_path(path)
 
 
-@pytest.mark.parametrize("backend", fixture_params(), indirect=True)
-class TestAtomicMoveCapability:
-    """CAP-001: ATOMIC_MOVE capability declared by backends with atomic move semantics."""
+def _atomic_move_canonical_fixtures() -> list[Any]:
+    """Pick one sync registry entry per backend family.
 
-    # Backends exercised by the conformance fixture registry.
-    # sql-query is not parameterised here; it has its own test module.
-    _DECLARES = {"local", "memory", "dafny-oracle", "sql-blob"}
-    _DOES_NOT_DECLARE = {"s3", "s3-pyarrow", "azure", "sftp", "http"}
+    Several families register more than one fixture (``sftp_inproc`` +
+    ``sftp_docker``, ``s3_pyarrow_moto`` + ``s3_pyarrow_minio``); the
+    ATOMIC_MOVE classification is family-level, so iterating over the
+    full registry would assert the same fact twice. Dedup by
+    ``BackendFixture.backend`` and keep the first entry seen per family.
+    """
+    seen: set[str] = set()
+    out: list[Any] = []
+    for f in all_fixtures():
+        if f.is_async or f.backend in seen:
+            continue
+        seen.add(f.backend)
+        out.append(pytest.param(f, id=f.backend))
+    return out
+
+
+class TestAtomicMoveCapability:
+    """CAP-001: ATOMIC_MOVE capability declared by backends with atomic move semantics.
+
+    Classification is by ``BackendFixture.backend`` (registry family
+    name), not by the live ``backend.name`` property -- the registry's
+    family field is what's stable across same-backend fixture pairs.
+    sql-query is not parametrised here; it has its own test module.
+    """
+
+    _DECLARES = {"local", "memory", "dafny", "sqlblob"}
+    _DOES_NOT_DECLARE = {"s3", "s3_pyarrow", "azure", "sftp", "http"}
 
     @pytest.mark.spec("CAP-001")
-    def test_atomic_move_capability_declaration(self, backend: Backend) -> None:
-        name = backend.name
-        supports = backend.capabilities.supports(Capability.ATOMIC_MOVE)
-        if name in self._DECLARES:
-            assert supports, f"{name} should declare ATOMIC_MOVE"
-        elif name in self._DOES_NOT_DECLARE:
-            assert not supports, f"{name} should not declare ATOMIC_MOVE"
+    @pytest.mark.parametrize("fixture", _atomic_move_canonical_fixtures())
+    def test_atomic_move_capability_declaration(self, fixture: BackendFixture) -> None:
+        family = fixture.backend
+        supports = Capability.ATOMIC_MOVE in fixture.capabilities
+        if family in self._DECLARES:
+            assert supports, f"{family} should declare ATOMIC_MOVE"
+        elif family in self._DOES_NOT_DECLARE:
+            assert not supports, f"{family} should not declare ATOMIC_MOVE"
         else:
             pytest.fail(
-                f"Backend {name!r} is not listed in _DECLARES or _DOES_NOT_DECLARE. "
-                "Update TestAtomicMoveCapability to classify this backend."
+                f"Backend family {family!r} is not listed in _DECLARES or _DOES_NOT_DECLARE. "
+                "Update TestAtomicMoveCapability to classify this family."
             )
 
 

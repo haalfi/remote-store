@@ -15,7 +15,7 @@ import pytest
 
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, NotFound
-from tests.backends.conformance._helpers import _require, _seed
+from tests.backends.conformance._helpers import _FLAT_NAMESPACE_BACKENDS, _require, _seed
 from tests.backends.fixtures import fixture_params
 
 if TYPE_CHECKING:
@@ -136,7 +136,7 @@ class TestBackendDelete:
     @pytest.mark.spec("BE-013")
     def test_delete_folder_empty(self, backend: Backend) -> None:
         _require(backend, Capability.WRITE)
-        if backend.name in ("s3", "s3-pyarrow", "azure", "sql-blob"):
+        if backend.name in _FLAT_NAMESPACE_BACKENDS:
             pytest.skip("Virtual folders vanish when last object is deleted (S3-009/AZ-006/SQL-BLOB-flat)")
         backend.write("dir/file.txt", b"x")
         backend.delete("dir/file.txt")

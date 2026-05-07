@@ -61,15 +61,23 @@ def _factory() -> Backend:
     finally:
         transport.close()
 
-    backend = SFTPBackend(
-        host="127.0.0.1",
-        port=INFRA.sftp_docker_port,
-        username="benchuser",
-        password="benchpass",
-        base_path=base_path,
-        host_key_policy=HostKeyPolicy.AUTO_ADD,
-        connect_kwargs={"allow_agent": False, "look_for_keys": False},
-    )
+    # If SFTPBackend(...) raises after mkdir succeeded (host-key check, network
+    # blip, credential mismatch), the orphan directory must still be removed --
+    # _BASE_PATHS would never get the registration and _cleanup would have no
+    # path to follow. Roll back the mkdir on ctor failure before re-raising.
+    try:
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=INFRA.sftp_docker_port,
+            username="benchuser",
+            password="benchpass",
+            base_path=base_path,
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+        )
+    except Exception:
+        _remove_base_path(base_path)
+        raise
     _BASE_PATHS[id(backend)] = base_path
     return backend
 
@@ -79,12 +87,23 @@ def _cleanup(backend: Backend) -> None:
 
     Without this teardown, every conformance iteration would leave an
     orphaned ``/upload/test_<uuid>/`` directory on the atmoz/sftp container.
-    A short-lived paramiko client mirrors the pre-creation pattern in
-    ``_factory`` and walks any residual files before removing the dir.
     """
     backend.close()
     base_path = _BASE_PATHS.pop(id(backend), None)
-    if base_path is None or INFRA.sftp_docker_port is None:
+    if base_path is None:
+        return
+    _remove_base_path(base_path)
+
+
+def _remove_base_path(base_path: str) -> None:
+    """Best-effort recursive removal of ``base_path`` on the Docker SFTP server.
+
+    Used by both ``_cleanup`` (normal teardown) and ``_factory`` (rollback when
+    the SFTPBackend constructor raises after ``mkdir(base_path)`` already
+    succeeded). Never raises -- a teardown failure must not mask the underlying
+    test result.
+    """
+    if INFRA.sftp_docker_port is None:
         return
     try:
         import paramiko

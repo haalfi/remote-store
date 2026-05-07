@@ -10,9 +10,9 @@ consults at parametrize time:
 
 * ``INFRA`` -- a mutable dataclass holding session-scoped infrastructure
   endpoints (moto URL, Azurite connection string, SFTP ports, ...).
-  Populated by an autouse session fixture in
-  :mod:`tests.backends.fixtures._infra`. Per-backend factory modules
-  read ``INFRA`` at call time.
+  Populated by the autouse ``_populate_infra`` session fixture in
+  :mod:`tests.backends.conftest`. Per-backend factory modules read
+  ``INFRA`` at call time.
 
 Both are module-level singletons. Pytest is single-process per worker;
 ``pytest-xdist`` is not currently used. If it ever is, both pieces of
@@ -54,11 +54,12 @@ def set_current_stage(stage: int) -> None:
 class InfraState:
     """Session-scoped service endpoints, populated once per pytest run.
 
-    The fields default to ``None``; an autouse session fixture in
-    :mod:`tests.backends.fixtures._infra` writes the live values after
-    the underlying service fixtures (``moto_server``, ``azurite_server``,
-    ...) have started. Factories observe the populated fields when they
-    are called from a test setup, never before.
+    The fields default to ``None``; the autouse ``_populate_infra``
+    session fixture in :mod:`tests.backends.conftest` writes the live
+    values after the underlying service fixtures (``moto_server``,
+    ``azurite_server``, ...) have started. Factories observe the
+    populated fields when they are called from a test setup, never
+    before.
 
     A factory whose required field is still ``None`` should call
     ``pytest.skip(...)`` rather than fail. This is the
