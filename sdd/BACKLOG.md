@@ -120,7 +120,7 @@ and the highest ID already in this file, then take the next integer. Run
   scrubbing complexity). Implement scrubbing for credentials, SAS tokens,
   account keys, and per-run request IDs. Wire `--record` mode for
   `pytest --stage=3 --record` and document the refresh procedure. Cassettes
-  live under `tests/cassettes/<backend>/`. Missing cassette ⇒ replay-fixture
+  live under `tests/backends/cassettes/<backend>/`. Missing cassette ⇒ replay-fixture
   skip (TEST-007). Sequencing: depends on BK-179 (registry) and
   BK-180 (live fixtures the recording mode runs against). Spec: TEST-007,
   TEST-008, TEST-009.
@@ -140,13 +140,14 @@ and the highest ID already in this file, then take the next integer. Run
   group is listed newest-first per BACKLOG ordering convention; execution
   order runs BK-179 → BK-180 → BK-181 → BK-182.
   Foundational refactor before any new fixtures or replay layer. Introduce
-  `tests/fixtures/registry.py` per spec [TEST-004](specs/048-testing-architecture.md);
+  `tests/backends/fixtures/registry.py` per spec [TEST-004](specs/048-testing-architecture.md);
   migrate existing backend fixtures (Memory, Local, Azurite, MinIO,
   Dockerised SFTP, SQLite) into `BackendFixture` records. Reorganise
   `tests/` into the layout in [TEST-010](specs/048-testing-architecture.md):
-  `tests/conformance/` (cross-backend spine), `tests/backends/<backend>/`
-  (backend-specific). Existing conformance tests move from
-  `tests/backends/test_conformance*.py` to `tests/conformance/`. Add the
+  the backend concern as one self-contained subtree under
+  `tests/backends/` (conformance, backend-specific, fixtures,
+  cassettes). Existing conformance tests move from
+  `tests/backends/test_conformance*.py` to `tests/backends/conformance/`. Add the
   `--stage=N` CLI flag and skipif-based capability gating
   ([TEST-005/006](specs/048-testing-architecture.md)). No live fixtures
   yet, no replay layer yet — pure layout change. Update

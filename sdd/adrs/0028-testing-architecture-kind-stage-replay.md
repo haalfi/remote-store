@@ -175,6 +175,6 @@ inclusion automatically.
 
 **Move all backend-specific tests under `tests/backends/<x>/` without
 separating conformance.** Rejected. Keeps the duplication problem.
-Without a dedicated `tests/conformance/` tree, the rule that
+Without a dedicated `tests/backends/conformance/` tree, the rule that
 conformance is parametrised cross-backend has no enforced home, and
 re-derivation under deadline pressure is the path of least resistance.

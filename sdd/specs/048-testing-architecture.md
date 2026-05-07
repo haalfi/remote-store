@@ -4,7 +4,8 @@
 capability-gating mechanism, stage selection, and HTTP cassette and
 replay layer that govern the `tests/` tree. Not library source code.
 The contracts here govern test organisation and the fixture and
-runner machinery in `tests/fixtures/` and `tests/conftest.py`.
+runner machinery in `tests/backends/fixtures/` and
+`tests/conftest.py`.
 
 **Prefix:** `TEST`
 
@@ -64,9 +65,9 @@ fixture declares exactly one kind and exactly one stage.
 
 ## TEST-002: Conformance is the Cross-Backend Spine
 
-**Invariant:** `tests/conformance/` contains the single, parametrised
+**Invariant:** `tests/backends/conformance/` contains the single, parametrised
 behavioural test set that every backend must satisfy. Tests in
-`tests/conformance/` reference only the cross-backend `Store` and
+`tests/backends/conformance/` reference only the cross-backend `Store` and
 `Backend` API surface and parametrise over the fixture registry
 (TEST-004). They contain no backend-specific branching.
 
@@ -112,7 +113,7 @@ wiring) also live here in `tests/backends/<backend>/test_config.py`.
 ## TEST-004: Fixture Registry and Metadata Interface
 
 **Invariant:** Every backend fixture is a record with the following
-shape, registered in `tests/fixtures/registry.py`:
+shape, registered in `tests/backends/fixtures/registry.py`:
 
 ```python
 AnyBackend = Backend | AsyncBackend  # type alias spanning both ABCs
@@ -192,14 +193,14 @@ guardrails for Stage 3 are out of scope for this spec. See Notes.
 `<backend>_replay` Stage 1 fixture that exercises the same SDK code
 path as the corresponding `<backend>_live` Stage 3 fixture, with the
 HTTP transport stubbed by recorded cassette files in
-`tests/cassettes/<backend>/`.
+`tests/backends/cassettes/<backend>/`.
 
 **Demotion flow:**
 
 1. A Stage 3 test runs against `<backend>_live` with `--record`.
 2. The recording layer writes a cassette keyed by test name, scrubbed
    of credentials, tokens, request IDs, and other per-run identifiers.
-3. The cassette is committed under `tests/cassettes/<backend>/`.
+3. The cassette is committed under `tests/backends/cassettes/<backend>/`.
 4. Subsequent Stage 1 runs of the same test execute against
    `<backend>_replay`, which reads the cassette instead of issuing
    network requests.
@@ -231,10 +232,10 @@ apply to:
   in-process and is already a Stage 1 fixture by construction.
 - **Local filesystem.** Already Stage 1. No demotion needed.
 
-**Postcondition:** `tests/cassettes/` contains subdirectories only
-for HTTP-transport backends. Backends excluded by this invariant
-rely on Stage 2 Docker fixtures as their cheapest source of truth,
-with no Stage 3 to Stage 1 demotion path.
+**Postcondition:** `tests/backends/cassettes/` contains
+subdirectories only for HTTP-transport backends. Backends excluded
+by this invariant rely on Stage 2 Docker fixtures as their cheapest
+source of truth, with no Stage 3 to Stage 1 demotion path.
 
 **Rationale:** [ADR-0028](../adrs/0028-testing-architecture-kind-stage-replay.md)
 § HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends.
@@ -261,20 +262,29 @@ drift data is available. This spec does not mandate either.
 
 ## TEST-010: Directory Layout
 
-**Invariant:** The `tests/` tree conforms to:
+**Invariant:** The `tests/` tree groups files by concern. The
+backend concern is one self-contained subtree under
+`tests/backends/`. Other concerns (`Store`, `RemotePath`, registry,
+errors, capabilities) live at the top level alongside their own
+helpers.
 
 ```
 tests/
-  unit/                          # Kind: pure
-  conformance/                   # Cross-backend spine. TEST-002.
-    test_io.py
-    test_listing.py
-    test_atomic.py
-    test_metadata.py
-    test_streaming.py
-    test_errors.py
-  backends/                      # Backend-specific. TEST-003.
-    azure/
+  test_store.py                  # non-backend concerns at top level
+  test_path.py
+  test_registry.py
+  ...
+  aio/                           # async variants of non-backend tests
+    test_*.py
+  backends/                      # the backend concern, self-contained
+    conformance/                 # cross-backend parametrised tests. TEST-002.
+      test_io.py
+      test_listing.py
+      test_atomic.py
+      test_metadata.py
+      test_streaming.py
+      test_errors.py
+    azure/                       # backend-specific. TEST-003.
       test_config.py
       test_hns.py
       aio/
@@ -286,27 +296,39 @@ tests/
       test_config.py
     sqlblob/
       test_config.py
-  fixtures/                      # TEST-004.
-    registry.py
-    memory.py
-    local.py
-    azurite.py
-    minio.py
-    sftp_docker.py
-    azure_live.py
-    azure_replay.py
-    s3_live.py
-    s3_replay.py
-  cassettes/                     # TEST-007. HTTP backends only.
-    azure/
-    s3/
+    fixtures/                    # registry and factories. TEST-004.
+      registry.py
+      memory.py
+      local.py
+      azurite.py
+      minio.py
+      sftp_docker.py
+      azure_live.py
+      azure_replay.py
+      s3_live.py
+      s3_replay.py
+    cassettes/                   # HTTP recordings. TEST-007. HTTP backends only.
+      azure/
+      s3/
   scripts/                       # tests for scripts/ utilities
-  e2e/                           # cross-backend end-to-end workflows
+  e2e/                           # end-to-end workflows
 ```
 
-**Postcondition:** No file in `tests/` references a backend by name
-outside `tests/backends/<backend>/`, the `fixtures/` directory, or
-the backend's own cassette directory.
+**Backend concern isolation:** Everything backend-related lives
+under `tests/backends/`. Conformance, backend-specific tests,
+fixtures, and cassettes share that one subtree because they share
+the backend concern. Top-level non-backend tests (`test_store.py`,
+`test_path.py`, etc.) do not import the fixture registry and do not
+parametrise across backends. They use a single concrete backend
+(typically `MemoryBackend`) when one is needed.
+
+**Postcondition:** No file outside `tests/backends/` imports from
+`tests/backends/fixtures/registry.py`. No file in `tests/`
+references a concrete backend by name outside
+`tests/backends/<backend>/`, `tests/backends/fixtures/`, or
+`tests/backends/cassettes/<backend>/`. Cross-concern tests (`e2e/`)
+that touch backends do so via the registry, not by direct backend
+import.
 
 ---
 
