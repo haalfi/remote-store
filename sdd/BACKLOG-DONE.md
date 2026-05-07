@@ -8,6 +8,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-175 — Live HNS test architecture: design phase**
+  Original exit criterion was "RFC for the parametrize + cassette design".
+  Delivered as a spec + ADR pair, exceeding the RFC scope: the design covers
+  the whole testing tree, not just Azure HNS, with kind × stage axes, a
+  conformance-as-spine layout, fixture registry, native pytest gating, and
+  HTTP-only cassette/replay demotion. Implementation is split into four
+  follow-up items (BK-179 Phase 1: fixture registry + reorganisation;
+  BK-180 Phase 2: live conformance fixtures; BK-181 Phase 3: HTTP replay
+  layer; BK-182: shrink legacy `test_azure_live_hns.py`). The
+  HNS-specific bug fixes BUG-195, BUG-196, BUG-197 land into the new
+  layout once BK-179/180 are green. Spec:
+  `sdd/specs/048-testing-architecture.md`. ADR:
+  `sdd/adrs/0028-testing-architecture-kind-stage-replay.md`.
+
 - [x] **ID-178 — `list_folders(pattern=…)` — name-based glob filter**
   `Store.list_folders` and `AsyncStore.list_folders` accept an optional
   `pattern` keyword mirroring `list_files(pattern=…)` (STORE-014). When set,
