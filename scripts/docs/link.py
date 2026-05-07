@@ -1,7 +1,7 @@
 """Markdown link rewriting for repo-rooted files served into the docs tree.
 
 When we inline a repo file (sdd/research/x.md, CONTRIBUTING.md, ...) as a
-virtual page at some other path, its relative links break. :class:`LinkResolver`
+virtual page at some other path, its relative links break. ``LinkResolver``
 walks each ``](target)`` link and:
 
 1. leaves absolute URLs and pure anchors alone;

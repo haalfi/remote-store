@@ -5,14 +5,14 @@ pages: sdd/ and examples/ scans, template fills, wrapper pages, assets, and
 ``SUMMARY.md``. Repo-root Markdown files that carry a
 ``<!-- doc: dual dest=... -->`` marker (e.g. ``CHANGELOG.md``,
 ``CONTRIBUTING.md``, ``FEATURES.md``) are also rendered as virtual docs pages
-via :func:`~scripts.docs.render.render_dual_pages`.
+via ``scripts.docs.render.render_dual_pages``.
 
 Before editing this file or ``mkdocs.yml``, read:
   ``sdd/AUTHORING.md``      (placement: where files belong)
   ``sdd/DOCUMENTATION.md``  (structure: what shape pages take)
   ``sdd/CONTENT-RULES.md``  (longevity: writing that stays accurate)
 
-See :mod:`scripts.docs` for the helpers and
+See ``scripts.docs`` for the helpers and
 ``sdd/adrs/0007-docs-src-literate-nav.md`` for the design.
 """
 

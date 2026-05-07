@@ -32,7 +32,7 @@ class ExtensionInfo(TypedDict):
 
 
 class InfoResult(TypedDict):
-    """Structured result of :func:`info`."""
+    """Structured result of the ``info`` function."""
 
     version: str
     backends: dict[str, BackendInfo]
@@ -82,7 +82,7 @@ def info() -> InfoResult:
     extension for availability in the current environment.
 
     Returns:
-        A :class:`InfoResult` with keys ``version``, ``backends``, and
+        An ``InfoResult`` with keys ``version``, ``backends``, and
         ``extensions``.
     """
     from remote_store import __version__

@@ -2,24 +2,24 @@
 
 Record types:
 
-:class:`SddKind`
-    One row in :data:`SDD_KINDS`. Declarative config for each sdd subdir
+``SddKind``
+    One row in ``SDD_KINDS``. Declarative config for each sdd subdir
     (adrs, specs, rfcs, audits, research): where to look, how to title,
     whether entries are numbered, optional status column.
 
-:class:`SddEntry`
+``SddEntry``
     One spec/ADR/RFC/audit/research document discovered under
     ``sdd/<kind.source_dir>/``.
 
-:class:`DualEntry`
+``DualEntry``
     One dual file: absolute repo source path and its virtual docs dest.
-    Produced by :func:`scan_dual_files`.
+    Produced by ``scan_dual_files``.
 
-:class:`ExampleEntry`
+``ExampleEntry``
     One example script discovered under ``examples/<category>/``. Title,
     description, and optional ``see_also`` come from the module docstring.
 
-:class:`ExampleCategory`
+``ExampleCategory``
     One row of ``examples/_categories.yml``.
 
 """
@@ -144,7 +144,7 @@ def _scan_kind(repo_root: Path, kind: SddKind) -> list[SddEntry]:
 
 
 def scan_all_sdd(repo_root: Path) -> dict[str, list[SddEntry]]:
-    """Scan every :data:`SDD_KINDS` entry, keyed by ``kind.slug``."""
+    """Scan every ``SDD_KINDS`` entry, keyed by ``kind.slug``."""
     return {kind.slug: _scan_kind(repo_root, kind) for kind in SDD_KINDS}
 
 
@@ -279,7 +279,7 @@ def _git_repo_markdown(repo_root: Path) -> list[Path]:
 
     Delegates to ``git ls-files`` so the full gitignore grammar — wildcards,
     negation patterns, nested ``.gitignore`` files — is handled by git itself.
-    Falls back to ``rglob`` skipping only :data:`_VCS_DIRS` when the tree is
+    Falls back to ``rglob`` skipping only ``_VCS_DIRS`` when the tree is
     not a git repository (test fixtures, CI sandboxes without git, etc.).
     """
     import subprocess
@@ -303,13 +303,13 @@ def _git_repo_markdown(repo_root: Path) -> list[Path]:
 def scan_dual_files(repo_root: Path) -> Iterator[DualEntry]:
     """Discover all dual files in *repo_root*.
 
-    Yields :class:`DualEntry` for every file whose effective classification is
-    ``dual``: SDD-subdir files (directory-default dual per :data:`SDD_KINDS`)
+    Yields ``DualEntry`` for every file whose effective classification is
+    ``dual``: SDD-subdir files (directory-default dual per ``SDD_KINDS``)
     and files elsewhere that carry an explicit ``<!-- doc: dual dest=... -->``
     marker.
 
-    **Caveat:** malformed markers (those that cause :func:`_parse_marker` to
-    raise ``ValueError``) emit a :mod:`warnings` warning and are skipped.
+    **Caveat:** malformed markers (those that cause ``_parse_marker`` to
+    raise ``ValueError``) emit a ``warnings`` warning and are skipped.
     The gate (DOCFRAME-004) is the authority for detecting and reporting G-01
     violations; callers that need a complete and verified source→dest map must
     run the gate first.

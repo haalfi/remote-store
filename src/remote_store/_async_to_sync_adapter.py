@@ -1,9 +1,9 @@
 """AsyncBackendSyncAdapter -- bridges async backends into the sync world.
 
-Implements the sync :class:`Backend` ABC by delegating to an
-:class:`AsyncBackend` running on a private event loop in a dedicated
+Implements the sync ``Backend`` ABC by delegating to an
+``AsyncBackend`` running on a private event loop in a dedicated
 background thread.  Mirror of
-:class:`remote_store.aio.SyncBackendAdapter` (ADR-0012); decision record
+``remote_store.aio.SyncBackendAdapter`` (ADR-0012); decision record
 for this direction is ADR-0025, invariants pinned in spec 029
 § AsyncBackendSyncAdapter (ASYNC-080..093).
 """
@@ -58,7 +58,7 @@ _OPEN_ATOMIC_SPOOL_MAX = 8 * 1024 * 1024
 @runtime_checkable
 class _SyncSafeHandleProvider(Protocol):
     """Opt-in protocol a wrapped async backend may implement to expose a
-    sync-safe native handle through :meth:`AsyncBackendSyncAdapter.unwrap`.
+    sync-safe native handle through ``AsyncBackendSyncAdapter.unwrap``.
 
     Mirrors ``SyncBackendAdapter.unwrap``'s exemption for wrappers that
     provide a synchronous handle (spec 029 § ASYNC-086).
@@ -75,16 +75,16 @@ class _SyncSafeHandleProvider(Protocol):
 
 
 class AsyncBackendSyncAdapter(Backend):
-    """Wraps an :class:`AsyncBackend` as a synchronous :class:`Backend`.
+    """Wraps an ``AsyncBackend`` as a synchronous ``Backend``.
 
     One private ``asyncio`` event loop per adapter instance, running on
     a dedicated daemon thread for the adapter's lifetime.  Sync methods
-    submit coroutines via :func:`asyncio.run_coroutine_threadsafe` and
-    block on the returned :class:`concurrent.futures.Future`.
+    submit coroutines via ``asyncio.run_coroutine_threadsafe`` and
+    block on the returned ``concurrent.futures.Future``.
 
     Construction does not enter the wrapped backend's async context
     manager -- callers that need ``__aenter__`` semantics should use
-    :class:`remote_store.aio.AsyncStore` directly.
+    ``AsyncStore`` directly.
 
     Args:
         async_backend: The async backend instance to wrap.
@@ -206,18 +206,18 @@ class AsyncBackendSyncAdapter(Backend):
     def unwrap(self, type_hint: type[T]) -> T:
         """Return a sync-safe native handle if the wrapped backend provides one.
 
-        By default raises :class:`~remote_store._errors.CapabilityNotSupported`
+        By default raises ``CapabilityNotSupported``
         because async-SDK handles are bound to the adapter's private event loop
         and cannot be used safely from the caller's thread.
 
         Wrapped backends that can expose a sync-safe handle should implement
-        :class:`_SyncSafeHandleProvider` and return it from
-        :meth:`~_SyncSafeHandleProvider.sync_safe_unwrap`
+        ``_SyncSafeHandleProvider`` and return it from
+        ``_SyncSafeHandleProvider.sync_safe_unwrap``
         (spec 029 § ASYNC-086).
 
         Args:
             type_hint: The type of handle to retrieve; passed through to
-                :meth:`~_SyncSafeHandleProvider.sync_safe_unwrap` for backends
+                ``_SyncSafeHandleProvider.sync_safe_unwrap`` for backends
                 that support the exemption.
 
         Returns:
@@ -225,7 +225,7 @@ class AsyncBackendSyncAdapter(Backend):
 
         Raises:
             CapabilityNotSupported: If the wrapped backend does not implement
-                :class:`_SyncSafeHandleProvider`.
+                ``_SyncSafeHandleProvider``.
 
         Example:
             ```python
@@ -286,7 +286,7 @@ class AsyncBackendSyncAdapter(Backend):
         """Submit a connectivity probe to the wrapped async backend.
 
         Not a no-op: the probe is forwarded to the wrapped
-        :class:`~remote_store.aio.AsyncBackend`, and any connectivity error
+        ``AsyncBackend``, and any connectivity error
         it raises reaches the sync caller unchanged (spec 029 § ASYNC-093).
 
         Returns:
@@ -326,7 +326,7 @@ class AsyncBackendSyncAdapter(Backend):
             path: Backend-relative key of the file to read.
 
         Returns:
-            A forward-only :class:`io.RawIOBase` stream over the file
+            A forward-only ``io.RawIOBase`` stream over the file
             contents.
 
         Raises:
@@ -426,13 +426,13 @@ class AsyncBackendSyncAdapter(Backend):
         in-flight tasks (repeating while new tasks appear, see below) → stop
         the private loop → join the daemon thread.
 
-        The drain step repeats :func:`_drain_tasks` until the private loop is
+        The drain step repeats ``_drain_tasks`` until the private loop is
         quiet, **narrowing** (not eliminating) the window where a caller that
-        passed :meth:`_guard` *before* the closed flag was set can still submit
+        passed ``_guard`` *before* the closed flag was set can still submit
         a coroutine.  Each pass snapshots outstanding tasks and waits for them;
         new tasks that arrive between snapshot and completion trigger another
         pass.  A residual TOCTOU gap remains: a thread that passes
-        :meth:`_guard` after the final empty-snapshot check but before the loop
+        ``_guard`` after the final empty-snapshot check but before the loop
         is stopped will have its coroutine silently discarded when the loop
         stops — eliminating this gap would require serialising all submits
         against a shutdown lock.
@@ -550,8 +550,8 @@ class AsyncBackendSyncAdapter(Backend):
 class _ChunkPullReader(io.RawIOBase):
     """Forward-only sync stream pumping chunks out of an async generator.
 
-    Subclasses :class:`io.RawIOBase` to inherit standard ``BinaryIO``
-    semantics: ``closed`` property managed by :class:`io.IOBase`, ``flush()``,
+    Subclasses ``io.RawIOBase`` to inherit standard ``BinaryIO``
+    semantics: ``closed`` property managed by ``io.IOBase``, ``flush()``,
     ``readline()``, and the context-manager protocol.
 
     Only forward reads are supported: ``seekable()`` returns ``False`` and no
@@ -716,7 +716,7 @@ class _ChunkPullReader(io.RawIOBase):
 
 
 class _AsyncIteratorBridge:
-    """Sync :class:`Iterator` pulling one item per ``__anext__`` call.
+    """Sync ``Iterator`` pulling one item per ``__anext__`` call.
 
     Used for ``list_files``, ``list_folders``, ``glob``, and
     ``iter_children`` (spec 029 § ASYNC-080).  Preserves streaming --
@@ -731,7 +731,7 @@ class _AsyncIteratorBridge:
         ``_iter`` is an *async generator* (i.e. exposes ``aclose()``).
         Plain ``AsyncIterator`` objects built from a class with only
         ``__aiter__``/``__anext__`` have no ``aclose``; the
-        :func:`contextlib.suppress` in ``__del__`` swallows the resulting
+        ``contextlib.suppress`` in ``__del__`` swallows the resulting
         ``AttributeError`` silently.  All async backends in this package
         use async generators for listing, so the guarantee holds in
         practice.
@@ -820,7 +820,7 @@ async def _binaryio_to_async_iter(stream: BinaryIO) -> AsyncIterator[bytes]:
 
 
 class _SpoolAndFlush:
-    """``open_atomic`` synthesis over :class:`tempfile.SpooledTemporaryFile`.
+    """``open_atomic`` synthesis over ``tempfile.SpooledTemporaryFile``.
 
     Clean exit rewinds the spool and submits it to the wrapped backend's
     ``write_atomic``.  On exception, the spool is dropped and the

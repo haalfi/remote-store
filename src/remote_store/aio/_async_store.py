@@ -78,7 +78,7 @@ class AsyncStore:
         return self._read_chunks(self._require_file_path(path))
 
     async def _read_chunks(self, resolved: str) -> AsyncIterator[bytes]:
-        """Inner generator for :meth:`read` — yields chunks from backend."""
+        """Inner generator for ``read`` — yields chunks from backend."""
         async for chunk in self._backend.read(resolved):
             yield chunk
 
@@ -404,7 +404,7 @@ class AsyncStore:
         max_depth: int | None,
         base_parts: int,
     ) -> AsyncIterator[FileInfo]:
-        """Inner generator for :meth:`list_files`."""
+        """Inner generator for ``list_files``."""
         async for info in self._backend.list_files(
             full_path,
             recursive=effective_recursive,
@@ -453,7 +453,7 @@ class AsyncStore:
         return self._list_folders_inner(self._full_path(path), effective_depth=effective_depth)
 
     async def _list_folders_inner(self, full_path: str, *, effective_depth: int) -> AsyncIterator[FolderEntry]:
-        """Inner generator for :meth:`list_folders` — BFS traversal."""
+        """Inner generator for ``list_folders`` — BFS traversal."""
         current_level: list[str] = [full_path]
         for level in range(effective_depth + 1):
             next_level: list[str] = []
@@ -487,7 +487,7 @@ class AsyncStore:
         return self._iter_children_inner(self._full_path(path))
 
     async def _iter_children_inner(self, full_path: str) -> AsyncIterator[FileInfo | FolderEntry]:
-        """Inner generator for :meth:`iter_children`."""
+        """Inner generator for ``iter_children``."""
         async for entry in self._backend.iter_children(full_path):
             if isinstance(entry, FolderEntry):
                 yield self._rebase_folder_entry(entry)
@@ -515,7 +515,7 @@ class AsyncStore:
         return self._glob_inner(full_pattern)
 
     async def _glob_inner(self, full_pattern: str) -> AsyncIterator[FileInfo]:
-        """Inner generator for :meth:`glob`."""
+        """Inner generator for ``glob``."""
         async for info in self._backend.glob(full_pattern):
             yield self._rebase_file_info(info)
 

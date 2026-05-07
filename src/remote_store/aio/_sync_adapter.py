@@ -44,10 +44,10 @@ async def _materialize(content: AsyncWritableContent) -> bytes:
 
 
 class SyncBackendAdapter(AsyncBackend):
-    """Wraps a synchronous :class:`Backend` as an :class:`AsyncBackend`.
+    """Wraps a synchronous ``Backend`` as an ``AsyncBackend``.
 
     Every blocking call is dispatched to the default executor via
-    :func:`asyncio.to_thread`, keeping the event loop responsive.
+    ``asyncio.to_thread``, keeping the event loop responsive.
 
     Args:
         backend: The synchronous backend instance to wrap.

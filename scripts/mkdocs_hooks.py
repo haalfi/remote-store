@@ -1,4 +1,4 @@
-"""MkDocs hook: apply :class:`LinkResolver` to docs-src files.
+"""MkDocs hook: apply ``LinkResolver`` to docs-src files.
 
 Static `docs-src/` Markdown is read by MkDocs directly and not routed through
 ``gen_pages.py``. The bridge already rewrites links in dual sources (sdd files,
