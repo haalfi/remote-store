@@ -19,7 +19,7 @@ from pathlib import Path
 RST_ROLE = re.compile(r":\w+:`(?!`)")
 
 _ROOT = Path(__file__).resolve().parent.parent
-_DEFAULT_DIRS = ["src", "tests", "scripts"]
+_DEFAULT_DIRS = ["src", "tests", "scripts", "examples"]
 
 
 def scan_file(path: Path) -> list[str]:

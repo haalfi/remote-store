@@ -26,4 +26,4 @@ repos:
         language: pygrep
         entry: ':\w+:`(?!`)'
         types: [python]
-        files: ^(src|tests|scripts)/
+        files: ^(src|tests|scripts|examples)/
