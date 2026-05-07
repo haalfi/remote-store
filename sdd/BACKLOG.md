@@ -99,62 +99,60 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-175 — Live HNS test architecture: parametrized conformance + record/replay layer**
-  The hand-written `test_azure_live_hns.py` / `test_async_azure_live_hns.py` suites
-  drifted into ~40% overlap with the conformance suite running against Azurite
-  (`tests/backends/conftest.py` `azure` parametrize). The HNS suite hand-rolls
-  contracts (NotFound family, copy/delete happy paths, exists True/False on files,
-  move-existing-dst guards) where the production code has no `_ensure_hns()` branch
-  — exercising the same lines as conformance, just on a different account. Going
-  forward this duplication will grow with every new contract added to conformance.
+- [ ] **BK-182 — Shrink legacy `test_azure_live_hns.py` per Spec 048**
+  Once BK-179, BK-180, and BK-181 land, the hand-written live HNS suites
+  (`tests/backends/test_azure_live_hns.py`, `tests/aio/test_async_azure_live_hns.py`,
+  ~1,840 lines combined) duplicate ~40 % of conformance against a real ADLS Gen2
+  account. After conformance parametrizes over `azure_live` (BK-180) and
+  `azure_replay` (BK-181), delete the duplicated happy-path cases and keep only
+  HNS-unique tests under `tests/backends/azure/test_hns.py`: DFS AsyncIterator
+  protocol (BUG-194 regression guard), etag normalisation cross-check
+  (`get_file_properties` vs `get_file_info`), directory-blob `hdi_isfolder`
+  probes, and any remaining deviation guards. Async equivalents follow under
+  `tests/backends/azure/aio/test_hns.py` only where sync/async behaviour
+  differs. Spec: TEST-002, TEST-003.
 
-  **Goal:** eliminate the duplication systematically and let conformance be the
-  single source of truth for cross-backend behavioural contracts; live HNS files
-  shrink to *only* HNS-unique tests (DataLake DFS protocol, `hdi_isfolder` directory
-  semantics, etag normalisation across SDK paths, BUG-194/195/197 deviation guards).
+- [ ] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
+  Add `<backend>_replay` Stage 1 fixtures for HTTP-transport backends
+  (Azure first, S3 follows) per spec [TEST-007](specs/048-testing-architecture.md).
+  Choose the recording mechanism (`pytest-recording`/vcrpy or a custom Azure
+  pipeline-policy adapter; benchmark against async-pipeline coverage and
+  scrubbing complexity). Implement scrubbing for credentials, SAS tokens,
+  account keys, and per-run request IDs. Wire `--record` mode for
+  `pytest --stage=3 --record` and document the refresh procedure. Cassettes
+  live under `tests/backends/cassettes/<backend>/`. Missing cassette ⇒ replay-fixture
+  skip (TEST-007). Sequencing: depends on BK-179 (registry) and
+  BK-180 (live fixtures the recording mode runs against). Spec: TEST-007,
+  TEST-008, TEST-009.
 
-  **Two pieces to design:**
+- [ ] **BK-180 — Implement Spec 048 Phase 2: live conformance fixtures**
+  Add `azure_live` (Stage 3, kind `real-live`) to the registry per
+  spec [TEST-001/004](specs/048-testing-architecture.md). Wire conformance
+  parametrize to include it when `--stage=3` and `RS_TEST_LIVE_HNS=1` are
+  set. Verify the full conformance + extended suite runs green against a
+  real ADLS Gen2 account. Repeat the shape for `s3_live` against real
+  AWS S3 (separate env var; cost-controlled). No legacy live-test deletion
+  yet — that is BK-182. Sequencing: depends on BK-179. Spec: TEST-001,
+  TEST-004, TEST-006.
 
-  1. **Live conformance parametrize.** Add an `azure-live-hns` (and async equivalent)
-     option to `tests/backends/conftest.py` that instantiates `AzureBackend` /
-     `AsyncAzureBackend` against a real ADLS Gen2 connection string instead of
-     Azurite. Gated by the existing `live` marker + `RS_TEST_LIVE_HNS=1` so default
-     CI is unaffected. The full conformance + conformance-extended suite then runs
-     against the real HNS account automatically — every future contract addition
-     gets HNS coverage for free. Cost: ~140 conformance tests × HNS = ~5–10× current
-     live transactions, still under $0.05/run.
-
-  2. **Record/replay abstraction layer.** Wrap the SDK transport so
-     live tests record real request/response pairs to YAML cassettes; replay mode
-     reads from cassettes when no credentials are present. Implementation candidates:
-     `pytest-recording` (vcrpy) for the HTTP layer, or a custom transport adapter
-     in front of the Azure SDK pipeline policies. Per-test cassette files committed
-     under `tests/cassettes/hns/`. Lets contributors run the full HNS conformance
-     suite offline without credentials; CI runs in replay mode by default.
-
-     Open design questions:
-     - Cassette scrubbing for SAS tokens, account keys, request IDs.
-     - Cassette invalidation policy when SDK request shapes change.
-     - Whether to record per-test (simple, larger storage) or per-fixture (compact,
-       harder to debug single-test failures).
-     - Async-pipeline coverage — vcrpy supports it but needs validation against
-       `azure.storage.filedatalake.aio`.
-
-  **What stays as hand-written live tests:**
-  - HNS-unique paths conformance can't reach: AsyncIterator DFS protocol (BUG-194
-    regression guard), etag normalisation cross-check (`get_file_properties` vs
-    `get_file_info` agreement), directory-blob `hdi_isfolder` probes.
-  - Active deviation guards (BUG-195, BUG-197) until the underlying code is fixed.
-
-  **Approach should not be designed in this PR** (PR #590, "improve HNS live tests")
-  — that PR's scope was to extend coverage, and it succeeded (32 → 58 tests, surfaced
-  BUG-194 / BUG-195 / BUG-196 / BUG-197). This BK is the follow-up to consolidate
-  the architecture before the suite grows further.
-
-  **Exit criteria:** RFC for the parametrize + cassette design; conformance runs
-  against real HNS in a gated CI job; `tests/(aio/)test_azure_live_hns.py` shrinks
-  to HNS-unique cases only; recording/replay procedure documented in
-  `CONTRIBUTING.md` § Live tests.
+- [ ] **BK-179 — Implement Spec 048 Phase 1: fixture registry + conformance reorganisation**
+  **Execute-first prerequisite for BK-180, BK-181, BK-182.** The four-item
+  group is listed newest-first per BACKLOG ordering convention; execution
+  order runs BK-179 → BK-180 → BK-181 → BK-182.
+  Foundational refactor before any new fixtures or replay layer. Introduce
+  `tests/backends/fixtures/registry.py` per spec [TEST-004](specs/048-testing-architecture.md);
+  migrate existing backend fixtures (Memory, Local, Azurite, MinIO,
+  Dockerised SFTP, SQLite) into `BackendFixture` records. Reorganise
+  `tests/` into the layout in [TEST-010](specs/048-testing-architecture.md):
+  the backend concern as one self-contained subtree under
+  `tests/backends/` (conformance, backend-specific, fixtures,
+  cassettes). Existing conformance tests move from
+  `tests/backends/test_conformance*.py` to `tests/backends/conformance/`. Add the
+  `--stage=N` CLI flag and skipif-based capability gating
+  ([TEST-005/006](specs/048-testing-architecture.md)). No live fixtures
+  yet, no replay layer yet — pure layout change. Update
+  [`sdd/TESTING.md`](TESTING.md) "Test Subpackage Placement" to match.
+  Spec: TEST-002, TEST-003, TEST-004, TEST-005, TEST-006, TEST-010.
 
 - [ ] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   `AsyncMemoryBackend.get_file_info` returns
