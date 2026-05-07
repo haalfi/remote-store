@@ -25,7 +25,34 @@ from tests.backends.fixtures.registry import (
     AnyBackend,
     BackendFixture,
     all_fixtures,
+    fixture_params,
     fixtures,
 )
 
-__all__ = ["AnyBackend", "BackendFixture", "all_fixtures", "fixtures"]
+
+def _load_all() -> None:
+    """Import every per-backend factory module to trigger registration.
+
+    Each module appends to the registry at import time, so this is the
+    single place that decides which backends are registered. The conftest
+    at :mod:`tests.backends` calls this once at session start.
+    """
+    from tests.backends.fixtures import (  # noqa: F401 -- import-side-effect registration
+        dafny_oracle,
+        http,
+        local,
+        memory,
+        s3_moto,
+        sftp_inproc,
+        sqlblob,
+    )
+
+
+__all__ = [
+    "AnyBackend",
+    "BackendFixture",
+    "_load_all",
+    "all_fixtures",
+    "fixture_params",
+    "fixtures",
+]

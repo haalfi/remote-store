@@ -20,8 +20,10 @@ collection.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Literal
+
+import pytest
 
 from remote_store._backend import Backend
 from remote_store.aio import AsyncBackend
@@ -60,6 +62,14 @@ class BackendFixture:
     capabilities: frozenset[Capability]
     is_async: bool
     cleanup: Callable[[AnyBackend], None] | None = None
+    marks: tuple[pytest.MarkDecorator, ...] = field(default_factory=tuple)
+    """Pytest marks applied to this fixture's parametrize entry.
+
+    Carries CI-runtime selectors that should ride along with the fixture
+    name -- e.g. ``pytest.mark.os_sensitive`` on the ``local`` fixture so
+    that LocalBackend conformance is included in the macOS/Windows CI
+    matrix that selects ``-m "os_sensitive"``.
+    """
 
 
 _FIXTURES: list[BackendFixture] = []
@@ -110,10 +120,22 @@ def fixtures(*caps: Capability, is_async: bool = False) -> list[BackendFixture]:
     ]
 
 
+def fixture_params(*caps: Capability, is_async: bool = False) -> list[Any]:
+    """Wrap :func:`fixtures` results as ``pytest.param`` entries.
+
+    Each entry carries the fixture's ``name`` as the parametrize id and
+    its ``marks`` (e.g. ``os_sensitive`` on local). Pass directly to
+    ``@pytest.mark.parametrize("backend", fixture_params(Cap.X),
+    indirect=True)``.
+    """
+    return [pytest.param(f, id=f.name, marks=list(f.marks)) for f in fixtures(*caps, is_async=is_async)]
+
+
 __all__ = [
     "AnyBackend",
     "BackendFixture",
     "all_fixtures",
+    "fixture_params",
     "fixtures",
     "register",
 ]
