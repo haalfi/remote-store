@@ -120,6 +120,15 @@ jobs:
             nc -z 127.0.0.1 10000 && break || sleep 1
           done
           nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
+      - name: Start SFTP (Stage 2)
+        run: |
+          docker run -d --name sftp-test -p 2222:22 \
+            atmoz/sftp:alpine \
+            benchuser:benchpass:::upload
+          for i in $(seq 1 30); do
+            nc -z 127.0.0.1 2222 && break || sleep 1
+          done
+          nc -z 127.0.0.1 2222 || { echo "::error::SFTP failed to start"; exit 1; }
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -166,9 +175,9 @@ jobs:
       - name: Assert pyarrow_ge_24() detects pyarrow 24
         run: python -c "from tests._helpers import pyarrow_ge_24; assert pyarrow_ge_24(), 'pyarrow_ge_24() returned False -- helper regressed'"
       - name: Verify S3-PyArrow routes to MinIO on pyarrow 24
-        run: pytest tests/backends/test_s3_pyarrow.py -v
+        run: pytest tests/backends/s3/test_pyarrow.py -v
       - name: Verify pyarrow-24 paths in ext.arrow, ext.parquet, sqlalchemy
-        run: pytest tests/test_arrow.py tests/test_ext_parquet.py tests/backends/test_sqlquery.py tests/backends/test_sqlblob.py -q
+        run: pytest tests/test_arrow.py tests/test_ext_parquet.py tests/backends/sqlquery/test_config.py tests/backends/sqlblob/test_config.py -q
 
   test-cross-platform:
     needs: [changes]

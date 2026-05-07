@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-179 — Implement Spec 048 Phase 1: fixture registry + conformance reorganisation**
+  Foundational refactor before any new fixtures or replay layer.
+  Introduces `tests/backends/fixtures/registry.py` per spec
+  [TEST-004](specs/048-testing-architecture.md) with the
+  `BackendFixture` record (name, backend, factory, stage, kind,
+  capabilities, is_async, cleanup, marks) and the `fixtures()` /
+  `fixture_params()` helpers. Per-backend factory modules register
+  every existing fixture: memory, local, http, s3_moto, sftp_inproc,
+  sqlblob, dafny_oracle, azurite, s3_pyarrow_moto, s3_pyarrow_minio,
+  sftp_docker, memory_async_native, memory_async_adapted,
+  local_async_adapted. Stage 2 SFTP-Docker is wired into the CI
+  `test` job. The `--stage=N` CLI flag (TEST-006) auto-detects via
+  `docker info` (Stage 2 if reachable, Stage 1 otherwise). Conformance
+  splits into seven topic files under `tests/backends/conformance/`
+  with class-level capability-filtered parametrize replacing the
+  `_require()` runtime-skip pattern (TEST-005). Backend-specific
+  tests move into per-backend subtrees under `tests/backends/<x>/`
+  with optional `aio/` siblings. Async conformance and sync-adapter
+  conformance move under `tests/backends/conformance/`. TESTING.md
+  placement table is updated to match. 14 spec-marker tests pin
+  TEST-001/004/005/006/010 invariants. Spec: TEST-002, TEST-003,
+  TEST-004, TEST-005, TEST-006, TEST-010.
+
 - [x] **BK-175 — Live HNS test architecture: design phase**
   Original exit criterion was "RFC for the parametrize + cassette design".
   Delivered as a spec + ADR pair, exceeding the RFC scope: the design covers

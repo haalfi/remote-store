@@ -32,7 +32,7 @@ class _Urllib3StreamAdapter(io.RawIOBase):
 
     def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
         try:
-            return self._raw.readinto(b)  # type: ignore[arg-type]
+            return self._raw.readinto(b)  # type: ignore[arg-type, unused-ignore]
         except urllib3.exceptions.HTTPError as exc:
             raise OSError(str(exc)) from exc
 

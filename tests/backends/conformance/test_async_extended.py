@@ -1,17 +1,16 @@
 """Extended conformance tests for the async backend contract.
 
-Mirrors ``tests/backends/test_conformance_extended.py`` for the async side.
-The fixture ``async_backend`` is parametrized across all backends that have
-explicit directory entries:
+Async sibling of the sync conformance topic files in this directory. The
+``async_backend`` fixture is parametrised by the registry-driven hook in
+``tests.backends.conformance.conftest`` over every registry entry whose
+``is_async=True``.
 
-* ``AsyncMemoryBackend``: native async implementation with ``_DirNode`` objects.
-* ``SyncBackendAdapter(MemoryBackend())``: adapter wrapping the sync reference.
-* ``SyncBackendAdapter(LocalBackend())``: adapter over a real filesystem.
-
-Flat-namespace backends (S3, Azure Blob, HTTP, SQL-blob) have no real directory
-entries and are excluded from error-fidelity tests by ``_skip_flat_namespace``.
-The current parametrization does not include any such backend, but the helper
-is preserved so future fixture extensions stay correct.
+Flat-namespace backends (S3, Azure Blob, HTTP, SQL-blob) have no real
+directory entries and are excluded from error-fidelity tests by
+``_skip_flat_namespace``. The current registry holds only hierarchical
+async fixtures (``memory_async_native``, ``memory_async_adapted``,
+``local_async_adapted``); the helper is preserved for the day a flat-NS
+async backend is added.
 
 Spec coverage: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008,
 ASYNC-010, ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017,
@@ -33,13 +32,8 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
-from remote_store.aio import AsyncMemoryBackend, SyncBackendAdapter
-from remote_store.backends._local import LocalBackend
-from remote_store.backends._memory import MemoryBackend
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from remote_store.aio._async_backend import AsyncBackend
 
 
@@ -103,22 +97,12 @@ _MOVE_COPY_PARAMS = [
 
 pytestmark = pytest.mark.extended_conformance
 
-
-@pytest.fixture(
-    params=[
-        "native-memory",
-        "adapted-memory",
-        pytest.param("adapted-local", marks=pytest.mark.os_sensitive),
-    ],
-    ids=["native-memory", "adapted-memory", "adapted-local"],
-)
-def async_backend(request: pytest.FixtureRequest, tmp_path: Path) -> AsyncBackend:
-    """Async backend parametrized over native and adapted hierarchical implementations."""
-    if request.param == "native-memory":
-        return AsyncMemoryBackend()
-    if request.param == "adapted-memory":
-        return SyncBackendAdapter(MemoryBackend())
-    return SyncBackendAdapter(LocalBackend(root=str(tmp_path)))
+# ``async_backend`` is parametrised by the registry-driven hook in
+# ``tests/backends/conformance/conftest.py``; the legacy local fixture
+# override (native-memory / adapted-memory / adapted-local) is replaced
+# by the registry entries memory_async_native, memory_async_adapted, and
+# local_async_adapted; see tests/backends/fixtures/{memory_async,
+# local_async}.py.
 
 
 # ===========================================================================

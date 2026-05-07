@@ -126,33 +126,28 @@ and the highest ID already in this file, then take the next integer. Run
   TEST-008, TEST-009.
 
 - [ ] **BK-180 — Implement Spec 048 Phase 2: live conformance fixtures**
-  Add `azure_live` (Stage 3, kind `real-live`) to the registry per
-  spec [TEST-001/004](specs/048-testing-architecture.md). Wire conformance
+  **Next-in-line after BK-179 landed.** Add `azure_live` (Stage 3, kind
+  `real-live`) to the registry per spec
+  [TEST-001/004](specs/048-testing-architecture.md). Wire conformance
   parametrize to include it when `--stage=3` and `RS_TEST_LIVE_HNS=1` are
   set. Verify the full conformance + extended suite runs green against a
   real ADLS Gen2 account. Repeat the shape for `s3_live` against real
   AWS S3 (separate env var; cost-controlled). No legacy live-test deletion
-  yet — that is BK-182. Sequencing: depends on BK-179. Spec: TEST-001,
-  TEST-004, TEST-006.
+  yet — that is BK-182. Spec: TEST-001, TEST-004, TEST-006.
 
-- [ ] **BK-179 — Implement Spec 048 Phase 1: fixture registry + conformance reorganisation**
-  **Execute-first prerequisite for BK-180, BK-181, BK-182.** The four-item
-  group is listed newest-first per BACKLOG ordering convention; execution
-  order runs BK-179 → BK-180 → BK-181 → BK-182.
-  Foundational refactor before any new fixtures or replay layer. Introduce
-  `tests/backends/fixtures/registry.py` per spec [TEST-004](specs/048-testing-architecture.md);
-  migrate existing backend fixtures (Memory, Local, Azurite, MinIO,
-  Dockerised SFTP, SQLite) into `BackendFixture` records. Reorganise
-  `tests/` into the layout in [TEST-010](specs/048-testing-architecture.md):
-  the backend concern as one self-contained subtree under
-  `tests/backends/` (conformance, backend-specific, fixtures,
-  cassettes). Existing conformance tests move from
-  `tests/backends/test_conformance*.py` to `tests/backends/conformance/`. Add the
-  `--stage=N` CLI flag and skipif-based capability gating
-  ([TEST-005/006](specs/048-testing-architecture.md)). No live fixtures
-  yet, no replay layer yet — pure layout change. Update
-  [`sdd/TESTING.md`](TESTING.md) "Test Subpackage Placement" to match.
-  Spec: TEST-002, TEST-003, TEST-004, TEST-005, TEST-006, TEST-010.
+  **Carried in from BK-179 review (#597):** the async indirect fixture
+  in `tests/backends/conformance/conftest.py` calls `cleanup` synchronously
+  (`Callable[[AnyBackend], None]`). Today's async fixtures
+  (`memory_async_native`/`memory_async_adapted` set `cleanup=None`;
+  `local_async_adapted` only does `tmp.cleanup()`) don't need an awaitable
+  teardown, so the gap is dormant. The first live async backend that owns a
+  real network pool (e.g. `AsyncAzureBackend` with an HTTP session, async
+  S3 if added later) must close it via `await backend.aclose()`. Decide
+  the channel before adding such a fixture: either extend `BackendFixture`
+  with an optional `aclose: Callable[[AnyBackend], Awaitable[None]] | None`
+  field and have the indirect fixture `await` it when present, or rely on
+  the backend's `__del__` / weak-finalizer (less reliable). Pin the
+  decision in this BK item before the first async live fixture lands.
 
 - [ ] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   `AsyncMemoryBackend.get_file_info` returns
