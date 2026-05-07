@@ -8,7 +8,7 @@ Wired into ``hatch run lint`` and the ``no-rst-roles`` pre-commit hook.
 
 Usage:
     python scripts/check_rst_roles.py [dir ...]
-    Defaults to src/, tests/, and scripts/ when no arguments are given.
+    Defaults to src/, tests/, scripts/, and examples/ when no arguments are given.
 """
 
 import re

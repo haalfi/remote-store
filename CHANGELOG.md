@@ -36,6 +36,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Added
 
+- ID-177: Design and set up long-term docstring style enforcement
 - ID-178: `Store.list_folders` and `AsyncStore.list_folders` now accept a
   `pattern=` keyword — a glob string matched against each folder's **name**
   (basename only) via `fnmatch.fnmatch`.  Mirrors `list_files(pattern=…)`

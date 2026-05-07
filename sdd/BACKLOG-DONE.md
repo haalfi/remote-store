@@ -9,10 +9,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **ID-177 — Design and set up long-term docstring style enforcement**
-  `scripts/check_rst_roles.py` scans `src/**/*.py` for RST inline roles
-  (`:\w+:`...``) and fails with file:line output. Wired into `hatch run lint`
-  and the `no-rst-roles` pre-commit pygrep hook. `sdd/DESIGN.md` § 4 documents
-  the gate.
+  `scripts/check_rst_roles.py` scans `src/`, `tests/`, `scripts/`, and
+  `examples/` for RST inline roles and fails with file:line output. Wired into
+  `hatch run lint` and the `no-rst-roles` pre-commit pygrep hook.
+  `sdd/DESIGN.md` § 4 documents the gate.
 
 - [x] **BK-179 — Implement Spec 048 Phase 1: fixture registry + conformance reorganisation**
   Foundational refactor before any new fixtures or replay layer.
