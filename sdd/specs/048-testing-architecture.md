@@ -41,10 +41,14 @@ two independent axes.
 4. **Real-live.** Real backend code paths against a live cloud
    service. Examples include real ADLS Gen2, real S3, and a live
    SSH server.
+5. **Replay.** Real backend SDK code paths against a recorded HTTP
+   cassette (TEST-007). No live network, no Docker, no live cloud
+   account. Distinct from mocked because no `MagicMock` is used; the
+   real SDK pipeline runs and the transport layer alone is stubbed.
 
 The canonical kind strings used in the fixture registry (TEST-004)
 are the lowercased forms of these names: `"pure"`, `"mocked"`,
-`"real-local"`, `"real-live"`.
+`"real-local"`, `"real-live"`, `"replay"`.
 
 **Stage**, the cost and availability tier the test runs in:
 
@@ -72,8 +76,9 @@ behavioural test set that every backend must satisfy. Tests in
 (TEST-004). They contain no backend-specific branching.
 
 **Postcondition:** Adding a new backend that satisfies the `Backend`
-ABC and registers a fixture (TEST-004) extends conformance coverage
-automatically. No conformance test names a concrete backend.
+or `AsyncBackend` ABC and registers a fixture (TEST-004) extends
+conformance coverage automatically. No conformance test names a
+concrete backend.
 
 **Capability filtering:** Conformance tests gate on cross-backend
 [`Capability`](../specs/003-backend-adapter-contract.md) values via
@@ -100,10 +105,18 @@ modes, SQL dialect particulars (PostgreSQL `bytea` versus Large
 Objects, MySQL `LONGBLOB` limits).
 
 **Postcondition:** No `tests/backends/<backend>/` test runs against a
-different backend's fixture. `tests/backends/<backend>/aio/` exists
-only when sync and async semantics genuinely diverge. Otherwise the
-sync file parametrises over both sync and async fixtures of the same
-backend.
+different backend's fixture.
+
+**Sync/async layout:** Sync backend-specific tests live in
+`tests/backends/<backend>/<topic>.py` and parametrise over the sync
+fixtures of that backend (registry filtered by `backend == "<x>"` and
+`is_async is False`). Async backend-specific tests live in
+`tests/backends/<backend>/aio/<topic>.py` and parametrise over the
+async fixtures (`is_async is True`). Test logic shared between the
+two lives in `tests/backends/<backend>/_helpers.py` and is imported
+by both files. The aio file may be omitted when no async-specific
+behaviour exists for the topic; mixing sync `def` and `async def`
+test methods in one file is not used.
 
 **Configuration tests** (construction options, opt parsing, registry
 wiring) also live here in `tests/backends/<backend>/test_config.py`.
@@ -124,7 +137,7 @@ class BackendFixture:
     backend: str                           # backend family, e.g. "azure"
     factory: Callable[[], AnyBackend]      # produces a fresh isolated instance
     stage: int                             # 1, 2, or 3 per TEST-001
-    kind: Literal["pure", "mocked", "real-local", "real-live"]
+    kind: Literal["pure", "mocked", "real-local", "real-live", "replay"]
     capabilities: frozenset[Capability]
     is_async: bool                         # disambiguates the AnyBackend union for parametrize
     cleanup: Callable[[AnyBackend], None] | None = None
@@ -144,18 +157,31 @@ sharing is forbidden.
 ## TEST-005: Capability Gating Uses Native Pytest Mechanisms
 
 **Invariant:** Conformance tests gate on capabilities and stages via
-native `pytest.mark.skipif` and parametrize-id filters. No custom
+parametrize-id filtering at registry walk time. Runtime conditions
+(env vars, infrastructure availability) gate via native
+`pytest.mark.skipif` or fixture-level `pytest.skip(...)`. No custom
 `@requires(...)` marker layer is introduced.
 
-**Mechanism:** A test asserting an `ATOMIC_WRITES` contract is
-parametrised over the registry. The parametrize id-filter excludes
-fixtures whose `capabilities` set does not contain
-`Capability.ATOMIC_WRITES`. Excluded fixtures appear as
-`SKIPPED [reason]` in `-v` output.
+**Capability and stage gating (id-filter):** A test
+asserting an `ATOMIC_WRITES` contract is parametrised over the
+subset of the registry whose `capabilities` set contains
+`Capability.ATOMIC_WRITES` and whose `stage <= --stage`. Fixtures
+that do not match the filter produce no parametrize id at all; they
+are absent from the test session and emit no `SKIPPED` line. Both
+`stage` and `capabilities` are static per fixture, so the filter is
+applied once at collection time.
+
+**Runtime gating (skipif / fixture skip):** Conditions
+that depend on per-run state (env vars set, Docker daemon reachable,
+cassette file present) gate via `pytest.mark.skipif` on the test or
+`pytest.skip(...)` inside the fixture's `factory()`. These do emit
+visible `SKIPPED [reason]` entries because the test was registered
+in the parametrize before the skip resolved.
 
 **Postcondition:** No special pytest plugin is required to read the
-gating logic. A reader can trace the skip from the parametrize source
-to the registry without indirection.
+gating logic. A reader can trace either gate (id-filter or skipif)
+from the parametrize source or the fixture body to the registry
+without indirection.
 
 **Rationale:** [ADR-0028](../adrs/0028-testing-architecture-kind-stage-replay.md)
 § Capability gating uses native pytest mechanisms.
@@ -180,6 +206,14 @@ developer machines and in CI. A developer with Docker available can
 still opt down with `--stage=1`. Stage 3 is never implicit. Missing
 env vars cause Stage 3 fixtures to skip loudly with a fixture-level
 `pytest.skip(...)` referencing the missing variable.
+
+**Explicit stage with missing infrastructure:** When an explicit
+`--stage=N` selects a tier whose infrastructure is unavailable on
+the running machine (e.g. `--stage=3` without Docker, or `--stage=2`
+without Docker), fixtures of the unavailable tier skip via their
+fixture-level `pytest.skip(...)` reason. Collection still succeeds
+and tests parametrised over fixtures of available tiers run. The CLI
+flag does not abort the session.
 
 **CI mapping:** The default-CI job runs Stage 2. A separate
 manually-triggered or scheduled job runs Stage 3. Per-backend cost
