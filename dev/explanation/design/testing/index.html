@@ -4886,6 +4886,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#provenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9118,6 +9129,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#provenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provenance
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9144,9 +9166,13 @@
 <!-- doc: dual dest=explanation/design/testing.md -->
 
 <h2 id="intent-scope">Intent &amp; Scope<a class="headerlink" href="#intent-scope" title="Permanent link">&para;</a></h2>
-<p>Authoritative source for test <strong>quality</strong> rules in <code>tests/</code>. Companion to
-<code>sdd/DESIGN.md</code> § 11 (test style). Derived from
-<code>sdd/research/research-testing-best-practices.md</code>.</p>
+<p>Authoritative source for test <strong>quality</strong> rules and top-level
+<strong>placement</strong> of test files in <code>tests/</code>. Companion to
+<a href="../design/#11-test-style"><code>sdd/DESIGN.md</code> § 11 (test style)</a>.</p>
+<p>For test <strong>architecture</strong> (the shape of the test tree and how backends
+are wired into it), see
+<a href="../specs/048-testing-architecture/"><code>sdd/specs/048-testing-architecture.md</code></a>
+and <a href="../adrs/0028-testing-architecture-kind-stage-replay/">ADR-0028</a>.</p>
 <h2 id="test-subpackage-placement">Test Subpackage Placement<a class="headerlink" href="#test-subpackage-placement" title="Permanent link">&para;</a></h2>
 <p>Each test file belongs in the subpackage matching its subject:</p>
 <table>
@@ -9356,6 +9382,8 @@ haven't thought of. See rules 9–11.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h3>
+<p>Derived from <a href="../research/research-testing-best-practices/"><code>sdd/research/research-testing-best-practices.md</code></a>.</p>
 
 
 
