@@ -6391,6 +6391,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: RFC-0013: list_folders(pattern=…) — Name-Based Glob Filter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8957,8 +8985,8 @@ well-formed paths (no trailing slashes, no empty segments).</p>
 </code></pre></div>
 <hr />
 <h2 id="depth-002-list_foldersmax_depthn">DEPTH-002: list_folders(max_depth=N)<a class="headerlink" href="#depth-002-list_foldersmax_depthn" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> <code>list_folders(path, *, max_depth=None)</code> accepts an optional
-<code>max_depth</code> keyword controlling how many levels of subfolders to return:</p>
+<p><strong>Invariant:</strong> <code>list_folders(path, *, pattern=None, max_depth=None)</code> accepts an
+optional <code>max_depth</code> keyword controlling how many levels of subfolders to return:</p>
 <ul>
 <li><code>max_depth=None</code> or <code>max_depth=0</code>: immediate children only (current behavior).</li>
 <li><code>max_depth=N</code> (N &gt; 0): subfolders up to N levels deep via BFS traversal using
@@ -8968,6 +8996,9 @@ well-formed paths (no trailing slashes, no empty segments).</p>
 <p><strong>Implementation (Phase 1):</strong> BFS at the Store level. Each BFS step calls the
 existing <code>Backend.list_folders()</code> for one level. Cost is O(total folders within
 depth), not O(depth). No Backend ABC change.</p>
+<p><strong>Filtering order:</strong> BFS traversal runs first; <code>pattern</code> filtering is applied to
+each <code>FolderEntry</code> after rebasing. The two compose naturally — depth controls
+which folders are visited, pattern filters what is yielded. See STORE-017.</p>
 <hr />
 <h2 id="depth-003-backend-native-max_depth-optimization">DEPTH-003: Backend-native <code>max_depth</code> optimization<a class="headerlink" href="#depth-003-backend-native-max_depth-optimization" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Backend.list_files(path, *, recursive=False, max_depth=None)</code>

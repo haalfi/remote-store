@@ -6391,6 +6391,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: RFC-0013: list_folders(pattern=…) — Name-Based Glob Filter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -7700,6 +7728,17 @@
     <span class="md-ellipsis">
       
         STORE-016: Depth-limited listing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#store-017-list_folderspattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STORE-017: list_folders(pattern=…)
       
     </span>
   </a>
@@ -9383,6 +9422,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#store-017-list_folderspattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STORE-017: list_folders(pattern=…)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9568,6 +9618,10 @@
 <p><strong>Invariant:</strong> <code>list_files(max_depth=N)</code> and <code>list_folders(max_depth=N)</code> control traversal depth. When <code>max_depth</code> is set on <code>list_files</code>, <code>recursive</code> is ignored. Negative values raise <code>ValueError</code>. Filtering is applied at the Store level.
 <strong>Rationale:</strong> Covers dataset discovery and shallow inventory without fetching the full recursive tree.
 <strong>See also:</strong> <a href="../037-depth-limited-listing/">037-depth-limited-listing.md</a> (DEPTH-001, DEPTH-002).</p>
+<h3 id="store-017-list_folderspattern">STORE-017: list_folders(pattern=…)<a class="headerlink" href="#store-017-list_folderspattern" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>list_folders(path, *, pattern=None, max_depth=None)</code> accepts an optional <code>pattern</code> keyword. When set, <code>FolderEntry</code> items whose <code>.name</code> does not match the pattern (via <code>fnmatch.fnmatch</code>) are excluded from results. Filtering is applied at the Store level after BFS traversal and path rebasing. <code>max_depth</code> controls traversal depth; <code>pattern</code> filters the yielded results — the two compose naturally.
+<strong>Rationale:</strong> Mirrors STORE-014. Covers the "find all folders named <code>raw</code>" or "skip <code>archive_*</code>" use case without new capabilities or backend changes.
+<strong>See also:</strong> STORE-014 (list_files pattern), <a href="../037-depth-limited-listing/">037-depth-limited-listing.md</a> (DEPTH-002), <a href="../../rfcs/rfc-0013-list-folders-pattern/">RFC-0013</a> (design rationale).</p>
 <hr />
 <h2 id="metadata-models">Metadata Models<a class="headerlink" href="#metadata-models" title="Permanent link">&para;</a></h2>
 <h3 id="mod-001-fileinfo-immutability">MOD-001: FileInfo Immutability<a class="headerlink" href="#mod-001-fileinfo-immutability" title="Permanent link">&para;</a></h3>

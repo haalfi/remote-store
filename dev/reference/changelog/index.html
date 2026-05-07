@@ -7937,6 +7937,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: RFC-0013: list_folders(pattern=…) — Name-Based Glob Filter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11881,6 +11909,12 @@
 </ul>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li>ID-178: <code>Store.list_folders</code> and <code>AsyncStore.list_folders</code> now accept a
+  <code>pattern=</code> keyword — a glob string matched against each folder's <strong>name</strong>
+  (basename only) via <code>fnmatch.fnmatch</code>.  Mirrors <code>list_files(pattern=…)</code>
+  (STORE-014).  Composes naturally with <code>max_depth=</code>: BFS traversal runs first,
+  pattern filters what is yielded.  No backend changes required (STORE-017,
+  DEPTH-002).</li>
 <li>Azure HNS account setup guide (<code>docs-src/guides/backends/azure-hns-setup.md</code>): step-by-step <code>az</code> CLI recipe for provisioning an ADLS Gen2 account suitable for the live HNS test suite, with cross-links from the Azure backend guide and <code>CONTRIBUTING.md</code>.</li>
 <li>ID-176: <code>docs-src/context7.json</code> — claims <code>https://docs.remotestore.dev/stable/</code> on context7 and supplies the full <code>rules</code> array so AI tools surface correct usage context from the rendered docs site.</li>
 <li>BK-171: Reliable link validation for docs-only files — universal on-disk

@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/specs/012-azure-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/rfcs/rfc-0013-list-folders-pattern/">
       
       
-        <link rel="prev" href="../011-s3-pyarrow-backend/">
+        <link rel="prev" href="../rfc-0012-doc-graph-model/">
       
       
-        <link rel="next" href="../013-memory-backend/">
+        <link rel="next" href="../../research/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>012: Azure Backend Specification - remote-store</title>
+        <title>0013: RFC-0013: list_folders(pattern=…) — Name-Based Glob Filter - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#azure-backend-specification" class="md-skip">
+        <a href="#rfc-0013-list_folderspattern-name-based-glob-filter" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              012: Azure Backend Specification
+              0013: RFC-0013: list_folders(pattern=…) — Name-Based Glob Filter
             
           </span>
         </div>
@@ -6002,6 +6002,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6012,15 +6014,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_9" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../rfcs/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6044,7 +6046,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_9_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_9_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6062,7 +6064,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -6090,7 +6092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -6118,7 +6120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -6146,7 +6148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -6174,7 +6176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -6202,7 +6204,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -6230,7 +6232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -6258,7 +6260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+      <a href="../rfc-0008-parquet-dataset-storage/" class="md-nav__link">
         
   
   
@@ -6286,7 +6288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../rfc-0009-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6314,7 +6316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0010-graph-backend/" class="md-nav__link">
+      <a href="../rfc-0010-graph-backend/" class="md-nav__link">
         
   
   
@@ -6342,7 +6344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0011-write-result/" class="md-nav__link">
+      <a href="../rfc-0011-write-result/" class="md-nav__link">
         
   
   
@@ -6370,7 +6372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
+      <a href="../rfc-0012-doc-graph-model/" class="md-nav__link">
         
   
   
@@ -6395,10 +6397,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: RFC-0013: list_folders(pattern=…) — Name-Based Glob Filter
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6414,6 +6443,203 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#motivation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Proposal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spec-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spec changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behaviour
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subclass-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subclass propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives Considered
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Alternatives Considered">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#push-pattern-into-the-backend-abcs-list_folders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Push pattern= into the Backend ABC's list_folders
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-as-part-of-bfs-pruning-non-matching-subtrees-from-descent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter as part of BFS, pruning non-matching subtrees from descent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-a-separate-glob_folders-extension-instead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add a separate glob_folders(...) extension instead
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Impact
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open Questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -7392,8 +7618,6 @@
                 
   
   
-    
-  
   
   
     
@@ -7404,15 +7628,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_11" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_11" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -7436,7 +7660,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_11_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_11_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_8_11">
             <span class="md-nav__icon md-icon"></span>
             
@@ -7454,7 +7678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -7482,7 +7706,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -7510,7 +7734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -7538,7 +7762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -7566,7 +7790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -7594,7 +7818,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -7622,7 +7846,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -7650,7 +7874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -7678,7 +7902,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -7706,7 +7930,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -7734,7 +7958,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -7759,37 +7983,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    012: Azure Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -7805,558 +8002,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Construction
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Construction">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-001-constructor-parameters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-001: Constructor Parameters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-002-backend-name" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-005: Construction Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#hns-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HNS Detection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="HNS Detection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-006: Adaptive Behavior Based on Hierarchical Namespace
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#azure-storage-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Azure Storage Model
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Azure Storage Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-007-container-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-007: Container Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-008-directory-semantics-hns-enabled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-008: Directory Semantics (HNS Enabled)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-009-virtual-folder-semantics-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-009: Virtual Folder Semantics (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-010-write-does-not-create-folder-markers-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-010: Write Does Not Create Folder Markers (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-011-path-encoding" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-011: Path Encoding
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-inspection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Inspection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Inspection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-012-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-012: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-013-is_file-and-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-013: is_file() and is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-014-atomic-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-014: Atomic Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-015-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-015: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-016-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-016: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-017-move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-017: Move
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-018-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-018: Copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-019-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-019: Glob
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-022-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-022: write()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-023-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-023: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-024-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-024: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-025-structured-error-classification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-025: Structured Error Classification
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-026-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-026: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-027-to_key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-027: to_key
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-028-error-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-028: Error Context Manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Management
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-029-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-029: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-030-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-030: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-034-etag-and-content-md5-digest-population" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-034: ETag and Content-MD5 Digest Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-033-transfer-concurrency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-033: Transfer Concurrency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-031-client-options-passthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-031: Client Options Passthrough
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-035-staged-block-upload-defaults" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-035: Staged-Block Upload Defaults
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-032-default-credential-chain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-032: Default Credential Chain
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -8369,7 +8014,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -8397,7 +8042,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -8425,7 +8070,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -8453,7 +8098,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -8481,7 +8126,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -8509,7 +8154,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -8537,7 +8182,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -8565,7 +8210,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -8593,7 +8238,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -8621,7 +8266,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8649,7 +8294,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -8677,7 +8322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -8705,7 +8350,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -8733,7 +8378,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -8761,7 +8406,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -8789,7 +8434,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -8817,7 +8462,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -8845,7 +8490,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -8873,7 +8518,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -8901,7 +8546,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -8929,7 +8574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -8957,7 +8602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -8985,7 +8630,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -9013,7 +8658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -9041,7 +8686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -9069,7 +8714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -9097,7 +8742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -9125,7 +8770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -9153,7 +8798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -9181,7 +8826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -9209,7 +8854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -9237,7 +8882,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../044-graph-backend/" class="md-nav__link">
+      <a href="../../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -9265,7 +8910,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../045-write-result/" class="md-nav__link">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -9293,7 +8938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../046-ext-write/" class="md-nav__link">
+      <a href="../../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -9321,7 +8966,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../047-docs-framework-tooling/" class="md-nav__link">
+      <a href="../../specs/047-docs-framework-tooling/" class="md-nav__link">
         
   
   
@@ -9392,10 +9037,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Status
       
     </span>
   </a>
@@ -9403,22 +9048,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#summary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        Summary
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#motivation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposal
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Proposal">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-001-constructor-parameters" class="md-nav__link">
+  <a href="#api-surface" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-001: Constructor Parameters
+        API surface
       
     </span>
   </a>
@@ -9426,10 +9093,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-002-backend-name" class="md-nav__link">
+  <a href="#spec-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-002: Backend Name
+        Spec changes
       
     </span>
   </a>
@@ -9437,10 +9104,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-003-capability-declaration" class="md-nav__link">
+  <a href="#behaviour" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-003: Capability Declaration
+        Behaviour
       
     </span>
   </a>
@@ -9448,21 +9115,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-004-lazy-connection" class="md-nav__link">
+  <a href="#subclass-propagation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-005: Construction Validation
+        Subclass propagation
       
     </span>
   </a>
@@ -9475,22 +9131,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hns-detection" class="md-nav__link">
+  <a href="#alternatives-considered" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HNS Detection
+        Alternatives Considered
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="HNS Detection">
+    <nav class="md-nav" aria-label="Alternatives Considered">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" class="md-nav__link">
+  <a href="#push-pattern-into-the-backend-abcs-list_folders" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-006: Adaptive Behavior Based on Hierarchical Namespace
+        Push pattern= into the Backend ABC's list_folders
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-as-part-of-bfs-pruning-non-matching-subtrees-from-descent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter as part of BFS, pruning non-matching subtrees from descent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-a-separate-glob_folders-extension-instead" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add a separate glob_folders(...) extension instead
       
     </span>
   </a>
@@ -9503,423 +9181,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#azure-storage-model" class="md-nav__link">
+  <a href="#impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Azure Storage Model
+        Impact
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Azure Storage Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-007-container-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-007: Container Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-008-directory-semantics-hns-enabled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-008: Directory Semantics (HNS Enabled)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-009-virtual-folder-semantics-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-009: Virtual Folder Semantics (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-010-write-does-not-create-folder-markers-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-010: Write Does Not Create Folder Markers (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-011-path-encoding" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-011: Path Encoding
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#path-inspection" class="md-nav__link">
+  <a href="#open-questions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Path Inspection
+        Open Questions
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Path Inspection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-012-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-012: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-013-is_file-and-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-013: is_file() and is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
+  <a href="#references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations
+        References
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-014-atomic-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-014: Atomic Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-015-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-015: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-016-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-016: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-017-move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-017: Move
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-018-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-018: Copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-019-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-019: Glob
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-022-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-022: write()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-023-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-023: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-024-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-024: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-025-structured-error-classification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-025: Structured Error Classification
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-026-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-026: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-027-to_key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-027: to_key
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-028-error-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-028: Error Context Manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Management
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-029-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-029: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-030-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-030: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-034-etag-and-content-md5-digest-population" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-034: ETag and Content-MD5 Digest Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-033-transfer-concurrency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-033: Transfer Concurrency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-031-client-options-passthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-031: Client Options Passthrough
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-035-staged-block-upload-defaults" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-035: Staged-Block Upload Defaults
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-032-default-credential-chain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-032: Default Credential Chain
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -9940,260 +9230,135 @@
 
 
 
-<h1 id="azure-backend-specification">Azure Backend Specification<a class="headerlink" href="#azure-backend-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>AzureBackend</code> implements the <code>Backend</code> ABC for Azure Storage using a dual-client architecture: <code>azure-storage-blob</code> (BlobServiceClient) for non-HNS accounts and <code>azure-storage-file-datalake</code> (DataLakeServiceClient) for HNS-only features. It targets ADLS Gen2 (Hierarchical Namespace) accounts as the primary use case, while remaining fully functional against plain Blob Storage accounts without HNS.</p>
-<p>Unlike the S3 backends (which use <code>s3fs</code>, an fsspec wrapper), this backend uses the Azure SDK directly. The dual-client design exists because the DFS wire protocol (used by <code>azure-storage-file-datalake</code>) is not supported by Azurite or plain Blob Storage accounts — only the Blob API works everywhere. HNS-only features (atomic rename, real directories) use the DataLake SDK; all other operations use the Blob SDK. See <a href="../../rfcs/rfc-0001-azure-backend/">RFC-0001</a> for the full rationale.</p>
-<p><strong>Dependencies:</strong> <code>azure-storage-file-datalake</code>, <code>azure-identity</code> (optional, for <code>DefaultAzureCredential</code>)
-<strong>Optional extra:</strong> <code>pip install "remote-store[azure]"</code></p>
-<hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="az-001-constructor-parameters">AZ-001: Constructor Parameters<a class="headerlink" href="#az-001-constructor-parameters" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend</code> is constructed with a required <code>container</code> name and optional connection parameters.
-<strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">AzureBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">container</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">account_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">account_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">account_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">sas_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">connection_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">credential</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># e.g. DefaultAzureCredential()</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># see AZ-033</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
+<h1 id="rfc-0013-list_folderspattern-name-based-glob-filter">RFC-0013: <code>list_folders(pattern=…)</code> — Name-Based Glob Filter<a class="headerlink" href="#rfc-0013-list_folderspattern-name-based-glob-filter" title="Permanent link">&para;</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
+<p>Implemented</p>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>Add an optional <code>pattern=</code> keyword to <code>Store.list_folders</code> and
+<code>AsyncStore.list_folders</code>, mirroring the existing <code>list_files(pattern=…)</code>
+(STORE-014). When set, <code>FolderEntry</code> items whose <code>.name</code> does not match the
+pattern via <code>fnmatch.fnmatch</code> are excluded from results. Filtering runs at
+the Store level after BFS traversal and path rebasing; <code>max_depth</code> controls
+traversal depth, <code>pattern</code> filters yielded results, and the two compose
+naturally.</p>
+<h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
+<p><code>list_files</code> accepts <code>pattern=</code> for name-based glob filtering at the Store
+level. <code>list_folders</code> does not. There is no design reason for the asymmetry
+— <code>FolderEntry</code> has carried <code>.name</code> since ID-072 / v0.17.0 (PathEntry
+protocol), so name-based filtering is purely a Store-level concern.</p>
+<p>Citizen-developer use cases that motivate the parameter:</p>
+<ul>
+<li>Listing only date-partitioned subfolders: <code>list_folders(prefix, pattern="20*")</code>.</li>
+<li>Filtering Hive-style partition folders: <code>pattern="ds=*"</code>.</li>
+<li>Discovering tenant-specific subtrees: <code>pattern="tenant_*"</code>.</li>
+</ul>
+<p>Without the kwarg these all require post-hoc Python filtering on top of an
+unfiltered <code>list_folders</code> walk, which obscures intent and (for deep walks)
+forces materialisation that <code>pattern=</code> could elide at iteration time.</p>
+<h2 id="proposal">Proposal<a class="headerlink" href="#proposal" title="Permanent link">&para;</a></h2>
+<h3 id="api-surface">API surface<a class="headerlink" href="#api-surface" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_folders</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FolderEntry</span><span class="p">]:</span> <span class="o">...</span>
 </code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect to Azure during construction (see AZ-004). At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> is raised at construction time.</p>
-<h3 id="az-002-backend-name">AZ-002: Backend Name<a class="headerlink" href="#az-002-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"azure"</code>.</p>
-<h3 id="az-003-capability-declaration">AZ-003: Capability Declaration<a class="headerlink" href="#az-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-020).
-<strong>Rationale:</strong>
-- <code>ATOMIC_WRITE</code>: HNS accounts use temp file + atomic rename; non-HNS accounts use direct upload (Azure PUT is atomic, same as S3). See AZ-006 and AZ-014.
-- <code>MOVE</code>: HNS accounts use native atomic rename; non-HNS accounts use copy + delete. See AZ-006 and AZ-017.
-- <code>COPY</code>: Implemented via server-side copy (<code>start_copy_from_url</code>). See AZ-018.
-- <code>GLOB</code>: Native prefix-optimized glob since v0.12.0 (BK-002).</p>
-<h3 id="az-004-lazy-connection">AZ-004: Lazy Connection<a class="headerlink" href="#az-004-lazy-connection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The <code>BlobServiceClient</code>, <code>DataLakeServiceClient</code> (HNS only), and HNS detection are deferred to first use.
-<strong>Rationale:</strong> Same as S3-004 — the backend may be created during application wiring before the network is available.</p>
-<h3 id="az-005-construction-validation">AZ-005: Construction Validation<a class="headerlink" href="#az-005-construction-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>container</code> must be a non-empty string. Passing an empty or whitespace-only container raises <code>ValueError</code> at construction time. At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> at construction.
-<strong>Postconditions:</strong> No network validation of container existence at construction time. Invalid names are caught by Azure on first operation and mapped to the appropriate error.</p>
-<hr />
-<h2 id="hns-detection">HNS Detection<a class="headerlink" href="#hns-detection" title="Permanent link">&para;</a></h2>
-<h3 id="az-006-adaptive-behavior-based-on-hierarchical-namespace">AZ-006: Adaptive Behavior Based on Hierarchical Namespace<a class="headerlink" href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On first use, the backend calls <code>GetAccountInfo</code> to determine whether the storage account has Hierarchical Namespace (HNS) enabled. The result is cached for the lifetime of the backend instance.</p>
-<p><strong>Behavior matrix:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Operation</th>
-<th>HNS enabled (ADLS Gen2)</th>
-<th>No HNS (plain Blob)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>write_atomic</code></td>
-<td>Temp file + atomic rename</td>
-<td>Direct upload (PUT is atomic)</td>
-</tr>
-<tr>
-<td><code>move</code></td>
-<td>Atomic <code>rename_file</code></td>
-<td>Copy + delete</td>
-</tr>
-<tr>
-<td><code>exists</code> / <code>is_file</code> / <code>is_folder</code></td>
-<td>Native path property check</td>
-<td>HEAD request + prefix check</td>
-</tr>
-<tr>
-<td><code>list_files</code> / <code>list_folders</code></td>
-<td>Native directory listing</td>
-<td>Prefix-based listing</td>
-</tr>
-<tr>
-<td><code>delete_folder(recursive=True)</code></td>
-<td>Single recursive delete</td>
-<td>Iterate + delete each path</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Rationale:</strong> ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity).</p>
-<p><strong>Postconditions:</strong> The HNS check is performed at most once. If the check itself fails (e.g. permissions), the backend falls back to non-HNS behavior and logs a warning.</p>
-<hr />
-<h2 id="azure-storage-model">Azure Storage Model<a class="headerlink" href="#azure-storage-model" title="Permanent link">&para;</a></h2>
-<h3 id="az-007-container-scope">AZ-007: Container Scope<a class="headerlink" href="#az-007-container-scope" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> All operations are scoped to a single Azure Storage container, analogous to S3Backend's bucket scope. Cross-container operations are not supported.</p>
-<h3 id="az-008-directory-semantics-hns-enabled">AZ-008: Directory Semantics (HNS Enabled)<a class="headerlink" href="#az-008-directory-semantics-hns-enabled" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When HNS is enabled, directories are real entities. <code>is_folder(path)</code> checks for the existence of a directory object. Empty directories persist after their contents are deleted.
-<strong>Postconditions:</strong> This matches SFTP behavior (SFTP-011, SFTP-013), not S3 behavior.</p>
-<h3 id="az-009-virtual-folder-semantics-no-hns">AZ-009: Virtual Folder Semantics (No HNS)<a class="headerlink" href="#az-009-virtual-folder-semantics-no-hns" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When HNS is not enabled, folder semantics match S3: "folders" are logical constructs derived from <code>/</code>-delimited path prefixes. A folder exists only as long as blobs exist under its prefix.
-<strong>Postconditions:</strong> Same as S3-006 through S3-009.</p>
-<h3 id="az-010-write-does-not-create-folder-markers-no-hns">AZ-010: Write Does Not Create Folder Markers (No HNS)<a class="headerlink" href="#az-010-write-does-not-create-folder-markers-no-hns" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On non-HNS accounts, <code>write("a/b/c.txt", content)</code> creates only the blob with path <code>a/b/c.txt</code>. No folder marker blobs are created.
-<strong>Postconditions:</strong> Same as S3-008. Not applicable to HNS accounts where directories are managed natively by the service.</p>
-<h3 id="az-011-path-encoding">AZ-011: Path Encoding<a class="headerlink" href="#az-011-path-encoding" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Azure paths use <code>/</code> as separator. The backend normalizes paths by stripping leading <code>/</code> and collapsing double separators, consistent with the <code>RemotePath</code> model (PATH-001 through PATH-014).</p>
-<hr />
-<h2 id="path-inspection">Path Inspection<a class="headerlink" href="#path-inspection" title="Permanent link">&para;</a></h2>
-<h3 id="az-012-exists">AZ-012: exists()<a class="headerlink" href="#az-012-exists" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>exists(path)</code> first checks for a blob via <code>BlobClient.get_blob_properties()</code>, then checks for a directory via <code>DataLakeDirectoryClient.get_directory_properties()</code>. Returns <code>True</code> if either exists, <code>False</code> on <code>ResourceNotFoundError</code>.
-<strong>Invariant (no HNS):</strong> <code>exists(path)</code> issues a HEAD request for the blob via <code>BlobClient.get_blob_properties()</code>. Returns <code>True</code> if found, <code>False</code> on <code>ResourceNotFoundError</code>. Falls back to prefix check for folders.
-<strong>Postconditions:</strong> Never raises <code>NotFound</code> — returns <code>False</code> instead (per BE-004).</p>
-<h3 id="az-013-is_file-and-is_folder">AZ-013: is_file() and is_folder()<a class="headerlink" href="#az-013-is_file-and-is_folder" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>is_file(path)</code> calls <code>get_path_properties()</code> and checks the <code>is_directory</code> attribute — returns <code>True</code> when <code>is_directory</code> is <code>False</code>. <code>is_folder(path)</code> returns <code>True</code> when <code>is_directory</code> is <code>True</code>. Both return <code>False</code> for non-existent paths.
-<strong>Invariant (no HNS):</strong> <code>is_file(path)</code> issues a HEAD request for the blob — returns <code>True</code> if the blob exists. <code>is_folder(path)</code> returns <code>True</code> if any blobs exist with prefix <code>{path}/</code> (same as S3-007).
-<strong>Postconditions:</strong> Both return <code>False</code> for non-existent paths — never raise (per BE-005).</p>
-<hr />
-<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
-<h3 id="az-014-atomic-write">AZ-014: Atomic Write<a class="headerlink" href="#az-014-atomic-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>write_atomic</code> writes to a temporary file <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> in the same directory as the target, then renames atomically to the target via <code>rename_file</code>.
-<strong>Cleanup:</strong> If the rename fails, the backend attempts to delete the temporary file. If cleanup also fails (e.g. connection lost), the orphan temp file remains — this is an inherent limitation of simulated atomicity over a network. Temp files are identifiable by their <code>.~tmp.</code> prefix for manual cleanup.
-<strong>Invariant (no HNS):</strong> <code>write_atomic</code> is implemented identically to <code>write</code> — as a direct upload. Azure PUT is atomic at the blob level (same rationale as S3-010).
-<strong>Postconditions:</strong> Satisfies AW-001: no partial content is ever visible.</p>
-<h3 id="az-015-delete_folder-recursive">AZ-015: delete_folder Recursive<a class="headerlink" href="#az-015-delete_folder-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>delete_folder(path, recursive=True)</code> calls the ADLS Gen2 recursive delete API (single call).
-<strong>Invariant (no HNS):</strong> <code>delete_folder(path, recursive=True)</code> lists and deletes all blobs with prefix <code>{path}/</code>.
-<strong>Raises:</strong> <code>NotFound</code> if no directory/blobs exist under the path and <code>missing_ok=False</code>.</p>
-<h3 id="az-016-delete_folder-non-recursive">AZ-016: delete_folder Non-Recursive<a class="headerlink" href="#az-016-delete_folder-non-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_folder(path, recursive=False)</code> succeeds only if the directory/prefix is empty.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist and <code>missing_ok=False</code>. Raises a non-empty error if children exist.
-<strong>Postconditions:</strong> Consistent with local filesystem and SFTP semantics.</p>
-<h3 id="az-017-move">AZ-017: Move<a class="headerlink" href="#az-017-move" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>move(src, dst)</code> uses ADLS Gen2's native <code>rename_file</code>, which is atomic.
-<strong>Invariant (no HNS):</strong> <code>move(src, dst)</code> is implemented as server-side copy + delete (same as S3-013). Not atomic — if copy succeeds but delete fails, both files exist.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
-<h3 id="az-018-copy">AZ-018: Copy<a class="headerlink" href="#az-018-copy" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>copy(src, dst)</code> uses Azure's server-side copy via <code>start_copy_from_url</code>. No data passes through the client.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
-<h3 id="az-019-glob">AZ-019: Glob<a class="headerlink" href="#az-019-glob" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>glob(pattern)</code> uses Azure's <code>list_paths</code> with a prefix filter derived from the non-wildcard prefix of the pattern. The wildcard portion is matched client-side using <code>fnmatch</code>.
-<strong>Example:</strong> <code>glob("data/2024/*.csv")</code> sends <code>list_paths(path="data/2024")</code> to the server, then filters results client-side against <code>*.csv</code>.
-<strong>Rationale:</strong> Azure (like S3) supports prefix-based listing but not full glob syntax server-side. The prefix optimization reduces the result set sent over the wire; <code>fnmatch</code> handles the rest locally.</p>
-<h3 id="az-020-read">AZ-020: read()<a class="headerlink" href="#az-020-read" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> stream via <code>_AzureBinaryIO</code>, a forward-only streaming adapter wrapping <code>StorageStreamDownloader.chunks()</code>. The raw adapter is wrapped in <code>io.BufferedReader</code> for efficient buffered reads.
-<strong>Postconditions:</strong> Data is streamed on demand — the full file is not loaded into memory. The stream is forward-only (not seekable). Callers that require seekability should use <code>read_bytes()</code> + <code>BytesIO</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
-<h3 id="az-021-read_bytes">AZ-021: read_bytes()<a class="headerlink" href="#az-021-read_bytes" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read_bytes(path)</code> returns the full file content as <code>bytes</code>. Implemented as <code>read(path).read()</code> or via <code>download_file().readall()</code> directly.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
-<h3 id="az-022-write">AZ-022: write()<a class="headerlink" href="#az-022-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write(path, content, overwrite=False)</code> uploads content via <code>BlobClient.upload_blob()</code> (Blob SDK).
-<strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>BinaryIO</code>.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. Existence check uses <code>ResourceNotFoundError</code> (not broad exception catch) to avoid swallowing auth/network errors.
-<strong>Postconditions (HNS):</strong> Intermediate directories are created automatically by the ADLS Gen2 service.
-<strong>Postconditions (no HNS):</strong> No intermediate directory creation needed (flat blob namespace).</p>
-<h3 id="az-023-get_file_info">AZ-023: get_file_info()<a class="headerlink" href="#az-023-get_file_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>get_file_info(path)</code> returns a <code>FileInfo</code> populated from <code>BlobClient.get_blob_properties()</code>.
-<strong>Mapped fields:</strong>
-- <code>path</code>: the store-relative key
-- <code>name</code>: filename component of the path
-- <code>size</code>: from <code>content_length</code> (or <code>size</code> for HNS path objects)
-- <code>modified_at</code>: from <code>last_modified</code> (UTC datetime)
-- <code>etag</code>: see AZ-034
-- <code>digest</code>: see AZ-034</p>
-<p><strong>Note:</strong> <code>content_type</code> is not included in <code>FileInfo</code>.</p>
-<p><strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
-<h3 id="az-024-get_folder_info">AZ-024: get_folder_info()<a class="headerlink" href="#az-024-get_folder_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>get_folder_info(path)</code> returns a <code>FolderInfo</code>.
-<strong>Invariant (HNS):</strong> Uses <code>get_path_properties()</code> on the directory object.
-<strong>Invariant (no HNS):</strong> Checks for the existence of blobs under the prefix <code>{path}/</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist.</p>
-<hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="az-025-structured-error-classification">AZ-025: Structured Error Classification<a class="headerlink" href="#az-025-structured-error-classification" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Azure SDK exceptions are mapped to <code>remote_store</code> errors using structured attributes (<code>status_code</code>, <code>error_code</code>), not string matching.</p>
-<table>
-<thead>
-<tr>
-<th>Azure SDK exception / code</th>
-<th>remote_store error</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>ResourceNotFoundError</code>; <code>status_code=404</code>; error codes <code>BlobNotFound</code>, <code>PathNotFound</code>, <code>FilesystemNotFound</code>, <code>ContainerNotFound</code></td>
-<td><code>NotFound</code></td>
-</tr>
-<tr>
-<td><code>status_code=403</code>; error codes <code>AuthorizationFailure</code>, <code>AuthorizationPermissionMismatch</code>, <code>InsufficientAccountPermissions</code></td>
-<td><code>PermissionDenied</code></td>
-</tr>
-<tr>
-<td><code>ResourceExistsError</code>; <code>status_code=409</code>; error codes <code>PathAlreadyExists</code>, <code>BlobAlreadyExists</code>, <code>ContainerAlreadyExists</code></td>
-<td><code>AlreadyExists</code></td>
-</tr>
-<tr>
-<td><code>ServiceRequestError</code>, <code>ServiceResponseError</code> (connection / DNS / timeout)</td>
-<td><code>BackendUnavailable</code></td>
-</tr>
-<tr>
-<td><code>ClientAuthenticationError</code></td>
-<td><code>PermissionDenied</code></td>
-</tr>
-</tbody>
-</table>
-<p><strong>Rationale:</strong> The Azure SDK provides <code>HttpResponseError</code> with <code>status_code</code> and <code>error_code</code> attributes, enabling reliable classification. This is a significant improvement over the S3 backends' fragile string-matching pattern (<code>"404" in msg.lower()</code>).</p>
-<h3 id="az-026-no-native-exception-leakage">AZ-026: No Native Exception Leakage<a class="headerlink" href="#az-026-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No <code>azure-storage-file-datalake</code>, <code>azure-core</code>, or <code>azure-identity</code> exceptions propagate to callers. All are mapped to <code>remote_store</code> error types per BE-021.
-<strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"azure"</code> on all mapped errors.</p>
-<h3 id="az-027-to_key">AZ-027: to_key<a class="headerlink" href="#az-027-to_key" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend.to_key(native_path)</code> strips the <code>{container}/</code> prefix from native paths.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">&quot;my-container&quot;</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;myaccount&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;my-container/data/file.txt&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; &quot;data/file.txt&quot;</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">)</span>               <span class="c1"># -&gt; &quot;data/file.txt&quot; (no prefix, unchanged)</span>
-</code></pre></div>
-<strong>Postconditions:</strong> Pure, deterministic, total (never raises). Same contract as NPR-004.</p>
-<h3 id="az-028-error-context-manager">AZ-028: Error Context Manager<a class="headerlink" href="#az-028-error-context-manager" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> A single <code>_errors(path)</code> context manager catches all Azure SDK exceptions and maps them per AZ-025.
-<strong>Rationale:</strong> Unlike S3PyArrowBackend's dual error contexts (one for PyArrow, one for s3fs), this backend uses a single SDK, so a single error context suffices.</p>
-<hr />
-<h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
-<h3 id="az-029-close">AZ-029: close()<a class="headerlink" href="#az-029-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> closes the underlying <code>BlobServiceClient</code>, <code>ContainerClient</code>, and (if HNS) <code>FileSystemClient</code> and <code>DataLakeServiceClient</code>. Resets all cached instances and HNS detection state.
-<strong>Postconditions:</strong> Safe to call multiple times. Note: because lazy properties re-initialize on next use, the backend is technically reusable after <code>close()</code>. This is consistent with S3Backend's behavior.</p>
-<h3 id="az-030-unwrap">AZ-030: unwrap()<a class="headerlink" href="#az-030-unwrap" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>unwrap(FileSystemClient)</code> returns the underlying <code>azure.storage.filedatalake.FileSystemClient</code>.
-<strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.
-<strong>Rationale:</strong> Escape hatch for users who need Azure-specific features (per ADR-0003).</p>
-<hr />
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<h3 id="az-034-etag-and-content-md5-digest-population">AZ-034: ETag and Content-MD5 Digest Population<a class="headerlink" href="#az-034-etag-and-content-md5-digest-population" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_props_to_fileinfo</code> populates <code>FileInfo.etag</code> and <code>FileInfo.digest</code> from blob properties.</p>
-<p><strong>ETag (<code>FileInfo.etag</code>):</strong>
-- Source: <code>BlobProperties.etag</code> (always present for existing blobs).
-- Azure returns it double-quoted (e.g. <code>'"0x8D4BCC2E4835CD0"'</code>); the backend strips the outer quotes and lowercases before storing.
-- Populated for all operations that call <code>_props_to_fileinfo</code>: <code>get_file_info</code>, <code>list_files</code>, <code>iter_children</code>.</p>
-<p><strong>Digest (<code>FileInfo.digest</code>):</strong>
-- Source: <code>BlobProperties.content_settings.content_md5</code> — a <code>bytes</code> object when set, <code>None</code> when absent.
-- Azure does not auto-compute Content-MD5; it is set explicitly by the client at upload time. Blobs uploaded without Content-MD5 yield <code>digest=None</code>.
-- When present: converted to lowercase hex and stored as <code>ContentDigest("md5", hex_value)</code>.</p>
-<p><strong>Postconditions:</strong>
-- <code>FileInfo.etag</code> is a non-empty lowercase string for all existing blobs.
-- <code>FileInfo.digest</code> is a <code>ContentDigest("md5", …)</code> when Content-MD5 is set, <code>None</code> otherwise.</p>
-<hr />
-<h3 id="az-033-transfer-concurrency">AZ-033: Transfer Concurrency<a class="headerlink" href="#az-033-transfer-concurrency" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend</code> accepts a <code>max_concurrency: int = 1</code> constructor parameter that controls the number of parallel connections used for blob uploads and downloads. The value is threaded through to <code>BlobClient.upload_blob()</code>, <code>BlobClient.download_blob()</code>, and <code>DataLakeFileClient.upload_data()</code> (HNS atomic writes).
-<strong>Preconditions:</strong> <code>max_concurrency</code> must be &gt;= 1; <code>ValueError</code> is raised at construction time otherwise.
-<strong>Default:</strong> <code>1</code> (sequential transfer, matching prior behavior). Users opt in to parallelism for large-file workloads.
-<strong>Rationale:</strong> The Azure SDK natively supports parallel block uploads and parallel chunk downloads. Exposing this parameter lets users improve throughput for large files without changing application code. SFTP has no equivalent (Paramiko is sequential); S3 concurrency is controlled at the <code>s3fs</code>/<code>aiobotocore</code> level.</p>
-<hr />
-<h3 id="az-031-client-options-passthrough">AZ-031: Client Options Passthrough<a class="headerlink" href="#az-031-client-options-passthrough" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>client_options</code> dict is merged into both the <code>BlobServiceClient</code> and <code>DataLakeServiceClient</code> configurations, allowing advanced settings (custom timeouts, retry policies, proxies, API version overrides, etc.).
-<strong>Postconditions:</strong> Explicit constructor parameters (<code>account_key</code>, <code>sas_token</code>, <code>credential</code>, etc.) take precedence over keys in <code>client_options</code>.</p>
-<h3 id="az-035-staged-block-upload-defaults">AZ-035: Staged-Block Upload Defaults<a class="headerlink" href="#az-035-staged-block-upload-defaults" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_blob_service</code> and <code>_datalake_service</code> set <code>max_block_size</code> and <code>max_single_put_size</code> to <code>_AZURE_BLOCK_SIZE</code> (1 MiB) via <code>setdefault</code>, and force <code>min_large_block_upload_threshold = 1</code> (1 byte — always stage). User-supplied <code>client_options</code> values take precedence (AZ-031).</p>
-<p><strong>Rationale:</strong> Bounds Azure SDK in-flight memory to ~2 × <code>_AZURE_BLOCK_SIZE</code> ≈ 2 MiB, within the streaming integrity threshold (65% × 7 MiB minimum file). <code>_AZURE_BLOCK_SIZE</code> is kept separate from <code>_COPY_BUFSIZE</code> (the pipe-layer copy buffer) because HTTP block granularity and Python-level streaming are independent concerns.</p>
-<h3 id="az-032-default-credential-chain">AZ-032: Default Credential Chain<a class="headerlink" href="#az-032-default-credential-chain" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When no explicit credential is provided (<code>account_key</code>, <code>sas_token</code>, <code>connection_string</code>, and <code>credential</code> are all <code>None</code>), the backend attempts to use <code>DefaultAzureCredential</code> from <code>azure-identity</code>.
-<strong>Raises:</strong> <code>BackendUnavailable</code> if <code>azure-identity</code> is not installed and no explicit credential is provided.
-<strong>Rationale:</strong> Follows the principle of least surprise for Azure users. <code>DefaultAzureCredential</code> automatically resolves environment variables, managed identity, Azure CLI login, and other credential sources.</p>
+<p>Same signature on <code>AsyncStore.list_folders</code> returning <code>AsyncIterator[FolderEntry]</code>.</p>
+<h3 id="spec-changes">Spec changes<a class="headerlink" href="#spec-changes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>New rule <code>STORE-017</code> in <code>sdd/specs/001-store-api.md</code>:
+  <code>list_folders(path, *, pattern=None, max_depth=None)</code> accepts an optional
+  <code>pattern</code> keyword. When set, <code>FolderEntry</code> items whose <code>.name</code> does not
+  match the pattern via <code>fnmatch.fnmatch</code> are excluded. Filtering is
+  Store-level, applied after BFS traversal and path rebasing.</li>
+<li><code>DEPTH-002</code> in <code>sdd/specs/037-depth-limited-listing.md</code> updated: signature
+  gains <code>pattern=None</code>; filtering-order note added — depth controls
+  traversal, pattern filters yielded results.</li>
+</ul>
+<h3 id="behaviour">Behaviour<a class="headerlink" href="#behaviour" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>pattern is None</code> is identical to today's behaviour (no filter).</li>
+<li>BFS continues regardless of pattern match: a folder whose name does not
+  match the pattern is still descended into when <code>max_depth &gt; 0</code>. The
+  pattern is a yield filter, not a traversal pruner. Callers who want
+  pattern-pruned traversal can compose <code>pattern=</code> with a manual descent.</li>
+<li>Composes with <code>max_depth</code> independently: <code>list_folders(p, pattern="raw_*",
+  max_depth=2)</code> yields all folders named <code>raw_*</code> at depths 0, 1, and 2.</li>
+</ul>
+<h3 id="subclass-propagation">Subclass propagation<a class="headerlink" href="#subclass-propagation" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ProxyStore.list_folders</code> and <code>ObservedStore.list_folders</code> accept
+  <code>pattern=</code> and forward it.</li>
+<li><code>CachedStore.list_folders</code> extends its cache key tuple with the pattern:
+  <code>("list_folders", path, pattern_key, depth_key)</code> where <code>pattern_key</code>
+  uses <code>"\x00"</code> as the sentinel for <code>None</code> (matching the existing
+  <code>depth_key</code> convention).</li>
+</ul>
+<h2 id="alternatives-considered">Alternatives Considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
+<h3 id="push-pattern-into-the-backend-abcs-list_folders">Push <code>pattern=</code> into the <code>Backend</code> ABC's <code>list_folders</code><a class="headerlink" href="#push-pattern-into-the-backend-abcs-list_folders" title="Permanent link">&para;</a></h3>
+<p>Rejected. <code>Backend.list_files</code> does not accept <code>pattern=</code> either — <code>list_files</code>
+filtering is already Store-level. Pushing filtering down would either (a)
+break parity between <code>list_files</code> and <code>list_folders</code>, or (b) require the same
+migration on <code>list_files</code>, which is out of scope. Backend-native filtering
+would only pay off if a backend exposed prefix-aware listing (e.g. S3
+<code>ListObjectsV2</code> with <code>Prefix</code>), and even then the prefix is path-level, not
+name-glob — fnmatch is not directly expressible as an S3 prefix.</p>
+<h3 id="filter-as-part-of-bfs-pruning-non-matching-subtrees-from-descent">Filter as part of BFS, pruning non-matching subtrees from descent<a class="headerlink" href="#filter-as-part-of-bfs-pruning-non-matching-subtrees-from-descent" title="Permanent link">&para;</a></h3>
+<p>Rejected. A non-matching folder name says nothing about the names of its
+descendants. Example: <code>archive/raw_2026/</code> with <code>pattern="raw_*"</code> — <code>archive</code>
+does not match, but its child <code>raw_2026</code> does. Pruning at the parent level
+would skip the descent and miss <code>raw_2026</code> entirely; the user would see no
+match where the spec requires one. Pruning would change results, not just
+performance. The semantics chosen here (yield-time filter) keep <code>pattern=</code>
+and <code>max_depth=</code> orthogonal.</p>
+<h3 id="add-a-separate-glob_folders-extension-instead">Add a separate <code>glob_folders(...)</code> extension instead<a class="headerlink" href="#add-a-separate-glob_folders-extension-instead" title="Permanent link">&para;</a></h3>
+<p>Rejected. <code>ext.glob.glob_files()</code> already exists for path-based globs;
+<code>list_folders(pattern=…)</code> is the name-based parallel of <code>list_files
+(pattern=…)</code>, not a path-glob feature. Splitting it into an extension would
+fragment the API by symmetry boundary alone, with no implementation
+benefit.</p>
+<h2 id="impact">Impact<a class="headerlink" href="#impact" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Public API:</strong> No change to <code>__all__</code> (method already exported). New
+  keyword-only parameter with <code>None</code> default — additive, non-breaking.</li>
+<li><strong>Backwards compatibility:</strong> Non-breaking. Existing call sites continue
+  to work unchanged. Pre-v1 semver acknowledged but not invoked.</li>
+<li><strong>Performance:</strong> <code>fnmatch.fnmatch</code> is O(name × pattern) per yielded
+  entry; negligible vs the listing I/O. No new round trips.</li>
+<li><strong>Cache shape:</strong> <code>CachedStore</code> cache keys for <code>list_folders</code> now include
+  a pattern slot. The old key was a 3-tuple <code>("list_folders", path,
+  depth_key)</code>; the new key is a 4-tuple <code>("list_folders", path,
+  pattern_key, depth_key)</code>. Python tuple equality requires equal length, so
+  no prior 3-tuple entry can ever match a new 4-tuple lookup. Persisted
+  cache entries from prior versions become unreachable after upgrade and
+  will be evicted by TTL. The implementation reuses the same <code>"\x00"</code>
+  null-sentinel convention already used by <code>list_files</code> cache keys — see
+  <code>ext/cache.py</code> for the encoding.</li>
+<li><strong>Testing:</strong> <code>tests/test_glob.py::TestListFoldersPattern</code> covers fnmatch
+  semantics (exact, wildcard, single-char), the <code>pattern=None</code> no-op
+  equivalence, <code>max_depth</code> composition, and a real-backend end-to-end check.
+  Wrapper-forwarding tests live alongside the existing wrapper suites
+  (<code>test_proxy.py</code>, <code>test_observe.py</code>, <code>test_cache.py</code>) and the async parity
+  cases in <code>tests/aio/test_async_store.py</code>.</li>
+</ul>
+<h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
+<p>None at acceptance. Future work — pushing <code>pattern=</code> into the <code>Backend</code> ABC's
+listing methods. Native <code>Backend.glob()</code> already exists (Local, S3,
+S3-PyArrow, Azure, SQLBlob, SQLQuery declare <code>Capability.GLOB</code>), but it
+matches full paths, not basenames, so it does not subsume the basename
+fnmatch filter introduced here. If a backend ever exposes basename-aware
+listing (or if <code>Capability.GLOB</code> is generalised to accept basename
+patterns), a separate RFC can migrate <code>list_files</code> and <code>list_folders</code>
+together. This RFC does not foreclose that path.</p>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Backlog: ID-178.</li>
+<li>Specs: <code>sdd/specs/001-store-api.md</code> STORE-014 (the parent symmetry
+  target), STORE-017 (new); <code>sdd/specs/037-depth-limited-listing.md</code>
+  DEPTH-002 (amended).</li>
+</ul>
 
 
 
@@ -10229,7 +9394,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../011-s3-pyarrow-backend/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 011: S3-PyArrow Hybrid Backend Specification">
+          <a href="../rfc-0012-doc-graph-model/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 0012: RFC-0012: Documentation Graph Model">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -10239,20 +9404,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                011: S3-PyArrow Hybrid Backend Specification
+                0012: RFC-0012: Documentation Graph Model
               </div>
             </div>
           </a>
         
         
           
-          <a href="../013-memory-backend/" class="md-footer__link md-footer__link--next" aria-label="Next: 013: Memory Backend Specification">
+          <a href="../../research/" class="md-footer__link md-footer__link--next" aria-label="Next: Research">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                013: Memory Backend Specification
+                Research
               </div>
             </div>
             <div class="md-footer__button md-icon">

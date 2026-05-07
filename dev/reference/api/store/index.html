@@ -6954,6 +6954,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/design/rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013: RFC-0013: list_folders(pattern=…) — Name-Based Glob Filter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11099,8 +11127,11 @@ as a safety net.</p>
 
 <a href="#remote_store.Store.list_folders" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_folders</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">pattern</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">max_depth</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FolderEntry
 
 
   
@@ -11124,6 +11155,20 @@ as a safety net.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
+            <b><code>pattern</code></b>
+              (<code><span title="str">str</span> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Glob pattern to filter folder names
+(e.g. <code>"raw_*"</code>).  Matched against each folder's <strong>name</strong>
+(basename only) via <code>fnmatch.fnmatch</code>.  Filters yielded
+results only — does <strong>not</strong> prune BFS traversal, so
+non-matching folders are still descended into.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
             <b><code>max_depth</code></b>
               (<code><span title="int">int</span> | None</code>, default:
                   <code>None</code>
@@ -11132,7 +11177,8 @@ as a safety net.</p>
           <div class="doc-md-description">
             <p>Maximum folder depth to include.  <code>None</code> or <code>0</code>
 returns immediate children only (default).  <code>1</code> adds
-grandchildren, and so on.</p>
+grandchildren, and so on.  BFS traversal runs first;
+<em>pattern</em> filters what is yielded.</p>
           </div>
         </li>
     </ul>
