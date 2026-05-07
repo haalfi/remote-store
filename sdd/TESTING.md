@@ -3,9 +3,15 @@
 
 ## Intent & Scope
 
-Authoritative source for test **quality** rules in `tests/`. Companion to
-`sdd/DESIGN.md` § 11 (test style). Derived from
-`sdd/research/research-testing-best-practices.md`.
+Authoritative source for test **quality** rules and top-level
+**placement** of test files in `tests/`. Companion to
+[`sdd/DESIGN.md` § 11 (test style)](DESIGN.md#11-test-style). Derived
+from [`sdd/research/research-testing-best-practices.md`](research/research-testing-best-practices.md).
+
+For test **architecture** (the shape of the test tree and how backends
+are wired into it), see
+[`sdd/specs/048-testing-architecture.md`](specs/048-testing-architecture.md)
+and [ADR-0028](adrs/0028-testing-architecture-kind-stage-replay.md).
 
 ## Test Subpackage Placement
 
