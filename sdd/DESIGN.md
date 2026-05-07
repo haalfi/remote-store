@@ -62,6 +62,24 @@ def write(self, path: str, content: WritableContent, *, overwrite: bool = False)
     """
 ```
 
+RST inline roles (colon-word-colon-backtick patterns) are banned;
+`scripts/check_rst_roles.py` enforces this in `hatch run lint` and via the
+`no-rst-roles` pre-commit hook.
+
+```python
+# bad — RST role; fails the lint gate
+def store_type() -> type:
+    """Return the :class:`Store` class."""
+
+# good — plain text
+def store_type() -> type:
+    """Return the Store class."""
+
+# good — double backticks for inline code (not a role)
+def store_type() -> type:
+    """Return the ``Store`` class."""
+```
+
 ### 5. Code Organisation Comments
 
 Two styles for structuring large files, each with a distinct purpose.

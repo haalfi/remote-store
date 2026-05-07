@@ -21,3 +21,9 @@ repos:
         entry: 'print\(.*[^\x00-\x7f]'
         types: [python]
         files: ^(src/|examples/)
+      - id: no-rst-roles
+        name: no RST inline roles in src/ tests/ scripts/
+        language: pygrep
+        entry: ':\w+:`(?!`)'
+        types: [python]
+        files: ^(src|tests|scripts|examples)/
