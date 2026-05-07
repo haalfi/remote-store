@@ -9174,7 +9174,9 @@ are wired into it), see
 <a href="../specs/048-testing-architecture/"><code>sdd/specs/048-testing-architecture.md</code></a>
 and <a href="../adrs/0028-testing-architecture-kind-stage-replay/">ADR-0028</a>.</p>
 <h2 id="test-subpackage-placement">Test Subpackage Placement<a class="headerlink" href="#test-subpackage-placement" title="Permanent link">&para;</a></h2>
-<p>Each test file belongs in the subpackage matching its subject:</p>
+<p>Each test file belongs in the subpackage matching its subject. The layout
+below reflects spec 048 / <a href="../specs/048-testing-architecture/">TEST-010</a>;
+that spec is the canonical reference.</p>
 <table>
 <thead>
 <tr>
@@ -9188,12 +9190,24 @@ and <a href="../adrs/0028-testing-architecture-kind-stage-replay/">ADR-0028</a>.
 <td><code>tests/</code> root</td>
 </tr>
 <tr>
-<td>Async variants of library tests</td>
+<td>Async cross-cutting tests (drift guard, adapters, async Store/Backend ABC, ext)</td>
 <td><code>tests/aio/</code></td>
 </tr>
 <tr>
-<td>Concrete backend conformance and integration</td>
-<td><code>tests/backends/</code></td>
+<td>Cross-backend conformance (parametrised over the registry)</td>
+<td><code>tests/backends/conformance/</code></td>
+</tr>
+<tr>
+<td>Backend-specific tests (one home per backend, sync + per-backend <code>aio/</code>)</td>
+<td><code>tests/backends/&lt;backend&gt;/</code></td>
+</tr>
+<tr>
+<td>Backend fixture registry + per-backend factories</td>
+<td><code>tests/backends/fixtures/</code></td>
+</tr>
+<tr>
+<td>HTTP cassettes (BK-181 onward; HTTP-transport backends only)</td>
+<td><code>tests/backends/cassettes/&lt;backend&gt;/</code></td>
 </tr>
 <tr>
 <td>End-to-end workflow tests (require Docker services)</td>
