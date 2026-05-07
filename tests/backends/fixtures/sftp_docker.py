@@ -29,11 +29,33 @@ def _factory() -> Backend:
     if INFRA.sftp_docker_port is None:
         pytest.skip("Dockerised SFTP not reachable on 127.0.0.1:2222")
     try:
+        import paramiko
+
         from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
     except ImportError:
         pytest.skip("paramiko not installed")
 
     base_path = f"/upload/test_{uuid.uuid4().hex[:8]}"
+
+    # SFTPBackend._ensure_parent_dirs early-returns when the parent equals
+    # base_path, so the base_path itself must exist on the server before
+    # construction. The in-process paramiko server we use elsewhere is
+    # forgiving about this; the real openssh-sftp-server in the atmoz/sftp
+    # container is not. Pre-create the directory via a short-lived client.
+    transport = paramiko.Transport(("127.0.0.1", INFRA.sftp_docker_port))
+    transport.connect(username="benchuser", password="benchpass")
+    try:
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        if sftp is None:
+            transport.close()
+            pytest.skip("paramiko could not open an SFTP channel")
+        try:
+            sftp.mkdir(base_path)
+        finally:
+            sftp.close()
+    finally:
+        transport.close()
+
     return SFTPBackend(
         host="127.0.0.1",
         port=INFRA.sftp_docker_port,
