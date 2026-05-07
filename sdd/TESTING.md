@@ -14,15 +14,26 @@ and [ADR-0028](adrs/0028-testing-architecture-kind-stage-replay.md).
 
 ## Test Subpackage Placement
 
-Each test file belongs in the subpackage matching its subject:
+Each test file belongs in the subpackage matching its subject. The layout
+below reflects spec 048 / [TEST-010](specs/048-testing-architecture.md);
+that spec is the canonical reference.
 
 | Subject | Subpackage |
 |---------|------------|
 | Library source (`src/remote_store/`) | `tests/` root |
-| Async variants of library tests | `tests/aio/` |
-| Concrete backend conformance and integration | `tests/backends/` |
+| Async cross-cutting tests (drift guard, adapters, async Store/Backend ABC, ext) | `tests/aio/` |
+| Cross-backend conformance (parametrised over the registry) | `tests/backends/conformance/` |
+| Backend-specific tests (one home per backend, sync + per-backend `aio/`) | `tests/backends/<backend>/` |
+| Backend fixture registry + per-backend factories | `tests/backends/fixtures/` |
+| HTTP cassettes (BK-181 onward; HTTP-transport backends only) | `tests/backends/cassettes/<backend>/` |
 | End-to-end workflow tests (require Docker services) | `tests/e2e/` |
 | `scripts/` utilities and build tooling | `tests/scripts/` |
+
+Backend isolation rule (TEST-010 postcondition): only files inside the
+backend subtree may import from the fixture registry. A concrete
+backend's name appears only inside that backend's own home, in
+registry/fixture/cassette files dedicated to it, or in registry code
+that enumerates all backends.
 
 Tests that load modules from `scripts/` via `sys.path` manipulation must live
 in `tests/scripts/`. The `check-test-placement` lint enforces this for `sys.path`
