@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-183: per-topic `mutate-conformance-*` scopes
+
 ### Fixed
 
 - BUG-194: async `AsyncAzureBackend.write_atomic` broken for all payloads on real ADLS Gen2

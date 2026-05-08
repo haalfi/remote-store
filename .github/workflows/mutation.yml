@@ -6,18 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: "Mutation scope to run"
+        description: "Mutation scope name (or 'all'). See scripts/mutate_scopes.py for the list."
         required: false
         default: "all"
-        type: choice
-        options:
-          - all
-          - core-api
-          - core-infra
-          - ext-proxy
-          - ext-format
-          - backends-local
-          - backends-cloud
+        type: string
 
 env:
   UV_SYSTEM_PYTHON: 1
@@ -25,19 +17,42 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
-  # Compute which scopes to run. schedule = all; manual dispatch = filtered.
+  # Read scope names + container needs from scripts/mutate_scopes.py so the
+  # workflow stays generic. schedule = all; manual dispatch = filtered.
   setup:
     runs-on: ubuntu-latest
     outputs:
       scopes: ${{ steps.set-scopes.outputs.scopes }}
+      minio-scopes: ${{ steps.set-scopes.outputs.minio-scopes }}
+      azurite-scopes: ${{ steps.set-scopes.outputs.azurite-scopes }}
+      sftp-scopes: ${{ steps.set-scopes.outputs.sftp-scopes }}
     steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
       - id: set-scopes
+        env:
+          # Route every workflow context value through the env, not direct
+          # template interpolation in the shell body. ``INPUT_SCOPE`` is the
+          # security-relevant one (user-supplied; ``"`` or ``\`` would break
+          # the JSON); ``EVENT_NAME`` is not user-controlled but is passed
+          # the same way for pattern consistency, so future additions don't
+          # have to relearn which inputs need quoting.
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_SCOPE: ${{ github.event.inputs.scope }}
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.scope }}" = "all" ]; then
-            echo 'scopes=["core-api","core-infra","ext-proxy","ext-format","backends-local","backends-cloud"]' >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "schedule" ] || [ "$INPUT_SCOPE" = "all" ]; then
+            scopes=$(python scripts/run_mutate.py --list-scopes)
           else
-            echo 'scopes=["${{ github.event.inputs.scope }}"]' >> "$GITHUB_OUTPUT"
+            scopes=$(python -c 'import json, os; print(json.dumps([os.environ["INPUT_SCOPE"]]))')
           fi
+          {
+            echo "scopes=${scopes}"
+            echo "minio-scopes=$(python scripts/run_mutate.py --container-needs minio)"
+            echo "azurite-scopes=$(python scripts/run_mutate.py --container-needs azurite)"
+            echo "sftp-scopes=$(python scripts/run_mutate.py --container-needs sftp)"
+          } >> "$GITHUB_OUTPUT"
 
   mutate:
     needs: [setup]
@@ -50,9 +65,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # --- Cloud-backend services (only for backends-cloud) ---
+      # --- Backend service containers ---
+      # Conditionally started based on the JSON arrays computed by setup
+      # from scripts/mutate_scopes.py (one source of truth for which scopes
+      # need which container).
       - name: Start MinIO
-        if: matrix.scope == 'backends-cloud'
+        if: contains(fromJSON(needs.setup.outputs.minio-scopes), matrix.scope)
         run: |
           docker run -d --name minio-mut -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
@@ -63,7 +81,7 @@ jobs:
           wget -qO /dev/null http://127.0.0.1:9000/minio/health/live || { echo "::error::MinIO failed to start"; exit 1; }
 
       - name: Start Azurite
-        if: matrix.scope == 'backends-cloud'
+        if: contains(fromJSON(needs.setup.outputs.azurite-scopes), matrix.scope)
         run: |
           docker run -d --name azurite-mut -p 10000:10000 \
             mcr.microsoft.com/azure-storage/azurite:3.35.0 \
@@ -74,7 +92,7 @@ jobs:
           nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
 
       - name: Start SFTP
-        if: matrix.scope == 'backends-cloud'
+        if: contains(fromJSON(needs.setup.outputs.sftp-scopes), matrix.scope)
         run: |
           docker run -d --name sftp-mut -p 2222:22 \
             atmoz/sftp:alpine \
@@ -103,12 +121,13 @@ jobs:
             gremlins-${{ matrix.scope }}-
 
       # --- Run mutation testing ---
-      # Hatch scripts don't forward extra CLI args, so inject report flags
-      # via PYTEST_ADDOPTS which pytest picks up automatically.
-      - name: Run mutate-${{ matrix.scope }}
+      # Hatch shim delegates to scripts/run_mutate.py which builds the
+      # pytest command from the manifest. Report flags are injected via
+      # PYTEST_ADDOPTS (pytest picks them up automatically).
+      - name: Run mutate ${{ matrix.scope }}
         env:
           PYTEST_ADDOPTS: "--no-cov -W ignore::UserWarning:pytest_gremlins.plugin --gremlin-report=html --gremlins-html-dir=mutation-report"
-        run: hatch run mutate-${{ matrix.scope }}
+        run: hatch run mutate ${{ matrix.scope }}
 
       # --- Upload HTML report ---
       - name: Upload mutation report
@@ -160,12 +179,14 @@ jobs:
           merge-multiple: true
 
       - name: Aggregate results
+        env:
+          ALL_SCOPES: ${{ needs.setup.outputs.scopes }}
         run: |
           echo "## Mutation Testing Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Scope | Result |" >> "$GITHUB_STEP_SUMMARY"
           echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          for scope in core-api core-infra ext-proxy ext-format backends-local backends-cloud; do
+          for scope in $(echo "$ALL_SCOPES" | python -c "import json,sys; print(' '.join(json.load(sys.stdin)))"); do
             if [ -f "outcomes/${scope}" ]; then
               result=$(cat "outcomes/${scope}")
             else
