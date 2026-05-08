@@ -104,13 +104,13 @@ and the highest ID already in this file, then take the next integer. Run
   and `[azure_live_async-copy]`. Errors at
   `src/remote_store/aio/backends/_azure.py:899/937/1068`. Same defect
   family as BUG-195/BUG-197/BUG-190: missing `hdi_isfolder` probe before
-  the SDK call. **Sync variant status uncertain — BK-185 caveat:** the
-  sync test `test_errors.py::TestMoveCopyErrorFidelity::test_source_is_directory_raises_error[azure_live]`
-  (and the destination-is-directory sibling) calls `_skip_flat_namespace`,
-  which silent-skips `azure_live` because `AzureBackend.name == "azure"`
-  is in `_FLAT_NAMESPACE_BACKENDS`. Re-verify once BK-185 lifts the
-  identity-based gate; the sync side may also need the same fix.
-  Fix: add the directory probe to the async `move`/`copy` paths.
+  the SDK call. **Sync variant now exercised:** BK-186 PR 1 lifted the
+  identity-based gate — `_skip_flat_namespace` now reads the per-fixture
+  `flat_namespace` flag (false for `azure_live` HNS), so the sync siblings
+  in `test_errors.py::TestMoveCopyErrorFidelity` no longer silent-skip on
+  Stage 3. Re-verify the sync side on the next Stage 3 run; the same fix
+  shape likely applies. Fix: add the directory probe to the async
+  `move`/`copy` paths.
   Spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024.
 
 - [ ] **BUG-199 — `AzureBackend.get_folder_info` recursive `file_count` includes HNS directory blobs as files (sync + async)**
@@ -135,12 +135,13 @@ and the highest ID already in this file, then take the next integer. Run
   `test_delete_folder_on_file_missing_ok_still_raises[azure_live_async]`,
   and `tests/backends/conformance/test_async_extended.py::TestGetFolderInfoErrorFidelity::test_get_folder_info_on_file_raises_error[azure_live_async]`.
   Errors at `src/remote_store/aio/backends/_azure.py:640` (delete_folder)
-  and `:829` (get_folder_info). **Sync variant status uncertain — BK-185
-  caveat:** the sync siblings in `test_errors.py::TestDeleteFolderErrorFidelity`
-  and `TestGetFolderInfoErrorFidelity` call `_skip_flat_namespace`, which
-  silent-skips `azure_live` because `AzureBackend.name == "azure"` is in
-  `_FLAT_NAMESPACE_BACKENDS`. Re-verify once BK-185 lifts the
-  identity-based gate; the sync side may share the defect.
+  and `:829` (get_folder_info). **Sync variant now exercised:** BK-186
+  PR 1 lifted the identity-based gate — `_skip_flat_namespace` now reads
+  the per-fixture `flat_namespace` flag (false for `azure_live` HNS), so
+  the sync siblings in `test_errors.py::TestDeleteFolderErrorFidelity`
+  and `TestGetFolderInfoErrorFidelity` no longer silent-skip on Stage 3.
+  Re-verify the sync side on the next Stage 3 run; the same defect likely
+  surfaces.
   Same fix shape as BUG-195/BUG-197: detect the type mismatch before
   the SDK call and raise `InvalidPath`.
   Spec: BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017.
@@ -202,31 +203,120 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-185 — Refactor flat-namespace gating from backend identity to capability/kind**
-  `tests/backends/conformance/_helpers.py:30` defines
-  `_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})`
-  and `_skip_flat_namespace(backend)` skips by `backend.name`. This was
-  correct when the only Azure-family fixture was `azurite` (genuinely
-  flat-namespace Blob storage). With `azure_live` from BK-180 pointing at
-  a real ADLS Gen2 account, HNS is real and directories exist — but
-  `AzureBackend.name == "azure"` is in the set, so directory-aware sync
-  conformance tests in `tests/backends/conformance/test_errors.py`
-  (`_skip_flat_namespace` users: `TestReadErrorFidelity`,
-  `TestWriteErrorFidelity`, `TestDeleteErrorFidelity`,
-  `TestDeleteFolderErrorFidelity`, `TestGetFileInfoErrorFidelity`,
-  `TestGetFolderInfoErrorFidelity`, `TestMoveCopyErrorFidelity`)
-  silently skip on `azure_live`. The async sibling escapes this because
-  `AsyncAzureBackend.name == "async-azure"` is not in the set, which is
-  why `azure_live_async` surfaces BUG-198/BUG-200 while the sync
-  counterpart falsely "looks green" in the BK-180 sweep. Two viable
-  refactors: (a) introduce an `HNS_AWARE` (or `REAL_DIRECTORIES`)
-  `Capability` flag and gate on its absence, (b) gate on fixture
-  identity (e.g. `kind == "real-live"` plus a per-backend HNS marker)
-  rather than `backend.name`. Either keeps `azurite` skipping while
-  letting `azure_live` exercise the directory contracts. The
-  BUG-198/BUG-200/BUG-203 entries should be re-verified once sync HNS
-  actually runs the directory contracts; several "sync green" claims
-  may flip to additional defects. Spec: TEST-005 (capability gating).
+- [~] **BK-186 — Physical fixture/backend registry as single source of truth**
+
+  *Done in PR 1 (foundation):* `tests/backends/fixtures/backends.toml`
+  + `fixtures.toml` + pure `_loader.py` are the new SSoT for fixture
+  metadata; closed-enum validation runs at parse time. The
+  `BackendFixture` record gained `flat_namespace`, `self_op_supported`,
+  `transport`, `container` fields populated by the loader. `_load_all`
+  walks TOML keys, conformance helpers attach the record onto every
+  parametrize-built backend, `_FLAT_NAMESPACE_BACKENDS` /
+  `_NO_SELF_OP_BACKENDS` identity sets are gone, and the `--stage`
+  CLI option / `set_current_stage` / spec-marker tests all read
+  `_VALID_STAGES` from `_loader`. Closes BK-185 structurally — the
+  Azurite emulator (flat) and live ADLS Gen2 (HNS) now disagree on
+  `flat_namespace` despite sharing `backend == "azure"`.
+
+  *Pending in PR 2:* `scripts/mutate_scopes.py` derivation from TOML;
+  `_BACKEND_LITERALS` derivation; `tests/conftest.py` reachability
+  helpers consolidation; `_live_env.py` generalisation for `s3_live`
+  (BK-184 prerequisite); CI workflow YAML simplification.
+
+  Spec 048 introduced the `BackendFixture` registry (BK-179), but the
+  per-fixture/per-backend "dictionary" is replicated across at least six
+  consumers that each carve their own slice and drift independently:
+  - `tests/backends/conformance/_helpers.py:30` —
+    `_FLAT_NAMESPACE_BACKENDS = {"s3", "s3-pyarrow", "azure", "http", "sql-blob"}`
+    and `_NO_SELF_OP_BACKENDS` keyed by `backend.name`. The drift this
+    causes is BK-185 (Azurite is flat, real ADLS Gen2 isn't, but both
+    register `backend == "azure"`).
+  - `scripts/mutate_scopes.py` — `ALL_BACKEND_SOURCES`,
+    `LOCAL_STACK_SOURCES`, `CLOUD_STACK_SOURCES`, `LOCAL_STACK_FILTER`,
+    `CLOUD_STACK_FILTER` literals, plus per-scope `needs=[MINIO/AZURITE/SFTP]`
+    lists. Adding a backend requires touching every literal.
+  - `tests/backends/fixtures/__init__.py::_load_all` — hardcoded import
+    list of 15 modules; adding a fixture means editing this file too.
+  - `tests/backends/fixtures/test_registry.py` — `_VALID_KINDS`,
+    `_VALID_STAGES`, `_BACKEND_LITERALS` (concrete-class → permitted-path
+    map), each a literal that mirrors data the registry should already own.
+  - `tests/conftest.py` — `_minio_reachable()`, `_azurite_reachable()`,
+    `_sftp_docker_reachable()` and the matching `*_server` session
+    fixtures; container availability is reasoned about per-helper rather
+    than per-fixture-record.
+  - `azure_live` / `_live_env` / future `s3_live` — each Stage 3 fixture
+    rebuilds its own opt-in env-var + creds-env validation. BK-184 will
+    add a third copy.
+
+  Three forces converge:
+  (a) the registry record `BackendFixture` carries only a flat slice of
+  the metadata each backend has (`name`, `backend`, `stage`, `kind`,
+  `capabilities`, `is_async`, `cleanup`, `aclose`, `marks`); structural
+  facts like transport class (HTTP vs SSH vs FS — TEST-008 replay
+  eligibility), source-file paths, container needs, has-real-directories,
+  live-env-var preconditions are absent; (b) some consumers (CI YAML
+  `if: contains(...)`) cannot run Python at lookup time, so today
+  `.github/workflows/mutation.yml` calls
+  `python scripts/run_mutate.py --container-needs minio` from a setup
+  job — plumbing that exists because the data only lives in Python;
+  (c) every new feature adds another sidecar literal instead of
+  extending the record.
+
+  **Proposed shape.** Two-layer split:
+
+  - `tests/backends/fixtures/backends.toml` — declarative facts per
+    *backend family* (sources, async-sources, transport class, default
+    `flat_namespace`, default `self_op_supported`).
+  - `tests/backends/fixtures/fixtures.toml` — declarative facts per
+    *fixture* (backend, stage, kind, container, live-opt-in env, live-creds
+    env, marks, per-fixture overrides of family defaults like
+    `flat_namespace=true` for Azurite).
+  - Python factory modules keep only the runtime callables (`factory`,
+    `cleanup`, `aclose`) plus `marks=(pytest.mark.live, …)`. Marks stay
+    in Python so they can compose with `pytest.mark.skipif(cond, …)`
+    when needed; `register()` reads TOML for static fields and accepts
+    `marks` as a kwarg.
+  - Capability sets stay in Python (introspected via
+    `<Backend>.CAPABILITIES` with soft `ImportError → frozenset()`
+    fallback for missing extras).
+  - Loader validates `transport`, `container`, `kind`, `stage` against
+    closed enums at TOML load time. Typos fail at import. Adding a value
+    (e.g. `transport="replay"` for BK-181) is a one-line loader change.
+
+  **Consumers migrate to derive:**
+  - `_FLAT_NAMESPACE_BACKENDS` / `_NO_SELF_OP_BACKENDS` →
+    `{f.name for f in fixtures() if f.flat_namespace}` etc. Closes BK-185
+    structurally rather than swapping one identity-keyed set for another.
+  - `_load_all` import list → loop over TOML keys.
+  - `mutate_scopes.py` `LOCAL_STACK_*` / `CLOUD_STACK_*` literals →
+    derived from `transport`/`container` fields. Hand-curated `targets`
+    / `needs` per scope go away.
+  - `_VALID_KINDS` / `_VALID_STAGES` triples → one Python const consumed
+    by `set_current_stage`, the registry `Literal[…]`, the conftest
+    `--stage` `choices=`, and the test_registry asserts.
+  - `_BACKEND_LITERALS` in `test_registry.py` → derived from `[backend.<x>]`
+    TOML keys + `tests/backends/<x>/` glob.
+
+  **Sequencing.** Land before BK-181 (HTTP replay layer) and BK-184
+  (`s3_live`); both will otherwise add a fourth/fifth replication. BK-185
+  folds into PR 1 below — its `HNS_AWARE` capability proposal is no
+  longer needed once `flat_namespace` is per-fixture.
+
+  **Suggested split:**
+  - PR 1 (foundation): introduce `backends.toml` + `fixtures.toml`,
+    drive `_load_all` from TOML, fold `_VALID_KINDS` / `_VALID_STAGES`,
+    migrate `_FLAT_NAMESPACE_BACKENDS` / `_NO_SELF_OP_BACKENDS` to
+    derived sets, and amend `specs/048-testing-architecture.md` § TEST-004
+    with the extended record shape on the same commit (no spec/code
+    skew window). Closes BK-185.
+  - PR 2 (consumers): rewrite `mutate_scopes.py` to derive `targets` /
+    `-k` filters from TOML; verify CI matrix unchanged. Drop
+    `LOCAL_STACK_SOURCES` / `CLOUD_STACK_SOURCES` / `…_FILTER` literals.
+
+  **Spec touchpoints:** TEST-001 (kind/stage), TEST-004 (record shape —
+  amended in PR 1), TEST-005 (capability gating), TEST-006 (stage
+  selection), TEST-008 (replay eligibility — currently doc-only, becomes
+  structural via `transport` field), TEST-010 (layout boundary).
 
 - [ ] **BK-184 — Implement `s3_live` Stage 3 conformance fixture (Spec 048 Phase 2 carryover)**
   Carved out from BK-180 because the bucket-isolation strategy needs

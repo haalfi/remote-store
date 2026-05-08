@@ -11,10 +11,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from tests.backends.dafny._helpers import DafnyOracleBackend
+from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
 if TYPE_CHECKING:
     from remote_store._backend import Backend
+
+_meta = load_fixture("dafny_oracle")
 
 
 def _factory() -> Backend:
@@ -34,13 +37,9 @@ def _cleanup(backend: Backend) -> None:
 
 register(
     BackendFixture(
-        name="dafny_oracle",
-        backend="dafny",
         factory=_factory,
-        stage=1,
-        kind="real-local",
         capabilities=frozenset(DafnyOracleBackend.CAPABILITIES),
-        is_async=False,
         cleanup=_cleanup,
+        **_meta.to_kwargs(),
     )
 )

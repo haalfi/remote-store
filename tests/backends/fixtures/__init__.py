@@ -31,29 +31,40 @@ from tests.backends.fixtures.registry import (
 
 
 def _load_all() -> None:
-    """Import every per-backend factory module to trigger registration.
+    """Import every per-fixture factory module to trigger registration.
 
-    Each module appends to the registry at import time, so this is the
-    single place that decides which backends are registered. The conftest
-    at ``tests.backends`` calls this once at session start.
+    The loop walks ``fixtures.toml`` (via ``_loader.load_fixtures``) so the
+    list of registered fixtures is derived from the TOML registry, not
+    duplicated as a hardcoded import list. Adding a fixture is therefore
+    a one-step change: declare ``[fixture.<name>]`` in ``fixtures.toml``
+    and create ``tests/backends/fixtures/<name>.py``.
+
+    A few TOML names map to a Python module that registers more than one
+    fixture at import time (e.g. both ``memory_async_native`` and
+    ``memory_async_adapted`` live in ``memory_async.py``). The mapping
+    here resolves the TOML key to the module that must be imported; the
+    registry's duplicate-name guard catches accidental double-imports.
     """
-    from tests.backends.fixtures import (  # noqa: F401 — import-side-effect registration
-        azure_live,
-        azure_live_async,
-        azurite,
-        dafny_oracle,
-        http,
-        local,
-        local_async,
-        memory,
-        memory_async,
-        s3_moto,
-        s3_pyarrow_minio,
-        s3_pyarrow_moto,
-        sftp_docker,
-        sftp_inproc,
-        sqlblob,
-    )
+    import importlib
+
+    from tests.backends.fixtures._loader import load_fixtures
+
+    # Per-fixture TOML key → Python module under tests.backends.fixtures
+    # that registers that key. Most fixtures map 1:1; the exceptions are
+    # the async-memory and async-local entries that share a single module.
+    _MODULE_FOR: dict[str, str] = {
+        "memory_async_native": "memory_async",
+        "memory_async_adapted": "memory_async",
+        "local_async_adapted": "local_async",
+    }
+
+    seen: set[str] = set()
+    for name in load_fixtures():
+        module = _MODULE_FOR.get(name, name)
+        if module in seen:
+            continue
+        seen.add(module)
+        importlib.import_module(f"tests.backends.fixtures.{module}")
 
 
 __all__ = [

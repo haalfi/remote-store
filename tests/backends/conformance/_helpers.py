@@ -7,10 +7,12 @@ defensive runtime gate for tests whose finer-grained capability needs
 diverge from the class-level filter; it is a no-op whenever the
 parametrise filter already excluded the fixture.
 
-``_skip_flat_namespace`` and the ``_FLAT_NAMESPACE_BACKENDS`` /
-``_NO_SELF_OP_BACKENDS`` sets gate on backend identity, not capability.
-TEST-005 routes identity-based runtime checks through ``pytest.skip``
-inside the test body, not the parametrise filter.
+``_skip_flat_namespace`` and the self-op gate consult the per-fixture
+``BackendFixture`` record attached by the indirect ``backend`` /
+``async_backend`` fixtures, not the runtime ``backend.name``. That makes
+the gate per-fixture, so the Azurite emulator (flat) and live ADLS Gen2
+(HNS) sharing ``backend.name == "azure"`` decide independently
+(closes BK-185).
 """
 
 from __future__ import annotations
@@ -22,18 +24,28 @@ import pytest
 from remote_store._capabilities import Capability
 
 if TYPE_CHECKING:
-    from remote_store._backend import Backend
+    from tests.backends.fixtures.registry import BackendFixture
 
 
-# Backends with a flat or virtual namespace: no real directory entries.
-# Update this set when adding a new flat-namespace backend.
-_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})
+def _fixture_record(backend: object) -> BackendFixture:
+    """Return the ``BackendFixture`` record attached to ``backend``.
 
-# Backends that do not yet handle self-copy / self-move correctly.
-_NO_SELF_OP_BACKENDS = frozenset({"azure", "http"})
+    The record is stamped on by the indirect ``backend`` / ``async_backend``
+    fixtures in ``tests/backends/conformance/conftest.py``. Tests that
+    bypass those fixtures (e.g. construct a backend directly) will hit
+    the ``RuntimeError`` here — that path is never the conformance
+    contract, so the failure is intentional and load-bearing.
+    """
+    rec = getattr(backend, "_fixture_record", None)
+    if rec is None:
+        raise RuntimeError(
+            "backend instance lacks _fixture_record; conformance helpers "
+            "require backends produced by the indirect fixture in conftest.py"
+        )
+    return rec
 
 
-def _require(backend: Backend, *caps: Capability) -> None:
+def _require(backend: object, *caps: Capability) -> None:
     """Skip the test if the backend lacks any of the given capabilities.
 
     Defensive runtime fallback. Tests should prefer the class-level
@@ -42,27 +54,28 @@ def _require(backend: Backend, *caps: Capability) -> None:
     stricter capability than its siblings.
     """
     for cap in caps:
-        if not backend.capabilities.supports(cap):
+        if not backend.capabilities.supports(cap):  # type: ignore[attr-defined]
             pytest.skip(f"Backend does not support {cap.name}")
 
 
-def _seed(backend: Backend, files: dict[str, bytes]) -> None:
+def _seed(backend: object, files: dict[str, bytes]) -> None:
     """Write multiple files into the backend."""
     for path, data in files.items():
-        backend.write(path, data)
+        backend.write(path, data)  # type: ignore[attr-defined]
 
 
-def _skip_flat_namespace(backend: Backend, reason: str = "flat-namespace backend") -> None:
+def _skip_flat_namespace(backend: object, reason: str = "flat-namespace backend") -> None:
     """Skip the test for backends without real directory entries.
 
-    Identity-based gate (TEST-005 routes identity checks through
-    ``pytest.skip`` rather than the parametrise filter).
+    Per-fixture gate: reads ``flat_namespace`` from the attached
+    ``BackendFixture`` record so fixtures of the same backend family
+    can disagree (Azurite vs live HNS).
     """
-    if backend.name in _FLAT_NAMESPACE_BACKENDS:
+    if _fixture_record(backend).flat_namespace:
         pytest.skip(reason)
 
 
-def _do_op(backend: Backend, op: str, src: str, dst: str, **kw: Any) -> None:
+def _do_op(backend: object, op: str, src: str, dst: str, **kw: Any) -> None:
     """Invoke ``backend.<op>(src, dst, **kw)``."""
     getattr(backend, op)(src, dst, **kw)
 

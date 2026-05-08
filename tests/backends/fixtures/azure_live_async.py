@@ -41,10 +41,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from tests.backends.fixtures._live_env import require_azure_live_connection_string
+from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
 if TYPE_CHECKING:
     from remote_store.aio import AsyncBackend
+
+_meta = load_fixture("azure_live_async")
 
 
 _LOG = logging.getLogger(__name__)
@@ -118,15 +121,11 @@ def _capabilities() -> frozenset:
 
 register(
     BackendFixture(
-        name="azure_live_async",
-        backend="azure",
         factory=_factory,
-        stage=3,
-        kind="real-live",
         capabilities=_capabilities(),
-        is_async=True,
         cleanup=_cleanup,
         aclose=_aclose,
         marks=(pytest.mark.live,),
+        **_meta.to_kwargs(),
     )
 )

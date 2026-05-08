@@ -12,8 +12,10 @@ import tempfile
 import pytest
 
 from remote_store.backends._local import LocalBackend
+from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
+_meta = load_fixture("local")
 _TMPDIRS: dict[int, tempfile.TemporaryDirectory[str]] = {}
 
 
@@ -32,14 +34,10 @@ def _cleanup(backend: LocalBackend) -> None:
 
 register(
     BackendFixture(
-        name="local",
-        backend="local",
         factory=_factory,
-        stage=1,
-        kind="real-local",
         capabilities=frozenset(LocalBackend.CAPABILITIES),
-        is_async=False,
         cleanup=_cleanup,
         marks=(pytest.mark.os_sensitive,),
+        **_meta.to_kwargs(),
     )
 )

@@ -454,16 +454,23 @@ Writing a file creates its parent directories; a path can be either a file
 Folders are virtual — inferred from key prefixes. A path `a/b/c` implies a
 prefix `a/b/` but no actual directory object exists.
 
-The extended conformance suite tracks this in a frozenset:
+The conformance suite reads this from the per-backend `flat_namespace` flag
+declared in `tests/backends/fixtures/backends.toml`:
 
-```python
-# tests/backends/test_conformance_extended.py
-_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http"})
+```toml
+# tests/backends/fixtures/backends.toml
+[backend.<your-backend>]
+transport         = "fs"        # http | ssh | fs | memory | sql
+flat_namespace    = true        # set true for flat-namespace backends
+self_op_supported = true
 ```
 
-Tests that rely on real directory semantics call `_skip_flat_namespace()` and
-self-skip for flat backends. If your new backend is flat-namespace, add its
-`backend.name` string to this set.
+A per-fixture override in `fixtures.toml` is also possible — Azurite (the
+flat emulator) and live ADLS Gen2 (HNS) share `backend == "azure"` but
+disagree on `flat_namespace`, so the fixture-level value takes precedence.
+Tests that rely on real directory semantics call `_skip_flat_namespace()`,
+which reads the resolved flag from the per-fixture record attached by the
+conformance indirect fixture; no identity-set lookup is needed.
 
 Key behavioral differences that the conformance tests check:
 

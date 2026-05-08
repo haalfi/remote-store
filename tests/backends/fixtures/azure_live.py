@@ -46,10 +46,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from tests.backends.fixtures._live_env import require_azure_live_connection_string
+from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
 if TYPE_CHECKING:
     from remote_store._backend import Backend
+
+_meta = load_fixture("azure_live")
 
 
 _LOG = logging.getLogger(__name__)
@@ -114,14 +117,10 @@ def _capabilities() -> frozenset:
 
 register(
     BackendFixture(
-        name="azure_live",
-        backend="azure",
         factory=_factory,
-        stage=3,
-        kind="real-live",
         capabilities=_capabilities(),
-        is_async=False,
         cleanup=_cleanup,
         marks=(pytest.mark.live,),
+        **_meta.to_kwargs(),
     )
 )

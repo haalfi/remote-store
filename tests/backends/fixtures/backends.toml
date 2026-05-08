@@ -1,0 +1,77 @@
+# Per-backend-family declarative facts (spec 048 / TEST-004).
+#
+# This is the single source of truth for facts that apply to every fixture
+# of a given backend family. Per-fixture overrides live in fixtures.toml
+# and merge on top of these defaults.
+#
+# Closed enums:
+#   transport: http | ssh | fs | memory | sql
+#
+# Per-backend defaults that fixtures may override:
+#   flat_namespace      — true when the backend has no real directory entries
+#   self_op_supported   — true when move(p,p)/copy(p,p) is a safe no-op
+
+[backend.azure]
+sources       = ["src/remote_store/backends/_azure.py", "src/remote_store/backends/_azure_common.py"]
+async_sources = ["src/remote_store/aio/backends/_azure.py"]
+transport     = "http"
+# Default to HNS-shape (real-live ADLS Gen2) so the conservative
+# Stage 3 fixture inherits correctly; the Azurite emulator overrides
+# to flat_namespace=true at the per-fixture level (BK-185).
+flat_namespace    = false
+# Both Azurite and live HNS reject self-copy/self-move today; tracked
+# by BUG-201 on the async side and the same shape on sync.
+self_op_supported = false
+
+[backend.s3]
+sources   = ["src/remote_store/backends/_s3.py", "src/remote_store/backends/_s3_base.py"]
+transport = "http"
+flat_namespace    = true
+self_op_supported = true
+
+[backend.s3_pyarrow]
+sources   = ["src/remote_store/backends/_s3_pyarrow.py"]
+transport = "http"
+flat_namespace    = true
+self_op_supported = true
+
+[backend.sftp]
+sources   = ["src/remote_store/backends/_sftp.py"]
+transport = "ssh"
+flat_namespace    = false
+self_op_supported = true
+
+[backend.sqlblob]
+sources   = ["src/remote_store/backends/_sqlalchemy.py"]
+transport = "sql"
+flat_namespace    = true
+self_op_supported = true
+
+[backend.http]
+sources   = [
+    "src/remote_store/backends/_http.py",
+    "src/remote_store/backends/_http_httpx.py",
+    "src/remote_store/backends/_http_requests.py",
+]
+transport = "http"
+flat_namespace    = true
+self_op_supported = false
+
+[backend.local]
+sources   = ["src/remote_store/backends/_local.py"]
+transport = "fs"
+flat_namespace    = false
+self_op_supported = true
+
+[backend.memory]
+sources       = ["src/remote_store/backends/_memory.py", "src/remote_store/backends/_memory_tree.py"]
+async_sources = ["src/remote_store/aio/backends/_memory.py"]
+transport     = "memory"
+flat_namespace    = false
+self_op_supported = true
+
+[backend.dafny]
+sources   = ["tests/backends/dafny/_helpers.py"]
+transport = "memory"
+flat_namespace    = false
+self_op_supported = true

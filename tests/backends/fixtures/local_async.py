@@ -19,11 +19,13 @@ import pytest
 
 from remote_store.aio import SyncBackendAdapter
 from remote_store.backends._local import LocalBackend
+from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
 if TYPE_CHECKING:
     from remote_store.aio import AsyncBackend
 
+_meta = load_fixture("local_async_adapted")
 _TMPDIRS: dict[int, tempfile.TemporaryDirectory[str]] = {}
 
 
@@ -43,14 +45,10 @@ def _cleanup(backend: AsyncBackend) -> None:
 
 register(
     BackendFixture(
-        name="local_async_adapted",
-        backend="local",
         factory=_factory,
-        stage=1,
-        kind="real-local",
         capabilities=frozenset(LocalBackend.CAPABILITIES),
-        is_async=True,
         cleanup=_cleanup,
         marks=(pytest.mark.os_sensitive,),
+        **_meta.to_kwargs(),
     )
 )

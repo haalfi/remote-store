@@ -6,7 +6,10 @@ Stage 1, real-local. Always available.
 from __future__ import annotations
 
 from remote_store.backends._memory import MemoryBackend
+from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
+
+_meta = load_fixture("memory")
 
 
 def _factory() -> MemoryBackend:
@@ -15,13 +18,9 @@ def _factory() -> MemoryBackend:
 
 register(
     BackendFixture(
-        name="memory",
-        backend="memory",
         factory=_factory,
-        stage=1,
-        kind="real-local",
         capabilities=frozenset(MemoryBackend.CAPABILITIES),
-        is_async=False,
         cleanup=None,
+        **_meta.to_kwargs(),
     )
 )

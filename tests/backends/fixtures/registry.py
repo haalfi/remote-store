@@ -51,6 +51,14 @@ class BackendFixture:
     factory, stage, kind, capability set, async flag, optional
     cleanup. Records are frozen so a misbehaving test cannot mutate
     a registry entry shared across the session.
+
+    The ``flat_namespace``, ``self_op_supported``, ``transport`` and
+    ``container`` fields are populated from ``backends.toml`` /
+    ``fixtures.toml`` via ``_loader.load_fixture``. They replace the
+    ``_FLAT_NAMESPACE_BACKENDS`` / ``_NO_SELF_OP_BACKENDS`` identity
+    sets that previously lived in conformance helpers and could not
+    distinguish the Azurite emulator (flat) from real ADLS Gen2
+    (HNS) — see BK-185.
     """
 
     name: str
@@ -60,6 +68,30 @@ class BackendFixture:
     kind: Literal["pure", "mocked", "real-local", "real-live", "replay"]
     capabilities: frozenset[Capability]
     is_async: bool
+    flat_namespace: bool = False
+    """True when the backend has no real directory entries.
+
+    Replaces the old ``_FLAT_NAMESPACE_BACKENDS`` identity set. Per-fixture
+    so the Azurite emulator (flat) and live ADLS Gen2 (HNS) sharing the
+    same backend family can disagree.
+    """
+    self_op_supported: bool = True
+    """True when ``move(p, p)`` / ``copy(p, p)`` is a safe no-op.
+
+    Replaces the old ``_NO_SELF_OP_BACKENDS`` identity set.
+    """
+    transport: Literal["http", "ssh", "fs", "memory", "sql"] = "fs"
+    """Transport family of the backend.
+
+    Sourced from ``[backend.<x>].transport`` in ``backends.toml`` and copied
+    onto every fixture of that family.
+    """
+    container: Literal["minio", "azurite", "sftp", "none"] = "none"
+    """External container the fixture talks to, or ``"none"`` for in-process.
+
+    Used by PR 2's mutate-scope generator to derive ``needs=[...]`` and
+    by CI plumbing to decide which services to start.
+    """
     cleanup: Callable[[AnyBackend], None] | None = None
     aclose: Callable[[AnyBackend], Awaitable[None]] | None = None
     """Awaitable teardown for async fixtures that own a real network pool.
