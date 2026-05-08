@@ -9966,6 +9966,10 @@ traceability and test-per-spec obligations are in
 <p>Tests gated on <code>RS_TEST_LIVE_HNS=1</code> require a real Azure Data Lake Storage
 Gen2 account. See <a href="../../guides/backends/azure-hns-setup/">Azure HNS account setup</a>
 for the provisioning recipe.</p>
+<p>Tests gated on <code>RS_TEST_LIVE_S3=1</code> require a real AWS S3 account. See the
+"Required IAM permissions" section in
+<code>tests/backends/fixtures/s3_live.py</code> for the IAM policy needed by the
+test user.</p>
 <h2 id="examples-and-notebooks">Examples and Notebooks<a class="headerlink" href="#examples-and-notebooks" title="Permanent link">&para;</a></h2>
 <p>The <code>examples/</code> directory contains runnable Python scripts that are validated in CI. Example scripts must remain self-contained and use <code>tempfile.TemporaryDirectory</code> for cleanup.</p>
 <p>Jupyter notebooks in <code>examples/notebooks/</code> are validated in CI via
