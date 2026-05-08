@@ -42,9 +42,15 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# Availability helpers — local copies; upward import from tests.conftest
-# is not allowed (subdirectory modules must stay self-contained).
+# Availability helpers — import-availability checks stay local because the
+# file deliberately exercises blocking behaviour via ``asyncio.to_thread``
+# and we want this module's static surface self-evident at the top. Container
+# reachability comes from ``tests.conftest._azurite_reachable`` (BK-186)
+# so the port number tracks the central ``_CONTAINER_PORTS`` map.
 # ---------------------------------------------------------------------------
+
+
+from tests.conftest import _azurite_reachable  # noqa: E402
 
 
 def _s3_available() -> bool:
@@ -72,17 +78,6 @@ def _azure_available() -> bool:
 
         return True
     except ImportError:
-        return False
-
-
-def _azurite_reachable() -> bool:
-    import socket
-
-    try:
-        s = socket.create_connection(("127.0.0.1", 10000), timeout=1)
-        s.close()
-        return True
-    except OSError:
         return False
 
 

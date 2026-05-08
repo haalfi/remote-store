@@ -137,6 +137,12 @@ def _build() -> dict[str, Scope]:
         tests = _matching_tests(stem, ext_prefix=ext_prefix)
         if not tests:
             return
+        # Fail loud rather than silently overwrite if a future src layout
+        # produces both ``src/remote_store/_<x>.py`` and
+        # ``src/remote_store/backends/_<x>.py`` with matching tests — both
+        # would land on the same ``core-<x>`` key today.
+        if scope_name in out:
+            raise ValueError(f"mutate scope name collision: {scope_name!r} (src_rel={src_rel!r})")
         out[scope_name] = Scope(
             targets=[src_rel],
             tests=[f"tests/{t}" for t in tests],
@@ -211,14 +217,19 @@ def _build() -> dict[str, Scope]:
         )
 
     # Conformance topics over the cmdline limit — split by transport.
+    # Skip transports with no stage-≤2 backends (``_filter_term`` returns
+    # empty for them); an empty filter would otherwise materialise as a
+    # full-conformance scope with empty targets and ``needs=full_needs``.
     for topic in ("io", "atomic", "errors", "identity"):
         for t in _TRANSPORTS:
             ts = [b for b in backends if b.transport == t]
             f = " or ".join(filter(None, (_filter_term(b.name) for b in ts)))
+            if not f:
+                continue
             out[f"conformance-{topic}-{t}"] = Scope(
                 targets=sorted({s for b in ts for s in _src(b)}),
                 tests=[f"tests/backends/conformance/test_{topic}.py"],
-                filter=f or None,
+                filter=f,
                 needs=_needs(f),
             )
 

@@ -453,6 +453,17 @@ def _build_backend_literals() -> dict[str, tuple[str, ...]]:
     by_backend: dict[str, list[str]] = {}
     for fx in load_fixtures().values():
         by_backend.setdefault(fx.backend, []).append(fx.name)
+    # Fail loud if ``sqlquery`` graduates into ``backends.toml`` without
+    # the corresponding ``_CLASS_TO_BACKEND["SQLQueryBackend"]`` update —
+    # the empty-string sentinel below would silently produce a stale
+    # allowlist (sqlquery fixtures missing from SQLQueryBackend's
+    # permitted-paths set).
+    if "sqlquery" in by_backend:
+        raise RuntimeError(
+            "sqlquery now has fixtures registered; update "
+            "_CLASS_TO_BACKEND['SQLQueryBackend'] from '' to 'sqlquery' "
+            "and drop the empty-string handling in _build_backend_literals."
+        )
     test_dir = {"s3_pyarrow": "s3", "": "sqlquery"}  # overrides; default = backend key
     out: dict[str, tuple[str, ...]] = {}
     for cls, key in _CLASS_TO_BACKEND.items():
