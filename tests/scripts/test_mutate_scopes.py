@@ -88,6 +88,13 @@ def test_every_async_fixture_matches_an_async_extended_scope() -> None:
     for f in all_fixtures():
         if not f.is_async:
             continue
+        # Stage 3 (real-live cloud) fixtures are exempt: mutation testing
+        # against a real cloud account is too slow and too costly to run in
+        # CI, and the fixture skips in default-stage runs anyway. The guard
+        # still catches any new Stage 1/Stage 2 async fixture that lacks a
+        # mutation scope, which is its actual intent.
+        if f.stage >= 3:
+            continue
         # The companion test above asserts every async-extended scope has a
         # non-None filter, so the substring match is the only path that
         # counts as coverage. Do not relax this without revisiting that test.

@@ -47,7 +47,13 @@ if TYPE_CHECKING:
 _FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})
 
 # Backends that do not yet handle self-copy/self-move correctly.
-_NO_SELF_OP_BACKENDS = frozenset({"azure", "http"})
+# ``async-azure`` is here pending BUG-201 (the async Azure backend's
+# self-op raises ``AlreadyExists`` instead of being a no-op on real HNS);
+# the sync ``azure`` entry pre-existed for the same shape on the sync
+# Azure side. The async backend's ``.name`` returns ``"async-azure"``
+# (not ``"azure"``), so the runtime check below needs both keys to filter
+# the live HNS parametrize ids on Stage 3.
+_NO_SELF_OP_BACKENDS = frozenset({"azure", "async-azure", "http"})
 
 
 def _require(backend: AsyncBackend, *caps: Capability) -> None:

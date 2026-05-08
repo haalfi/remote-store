@@ -163,7 +163,12 @@ class TestLayoutBoundary:
     # Identifiers we want to keep out of cross-cutting tests. Each maps to
     # the path prefix(es) where the literal is permitted.
     _BACKEND_LITERALS = {
-        "AzureBackend": ("tests/backends/azure/", "tests/backends/fixtures/azurite"),
+        "AzureBackend": (
+            "tests/backends/azure/",
+            "tests/backends/fixtures/azurite",
+            "tests/backends/fixtures/azure_live",
+            "tests/backends/fixtures/azure_live_async",
+        ),
         "S3Backend": ("tests/backends/s3/", "tests/backends/fixtures/s3_"),
         "S3PyArrowBackend": ("tests/backends/s3/", "tests/backends/fixtures/s3_pyarrow"),
         "SFTPBackend": ("tests/backends/sftp/", "tests/backends/fixtures/sftp_"),

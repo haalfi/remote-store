@@ -8,6 +8,35 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-180 — Implement Spec 048 Phase 2: live Azure conformance fixtures**
+  Adds `azure_live` and `azure_live_async` (Stage 3, kind `real-live`) to
+  the registry per spec [TEST-001/004](specs/048-testing-architecture.md);
+  conformance parametrize includes both when `--stage=3` and
+  `RS_TEST_LIVE_HNS=1` are set. Each factory call provisions a fresh HNS
+  filesystem (`conformance-<uuid>` / `conformance-async-<uuid>`) on the
+  configured account and tears it down on cleanup; isolation matches the
+  per-call shape used by `azurite` / `s3_moto`. The async cleanup channel
+  is the new optional `BackendFixture.aclose:
+  Callable[[AnyBackend], Awaitable[None]] | None` field — the conformance
+  `async_backend` indirect fixture (now `async def`) awaits it before
+  the synchronous `cleanup`. Spec TEST-004's dataclass example carries
+  the additive field. The `_live_env.require_azure_live_connection_string`
+  helper centralises the env-var validation (empty / Azurite-pointing
+  values fail loud, not skip silent); the legacy live-HNS suite under
+  `tests/backends/azure/test_live_hns.py` keeps its own inline copy
+  pending BK-182's deletion.
+
+  Verification: full conformance + extended sweep against a real ADLS
+  Gen2 account in 2:45 — 208 passed, 24 skipped (capability gates), 20
+  failed. The reds are real defects HNS surfaces that Azurite forgives;
+  they are tracked as **BUG-198..BUG-203** plus addenda on **BUG-195**
+  and **BUG-197**, not as BK-180 scope per the D4 decision (file
+  follow-ups, ship the fixture wiring).
+
+  Live S3 (`s3_live`) carved out to **BK-184** — `S3Backend` has no
+  prefix support, so the bucket-isolation strategy needs a deliberate
+  decision rather than copying the Azure shape.
+
 - [x] **BK-183 — Per-topic `mutate-conformance-*` scopes (Windows-compatible)**
   Closes the conformance coverage gap noted during BK-179 review (PR #597,
   round 4): the per-backend `mutate-backends-{local,cloud}` scopes do not

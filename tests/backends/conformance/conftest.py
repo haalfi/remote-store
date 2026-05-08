@@ -25,6 +25,7 @@ that case, so explicit markers and the auto-walk cohabit cleanly.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import pytest
@@ -32,9 +33,12 @@ import pytest
 from tests.backends.fixtures import BackendFixture, fixture_params
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import AsyncIterator, Iterator
 
     from remote_store._backend import Backend
+
+
+_LOG = logging.getLogger(__name__)
 
 
 def _is_already_parametrized(metafunc: pytest.Metafunc, argname: str) -> bool:
@@ -70,12 +74,32 @@ def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
 
 
 @pytest.fixture
-def async_backend(request: pytest.FixtureRequest) -> Iterator[object]:
-    """Indirect async fixture: build an AsyncBackend from a ``BackendFixture`` record."""
+async def async_backend(request: pytest.FixtureRequest) -> AsyncIterator[object]:
+    """Indirect async fixture: build an AsyncBackend from a ``BackendFixture`` record.
+
+    Sync ``cleanup`` and async ``aclose`` are both honoured. Async fixtures
+    that own a real network pool (live cloud backends) set ``aclose`` so
+    the connection pool is awaited before the next test starts. Sync
+    teardown (e.g. tempdir removal) goes through ``cleanup`` as for sync
+    fixtures. ``asyncio_mode = "auto"`` in ``pyproject.toml`` makes the
+    ``async def`` fixture a first-class pytest-asyncio fixture without
+    additional decorators.
+
+    Both teardown channels are guarded so a transient failure in
+    ``aclose`` (e.g. SDK pool-flush error) cannot strand the resource
+    that ``cleanup`` is responsible for releasing — mirrors the same
+    threat model that motivates the per-fixture ``_cleanup`` guards in
+    ``azure_live`` / ``azurite``.
+    """
     fixture: BackendFixture = request.param
     instance = fixture.factory()
     try:
         yield instance
     finally:
+        if fixture.aclose is not None:
+            try:
+                await fixture.aclose(instance)
+            except Exception:  # noqa: BLE001 -- teardown is best-effort
+                _LOG.warning("fixture.aclose() failed; continuing to cleanup", exc_info=True)
         if fixture.cleanup is not None:
             fixture.cleanup(instance)

@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-180: spec 048 Phase 2 — `azure_live` and `azure_live_async` Stage 3 conformance fixtures, `BackendFixture.aclose` async cleanup channel
 - BK-183: per-topic `mutate-conformance-*` scopes
 
 ### Fixed
