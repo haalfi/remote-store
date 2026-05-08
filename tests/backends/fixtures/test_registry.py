@@ -26,6 +26,9 @@ from tests.backends.fixtures._loader import (
     VALID_KINDS,
     VALID_STAGES,
     VALID_TRANSPORTS,
+    _parse_backend,
+    _parse_fixture,
+    load_backends,
     load_fixtures,
 )
 from tests.backends.fixtures._state import current_stage, set_current_stage
@@ -164,6 +167,197 @@ class TestRegistryShape:
         assert by_name["azure_live_async"].flat_namespace is False, "async live HNS has real directories"
         # Both fixtures still share the same backend family.
         assert by_name["azurite"].backend == by_name["azure_live"].backend == "azure"
+
+
+def _valid_backend_raw() -> dict[str, object]:
+    """Return a minimal valid raw dict for ``_parse_backend``.
+
+    The negative-path tests below mutate one field at a time off this
+    baseline so each test exercises a single branch.
+    """
+    return {"transport": "fs", "sources": [], "async_sources": []}
+
+
+def _valid_fixture_raw() -> dict[str, object]:
+    """Return a minimal valid raw dict for ``_parse_fixture``."""
+    return {
+        "backend": "memory",
+        "stage": 1,
+        "kind": "real-local",
+        "container": "none",
+        "is_async": False,
+    }
+
+
+def _backends_for_fixture_tests() -> dict[str, object]:
+    """Return the parsed backends.toml view, used as the cross-reference
+    map for ``_parse_fixture`` negative-path tests.
+
+    Cached at the module level by ``functools.cache`` on
+    ``load_backends``; calling it here is effectively free.
+    """
+    return load_backends()  # type: ignore[return-value]
+
+
+@pytest.mark.spec("TEST-004")
+class TestClosedEnumValidation:
+    """Every ``ValueError`` branch in the loader's closed-enum validation
+    has explicit regression coverage. Fail-loud parsing is the load-bearing
+    contract introduced by BK-186 PR 1; without these tests, a regression
+    that loosens validation would land silently — exactly the failure mode
+    the loader was designed to prevent.
+
+    The tests round-trip synthetic raw dicts through ``_parse_backend`` /
+    ``_parse_fixture`` directly so they do not need to mutate the on-disk
+    TOML files.
+    """
+
+    # region: _parse_backend negative paths
+
+    @pytest.mark.parametrize("transport", ["", "tcp", "ftp", "FS", None, 1, 1.5])
+    def test_parse_backend_rejects_invalid_transport(self, transport: object) -> None:
+        raw = _valid_backend_raw()
+        raw["transport"] = transport
+        with pytest.raises(ValueError, match="transport must be one of"):
+            _parse_backend("x", raw)
+
+    @pytest.mark.parametrize("flat_ns", [0, 1, "yes", None, "true"])
+    def test_parse_backend_rejects_non_bool_flat_namespace(self, flat_ns: object) -> None:
+        raw = _valid_backend_raw()
+        raw["flat_namespace"] = flat_ns
+        with pytest.raises(ValueError, match="flat_namespace must be bool"):
+            _parse_backend("x", raw)
+
+    @pytest.mark.parametrize("self_op", [0, 1, "yes", None])
+    def test_parse_backend_rejects_non_bool_self_op_supported(self, self_op: object) -> None:
+        raw = _valid_backend_raw()
+        raw["self_op_supported"] = self_op
+        with pytest.raises(ValueError, match="self_op_supported must be bool"):
+            _parse_backend("x", raw)
+
+    @pytest.mark.parametrize(
+        "sources",
+        [
+            "src/path.py",  # bare string, not a list
+            ["ok.py", 1],  # list with non-string member
+            [None],  # list of None
+            {"a": "b"},  # dict
+        ],
+    )
+    def test_parse_backend_rejects_non_string_list_sources(self, sources: object) -> None:
+        raw = _valid_backend_raw()
+        raw["sources"] = sources
+        with pytest.raises(ValueError, match="must be a list of strings"):
+            _parse_backend("x", raw)
+
+    @pytest.mark.parametrize("async_sources", ["solo.py", ["ok.py", 2]])
+    def test_parse_backend_rejects_non_string_list_async_sources(self, async_sources: object) -> None:
+        raw = _valid_backend_raw()
+        raw["async_sources"] = async_sources
+        with pytest.raises(ValueError, match="must be a list of strings"):
+            _parse_backend("x", raw)
+
+    # endregion
+
+    # region: _parse_fixture negative paths
+
+    @pytest.mark.parametrize("backend", [None, 1, ["memory"], {"name": "memory"}])
+    def test_parse_fixture_rejects_non_string_backend(self, backend: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["backend"] = backend
+        with pytest.raises(ValueError, match="backend must be a string"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    def test_parse_fixture_rejects_unknown_backend(self) -> None:
+        raw = _valid_fixture_raw()
+        raw["backend"] = "no-such-backend"
+        with pytest.raises(ValueError, match="not declared in backends.toml"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    @pytest.mark.parametrize("stage", [0, 4, 5, "1", None])
+    def test_parse_fixture_rejects_invalid_stage(self, stage: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["stage"] = stage
+        with pytest.raises(ValueError, match="stage must be one of"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    @pytest.mark.parametrize("kind", ["", "real", "wrong", None, 1])
+    def test_parse_fixture_rejects_invalid_kind(self, kind: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["kind"] = kind
+        with pytest.raises(ValueError, match="kind must be one of"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    @pytest.mark.parametrize("container", ["", "broken", "MINIO", None, 1])
+    def test_parse_fixture_rejects_invalid_container(self, container: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["container"] = container
+        with pytest.raises(ValueError, match="container must be one of"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    @pytest.mark.parametrize("is_async", [0, 1, "no", None])
+    def test_parse_fixture_rejects_non_bool_is_async(self, is_async: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["is_async"] = is_async
+        with pytest.raises(ValueError, match="is_async must be bool"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    @pytest.mark.parametrize("flat_ns", [0, 1, "yes", None])
+    def test_parse_fixture_rejects_non_bool_flat_namespace(self, flat_ns: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["flat_namespace"] = flat_ns
+        with pytest.raises(ValueError, match="flat_namespace must be bool"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    @pytest.mark.parametrize("self_op", [0, 1, "yes", None])
+    def test_parse_fixture_rejects_non_bool_self_op_supported(self, self_op: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["self_op_supported"] = self_op
+        with pytest.raises(ValueError, match="self_op_supported must be bool"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    @pytest.mark.parametrize("opt_in", [1, ["RS_X"], {"name": "RS_X"}])
+    def test_parse_fixture_rejects_non_string_live_opt_in_env(self, opt_in: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["live_opt_in_env"] = opt_in
+        with pytest.raises(ValueError, match="live_opt_in_env must be a string"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    @pytest.mark.parametrize(
+        "creds_env",
+        [
+            "RS_X",  # bare string, not a list
+            ["RS_OK", 1],  # list with non-string
+            [None],
+        ],
+    )
+    def test_parse_fixture_rejects_non_string_list_live_creds_env(self, creds_env: object) -> None:
+        raw = _valid_fixture_raw()
+        raw["live_creds_env"] = creds_env
+        with pytest.raises(ValueError, match="live_creds_env.*must be a list of strings"):
+            _parse_fixture("x", raw, _backends_for_fixture_tests())
+
+    # endregion
+
+    # region: positive baseline (guards against vacuous negative-path tests)
+
+    def test_valid_backend_baseline_parses(self) -> None:
+        """Pin the positive path: every negative-path test mutates one field off
+        this baseline. If the baseline itself stopped parsing, the rest of the
+        class would become vacuous passes.
+        """
+        result = _parse_backend("x", _valid_backend_raw())
+        assert result.transport == "fs"
+        assert result.flat_namespace is False
+        assert result.self_op_supported is True
+
+    def test_valid_fixture_baseline_parses(self) -> None:
+        """Pin the positive path for ``_parse_fixture``."""
+        result = _parse_fixture("x", _valid_fixture_raw(), _backends_for_fixture_tests())
+        assert result.backend == "memory"
+        assert result.stage == 1
+
+    # endregion
 
 
 @pytest.mark.spec("TEST-005")

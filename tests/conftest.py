@@ -333,7 +333,7 @@ def pytest_configure(config: object) -> None:
                     stage = int(env_override)
                 except ValueError:
                     pytest.exit(
-                        f"RS_TEST_STAGE must be 1, 2, or 3 (got {env_override!r})",
+                        f"RS_TEST_STAGE must be one of {sorted(VALID_STAGES)} (got {env_override!r})",
                         returncode=1,
                     )
                 if stage not in VALID_STAGES:
