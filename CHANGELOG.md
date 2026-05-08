@@ -7,8 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-186 (PR 1 / foundation): TOML registry as single source of truth for fixture metadata — `tests/backends/fixtures/backends.toml` + `fixtures.toml` + pure `_loader.py`. `BackendFixture` gains `flat_namespace`, `self_op_supported`, `transport`, `container` fields populated from TOML. PR 2 will derive `mutate_scopes.py` from the same source.
-- BK-185: flat-namespace gating moves from `_FLAT_NAMESPACE_BACKENDS` / `_NO_SELF_OP_BACKENDS` identity sets keyed by `backend.name` to per-fixture `flat_namespace` / `self_op_supported` flags on `BackendFixture`. Closes the BK-180 silent-skip on `azure_live`: the Azurite emulator (flat) and live ADLS Gen2 (HNS) now decide independently despite sharing `backend == "azure"`.
+- BK-186: physical fixture/backend registry as single source of truth (PR 1 foundation, PR 2 consumers)
+- BK-185: per-fixture flat-namespace / self-op flags replace the identity-keyed sets
 - BK-180: spec 048 Phase 2 — `azure_live` and `azure_live_async` Stage 3 conformance fixtures, `BackendFixture.aclose` async cleanup channel
 - BK-183: per-topic `mutate-conformance-*` scopes
 - tooling: `hatch run test-cov` no longer enforces `--cov-fail-under=95`; strict gate moved to new `hatch run test-cov-strict`

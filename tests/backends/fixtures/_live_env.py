@@ -19,6 +19,18 @@ regular ``hatch run test`` does not pull credentials into its
 environment". Lazy load preserves that contract while still covering the
 niche where the user runs with ``RS_TEST_LIVE_HNS=1`` exported but
 without ``-m live``.
+
+Generalisation
+==============
+
+The validator core is descriptor-driven: the per-fixture
+``live_opt_in_env`` and ``live_creds_env`` fields parsed by
+``_loader.py`` carry the env-var names, and ``require_live_credentials``
+walks them. ``require_azure_live_connection_string`` is a thin
+backend-specific wrapper that adds the Azurite signature check and
+extracts the single connection-string value. BK-184's ``s3_live``
+fixture will add a sibling ``require_s3_live_credentials`` that wraps
+the same core with MinIO-aware emulator signatures.
 """
 
 from __future__ import annotations
@@ -27,12 +39,61 @@ import os
 
 import pytest
 
+from tests.backends.fixtures._loader import FixtureDescriptor, load_fixture
+
 # Connection-string fragments that unambiguously identify Azurite.
 # ``UseDevelopmentStorage=true`` is the shorthand; ``AccountName=devstoreaccount1``
 # is Azurite's well-known emulator account, globally reserved on real
 # Azure. Tunnelled real accounts may legitimately contain ``127.0.0.1``
 # or ``localhost`` in BlobEndpoint, so those tokens are not Azurite signatures.
 _AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "AccountName=devstoreaccount1")
+
+
+def _load_dotenv_backstop() -> None:
+    """Lazy ``.env`` load — see module docstring for the rationale."""
+    from dotenv import load_dotenv  # noqa: PLC0415 -- intentional lazy import
+
+    load_dotenv(override=False)
+
+
+def require_live_credentials(
+    descriptor: FixtureDescriptor,
+    *,
+    emulator_signatures: tuple[str, ...] = (),
+    emulator_label: str | None = None,
+) -> dict[str, str]:
+    """Return every env var listed in ``descriptor.live_creds_env``.
+
+    Fails loud when:
+
+    * the descriptor has no ``live_creds_env`` (mis-configured TOML);
+    * any required env var is missing, empty, or whitespace-only;
+    * any value contains a fragment from ``emulator_signatures``
+      (caller signals "this looks like an emulator, not a real account").
+
+    The opt-in flag itself (``descriptor.live_opt_in_env``) is checked
+    at the fixture-factory level, not here. A descriptor lacking that
+    flag is unusual but not an error from the validator's perspective —
+    callers that wrap this helper assert on it before calling.
+    """
+    _load_dotenv_backstop()
+
+    if not descriptor.live_creds_env:
+        pytest.fail(f"fixture {descriptor.name!r} has no live_creds_env; check fixtures.toml")
+
+    opt_in = descriptor.live_opt_in_env
+    gate = f"{opt_in}=1 set but " if opt_in else ""
+
+    out: dict[str, str] = {}
+    for env_var in descriptor.live_creds_env:
+        value = os.environ.get(env_var)
+        if not value or not value.strip():
+            pytest.fail(f"{gate}{env_var} is empty")
+        if emulator_signatures and any(frag in value for frag in emulator_signatures):
+            label = emulator_label or "an emulator"
+            pytest.fail(f"{gate}{env_var} points at {label}; the live suite needs a real account")
+        out[env_var] = value
+    return out
 
 
 def require_azure_live_connection_string() -> str:
@@ -43,32 +104,19 @@ def require_azure_live_connection_string() -> str:
     so live HNS coverage is impossible against it.
 
     The legacy live-HNS suite under ``tests/backends/azure/test_live_hns.py``
-    keeps its own inline copy of this validator pending BK-182's deletion of
-    that suite. The conformance fixtures ``azure_live`` /
+    keeps its own inline copy of this validator pending BK-182's deletion
+    of that suite. The conformance fixtures ``azure_live`` /
     ``azure_live_async`` are the first consumers of this shared helper.
     """
-    # Backstop ``.env`` load. The primary path is
-    # ``tests.conftest._maybe_load_dotenv_for_live``, which loads ``.env``
-    # before collection when ``-m live`` is in the mark expression. This
-    # call covers the niche where a user runs with the opt-in env var
-    # exported but without ``-m live``. Lazy (inside the helper) so a
-    # default ``hatch run test`` does not import ``.env`` into the test
-    # process — see module docstring.
-    from dotenv import load_dotenv  # noqa: PLC0415 -- intentional lazy import
-
-    load_dotenv(override=False)
-
-    conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
-    if not conn or not conn.strip():
-        pytest.fail("RS_TEST_LIVE_HNS=1 set but AZURE_STORAGE_CONNECTION_STRING is empty")
-    if any(frag in conn for frag in _AZURITE_FRAGMENTS):
-        pytest.fail(
-            "RS_TEST_LIVE_HNS=1 set but AZURE_STORAGE_CONNECTION_STRING points at Azurite; "
-            "the live HNS suite needs a real ADLS Gen2 account"
-        )
-    return conn
+    creds = require_live_credentials(
+        load_fixture("azure_live"),
+        emulator_signatures=_AZURITE_FRAGMENTS,
+        emulator_label="Azurite",
+    )
+    return creds["AZURE_STORAGE_CONNECTION_STRING"]
 
 
 __all__ = [
     "require_azure_live_connection_string",
+    "require_live_credentials",
 ]

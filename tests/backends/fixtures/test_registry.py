@@ -430,33 +430,33 @@ _TESTS_ROOT = Path(__file__).resolve().parent.parent.parent  # tests/
 _BACKENDS_ROOT = _TESTS_ROOT / "backends"
 
 
+# Concrete backend class names whose presence in cross-backend
+# conformance code is a TEST-010 boundary violation. Class names aren't
+# in the TOML registry (TOML keys are family identifiers like "azure"),
+# so this list is hand-maintained. The current
+# ``test_conformance_does_not_reference_concrete_backends`` consumes only
+# these names; per-backend permitted-path prefixes are not enforced.
+_BACKEND_CLASS_NAMES: tuple[str, ...] = (
+    "AzureBackend",
+    "S3Backend",
+    "S3PyArrowBackend",
+    "SFTPBackend",
+    "SQLBlobBackend",
+    "SQLQueryBackend",
+    "ReadOnlyHttpBackend",
+)
+
+
 @pytest.mark.spec("TEST-010")
 class TestLayoutBoundary:
     """TEST-010: backend names appear only inside their backend's home,
     in fixture/registry files dedicated to that backend, or in registry
     code enumerating all backends.
 
-    Lint-style scan over ``tests/`` looking for concrete backend identifiers
-    used as string literals or imports outside the permitted homes. Catches
-    accidental cross-backend coupling at review time.
+    Lint-style scan over ``tests/backends/conformance/`` for concrete
+    backend class names. Catches accidental cross-backend coupling at
+    review time.
     """
-
-    # Identifiers we want to keep out of cross-cutting tests. Each maps to
-    # the path prefix(es) where the literal is permitted.
-    _BACKEND_LITERALS = {
-        "AzureBackend": (
-            "tests/backends/azure/",
-            "tests/backends/fixtures/azurite",
-            "tests/backends/fixtures/azure_live",
-            "tests/backends/fixtures/azure_live_async",
-        ),
-        "S3Backend": ("tests/backends/s3/", "tests/backends/fixtures/s3_"),
-        "S3PyArrowBackend": ("tests/backends/s3/", "tests/backends/fixtures/s3_pyarrow"),
-        "SFTPBackend": ("tests/backends/sftp/", "tests/backends/fixtures/sftp_"),
-        "SQLBlobBackend": ("tests/backends/sqlblob/", "tests/backends/fixtures/sqlblob"),
-        "SQLQueryBackend": ("tests/backends/sqlquery/", "tests/backends/fixtures/sqlquery"),
-        "ReadOnlyHttpBackend": ("tests/backends/http/", "tests/backends/fixtures/http"),
-    }
 
     def test_conformance_does_not_reference_concrete_backends(self) -> None:
         """TEST-002 + TEST-010 narrow boundary check on the conformance subtree.
@@ -483,7 +483,7 @@ class TestLayoutBoundary:
             if py in exempt_files:
                 continue
             text = py.read_text(encoding="utf-8")
-            for name in self._BACKEND_LITERALS:
+            for name in _BACKEND_CLASS_NAMES:
                 if re.search(rf"\b{re.escape(name)}\b", text):
                     rel = py.relative_to(_TESTS_ROOT.parent).as_posix()
                     violations.append(f"{rel}: references {name!r}")

@@ -1,121 +1,45 @@
 """Single source of truth for pytest-gremlins mutation scopes.
 
-Each scope entry pairs source-file mutation targets with a test selection
-(directories, files, optional ``-k`` filter) and the backend service
-containers it needs for the tests to execute. The same definitions feed:
+Each scope pairs source-file mutation targets with a test selection
+(path, optional ``-k`` filter) and the containers required. The same
+definitions feed ``hatch run mutate <scope>`` (via
+``scripts/run_mutate.py``) and ``.github/workflows/mutation.yml``.
 
-* ``hatch run mutate <scope>`` (via the ``mutate`` shim in
-  ``pyproject.toml`` that delegates to ``scripts/run_mutate.py``);
-* ``.github/workflows/mutation.yml`` (reads ``--list-scopes`` and
-  ``--container-needs <name>`` to populate the matrix and conditional
-  container startup steps).
+Every scope is derived. Backend scopes read
+``tests/backends/fixtures/backends.toml`` + ``fixtures.toml`` via
+``_loader.py``. Non-backend scopes pair each ``src/remote_store/_<x>.py``
+or ``src/remote_store/ext/<x>.py`` with the prefix-matching
+``tests/test_<x>*.py`` (and ``tests/test_ext_<x>*.py`` for ext); test
+files that match no src file roll into a single ``core-misc`` scope.
 
-Add or change a scope here only; pyproject and the CI workflow stay
-generic.
+Cmdline split
+=============
 
-Conformance scopes
-==================
-
-pytest-gremlins re-runs pytest as a subprocess with every collected node
-id as argv. A single conformance topic file can exceed the ~32 KiB
-Windows command-line limit (WinError 206) when it covers all backends.
-Topics that fit run as one scope; topics over the limit are split by
-backend group with a ``-k`` filter on the parametrized backend ids (see
-``tests/backends/conformance/conftest.py``). Source-file targets in each
-split scope match the backends kept by the filter so mutations are
-exercised by surviving tests.
+pytest-gremlins re-runs pytest with every collected node id as argv. A
+single conformance topic file can exceed the ~32 KiB Windows command-line
+limit (WinError 206) when it covers all backends. Topics that fit run as
+one scope; topics over the limit are split by ``[backend.<x>].transport``.
 """
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Backend source-file groups
-# ---------------------------------------------------------------------------
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO_ROOT))
 
-ALL_BACKEND_SOURCES: list[str] = [
-    "src/remote_store/backends/_local.py",
-    "src/remote_store/backends/_memory.py",
-    "src/remote_store/backends/_sqlalchemy.py",
-    "src/remote_store/backends/_http.py",
-    "src/remote_store/backends/_http_httpx.py",
-    "src/remote_store/backends/_http_requests.py",
-    "src/remote_store/backends/_azure.py",
-    "src/remote_store/backends/_s3.py",
-    "src/remote_store/backends/_s3_base.py",
-    "src/remote_store/backends/_s3_pyarrow.py",
-    "src/remote_store/backends/_sftp.py",
-]
+from tests.backends.fixtures._loader import load_backends, load_fixtures  # noqa: E402
 
-# Backends whose tests run on a developer machine without a Docker container
-# matching the production cloud (local files, in-memory, in-process http,
-# in-process sqlite, Azurite emulator, in-process Dafny oracle).
-LOCAL_STACK_SOURCES: list[str] = [
-    "src/remote_store/backends/_local.py",
-    "src/remote_store/backends/_memory.py",
-    "src/remote_store/backends/_sqlalchemy.py",
-    "src/remote_store/backends/_http.py",
-    "src/remote_store/backends/_http_httpx.py",
-    "src/remote_store/backends/_http_requests.py",
-    "src/remote_store/backends/_azure.py",
-]
-
-# Backends whose tests need MinIO (S3) or atmoz/sftp containers.
-CLOUD_STACK_SOURCES: list[str] = [
-    "src/remote_store/backends/_s3.py",
-    "src/remote_store/backends/_s3_base.py",
-    "src/remote_store/backends/_s3_pyarrow.py",
-    "src/remote_store/backends/_sftp.py",
-]
-
-# ``-k`` expressions used by the split-topic conformance scopes. ``LOCAL_STACK_FILTER``
-# matches ``[azurite]`` in the parametrized id; that fixture needs the Azurite emulator
-# even though every other fixture in the local stack runs without a container. The
-# corresponding scopes therefore declare ``needs=[AZURITE]`` individually.
-LOCAL_STACK_FILTER = "local or memory or sqlblob or http or azurite or dafny"
-CLOUD_STACK_FILTER = "s3 or sftp"
-
-# Adapter source exercised by ``test_sync_adapter_conformance.py`` directly,
-# and by ``test_async_extended.py`` via the ``local_async_adapted`` /
-# ``memory_async_adapted`` fixtures (both wrap a sync backend with
-# ``SyncBackendAdapter``). Scopes that run those tests include this file in
-# their gremlin targets so adapter-internal mutations are detected.
-SYNC_ADAPTER_SOURCE = "src/remote_store/aio/_sync_adapter.py"
-
-# ---------------------------------------------------------------------------
-# Container identifiers (must match conditional startup keys in CI)
-# ---------------------------------------------------------------------------
-
-MINIO = "minio"
-AZURITE = "azurite"
-SFTP = "sftp"
-
-
-# ---------------------------------------------------------------------------
-# Scope record
-# ---------------------------------------------------------------------------
+_TRANSPORTS = ("fs", "memory", "sql", "http", "ssh")
+_SYNC_ADAPTER = "src/remote_store/aio/_sync_adapter.py"
+_SRC_ROOT = _REPO_ROOT / "src" / "remote_store"
+_TESTS_ROOT = _REPO_ROOT / "tests"
 
 
 @dataclass(frozen=True)
 class Scope:
-    """One mutation-test scope.
-
-    ``targets``  files passed to ``--gremlin-targets``
-    ``tests``    pytest path/file args (positional)
-    ``filter``   optional ``-k`` expression
-    ``needs``    container identifiers (``MINIO``/``AZURITE``/``SFTP``) the
-                 tests require to run with full coverage. Used by CI to
-                 decide which Docker images to start; **advisory only**.
-                 Backend fixtures decide internally whether they can run
-                 (e.g. ``sftp_inproc`` runs without Docker, ``sftp_docker``
-                 ``pytest.skip``s when its container is missing). A
-                 Docker-off local run will therefore exercise a subset of
-                 the fixtures the scope's ``-k`` filter selects, and a
-                 mutation only the real-daemon fixture would catch can
-                 survive.
-    """
-
     targets: list[str]
     tests: list[str]
     filter: str | None = None
@@ -123,200 +47,210 @@ class Scope:
 
 
 # ---------------------------------------------------------------------------
-# Scopes
+# Registry-driven primitives (backend scopes)
 # ---------------------------------------------------------------------------
 
-SCOPES: dict[str, Scope] = {
-    # Core / extension scopes (no backend containers required)
-    "core-api": Scope(
-        targets=[
-            "src/remote_store/_store.py",
-            "src/remote_store/_proxy.py",
-            "src/remote_store/_stream.py",
-            "src/remote_store/_glob.py",
-            "src/remote_store/_backend.py",
-            "src/remote_store/_types.py",
-        ],
-        tests=[
-            "tests/test_store.py",
-            "tests/test_store_child.py",
-            "tests/test_proxy.py",
-            "tests/test_depth_listing.py",
-            "tests/test_folder_info_depth.py",
-            "tests/test_open_atomic.py",
-            "tests/test_ping.py",
-            "tests/test_stream.py",
-            "tests/test_glob.py",
-        ],
-    ),
-    "core-infra": Scope(
-        targets=[
-            "src/remote_store/_capabilities.py",
-            "src/remote_store/_errors.py",
-            "src/remote_store/_config.py",
-            "src/remote_store/_models.py",
-            "src/remote_store/_path.py",
-            "src/remote_store/_resolution.py",
-            "src/remote_store/_registry.py",
-            "src/remote_store/backends/_memory.py",
-            "src/remote_store/backends/_fileinfo.py",
-        ],
-        tests=[
-            "tests/test_capabilities.py",
-            "tests/test_errors.py",
-            "tests/test_config.py",
-            "tests/test_models.py",
-            "tests/test_path.py",
-            "tests/test_resolution.py",
-            "tests/test_registry.py",
-            "tests/test_memory_coverage.py",
-        ],
-    ),
-    "ext-proxy": Scope(
-        targets=[
-            "src/remote_store/ext/arrow.py",
-            "src/remote_store/ext/batch.py",
-            "src/remote_store/ext/cache.py",
-            "src/remote_store/ext/glob.py",
-            "src/remote_store/ext/integrity.py",
-            "src/remote_store/ext/observe.py",
-            "src/remote_store/ext/otel.py",
-            "src/remote_store/ext/partition.py",
-            "src/remote_store/ext/streams.py",
-            "src/remote_store/ext/transfer.py",
-        ],
-        tests=[
-            "tests/test_arrow.py",
-            "tests/test_batch.py",
-            "tests/test_cache.py",
-            "tests/test_observe.py",
-            "tests/test_otel.py",
-            "tests/test_partition.py",
-            "tests/test_integrity.py",
-            "tests/test_transfer.py",
-            "tests/test_streams.py",
-            "tests/test_glob.py",
-        ],
-    ),
-    "ext-format": Scope(
-        targets=[
-            "src/remote_store/ext/parquet.py",
-            "src/remote_store/ext/yaml.py",
-            "src/remote_store/ext/pydantic.py",
-            "src/remote_store/ext/dagster.py",
-        ],
-        tests=[
-            "tests/test_ext_parquet.py",
-            "tests/test_ext_yaml.py",
-            "tests/test_ext_pydantic.py",
-            "tests/test_dagster.py",
-        ],
-    ),
-    # Per-backend scopes (legacy axis: per-backend test directory)
-    "backends-local": Scope(
-        targets=[
-            "src/remote_store/backends/_local.py",
-            "src/remote_store/backends/_http.py",
-            "src/remote_store/backends/_http_httpx.py",
-            "src/remote_store/backends/_http_requests.py",
-            "src/remote_store/backends/_sqlalchemy.py",
-        ],
-        tests=[
-            "tests/backends/local/",
-            "tests/backends/http/",
-            "tests/backends/sqlblob/",
-            "tests/backends/sqlquery/",
-        ],
-    ),
-    "backends-cloud": Scope(
-        targets=CLOUD_STACK_SOURCES + ["src/remote_store/backends/_azure.py"],
-        tests=[
-            "tests/backends/s3/",
-            "tests/backends/sftp/",
-            "tests/backends/azure/",
-        ],
-        needs=[MINIO, AZURITE, SFTP],
-    ),
-    # Conformance scopes (topic axis): single-file topics
-    "conformance-listing": Scope(
-        targets=ALL_BACKEND_SOURCES,
-        tests=["tests/backends/conformance/test_listing.py"],
-        needs=[MINIO, AZURITE, SFTP],
-    ),
-    "conformance-metadata": Scope(
-        targets=ALL_BACKEND_SOURCES,
-        tests=["tests/backends/conformance/test_metadata.py"],
-        needs=[MINIO, AZURITE, SFTP],
-    ),
-    "conformance-streaming": Scope(
-        targets=ALL_BACKEND_SOURCES,
-        tests=["tests/backends/conformance/test_streaming.py"],
-        needs=[MINIO, AZURITE, SFTP],
-    ),
-    "conformance-sync-adapter": Scope(
-        targets=[*ALL_BACKEND_SOURCES, SYNC_ADAPTER_SOURCE],
+
+def _src(b) -> list[str]:
+    """Source files of backend ``b`` under ``src/`` (excludes test-only
+    backends like ``dafny`` whose source points at a tests/ helper).
+    """
+    return [s for s in b.sources if s.startswith("src/")]
+
+
+def _test_dir(backend_name: str) -> str:
+    """``tests/backends/<dir>/`` for ``backend_name``. ``s3_pyarrow`` shares
+    ``tests/backends/s3/`` with ``S3Backend`` (they share ``_s3_base.py``).
+    """
+    return "s3" if backend_name == "s3_pyarrow" else backend_name
+
+
+def _filter_term(backend_name: str) -> str:
+    """``-k`` term matching every ``stage <= 2`` fixture of ``backend_name``
+    and no other backend's fixtures. Falls back to ``OR`` of fixture names
+    when the backend name collides (``s3`` matches ``s3_pyarrow_*``;
+    ``azure`` matches ``azure_live*``).
+    """
+    fxs = load_fixtures().values()
+    own = {f.name for f in fxs if f.backend == backend_name and f.stage <= 2}
+    if not own:
+        return ""
+    forbidden = {f.name for f in fxs if f.backend != backend_name or f.stage > 2}
+    if all(backend_name in n for n in own) and not any(backend_name in n for n in forbidden):
+        return backend_name
+    return " or ".join(sorted(own))
+
+
+def _needs(filter_str: str | None) -> list[str]:
+    """Containers required by every fixture matched by ``filter_str``.
+    ``None`` matches all fixtures (full-conformance scopes).
+    """
+    fxs = load_fixtures().values()
+    if not filter_str:
+        matched = list(fxs)
+    else:
+        terms = [t.strip() for t in filter_str.split(" or ") if t.strip()]
+        matched = [f for f in fxs if any(t in f.name for t in terms)]
+    return sorted({f.container for f in matched if f.container != "none"})
+
+
+# ---------------------------------------------------------------------------
+# Filesystem-driven primitives (non-backend scopes)
+# ---------------------------------------------------------------------------
+
+
+def _toplevel_test_files() -> list[Path]:
+    """``tests/test_*.py`` (top-level only, no subdirs)."""
+    return [p for p in sorted(_TESTS_ROOT.glob("test_*.py")) if p.parent == _TESTS_ROOT]
+
+
+def _matching_tests(name: str, *, ext_prefix: bool) -> list[str]:
+    """Test filenames matching ``test_<name>*.py`` (and ``test_ext_<name>*.py``
+    for ext) at the top of ``tests/``.
+    """
+    matches = set(_TESTS_ROOT.glob(f"test_{name}.py")) | set(_TESTS_ROOT.glob(f"test_{name}_*.py"))
+    if ext_prefix:
+        matches |= set(_TESTS_ROOT.glob(f"test_ext_{name}.py")) | set(_TESTS_ROOT.glob(f"test_ext_{name}_*.py"))
+    return sorted(p.name for p in matches if p.parent == _TESTS_ROOT)
+
+
+# ---------------------------------------------------------------------------
+# SCOPES — every entry derived from the registry or filesystem
+# ---------------------------------------------------------------------------
+
+
+def _build() -> dict[str, Scope]:
+    backends = load_backends().values()
+    all_src = sorted({s for b in backends for s in _src(b)})
+    full_needs = _needs(None)
+    out: dict[str, Scope] = {}
+    matched_tests: set[str] = set()
+
+    # Per-file non-backend scopes: each src/remote_store/_<x>.py,
+    # src/remote_store/ext/<x>.py, and src/remote_store/backends/_<x>.py
+    # paired with prefix-matching test files at tests/test_<x>*.py. The
+    # third loop catches `backends/_memory.py` paired with
+    # `test_memory_coverage.py`; other backend src files have no
+    # top-level test and roll into ``backends-*`` instead.
+    def _add_per_file(p: Path, scope_name: str, src_rel: str, *, ext_prefix: bool) -> None:
+        stem = p.stem.lstrip("_")
+        tests = _matching_tests(stem, ext_prefix=ext_prefix)
+        if not tests:
+            return
+        # Fail loud rather than silently overwrite if a future src layout
+        # produces both ``src/remote_store/_<x>.py`` and
+        # ``src/remote_store/backends/_<x>.py`` with matching tests — both
+        # would land on the same ``core-<x>`` key today.
+        if scope_name in out:
+            raise ValueError(f"mutate scope name collision: {scope_name!r} (src_rel={src_rel!r})")
+        out[scope_name] = Scope(
+            targets=[src_rel],
+            tests=[f"tests/{t}" for t in tests],
+        )
+        matched_tests.update(tests)
+
+    for p in sorted(_SRC_ROOT.glob("_*.py")):
+        if p.name != "__init__.py":
+            _add_per_file(p, f"core-{p.stem.lstrip('_')}", f"src/remote_store/{p.name}", ext_prefix=False)
+    for p in sorted((_SRC_ROOT / "ext").glob("*.py")):
+        if p.name != "__init__.py":
+            _add_per_file(p, f"ext-{p.stem}", f"src/remote_store/ext/{p.name}", ext_prefix=True)
+    for p in sorted((_SRC_ROOT / "backends").glob("_*.py")):
+        if p.name != "__init__.py":
+            _add_per_file(p, f"core-{p.stem.lstrip('_')}", f"src/remote_store/backends/{p.name}", ext_prefix=False)
+
+    # Orphan-catch: top-level test files matching no src by prefix
+    # (test_open_atomic, test_ping, test_pbt_*, test_snippets, ...). These
+    # exercise the public API and cross-cutting behaviours. Targets are
+    # every non-backend src file plus backend-folder *utilities* — files
+    # under backends/ that no TOML backend claims as its source (today
+    # only ``_fileinfo.py``). Real backend src files belong to
+    # ``backends-*`` scopes; including them here would surface mutations
+    # that cross-cutting tests can't actually exercise.
+    known_backend_src = {s for b in backends for s in b.sources}
+    orphan_targets = (
+        [f"src/remote_store/{p.name}" for p in sorted(_SRC_ROOT.glob("_*.py")) if p.name != "__init__.py"]
+        + [
+            f"src/remote_store/ext/{p.name}"
+            for p in sorted((_SRC_ROOT / "ext").glob("*.py"))
+            if p.name != "__init__.py"
+        ]
+        + [
+            f"src/remote_store/backends/{p.name}"
+            for p in sorted((_SRC_ROOT / "backends").glob("_*.py"))
+            if p.name != "__init__.py" and f"src/remote_store/backends/{p.name}" not in known_backend_src
+        ]
+    )
+    orphan_tests = [f"tests/{p.name}" for p in _toplevel_test_files() if p.name not in matched_tests]
+    if orphan_tests:
+        out["core-misc"] = Scope(targets=orphan_targets, tests=orphan_tests)
+
+    # Per-transport backend scopes — collapses old backends-local/cloud.
+    for t in _TRANSPORTS:
+        ts = [b for b in backends if b.transport == t]
+        dirs = sorted({_test_dir(b.name) for b in ts if (_REPO_ROOT / "tests/backends" / _test_dir(b.name)).is_dir()})
+        if not dirs:
+            continue
+        out[f"backends-{t}"] = Scope(
+            targets=sorted({s for b in ts for s in _src(b)}),
+            tests=[f"tests/backends/{d}/" for d in dirs],
+            needs=sorted(
+                {
+                    f.container
+                    for f in load_fixtures().values()
+                    if f.backend in {b.name for b in ts} and f.container != "none"
+                }
+            ),
+        )
+
+    # Conformance — sync-adapter + the three unsplit topics walk every backend.
+    out["conformance-sync-adapter"] = Scope(
+        targets=sorted({*all_src, _SYNC_ADAPTER}),
         tests=["tests/backends/conformance/test_sync_adapter_conformance.py"],
-        needs=[MINIO, AZURITE, SFTP],
-    ),
-    # Conformance scopes (split topics): over-limit, partitioned by backend group
-    "conformance-io-local": Scope(
-        targets=LOCAL_STACK_SOURCES,
-        tests=["tests/backends/conformance/test_io.py"],
-        filter=LOCAL_STACK_FILTER,
-        needs=[AZURITE],
-    ),
-    "conformance-io-cloud": Scope(
-        targets=CLOUD_STACK_SOURCES,
-        tests=["tests/backends/conformance/test_io.py"],
-        filter=CLOUD_STACK_FILTER,
-        needs=[MINIO, SFTP],
-    ),
-    "conformance-atomic-local": Scope(
-        targets=LOCAL_STACK_SOURCES,
-        tests=["tests/backends/conformance/test_atomic.py"],
-        filter=LOCAL_STACK_FILTER,
-        needs=[AZURITE],
-    ),
-    "conformance-atomic-cloud": Scope(
-        targets=CLOUD_STACK_SOURCES,
-        tests=["tests/backends/conformance/test_atomic.py"],
-        filter=CLOUD_STACK_FILTER,
-        needs=[MINIO, SFTP],
-    ),
-    "conformance-errors-local": Scope(
-        targets=LOCAL_STACK_SOURCES,
-        tests=["tests/backends/conformance/test_errors.py"],
-        filter=LOCAL_STACK_FILTER,
-        needs=[AZURITE],
-    ),
-    "conformance-errors-cloud": Scope(
-        targets=CLOUD_STACK_SOURCES,
-        tests=["tests/backends/conformance/test_errors.py"],
-        filter=CLOUD_STACK_FILTER,
-        needs=[MINIO, SFTP],
-    ),
-    "conformance-identity-local": Scope(
-        targets=LOCAL_STACK_SOURCES,
-        tests=["tests/backends/conformance/test_identity.py"],
-        filter=LOCAL_STACK_FILTER,
-        needs=[AZURITE],
-    ),
-    "conformance-identity-cloud": Scope(
-        targets=CLOUD_STACK_SOURCES,
-        tests=["tests/backends/conformance/test_identity.py"],
-        filter=CLOUD_STACK_FILTER,
-        needs=[MINIO, SFTP],
-    ),
-    # async-extended runs only on local / memory; one scope per backend
-    # keeps the cmdline well under the limit
-    "conformance-async-extended-local": Scope(
-        targets=["src/remote_store/backends/_local.py", SYNC_ADAPTER_SOURCE],
-        tests=["tests/backends/conformance/test_async_extended.py"],
-        filter="local",
-    ),
-    "conformance-async-extended-memory": Scope(
-        targets=["src/remote_store/backends/_memory.py", SYNC_ADAPTER_SOURCE],
-        tests=["tests/backends/conformance/test_async_extended.py"],
-        filter="memory",
-    ),
-}
+        needs=full_needs,
+    )
+    for topic in ("listing", "metadata", "streaming"):
+        out[f"conformance-{topic}"] = Scope(
+            targets=all_src,
+            tests=[f"tests/backends/conformance/test_{topic}.py"],
+            needs=full_needs,
+        )
+
+    # Conformance topics over the cmdline limit — split by transport.
+    # Skip transports with no stage-≤2 backends (``_filter_term`` returns
+    # empty for them); an empty filter would otherwise materialise as a
+    # full-conformance scope with empty targets and ``needs=full_needs``.
+    for topic in ("io", "atomic", "errors", "identity"):
+        for t in _TRANSPORTS:
+            ts = [b for b in backends if b.transport == t]
+            f = " or ".join(filter(None, (_filter_term(b.name) for b in ts)))
+            if not f:
+                continue
+            out[f"conformance-{topic}-{t}"] = Scope(
+                targets=sorted({s for b in ts for s in _src(b)}),
+                tests=[f"tests/backends/conformance/test_{topic}.py"],
+                filter=f,
+                needs=_needs(f),
+            )
+
+    # Async-extended — per backend that wires a native or adapted async
+    # implementation today (memory, local). Mirrors the conformance-split
+    # ``if not f: continue`` guard so a future backend with only stage-3
+    # fixtures does not silently produce a scope with empty filter and
+    # ``_needs(f)`` expanding to ``full_needs``.
+    for backend_name in ("local", "memory"):
+        f = _filter_term(backend_name)
+        if not f:
+            continue
+        b = load_backends()[backend_name]
+        out[f"conformance-async-extended-{backend_name}"] = Scope(
+            targets=sorted({*_src(b), _SYNC_ADAPTER}),
+            tests=["tests/backends/conformance/test_async_extended.py"],
+            filter=f,
+            needs=_needs(f),
+        )
+
+    return out
+
+
+SCOPES: dict[str, Scope] = _build()
