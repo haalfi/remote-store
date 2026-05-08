@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from tests.backends.fixtures._loader import _VALID_STAGES
+from tests.backends.fixtures._loader import VALID_STAGES
 
 # ---------------------------------------------------------------------------
 # Stage selection
@@ -46,12 +46,12 @@ def current_stage() -> int:
 def set_current_stage(stage: int) -> None:
     """Set the active stage tier. Called once by ``pytest_configure``.
 
-    Valid stages come from ``_loader._VALID_STAGES``, the same set the
+    Valid stages come from ``_loader.VALID_STAGES``, the same set the
     ``--stage`` CLI option's ``choices`` reads.
     """
     global _CURRENT_STAGE
-    if stage not in _VALID_STAGES:
-        raise ValueError(f"stage must be one of {sorted(_VALID_STAGES)} (got {stage!r})")
+    if stage not in VALID_STAGES:
+        raise ValueError(f"stage must be one of {sorted(VALID_STAGES)} (got {stage!r})")
     _CURRENT_STAGE = stage
 
 

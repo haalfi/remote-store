@@ -21,7 +21,7 @@ Typical use sites:
   splats the resulting kwargs into its ``BackendFixture(...)`` literal.
 * ``tests/backends/fixtures/__init__.py::_load_all`` walks
   ``load_fixtures()`` to import every per-fixture module by name.
-* ``tests/conftest.py::pytest_addoption`` reads ``_VALID_STAGES`` for the
+* ``tests/conftest.py::pytest_addoption`` reads ``VALID_STAGES`` for the
   ``--stage`` option's ``choices``.
 
 Per house style (``scripts/gen_features.py:20-23``) the ``tomllib``/``tomli``
@@ -31,6 +31,7 @@ Python 3.10 (via ``tomli``) and 3.11+ (stdlib ``tomllib``) alike.
 
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -47,18 +48,20 @@ _FIXTURES_TOML = _HERE / "fixtures.toml"
 
 
 # ---------------------------------------------------------------------------
-# Closed-enum validation sets
+# Closed-enum validation sets (public — listed in ``__all__``)
 # ---------------------------------------------------------------------------
 #
 # Single source of truth for every closed-enum dimension on a fixture or
 # backend record. ``set_current_stage`` and the ``--stage`` option both
-# read from ``_VALID_STAGES``; the other three are consumed by the loader
-# itself and the spec-marker round-trip tests.
+# read from ``VALID_STAGES``; the other three are consumed by the loader
+# itself and the spec-marker round-trip tests. Public names so external
+# callers (``_state.py``, ``tests/conftest.py``, ``test_registry.py``)
+# do not reach into a "private" module surface.
 
-_VALID_STAGES: frozenset[int] = frozenset({1, 2, 3})
-_VALID_KINDS: frozenset[str] = frozenset({"pure", "mocked", "real-local", "real-live", "replay"})
-_VALID_TRANSPORTS: frozenset[str] = frozenset({"http", "ssh", "fs", "memory", "sql"})
-_VALID_CONTAINERS: frozenset[str] = frozenset({"minio", "azurite", "sftp", "none"})
+VALID_STAGES: frozenset[int] = frozenset({1, 2, 3})
+VALID_KINDS: frozenset[str] = frozenset({"pure", "mocked", "real-local", "real-live", "replay"})
+VALID_TRANSPORTS: frozenset[str] = frozenset({"http", "ssh", "fs", "memory", "sql"})
+VALID_CONTAINERS: frozenset[str] = frozenset({"minio", "azurite", "sftp", "none"})
 
 
 Stage = Literal[1, 2, 3]
@@ -154,8 +157,8 @@ def _require_str_list(value: Any, *, where: str) -> tuple[str, ...]:
 
 def _parse_backend(name: str, raw: dict[str, Any]) -> BackendDescriptor:
     transport = raw.get("transport")
-    if transport not in _VALID_TRANSPORTS:
-        raise ValueError(f"backend.{name}: transport must be one of {sorted(_VALID_TRANSPORTS)}, got {transport!r}")
+    if transport not in VALID_TRANSPORTS:
+        raise ValueError(f"backend.{name}: transport must be one of {sorted(VALID_TRANSPORTS)}, got {transport!r}")
     flat_ns = raw.get("flat_namespace", False)
     self_op = raw.get("self_op_supported", True)
     if not isinstance(flat_ns, bool):
@@ -184,16 +187,16 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
     backend = backends[backend_name]
 
     stage = raw.get("stage")
-    if stage not in _VALID_STAGES:
-        raise ValueError(f"fixture.{name}: stage must be one of {sorted(_VALID_STAGES)}, got {stage!r}")
+    if stage not in VALID_STAGES:
+        raise ValueError(f"fixture.{name}: stage must be one of {sorted(VALID_STAGES)}, got {stage!r}")
 
     kind = raw.get("kind")
-    if kind not in _VALID_KINDS:
-        raise ValueError(f"fixture.{name}: kind must be one of {sorted(_VALID_KINDS)}, got {kind!r}")
+    if kind not in VALID_KINDS:
+        raise ValueError(f"fixture.{name}: kind must be one of {sorted(VALID_KINDS)}, got {kind!r}")
 
     container = raw.get("container", "none")
-    if container not in _VALID_CONTAINERS:
-        raise ValueError(f"fixture.{name}: container must be one of {sorted(_VALID_CONTAINERS)}, got {container!r}")
+    if container not in VALID_CONTAINERS:
+        raise ValueError(f"fixture.{name}: container must be one of {sorted(VALID_CONTAINERS)}, got {container!r}")
 
     is_async = raw.get("is_async", False)
     if not isinstance(is_async, bool):
@@ -232,12 +235,18 @@ def _parse_fixture(name: str, raw: dict[str, Any], backends: dict[str, BackendDe
 # ---------------------------------------------------------------------------
 
 
+@functools.cache
 def load_backends() -> dict[str, BackendDescriptor]:
     """Parse ``backends.toml`` and return a name → descriptor map.
 
     The map preserves the TOML iteration order so downstream consumers
     that walk the registry deterministically (e.g. PR 2's mutate scopes)
     see a stable sequence.
+
+    Cached: ``BackendDescriptor`` is frozen and the consumer set
+    (per-fixture modules, ``test_registry.py``) treats the dict as
+    read-only, so the result is safe to share across calls. Tests that
+    swap the TOML at runtime should call ``load_backends.cache_clear()``.
     """
     raw = _read_toml(_BACKENDS_TOML)
     backends_raw = raw.get("backend", {})
@@ -246,12 +255,19 @@ def load_backends() -> dict[str, BackendDescriptor]:
     return {name: _parse_backend(name, body) for name, body in backends_raw.items()}
 
 
+@functools.cache
 def load_fixtures() -> dict[str, FixtureDescriptor]:
     """Parse ``fixtures.toml`` and return a name → descriptor map.
 
     Cross-references every fixture's ``backend`` against
     ``load_backends()``; an unknown reference is a hard error so a
     fixture cannot silently float free of any family.
+
+    Cached: at session startup every per-fixture module calls
+    ``load_fixture`` (which delegates here), so without the cache both
+    TOML files are parsed ~15 times. ``FixtureDescriptor`` is frozen and
+    the consumer set treats the dict as read-only. Tests that swap the
+    TOML at runtime should call ``load_fixtures.cache_clear()``.
     """
     backends = load_backends()
     raw = _read_toml(_FIXTURES_TOML)
@@ -265,8 +281,8 @@ def load_fixture(name: str) -> FixtureDescriptor:
     """Return the descriptor for a single named fixture.
 
     Convenience for per-fixture modules that only need their own block;
-    parsing the whole file is cheap (16 small entries) so we accept the
-    repeated work in exchange for a tiny call site.
+    delegates to the cached ``load_fixtures()`` so repeated calls do not
+    re-parse the TOML files.
     """
     fixtures = load_fixtures()
     if name not in fixtures:
@@ -275,6 +291,10 @@ def load_fixture(name: str) -> FixtureDescriptor:
 
 
 __all__ = [
+    "VALID_CONTAINERS",
+    "VALID_KINDS",
+    "VALID_STAGES",
+    "VALID_TRANSPORTS",
     "BackendDescriptor",
     "Container",
     "FixtureDescriptor",

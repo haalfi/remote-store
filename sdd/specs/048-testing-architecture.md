@@ -363,18 +363,20 @@ tests/
     sqlblob/
       test_config.py
     fixtures/                    # registry and factories. TEST-004.
-      registry.py
-      _live_env.py
-      memory.py
+      backends.toml              # per-backend-family declarative facts (SSoT)
+      fixtures.toml              # per-fixture declarative facts (SSoT)
+      _loader.py                 # pure TOML loader; closed-enum validation
+      registry.py                # ``BackendFixture`` record + register/fixtures
+      _state.py                  # ``current_stage`` / ``INFRA`` runtime state
+      _live_env.py               # Stage 3 env-var preconditions
+      test_registry.py           # spec-marker tests for the registry itself
+      memory.py                  # representative per-fixture factory modules
       local.py
       azurite.py
-      minio.py
       sftp_docker.py
       azure_live.py
       azure_live_async.py
-      azure_replay.py
-      s3_live.py
-      s3_replay.py
+      ...                        # full set in fixtures.toml
     cassettes/                   # HTTP recordings. TEST-007. HTTP backends only.
       azure/
       s3/

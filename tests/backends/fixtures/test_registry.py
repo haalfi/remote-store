@@ -22,10 +22,10 @@ from tests.backends.fixtures import (
     fixtures,
 )
 from tests.backends.fixtures._loader import (
-    _VALID_CONTAINERS,
-    _VALID_KINDS,
-    _VALID_STAGES,
-    _VALID_TRANSPORTS,
+    VALID_CONTAINERS,
+    VALID_KINDS,
+    VALID_STAGES,
+    VALID_TRANSPORTS,
     load_fixtures,
 )
 from tests.backends.fixtures._state import current_stage, set_current_stage
@@ -40,11 +40,11 @@ class TestAxisInvariants:
 
     def test_every_fixture_has_valid_kind(self) -> None:
         for f in all_fixtures():
-            assert f.kind in _VALID_KINDS, f"{f.name!r} has invalid kind {f.kind!r}"
+            assert f.kind in VALID_KINDS, f"{f.name!r} has invalid kind {f.kind!r}"
 
     def test_every_fixture_has_valid_stage(self) -> None:
         for f in all_fixtures():
-            assert f.stage in _VALID_STAGES, f"{f.name!r} has invalid stage {f.stage!r}"
+            assert f.stage in VALID_STAGES, f"{f.name!r} has invalid stage {f.stage!r}"
 
     def test_every_fixture_declares_async_flag(self) -> None:
         for f in all_fixtures():
@@ -114,8 +114,39 @@ class TestRegistryShape:
             assert f.self_op_supported == desc.self_op_supported
             assert f.transport == desc.transport, f"{f.name!r} transport drift"
             assert f.container == desc.container, f"{f.name!r} container drift"
-            assert f.transport in _VALID_TRANSPORTS
-            assert f.container in _VALID_CONTAINERS
+            assert f.transport in VALID_TRANSPORTS
+            assert f.container in VALID_CONTAINERS
+
+    def test_live_env_fields_parse_on_descriptor(self) -> None:
+        """``FixtureDescriptor`` carries the live-cloud env metadata that
+        ``BackendFixture.to_kwargs`` deliberately omits.
+
+        The fields are static-but-out-of-band: they are read by future
+        PR 2 work (mutate scopes, CI plumbing) rather than by the
+        ``BackendFixture`` runtime contract, so they sit on the
+        descriptor and not on the registered record. This test pins
+        the parsing path so a typo in ``live_creds_env`` would fail
+        in CI immediately, not when PR 2 first reads it.
+        """
+        fixtures_by_name = load_fixtures()
+
+        live = fixtures_by_name["azure_live"]
+        assert live.live_opt_in_env == "RS_TEST_LIVE_HNS"
+        # tuple, not list — ``_require_str_list`` froze the sequence so
+        # ``FixtureDescriptor`` stays hashable / immutable.
+        assert isinstance(live.live_creds_env, tuple)
+        assert live.live_creds_env == ("AZURE_STORAGE_CONNECTION_STRING",)
+
+        live_async = fixtures_by_name["azure_live_async"]
+        assert live_async.live_opt_in_env == "RS_TEST_LIVE_HNS"
+        assert isinstance(live_async.live_creds_env, tuple)
+        assert live_async.live_creds_env == ("AZURE_STORAGE_CONNECTION_STRING",)
+
+        # Non-live fixtures default to ``None`` / empty tuple — the
+        # absence of a TOML key is meaningful.
+        non_live = fixtures_by_name["memory"]
+        assert non_live.live_opt_in_env is None
+        assert non_live.live_creds_env == ()
 
     def test_bk185_azurite_flat_azure_live_hns(self) -> None:
         """BK-185 regression: same backend family can disagree on flat_namespace.
