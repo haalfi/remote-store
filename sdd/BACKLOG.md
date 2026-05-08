@@ -125,8 +125,8 @@ and the highest ID already in this file, then take the next integer. Run
   BK-180 (live fixtures the recording mode runs against). Spec: TEST-007,
   TEST-008, TEST-009.
 
-- [ ] **BK-180 — Implement Spec 048 Phase 2: live conformance fixtures**
-  **Next-in-line after BK-179 landed.** Add `azure_live` (Stage 3, kind
+- [~] **BK-180 — Implement Spec 048 Phase 2: live conformance fixtures**
+  **In progress.** Add `azure_live` (Stage 3, kind
   `real-live`) to the registry per spec
   [TEST-001/004](specs/048-testing-architecture.md). Wire conformance
   parametrize to include it when `--stage=3` and `RS_TEST_LIVE_HNS=1` are
@@ -134,6 +134,21 @@ and the highest ID already in this file, then take the next integer. Run
   real ADLS Gen2 account. Repeat the shape for `s3_live` against real
   AWS S3 (separate env var; cost-controlled). No legacy live-test deletion
   yet — that is BK-182. Spec: TEST-001, TEST-004, TEST-006.
+
+  **Done so far:** sync `azure_live` registry fixture with per-call
+  fresh HNS filesystem provisioning, `_live_env.require_azure_live_connection_string`
+  helper, and one smoke test passing against the real ADLS Gen2 account.
+  Carryover: full conformance run against `azure_live` (and triage of any
+  reds), async `azure_live_async` (requires the `aclose` channel
+  extension below), and `s3_live` against real AWS S3
+  (`RS_TEST_LIVE_S3=1` / `RS_TEST_LIVE_S3_BUCKET`).
+
+  **Decision pinned (carry-in from BK-179 review #597):** the async
+  cleanup channel will be added by extending `BackendFixture` with an
+  optional `aclose: Callable[[AnyBackend], Awaitable[None]] | None`
+  field; the conformance `async_backend` indirect fixture awaits it
+  when set. Spec TEST-004 dataclass gets a one-line addition. This
+  lands together with `azure_live_async`.
 
   **Carried in from BK-179 review (#597):** the async indirect fixture
   in `tests/backends/conformance/conftest.py` calls `cleanup` synchronously
