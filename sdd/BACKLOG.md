@@ -184,16 +184,6 @@ and the highest ID already in this file, then take the next integer. Run
   sync try/except + log + `_build_azure_write_result(path, size, None, metadata)` shape, then
   weaken the live-test assertion to allow the fallback path. Spec: WR-001a, WR-004, AZ-034.
 
-- [ ] **BUG-204 — `remote-store-bench-user` IAM policy missing `s3:CreateBucket` / `s3:DeleteBucket` for Stage 3 conformance**
-  `s3_live` Stage 3 fixture (BK-184) creates a fresh `rs-conformance-<uuid>` bucket per
-  factory call and deletes it on cleanup. The `.env` IAM user (`remote-store-bench-user`)
-  is not authorized for `s3:CreateBucket` (confirmed: `AccessDenied` on first smoke run,
-  `arn:aws:iam::981698391881:user/remote-store-bench-user`). Fix: attach an inline or
-  managed policy granting `s3:CreateBucket`, `s3:DeleteBucket`, `s3:ListBucket`,
-  `s3:DeleteObject`, `s3:PutObject`, `s3:GetObject` scoped to `arn:aws:s3:::rs-conformance-*`
-  (or a dedicated IAM user for the Stage 3 suite). Once fixed, run the full Stage 3 sweep
-  and record pass/skip/fail counts in the BACKLOG-DONE entry.
-
 - [ ] **BUG-195 — `get_file_info` on an HNS directory raises `NotFound` instead of `InvalidPath` (sync + async)**
   BE-016 specifies "`InvalidPath` if the path names a directory (Dafny:
   `GetFileInfo: IsDir → InvalidPath`)" and ASYNC-016 inherits the same contract. Both

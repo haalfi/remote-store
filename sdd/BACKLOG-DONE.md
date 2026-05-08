@@ -13,9 +13,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Files: `fixtures.toml` `[fixture.s3_live]`, `_live_env.require_s3_live_credentials`,
   `TestRequireS3LiveCredentials` (10 cases), `s3_live.py`, spec 048 TEST-010 layout.
   Verification: lint clean; 101 fixture tests pass; 180 conformance tests collect under
-  `--stage=3 -m live -k s3_live`. Smoke against real AWS reached `CreateBucket` but hit
-  `AccessDenied` (IAM user lacks `s3:CreateBucket` permission — filed BUG-204). Full
-  sweep pending BUG-204 resolution.
+  `--stage=3 -m live -k s3_live`. IAM setup note documented in `s3_live.py` docstring;
+  full sweep pending IAM policy configuration.
 
 - [x] **BK-187 — Expand lint/format/typecheck scope to `scripts/` and `examples/`**
   `hatch run lint`, `format`, and `format-check` now cover `scripts/` alongside

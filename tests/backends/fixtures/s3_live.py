@@ -44,6 +44,24 @@ affordable for Stage 3 cadence (manual or scheduled CI), not for default CI.
 reads the region from ``AWS_DEFAULT_REGION`` and always passes it.
 ``S3Backend`` is constructed without ``key=`` / ``secret=`` /
 ``region_name=`` so it defers to boto3's default credential chain.
+
+Required IAM permissions
+------------------------
+
+The IAM user in ``.env`` must have the following permissions (this is a
+setup prerequisite, not checked at runtime)::
+
+    s3:CreateBucket       arn:aws:s3:::rs-conformance-*
+    s3:DeleteBucket       arn:aws:s3:::rs-conformance-*
+    s3:ListBucket         arn:aws:s3:::rs-conformance-*
+    s3:ListBucketMultipartUploads  arn:aws:s3:::rs-conformance-*
+    s3:GetBucketLocation  arn:aws:s3:::rs-conformance-*
+    s3:GetObject          arn:aws:s3:::rs-conformance-*/*
+    s3:PutObject          arn:aws:s3:::rs-conformance-*/*
+    s3:DeleteObject       arn:aws:s3:::rs-conformance-*/*
+    s3:CopyObject         arn:aws:s3:::rs-conformance-*/*
+    s3:HeadObject         arn:aws:s3:::rs-conformance-*/*
+    s3:AbortMultipartUpload  arn:aws:s3:::rs-conformance-*/*
 """
 
 from __future__ import annotations
