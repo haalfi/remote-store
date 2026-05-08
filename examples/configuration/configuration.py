@@ -14,13 +14,14 @@ see_also:
 from __future__ import annotations
 
 import tempfile
+from typing import Any
 
 from remote_store import BackendConfig, Registry, RegistryConfig, Secret, StoreProfile
 
 
-def demo():
+def demo() -> dict[str, Any]:
     """Config creation, Secret hygiene, from_dict(), validation. Returns results dict."""
-    results = {}
+    results: dict[str, Any] = {}
 
     # --- from_dict() — e.g. loaded from TOML or JSON ---
     with tempfile.TemporaryDirectory() as tmp:

@@ -16,10 +16,13 @@ see_also:
 
 from __future__ import annotations
 
+from typing import Any
+
 from remote_store import (
     BackendConfig,
     Registry,
     RegistryConfig,
+    Store,
     StoreProfile,
     batch_copy,
     batch_delete,
@@ -27,9 +30,9 @@ from remote_store import (
 )
 
 
-def demo(store):
+def demo(store: Store) -> dict[str, Any]:
     """Batch operations with error collection. Returns results dict."""
-    results = {}
+    results: dict[str, Any] = {}
 
     # --- Set up some files ---
     for name in ("a.txt", "b.txt", "c.txt", "d.txt"):

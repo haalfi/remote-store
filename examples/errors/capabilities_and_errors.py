@@ -16,6 +16,8 @@ see_also:
 
 from __future__ import annotations
 
+from typing import Any
+
 from remote_store import (
     Capability,
     CapabilityNotSupported,
@@ -28,9 +30,9 @@ from remote_store import (
 from remote_store.backends import MemoryBackend
 
 
-def demo(store):
+def demo(store: Store) -> dict[str, Any]:
     """Capability system and error handling. Returns results dict."""
-    results = {}
+    results: dict[str, Any] = {}
 
     # --- Capability enum ---
     print("=== Capability Enum ===\n")

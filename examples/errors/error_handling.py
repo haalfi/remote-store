@@ -13,6 +13,7 @@ see_also:
 from __future__ import annotations
 
 import tempfile
+from typing import Any
 
 from remote_store import (
     AlreadyExists,
@@ -22,13 +23,14 @@ from remote_store import (
     Registry,
     RegistryConfig,
     RemoteStoreError,
+    Store,
     StoreProfile,
 )
 
 
-def demo(store):
+def demo(store: Store) -> dict[str, Any]:
     """Exercise error paths. Returns caught exceptions for test verification."""
-    results = {}
+    results: dict[str, Any] = {}
 
     # --- NotFound ---
     try:

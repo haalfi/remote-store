@@ -13,13 +13,14 @@ see_also:
 from __future__ import annotations
 
 import tempfile
+from typing import Any
 
-from remote_store import AlreadyExists, BackendConfig, Registry, RegistryConfig, StoreProfile
+from remote_store import AlreadyExists, BackendConfig, Registry, RegistryConfig, Store, StoreProfile
 
 
-def demo(store):
+def demo(store: Store) -> dict[str, Any]:
     """Atomic writes with overwrite semantics. Returns caught exceptions."""
-    results = {}
+    results: dict[str, Any] = {}
 
     # --- Basic atomic write ---
     result = store.write_atomic("config.json", b'{"version": 1}')

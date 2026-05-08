@@ -21,6 +21,8 @@ see_also:
 
 from __future__ import annotations
 
+from typing import Any
+
 try:
     import pyarrow as pa
 
@@ -33,9 +35,9 @@ from remote_store import Store
 from remote_store.backends import MemoryBackend
 
 
-def demo(store: Store) -> dict:
+def demo(store: Store) -> dict[str, Any]:
     """ParquetDatasetStore: managed Parquet datasets. Returns results dict."""
-    results: dict = {}
+    results: dict[str, Any] = {}
 
     # -- Basic write/read roundtrip --
     pds = ParquetDatasetStore(store)

@@ -18,11 +18,13 @@ from __future__ import annotations
 
 import os
 import tempfile
+from typing import Any
 
 from remote_store import (
     BackendConfig,
     Registry,
     RegistryConfig,
+    Store,
     StoreProfile,
     download,
     transfer,
@@ -30,9 +32,9 @@ from remote_store import (
 )
 
 
-def demo(primary, archive, tmp_dir):
+def demo(primary: Store, archive: Store, tmp_dir: str) -> dict[str, Any]:
     """Upload, download, transfer between stores. Returns results dict."""
-    results = {}
+    results: dict[str, Any] = {}
 
     # -- Create a local file to upload --
     local_file = os.path.join(tmp_dir, "hello.txt")

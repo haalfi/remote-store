@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-187 — Expand lint/format/typecheck scope to `scripts/` and `examples/`**
+  `hatch run lint`, `format`, and `format-check` now cover `scripts/` alongside
+  `src/`, `tests/`, `examples/`. `hatch run typecheck` adds `examples/` so that
+  user-facing example code is held to the same `mypy --strict` bar as `src/`.
+  Two scope carve-outs documented inline in `pyproject.toml`:
+  `examples/medallion_dagster/` is excluded (its modules use sibling-relative
+  imports that resolve only under the dagster launcher), and
+  `examples/snippets/custom_backend_guide.py` carries `# mypy: ignore-errors`
+  matching its existing `# ruff: noqa` (intentionally-incomplete tutorial
+  fragments referenced by `--8<--` snippet markers in the Build Your Own
+  Backend guide). `scripts/` was kept on the lint/format gate but deferred
+  for typecheck — its 70+ `--strict` errors (untyped json/yaml dict literals,
+  griffe API drift in `gen_graph.py`, stub gaps for `yaml`/`mkdocs_gen_files`)
+  are queueable as a follow-up. The 26 example scripts under
+  `hatch run examples` and the 31 demo-consuming tests in
+  `tests/test_examples.py` + `tests/test_snippets.py` continue to pass; two
+  snippet rewrites (`write_integrity{,_async}.py`) moved
+  `assert result.digest is not None` *into* the rendered snippet block so the
+  guide now demonstrates safe `Optional` access rather than relying on the
+  post-snippet runtime assertion.
+
 - [x] **BK-186 — Physical fixture/backend registry as single source of truth**
   Two-layer SSoT shipped across PR 1 (foundation) and PR 2 (consumers).
   PR 1 introduced `tests/backends/fixtures/backends.toml` + `fixtures.toml`

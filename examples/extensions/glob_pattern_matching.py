@@ -16,19 +16,22 @@ see_also:
 
 from __future__ import annotations
 
+from typing import Any
+
 from remote_store import (
     BackendConfig,
     Capability,
     Registry,
     RegistryConfig,
+    Store,
     StoreProfile,
     glob_files,
 )
 
 
-def demo(store):
+def demo(store: Store) -> dict[str, Any]:
     """Three-tier glob filtering. Returns matched file lists."""
-    results = {}
+    results: dict[str, Any] = {}
 
     # --- Set up test files ---
     store.write("report.csv", b"quarterly report")

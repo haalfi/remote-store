@@ -14,14 +14,16 @@ see_also:
 
 from __future__ import annotations
 
+from typing import Any
+
 from dagster import AssetKey, build_init_resource_context, build_input_context, build_output_context
 
 from remote_store.ext.dagster import RemoteStoreIOManager
 
 
-def demo() -> dict:
+def demo() -> dict[str, Any]:
     """Dagster v2 resource demo. Returns results for test verification."""
-    results: dict = {}
+    results: dict[str, Any] = {}
 
     # --- Create IO manager factory from config ---
     print("=== RemoteStoreIOManager (memory backend) ===")

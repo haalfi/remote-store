@@ -13,6 +13,12 @@ requiring a Redis server.
 """
 
 # ruff: noqa: F401, F811, F821, F841, E402, I001, SIM108, TCH001, TCH002, TCH003
+# mypy: ignore-errors
+#
+# Tutorial source for the Build Your Own Backend guide. Snippet regions
+# include partial code (incomplete method bodies, undefined names referenced
+# from later steps) that wouldn't pass strict typing as a single file.
+# The runtime smoke check at the bottom exercises a subset that does.
 
 # ---------------------------------------------------------------------------
 # Step 1: Scaffold the class -- imports

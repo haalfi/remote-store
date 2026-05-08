@@ -57,7 +57,7 @@ def _multi_partition() -> None:
         return dagster_io_manager(store, serializer="json")
 
     @asset(partitions_def=monthly)
-    def sales_monthly() -> dict:
+    def sales_monthly() -> dict[str, int]:
         """Upstream asset — one partition per month."""
         return {"revenue": 100}
 
@@ -69,7 +69,7 @@ def _multi_partition() -> None:
             ),
         },
     )
-    def sales_rolling_3m(sales_monthly: dict[str, Any]) -> dict:
+    def sales_rolling_3m(sales_monthly: dict[str, Any]) -> dict[str, Any]:
         """Downstream — receives last 3 months as dict[str, Any].
 
         ``sales_monthly`` is ``{"2026-01": {...}, "2026-02": {...}, "2026-03": {...}}``

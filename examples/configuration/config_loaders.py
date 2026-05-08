@@ -51,8 +51,9 @@ def demo() -> dict[str, object]:
         with Registry(config) as reg:
             docs = reg.get_store("docs")
             docs.write("readme.txt", b"Hello from TOML config!")
-            results["toml_content"] = docs.read_bytes("readme.txt")
-            print(f"  wrote: {results['toml_content'].decode()}")
+            toml_content = docs.read_bytes("readme.txt")
+            results["toml_content"] = toml_content
+            print(f"  wrote: {toml_content.decode()}")
 
         # --- from_toml(): pyproject.toml with table extraction ---
         pyproject = root / "pyproject.toml"
@@ -99,8 +100,9 @@ def demo() -> dict[str, object]:
         with Registry(config) as reg:
             logs = reg.get_store("logs")
             logs.write("app.log", b"[INFO] started\n")
-            results["yaml_content"] = logs.read_bytes("app.log")
-            print(f"  wrote: {results['yaml_content'].decode().strip()}")
+            yaml_content = logs.read_bytes("app.log")
+            results["yaml_content"] = yaml_content
+            print(f"  wrote: {yaml_content.decode().strip()}")
 
         # --- from_pydantic() ---
         try:
@@ -136,8 +138,9 @@ def demo() -> dict[str, object]:
             with Registry(config) as reg:
                 notes = reg.get_store("notes")
                 notes.write("todo.txt", b"Ship config loaders!")
-                results["pydantic_content"] = notes.read_bytes("todo.txt")
-                print(f"  wrote: {results['pydantic_content'].decode()}")
+                pydantic_content = notes.read_bytes("todo.txt")
+                results["pydantic_content"] = pydantic_content
+                print(f"  wrote: {pydantic_content.decode()}")
 
         except ImportError:
             print("\n(pydantic not installed -- skipping pydantic example)")

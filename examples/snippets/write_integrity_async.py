@@ -7,8 +7,12 @@ Run directly (``python examples/snippets/write_integrity_async.py``) to verify.
 from __future__ import annotations
 
 import asyncio
+from typing import TYPE_CHECKING
 
 from remote_store.aio import AsyncMemoryBackend, AsyncStore
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 def _async_quick_start() -> None:
@@ -36,10 +40,10 @@ async def _async_write_with_hash() -> None:
     store = AsyncStore(AsyncMemoryBackend())
     result = await write_with_hash(store, "report.csv", b"col1,col2\n1,2\n")
 
+    assert result.digest is not None
     print(result.digest.algorithm)  # sha256
     print(result.digest.value)  # hex digest
     # --8<-- [end:async-write-with-hash]
-    assert result.digest is not None
     assert result.digest.algorithm == "sha256"
     assert len(result.digest.value) == 64
 
@@ -48,7 +52,7 @@ async def _async_iterator_write() -> None:
     # --8<-- [start:async-iterator-write]
     store = AsyncStore(AsyncMemoryBackend())
 
-    async def generate_report():
+    async def generate_report() -> AsyncIterator[bytes]:
         yield b"header\n"
         yield b"row1\n"
         yield b"row2\n"

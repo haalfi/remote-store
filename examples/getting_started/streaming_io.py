@@ -8,10 +8,10 @@ from __future__ import annotations
 import io
 import tempfile
 
-from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
+from remote_store import BackendConfig, Registry, RegistryConfig, Store, StoreProfile
 
 
-def demo(store):
+def demo(store: Store) -> None:
     """Streaming write, line-by-line read, and chunked read."""
     # --- Write from a BytesIO stream ---
     data = b"line1\nline2\nline3\nline4\nline5\n"
@@ -24,7 +24,7 @@ def demo(store):
         print(f"\nStreaming read (type: {type(reader).__name__}):")
         newline = b"\n"
         for line in reader:
-            print(f"  {line.rstrip(newline)}")
+            print(f"  {line.rstrip(newline)!r}")
 
     # --- Chunked processing ---
     large_data = b"X" * 10_000

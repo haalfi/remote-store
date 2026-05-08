@@ -110,7 +110,7 @@ if __name__ == "__main__":
     )
 
     try:
-        import s3fs
+        import s3fs  # type: ignore[import-untyped]
         from pyarrow.fs import S3FileSystem as PyArrowS3
 
         # PyArrow filesystem (data path — reads, writes, copies)

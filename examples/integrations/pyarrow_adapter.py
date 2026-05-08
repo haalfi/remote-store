@@ -16,6 +16,8 @@ see_also:
 
 from __future__ import annotations
 
+from typing import Any
+
 try:
     import pyarrow as pa
     import pyarrow.parquet as pq
@@ -28,11 +30,11 @@ from remote_store.backends import MemoryBackend
 from remote_store.ext.arrow import pyarrow_fs
 
 
-def demo(store):
+def demo(store: Store) -> dict[str, Any]:
     """PyArrow filesystem: Parquet round-trip and dataset discovery. Returns results dict."""
     import pyarrow.dataset as ds
 
-    results = {}
+    results: dict[str, Any] = {}
 
     fs = pyarrow_fs(store)
     results["type_name"] = fs.type_name

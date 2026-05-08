@@ -12,13 +12,15 @@ Demonstrates:
 
 from __future__ import annotations
 
+from typing import Any
+
 from remote_store import InvalidPath, RemotePath, Store
 from remote_store.backends import MemoryBackend
 
 
-def demo(store):
+def demo(store: Store) -> dict[str, Any]:
     """RemotePath construction, normalization, and properties. Returns results dict."""
-    results = {}
+    results: dict[str, Any] = {}
 
     # --- Normalization ---
     print("=== Normalization Rules ===\n")
@@ -131,7 +133,7 @@ def demo(store):
 
     immutable_path = RemotePath("important/file.txt")
     try:
-        immutable_path._path = "hacked"
+        immutable_path._path = "hacked"  # type: ignore[misc]
     except AttributeError as exc:
         results["immutable"] = True
         print(f"Cannot modify: {exc}")
