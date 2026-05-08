@@ -56,12 +56,14 @@ setup prerequisite, not checked at runtime)::
     s3:ListBucket         arn:aws:s3:::rs-conformance-*
     s3:ListBucketMultipartUploads  arn:aws:s3:::rs-conformance-*
     s3:GetBucketLocation  arn:aws:s3:::rs-conformance-*
-    s3:GetObject          arn:aws:s3:::rs-conformance-*/*
-    s3:PutObject          arn:aws:s3:::rs-conformance-*/*
-    s3:DeleteObject       arn:aws:s3:::rs-conformance-*/*
-    s3:CopyObject         arn:aws:s3:::rs-conformance-*/*
-    s3:HeadObject         arn:aws:s3:::rs-conformance-*/*
-    s3:AbortMultipartUpload  arn:aws:s3:::rs-conformance-*/*
+    s3:GetObject               arn:aws:s3:::rs-conformance-*/*
+    s3:PutObject               arn:aws:s3:::rs-conformance-*/*
+    s3:DeleteObject            arn:aws:s3:::rs-conformance-*/*
+    s3:ListMultipartUploadParts  arn:aws:s3:::rs-conformance-*/*
+    s3:AbortMultipartUpload    arn:aws:s3:::rs-conformance-*/*
+
+Note: ``CopyObject`` and ``HeadObject`` are S3 API methods, not IAM action
+names; IAM maps them to ``s3:PutObject``/``s3:GetObject`` (already above).
 """
 
 from __future__ import annotations
