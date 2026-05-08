@@ -234,14 +234,19 @@ def _build() -> dict[str, Scope]:
             )
 
     # Async-extended — per backend that wires a native or adapted async
-    # implementation today (memory, local).
+    # implementation today (memory, local). Mirrors the conformance-split
+    # ``if not f: continue`` guard so a future backend with only stage-3
+    # fixtures does not silently produce a scope with empty filter and
+    # ``_needs(f)`` expanding to ``full_needs``.
     for backend_name in ("local", "memory"):
-        b = load_backends()[backend_name]
         f = _filter_term(backend_name)
+        if not f:
+            continue
+        b = load_backends()[backend_name]
         out[f"conformance-async-extended-{backend_name}"] = Scope(
             targets=sorted({*_src(b), _SYNC_ADAPTER}),
             tests=["tests/backends/conformance/test_async_extended.py"],
-            filter=f or None,
+            filter=f,
             needs=_needs(f),
         )
 

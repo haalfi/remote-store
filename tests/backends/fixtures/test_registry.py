@@ -430,50 +430,21 @@ _TESTS_ROOT = Path(__file__).resolve().parent.parent.parent  # tests/
 _BACKENDS_ROOT = _TESTS_ROOT / "backends"
 
 
-# Backend class name → TOML backend key. Class names aren't in the registry
-# (TOML keys are family identifiers like "azure"). ``S3Backend`` and
-# ``S3PyArrowBackend`` share ``tests/backends/s3/`` (they share
-# ``_s3_base.py``); ``SQLQueryBackend`` has no TOML entry yet — its key is
-# the empty string and its test dir is read from the class name.
-_CLASS_TO_BACKEND: dict[str, str] = {
-    "AzureBackend": "azure",
-    "S3Backend": "s3",
-    "S3PyArrowBackend": "s3_pyarrow",
-    "SFTPBackend": "sftp",
-    "SQLBlobBackend": "sqlblob",
-    "SQLQueryBackend": "",
-    "ReadOnlyHttpBackend": "http",
-}
-
-
-def _build_backend_literals() -> dict[str, tuple[str, ...]]:
-    """class-name → permitted ``tests/`` path prefixes, derived from
-    ``fixtures.toml``. New fixtures flow through without touching this file.
-    """
-    by_backend: dict[str, list[str]] = {}
-    for fx in load_fixtures().values():
-        by_backend.setdefault(fx.backend, []).append(fx.name)
-    # Fail loud if ``sqlquery`` graduates into ``backends.toml`` without
-    # the corresponding ``_CLASS_TO_BACKEND["SQLQueryBackend"]`` update —
-    # the empty-string sentinel below would silently produce a stale
-    # allowlist (sqlquery fixtures missing from SQLQueryBackend's
-    # permitted-paths set).
-    if "sqlquery" in by_backend:
-        raise RuntimeError(
-            "sqlquery now has fixtures registered; update "
-            "_CLASS_TO_BACKEND['SQLQueryBackend'] from '' to 'sqlquery' "
-            "and drop the empty-string handling in _build_backend_literals."
-        )
-    test_dir = {"s3_pyarrow": "s3", "": "sqlquery"}  # overrides; default = backend key
-    out: dict[str, tuple[str, ...]] = {}
-    for cls, key in _CLASS_TO_BACKEND.items():
-        d = test_dir.get(key, key)
-        paths = [f"tests/backends/{d}/"]
-        paths += [f"tests/backends/fixtures/{fx}" for fx in sorted(by_backend.get(key, []))]
-        if key == "":
-            paths.append(f"tests/backends/fixtures/{d}")  # no fixtures yet for SQLQueryBackend
-        out[cls] = tuple(paths)
-    return out
+# Concrete backend class names whose presence in cross-backend
+# conformance code is a TEST-010 boundary violation. Class names aren't
+# in the TOML registry (TOML keys are family identifiers like "azure"),
+# so this list is hand-maintained. The current
+# ``test_conformance_does_not_reference_concrete_backends`` consumes only
+# these names; per-backend permitted-path prefixes are not enforced.
+_BACKEND_CLASS_NAMES: tuple[str, ...] = (
+    "AzureBackend",
+    "S3Backend",
+    "S3PyArrowBackend",
+    "SFTPBackend",
+    "SQLBlobBackend",
+    "SQLQueryBackend",
+    "ReadOnlyHttpBackend",
+)
 
 
 @pytest.mark.spec("TEST-010")
@@ -482,12 +453,10 @@ class TestLayoutBoundary:
     in fixture/registry files dedicated to that backend, or in registry
     code enumerating all backends.
 
-    Lint-style scan over ``tests/`` looking for concrete backend identifiers
-    used as string literals or imports outside the permitted homes. Catches
-    accidental cross-backend coupling at review time.
+    Lint-style scan over ``tests/backends/conformance/`` for concrete
+    backend class names. Catches accidental cross-backend coupling at
+    review time.
     """
-
-    _BACKEND_LITERALS = _build_backend_literals()
 
     def test_conformance_does_not_reference_concrete_backends(self) -> None:
         """TEST-002 + TEST-010 narrow boundary check on the conformance subtree.
@@ -514,7 +483,7 @@ class TestLayoutBoundary:
             if py in exempt_files:
                 continue
             text = py.read_text(encoding="utf-8")
-            for name in self._BACKEND_LITERALS:
+            for name in _BACKEND_CLASS_NAMES:
                 if re.search(rf"\b{re.escape(name)}\b", text):
                     rel = py.relative_to(_TESTS_ROOT.parent).as_posix()
                     violations.append(f"{rel}: references {name!r}")
