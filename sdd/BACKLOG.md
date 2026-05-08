@@ -184,6 +184,16 @@ and the highest ID already in this file, then take the next integer. Run
   sync try/except + log + `_build_azure_write_result(path, size, None, metadata)` shape, then
   weaken the live-test assertion to allow the fallback path. Spec: WR-001a, WR-004, AZ-034.
 
+- [ ] **BUG-204 — `remote-store-bench-user` IAM policy missing `s3:CreateBucket` / `s3:DeleteBucket` for Stage 3 conformance**
+  `s3_live` Stage 3 fixture (BK-184) creates a fresh `rs-conformance-<uuid>` bucket per
+  factory call and deletes it on cleanup. The `.env` IAM user (`remote-store-bench-user`)
+  is not authorized for `s3:CreateBucket` (confirmed: `AccessDenied` on first smoke run,
+  `arn:aws:iam::981698391881:user/remote-store-bench-user`). Fix: attach an inline or
+  managed policy granting `s3:CreateBucket`, `s3:DeleteBucket`, `s3:ListBucket`,
+  `s3:DeleteObject`, `s3:PutObject`, `s3:GetObject` scoped to `arn:aws:s3:::rs-conformance-*`
+  (or a dedicated IAM user for the Stage 3 suite). Once fixed, run the full Stage 3 sweep
+  and record pass/skip/fail counts in the BACKLOG-DONE entry.
+
 - [ ] **BUG-195 — `get_file_info` on an HNS directory raises `NotFound` instead of `InvalidPath` (sync + async)**
   BE-016 specifies "`InvalidPath` if the path names a directory (Dafny:
   `GetFileInfo: IsDir → InvalidPath`)" and ASYNC-016 inherits the same contract. Both
@@ -202,24 +212,6 @@ and the highest ID already in this file, then take the next integer. Run
 ---
 
 ## Backlog (Prioritized)
-
-- [ ] **BK-184 — Implement `s3_live` Stage 3 conformance fixture (Spec 048 Phase 2 carryover)**
-  Carved out from BK-180 because the bucket-isolation strategy needs
-  an explicit decision rather than copying the Azure shape. `S3Backend`
-  has no `prefix` parameter, so the conformance suite (which assumes a
-  clean slate per fixture) cannot share a bucket without either
-  (a) adding prefix support to `S3Backend`, (b) per-call fresh
-  `rs-conformance-<uuid>` buckets — small leak risk if cleanup fails,
-  ~3-4 min added to a Stage 3 run, IAM needs `s3:CreateBucket` /
-  `s3:DeleteBucket`, or (c) shared bucket via `RS_TEST_LIVE_S3_BUCKET`
-  with full-bucket wipe between tests — bucket dedicated, no
-  concurrent runs. The `_live_env` helper in `tests/backends/fixtures/`
-  already has the env-var validation pattern from `azure_live`; the
-  S3 helper extension and the `s3_live` factory are mechanical once
-  the isolation choice is made. Pre-condition `.env` AWS creds work
-  end-to-end against `BENCH_S3_BUCKET` (verified during BK-180);
-  s3fs/boto3 default credential chain already runs without explicit
-  `key=`/`secret=` plumbing. Spec: TEST-001, TEST-004, TEST-006.
 
 - [ ] **BK-182 — Shrink legacy `test_azure_live_hns.py` per Spec 048**
   Once BK-179, BK-180, and BK-181 land, the hand-written live HNS suites
