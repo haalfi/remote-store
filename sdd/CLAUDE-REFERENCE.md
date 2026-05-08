@@ -120,7 +120,7 @@ Before committing, check whether your change has cross-file dependencies:
 | Understand the full SDD workflow         | `sdd/000-process.md`                                 |
 | Add or update a backend guide            | `docs-src/guides/backends/` + docs nav               |
 | Run a quick smoke test                   | `examples/` — pick one and run it                    |
-| Verify everything passes                 | `hatch run all` (lint + format-check + typecheck + test-cov + examples) |
+| Verify everything passes                 | `hatch run all` (lint + format-check + typecheck + test-cov-strict + examples) |
 
 ---
 

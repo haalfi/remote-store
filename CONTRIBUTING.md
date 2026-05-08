@@ -312,7 +312,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 - [ ] Master is clean: `git status` shows no uncommitted changes
 - [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
-- [ ] `hatch run all` passes **locally** (lint + format-check + typecheck + test-cov-strict + examples). The 95% coverage gate is unreachable without Azurite running locally, since the Azure backends account for ~900 covered lines that vanish when Stage-2 fixtures skip. Start Azurite before running `all`, or run the loose `hatch run test-cov` for coverage reports without the gate
+- [ ] `hatch run all` passes **locally** (lint + format-check + typecheck + test-cov-strict + examples). See CLAUDE.md § Coverage gate if the 95% threshold fails without Azurite running
 - [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`)
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
 - [ ] Decide bump level (patch / minor / major) per the table above
