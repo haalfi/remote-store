@@ -376,6 +376,7 @@ tests/
       sftp_docker.py
       azure_live.py
       azure_live_async.py
+      s3_live.py
       ...                        # full set in fixtures.toml
     cassettes/                   # HTTP recordings. TEST-007. HTTP backends only.
       azure/

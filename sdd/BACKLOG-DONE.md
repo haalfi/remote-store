@@ -8,6 +8,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-184 — `s3_live` Stage 3 conformance fixture**
+  Per-call fresh bucket (`rs-conformance-<uuid>`), mirroring `azure_live.py` shape.
+  Files: `fixtures.toml` `[fixture.s3_live]`, `_live_env.require_s3_live_credentials`,
+  `TestRequireS3LiveCredentials` (10 cases), `s3_live.py`, spec 048 TEST-010 layout.
+  Full sweep result: **162 passed, 18 skipped, 0 failed** (5 min, real AWS eu-central-1).
+  All 18 skips are capability-gated: 13 flat-namespace folder tests, 2 WR-005, 1 WR-013,
+  1 flat-namespace file/folder distinction, 1 virtual-folder deletion behaviour.
+
 - [x] **BK-187 — Expand lint/format/typecheck scope to `scripts/` and `examples/`**
   `hatch run lint`, `format`, and `format-check` now cover `scripts/` alongside
   `src/`, `tests/`, `examples/`. `hatch run typecheck` adds `examples/` so that

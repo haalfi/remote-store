@@ -254,6 +254,11 @@ Tests gated on `RS_TEST_LIVE_HNS=1` require a real Azure Data Lake Storage
 Gen2 account. See [Azure HNS account setup](docs-src/guides/backends/azure-hns-setup.md)
 for the provisioning recipe.
 
+Tests gated on `RS_TEST_LIVE_S3=1` require a real AWS S3 account. See the
+"Required IAM permissions" section in
+`tests/backends/fixtures/s3_live.py` for the IAM policy needed by the
+test user.
+
 ## Examples and Notebooks
 
 The `examples/` directory contains runnable Python scripts that are validated in CI. Example scripts must remain self-contained and use `tempfile.TemporaryDirectory` for cleanup.

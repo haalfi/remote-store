@@ -203,24 +203,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-184 — Implement `s3_live` Stage 3 conformance fixture (Spec 048 Phase 2 carryover)**
-  Carved out from BK-180 because the bucket-isolation strategy needs
-  an explicit decision rather than copying the Azure shape. `S3Backend`
-  has no `prefix` parameter, so the conformance suite (which assumes a
-  clean slate per fixture) cannot share a bucket without either
-  (a) adding prefix support to `S3Backend`, (b) per-call fresh
-  `rs-conformance-<uuid>` buckets — small leak risk if cleanup fails,
-  ~3-4 min added to a Stage 3 run, IAM needs `s3:CreateBucket` /
-  `s3:DeleteBucket`, or (c) shared bucket via `RS_TEST_LIVE_S3_BUCKET`
-  with full-bucket wipe between tests — bucket dedicated, no
-  concurrent runs. The `_live_env` helper in `tests/backends/fixtures/`
-  already has the env-var validation pattern from `azure_live`; the
-  S3 helper extension and the `s3_live` factory are mechanical once
-  the isolation choice is made. Pre-condition `.env` AWS creds work
-  end-to-end against `BENCH_S3_BUCKET` (verified during BK-180);
-  s3fs/boto3 default credential chain already runs without explicit
-  `key=`/`secret=` plumbing. Spec: TEST-001, TEST-004, TEST-006.
-
 - [ ] **BK-182 — Shrink legacy `test_azure_live_hns.py` per Spec 048**
   Once BK-179, BK-180, and BK-181 land, the hand-written live HNS suites
   (`tests/backends/test_azure_live_hns.py`, `tests/aio/test_async_azure_live_hns.py`,

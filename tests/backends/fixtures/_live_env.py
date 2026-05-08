@@ -28,9 +28,13 @@ The validator core is descriptor-driven: the per-fixture
 ``_loader.py`` carry the env-var names, and ``require_live_credentials``
 walks them. ``require_azure_live_connection_string`` is a thin
 backend-specific wrapper that adds the Azurite signature check and
-extracts the single connection-string value. BK-184's ``s3_live``
-fixture will add a sibling ``require_s3_live_credentials`` that wraps
-the same core with MinIO-aware emulator signatures.
+extracts the single connection-string value. ``require_s3_live_credentials``
+is the S3 sibling: it validates the three AWS credential env vars through
+the descriptor-driven path (no per-value emulator check there, because
+``AWS_ACCESS_KEY_ID`` values don't embed endpoint URLs), then separately
+checks ``AWS_ENDPOINT_URL`` / ``AWS_S3_ENDPOINT_URL`` against
+``_S3_EMULATOR_FRAGMENTS`` — those vars are optional and absent from
+``live_creds_env``, so the guard lives outside the core walker.
 """
 
 from __future__ import annotations
@@ -96,6 +100,36 @@ def require_live_credentials(
     return out
 
 
+# Endpoint-URL fragments that identify local S3 emulators (moto server,
+# MinIO, LocalStack). Applied only to AWS_ENDPOINT_URL / AWS_S3_ENDPOINT_URL
+# — the eu-central-1 region string is not checked here.
+_S3_EMULATOR_FRAGMENTS = ("127.0.0.1", "localhost", ":9000", ":5000", ":4566")
+
+
+def require_s3_live_credentials() -> dict[str, str]:
+    """Return AWS credentials for a real S3 account.
+
+    Wraps ``require_live_credentials`` for the three required creds, then
+    additionally fails loud if ``AWS_ENDPOINT_URL`` or
+    ``AWS_S3_ENDPOINT_URL`` contains an emulator fragment. Those vars are
+    optional and therefore absent from ``live_creds_env``, but if set they
+    must not redirect traffic to a local emulator.
+    """
+    creds = require_live_credentials(
+        load_fixture("s3_live"),
+        emulator_signatures=(),
+        emulator_label=None,
+    )
+    for endpoint_var in ("AWS_ENDPOINT_URL", "AWS_S3_ENDPOINT_URL"):
+        value = os.environ.get(endpoint_var, "")
+        if value and any(frag in value for frag in _S3_EMULATOR_FRAGMENTS):
+            pytest.fail(
+                f"RS_TEST_LIVE_S3=1 set but {endpoint_var} points at an S3 emulator;"
+                " the live suite needs a real AWS account"
+            )
+    return creds
+
+
 def require_azure_live_connection_string() -> str:
     """Return ``AZURE_STORAGE_CONNECTION_STRING`` for a real ADLS Gen2 account.
 
@@ -119,4 +153,5 @@ def require_azure_live_connection_string() -> str:
 __all__ = [
     "require_azure_live_connection_string",
     "require_live_credentials",
+    "require_s3_live_credentials",
 ]
