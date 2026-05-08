@@ -9,6 +9,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - BK-180: spec 048 Phase 2 — `azure_live` and `azure_live_async` Stage 3 conformance fixtures, `BackendFixture.aclose` async cleanup channel
 - BK-183: per-topic `mutate-conformance-*` scopes
+- tooling: `hatch run test-cov` no longer enforces `--cov-fail-under=95`; strict gate moved to new `hatch run test-cov-strict`
 
 ### Fixed
 

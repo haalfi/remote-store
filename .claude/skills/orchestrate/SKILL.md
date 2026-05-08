@@ -173,7 +173,7 @@ CONSTRAINTS:
 DONE WHEN:
 - All new public methods have failure-path tests.
 - Every test has @pytest.mark.spec tracing.
-- Coverage delta >= 0 (verify with hatch run test-cov).
+- Coverage delta >= 0 (verify with hatch run test-cov-strict).
 
 OUTPUT: files created/modified, spec IDs covered, coverage impact.
 ```
