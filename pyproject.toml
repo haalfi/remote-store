@@ -136,11 +136,8 @@ format = "ruff format src/ tests/ examples/"
 format-check = "ruff format --check src/ tests/ examples/"
 typecheck = "mypy src/"
 test = "pytest"
-# `test-cov` reports coverage without enforcing a floor — the everyday local runner.
-# `test-cov-strict` adds `--cov-fail-under=95` and is wired into `hatch run all`
-# and CI. The 95% gate depends on Stage-2 fixtures (Azurite in particular) running;
-# without them the Azure backends drop ~900 covered lines and the gate fails by
-# design, not regression. See CLAUDE.md § Coverage gate.
+# `test-cov` is the everyday local runner; `test-cov-strict` adds the 95% floor
+# and is wired into `hatch run all`. See CLAUDE.md § Coverage gate.
 test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml"
 test-cov-strict = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
 test-cov-branch = "pytest --cov=remote_store --cov-branch --cov-report=term-missing --cov-report=xml"
