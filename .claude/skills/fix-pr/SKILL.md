@@ -88,6 +88,12 @@ Only resolve threads you fixed. No gh? Tell user to resolve manually.
 
 Run `hatch run lint` and `hatch run test`. Fix failures, re-run until clean.
 
+5a. **Testing gate:** Do the changed tests follow the rules in `sdd/TESTING.md`?
+    Report violations before commit.
+
+5b. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
+    Report violations before commit.
+
 ## Step 6: Commit and push
 
 Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments fixed/resolved, skipped with reasons.
