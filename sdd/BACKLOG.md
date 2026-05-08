@@ -50,6 +50,88 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Bugs
 
+- [ ] **BUG-203 — `AzureBackend.is_file()` returns `True` for HNS folder paths**
+  Sync `AzureBackend.is_file('a.txt')` returns `True` when `a.txt` exists as
+  an HNS directory blob (marker `hdi_isfolder=true`). Conformance contract
+  requires `is_file()` to return `False` whenever the path is a directory,
+  symmetric to `is_folder()` returning `False` on a file. Surfaced by the
+  BK-180 conformance run against real ADLS Gen2:
+  `tests/backends/conformance/test_io.py::TestBackendFileFolder::test_is_file[azure_live]`.
+  Azurite-backed `azurite` fixture passes the same test because Azurite
+  does not emulate HNS. Fix: extend the `hdi_isfolder` probe used by
+  `write`/`write_atomic`/`open_atomic` to the `is_file` HNS branch in
+  `src/remote_store/backends/_azure.py`. Async sibling apparently
+  unaffected (no `[azure_live_async]` failure for this test). Spec:
+  BE-005 (or whichever spec covers `is_file` semantics), BE-021.
+
+- [ ] **BUG-202 — `AzureBackend.write_atomic` streaming-input path raises `MissingRequiredQueryParameter` on real HNS**
+  Sync `AzureBackend.write_atomic` with a `BinaryIO` (streaming) input
+  succeeds against Azurite but fails against a real HNS account with the
+  Azure SDK error `MissingRequiredQueryParameter`. Surfaced by
+  `tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_size_matches_written_bytes_for_streaming_input[azure_live]`.
+  The bytes-input variant of the same test is green, so the defect is on
+  the streaming code path (`src/remote_store/backends/_azure.py:~1027`).
+  Likely a missing query parameter on the DataLake SDK call that real
+  HNS validates and Azurite forgives. Async variant not exercised in
+  this sweep (different test class). Fix: identify the SDK call,
+  add the missing parameter, regression-cover with the conformance
+  test once green. Spec: BE-010, WR-001a.
+
+- [ ] **BUG-201 — `AsyncAzureBackend.move`/`copy` self-op (src == dst) raises `AlreadyExists` instead of being a no-op**
+  Conformance contract for `move(p, p)` and `copy(p, p)` is to be a
+  no-op (data preserved, no error). `AsyncAzureBackend` raises
+  `AlreadyExists` instead. Surfaced by
+  `tests/backends/conformance/test_async_extended.py::TestMoveCopySelfOperation::test_self_op_preserves_data[azure_live_async-overwrite-move]`,
+  `[azure_live_async-no-overwrite-move]`, and `[azure_live_async-no-overwrite-copy]`.
+  Errors fire at `src/remote_store/aio/backends/_azure.py:899` (copy
+  destination check) and `:1068` (rename SDK call). Sync variant green
+  in this sweep — the gap is async-only. Fix: detect src == dst at the
+  top of `move`/`copy` and short-circuit. Spec: BE-018, BE-019,
+  ASYNC-018, ASYNC-019.
+
+- [ ] **BUG-200 — `AsyncAzureBackend.move`/`copy` directory checks raise wrong error / `InvalidInput` on real HNS**
+  Conformance contract: `move`/`copy` with a directory source or
+  directory destination raises `InvalidPath`. `AsyncAzureBackend`
+  instead raises `RemoteStoreError(InvalidInput)` (when source is a
+  directory) or `AlreadyExists` (when destination is a directory).
+  Surfaced by
+  `tests/backends/conformance/test_async_extended.py::TestMoveCopyErrorFidelity::test_source_is_directory_raises_error[azure_live_async-move]`,
+  `[azure_live_async-copy]`,
+  `test_destination_is_directory_raises_error[azure_live_async-move]`,
+  and `[azure_live_async-copy]`. Errors at
+  `src/remote_store/aio/backends/_azure.py:899/937/1068`. Same defect
+  family as BUG-195/BUG-197/BUG-190: missing `hdi_isfolder` probe before
+  the SDK call. Sync variant apparently fixed (no `[azure_live]` failure).
+  Fix: add the directory probe to the async `move`/`copy` paths.
+  Spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024.
+
+- [ ] **BUG-199 — `AzureBackend.get_folder_info` recursive `file_count` includes HNS directory blobs as files (sync + async)**
+  `FolderInfo.file_count` returned by `get_folder_info(path, recursive=True)`
+  reports `3` where conformance expects `2`. The extra "file" is an HNS
+  directory blob (marker `hdi_isfolder=true`) that the recursive walk
+  fails to filter out. Surfaced by three live conformance tests:
+  `tests/backends/conformance/test_async_extended.py::TestGetFolderInfoAggregates::test_get_folder_info_counts_recursive_children[azure_live_async]`,
+  `tests/backends/conformance/test_metadata.py::TestGetFolderInfoAggregates::test_get_folder_info_counts_recursive_children[azure_live]`,
+  and `tests/backends/conformance/test_metadata.py::TestBackendMetadata::test_get_folder_info_excludes_subdirs[azure_live]`.
+  Both sync and async hit it, so the miscount lives in the shared
+  recursive-walk logic (or in the per-iteration filter) used by both
+  backends. Fix: filter `hdi_isfolder=true` entries from the recursive
+  file aggregation in `get_folder_info`. Spec: BE-017, ASYNC-017.
+
+- [ ] **BUG-198 — Folder-API on a file path raises wrong error type on `AsyncAzureBackend` (HNS)**
+  Symmetric to BUG-197/BUG-195: `delete_folder` and `get_folder_info`
+  on a *file* path should raise `InvalidPath`, but `AsyncAzureBackend`
+  raises `DirectoryNotEmpty` (delete_folder) and `NotFound`
+  (get_folder_info) instead. Surfaced by
+  `tests/backends/conformance/test_async_extended.py::TestDeleteFolderErrorFidelity::test_delete_folder_on_file_raises_error[azure_live_async]`,
+  `test_delete_folder_on_file_missing_ok_still_raises[azure_live_async]`,
+  and `tests/backends/conformance/test_async_extended.py::TestGetFolderInfoErrorFidelity::test_get_folder_info_on_file_raises_error[azure_live_async]`.
+  Errors at `src/remote_store/aio/backends/_azure.py:640` (delete_folder)
+  and `:829` (get_folder_info). Sync variant green in this sweep — the
+  probe gap is async-only here. Same fix shape as BUG-195/BUG-197: detect
+  the type mismatch before the SDK call and raise `InvalidPath`.
+  Spec: BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017.
+
 - [ ] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)**
   BE-021 requires file-API operations on a directory path to raise `InvalidPath`.
   `write`/`write_atomic`/`open_atomic` enforce this via the `hdi_isfolder` probe
@@ -65,7 +147,12 @@ and the highest ID already in this file, then take the next integer. Run
     error class) — this one mutates account state.
   Live tests freeze the actual behaviour in `tests/backends/test_azure_live_hns.py::
   TestAzureLiveHnsFileApiOnDirectory` and the async sibling; they must be flipped
-  back to assert `InvalidPath` once the fix lands. Fix: extend the existing
+  back to assert `InvalidPath` once the fix lands. The BK-180 conformance run
+  against `azure_live_async` reproduces the async halves at
+  `tests/backends/conformance/test_async_extended.py::TestReadErrorFidelity::test_read_on_directory_raises_error`,
+  `test_read_bytes_on_directory_raises_error`,
+  `TestDeleteErrorFidelity::test_delete_on_directory_raises_invalid_path`, and
+  `test_delete_on_directory_missing_ok_still_raises`. Fix: extend the existing
   `hdi_isfolder` probe pattern from `write_atomic`/`open_atomic` to `read`,
   `read_bytes`, `read_seekable`, and `delete` on both sync and async backends.
   Spec: BE-021, BE-013, BE-014, ASYNC-013.
@@ -89,15 +176,35 @@ and the highest ID already in this file, then take the next integer. Run
   `NotFound` when the target is an HNS directory blob (marker `hdi_isfolder=true`). New live
   tests `tests/backends/test_azure_live_hns.py::TestAzureLiveHnsGetFileInfoOnDirectory` and
   `tests/aio/test_async_azure_live_hns.py::TestAsyncLiveHnsGetFileInfoOnDirectory` confirm
-  the runtime behaviour and document the deviation. Same defect shape as BUG-190 (write on
-  HNS directory) and BUG-192 (open_atomic on HNS directory): the `hdi_isfolder` probe is
-  missing. Fix: detect `hdi_isfolder` in the `get_file_info` HNS branch and raise
-  `InvalidPath`; update both live tests to assert `InvalidPath`. Spec: BE-016, ASYNC-016,
-  BE-021.
+  the runtime behaviour and document the deviation. The BK-180 conformance run against
+  `azure_live_async` reproduces the async half at
+  `tests/backends/conformance/test_async_extended.py::TestGetFileInfoErrorFidelity::test_get_file_info_on_directory_raises_error`.
+  Same defect shape as BUG-190 (write on HNS directory) and BUG-192 (open_atomic on HNS
+  directory): the `hdi_isfolder` probe is missing. Fix: detect `hdi_isfolder` in the
+  `get_file_info` HNS branch and raise `InvalidPath`; update both live tests to assert
+  `InvalidPath`. Spec: BE-016, ASYNC-016, BE-021.
 
 ---
 
 ## Backlog (Prioritized)
+
+- [ ] **BK-184 — Implement `s3_live` Stage 3 conformance fixture (Spec 048 Phase 2 carryover)**
+  Carved out from BK-180 because the bucket-isolation strategy needs
+  an explicit decision rather than copying the Azure shape. `S3Backend`
+  has no `prefix` parameter, so the conformance suite (which assumes a
+  clean slate per fixture) cannot share a bucket without either
+  (a) adding prefix support to `S3Backend`, (b) per-call fresh
+  `rs-conformance-<uuid>` buckets — small leak risk if cleanup fails,
+  ~3-4 min added to a Stage 3 run, IAM needs `s3:CreateBucket` /
+  `s3:DeleteBucket`, or (c) shared bucket via `RS_TEST_LIVE_S3_BUCKET`
+  with full-bucket wipe between tests — bucket dedicated, no
+  concurrent runs. The `_live_env` helper in `tests/backends/fixtures/`
+  already has the env-var validation pattern from `azure_live`; the
+  S3 helper extension and the `s3_live` factory are mechanical once
+  the isolation choice is made. Pre-condition `.env` AWS creds work
+  end-to-end against `BENCH_S3_BUCKET` (verified during BK-180);
+  s3fs/boto3 default credential chain already runs without explicit
+  `key=`/`secret=` plumbing. Spec: TEST-001, TEST-004, TEST-006.
 
 - [ ] **BK-182 — Shrink legacy `test_azure_live_hns.py` per Spec 048**
   Once BK-179, BK-180, and BK-181 land, the hand-written live HNS suites
@@ -124,45 +231,6 @@ and the highest ID already in this file, then take the next integer. Run
   skip (TEST-007). Sequencing: depends on BK-179 (registry) and
   BK-180 (live fixtures the recording mode runs against). Spec: TEST-007,
   TEST-008, TEST-009.
-
-- [~] **BK-180 — Implement Spec 048 Phase 2: live conformance fixtures**
-  **In progress.** Add `azure_live` (Stage 3, kind
-  `real-live`) to the registry per spec
-  [TEST-001/004](specs/048-testing-architecture.md). Wire conformance
-  parametrize to include it when `--stage=3` and `RS_TEST_LIVE_HNS=1` are
-  set. Verify the full conformance + extended suite runs green against a
-  real ADLS Gen2 account. Repeat the shape for `s3_live` against real
-  AWS S3 (separate env var; cost-controlled). No legacy live-test deletion
-  yet — that is BK-182. Spec: TEST-001, TEST-004, TEST-006.
-
-  **Done so far:** sync `azure_live` registry fixture with per-call
-  fresh HNS filesystem provisioning, `_live_env.require_azure_live_connection_string`
-  helper, and one smoke test passing against the real ADLS Gen2 account.
-  Carryover: full conformance run against `azure_live` (and triage of any
-  reds), async `azure_live_async` (requires the `aclose` channel
-  extension below), and `s3_live` against real AWS S3
-  (`RS_TEST_LIVE_S3=1` / `RS_TEST_LIVE_S3_BUCKET`).
-
-  **Decision pinned (carry-in from BK-179 review #597):** the async
-  cleanup channel will be added by extending `BackendFixture` with an
-  optional `aclose: Callable[[AnyBackend], Awaitable[None]] | None`
-  field; the conformance `async_backend` indirect fixture awaits it
-  when set. Spec TEST-004 dataclass gets a one-line addition. This
-  lands together with `azure_live_async`.
-
-  **Carried in from BK-179 review (#597):** the async indirect fixture
-  in `tests/backends/conformance/conftest.py` calls `cleanup` synchronously
-  (`Callable[[AnyBackend], None]`). Today's async fixtures
-  (`memory_async_native`/`memory_async_adapted` set `cleanup=None`;
-  `local_async_adapted` only does `tmp.cleanup()`) don't need an awaitable
-  teardown, so the gap is dormant. The first live async backend that owns a
-  real network pool (e.g. `AsyncAzureBackend` with an HTTP session, async
-  S3 if added later) must close it via `await backend.aclose()`. Decide
-  the channel before adding such a fixture: either extend `BackendFixture`
-  with an optional `aclose: Callable[[AnyBackend], Awaitable[None]] | None`
-  field and have the indirect fixture `await` it when present, or rely on
-  the backend's `__del__` / weak-finalizer (less reliable). Pin the
-  decision in this BK item before the first async live fixture lands.
 
 - [ ] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   `AsyncMemoryBackend.get_file_info` returns

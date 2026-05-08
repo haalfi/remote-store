@@ -5,10 +5,9 @@ Each helper returns the validated connection record or fails loud via
 so the helpers fail rather than skip when the opt-in flag is set but
 credentials are missing or point at a local emulator.
 
-The opt-in flags themselves (``RS_TEST_LIVE_HNS=1``, ``RS_TEST_LIVE_S3=1``)
-are checked at the fixture-factory level, not here. A helper is only
-called once the corresponding factory has decided the user has asked for
-the live tier.
+The opt-in flags themselves (``RS_TEST_LIVE_HNS=1``) are checked at the
+fixture-factory level, not here. A helper is only called once the
+corresponding factory has decided the user has asked for the live tier.
 
 A ``load_dotenv(override=False)`` runs at module level for callers that
 import this from a shell where ``-m live`` was not in the mark expression
@@ -48,8 +47,8 @@ def require_azure_live_connection_string() -> str:
 
     The legacy live-HNS suite under ``tests/backends/azure/test_live_hns.py``
     keeps its own inline copy of this validator pending BK-182's deletion of
-    that suite. The new conformance fixture ``azure_live`` is the first
-    consumer of this shared helper.
+    that suite. The conformance fixtures ``azure_live`` /
+    ``azure_live_async`` are the first consumers of this shared helper.
     """
     conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
     if not conn:

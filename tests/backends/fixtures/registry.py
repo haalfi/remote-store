@@ -29,7 +29,7 @@ from remote_store.aio import AsyncBackend
 from tests.backends.fixtures._state import current_stage
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable
 
     from remote_store._capabilities import Capability
 
@@ -61,6 +61,16 @@ class BackendFixture:
     capabilities: frozenset[Capability]
     is_async: bool
     cleanup: Callable[[AnyBackend], None] | None = None
+    aclose: Callable[[AnyBackend], Awaitable[None]] | None = None
+    """Awaitable teardown for async fixtures that own a real network pool.
+
+    Set on async live fixtures so the conformance ``async_backend``
+    indirect fixture can ``await`` it after a test. Sync fixtures and
+    async fixtures whose teardown is purely synchronous (e.g.
+    ``memory_async``) leave it as ``None``. Sync ``cleanup`` and async
+    ``aclose`` are independent: a fixture may set both when it has both
+    sync resources to release and an async pool to close.
+    """
     marks: tuple[pytest.MarkDecorator, ...] = field(default_factory=tuple)
     """Pytest marks applied to this fixture's parametrize entry.
 

@@ -32,7 +32,7 @@ import pytest
 from tests.backends.fixtures import BackendFixture, fixture_params
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import AsyncIterator, Iterator
 
     from remote_store._backend import Backend
 
@@ -70,12 +70,23 @@ def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
 
 
 @pytest.fixture
-def async_backend(request: pytest.FixtureRequest) -> Iterator[object]:
-    """Indirect async fixture: build an AsyncBackend from a ``BackendFixture`` record."""
+async def async_backend(request: pytest.FixtureRequest) -> AsyncIterator[object]:
+    """Indirect async fixture: build an AsyncBackend from a ``BackendFixture`` record.
+
+    Sync ``cleanup`` and async ``aclose`` are both honoured. Async fixtures
+    that own a real network pool (live cloud backends) set ``aclose`` so
+    the connection pool is awaited before the next test starts. Sync
+    teardown (e.g. tempdir removal) goes through ``cleanup`` as for sync
+    fixtures. ``asyncio_mode = "auto"`` in ``pyproject.toml`` makes the
+    ``async def`` fixture a first-class pytest-asyncio fixture without
+    additional decorators.
+    """
     fixture: BackendFixture = request.param
     instance = fixture.factory()
     try:
         yield instance
     finally:
+        if fixture.aclose is not None:
+            await fixture.aclose(instance)
         if fixture.cleanup is not None:
             fixture.cleanup(instance)

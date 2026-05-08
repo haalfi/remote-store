@@ -39,6 +39,7 @@ def _load_all() -> None:
     """
     from tests.backends.fixtures import (  # noqa: F401 — import-side-effect registration
         azure_live,
+        azure_live_async,
         azurite,
         dafny_oracle,
         http,

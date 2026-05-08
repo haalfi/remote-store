@@ -167,6 +167,7 @@ class TestLayoutBoundary:
             "tests/backends/azure/",
             "tests/backends/fixtures/azurite",
             "tests/backends/fixtures/azure_live",
+            "tests/backends/fixtures/azure_live_async",
         ),
         "S3Backend": ("tests/backends/s3/", "tests/backends/fixtures/s3_"),
         "S3PyArrowBackend": ("tests/backends/s3/", "tests/backends/fixtures/s3_pyarrow"),
