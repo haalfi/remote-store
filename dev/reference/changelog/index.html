@@ -11937,6 +11937,8 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-186 (PR 1 / foundation): TOML registry as single source of truth for fixture metadata — <code>tests/backends/fixtures/backends.toml</code> + <code>fixtures.toml</code> + pure <code>_loader.py</code>. <code>BackendFixture</code> gains <code>flat_namespace</code>, <code>self_op_supported</code>, <code>transport</code>, <code>container</code> fields populated from TOML. PR 2 will derive <code>mutate_scopes.py</code> from the same source.</li>
+<li>BK-185: flat-namespace gating moves from <code>_FLAT_NAMESPACE_BACKENDS</code> / <code>_NO_SELF_OP_BACKENDS</code> identity sets keyed by <code>backend.name</code> to per-fixture <code>flat_namespace</code> / <code>self_op_supported</code> flags on <code>BackendFixture</code>. Closes the BK-180 silent-skip on <code>azure_live</code>: the Azurite emulator (flat) and live ADLS Gen2 (HNS) now decide independently despite sharing <code>backend == "azure"</code>.</li>
 <li>BK-180: spec 048 Phase 2 — <code>azure_live</code> and <code>azure_live_async</code> Stage 3 conformance fixtures, <code>BackendFixture.aclose</code> async cleanup channel</li>
 <li>BK-183: per-topic <code>mutate-conformance-*</code> scopes</li>
 <li>tooling: <code>hatch run test-cov</code> no longer enforces <code>--cov-fail-under=95</code>; strict gate moved to new <code>hatch run test-cov-strict</code></li>

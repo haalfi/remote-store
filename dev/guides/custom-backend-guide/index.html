@@ -10702,13 +10702,20 @@ Writing a file creates its parent directories; a path can be either a file
 <p><strong>Flat-namespace</strong> backends (S3, Azure, HTTP) have no real directory entries.
 Folders are virtual — inferred from key prefixes. A path <code>a/b/c</code> implies a
 prefix <code>a/b/</code> but no actual directory object exists.</p>
-<p>The extended conformance suite tracks this in a frozenset:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># tests/backends/test_conformance_extended.py</span>
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">_FLAT_NAMESPACE_BACKENDS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="s2">&quot;s3-pyarrow&quot;</span><span class="p">,</span> <span class="s2">&quot;azure&quot;</span><span class="p">,</span> <span class="s2">&quot;http&quot;</span><span class="p">})</span>
+<p>The conformance suite reads this from the per-backend <code>flat_namespace</code> flag
+declared in <code>tests/backends/fixtures/backends.toml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># tests/backends/fixtures/backends.toml</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="k">[backend.</span><span class="err">&lt;</span><span class="k">your-backend</span><span class="err">&gt;</span><span class="k">]</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="n">transport</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;fs&quot;</span><span class="w">        </span><span class="c1"># http | ssh | fs | memory | sql</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="n">flat_namespace</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">        </span><span class="c1"># set true for flat-namespace backends</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="n">self_op_supported</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 </code></pre></div>
-<p>Tests that rely on real directory semantics call <code>_skip_flat_namespace()</code> and
-self-skip for flat backends. If your new backend is flat-namespace, add its
-<code>backend.name</code> string to this set.</p>
+<p>A per-fixture override in <code>fixtures.toml</code> is also possible — Azurite (the
+flat emulator) and live ADLS Gen2 (HNS) share <code>backend == "azure"</code> but
+disagree on <code>flat_namespace</code>, so the fixture-level value takes precedence.
+Tests that rely on real directory semantics call <code>_skip_flat_namespace()</code>,
+which reads the resolved flag from the per-fixture record attached by the
+conformance indirect fixture; no identity-set lookup is needed.</p>
 <p>Key behavioral differences that the conformance tests check:</p>
 <table>
 <thead>

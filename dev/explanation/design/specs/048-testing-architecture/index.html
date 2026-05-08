@@ -9387,14 +9387,35 @@ shape, registered in <code>tests/backends/fixtures/registry.py</code>:</p>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">kind</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;pure&quot;</span><span class="p">,</span> <span class="s2">&quot;mocked&quot;</span><span class="p">,</span> <span class="s2">&quot;real-local&quot;</span><span class="p">,</span> <span class="s2">&quot;real-live&quot;</span><span class="p">,</span> <span class="s2">&quot;replay&quot;</span><span class="p">]</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">capabilities</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">[</span><span class="n">Capability</span><span class="p">]</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">is_async</span><span class="p">:</span> <span class="nb">bool</span>                         <span class="c1"># disambiguates the AnyBackend union for parametrize</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">cleanup</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">AnyBackend</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">aclose</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">AnyBackend</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">flat_namespace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>           <span class="c1"># true when the backend has no real directory entries</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">self_op_supported</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>         <span class="c1"># true when move(p,p)/copy(p,p) is a safe no-op</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">transport</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;http&quot;</span><span class="p">,</span> <span class="s2">&quot;ssh&quot;</span><span class="p">,</span> <span class="s2">&quot;fs&quot;</span><span class="p">,</span> <span class="s2">&quot;memory&quot;</span><span class="p">,</span> <span class="s2">&quot;sql&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;fs&quot;</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">container</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;minio&quot;</span><span class="p">,</span> <span class="s2">&quot;azurite&quot;</span><span class="p">,</span> <span class="s2">&quot;sftp&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">cleanup</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">AnyBackend</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">aclose</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">AnyBackend</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div>
 <p><code>aclose</code> is awaited in the async indirect fixture's teardown when set;
 sync fixtures and async fixtures whose teardown is purely synchronous
 leave it <code>None</code>. Sync <code>cleanup</code> and async <code>aclose</code> are independent:
 a fixture may set both when it has both sync resources to release and an
 async pool to close.</p>
+<p>The four declarative flags after <code>is_async</code> describe per-fixture
+behaviour that conformance helpers consult to gate test bodies
+(<code>flat_namespace</code> / <code>self_op_supported</code>) or that downstream tooling
+reads to derive scopes (<code>transport</code> / <code>container</code>). They make the
+fixture record self-describing: a flat-namespace skip no longer requires
+a hand-maintained backend-name set in conformance helpers, so the
+Azurite emulator (flat) and live ADLS Gen2 (HNS) — both
+<code>backend == "azure"</code> — disagree correctly.</p>
+<p><strong>Source of truth.</strong> The static fields are loaded from two TOML files
+in the fixture package: <code>tests/backends/fixtures/backends.toml</code> (per
+backend family) and <code>tests/backends/fixtures/fixtures.toml</code> (per
+fixture, with overrides on top of the family defaults). The pure
+loader at <code>tests/backends/fixtures/_loader.py</code> validates closed
+enums (<code>stage</code>, <code>kind</code>, <code>transport</code>, <code>container</code>) at parse
+time. Per-fixture Python modules supply only the runtime callables —
+<code>factory</code>, <code>cleanup</code>, <code>aclose</code>, <code>capabilities</code>, <code>marks</code> —
+and splat the loader's <code>to_kwargs()</code> for the rest.</p>
 <p><strong>Postcondition:</strong> Conformance parametrize is auto-generated by
 walking the registry, filtered by stage (TEST-006) and capability
 (TEST-005). Backend-specific tests walk the registry filtered by
@@ -9570,23 +9591,25 @@ helpers.</p>
 <a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>    sqlblob/
 <a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>      test_config.py
 <a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>    fixtures/                    # registry and factories. TEST-004.
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>      registry.py
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>      _live_env.py
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>      memory.py
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>      local.py
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>      azurite.py
-<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>      minio.py
-<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>      sftp_docker.py
-<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>      azure_live.py
-<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>      azure_live_async.py
-<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>      azure_replay.py
-<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>      s3_live.py
-<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>      s3_replay.py
-<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>    cassettes/                   # HTTP recordings. TEST-007. HTTP backends only.
-<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>      azure/
-<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>      s3/
-<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a>  scripts/                       # tests for scripts/ utilities
-<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>  e2e/                           # end-to-end workflows
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>      backends.toml              # per-backend-family declarative facts (SSoT)
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>      fixtures.toml              # per-fixture declarative facts (SSoT)
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>      _loader.py                 # pure TOML loader; closed-enum validation
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>      registry.py                # ``BackendFixture`` record + register/fixtures
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>      _state.py                  # ``current_stage`` / ``INFRA`` runtime state
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>      _live_env.py               # Stage 3 env-var preconditions
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>      test_registry.py           # spec-marker tests for the registry itself
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>      memory.py                  # representative per-fixture factory modules
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>      local.py
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>      azurite.py
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>      sftp_docker.py
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>      azure_live.py
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>      azure_live_async.py
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>      ...                        # full set in fixtures.toml
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>    cassettes/                   # HTTP recordings. TEST-007. HTTP backends only.
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a>      azure/
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>      s3/
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>  scripts/                       # tests for scripts/ utilities
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>  e2e/                           # end-to-end workflows
 </code></pre></div>
 <p><strong>Backend concern isolation:</strong> Everything backend-related lives
 under <code>tests/backends/</code>. Conformance, backend-specific tests,
