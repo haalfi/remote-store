@@ -33,11 +33,16 @@ jobs:
           python-version: "3.13"
       - id: set-scopes
         env:
-          # Pass the dispatch input through the env (not a shell-interpolated
-          # string) so a value containing `"` or `\` cannot break the JSON.
+          # Route every workflow context value through the env, not direct
+          # template interpolation in the shell body. ``INPUT_SCOPE`` is the
+          # security-relevant one (user-supplied; ``"`` or ``\`` would break
+          # the JSON); ``EVENT_NAME`` is not user-controlled but is passed
+          # the same way for pattern consistency, so future additions don't
+          # have to relearn which inputs need quoting.
+          EVENT_NAME: ${{ github.event_name }}
           INPUT_SCOPE: ${{ github.event.inputs.scope }}
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "$INPUT_SCOPE" = "all" ]; then
+          if [ "$EVENT_NAME" = "schedule" ] || [ "$INPUT_SCOPE" = "all" ]; then
             scopes=$(python scripts/run_mutate.py --list-scopes)
           else
             scopes=$(python -c 'import json, os; print(json.dumps([os.environ["INPUT_SCOPE"]]))')

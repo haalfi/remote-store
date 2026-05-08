@@ -76,6 +76,13 @@ CLOUD_STACK_SOURCES: list[str] = [
 LOCAL_STACK_FILTER = "local or memory or sqlblob or http or azurite or dafny"
 CLOUD_STACK_FILTER = "s3 or sftp"
 
+# Adapter source exercised by ``test_sync_adapter_conformance.py`` directly,
+# and by ``test_async_extended.py`` via the ``local_async_adapted`` /
+# ``memory_async_adapted`` fixtures (both wrap a sync backend with
+# ``SyncBackendAdapter``). Scopes that run those tests include this file in
+# their gremlin targets so adapter-internal mutations are detected.
+SYNC_ADAPTER_SOURCE = "src/remote_store/aio/_sync_adapter.py"
+
 # ---------------------------------------------------------------------------
 # Container identifiers (must match conditional startup keys in CI)
 # ---------------------------------------------------------------------------
@@ -247,7 +254,7 @@ SCOPES: dict[str, Scope] = {
         needs=[MINIO, AZURITE, SFTP],
     ),
     "conformance-sync-adapter": Scope(
-        targets=ALL_BACKEND_SOURCES,
+        targets=[*ALL_BACKEND_SOURCES, SYNC_ADAPTER_SOURCE],
         tests=["tests/backends/conformance/test_sync_adapter_conformance.py"],
         needs=[MINIO, AZURITE, SFTP],
     ),
@@ -303,12 +310,12 @@ SCOPES: dict[str, Scope] = {
     # async-extended runs only on local / memory; one scope per backend
     # keeps the cmdline well under the limit
     "conformance-async-extended-local": Scope(
-        targets=["src/remote_store/backends/_local.py"],
+        targets=["src/remote_store/backends/_local.py", SYNC_ADAPTER_SOURCE],
         tests=["tests/backends/conformance/test_async_extended.py"],
         filter="local",
     ),
     "conformance-async-extended-memory": Scope(
-        targets=["src/remote_store/backends/_memory.py"],
+        targets=["src/remote_store/backends/_memory.py", SYNC_ADAPTER_SOURCE],
         tests=["tests/backends/conformance/test_async_extended.py"],
         filter="memory",
     ),

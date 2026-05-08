@@ -50,6 +50,30 @@ def _kfilter_matches(name: str, kfilter: str) -> bool:
 
 
 @pytest.mark.spec("TEST-004")
+def test_async_extended_scopes_use_explicit_filter() -> None:
+    """Every async-extended scope must declare an explicit ``-k`` filter.
+
+    The completeness check below assumes per-fixture verification via
+    ``-k`` substring match. A scope with ``filter is None`` would
+    short-circuit that check to "covered" for every fixture without
+    actually parametrising over them — defeating the guard. If a filter-
+    less scope is genuinely required in the future, extend the predicate
+    in ``test_every_async_fixture_matches_an_async_extended_scope`` with
+    explicit fixture-list verification before lifting this assertion.
+    """
+    scopes = _load_manifest().SCOPES
+    filterless = [
+        name
+        for name, scope in scopes.items()
+        if any("test_async_extended.py" in t for t in scope.tests) and scope.filter is None
+    ]
+    assert not filterless, (
+        f"async-extended scopes without an explicit `-k` filter: {filterless}. "
+        "See the docstring for why this breaks the coverage guard."
+    )
+
+
+@pytest.mark.spec("TEST-004")
 def test_every_async_fixture_matches_an_async_extended_scope() -> None:
     scopes = _load_manifest().SCOPES
 
@@ -64,8 +88,11 @@ def test_every_async_fixture_matches_an_async_extended_scope() -> None:
     for f in all_fixtures():
         if not f.is_async:
             continue
+        # The companion test above asserts every async-extended scope has a
+        # non-None filter, so the substring match is the only path that
+        # counts as coverage. Do not relax this without revisiting that test.
         if not any(
-            scope.filter is None or _kfilter_matches(f.name, scope.filter) for _, scope in async_extended_scopes
+            scope.filter is not None and _kfilter_matches(f.name, scope.filter) for _, scope in async_extended_scopes
         ):
             uncovered.append(f.name)
 
