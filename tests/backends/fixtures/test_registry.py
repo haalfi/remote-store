@@ -21,14 +21,17 @@ from tests.backends.fixtures import (
     all_fixtures,
     fixtures,
 )
+from tests.backends.fixtures._loader import (
+    _VALID_CONTAINERS,
+    _VALID_KINDS,
+    _VALID_STAGES,
+    _VALID_TRANSPORTS,
+    load_fixtures,
+)
 from tests.backends.fixtures._state import current_stage, set_current_stage
 from tests.backends.fixtures.registry import register
 
 _load_all()
-
-
-_VALID_KINDS = frozenset({"pure", "mocked", "real-local", "real-live", "replay"})
-_VALID_STAGES = frozenset({1, 2, 3})
 
 
 @pytest.mark.spec("TEST-001")
@@ -88,6 +91,48 @@ class TestRegistryShape:
         if memory.cleanup is not None:
             memory.cleanup(a)
             memory.cleanup(b)
+
+    def test_toml_round_trips_to_records(self) -> None:
+        """TOML loader populates every field on the registered ``BackendFixture``.
+
+        Reads ``fixtures.toml`` directly and compares the loader's view of
+        each entry against the registered record. Pins the contract that
+        ``transport`` / ``container`` / ``flat_namespace`` /
+        ``self_op_supported`` survive the round-trip without manual
+        per-field copying — adding a new TOML field requires one update
+        to ``FixtureDescriptor.to_kwargs`` and one matching field on
+        ``BackendFixture``; this test catches drift.
+        """
+        descriptors = load_fixtures()
+        for f in all_fixtures():
+            desc = descriptors[f.name]
+            assert f.backend == desc.backend
+            assert f.stage == desc.stage
+            assert f.kind == desc.kind
+            assert f.is_async == desc.is_async
+            assert f.flat_namespace == desc.flat_namespace
+            assert f.self_op_supported == desc.self_op_supported
+            assert f.transport == desc.transport, f"{f.name!r} transport drift"
+            assert f.container == desc.container, f"{f.name!r} container drift"
+            assert f.transport in _VALID_TRANSPORTS
+            assert f.container in _VALID_CONTAINERS
+
+    def test_bk185_azurite_flat_azure_live_hns(self) -> None:
+        """BK-185 regression: same backend family can disagree on flat_namespace.
+
+        ``azurite`` (emulator) and ``azure_live`` (real ADLS Gen2) both
+        carry ``backend == "azure"`` but their namespaces differ — the
+        emulator is flat, real ADLS Gen2 has HNS. The old
+        ``_FLAT_NAMESPACE_BACKENDS`` set keyed by ``backend.name`` could
+        not represent the split; this test pins the per-fixture override
+        and would have failed before BK-186 PR 1.
+        """
+        by_name = {f.name: f for f in all_fixtures()}
+        assert by_name["azurite"].flat_namespace is True, "azurite emulator is flat-namespace"
+        assert by_name["azure_live"].flat_namespace is False, "live HNS has real directories"
+        assert by_name["azure_live_async"].flat_namespace is False, "async live HNS has real directories"
+        # Both fixtures still share the same backend family.
+        assert by_name["azurite"].backend == by_name["azure_live"].backend == "azure"
 
 
 @pytest.mark.spec("TEST-005")

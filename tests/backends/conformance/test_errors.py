@@ -20,9 +20,9 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from tests.backends.conformance._helpers import (
-    _FLAT_NAMESPACE_BACKENDS,
     _MOVE_COPY_PARAMS,
     _do_op,
+    _fixture_record,
     _require,
     _seed,
     _skip_flat_namespace,
@@ -128,7 +128,7 @@ class TestDeleteFolderErrorFidelity:
     def test_delete_folder_on_file_no_native_leak(self, backend: Backend) -> None:
         """Flat-namespace backends: delete_folder(file) must not leak native exceptions."""
         _require(backend, Capability.WRITE)
-        if backend.name not in _FLAT_NAMESPACE_BACKENDS:
+        if not _fixture_record(backend).flat_namespace:
             pytest.skip("hierarchical backend; covered by test_delete_folder_on_file_raises_error")
         backend.write("dffile_flat.txt", b"x")
         with contextlib.suppress(RemoteStoreError):

@@ -17,11 +17,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures._state import INFRA
 from tests.backends.fixtures.registry import BackendFixture, register
 
 if TYPE_CHECKING:
     from remote_store._backend import Backend
+
+_meta = load_fixture("azurite")
 
 _LOG = logging.getLogger(__name__)
 _CONTAINERS: dict[int, tuple[str, object]] = {}
@@ -75,14 +78,10 @@ def _capabilities() -> frozenset:
 
 register(
     BackendFixture(
-        name="azurite",
-        backend="azure",
         factory=_factory,
-        stage=2,
-        kind="real-local",
         capabilities=_capabilities(),
-        is_async=False,
         cleanup=_cleanup,
         marks=(pytest.mark.requires_docker,),
+        **_meta.to_kwargs(),
     )
 )

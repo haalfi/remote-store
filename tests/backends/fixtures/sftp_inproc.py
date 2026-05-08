@@ -18,11 +18,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures._state import INFRA
 from tests.backends.fixtures.registry import BackendFixture, register
 
 if TYPE_CHECKING:
     from remote_store._backend import Backend
+
+_meta = load_fixture("sftp_inproc")
 
 
 def _factory() -> Backend:
@@ -56,13 +59,9 @@ def _capabilities() -> frozenset:
 
 register(
     BackendFixture(
-        name="sftp_inproc",
-        backend="sftp",
         factory=_factory,
-        stage=1,
-        kind="real-local",
         capabilities=_capabilities(),
-        is_async=False,
         cleanup=_cleanup,
+        **_meta.to_kwargs(),
     )
 )

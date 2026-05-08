@@ -32,6 +32,7 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
+from tests.backends.conformance._helpers import _fixture_record
 
 if TYPE_CHECKING:
     from remote_store.aio._async_backend import AsyncBackend
@@ -40,20 +41,13 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # Helpers (mirror tests/backends/test_conformance_extended.py)
 # ---------------------------------------------------------------------------
-
-# Backends that use flat/virtual namespace: no real directory entries.
-# Update this set when adding a new flat-namespace async backend to the
-# fixture below.
-_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})
-
-# Backends that do not yet handle self-copy/self-move correctly.
-# ``async-azure`` is here pending BUG-201 (the async Azure backend's
-# self-op raises ``AlreadyExists`` instead of being a no-op on real HNS);
-# the sync ``azure`` entry pre-existed for the same shape on the sync
-# Azure side. The async backend's ``.name`` returns ``"async-azure"``
-# (not ``"azure"``), so the runtime check below needs both keys to filter
-# the live HNS parametrize ids on Stage 3.
-_NO_SELF_OP_BACKENDS = frozenset({"azure", "async-azure", "http"})
+#
+# ``flat_namespace`` and ``self_op_supported`` come from the per-fixture
+# ``BackendFixture`` record (attached by the indirect ``async_backend``
+# fixture in ``tests/backends/conformance/conftest.py``). The previous
+# file-local identity sets keyed by ``backend.name`` could not
+# distinguish the Azurite emulator (flat) from live ADLS Gen2 (HNS) —
+# closes BK-185.
 
 
 def _require(backend: AsyncBackend, *caps: Capability) -> None:
@@ -75,7 +69,7 @@ async def _seed(backend: AsyncBackend, files: dict[str, bytes]) -> None:
 
 def _skip_flat_namespace(backend: AsyncBackend, reason: str = "flat-namespace backend") -> None:
     """Skip test for backends without real directory entries."""
-    if backend.name in _FLAT_NAMESPACE_BACKENDS:
+    if _fixture_record(backend).flat_namespace:
         pytest.skip(reason)
 
 
@@ -232,7 +226,7 @@ class TestDeleteFolderErrorFidelity:
     async def test_delete_folder_on_file_no_native_leak(self, async_backend: AsyncBackend) -> None:
         """Flat-namespace backends: delete_folder(file) must not leak native exceptions."""
         _require(async_backend, Capability.DELETE, Capability.WRITE)
-        if async_backend.name not in _FLAT_NAMESPACE_BACKENDS:
+        if not _fixture_record(async_backend).flat_namespace:
             pytest.skip("hierarchical backend: covered by test_delete_folder_on_file_raises_error")
         await async_backend.write("dffile_flat.txt", b"x")
         with contextlib.suppress(RemoteStoreError):
@@ -522,7 +516,7 @@ class TestMoveCopySelfOperation:
     ) -> None:
         """{move,copy}(src, src, overwrite={True,False}) is a no-op: source content preserved."""
         _require(async_backend, cap, Capability.WRITE)
-        if async_backend.name in _NO_SELF_OP_BACKENDS:
+        if not _fixture_record(async_backend).self_op_supported:
             pytest.skip(f"Backend {async_backend.name!r} does not handle self-{op} yet")
         path = f"self_{op}_ow{overwrite}.txt"
         await async_backend.write(path, b"data")
@@ -538,7 +532,7 @@ class TestMoveCopySelfOperation:
     ) -> None:
         """{move,copy}(src, src) where src does not exist raises NotFound."""
         _require(async_backend, cap)
-        if async_backend.name in _NO_SELF_OP_BACKENDS:
+        if not _fixture_record(async_backend).self_op_supported:
             pytest.skip(f"Backend {async_backend.name!r} does not handle self-{op} yet")
         path = f"sm_{op}_missing.txt"
         with pytest.raises(NotFound, match=f"sm_{op}_missing"):

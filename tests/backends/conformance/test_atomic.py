@@ -17,8 +17,8 @@ from remote_store._errors import AlreadyExists, NotFound
 from remote_store._models import WriteResult
 from tests.backends.conformance._helpers import (
     _MOVE_COPY_PARAMS,
-    _NO_SELF_OP_BACKENDS,
     _do_op,
+    _fixture_record,
     _require,
     _seed,
 )
@@ -319,7 +319,7 @@ class TestMoveCopySelfOperation:
     def test_self_copy_preserves_data(self, backend: Backend) -> None:
         """copy(src, src, overwrite=True) must not lose data."""
         _require(backend, Capability.COPY)
-        if backend.name in _NO_SELF_OP_BACKENDS:
+        if not _fixture_record(backend).self_op_supported:
             pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
         backend.write("selfcp.txt", b"data")
         backend.copy("selfcp.txt", "selfcp.txt", overwrite=True)
@@ -329,7 +329,7 @@ class TestMoveCopySelfOperation:
     def test_self_move_preserves_data(self, backend: Backend) -> None:
         """move(src, src, overwrite=True) must not lose data."""
         _require(backend, Capability.MOVE)
-        if backend.name in _NO_SELF_OP_BACKENDS:
+        if not _fixture_record(backend).self_op_supported:
             pytest.skip(f"Backend {backend.name!r} does not handle self-move yet")
         backend.write("selfmv.txt", b"data")
         backend.move("selfmv.txt", "selfmv.txt", overwrite=True)
@@ -339,7 +339,7 @@ class TestMoveCopySelfOperation:
     def test_self_copy_no_overwrite_preserves_data(self, backend: Backend) -> None:
         """copy(src, src, overwrite=False) is a no-op; must not raise AlreadyExists."""
         _require(backend, Capability.COPY)
-        if backend.name in _NO_SELF_OP_BACKENDS:
+        if not _fixture_record(backend).self_op_supported:
             pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
         backend.write("selfcp2.txt", b"data")
         backend.copy("selfcp2.txt", "selfcp2.txt", overwrite=False)
@@ -349,7 +349,7 @@ class TestMoveCopySelfOperation:
     def test_self_copy_missing_raises_not_found(self, backend: Backend) -> None:
         """copy(src, src) where src does not exist must raise NotFound."""
         _require(backend, Capability.COPY)
-        if backend.name in _NO_SELF_OP_BACKENDS:
+        if not _fixture_record(backend).self_op_supported:
             pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
         with pytest.raises(NotFound, match="sc_missing"):
             backend.copy("sc_missing.txt", "sc_missing.txt")
@@ -358,7 +358,7 @@ class TestMoveCopySelfOperation:
     def test_self_move_no_overwrite_preserves_data(self, backend: Backend) -> None:
         """move(src, src, overwrite=False) is a no-op; must not raise AlreadyExists."""
         _require(backend, Capability.MOVE)
-        if backend.name in _NO_SELF_OP_BACKENDS:
+        if not _fixture_record(backend).self_op_supported:
             pytest.skip(f"Backend {backend.name!r} does not handle self-move yet")
         backend.write("selfmv2.txt", b"data")
         backend.move("selfmv2.txt", "selfmv2.txt", overwrite=False)

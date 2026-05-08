@@ -17,10 +17,14 @@ from typing import TYPE_CHECKING
 
 from remote_store.aio import AsyncMemoryBackend, SyncBackendAdapter
 from remote_store.backends._memory import MemoryBackend
+from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
 
 if TYPE_CHECKING:
     from remote_store.aio import AsyncBackend
+
+_meta_native = load_fixture("memory_async_native")
+_meta_adapted = load_fixture("memory_async_adapted")
 
 
 def _native_factory() -> AsyncBackend:
@@ -33,27 +37,19 @@ def _adapted_factory() -> AsyncBackend:
 
 register(
     BackendFixture(
-        name="memory_async_native",
-        backend="memory",
         factory=_native_factory,
-        stage=1,
-        kind="real-local",
         capabilities=frozenset(AsyncMemoryBackend.CAPABILITIES),
-        is_async=True,
         cleanup=None,
+        **_meta_native.to_kwargs(),
     )
 )
 
 
 register(
     BackendFixture(
-        name="memory_async_adapted",
-        backend="memory",
         factory=_adapted_factory,
-        stage=1,
-        kind="real-local",
         capabilities=frozenset(MemoryBackend.CAPABILITIES),
-        is_async=True,
         cleanup=None,
+        **_meta_adapted.to_kwargs(),
     )
 )

@@ -202,7 +202,26 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-186 — Physical fixture/backend registry as single source of truth**
+- [~] **BK-186 — Physical fixture/backend registry as single source of truth**
+
+  *Done in PR 1 (foundation):* `tests/backends/fixtures/backends.toml`
+  + `fixtures.toml` + pure `_loader.py` are the new SSoT for fixture
+  metadata; closed-enum validation runs at parse time. The
+  `BackendFixture` record gained `flat_namespace`, `self_op_supported`,
+  `transport`, `container` fields populated by the loader. `_load_all`
+  walks TOML keys, conformance helpers attach the record onto every
+  parametrize-built backend, `_FLAT_NAMESPACE_BACKENDS` /
+  `_NO_SELF_OP_BACKENDS` identity sets are gone, and the `--stage`
+  CLI option / `set_current_stage` / spec-marker tests all read
+  `_VALID_STAGES` from `_loader`. Closes BK-185 structurally — the
+  Azurite emulator (flat) and live ADLS Gen2 (HNS) now disagree on
+  `flat_namespace` despite sharing `backend == "azure"`.
+
+  *Pending in PR 2:* `scripts/mutate_scopes.py` derivation from TOML;
+  `_BACKEND_LITERALS` derivation; `tests/conftest.py` reachability
+  helpers consolidation; `_live_env.py` generalisation for `s3_live`
+  (BK-184 prerequisite); CI workflow YAML simplification.
+
   Spec 048 introduced the `BackendFixture` registry (BK-179), but the
   per-fixture/per-backend "dictionary" is replicated across at least six
   consumers that each carve their own slice and drift independently:
@@ -297,32 +316,6 @@ and the highest ID already in this file, then take the next integer. Run
   amended in PR 1), TEST-005 (capability gating), TEST-006 (stage
   selection), TEST-008 (replay eligibility — currently doc-only, becomes
   structural via `transport` field), TEST-010 (layout boundary).
-
-- [ ] **BK-185 — Refactor flat-namespace gating from backend identity to capability/kind**
-  `tests/backends/conformance/_helpers.py:30` defines
-  `_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})`
-  and `_skip_flat_namespace(backend)` skips by `backend.name`. This was
-  correct when the only Azure-family fixture was `azurite` (genuinely
-  flat-namespace Blob storage). With `azure_live` from BK-180 pointing at
-  a real ADLS Gen2 account, HNS is real and directories exist — but
-  `AzureBackend.name == "azure"` is in the set, so directory-aware sync
-  conformance tests in `tests/backends/conformance/test_errors.py`
-  (`_skip_flat_namespace` users: `TestReadErrorFidelity`,
-  `TestWriteErrorFidelity`, `TestDeleteErrorFidelity`,
-  `TestDeleteFolderErrorFidelity`, `TestGetFileInfoErrorFidelity`,
-  `TestGetFolderInfoErrorFidelity`, `TestMoveCopyErrorFidelity`)
-  silently skip on `azure_live`. The async sibling escapes this because
-  `AsyncAzureBackend.name == "async-azure"` is not in the set, which is
-  why `azure_live_async` surfaces BUG-198/BUG-200 while the sync
-  counterpart falsely "looks green" in the BK-180 sweep. Two viable
-  refactors: (a) introduce an `HNS_AWARE` (or `REAL_DIRECTORIES`)
-  `Capability` flag and gate on its absence, (b) gate on fixture
-  identity (e.g. `kind == "real-live"` plus a per-backend HNS marker)
-  rather than `backend.name`. Either keeps `azurite` skipping while
-  letting `azure_live` exercise the directory contracts. The
-  BUG-198/BUG-200/BUG-203 entries should be re-verified once sync HNS
-  actually runs the directory contracts; several "sync green" claims
-  may flip to additional defects. Spec: TEST-005 (capability gating).
 
 - [ ] **BK-184 — Implement `s3_live` Stage 3 conformance fixture (Spec 048 Phase 2 carryover)**
   Carved out from BK-180 because the bucket-isolation strategy needs

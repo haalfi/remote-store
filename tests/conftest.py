@@ -12,6 +12,7 @@ from hypothesis import HealthCheck, settings
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
+from tests.backends.fixtures._loader import _VALID_STAGES
 from tests.backends.fixtures._state import set_current_stage
 
 if TYPE_CHECKING:
@@ -281,7 +282,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--stage",
         action="store",
         type=int,
-        choices=[1, 2, 3],
+        choices=sorted(_VALID_STAGES),
         default=None,
         help="Test stage: 1 (repo-only), 2 (Docker), 3 (live cloud). "
         "Default: auto-detect (2 if Docker reachable, else 1). "
@@ -335,9 +336,9 @@ def pytest_configure(config: object) -> None:
                         f"RS_TEST_STAGE must be 1, 2, or 3 (got {env_override!r})",
                         returncode=1,
                     )
-                if stage not in (1, 2, 3):
+                if stage not in _VALID_STAGES:
                     pytest.exit(
-                        f"RS_TEST_STAGE must be 1, 2, or 3 (got {stage})",
+                        f"RS_TEST_STAGE must be one of {sorted(_VALID_STAGES)} (got {stage})",
                         returncode=1,
                     )
             else:

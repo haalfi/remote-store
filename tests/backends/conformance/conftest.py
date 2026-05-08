@@ -63,9 +63,18 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 @pytest.fixture
 def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
-    """Indirect fixture: build a Backend from a ``BackendFixture`` record."""
+    """Indirect fixture: build a Backend from a ``BackendFixture`` record.
+
+    Attaches the ``BackendFixture`` record onto the produced instance as
+    ``_fixture_record`` so conformance helpers (``_skip_flat_namespace``,
+    self-op skips) can consult per-fixture flags without re-deriving them
+    from ``backend.name``. Reading the record is what closes BK-185 — the
+    Azurite emulator and live ADLS Gen2 share ``backend.name == "azure"``
+    but disagree on ``flat_namespace``.
+    """
     fixture: BackendFixture = request.param
     instance = fixture.factory()
+    instance._fixture_record = fixture  # type: ignore[attr-defined]
     try:
         yield instance  # type: ignore[misc]
     finally:
@@ -93,6 +102,7 @@ async def async_backend(request: pytest.FixtureRequest) -> AsyncIterator[object]
     """
     fixture: BackendFixture = request.param
     instance = fixture.factory()
+    instance._fixture_record = fixture  # type: ignore[attr-defined]
     try:
         yield instance
     finally:

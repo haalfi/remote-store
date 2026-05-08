@@ -1,0 +1,147 @@
+# Per-fixture declarative facts (spec 048 / TEST-004).
+#
+# Each [fixture.<name>] block names a Python module in
+# tests/backends/fixtures/<name>.py and supplies the static fields that
+# fixture's BackendFixture record needs. Runtime callables (factory,
+# cleanup, aclose, marks) stay in Python; everything declarative lives
+# here.
+#
+# Closed enums:
+#   stage:     1 | 2 | 3
+#   kind:      pure | mocked | real-local | real-live | replay
+#   container: minio | azurite | sftp | none
+#
+# Per-fixture overrides (flat_namespace, self_op_supported) merge on top
+# of [backend.<x>] defaults from backends.toml. Omit to inherit.
+
+# ---------------------------------------------------------------------------
+# Stage 1 fixtures: in-process, always available
+# ---------------------------------------------------------------------------
+
+[fixture.memory]
+backend   = "memory"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
+[fixture.memory_async_native]
+backend   = "memory"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = true
+
+[fixture.memory_async_adapted]
+backend   = "memory"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = true
+
+[fixture.local]
+backend   = "local"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
+[fixture.local_async_adapted]
+backend   = "local"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = true
+
+[fixture.http]
+backend   = "http"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
+[fixture.sftp_inproc]
+backend   = "sftp"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
+[fixture.dafny_oracle]
+backend   = "dafny"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
+[fixture.sqlblob]
+backend   = "sqlblob"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
+[fixture.s3_moto]
+backend   = "s3"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
+[fixture.s3_pyarrow_moto]
+backend   = "s3_pyarrow"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
+# ---------------------------------------------------------------------------
+# Stage 2 fixtures: real local containers
+# ---------------------------------------------------------------------------
+
+[fixture.azurite]
+backend   = "azure"
+stage     = 2
+kind      = "real-local"
+container = "azurite"
+is_async  = false
+# OVERRIDE: emulator is flat-namespace (no HNS); BK-185.
+flat_namespace = true
+
+[fixture.sftp_docker]
+backend   = "sftp"
+stage     = 2
+kind      = "real-local"
+container = "sftp"
+is_async  = false
+
+[fixture.s3_pyarrow_minio]
+backend   = "s3_pyarrow"
+stage     = 2
+kind      = "real-local"
+container = "minio"
+is_async  = false
+
+# ---------------------------------------------------------------------------
+# Stage 3 fixtures: live cloud accounts (opt-in; cost gating)
+# ---------------------------------------------------------------------------
+
+[fixture.azure_live]
+backend   = "azure"
+stage     = 3
+kind      = "real-live"
+container = "none"
+is_async  = false
+live_opt_in_env = "RS_TEST_LIVE_HNS"
+live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
+# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].
+
+[fixture.azure_live_async]
+backend   = "azure"
+stage     = 3
+kind      = "real-live"
+container = "none"
+is_async  = true
+live_opt_in_env = "RS_TEST_LIVE_HNS"
+live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
+# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].

@@ -8,6 +8,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-185 — Refactor flat-namespace gating from backend identity to capability/kind**
+  Closed structurally by BK-186 PR 1: per-fixture `flat_namespace` /
+  `self_op_supported` boolean fields on `BackendFixture` (sourced from
+  `tests/backends/fixtures/backends.toml` + `fixtures.toml` via
+  `_loader.py`) replace the `_FLAT_NAMESPACE_BACKENDS` /
+  `_NO_SELF_OP_BACKENDS` identity sets keyed by `backend.name`. The
+  Azurite emulator and live ADLS Gen2 now decide their namespace shape
+  independently despite sharing `backend == "azure"`; the previously
+  silent-skipped sync directory contracts in
+  `tests/backends/conformance/test_errors.py` now exercise `azure_live`
+  on Stage 3, surfacing the BUG-198/BUG-200/BUG-203 family that BK-180's
+  sync sweep missed. The `HNS_AWARE` / `REAL_DIRECTORIES` capability
+  alternatives are no longer needed: the per-fixture override is
+  sufficient. Spec: TEST-005 (capability gating).
+
 - [x] **BK-180 — Implement Spec 048 Phase 2: live Azure conformance fixtures**
   Adds `azure_live` and `azure_live_async` (Stage 3, kind `real-live`) to
   the registry per spec [TEST-001/004](specs/048-testing-architecture.md);
