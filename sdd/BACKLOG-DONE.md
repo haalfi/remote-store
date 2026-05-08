@@ -12,9 +12,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Per-call fresh bucket (`rs-conformance-<uuid>`), mirroring `azure_live.py` shape.
   Files: `fixtures.toml` `[fixture.s3_live]`, `_live_env.require_s3_live_credentials`,
   `TestRequireS3LiveCredentials` (10 cases), `s3_live.py`, spec 048 TEST-010 layout.
-  Verification: lint clean; 101 fixture tests pass; 180 conformance tests collect under
-  `--stage=3 -m live -k s3_live`. IAM setup note documented in `s3_live.py` docstring;
-  full sweep pending IAM policy configuration.
+  Full sweep result: **162 passed, 18 skipped, 0 failed** (5 min, real AWS eu-central-1).
+  All 18 skips are capability-gated: 13 flat-namespace folder tests, 2 WR-005, 1 WR-013,
+  1 flat-namespace file/folder distinction, 1 virtual-folder deletion behaviour.
 
 - [x] **BK-187 — Expand lint/format/typecheck scope to `scripts/` and `examples/`**
   `hatch run lint`, `format`, and `format-check` now cover `scripts/` alongside
