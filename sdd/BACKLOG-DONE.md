@@ -8,6 +8,37 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-186 — Physical fixture/backend registry as single source of truth**
+  Two-layer SSoT shipped across PR 1 (foundation) and PR 2 (consumers).
+  PR 1 introduced `tests/backends/fixtures/backends.toml` + `fixtures.toml`
+  + pure `_loader.py` with closed-enum validation; `BackendFixture` gained
+  `flat_namespace`, `self_op_supported`, `transport`, `container` fields;
+  the `_FLAT_NAMESPACE_BACKENDS` / `_NO_SELF_OP_BACKENDS` identity sets,
+  the per-fixture import list in `_load_all`, and the `_VALID_KINDS` /
+  `_VALID_STAGES` triples were folded into the loader. Closed BK-185.
+  PR 2 made every scope derived. Non-backend scopes pair each
+  `src/remote_store/_<x>.py` / `src/remote_store/ext/<x>.py` /
+  `src/remote_store/backends/_<x>.py` with prefix-matching
+  `tests/test_<x>*.py` files (per-file scopes); top-level test files
+  matching no src by prefix roll into a single `core-misc` scope.
+  Backend scopes come from `backends.toml` + `fixtures.toml`:
+  `backends-local` / `backends-cloud` collapse into transport-derived
+  `backends-{fs,memory,sql,http,ssh}`; the four split conformance topics
+  (`io`, `atomic`, `errors`, `identity`) partition by transport instead
+  of the hand-curated `LOCAL_STACK` / `CLOUD_STACK` literals. Mutation
+  matrix grows from 20 to 60 scopes (12 per-file core + 15 per-file
+  ext + core-memory + core-misc + 5 backends-* + 1 sync-adapter + 3
+  unsplit conformance + 20 split conformance + 2 async-extended);
+  `mutate_scopes.py` itself shrinks from 322 to 240 lines (-25%). `_BACKEND_LITERALS` in
+  `test_registry.py::TestLayoutBoundary` derives fixture-path portions
+  from `fixtures.toml`. `_live_env.py` exposes
+  `require_live_credentials(descriptor, ...)` so BK-184's `s3_live`
+  fixture can wrap the same emulator-signature core.
+  `tests/conftest.py` reachability helpers route through one
+  `_container_reachable(name)` keyed by a single `_CONTAINER_PORTS`
+  map. Spec: TEST-001, TEST-004, TEST-005, TEST-006, TEST-008
+  (transport-driven), TEST-010.
+
 - [x] **BK-185 — Refactor flat-namespace gating from backend identity to capability/kind**
   Closed structurally by BK-186 PR 1: per-fixture `flat_namespace` /
   `self_op_supported` boolean fields on `BackendFixture` (sourced from

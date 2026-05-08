@@ -98,31 +98,45 @@ def _sftp_available() -> bool:
         return False
 
 
-def _azurite_reachable() -> bool:
+# Container reachability is a function of one fact per ``[fixture.<x>].container``
+# value: which TCP port the container exposes on 127.0.0.1. Centralising
+# the port mapping here means a new container value in ``fixtures.toml``
+# only needs one entry added below; the per-helper boilerplate (one
+# function each for minio/azurite/sftp) is gone.
+_CONTAINER_PORTS: dict[str, int] = {
+    "minio": 9000,
+    "azurite": 10000,
+    "sftp": 2222,
+}
+
+
+def _container_reachable(name: str) -> bool:
+    """Return True when the container with the given ``container`` value
+    is listening on its known port at 127.0.0.1.
+
+    ``name`` is one of the values from ``VALID_CONTAINERS`` in the
+    fixture loader (excluding ``"none"``). Unknown names raise
+    ``KeyError`` so a typo at the call site fails loud.
+    """
+    port = _CONTAINER_PORTS[name]
     try:
-        s = socket.create_connection(("127.0.0.1", 10000), timeout=1)
-        s.close()
-        return True
+        s = socket.create_connection(("127.0.0.1", port), timeout=1)
     except OSError:
         return False
+    s.close()
+    return True
+
+
+def _azurite_reachable() -> bool:
+    return _container_reachable("azurite")
 
 
 def _minio_reachable() -> bool:
-    try:
-        s = socket.create_connection(("127.0.0.1", 9000), timeout=1)
-        s.close()
-        return True
-    except OSError:
-        return False
+    return _container_reachable("minio")
 
 
 def _sftp_docker_reachable() -> bool:
-    try:
-        s = socket.create_connection(("127.0.0.1", 2222), timeout=1)
-        s.close()
-        return True
-    except OSError:
-        return False
+    return _container_reachable("sftp")
 
 
 _AZURITE_CONN_STR = (

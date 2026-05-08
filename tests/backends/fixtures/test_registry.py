@@ -430,6 +430,41 @@ _TESTS_ROOT = Path(__file__).resolve().parent.parent.parent  # tests/
 _BACKENDS_ROOT = _TESTS_ROOT / "backends"
 
 
+# Backend class name → TOML backend key. Class names aren't in the registry
+# (TOML keys are family identifiers like "azure"). ``S3Backend`` and
+# ``S3PyArrowBackend`` share ``tests/backends/s3/`` (they share
+# ``_s3_base.py``); ``SQLQueryBackend`` has no TOML entry yet — its key is
+# the empty string and its test dir is read from the class name.
+_CLASS_TO_BACKEND: dict[str, str] = {
+    "AzureBackend": "azure",
+    "S3Backend": "s3",
+    "S3PyArrowBackend": "s3_pyarrow",
+    "SFTPBackend": "sftp",
+    "SQLBlobBackend": "sqlblob",
+    "SQLQueryBackend": "",
+    "ReadOnlyHttpBackend": "http",
+}
+
+
+def _build_backend_literals() -> dict[str, tuple[str, ...]]:
+    """class-name → permitted ``tests/`` path prefixes, derived from
+    ``fixtures.toml``. New fixtures flow through without touching this file.
+    """
+    by_backend: dict[str, list[str]] = {}
+    for fx in load_fixtures().values():
+        by_backend.setdefault(fx.backend, []).append(fx.name)
+    test_dir = {"s3_pyarrow": "s3", "": "sqlquery"}  # overrides; default = backend key
+    out: dict[str, tuple[str, ...]] = {}
+    for cls, key in _CLASS_TO_BACKEND.items():
+        d = test_dir.get(key, key)
+        paths = [f"tests/backends/{d}/"]
+        paths += [f"tests/backends/fixtures/{fx}" for fx in sorted(by_backend.get(key, []))]
+        if key == "":
+            paths.append(f"tests/backends/fixtures/{d}")  # no fixtures yet for SQLQueryBackend
+        out[cls] = tuple(paths)
+    return out
+
+
 @pytest.mark.spec("TEST-010")
 class TestLayoutBoundary:
     """TEST-010: backend names appear only inside their backend's home,
@@ -441,22 +476,7 @@ class TestLayoutBoundary:
     accidental cross-backend coupling at review time.
     """
 
-    # Identifiers we want to keep out of cross-cutting tests. Each maps to
-    # the path prefix(es) where the literal is permitted.
-    _BACKEND_LITERALS = {
-        "AzureBackend": (
-            "tests/backends/azure/",
-            "tests/backends/fixtures/azurite",
-            "tests/backends/fixtures/azure_live",
-            "tests/backends/fixtures/azure_live_async",
-        ),
-        "S3Backend": ("tests/backends/s3/", "tests/backends/fixtures/s3_"),
-        "S3PyArrowBackend": ("tests/backends/s3/", "tests/backends/fixtures/s3_pyarrow"),
-        "SFTPBackend": ("tests/backends/sftp/", "tests/backends/fixtures/sftp_"),
-        "SQLBlobBackend": ("tests/backends/sqlblob/", "tests/backends/fixtures/sqlblob"),
-        "SQLQueryBackend": ("tests/backends/sqlquery/", "tests/backends/fixtures/sqlquery"),
-        "ReadOnlyHttpBackend": ("tests/backends/http/", "tests/backends/fixtures/http"),
-    }
+    _BACKEND_LITERALS = _build_backend_literals()
 
     def test_conformance_does_not_reference_concrete_backends(self) -> None:
         """TEST-002 + TEST-010 narrow boundary check on the conformance subtree.
