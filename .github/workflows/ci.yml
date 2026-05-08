@@ -63,8 +63,8 @@ jobs:
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
-      - run: ruff check src/ tests/ examples/
-      - run: ruff format --check src/ tests/ examples/
+      - run: ruff check src/ tests/ examples/ scripts/
+      - run: ruff format --check src/ tests/ examples/ scripts/
       - run: python scripts/check_test_assertions.py tests
       - run: python scripts/check_mock_spec.py tests
       - run: python scripts/check_test_placement.py tests
@@ -91,7 +91,7 @@ jobs:
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
-      - run: mypy src/
+      - run: mypy src/ examples/
 
   test:
     needs: [changes]

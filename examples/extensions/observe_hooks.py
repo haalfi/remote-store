@@ -34,7 +34,7 @@ from remote_store import (
 )
 
 
-def demo(store: Store) -> dict[str, Any]:
+def demo(store: Store) -> dict[str, list[Any]]:
     """Hook-based observation. Returns collected events for test verification."""
     results: dict[str, list[Any]] = {
         "write_events": [],
