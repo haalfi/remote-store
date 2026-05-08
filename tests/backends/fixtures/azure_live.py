@@ -84,7 +84,14 @@ def _factory() -> Backend:
 
 
 def _cleanup(backend: Backend) -> None:
-    backend.close()
+    # Guard ``backend.close()`` so a transient close failure (e.g. SDK
+    # session-flush error) cannot strand a real HNS filesystem. A leaked
+    # filesystem on a real ADLS Gen2 account costs money and pollutes the
+    # storage account; the deletion path below is the load-bearing step.
+    try:
+        backend.close()
+    except Exception:  # noqa: BLE001 -- teardown is best-effort
+        _LOG.warning("backend.close() failed during cleanup", exc_info=True)
     entry = _FILESYSTEMS.pop(id(backend), None)
     if entry is None:
         return

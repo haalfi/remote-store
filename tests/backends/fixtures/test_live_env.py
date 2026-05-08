@@ -25,6 +25,18 @@ _AZURITE_EXPLICIT_CONN = (
 )
 
 
+@pytest.fixture(autouse=True)
+def _disable_dotenv_load(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stub ``dotenv.load_dotenv`` so the helper's lazy backstop does not
+    repopulate ``AZURE_STORAGE_CONNECTION_STRING`` from the project ``.env``
+    during each test. Without this, ``monkeypatch.delenv`` is silently
+    undone by the helper before its empty-check fires.
+    """
+    import dotenv
+
+    monkeypatch.setattr(dotenv, "load_dotenv", lambda *args, **kwargs: False)
+
+
 @pytest.mark.spec("TEST-001")
 class TestRequireAzureLiveConnectionString:
     """Each fail-loud branch of ``require_azure_live_connection_string``."""
@@ -41,6 +53,15 @@ class TestRequireAzureLiveConnectionString:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.delenv("AZURE_STORAGE_CONNECTION_STRING", raising=False)
+        with pytest.raises(pytest.fail.Exception, match="AZURE_STORAGE_CONNECTION_STRING is empty"):
+            require_azure_live_connection_string()
+
+    def test_whitespace_only_connection_string_fails_loud(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Whitespace-only env var must fail-loud, not pass through to the SDK."""
+        monkeypatch.setenv("AZURE_STORAGE_CONNECTION_STRING", "   ")
         with pytest.raises(pytest.fail.Exception, match="AZURE_STORAGE_CONNECTION_STRING is empty"):
             require_azure_live_connection_string()
 

@@ -11,6 +11,7 @@ introduced by BK-180.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import TYPE_CHECKING
 
@@ -22,6 +23,7 @@ from tests.backends.fixtures.registry import BackendFixture, register
 if TYPE_CHECKING:
     from remote_store._backend import Backend
 
+_LOG = logging.getLogger(__name__)
 _CONTAINERS: dict[int, tuple[str, object]] = {}
 
 
@@ -45,7 +47,15 @@ def _factory() -> Backend:
 
 
 def _cleanup(backend: Backend) -> None:
-    backend.close()
+    # Guard ``backend.close()`` so a transient close failure does not
+    # short-circuit the container-deletion path. Mirrors the same pattern
+    # in ``azure_live._cleanup``; a leaked Azurite container is free, so
+    # this is consistency with the live counterpart rather than a cost
+    # concern.
+    try:
+        backend.close()
+    except Exception:  # noqa: BLE001 -- teardown is best-effort
+        _LOG.warning("backend.close() failed during cleanup", exc_info=True)
     entry = _CONTAINERS.pop(id(backend), None)
     if entry is not None:
         container, service = entry

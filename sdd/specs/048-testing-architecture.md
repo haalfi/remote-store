@@ -341,12 +341,14 @@ tests/
       test_config.py
     fixtures/                    # registry and factories. TEST-004.
       registry.py
+      _live_env.py
       memory.py
       local.py
       azurite.py
       minio.py
       sftp_docker.py
       azure_live.py
+      azure_live_async.py
       azure_replay.py
       s3_live.py
       s3_replay.py

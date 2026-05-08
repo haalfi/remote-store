@@ -86,7 +86,10 @@ and the highest ID already in this file, then take the next integer. Run
   Errors fire at `src/remote_store/aio/backends/_azure.py:899` (copy
   destination check) and `:1068` (rename SDK call). Sync variant green
   in this sweep — the gap is async-only. Fix: detect src == dst at the
-  top of `move`/`copy` and short-circuit. Spec: BE-018, BE-019,
+  top of `move`/`copy` and short-circuit. The conformance test is
+  currently behind `_NO_SELF_OP_BACKENDS` in `test_async_extended.py`
+  with key `"async-azure"`; the fix must also remove that key so the
+  regression test runs against `azure_live_async`. Spec: BE-018, BE-019,
   ASYNC-018, ASYNC-019.
 
 - [ ] **BUG-200 — `AsyncAzureBackend.move`/`copy` directory checks raise wrong error / `InvalidInput` on real HNS**
