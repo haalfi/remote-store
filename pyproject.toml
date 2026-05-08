@@ -136,7 +136,13 @@ format = "ruff format src/ tests/ examples/"
 format-check = "ruff format --check src/ tests/ examples/"
 typecheck = "mypy src/"
 test = "pytest"
-test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
+# `test-cov` reports coverage without enforcing a floor — the everyday local runner.
+# `test-cov-strict` adds `--cov-fail-under=95` and is wired into `hatch run all`
+# and CI. The 95% gate depends on Stage-2 fixtures (Azurite in particular) running;
+# without them the Azure backends drop ~900 covered lines and the gate fails by
+# design, not regression. See CLAUDE.md § Coverage gate.
+test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml"
+test-cov-strict = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
 test-cov-branch = "pytest --cov=remote_store --cov-branch --cov-report=term-missing --cov-report=xml"
 # Auto-discovers examples in getting_started/, configuration/, errors/,
 # advanced/, extensions/, plus snippets.  Skips backends/ (needs credentials)
@@ -185,7 +191,7 @@ docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
-all = ["lint", "format-check", "typecheck", "test-cov", "examples", "notebooks", "check-links", "docs-check", "docs-build"]
+all = ["lint", "format-check", "typecheck", "test-cov-strict", "examples", "notebooks", "check-links", "docs-check", "docs-build"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]

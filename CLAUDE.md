@@ -51,6 +51,15 @@ Claude-specific shell constraints:
 - **No heredoc in git commits.** `git commit -m "$(cat <<'EOF'...)"` breaks the `Bash(git:*)` auto-approve pattern. Use multiple `-m` flags instead.
 - **No `/tmp/`.** Use `./tmp/` instead (gitignored). `/tmp/` is a system directory and triggers a separate permission prompt.
 
+## Coverage gate (`test-cov` vs `test-cov-strict`)
+
+The 95% coverage threshold is **structurally unreachable locally without Azurite running**. The Azure backends (`backends/_azure.py`, `aio/backends/_azure.py`) account for ~900 covered lines that vanish when Stage-2 fixtures skip; CI starts Azurite as a service, local runs depend on the developer.
+
+- `hatch run test-cov` reports coverage with no floor. Use this for everyday local feedback.
+- `hatch run test-cov-strict` adds `--cov-fail-under=95`. Lives in `hatch run all` and the publish workflow.
+
+If `test-cov-strict` (or `hatch run all`) fails locally on the coverage gate, **do not loop on "master is passing it, let me re-run"**. Either start Azurite (`docker run -d --name azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:3.35.0 azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck`) and re-run, or treat the strict gate as a CI/release-only check.
+
 ## Branching
 
 - **Never commit or push directly to master.** Always create a feature branch.

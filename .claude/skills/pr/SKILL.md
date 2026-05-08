@@ -34,7 +34,7 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
     Report violations before drafting the PR.
 
 2c. **Coverage gate:** Check `git diff origin/<BASE>...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
-    - If any match: run `hatch run test-cov` (requires 95%). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
+    - If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see CLAUDE.md § Coverage gate). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
     - If none match (docs/config-only): skip coverage.
 
 3. **Gather context:** `git log origin/<BASE>..HEAD --oneline` and `git diff origin/<BASE>...HEAD`
