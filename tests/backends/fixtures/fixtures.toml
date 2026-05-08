@@ -145,3 +145,14 @@ is_async  = true
 live_opt_in_env = "RS_TEST_LIVE_HNS"
 live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
 # Inherits flat_namespace=false, self_op_supported=false from [backend.azure].
+
+[fixture.s3_live]
+backend   = "s3"
+stage     = 3
+kind      = "real-live"
+container = "none"
+is_async  = false
+live_opt_in_env = "RS_TEST_LIVE_S3"
+live_creds_env  = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"]
+# Inherits flat_namespace=true, self_op_supported=true from [backend.s3].
+# Per-call bucket creation (rs-conformance-<uuid>) makes RS_TEST_LIVE_S3_BUCKET redundant.

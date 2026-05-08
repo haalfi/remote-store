@@ -11,8 +11,10 @@ from __future__ import annotations
 import pytest
 
 from tests.backends.fixtures._live_env import (
+    _S3_EMULATOR_FRAGMENTS,
     require_azure_live_connection_string,
     require_live_credentials,
+    require_s3_live_credentials,
 )
 from tests.backends.fixtures._loader import FixtureDescriptor
 
@@ -27,6 +29,12 @@ _AZURITE_EXPLICIT_CONN = (
     "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
     "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
 )
+
+_REAL_AWS_CREDS = {
+    "AWS_ACCESS_KEY_ID": "AKIAIOSFODNN7EXAMPLE",
+    "AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    "AWS_DEFAULT_REGION": "eu-central-1",
+}
 
 
 @pytest.fixture(autouse=True)
@@ -147,3 +155,63 @@ class TestRequireLiveCredentials:
         msg = str(exc_info.value)
         assert "RS_TEST_SYNTHETIC_CREDS is empty" in msg
         assert "set but" not in msg
+
+
+@pytest.mark.spec("TEST-001")
+class TestRequireS3LiveCredentials:
+    """Each fail-loud branch of ``require_s3_live_credentials``."""
+
+    def _set_real_creds(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        for var, val in _REAL_AWS_CREDS.items():
+            monkeypatch.setenv(var, val)
+        monkeypatch.delenv("AWS_ENDPOINT_URL", raising=False)
+        monkeypatch.delenv("AWS_S3_ENDPOINT_URL", raising=False)
+
+    def test_returns_real_credentials_unchanged(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self._set_real_creds(monkeypatch)
+        assert require_s3_live_credentials() == _REAL_AWS_CREDS
+
+    @pytest.mark.parametrize("missing_var", list(_REAL_AWS_CREDS))
+    def test_missing_cred_env_var_fails_loud(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        missing_var: str,
+    ) -> None:
+        self._set_real_creds(monkeypatch)
+        monkeypatch.delenv(missing_var)
+        with pytest.raises(pytest.fail.Exception, match=f"{missing_var} is empty"):
+            require_s3_live_credentials()
+
+    def test_whitespace_only_cred_fails_loud(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        self._set_real_creds(monkeypatch)
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "   ")
+        with pytest.raises(pytest.fail.Exception, match="AWS_ACCESS_KEY_ID is empty"):
+            require_s3_live_credentials()
+
+    @pytest.mark.parametrize("fragment", list(_S3_EMULATOR_FRAGMENTS))
+    def test_emulator_endpoint_url_fails_loud(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fragment: str,
+    ) -> None:
+        self._set_real_creds(monkeypatch)
+        monkeypatch.setenv("AWS_ENDPOINT_URL", f"http://{fragment}/")
+        with pytest.raises(pytest.fail.Exception, match="points at an S3 emulator"):
+            require_s3_live_credentials()
+
+    @pytest.mark.parametrize("fragment", list(_S3_EMULATOR_FRAGMENTS))
+    def test_emulator_s3_endpoint_url_fails_loud(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        fragment: str,
+    ) -> None:
+        self._set_real_creds(monkeypatch)
+        monkeypatch.setenv("AWS_S3_ENDPOINT_URL", f"http://{fragment}/")
+        with pytest.raises(pytest.fail.Exception, match="points at an S3 emulator"):
+            require_s3_live_credentials()
