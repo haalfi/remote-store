@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -74,8 +74,12 @@ def main() -> int:
     if args.scope not in SCOPES:
         parser.error(f"unknown scope {args.scope!r}; available: {', '.join(SCOPES)}")
 
-    os.execvp(sys.executable, [sys.executable, *_build_pytest_argv(args.scope)])
-    return 0  # unreachable; execvp replaces the process
+    # subprocess.run + sys.exit, not os.execvp: the latter is a real exec on
+    # POSIX but spawn+wait+exit on Windows, and a launch failure raises
+    # rather than returning an exit code. subprocess.run is platform-neutral
+    # and surfaces non-zero exit codes uniformly.
+    completed = subprocess.run([sys.executable, *_build_pytest_argv(args.scope)], check=False)
+    return completed.returncode
 
 
 if __name__ == "__main__":

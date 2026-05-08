@@ -30,7 +30,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-# --- Backend source-file groups -----------------------------------------
+# ---------------------------------------------------------------------------
+# Backend source-file groups
+# ---------------------------------------------------------------------------
 
 ALL_BACKEND_SOURCES: list[str] = [
     "src/remote_store/backends/_local.py",
@@ -67,17 +69,25 @@ CLOUD_STACK_SOURCES: list[str] = [
     "src/remote_store/backends/_sftp.py",
 ]
 
+# ``-k`` expressions used by the split-topic conformance scopes. ``LOCAL_STACK_FILTER``
+# matches ``[azurite]`` in the parametrized id; that fixture needs the Azurite emulator
+# even though every other fixture in the local stack runs without a container. The
+# corresponding scopes therefore declare ``needs=[AZURITE]`` individually.
 LOCAL_STACK_FILTER = "local or memory or sqlblob or http or azurite or dafny"
 CLOUD_STACK_FILTER = "s3 or sftp"
 
-# --- Container identifiers (must match conditional startup keys in CI) ---
+# ---------------------------------------------------------------------------
+# Container identifiers (must match conditional startup keys in CI)
+# ---------------------------------------------------------------------------
 
 MINIO = "minio"
 AZURITE = "azurite"
 SFTP = "sftp"
 
 
-# --- Scope record -------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Scope record
+# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -87,8 +97,16 @@ class Scope:
     ``targets``  files passed to ``--gremlin-targets``
     ``tests``    pytest path/file args (positional)
     ``filter``   optional ``-k`` expression
-    ``needs``    container identifiers (MINIO/AZURITE/SFTP) the tests
-                 require to actually run; CI uses this to gate startup
+    ``needs``    container identifiers (``MINIO``/``AZURITE``/``SFTP``) the
+                 tests require to run with full coverage. Used by CI to
+                 decide which Docker images to start; **advisory only**.
+                 Backend fixtures decide internally whether they can run
+                 (e.g. ``sftp_inproc`` runs without Docker, ``sftp_docker``
+                 ``pytest.skip``s when its container is missing). A
+                 Docker-off local run will therefore exercise a subset of
+                 the fixtures the scope's ``-k`` filter selects, and a
+                 mutation only the real-daemon fixture would catch can
+                 survive.
     """
 
     targets: list[str]
@@ -97,7 +115,9 @@ class Scope:
     needs: list[str] = field(default_factory=list)
 
 
-# --- The 20 scopes ------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Scopes
+# ---------------------------------------------------------------------------
 
 SCOPES: dict[str, Scope] = {
     # Core / extension scopes (no backend containers required)

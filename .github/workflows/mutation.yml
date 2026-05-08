@@ -32,11 +32,15 @@ jobs:
         with:
           python-version: "3.13"
       - id: set-scopes
+        env:
+          # Pass the dispatch input through the env (not a shell-interpolated
+          # string) so a value containing `"` or `\` cannot break the JSON.
+          INPUT_SCOPE: ${{ github.event.inputs.scope }}
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.scope }}" = "all" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "$INPUT_SCOPE" = "all" ]; then
             scopes=$(python scripts/run_mutate.py --list-scopes)
           else
-            scopes='["${{ github.event.inputs.scope }}"]'
+            scopes=$(python -c 'import json, os; print(json.dumps([os.environ["INPUT_SCOPE"]]))')
           fi
           {
             echo "scopes=${scopes}"
