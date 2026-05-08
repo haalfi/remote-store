@@ -34,7 +34,7 @@ from remote_store.backends import MemoryBackend
 from remote_store.ext.otel import otel_observe
 
 
-def demo(observed):
+def demo(observed: Store) -> None:
     """Store operations under OTel instrumentation."""
     observed.write("data/report.csv", b"id,value\n1,100\n2,200")
     print("Wrote data/report.csv")
@@ -81,6 +81,7 @@ def main() -> None:
 
     # -- Inspect collected metrics ----------------------------------
     data = metric_reader.get_metrics_data()
+    assert data is not None
     print("\n--- Metrics ---")
     for rm in data.resource_metrics:
         for sm in rm.scope_metrics:

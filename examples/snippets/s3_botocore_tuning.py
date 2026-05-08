@@ -16,6 +16,8 @@ not set ``client_kwargs["config"]`` directly (BUG-178, BUG-185).
 
 from __future__ import annotations
 
+from typing import Any
+
 from remote_store import RetryPolicy
 from remote_store.backends import S3Backend
 
@@ -31,7 +33,7 @@ def demo() -> None:
     _everything()
 
 
-def _assert_wired(backend: S3Backend) -> dict:
+def _assert_wired(backend: S3Backend) -> dict[str, Any]:
     """Trigger lazy init and return the dict s3fs received as config_kwargs.
 
     Asserts the never-clobber invariant (S3-026): ``client_kwargs['config']``

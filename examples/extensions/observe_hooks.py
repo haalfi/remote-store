@@ -17,7 +17,7 @@ see_also:
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -27,15 +27,22 @@ from remote_store import (
     BufferedObserver,
     Registry,
     RegistryConfig,
+    Store,
     StoreEvent,
     StoreProfile,
     observe,
 )
 
 
-def demo(store):
+def demo(store: Store) -> dict[str, Any]:
     """Hook-based observation. Returns collected events for test verification."""
-    results = {"write_events": [], "read_events": [], "any_events": [], "around_ops": [], "buffered_events": []}
+    results: dict[str, list[Any]] = {
+        "write_events": [],
+        "read_events": [],
+        "any_events": [],
+        "around_ops": [],
+        "buffered_events": [],
+    }
 
     # --- Per-operation hooks ---
     print("=== Per-operation hooks ===")

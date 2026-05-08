@@ -131,10 +131,10 @@ dependencies = [
 ]
 
 [tool.hatch.envs.default.scripts]
-lint = ["ruff check src/ tests/ examples/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py"]
-format = "ruff format src/ tests/ examples/"
-format-check = "ruff format --check src/ tests/ examples/"
-typecheck = "mypy src/"
+lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py"]
+format = "ruff format src/ tests/ examples/ scripts/"
+format-check = "ruff format --check src/ tests/ examples/ scripts/"
+typecheck = "mypy src/ examples/"
 test = "pytest"
 # `test-cov` is the everyday local runner; `test-cov-strict` adds the 95% floor
 # and is wired into `hatch run all`. See CLAUDE.md § Coverage gate.
@@ -197,6 +197,11 @@ packages = ["src/remote_store"]
 strict = true
 namespace_packages = true
 plugins = ["sqlalchemy.ext.mypy.plugin"]
+# medallion_dagster/ is a self-contained dagster project — its modules use
+# sibling-relative imports (`from assets.bronze import ...`, `from stores import ...`)
+# that only resolve when dagster's launcher puts the directory on sys.path.
+# mypy doesn't have that context, so skip the subtree.
+exclude = ["^examples/medallion_dagster/"]
 
 # tomllib is stdlib from 3.11+; on 3.10 it doesn't exist and tomli is used instead.
 [[tool.mypy.overrides]]

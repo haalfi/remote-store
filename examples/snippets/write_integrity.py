@@ -24,10 +24,10 @@ def _write_with_hash() -> None:
     store = Store(MemoryBackend())
     result = write_with_hash(store, "report.csv", b"col1,col2\n1,2\n")
 
+    assert result.digest is not None
     print(result.digest.algorithm)  # sha256
     print(result.digest.value)  # hex digest
     # --8<-- [end:write-with-hash]
-    assert result.digest is not None
     assert result.digest.algorithm == "sha256"
     assert len(result.digest.value) == 64
 
@@ -42,10 +42,10 @@ def _open_atomic_with_hash() -> None:
         writer.write(b"chunk two")
 
     result = writer.result
-    print(result.digest.value)  # sha256 of "chunk one chunk two"
-    # --8<-- [end:open-atomic-with-hash]
     assert result is not None
     assert result.digest is not None
+    print(result.digest.value)  # sha256 of "chunk one chunk two"
+    # --8<-- [end:open-atomic-with-hash]
     assert result.size == len(b"chunk one chunk two")
 
 

@@ -19,7 +19,7 @@ from remote_store import BackendConfig, Registry, RegistryConfig, Store, StorePr
 from remote_store.backends import MemoryBackend
 
 
-def demo(store):
+def demo(store: Store) -> None:
     """Standard Store operations on any backend."""
     store.write_text("hello.txt", "Hello from memory!")
     print(f"exists: {store.exists('hello.txt')}")

@@ -13,10 +13,10 @@ from __future__ import annotations
 
 import tempfile
 
-from remote_store import BackendConfig, Registry, RegistryConfig, StoreProfile
+from remote_store import BackendConfig, Registry, RegistryConfig, Store, StoreProfile
 
 
-def demo(store):
+def demo(store: Store) -> None:
     """Child store creation, isolation, chaining, close semantics."""
     # --- Create child stores ---
     reports = store.child("reports")

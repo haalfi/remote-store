@@ -15,13 +15,15 @@ see_also:
 
 from __future__ import annotations
 
+from typing import Any
+
 from remote_store import Capability, CapabilityNotSupported, Store
 from remote_store.backends import ReadOnlyHttpBackend
 
 
-def demo(store: Store) -> dict:
+def demo(store: Store) -> dict[str, Any]:
     """HTTP backend demonstration. Returns results dict."""
-    results = {}
+    results: dict[str, Any] = {}
 
     # --- Capabilities ---
     print("=== HTTP Backend Capabilities ===\n")

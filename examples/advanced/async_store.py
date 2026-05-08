@@ -16,8 +16,12 @@ see_also:
 from __future__ import annotations
 
 import asyncio
+from typing import TYPE_CHECKING
 
 from remote_store.aio import AsyncMemoryBackend, AsyncStore
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 async def demo(store: AsyncStore) -> None:
@@ -35,7 +39,7 @@ async def demo(store: AsyncStore) -> None:
     print(f"streaming read: {total} bytes")
 
     # --- Write from async iterator ---
-    async def row_generator():
+    async def row_generator() -> AsyncIterator[bytes]:
         yield b"id,value\n"
         for i in range(3):
             yield f"{i},{i * 10}\n".encode()

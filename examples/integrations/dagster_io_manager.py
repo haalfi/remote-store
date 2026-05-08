@@ -15,6 +15,8 @@ see_also:
 
 from __future__ import annotations
 
+from typing import Any
+
 from dagster import AssetKey, build_input_context, build_output_context
 
 from remote_store import Store
@@ -22,9 +24,9 @@ from remote_store.backends import MemoryBackend
 from remote_store.ext.dagster import dagster_io_manager
 
 
-def demo() -> dict:
+def demo() -> dict[str, Any]:
     """Dagster IO manager adapter demo. Returns results for test verification."""
-    results: dict = {}
+    results: dict[str, Any] = {}
     store = Store(backend=MemoryBackend())
 
     # --- Pickle roundtrip ---

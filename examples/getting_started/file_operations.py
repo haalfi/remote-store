@@ -15,10 +15,10 @@ from __future__ import annotations
 import os
 import tempfile
 
-from remote_store import BackendConfig, Capability, Registry, RegistryConfig, StoreProfile
+from remote_store import BackendConfig, Capability, Registry, RegistryConfig, Store, StoreProfile
 
 
-def demo(store):
+def demo(store: Store) -> None:
     """Exercise core Store operations (everything except to_key)."""
     # --- Write ---
     result = store.write("docs/readme.txt", b"First file")
