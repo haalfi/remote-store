@@ -104,7 +104,12 @@ and the highest ID already in this file, then take the next integer. Run
   and `[azure_live_async-copy]`. Errors at
   `src/remote_store/aio/backends/_azure.py:899/937/1068`. Same defect
   family as BUG-195/BUG-197/BUG-190: missing `hdi_isfolder` probe before
-  the SDK call. Sync variant apparently fixed (no `[azure_live]` failure).
+  the SDK call. **Sync variant status uncertain — BK-185 caveat:** the
+  sync test `test_errors.py::TestMoveCopyErrorFidelity::test_source_is_directory_raises_error[azure_live]`
+  (and the destination-is-directory sibling) calls `_skip_flat_namespace`,
+  which silent-skips `azure_live` because `AzureBackend.name == "azure"`
+  is in `_FLAT_NAMESPACE_BACKENDS`. Re-verify once BK-185 lifts the
+  identity-based gate; the sync side may also need the same fix.
   Fix: add the directory probe to the async `move`/`copy` paths.
   Spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024.
 
@@ -130,9 +135,14 @@ and the highest ID already in this file, then take the next integer. Run
   `test_delete_folder_on_file_missing_ok_still_raises[azure_live_async]`,
   and `tests/backends/conformance/test_async_extended.py::TestGetFolderInfoErrorFidelity::test_get_folder_info_on_file_raises_error[azure_live_async]`.
   Errors at `src/remote_store/aio/backends/_azure.py:640` (delete_folder)
-  and `:829` (get_folder_info). Sync variant green in this sweep — the
-  probe gap is async-only here. Same fix shape as BUG-195/BUG-197: detect
-  the type mismatch before the SDK call and raise `InvalidPath`.
+  and `:829` (get_folder_info). **Sync variant status uncertain — BK-185
+  caveat:** the sync siblings in `test_errors.py::TestDeleteFolderErrorFidelity`
+  and `TestGetFolderInfoErrorFidelity` call `_skip_flat_namespace`, which
+  silent-skips `azure_live` because `AzureBackend.name == "azure"` is in
+  `_FLAT_NAMESPACE_BACKENDS`. Re-verify once BK-185 lifts the
+  identity-based gate; the sync side may share the defect.
+  Same fix shape as BUG-195/BUG-197: detect the type mismatch before
+  the SDK call and raise `InvalidPath`.
   Spec: BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017.
 
 - [ ] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)**
@@ -148,8 +158,9 @@ and the highest ID already in this file, then take the next integer. Run
     caller believed was a file but is actually a directory destroys the directory
     silently. Stronger consequence than BUG-190/BUG-192 (which just chose the wrong
     error class) — this one mutates account state.
-  Live tests freeze the actual behaviour in `tests/backends/test_azure_live_hns.py::
-  TestAzureLiveHnsFileApiOnDirectory` and the async sibling; they must be flipped
+  Live tests freeze the actual behaviour in `tests/backends/azure/test_live_hns.py::
+  TestAzureLiveHnsFileApiOnDirectory` and the async sibling at
+  `tests/backends/azure/aio/test_live_hns.py`; they must be flipped
   back to assert `InvalidPath` once the fix lands. The BK-180 conformance run
   against `azure_live_async` reproduces the async halves at
   `tests/backends/conformance/test_async_extended.py::TestReadErrorFidelity::test_read_on_directory_raises_error`,
@@ -167,7 +178,7 @@ and the highest ID already in this file, then take the next integer. Run
   logs a warning, and returns `WriteResult(etag=None, last_modified=None)` — the rename
   already succeeded, so a transient post-rename read failure must not surface as a write
   failure. WR-001a lists both fields as `Optional`. Surfaced by the new
-  `tests/aio/test_async_azure_live_hns.py::TestAsyncLiveHnsWriteResult` assertion
+  `tests/backends/azure/aio/test_live_hns.py::TestAsyncLiveHnsWriteResult` assertion
   `result.etag is not None` (only path the async backend supports today). Fix: mirror the
   sync try/except + log + `_build_azure_write_result(path, size, None, metadata)` shape, then
   weaken the live-test assertion to allow the fallback path. Spec: WR-001a, WR-004, AZ-034.
@@ -177,8 +188,8 @@ and the highest ID already in this file, then take the next integer. Run
   `GetFileInfo: IsDir → InvalidPath`)" and ASYNC-016 inherits the same contract. Both
   `AzureBackend.get_file_info` and `AsyncAzureBackend.get_file_info` currently raise
   `NotFound` when the target is an HNS directory blob (marker `hdi_isfolder=true`). New live
-  tests `tests/backends/test_azure_live_hns.py::TestAzureLiveHnsGetFileInfoOnDirectory` and
-  `tests/aio/test_async_azure_live_hns.py::TestAsyncLiveHnsGetFileInfoOnDirectory` confirm
+  tests `tests/backends/azure/test_live_hns.py::TestAzureLiveHnsGetFileInfoOnDirectory` and
+  `tests/backends/azure/aio/test_live_hns.py::TestAsyncLiveHnsGetFileInfoOnDirectory` confirm
   the runtime behaviour and document the deviation. The BK-180 conformance run against
   `azure_live_async` reproduces the async half at
   `tests/backends/conformance/test_async_extended.py::TestGetFileInfoErrorFidelity::test_get_file_info_on_directory_raises_error`.
@@ -190,6 +201,32 @@ and the highest ID already in this file, then take the next integer. Run
 ---
 
 ## Backlog (Prioritized)
+
+- [ ] **BK-185 — Refactor flat-namespace gating from backend identity to capability/kind**
+  `tests/backends/conformance/_helpers.py:30` defines
+  `_FLAT_NAMESPACE_BACKENDS = frozenset({"s3", "s3-pyarrow", "azure", "http", "sql-blob"})`
+  and `_skip_flat_namespace(backend)` skips by `backend.name`. This was
+  correct when the only Azure-family fixture was `azurite` (genuinely
+  flat-namespace Blob storage). With `azure_live` from BK-180 pointing at
+  a real ADLS Gen2 account, HNS is real and directories exist — but
+  `AzureBackend.name == "azure"` is in the set, so directory-aware sync
+  conformance tests in `tests/backends/conformance/test_errors.py`
+  (`_skip_flat_namespace` users: `TestReadErrorFidelity`,
+  `TestWriteErrorFidelity`, `TestDeleteErrorFidelity`,
+  `TestDeleteFolderErrorFidelity`, `TestGetFileInfoErrorFidelity`,
+  `TestGetFolderInfoErrorFidelity`, `TestMoveCopyErrorFidelity`)
+  silently skip on `azure_live`. The async sibling escapes this because
+  `AsyncAzureBackend.name == "async-azure"` is not in the set, which is
+  why `azure_live_async` surfaces BUG-198/BUG-200 while the sync
+  counterpart falsely "looks green" in the BK-180 sweep. Two viable
+  refactors: (a) introduce an `HNS_AWARE` (or `REAL_DIRECTORIES`)
+  `Capability` flag and gate on its absence, (b) gate on fixture
+  identity (e.g. `kind == "real-live"` plus a per-backend HNS marker)
+  rather than `backend.name`. Either keeps `azurite` skipping while
+  letting `azure_live` exercise the directory contracts. The
+  BUG-198/BUG-200/BUG-203 entries should be re-verified once sync HNS
+  actually runs the directory contracts; several "sync green" claims
+  may flip to additional defects. Spec: TEST-005 (capability gating).
 
 - [ ] **BK-184 — Implement `s3_live` Stage 3 conformance fixture (Spec 048 Phase 2 carryover)**
   Carved out from BK-180 because the bucket-isolation strategy needs
