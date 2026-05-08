@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-183 — Per-topic `mutate-conformance-*` scopes (Windows-compatible)**
+  Closes the conformance coverage gap noted during BK-179 review (PR #597,
+  round 4): the per-backend `mutate-backends-{local,cloud}` scopes do not
+  exercise `tests/backends/conformance/`, so a mutation in `_local.py` /
+  `_s3.py` / etc. that kills only a conformance assertion is reported as a
+  survivor. Adding the directory to either scope pushes pytest-gremlins'
+  coverage subprocess past Windows' ~32 KiB command-line limit (WinError
+  206). New scopes: `mutate-conformance-{listing,metadata,streaming,sync-adapter}`
+  for topics that fit as one file, plus `-{io,atomic,errors,identity}-{local,cloud}`
+  and `-async-extended-{local,memory}` for topics that exceed the limit
+  (split by backend group via `-k`, with source-file targets matching the
+  filter). Verified end-to-end on Windows by running
+  `mutate-conformance-listing` (1184 mutations, 0 survivors).
+  `.github/workflows/mutation.yml` is extended to include every new scope
+  in the scheduled "all" list, the `workflow_dispatch` choices, and the
+  summary aggregation; MinIO / Azurite / SFTP container startup conditions
+  are widened to cover the new scopes that exercise the corresponding
+  fixtures.
+
 - [x] **ID-177 — Design and set up long-term docstring style enforcement**
   `scripts/check_rst_roles.py` scans `src/`, `tests/`, `scripts/`, and
   `examples/` for RST inline roles and fails with file:line output. Wired into
