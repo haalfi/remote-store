@@ -74,6 +74,12 @@ def backend(request: pytest.FixtureRequest) -> Iterator[Backend]:
     """
     fixture: BackendFixture = request.param
     instance = fixture.factory()
+    # Constraint: backend classes must not define ``__slots__`` (and must
+    # not override ``__setattr__`` to reject unknown attributes). The
+    # current backend set is plain dataclasses / classes with no slots,
+    # so the assignment is safe; if a future backend adds slots, surface
+    # the failure here rather than silently in a downstream
+    # ``_fixture_record`` access.
     instance._fixture_record = fixture  # type: ignore[attr-defined]
     try:
         yield instance  # type: ignore[misc]
@@ -102,6 +108,7 @@ async def async_backend(request: pytest.FixtureRequest) -> AsyncIterator[object]
     """
     fixture: BackendFixture = request.param
     instance = fixture.factory()
+    # Same ``__slots__`` constraint as the sync ``backend`` fixture above.
     instance._fixture_record = fixture  # type: ignore[attr-defined]
     try:
         yield instance

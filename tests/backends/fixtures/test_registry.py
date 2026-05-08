@@ -21,6 +21,13 @@ from tests.backends.fixtures import (
     all_fixtures,
     fixtures,
 )
+
+# ``_parse_backend`` and ``_parse_fixture`` are deliberate private-reach
+# imports: the ``TestClosedEnumValidation`` class needs direct access to
+# the loader's validation internals to round-trip synthetic raw dicts
+# without mutating the on-disk TOML. They stay out of ``_loader.__all__``
+# because they are not part of the runtime calling contract — only tests
+# pinning the closed-enum branches consume them.
 from tests.backends.fixtures._loader import (
     VALID_CONTAINERS,
     VALID_KINDS,
@@ -109,6 +116,10 @@ class TestRegistryShape:
         descriptors = load_fixtures()
         for f in all_fixtures():
             desc = descriptors[f.name]
+            # Pin the TOML key → ``BackendFixture.name`` link explicitly:
+            # a mismatch between ``[fixture.<key>]`` and the registered
+            # ``name`` would slip through every other field-level assert.
+            assert f.name == desc.name, f"{f.name!r} name drift"
             assert f.backend == desc.backend
             assert f.stage == desc.stage
             assert f.kind == desc.kind

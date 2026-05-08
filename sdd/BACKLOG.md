@@ -104,13 +104,13 @@ and the highest ID already in this file, then take the next integer. Run
   and `[azure_live_async-copy]`. Errors at
   `src/remote_store/aio/backends/_azure.py:899/937/1068`. Same defect
   family as BUG-195/BUG-197/BUG-190: missing `hdi_isfolder` probe before
-  the SDK call. **Sync variant status uncertain — BK-185 caveat:** the
-  sync test `test_errors.py::TestMoveCopyErrorFidelity::test_source_is_directory_raises_error[azure_live]`
-  (and the destination-is-directory sibling) calls `_skip_flat_namespace`,
-  which silent-skips `azure_live` because `AzureBackend.name == "azure"`
-  is in `_FLAT_NAMESPACE_BACKENDS`. Re-verify once BK-185 lifts the
-  identity-based gate; the sync side may also need the same fix.
-  Fix: add the directory probe to the async `move`/`copy` paths.
+  the SDK call. **Sync variant now exercised:** BK-186 PR 1 lifted the
+  identity-based gate — `_skip_flat_namespace` now reads the per-fixture
+  `flat_namespace` flag (false for `azure_live` HNS), so the sync siblings
+  in `test_errors.py::TestMoveCopyErrorFidelity` no longer silent-skip on
+  Stage 3. Re-verify the sync side on the next Stage 3 run; the same fix
+  shape likely applies. Fix: add the directory probe to the async
+  `move`/`copy` paths.
   Spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024.
 
 - [ ] **BUG-199 — `AzureBackend.get_folder_info` recursive `file_count` includes HNS directory blobs as files (sync + async)**
@@ -135,12 +135,13 @@ and the highest ID already in this file, then take the next integer. Run
   `test_delete_folder_on_file_missing_ok_still_raises[azure_live_async]`,
   and `tests/backends/conformance/test_async_extended.py::TestGetFolderInfoErrorFidelity::test_get_folder_info_on_file_raises_error[azure_live_async]`.
   Errors at `src/remote_store/aio/backends/_azure.py:640` (delete_folder)
-  and `:829` (get_folder_info). **Sync variant status uncertain — BK-185
-  caveat:** the sync siblings in `test_errors.py::TestDeleteFolderErrorFidelity`
-  and `TestGetFolderInfoErrorFidelity` call `_skip_flat_namespace`, which
-  silent-skips `azure_live` because `AzureBackend.name == "azure"` is in
-  `_FLAT_NAMESPACE_BACKENDS`. Re-verify once BK-185 lifts the
-  identity-based gate; the sync side may share the defect.
+  and `:829` (get_folder_info). **Sync variant now exercised:** BK-186
+  PR 1 lifted the identity-based gate — `_skip_flat_namespace` now reads
+  the per-fixture `flat_namespace` flag (false for `azure_live` HNS), so
+  the sync siblings in `test_errors.py::TestDeleteFolderErrorFidelity`
+  and `TestGetFolderInfoErrorFidelity` no longer silent-skip on Stage 3.
+  Re-verify the sync side on the next Stage 3 run; the same defect likely
+  surfaces.
   Same fix shape as BUG-195/BUG-197: detect the type mismatch before
   the SDK call and raise `InvalidPath`.
   Spec: BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017.
