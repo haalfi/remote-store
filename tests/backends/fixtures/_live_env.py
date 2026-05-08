@@ -28,9 +28,13 @@ The validator core is descriptor-driven: the per-fixture
 ``_loader.py`` carry the env-var names, and ``require_live_credentials``
 walks them. ``require_azure_live_connection_string`` is a thin
 backend-specific wrapper that adds the Azurite signature check and
-extracts the single connection-string value. BK-184's ``s3_live``
-fixture will add a sibling ``require_s3_live_credentials`` that wraps
-the same core with MinIO-aware emulator signatures.
+extracts the single connection-string value. ``require_s3_live_credentials``
+is the S3 sibling: it validates the three AWS credential env vars through
+the descriptor-driven path (no per-value emulator check there, because
+``AWS_ACCESS_KEY_ID`` values don't embed endpoint URLs), then separately
+checks ``AWS_ENDPOINT_URL`` / ``AWS_S3_ENDPOINT_URL`` against
+``_S3_EMULATOR_FRAGMENTS`` — those vars are optional and absent from
+``live_creds_env``, so the guard lives outside the core walker.
 """
 
 from __future__ import annotations

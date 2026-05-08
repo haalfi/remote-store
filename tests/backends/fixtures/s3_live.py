@@ -101,7 +101,7 @@ def _factory() -> Backend:
 
     creds = require_s3_live_credentials()
     region = creds["AWS_DEFAULT_REGION"]
-    bucket = f"rs-conformance-{uuid.uuid4().hex[:8]}"
+    bucket = f"rs-conformance-{uuid.uuid4().hex[:12]}"
     client = boto3.client(
         "s3",
         aws_access_key_id=creds["AWS_ACCESS_KEY_ID"],
@@ -109,15 +109,23 @@ def _factory() -> Backend:
         region_name=region,
     )
     try:
-        client.create_bucket(
-            Bucket=bucket,
-            CreateBucketConfiguration={"LocationConstraint": region},
-        )
+        create_kwargs: dict = {"Bucket": bucket}
+        if region != "us-east-1":
+            create_kwargs["CreateBucketConfiguration"] = {"LocationConstraint": region}
+        client.create_bucket(**create_kwargs)
     except Exception:
         client.close()
         raise
-    backend = S3Backend(bucket=bucket)
-    _BUCKETS[id(backend)] = (bucket, client)
+    try:
+        backend = S3Backend(bucket=bucket)
+        _BUCKETS[id(backend)] = (bucket, client)
+    except Exception:
+        try:
+            client.delete_bucket(Bucket=bucket)
+        except Exception:  # noqa: BLE001 -- best-effort on init failure
+            _LOG.warning("failed to delete bucket %s after S3Backend init failure", bucket, exc_info=True)
+        client.close()
+        raise
     return backend
 
 

@@ -156,6 +156,15 @@ class TestRegistryShape:
         assert isinstance(live_async.live_creds_env, tuple)
         assert live_async.live_creds_env == ("AZURE_STORAGE_CONNECTION_STRING",)
 
+        s3_live = fixtures_by_name["s3_live"]
+        assert s3_live.live_opt_in_env == "RS_TEST_LIVE_S3"
+        assert isinstance(s3_live.live_creds_env, tuple)
+        assert s3_live.live_creds_env == (
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+            "AWS_DEFAULT_REGION",
+        )
+
         # Non-live fixtures default to ``None`` / empty tuple — the
         # absence of a TOML key is meaningful.
         non_live = fixtures_by_name["memory"]
