@@ -9909,8 +9909,9 @@ hatch expects.</p>
 <a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>hatch<span class="w"> </span>run<span class="w"> </span>all<span class="w">    </span><span class="c1"># or run individual steps:</span>
 <a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>hatch<span class="w"> </span>run<span class="w"> </span>lint
 <a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>hatch<span class="w"> </span>run<span class="w"> </span>typecheck
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>hatch<span class="w"> </span>run<span class="w"> </span>test-cov
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>hatch<span class="w"> </span>run<span class="w"> </span>examples
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>hatch<span class="w"> </span>run<span class="w"> </span>test-cov<span class="w">         </span><span class="c1"># report coverage, no threshold (everyday local runner)</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>hatch<span class="w"> </span>run<span class="w"> </span>test-cov-strict<span class="w">  </span><span class="c1"># adds --cov-fail-under=95; needs Azurite for the Azure backends</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>hatch<span class="w"> </span>run<span class="w"> </span>examples
 </code></pre></div>
 <p>All dev scripts are defined in <code>pyproject.toml</code> under <code>[tool.hatch.envs.default.scripts]</code>. Run <code>hatch run</code> to see available commands.</p>
 <h3 id="migrating-an-existing-checkout">Migrating an existing checkout<a class="headerlink" href="#migrating-an-existing-checkout" title="Permanent link">&para;</a></h3>
@@ -10053,7 +10054,7 @@ errors.</p>
 <ul>
 <li>[ ] Master is clean: <code>git status</code> shows no uncommitted changes</li>
 <li>[ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)</li>
-<li>[ ] <code>hatch run all</code> passes <strong>locally</strong> (lint + format-check + typecheck + test-cov + examples). Local runs without Docker backends are stricter than CI for coverage — CI has Azurite which inflates Azure backend coverage, potentially masking gaps in new code</li>
+<li>[ ] <code>hatch run all</code> passes <strong>locally</strong> (lint + format-check + typecheck + test-cov-strict + examples). See CLAUDE.md § Coverage gate if the 95% threshold fails without Azurite running</li>
 <li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> — complete and move to <code>BACKLOG-DONE.md</code>, or defer (<code>[ ]</code>)</li>
 <li>[ ] <code>[Unreleased]</code> section in CHANGELOG.md is non-empty</li>
 <li>[ ] Decide bump level (patch / minor / major) per the table above</li>
@@ -10085,7 +10086,7 @@ errors.</p>
 </ul>
 <h3 id="phase-3-validate">Phase 3: Validate<a class="headerlink" href="#phase-3-validate" title="Permanent link">&para;</a></h3>
 <ul>
-<li>[ ] <code>hatch run all</code> passes (lint + format-check + typecheck + test-cov + examples)</li>
+<li>[ ] <code>hatch run all</code> passes (lint + format-check + typecheck + test-cov-strict + examples)</li>
 <li>[ ] <code>mkdocs build --strict</code> passes</li>
 <li>[ ] <code>python -m build &amp;&amp; twine check dist/*</code> — package builds cleanly</li>
 <li>[ ] <code>pip install dist/*.whl &amp;&amp; python -c "import remote_store; print(remote_store.__version__)"</code> — version matches</li>
