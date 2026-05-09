@@ -340,8 +340,15 @@ tests/
   test_path.py
   test_registry.py
   ...
+  ext/                           # mirrors src/remote_store/ext/. TEST-002.
+    test_arrow.py                # one file per ext module, naming matches src
+    test_batch.py
+    ...
+    test_contract.py             # namespace-wide contract (allow-listed; no ext/<x>.py pair)
   aio/                           # async variants of non-backend tests
     test_*.py
+    ext/                         # mirrors src/remote_store/aio/ext/
+      test_async_*.py
   backends/                      # the backend concern, self-contained
     conformance/                 # cross-backend parametrised tests. TEST-002.
       test_io.py

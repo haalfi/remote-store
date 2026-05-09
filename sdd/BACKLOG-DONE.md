@@ -8,6 +8,46 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-190 — tests/ root cleanup phase C: enforce + document**
+  Three CI-enforced placement rules in
+  `scripts/check_test_placement.py`, all derived from spec 048:
+  - **S** (existing): tests loading `scripts/` modules via `sys.path`
+    must live in `tests/scripts/`.
+  - **B** (new): top-level `tests/test_*.py` may import from
+    `remote_store.backends._*` only `_memory`, `_local`, `_fileinfo`
+    (the in-process backends and the shared `FileInfo` helper). Concrete
+    cloud / network classes (`AzureBackend`, `S3Backend`,
+    `S3PyArrowBackend`, `SFTPBackend`, `SQLBlobBackend`,
+    `SQLQueryBackend`, `ReadOnlyHttpBackend`, async siblings) imported
+    via either the private module path or the public
+    `remote_store.backends` namespace are TEST-003 violations. A
+    grandfathered allow-list inside the script covers seven existing
+    cross-cutting files (`test_config.py`, `test_coverage_gaps.py`,
+    `test_depth_listing.py`, `test_examples.py`,
+    `test_pbt_write_result.py`, `test_ping.py`, `test_seekable.py`); each
+    also imports `MemoryBackend` or `LocalBackend` and exercises a
+    cross-protocol feature. Their per-file migration / split is tracked
+    as **BK-191**. New top-level files are held to the strict standard.
+  - **E** (new): top-level `tests/test_ext_*.py` is banned, and every
+    `tests/ext/test_<x>.py` must have a matching
+    `src/remote_store/ext/<x>.py`. The single namespace-wide contract
+    (`tests/ext/test_contract.py`) is on a small allow-list inside the
+    script.
+  Three new scope checks under
+  `tests/scripts/test_check_test_placement.py`
+  (`TestBackendImportsAtRoot`, `TestRootExtNaming`, `TestExtOrphans`)
+  cover all positive and negative paths plus the grandfather skip and
+  the contract allow-list. `sdd/TESTING.md` § Test Subpackage Placement
+  table extended with the `tests/ext/` row, the `tests/aio/ext/` row,
+  and the new naming column; rule prose lists the three rules with the
+  grandfathered file roster. `sdd/specs/048-testing-architecture.md`
+  TEST-010 directory-layout snippet updated to show `tests/ext/` and
+  `tests/aio/ext/`. BK-182 and BK-177 re-scoped to current paths
+  (`tests/backends/azure/test_live_hns.py` and
+  `tests/backends/conformance/test_atomic.py::TestMoveCopySelfOperation`
+  respectively); the legacy paths they referenced no longer exist.
+  Spec: TEST-002, TEST-003, TEST-010.
+
 - [x] **BK-189 — tests/ root cleanup phase B: `tests/ext/` package + ext-module moves**
   Mirrors `src/remote_store/ext/`'s layout (the async sibling at
   `tests/aio/ext/` already followed this shape). Created

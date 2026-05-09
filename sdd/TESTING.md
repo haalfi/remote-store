@@ -18,20 +18,39 @@ Each test file belongs in the subpackage matching its subject. The layout
 below reflects spec 048 / [TEST-010](specs/048-testing-architecture.md);
 that spec is the canonical reference.
 
-| Subject | Subpackage |
-|---------|------------|
-| Library source (`src/remote_store/`) | `tests/` root |
-| Async cross-cutting tests (drift guard, adapters, async Store/Backend ABC, ext) | `tests/aio/` |
-| Cross-backend conformance (parametrised over the registry) | `tests/backends/conformance/` |
-| Backend-specific tests (one home per backend, sync + per-backend `aio/`) | `tests/backends/<backend>/` |
-| Backend fixture registry + per-backend factories | `tests/backends/fixtures/` |
-| HTTP cassettes (BK-181 onward; HTTP-transport backends only) | `tests/backends/cassettes/<backend>/` |
-| End-to-end workflow tests (require Docker services) | `tests/e2e/` |
-| `scripts/` utilities and build tooling | `tests/scripts/` |
+| Subject | Subpackage | Naming |
+|---------|------------|--------|
+| Core library source (`src/remote_store/_<x>.py`) | `tests/` root | `test_<x>.py` (or feature-named for cross-cutting) |
+| Sync ext-module source (`src/remote_store/ext/<x>.py`) | `tests/ext/` | `test_<x>.py` (no `ext_` prefix; mirrors src layout) |
+| Async ext-module source (`src/remote_store/aio/ext/<x>.py`) | `tests/aio/ext/` | `test_async_<x>.py` |
+| Async cross-cutting tests (drift guard, adapters, async Store/Backend ABC) | `tests/aio/` | `test_async_*.py` |
+| Cross-backend conformance (parametrised over the registry) | `tests/backends/conformance/` | per spec 048 TEST-002 |
+| Backend-specific tests (one home per backend, sync + per-backend `aio/`) | `tests/backends/<backend>/` | per spec 048 TEST-003 / TEST-010 |
+| Backend fixture registry + per-backend factories | `tests/backends/fixtures/` | — |
+| HTTP cassettes (BK-181 onward; HTTP-transport backends only) | `tests/backends/cassettes/<backend>/` | — |
+| End-to-end workflow tests (require Docker services) | `tests/e2e/` | — |
+| `scripts/` utilities and build tooling | `tests/scripts/` | `test_<script>.py` |
 
-Tests that load modules from `scripts/` via `sys.path` manipulation must live
-in `tests/scripts/`. The `check-test-placement` lint enforces this for `sys.path`
-patterns; tests using `importlib.util.spec_from_file_location` are review-enforced.
+The `check-test-placement` lint
+([`scripts/check_test_placement.py`](../scripts/check_test_placement.py))
+enforces three rules at CI time, all derived from spec 048:
+
+- **S** — tests that load modules from `scripts/` via `sys.path` manipulation
+  must live in `tests/scripts/`. Tests using
+  `importlib.util.spec_from_file_location` are review-enforced.
+- **B** — top-level `tests/test_*.py` may import from `remote_store.backends`
+  only the in-process backends (`MemoryBackend`, `LocalBackend`, plus the
+  shared `_fileinfo` helper). Concrete cloud / network backends (Azure / S3
+  / SFTP / SQL / HTTP) belong under `tests/backends/<backend>/` per
+  TEST-003. A grandfathered allow-list inside the script covers cross-cutting
+  legacy files (`test_config.py`, `test_coverage_gaps.py`, `test_depth_listing.py`,
+  `test_examples.py`, `test_pbt_write_result.py`, `test_ping.py`,
+  `test_seekable.py`); their migration is tracked as a follow-up audit.
+- **E** — ext-module tests live at `tests/ext/test_<x>.py` (mirroring
+  `src/remote_store/ext/`). Top-level `tests/test_ext_*.py` is banned, and
+  every `tests/ext/test_<x>.py` must have a matching
+  `src/remote_store/ext/<x>.py`. The single namespace-wide contract test
+  (`tests/ext/test_contract.py`) is on the script's allow-list.
 
 ## Rules
 

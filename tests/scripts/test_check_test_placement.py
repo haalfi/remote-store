@@ -1,7 +1,13 @@
 """Unit tests for scripts/check_test_placement.py.
 
-Exercises both detection paths (variable-name match and string-literal match),
-the AnnAssign handling, and the false-positive guard on the index slot.
+Exercises all three placement rules:
+
+S — scripts/ sys.path: variable-name match, string-literal match,
+    AnnAssign handling, and the false-positive guard on the index slot.
+B — backend imports at root: TEST-003 enforcement and the BK-190
+    grandfathered allow-list.
+E — ext placement: ``test_ext_*.py`` ban at root and the ext-source
+    matching contract under ``tests/ext/``.
 """
 
 from __future__ import annotations
@@ -28,6 +34,9 @@ _mod = _load_module()
 _names_referencing_scripts = _mod._names_referencing_scripts
 _uses_scripts_sys_path = _mod._uses_scripts_sys_path
 _check_file = _mod._check_file
+_check_backend_imports_at_root = _mod._check_backend_imports_at_root
+_check_root_ext_naming = _mod._check_root_ext_naming
+_check_ext_orphans = _mod._check_ext_orphans
 main = _mod.main
 
 
@@ -213,3 +222,149 @@ class TestMain:
         f = tmp_path / "test_ok.py"
         f.write_text("def test_simple():\n    assert 1 + 1 == 2\n", encoding="utf-8")
         assert main([str(tmp_path)]) == 0
+
+
+# ---------------------------------------------------------------------------
+# Rule B — backend imports at root (TEST-003)
+# ---------------------------------------------------------------------------
+
+
+_AZURE_AT_ROOT = """\
+from remote_store.backends._azure import AzureBackend
+
+def test_uses_azure():
+    assert AzureBackend is not None
+"""
+
+_S3_PUBLIC_IMPORT = """\
+from remote_store.backends import S3Backend
+
+def test_uses_s3():
+    assert S3Backend is not None
+"""
+
+_MEMORY_OK = """\
+from remote_store.backends._memory import MemoryBackend
+
+def test_memory_only():
+    assert MemoryBackend() is not None
+"""
+
+_LOCAL_OK = """\
+from remote_store.backends._local import LocalBackend
+
+def test_local_only():
+    assert LocalBackend is not None
+"""
+
+_FILEINFO_OK = """\
+from remote_store.backends._fileinfo import build_file_info
+
+def test_fileinfo():
+    assert build_file_info is not None
+"""
+
+
+class TestBackendImportsAtRoot:
+    def test_flags_private_module_import(self, tmp_path):
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_AZURE_AT_ROOT, encoding="utf-8")
+        violations = _check_backend_imports_at_root(f)
+        assert len(violations) == 1
+        assert "remote_store.backends._azure" in violations[0]
+        assert "TEST-003" in violations[0]
+
+    def test_flags_public_concrete_class_import(self, tmp_path):
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_S3_PUBLIC_IMPORT, encoding="utf-8")
+        violations = _check_backend_imports_at_root(f)
+        assert len(violations) == 1
+        assert "S3Backend" in violations[0]
+
+    def test_allows_memory(self, tmp_path):
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_MEMORY_OK, encoding="utf-8")
+        assert _check_backend_imports_at_root(f) == []
+
+    def test_allows_local(self, tmp_path):
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_LOCAL_OK, encoding="utf-8")
+        assert _check_backend_imports_at_root(f) == []
+
+    def test_allows_fileinfo_helper(self, tmp_path):
+        # _fileinfo is a backend helper module, not a backend per se.
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_FILEINFO_OK, encoding="utf-8")
+        assert _check_backend_imports_at_root(f) == []
+
+    def test_grandfathered_files_skipped(self, tmp_path):
+        # A grandfathered name on a path that imports a banned backend must
+        # still report no violations — the BK-190 audit owns the migration.
+        f = tmp_path / "test_seekable.py"
+        f.write_text(_AZURE_AT_ROOT, encoding="utf-8")
+        assert _check_backend_imports_at_root(f) == []
+
+    def test_main_flags_new_root_violation(self, tmp_path):
+        bad = tmp_path / "test_new_module.py"
+        bad.write_text(_AZURE_AT_ROOT, encoding="utf-8")
+        rc = main([str(tmp_path)], src_root=tmp_path / "missing_src")
+        assert rc == 1
+
+
+# ---------------------------------------------------------------------------
+# Rule E — ext placement (TEST-002 / TEST-010)
+# ---------------------------------------------------------------------------
+
+
+class TestRootExtNaming:
+    def test_flags_root_test_ext_prefix(self, tmp_path):
+        bad = tmp_path / "test_ext_foo.py"
+        bad.write_text("def test_x(): assert True\n", encoding="utf-8")
+        violations = _check_root_ext_naming(tmp_path)
+        assert len(violations) == 1
+        assert "test_ext_foo.py" in violations[0]
+        assert "tests/ext/test_foo.py" in violations[0]
+
+    def test_clean_root_returns_empty(self, tmp_path):
+        (tmp_path / "test_seekable.py").write_text("", encoding="utf-8")
+        assert _check_root_ext_naming(tmp_path) == []
+
+
+class TestExtOrphans:
+    def _setup_src(self, tmp_path: Path, modules: list[str]) -> Path:
+        src = tmp_path / "src"
+        ext = src / "ext"
+        ext.mkdir(parents=True)
+        for m in modules:
+            (ext / f"{m}.py").write_text("", encoding="utf-8")
+        return src
+
+    def test_flags_unmatched_ext_test(self, tmp_path):
+        src_root = self._setup_src(tmp_path, ["arrow"])
+        ext_tests = tmp_path / "tests" / "ext"
+        ext_tests.mkdir(parents=True)
+        (ext_tests / "test_arrow.py").write_text("", encoding="utf-8")
+        (ext_tests / "test_typo.py").write_text("", encoding="utf-8")
+        violations = _check_ext_orphans(tmp_path / "tests", src_root)
+        assert len(violations) == 1
+        assert "test_typo.py" in violations[0]
+        assert "no matching src/remote_store/ext/typo.py" in violations[0]
+
+    def test_allows_namespace_contract_test(self, tmp_path):
+        src_root = self._setup_src(tmp_path, [])
+        ext_tests = tmp_path / "tests" / "ext"
+        ext_tests.mkdir(parents=True)
+        (ext_tests / "test_contract.py").write_text("", encoding="utf-8")
+        assert _check_ext_orphans(tmp_path / "tests", src_root) == []
+
+    def test_no_ext_dir_returns_empty(self, tmp_path):
+        src_root = self._setup_src(tmp_path, [])
+        assert _check_ext_orphans(tmp_path / "tests", src_root) == []
+
+    def test_main_flags_ext_violations(self, tmp_path):
+        src_root = self._setup_src(tmp_path, [])
+        ext_tests = tmp_path / "tests" / "ext"
+        ext_tests.mkdir(parents=True)
+        (ext_tests / "test_orphan.py").write_text("", encoding="utf-8")
+        rc = main([str(tmp_path / "tests")], src_root=src_root)
+        assert rc == 1

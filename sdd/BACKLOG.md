@@ -203,36 +203,39 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-190 — tests/ root cleanup phase C: enforce + document**
-  Wire automated checks for the placement contract that BK-188 (phase A)
-  and BK-189 (phase B) settle. Extend `scripts/check_test_placement.py`
-  with three rules: (1) top-level `tests/test_*.py` may import only
-  `MemoryBackend` and `LocalBackend` from `remote_store.backends.*` —
-  any other concrete backend import is a TEST-003 violation; (2)
-  `tests/ext/test_<x>.py` requires a matching
-  `src/remote_store/ext/<x>.py` (allow-list: `test_contract.py`); (3)
-  ban top-level `tests/test_ext_*.py` so ext tests cannot regress out of
-  `tests/ext/`. Cover each rule under
-  `tests/scripts/test_check_test_placement.py`. Update
-  `sdd/TESTING.md` § Test Subpackage Placement table to add `tests/ext/`
-  rows and the new naming rule, and update `sdd/specs/048-testing-architecture.md`
-  TEST-010 directory-layout snippet to show `tests/ext/`. Re-scope or
-  close BK-182 (legacy live-HNS paths gone) and BK-177 (sync extended
-  conformance now lives at `tests/backends/conformance/test_errors.py`).
-  Spec: TEST-002, TEST-003, TEST-010.
+- [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
+  BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
+  `tests/` root) but grandfathers seven legacy files that import multiple
+  cloud backends to verify cross-cutting features:
+  `test_config.py` (config-loader construction across backends),
+  `test_coverage_gaps.py` (explicit module-level coverage padding),
+  `test_depth_listing.py` (depth-limited listing across backends),
+  `test_examples.py` (example demos), `test_pbt_write_result.py` (PBT
+  oracle), `test_ping.py` (ping/health-check across protocols),
+  `test_seekable.py` (Store.read_seekable across backends).
+  For each file, decide: (a) move backend-specific assertions to
+  `tests/backends/<backend>/`, (b) reshape into conformance parametrize
+  (`tests/backends/conformance/`), or (c) keep at root if genuinely
+  cross-cutting and document why. `test_coverage_gaps.py` is the most
+  obvious candidate for split — its sections are explicit per-backend
+  coverage padding. Each file removed from the allow-list closes part of
+  this item. Spec: TEST-003, TEST-010.
 
-- [ ] **BK-182 — Shrink legacy `test_azure_live_hns.py` per Spec 048**
-  Once BK-179, BK-180, and BK-181 land, the hand-written live HNS suites
-  (`tests/backends/test_azure_live_hns.py`, `tests/aio/test_async_azure_live_hns.py`,
-  ~1,840 lines combined) duplicate ~40 % of conformance against a real ADLS Gen2
-  account. After conformance parametrizes over `azure_live` (BK-180) and
-  `azure_replay` (BK-181), delete the duplicated happy-path cases and keep only
-  HNS-unique tests under `tests/backends/azure/test_hns.py`: DFS AsyncIterator
-  protocol (BUG-194 regression guard), etag normalisation cross-check
+- [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
+  Originally targeted the now-removed top-level
+  `tests/backends/test_azure_live_hns.py` /
+  `tests/aio/test_async_azure_live_hns.py` pair; BK-179's reorg moved them
+  to `tests/backends/azure/test_live_hns.py` and
+  `tests/backends/azure/aio/test_live_hns.py`. BK-180 added live `azure_live`
+  / `azure_live_async` conformance fixtures, so most happy-path coverage
+  in the moved files is now duplicated against a real ADLS Gen2 account.
+  Once BK-181 lands HTTP cassette/replay, delete the duplicated cases and
+  keep only HNS-unique tests at the new paths: DFS AsyncIterator protocol
+  (BUG-194 regression guard), etag normalisation cross-check
   (`get_file_properties` vs `get_file_info`), directory-blob `hdi_isfolder`
-  probes, and any remaining deviation guards. Async equivalents follow under
-  `tests/backends/azure/aio/test_hns.py` only where sync/async behaviour
-  differs. Spec: TEST-002, TEST-003.
+  probes, and any remaining deviation guards. Async equivalents stay under
+  `tests/backends/azure/aio/test_live_hns.py` only where sync / async
+  behaviour differs. Spec: TEST-002, TEST-003.
 
 - [ ] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
   Add `<backend>_replay` Stage 1 fixtures for HTTP-transport backends
@@ -261,9 +264,14 @@ and the highest ID already in this file, then take the next integer. Run
   `get_file_info` and through `write` → `list_files` for the native async
   backend. Spec: ASYNC-016 § metadata round-trip.
 
-- [ ] **BK-177 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/test_conformance_extended.py`**
-  Two TESTING.md alignments to apply on the sync extended-conformance suite,
-  mirroring fixes that landed in the async mirror via PR #580:
+- [ ] **BK-177 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/conformance/test_atomic.py`**
+  Two TESTING.md alignments to apply on the sync side of
+  `TestMoveCopySelfOperation`, mirroring fixes that landed in the async
+  mirror (`tests/backends/conformance/test_async_extended.py`) via PR #580.
+  Originally referenced the now-removed
+  `tests/backends/test_conformance_extended.py`; BK-179's split moved the
+  self-op tests into
+  `tests/backends/conformance/test_atomic.py::TestMoveCopySelfOperation`.
   1. **Parametrize `TestMoveCopySelfOperation`.** The sync class has five
      near-duplicate methods that differ only in `op ∈ {move, copy}` and
      `overwrite ∈ {True, False}` — a TESTING.md Rule 7 violation. The async
@@ -277,7 +285,7 @@ and the highest ID already in this file, then take the next integer. Run
      async mirror was tightened in PR #580.
   No spec change; marker tags (`BE-018`, `BE-019`, the BE counterpart of
   `ASYNC-047`) stay on the parametrized methods. Verify behavior unchanged
-  via `hatch run pytest tests/backends/test_conformance_extended.py -k SelfOperation`.
+  via `hatch run pytest tests/backends/conformance/test_atomic.py -k SelfOperation`.
 
 ---
 
