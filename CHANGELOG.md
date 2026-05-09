@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-188: tests/ root cleanup — backend-specific evictions and seekable rename (TEST-003 / TEST-010)
 - BK-184: s3_live Stage 3 conformance fixture
 - BK-186: physical fixture/backend registry as single source of truth (PR 1 foundation, PR 2 consumers)
 - BK-185: per-fixture flat-namespace / self-op flags replace the identity-keyed sets

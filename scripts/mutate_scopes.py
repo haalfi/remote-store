@@ -126,12 +126,12 @@ def _build() -> dict[str, Scope]:
     out: dict[str, Scope] = {}
     matched_tests: set[str] = set()
 
-    # Per-file non-backend scopes: each src/remote_store/_<x>.py,
-    # src/remote_store/ext/<x>.py, and src/remote_store/backends/_<x>.py
-    # paired with prefix-matching test files at tests/test_<x>*.py. The
-    # third loop catches `backends/_memory.py` paired with
-    # `test_memory_coverage.py`; other backend src files have no
-    # top-level test and roll into ``backends-*`` instead.
+    # Per-file non-backend scopes: each src/remote_store/_<x>.py and
+    # src/remote_store/ext/<x>.py paired with prefix-matching test files
+    # at tests/test_<x>*.py. The ``backends/_<x>.py`` loop currently
+    # produces no scopes — every backend src file is claimed by a
+    # ``backends-*`` transport scope and any backend-specific top-level
+    # test has been migrated under ``tests/backends/<backend>/``.
     def _add_per_file(p: Path, scope_name: str, src_rel: str, *, ext_prefix: bool) -> None:
         stem = p.stem.lstrip("_")
         tests = _matching_tests(stem, ext_prefix=ext_prefix)

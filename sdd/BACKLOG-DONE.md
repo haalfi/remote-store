@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-188 — tests/ root cleanup phase A: backend-specific evictions + seekable rename**
+  Three TEST-003 / TEST-010 placement fixes at `tests/` root, each a pure
+  move with no behaviour change:
+  - `tests/test_memory_coverage.py` → `tests/backends/memory/test_coverage.py`
+    (covers `backends/_memory.py` MemoryBackend internals — TEST-003 home).
+  - `tests/test_tls_ca_bundle.py` → `tests/backends/s3/test_tls_ca_bundle.py`
+    (covers `backends/_s3_base.py` `_resolve_tls_ca_bundle` /
+    `_validate_tls_ca_bundle` — S3-only).
+  - `tests/test_ext_seekable.py` → `tests/test_seekable.py` (subject is
+    `Store.read_seekable()` on the core `Store` API per spec 036
+    SEEK-001..SEEK-012, not an ext module — drop misleading `ext_`
+    prefix).
+  `scripts/mutate_scopes.py`'s `core-memory` per-file scope folds away
+  (no top-level test paired with `backends/_memory.py` after the move);
+  the moved file is picked up by the existing `backends-memory` /
+  `backends-http` transport scopes via the registry walk. Comment in
+  `_add_per_file` updated to match. Phases B (`tests/ext/` package) and
+  C (placement checks + TESTING.md / spec 048 update) follow under
+  BK-189 / BK-190. Spec: TEST-003, TEST-010.
+
 - [x] **BK-184 — `s3_live` Stage 3 conformance fixture**
   Per-call fresh bucket (`rs-conformance-<uuid>`), mirroring `azure_live.py` shape.
   Files: `fixtures.toml` `[fixture.s3_live]`, `_live_env.require_s3_live_credentials`,
