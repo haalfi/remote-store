@@ -221,30 +221,6 @@ and the highest ID already in this file, then take the next integer. Run
   conformance now lives at `tests/backends/conformance/test_errors.py`).
   Spec: TEST-002, TEST-003, TEST-010.
 
-- [ ] **BK-189 — tests/ root cleanup phase B: `tests/ext/` package + ext-module moves**
-  Create `tests/ext/__init__.py` and migrate all 15 ext-module test
-  files plus the namespace-contract test under it, mirroring
-  `src/remote_store/ext/`'s layout (the async sibling at `tests/aio/ext/`
-  already follows this shape). Rename to drop the inconsistent
-  `test_ext_` prefix: 11 bare-named files (`test_arrow.py`,
-  `test_batch.py`, `test_cache.py`, `test_dagster.py`, `test_glob.py`
-  ext portion, `test_integrity.py`, `test_observe.py`, `test_otel.py`,
-  `test_partition.py`, `test_streams.py`, `test_transfer.py`) move
-  unchanged in name; 4 prefixed (`test_ext_parquet.py`,
-  `test_ext_pydantic.py`, `test_ext_write.py`, `test_ext_yaml.py`) lose
-  the prefix; `test_ext_contract.py` becomes
-  `tests/ext/test_contract.py`. `tests/test_glob.py` splits: core
-  `_glob` helpers and `Store.glob`/`Backend.glob` (Tier 1+2) stay at
-  root, `ext.glob.glob_files` (Tier 3) moves to `tests/ext/test_glob.py`.
-  Update `scripts/mutate_scopes.py`: replace the dual
-  `tests/test_<name>*.py` + `tests/test_ext_<name>*.py` glob in
-  `_add_per_file` with `tests/ext/test_<name>.py` for ext sources, drop
-  the `ext_prefix=True` knob, and add an `ext-misc` orphan-catch for
-  `tests/ext/test_*.py` files with no matching ext source (covers
-  `test_contract.py`). Update
-  `tests/scripts/test_mutate_scopes.py` expectations. No naming or
-  enforcement changes — that ships in BK-190. Spec: TEST-002, TEST-010.
-
 - [ ] **BK-182 — Shrink legacy `test_azure_live_hns.py` per Spec 048**
   Once BK-179, BK-180, and BK-181 land, the hand-written live HNS suites
   (`tests/backends/test_azure_live_hns.py`, `tests/aio/test_async_azure_live_hns.py`,

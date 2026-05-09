@@ -16,8 +16,7 @@ from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
 from remote_store.ext.streams import ProgressReader
 from remote_store.ext.transfer import download, transfer, upload
-
-from .conftest import RestrictedBackend
+from tests.conftest import RestrictedBackend
 
 # ---------------------------------------------------------------------------
 # Helpers

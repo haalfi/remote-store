@@ -1,8 +1,13 @@
-"""Tests for glob -- three-tier pattern matching.
+"""Tests for core glob -- Tier 1 + Tier 2 + internal helpers.
 
 Tier 1: Store.list_files(pattern=...) -- fnmatch name filtering (GLOB-001)
+Tier 1b: Store.list_folders(pattern=...) -- fnmatch name filtering (STORE-017)
 Tier 2: Store.glob() / Backend.glob() -- native glob (GLOB-002 through GLOB-008)
-Tier 3: ext.glob.glob_files() -- portable fallback (GLOB-009 through GLOB-017)
+Internal helpers (`_glob.py`): extract_prefix / needs_recursive /
+pattern_to_regex (GLOB-012 through GLOB-014).
+
+Tier 3 (`ext.glob.glob_files`) is exercised in
+``tests/ext/test_glob.py``.
 
 Covers spec 018-glob.md.
 """
@@ -13,13 +18,12 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from remote_store._capabilities import Capability, CapabilitySet
+from remote_store._capabilities import Capability
 from remote_store._errors import CapabilityNotSupported
 from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
 from remote_store.backends._memory import MemoryBackend
-from remote_store.ext.glob import glob_files
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -265,90 +269,6 @@ class TestTier2NativeGlob:
         with pytest.raises(CapabilityNotSupported) as exc_info:
             list(mem_store.glob("*.csv"))
         assert exc_info.value.capability == "glob"
-
-
-# ===========================================================================
-# Tier 3: ext.glob -- GLOB-009..017
-# ===========================================================================
-
-
-class TestGlobFiles:
-    """glob_files() -- native delegation and fallback paths."""
-
-    @pytest.mark.spec("GLOB-010")
-    @pytest.mark.parametrize(
-        ("pattern", "expected"),
-        [
-            pytest.param("*.csv", ["report.csv"], id="star_csv"),
-            pytest.param("**/*.md", ["docs/guide.md", "docs/readme.md"], id="recursive_md"),
-        ],
-    )
-    def test_delegates_to_native(self, pop_local: Store, pattern: str, expected: list[str]) -> None:
-        results = sorted(str(f.path) for f in glob_files(pop_local, pattern))
-        assert results == expected
-
-    @pytest.mark.spec("GLOB-011")
-    @pytest.mark.parametrize(
-        ("pattern", "expected"),
-        [
-            pytest.param("*.csv", ["report.csv"], id="star_csv"),
-            pytest.param("*.txt", ["report.txt"], id="star_txt"),
-            pytest.param("docs/*.md", ["docs/guide.md", "docs/readme.md"], id="subdirectory"),
-            pytest.param("**/*.log", ["logs/app.log", "logs/archive/old.log", "logs/error.log"], id="recursive"),
-            pytest.param(
-                "logs/**/*.log", ["logs/app.log", "logs/archive/old.log", "logs/error.log"], id="double_star_middle"
-            ),
-            pytest.param("*.xyz", [], id="no_matches"),
-        ],
-    )
-    def test_fallback_patterns(self, mem_store: Store, pattern: str, expected: list[str]) -> None:
-        results = sorted(str(f.path) for f in glob_files(mem_store, pattern))
-        assert results == expected
-
-    @pytest.mark.spec("GLOB-011")
-    @pytest.mark.parametrize(
-        ("pattern", "count"),
-        [
-            pytest.param("**/*", 8, id="double_star_all"),
-            pytest.param("**", 8, id="bare_double_star"),
-        ],
-    )
-    def test_double_star_matches_all(self, mem_store: Store, pattern: str, count: int) -> None:
-        assert len(list(glob_files(mem_store, pattern))) == count
-
-    @pytest.mark.spec("GLOB-011")
-    def test_question_mark_wildcard(self) -> None:
-        store = Store(backend=MemoryBackend(), root_path="data")
-        for name, data in [("a1.txt", b"x"), ("a2.txt", b"y"), ("ab.txt", b"z")]:
-            store.write(name, data)
-        results = sorted(str(f.path) for f in glob_files(store, "a?.txt"))
-        assert results == ["a1.txt", "a2.txt", "ab.txt"]
-
-    @pytest.mark.spec("GLOB-016")
-    def test_list_capability_propagates(self) -> None:
-        class _NoListBackend(MemoryBackend):
-            @property
-            def capabilities(self) -> CapabilitySet:
-                return CapabilitySet({Capability.READ, Capability.WRITE, Capability.DELETE})
-
-        store = Store(backend=_NoListBackend())
-        with pytest.raises(CapabilityNotSupported):
-            list(glob_files(store, "*.txt"))
-
-    @pytest.mark.spec("GLOB-007")
-    @pytest.mark.parametrize(
-        ("child_path", "pattern", "expected"),
-        [
-            pytest.param("docs", "*.md", ["guide.md", "readme.md"], id="child_docs"),
-            pytest.param("logs", "**/*.log", ["app.log", "archive/old.log", "error.log"], id="child_logs_recursive"),
-        ],
-    )
-    def test_glob_files_with_child_store(
-        self, mem_store: Store, child_path: str, pattern: str, expected: list[str]
-    ) -> None:
-        child = mem_store.child(child_path)
-        results = sorted(str(f.path) for f in glob_files(child, pattern))
-        assert results == expected
 
 
 # ===========================================================================

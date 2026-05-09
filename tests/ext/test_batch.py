@@ -16,8 +16,7 @@ from remote_store._errors import (
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
 from remote_store.ext.batch import BatchResult, batch_copy, batch_delete, batch_exists
-
-from .conftest import RestrictedBackend
+from tests.conftest import RestrictedBackend
 
 # ---------------------------------------------------------------------------
 # Helpers & fixtures

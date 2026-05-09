@@ -14,7 +14,7 @@ import pytest
 
 import remote_store as _rs
 
-_SRC = Path(__file__).resolve().parent.parent / "src" / "remote_store"
+_SRC = Path(__file__).resolve().parent.parent.parent / "src" / "remote_store"
 
 # Public names available via `from remote_store import X` — used by the
 # private-import checker and validated by test_public_api_completeness.
