@@ -32,9 +32,13 @@ phases:
         read_type: gate
         extract: "WriteResult field contracts: source/size, etag normalisation, metadata echo, metadata persistence"
       - file: sdd/specs/012-azure-backend.md
-        section: "AZ-034, BE-008, BE-010, BE-021"
+        section: "AZ-034"
         read_type: gate
-        extract: "Azure etag; write/write_atomic postconditions; InvalidPath on directory path"
+        extract: "Azure etag normalisation on write/write_atomic"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008, BE-010, BE-021"
+        read_type: gate
+        extract: "Sync write/write_atomic postconditions; InvalidPath on directory path; canonical error mapping"
       - file: sdd/specs/029-async-store-backend-api.md
         section: "ASYNC-008, ASYNC-010"
         read_type: gate

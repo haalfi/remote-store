@@ -27,7 +27,7 @@ phases:
   - id: reproduce
     name: Reproduce
     steps:
-      - file: sdd/specs/001-store-api.md
+      - file: sdd/specs/045-write-result.md
         section: "WR-001a, WR-004"
         read_type: gate
         extract: "WriteResult source/size contract; etag normalisation invariant"

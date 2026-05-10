@@ -15,10 +15,6 @@ phases:
         section: "BE-021, BE-008, BE-010"
         read_type: gate
         extract: "InvalidPath on directory-path for write/write_atomic; postconditions"
-      - file: sdd/specs/007-atomic-writes.md
-        section: "SAW-001"
-        read_type: gate
-        extract: "Atomic write precondition: path must not name an existing directory"
 
   - id: tests
     name: Tests (live integration)
@@ -34,7 +30,7 @@ phases:
       - file: sdd/000-process.md
         section: "Test traceability"
         read_type: gate
-        extract: "@pytest.mark.spec(BE-021/BE-008/BE-010/SAW-001)"
+        extract: "@pytest.mark.spec(BE-021/BE-008/BE-010)"
 
   - id: docs
     name: Docs
