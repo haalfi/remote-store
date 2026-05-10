@@ -1,7 +1,7 @@
-"""Tests for core glob -- Tier 1 + Tier 2 + internal helpers.
+"""Tests for core glob: Tier 1 + Tier 2 + internal helpers.
 
 Tier 1: Store.list_files(pattern=...) -- fnmatch name filtering (GLOB-001)
-Tier 1b: Store.list_folders(pattern=...) -- fnmatch name filtering (STORE-017)
+Tier 1b: Store.list_folders(pattern=...) (STORE-017)
 Tier 2: Store.glob() / Backend.glob() -- native glob (GLOB-002 through GLOB-008)
 Internal helpers (`_glob.py`): extract_prefix / needs_recursive /
 pattern_to_regex (GLOB-012 through GLOB-014).

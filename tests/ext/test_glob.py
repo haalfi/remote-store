@@ -1,4 +1,4 @@
-"""Tests for ext.glob -- portable Tier 3 fallback for glob_files().
+"""Tests for ext.glob: portable Tier 3 fallback for glob_files().
 
 Tier 3 surface: ``glob_files`` signature, native delegation when the
 backend declares ``Capability.GLOB``, client-side fallback patterns, and
@@ -75,12 +75,12 @@ def pop_local(local_store: Store) -> Store:
 
 
 # ===========================================================================
-# Tier 3: ext.glob -- GLOB-009..017
+# Tier 3: ext.glob (GLOB-009..017)
 # ===========================================================================
 
 
 class TestGlobFiles:
-    """glob_files() -- native delegation and fallback paths."""
+    """glob_files(): native delegation and fallback paths."""
 
     @pytest.mark.spec("GLOB-010")
     @pytest.mark.parametrize(
