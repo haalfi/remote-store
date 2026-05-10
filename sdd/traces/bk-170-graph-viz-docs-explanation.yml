@@ -1,0 +1,45 @@
+id: BK-170
+title: "Host API graph visualization in docs Explanation section"
+trigger: "graph_viz.html lived under docs-src/_data/graph/ (a private MkDocs dir) so it was not reachable as a page in the rendered site navigation"
+source_items:
+  - BK-170
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/DOCUMENTATION.md
+        section: "1 (Diataxis placement)"
+        read_type: gate
+        extract: "Architecture/design content belongs under Explanation"
+      - file: sdd/DOCUMENTATION.md
+        section: "9 (Top-level nav structure)"
+        read_type: gate
+        extract: "Only four Diataxis quadrants at top level; Explanation is the right home"
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?"
+        read_type: gate
+        extract: "New companion page graph-ir.md is docs-only; docs-src/ is correct"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: docs-src/explanation/_nav.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Existing nav structure to insert after Architecture Overview"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1–6"
+        read_type: reference
+        extract: "6-month test on companion page prose; link to generated graph, not copy"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs navigation"
+        read_type: verify
+        extract: "Per-section _nav.yml updated; docs-src/_data/ and graph_viz.html excluded from context7 index"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

@@ -1,0 +1,49 @@
+id: BUG-186
+title: "API graph visualization blank on iOS Safari"
+trigger: "Four root causes in gen_graph_viz.py template: missing viewport meta, missing touch-action:none on SVG, missing viewBox combined with forceX/forceY constants, 100vh unstable under Safari dynamic URL bar"
+source_items:
+  - BUG-186
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Bug fix pipeline; reproduce before claiming fix"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "Add stub"
+
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: scripts/gen_graph_viz.py
+        section: "(full)"
+        read_type: gate
+        extract: "Template HTML/JS/CSS; forceX/forceY W0=1200 H0=800 design constants"
+      - file: tests/scripts/test_gen_graph_viz.py
+        section: "(full)"
+        read_type: reference
+        extract: "Existing golden test to update after fix"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting and types for script changes"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub"

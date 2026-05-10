@@ -1,0 +1,65 @@
+id: BK-175
+title: "Live HNS test architecture: design phase"
+trigger: "Azure HNS live tests needed a parametrize + cassette design; scope expanded to the full testing tree once the kind × stage axes were recognized as the right abstraction"
+source_items:
+  - BK-175
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 1: ship complete; principle 7: be critical"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Where do I…? / Propose a significant change"
+        read_type: gate
+        extract: "RFC in sdd/rfcs/ is the entry point for significant changes"
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: "Decision rule: RFC → spec + ADR once design is settled"
+
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/000-process.md
+        section: "Spec format"
+        read_type: gate
+        extract: "PREFIX-NNN skeleton for TEST-NNN IDs"
+      - file: sdd/templates/spec-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Spec starter structure"
+      - file: sdd/templates/adr-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "ADR starter structure"
+      - file: sdd/TESTING.md
+        section: "(full)"
+        read_type: reference
+        extract: "Existing testing quality rules to preserve and build on"
+
+  - id: write
+    name: Write spec and ADR
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "sdd/specs/*.md is dual by default; sdd/adrs/*.md is dual by default"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1–6"
+        read_type: reference
+        extract: "6-month test on spec invariants; principle over enumeration"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        read_type: verify
+        extract: "New spec + ADR: check sibling authority docs for back-references; update CLAUDE-REFERENCE.md ripple table if needed"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

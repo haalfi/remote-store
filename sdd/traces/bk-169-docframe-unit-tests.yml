@@ -1,0 +1,46 @@
+id: BK-169
+title: "Add unit tests for DOCFRAME-004 gate (G-02 through G-06)"
+trigger: "BK-167a implemented G-01..G-06 checks but deferred unit tests for G-02..G-06; tests ensure each gate fails precisely on its trigger condition"
+source_items:
+  - BK-169
+  - BK-167a
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/047-docs-framework-tooling.md
+        section: "DOCFRAME-004 / G-02, G-03, G-04, G-05, G-06"
+        read_type: gate
+        extract: "Exact trigger condition for each gate to test: dest collision, Jinja, include-markdown, broken repo link, URL nav misalignment"
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "tests/scripts/ for check_docs_framework.py tests"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(DOCFRAME-004) on all five tests"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: assert directly on _check_gXX return value; rule 6: tmp_path fixture tree as real dependency"
+      - file: sdd/DESIGN.md
+        section: "11 (Test style)"
+        read_type: reference
+        extract: "Class docstring references spec IDs; each method carries @pytest.mark.spec"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A spec section"
+        read_type: verify
+        extract: "DOCFRAME-004 now has tests; @pytest.mark.spec(DOCFRAME-004) wired"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub (internal tooling)"

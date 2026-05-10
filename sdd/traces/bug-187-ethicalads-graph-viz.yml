@@ -1,0 +1,42 @@
+id: BUG-187
+title: "EthicalAds floats over graph viz canvas on RTD"
+trigger: "graph_viz.html is a standalone <!DOCTYPE html> document; RTD's EthicalAds client had no MkDocs Material sidebar to anchor to and injected a floating div over the canvas"
+source_items:
+  - BUG-187
+  - BK-170
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Bug fix pipeline"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "Add stub"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: scripts/gen_graph_viz.py
+        section: "(full)"
+        read_type: reference
+        extract: "Template structure; #sidebar div location; RTD custom-placement hook"
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting and type annotations for script changes"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub"

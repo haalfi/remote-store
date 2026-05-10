@@ -1,0 +1,54 @@
+id: ID-177
+title: "Design and set up long-term docstring style enforcement"
+trigger: "RST inline roles (:class:, :meth:, etc.) found in docstrings during audit-013; no automated gate existed to prevent recurrence after BK-178 manual fixes"
+source_items:
+  - ID-177
+  - BK-178
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/DESIGN.md
+        section: "4 (Docstrings)"
+        read_type: gate
+        extract: "RST role ban; double-backtick as correct inline code form"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Where do I…? / Check or update code style conventions"
+        read_type: reference
+        extract: "Confirm sdd/DESIGN.md is the right place to document the gate"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: reference
+        extract: "Existing hatch run lint definition to extend"
+      - file: sdd/DESIGN.md
+        section: "1 (Formatting & Linting)"
+        read_type: gate
+        extract: "Pattern for wiring new checks into hatch run lint"
+
+  - id: document
+    name: Document gate
+    steps:
+      - file: sdd/DESIGN.md
+        section: "4 (Docstrings)"
+        read_type: gate
+        extract: "Section to update with gate description and bad/good examples"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1–6"
+        read_type: reference
+        extract: "6-month test: gate description must remain accurate"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        read_type: verify
+        extract: "DESIGN.md is an existing authority doc; ripple check for sibling back-references"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub (tooling, not user-facing API)"

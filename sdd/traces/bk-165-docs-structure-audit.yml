@@ -1,0 +1,57 @@
+id: BK-165
+title: "Docs structure audit for the post-ID-174 layout (audit phase)"
+trigger: "ID-174 reorganised the docs filesystem into a Diataxis layout; an audit was needed to verify the new structure against documentation quality rules before any further docs work"
+source_items:
+  - BK-165
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Audits"
+        read_type: gate
+        extract: "Report only; present findings with evidence; do not fix anything; user decides next steps"
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: "Audit category: systematic quality review; permanent record; never edited after writing"
+      - file: sdd/templates/audit-template.md
+        section: "(full)"
+        read_type: gate
+        extract: "Audit file structure and required sections"
+
+  - id: audit
+    name: Audit
+    steps:
+      - file: sdd/DOCUMENTATION.md
+        section: "(full)"
+        read_type: gate
+        extract: "Rules 1–9: Diataxis placement, content homes, docstring completeness, cross-linking, README, typography, URL alignment, link integrity, nav structure"
+      - file: sdd/AUTHORING.md
+        section: "(full)"
+        read_type: gate
+        extract: "Classification, single home, on-disk links rules — audit against"
+      - file: sdd/CONTENT-RULES.md
+        section: "(full)"
+        read_type: gate
+        extract: "6-month test, principle over enumeration, one copy per fact — audit against"
+
+  - id: report
+    name: Report
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: reference
+        extract: "Confirm audit report is placed at sdd/audits/audit-012-docs-structure.md (dual by default)"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1–6"
+        read_type: gate
+        extract: "Apply content rules to the audit doc itself: principle over enumeration, 6-month test"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: verify
+        extract: "Move audit item to BACKLOG-DONE.md; follow-up items (BK-167) remain in BACKLOG.md"

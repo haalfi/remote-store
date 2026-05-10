@@ -1,0 +1,73 @@
+id: BUG-194
+title: "AsyncAzureBackend.write_atomic broken for all payloads on real ADLS Gen2"
+trigger: "_count_and_pass_hns wrapped bytes in an async generator; Azure SDK get_length() returns None for async generators causing flush_data(position=None) to omit required DFS query parameter; Azurite tolerated the missing position but real ADLS Gen2 did not"
+source_items:
+  - BUG-194
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Bug fix pipeline: write failing test before implementing fix"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: "Confirm item is tracked before touching code"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "Add stub before fix lands"
+
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: sdd/specs/001-store-api.md
+        section: "WR-001a, WR-004"
+        read_type: gate
+        extract: "WriteResult source/size contract; etag normalisation invariant"
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-003"
+        read_type: gate
+        extract: "Memory-bounded streaming: one chunk at a time, no full-buffer buffering"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-010, ASYNC-021"
+        read_type: gate
+        extract: "Async write contract; streaming anti-pattern prohibition"
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-034"
+        read_type: gate
+        extract: "Azure-specific etag normalisation on HNS write path"
+
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 6: async live test against real ADLS Gen2 as the oracle"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(WR-001a/WR-004/AZ-034/ASYNC-010/SIO-003/ASYNC-021)"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, docstrings for aio/backends/_azure.py changes"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, failing test, spec if bug contradicts invariant"

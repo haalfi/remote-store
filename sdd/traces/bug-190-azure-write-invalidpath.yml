@@ -1,0 +1,69 @@
+id: BUG-190
+title: "Azure write/write_atomic on directory path does not raise InvalidPath per BE-021/ASYNC-024"
+trigger: "AzureBackend and AsyncAzureBackend: get_blob_properties() succeeds for HNS dirs returning hdi_isfolder=true, causing AlreadyExists on overwrite=False or silent upload on overwrite=True instead of InvalidPath"
+source_items:
+  - BUG-190
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Bug fix pipeline; update spec if bug contradicts a spec invariant"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: "Confirm item tracked"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "Add stub"
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021, BE-008, BE-010"
+        read_type: gate
+        extract: "InvalidPath invariant for write/write_atomic when path names a directory"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-008, ASYNC-010, ASYNC-024"
+        read_type: gate
+        extract: "Async write/write_atomic contracts; ASYNC-024 mirrors BE-021 for async"
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: pytest.raises with match=; rule 4: spec= on MagicMock for HNS probe mocks"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(BE-008/BE-010/ASYNC-008/ASYNC-010/BE-021/ASYNC-024)"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, docstrings for backends/_azure.py and aio/backends/_azure.py"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, failing test, spec updated for ASYNC-024"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / An error type"
+        read_type: verify
+        extract: "InvalidPath: check all backends' error mapping; error docstring Raised by list"

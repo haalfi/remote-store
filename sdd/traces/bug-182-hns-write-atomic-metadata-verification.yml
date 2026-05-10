@@ -1,0 +1,53 @@
+id: BUG-182
+title: "Verify HNS write_atomic user metadata survives the atomic rename in integration"
+trigger: "BUG-181 verified metadata forwarding and WriteResult echo in unit tests but could not verify that ADLS Gen2 rename_file preserves user metadata — a service-side semantics question only a real account answers"
+source_items:
+  - BUG-182
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "Reproduce before claiming fix; verify behaviour not just signatures"
+      - file: CLAUDE.md
+        section: "Principles / Principle 6"
+        read_type: gate
+        extract: "Run it, don't just type-check it; reproduce bugs before claiming fixes"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-012, WR-013"
+        read_type: gate
+        extract: "Metadata echo in WriteResult.metadata; metadata persistence on rename"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-010"
+        read_type: gate
+        extract: "write_atomic postcondition: metadata must survive"
+
+  - id: tests
+    name: Tests (live integration)
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "Placement: tests/backends/test_azure_live_hns.py"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 6: real ADLS Gen2 as the oracle for service-side semantics"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(WR-013/BE-010)"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, test present"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A new test file"
+        read_type: verify
+        extract: "os_sensitive mark decision"

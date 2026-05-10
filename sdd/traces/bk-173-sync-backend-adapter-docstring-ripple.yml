@@ -1,0 +1,38 @@
+id: BK-173
+title: "Complete the four-layer async docstring ripple at SyncBackendAdapter"
+trigger: "BUG-189 PR review surfaced that the four-layer ripple chain (concrete backend → ABC → AsyncStore → SyncBackendAdapter) was applied through layer 3 but SyncBackendAdapter's I/O methods were left silent"
+source_items:
+  - BK-173
+  - BUG-189
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles / Principle 2"
+        read_type: gate
+        extract: "Verify beyond the diff: search every layer that references changed contracts"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "(full Raises: clauses on I/O methods)"
+        read_type: gate
+        extract: "Source of truth for Raises: content to mirror verbatim onto SyncBackendAdapter"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "4 (Docstrings)"
+        read_type: gate
+        extract: "Google style Raises: format; verbatim mirror discipline"
+      - file: sdd/DOCUMENTATION.md
+        section: "3 (Docstring completeness)"
+        read_type: gate
+        extract: "Public method requires Raises: section"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A public method signature"
+        read_type: verify
+        extract: "Raises: clauses on nine SyncBackendAdapter methods now mirror ABC verbatim"

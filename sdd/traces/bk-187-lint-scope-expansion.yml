@@ -1,0 +1,45 @@
+id: BK-187
+title: "Expand lint/format/typecheck scope to scripts/ and examples/"
+trigger: "scripts/ and examples/ were excluded from hatch run lint, format, and typecheck, allowing style drift and type errors to accumulate undetected"
+source_items:
+  - BK-187
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 3: repo describes reality at every commit"
+      - file: CLAUDE.md
+        section: "Dev commands"
+        read_type: gate
+        extract: "Current hatch run scripts and what they cover"
+      - file: sdd/DESIGN.md
+        section: "1 (Formatting & Linting)"
+        read_type: gate
+        extract: "Authoritative scope definition for ruff and mypy"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: reference
+        extract: "Existing lint/format/typecheck script definitions to extend"
+      - file: sdd/DESIGN.md
+        section: "1 (Formatting & Linting)"
+        read_type: reference
+        extract: "mypy strict mode requirement; ruff line-length 120"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: verify
+        extract: "Move item to BACKLOG-DONE.md"

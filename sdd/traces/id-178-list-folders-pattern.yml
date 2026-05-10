@@ -1,0 +1,105 @@
+id: ID-178
+title: "list_folders(pattern=…) — name-based glob filter"
+trigger: "list_files() had a pattern= keyword for name filtering but list_folders() did not, creating an inconsistent Store API surface"
+source_items:
+  - ID-178
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 1: ship complete; change is done when code/tests/docs/CHANGELOG are consistent"
+      - file: FEATURES.md
+        section: "Store API / LIST"
+        read_type: gate
+        extract: "Current list_folders signature and description"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A Store method"
+        read_type: gate
+        extract: "All artifacts to update for a new Store method"
+
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: spec before code; Rule 6: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS"
+      - file: sdd/000-process.md
+        section: "Spec format"
+        read_type: gate
+        extract: "STORE-NNN and DEPTH-NNN skeleton"
+      - file: sdd/specs/001-store-api.md
+        section: "(full)"
+        read_type: gate
+        extract: "Existing STORE-NNN IDs; list_files(pattern=) precedent (STORE-014)"
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "(full)"
+        read_type: gate
+        extract: "DEPTH-002 to amend for pattern= interaction with max_depth="
+      - file: sdd/rfcs/rfc-0013-list-folders-pattern.md
+        section: "(full)"
+        read_type: reference
+        extract: "Accepted RFC design decisions to implement faithfully"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "Placement for list_folders pattern tests in tests/ root"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rules 1, 4, 7: assertions, spec= on mocks, parametrize"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(STORE-017) and @pytest.mark.spec(DEPTH-002)"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, PEP 604 types, keyword-only flag, Google docstrings"
+      - file: sdd/DESIGN.md
+        section: "3 (Type annotations)"
+        read_type: gate
+        extract: "pattern: str | None = None — keyword-only, PEP 604"
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: sdd/DOCUMENTATION.md
+        section: "3 (Docstring completeness)"
+        read_type: gate
+        extract: "Public method: Args, Returns, Raises, Example all required"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1–6"
+        read_type: reference
+        extract: "6-month test; source-code examples from snippets/"
+      - file: FEATURES.md
+        section: "Store API / LIST"
+        read_type: gate
+        extract: "Update list_folders row with pattern= parameter"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A Store method"
+        read_type: verify
+        extract: "README Store API table, __init__.py __all__, specs, guides, CHANGELOG"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A public method signature"
+        read_type: verify
+        extract: "Docstring Args/Returns/Raises, examples that call it"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

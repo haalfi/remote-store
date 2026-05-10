@@ -1,0 +1,58 @@
+id: BK-172
+title: "Run S3-PyArrow tests against MinIO when pyarrow >= 24"
+trigger: "pyarrow >= 24 C++ S3 client rejects CompleteMultipartUpload response shape from ThreadedMotoServer with INTERNAL_FAILURE; MinIO returns a compatible shape"
+source_items:
+  - BK-172
+  - BK-168
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: FEATURES.md
+        section: "Backends / s3-pyarrow"
+        read_type: gate
+        extract: "S3PyArrowBackend capabilities and extra; understand what must keep working"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A dependency"
+        read_type: gate
+        extract: "pyproject.toml extras, README install instructions, docs prerequisites"
+      - file: sdd/specs/011-s3-pyarrow-backend.md
+        section: "S3PA-026"
+        read_type: gate
+        extract: "s3fs control-path contract; MinIO as equivalent oracle"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "tests/backends/conftest.py for _s3_pyarrow_available(); tests/backends/test_s3_pyarrow.py"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 6: prefer real MinIO over mock for pyarrow >= 24 path"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(S3PA-026)"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, docstrings for conftest and fixture changes"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A dependency"
+        read_type: verify
+        extract: "pyarrow < 25 cap lifted in pyproject.toml extras; README install unchanged"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"
