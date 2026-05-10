@@ -1,0 +1,62 @@
+id: BUG-192
+title: "AzureBackend.open_atomic HNS branch missing InvalidPath guard for directory paths"
+trigger: "open_atomic HNS branch only checked hdi_isfolder under overwrite=False and skipped it under overwrite=True, mirroring the pre-BUG-190 pattern for write/write_atomic"
+source_items:
+  - BUG-192
+  - BUG-190
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Bug fix pipeline"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: "Confirm item tracked"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "Add stub"
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021"
+        read_type: gate
+        extract: "InvalidPath must be raised when path names a directory for all write methods including open_atomic"
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: pytest.raises with match=; rule 4: spec= on MagicMock for HNS mocks"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(BE-021)"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, docstrings for backends/_azure.py changes"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, failing test before fix, spec if invariant contradicted"

@@ -1,0 +1,74 @@
+id: BK-186
+title: "Physical fixture/backend registry as single source of truth"
+trigger: "Identity-set constants (_FLAT_NAMESPACE_BACKENDS, _NO_SELF_OP_BACKENDS, _VALID_KINDS, etc.) scattered across test files instead of derived from one authoritative TOML registry"
+source_items:
+  - BK-186
+  - BK-185
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 4: single source of truth; principle 2: verify beyond the diff"
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-001, TEST-004, TEST-005, TEST-006, TEST-008, TEST-010"
+        read_type: gate
+        extract: "Fixture registry contract; transport-driven scope partitioning"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A spec section"
+        read_type: gate
+        extract: "Tests with @pytest.mark.spec must be updated when spec sections change"
+
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: spec must precede code; Rule 3: specs are authoritative"
+      - file: sdd/000-process.md
+        section: "Spec format"
+        read_type: reference
+        extract: "How to reference spec IDs in tests"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "Placement for fixture registry loader and per-backend factory modules"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rules 4, 6: spec= on mocks; prefer real fixtures over mocks"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(TEST-NNN) on all 14 spec-marker tests"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, module docstring, Google docstrings"
+      - file: sdd/DESIGN.md
+        section: "8 (Constants)"
+        read_type: reference
+        extract: "UPPER_SNAKE_CASE for public constants"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A spec section"
+        read_type: verify
+        extract: "All @pytest.mark.spec(TEST-NNN) tests updated"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

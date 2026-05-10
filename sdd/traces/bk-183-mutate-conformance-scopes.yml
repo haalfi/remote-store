@@ -1,0 +1,38 @@
+id: BK-183
+title: "Per-topic mutate-conformance-* scopes (Windows-compatible)"
+trigger: "Conformance tests in tests/backends/conformance/ were not included in any mutation scope, so a mutation killing only a conformance assertion survived undetected; naive directory inclusion exceeded Windows command-line length limit"
+source_items:
+  - BK-183
+  - BK-179
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-010"
+        read_type: gate
+        extract: "Conformance test layout; topic file breakdown"
+      - file: .github/workflows/mutation.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Existing scope definitions and aggregation structure to extend"
+      - file: scripts/mutate_scopes.py
+        section: "(full)"
+        read_type: reference
+        extract: "Scope definition format and source-file targeting"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting and type annotations for mutate_scopes.py changes"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

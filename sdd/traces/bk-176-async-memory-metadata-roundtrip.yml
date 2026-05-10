@@ -1,0 +1,70 @@
+id: BK-176
+title: "AsyncMemoryBackend metadata round-tripping parity with sync MemoryBackend"
+trigger: "AsyncMemoryBackend.get_file_info and three other FileInfo-constructing sites omitted metadata=node.metadata while sync MemoryBackend passed it through; surfaced as a review note during BUG-189 (which fixed error fidelity only)"
+source_items:
+  - BK-176
+  - BUG-189
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles / Principle 2"
+        read_type: gate
+        extract: "Verify beyond the diff: BUG-189 fixed error fidelity; metadata gap was out-of-scope and tracked separately"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-016"
+        read_type: gate
+        extract: "AsyncMemoryBackend metadata round-trip contract: get_file_info must return metadata written via write()"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-013"
+        read_type: gate
+        extract: "User metadata persistence: metadata= on write must survive through read-back paths"
+
+  - id: reproduce
+    name: Reproduce gap
+    steps:
+      - file: src/remote_store/backends/_memory.py
+        section: "get_file_info"
+        read_type: reference
+        extract: "Sync reference: metadata=node.metadata already present — the correct pattern to mirror"
+      - file: src/remote_store/aio/backends/_memory.py
+        section: "get_file_info, list_files, iter_children, _collect_files_from_snapshot"
+        read_type: gate
+        extract: "Four FileInfo-constructing sites missing metadata=node.metadata"
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "Placement: tests/backends/memory/aio/test_basics.py"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 7: parametrize over the four sites; rule 1: assert info.metadata == {...}"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(ASYNC-016/WR-013/ASYNC-014/ASYNC-029)"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, docstrings for aio/backends/_memory.py changes"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, failing test before fix"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

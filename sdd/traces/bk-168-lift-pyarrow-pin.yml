@@ -1,0 +1,41 @@
+id: BK-168
+title: "Lift pyarrow <24 pin; require moto >=5.2.0"
+trigger: "pyarrow 23 was blocked by moto multipart-checksum bugs fixed in moto 5.2.0; pin could be raised after adopting the fixed moto version"
+source_items:
+  - BK-168
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: FEATURES.md
+        section: "Install extras"
+        read_type: gate
+        extract: "Current s3-pyarrow, sql-query, and arrow extra definitions"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A dependency"
+        read_type: gate
+        extract: "pyproject.toml extras + minimum pins, README install instructions, docs prerequisites"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: reference
+        extract: "s3-pyarrow, sql-query, arrow extra pin definitions to update"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default]"
+        read_type: reference
+        extract: "dev dep moto[server,s3] version to update"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A dependency"
+        read_type: verify
+        extract: "Extras, README install instructions, docs prerequisites all consistent"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

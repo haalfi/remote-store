@@ -1,0 +1,49 @@
+id: ID-175
+title: "Author templates folder (sdd/templates/)"
+trigger: "RFC/spec/ADR/audit/research starters were absent or scattered; contributors had no canonical starting point for new SDD artefacts"
+source_items:
+  - ID-175
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: "Five SDD categories (specs, ADRs, RFCs, research, audits) and their lifecycle — what each template must capture"
+      - file: sdd/000-process.md
+        section: "Spec format"
+        read_type: gate
+        extract: "Required spec skeleton: PREFIX-NNN, Invariant, Preconditions, Postconditions, Raises, Example"
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "sdd/templates/*.md defaults to repo-only — no classification marker needed"
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?"
+        read_type: gate
+        extract: "Internal tooling: repo path, declare repo-only"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1–6"
+        read_type: reference
+        extract: "6-month test; templates must describe principles not enumerate steps"
+      - file: scripts/docs/scan.py
+        section: "SDD_KINDS"
+        read_type: reference
+        extract: "Directory default registration location for sdd/templates/"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        read_type: verify
+        extract: "Update CONTRIBUTING.md and CLAUDE-REFERENCE.md links to templates; update AUTHORING.md directory defaults table"
+      - file: CONTRIBUTING.md
+        section: "Spec-First Workflow"
+        read_type: verify
+        extract: "rfc-template.md link points to new sdd/templates/ location"

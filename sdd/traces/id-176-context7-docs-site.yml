@@ -1,0 +1,33 @@
+id: ID-176
+title: "Wire stable docs site to context7"
+trigger: "remote-store's rendered docs site at docs.remotestore.dev/stable/ was not indexed by context7, reducing LLM discoverability of the Diataxis-structured user docs"
+source_items:
+  - ID-176
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/DOCUMENTATION.md
+        section: "2 (Content homes)"
+        read_type: gate
+        extract: "docs-src/ is the authoritative location for site-specific pages and config"
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?"
+        read_type: gate
+        extract: "context7.json is docs-site config: docs-only, lives in docs-src/"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: docs-src/context7.json
+        section: "(full)"
+        read_type: reference
+        extract: "Existing repo-level context7.json shape to differ from intentionally"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: verify
+        extract: "Move item to BACKLOG-DONE.md"

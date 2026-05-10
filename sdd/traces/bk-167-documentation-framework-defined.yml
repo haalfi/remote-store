@@ -1,0 +1,69 @@
+id: BK-167
+title: "Documentation framework defined and wired in"
+trigger: "Documentation placement, structure, and longevity rules existed in scattered locations; no single entry point told contributors or agents where to look first and in what order"
+source_items:
+  - BK-167
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 4: single source of truth — framework itself must be single-sourced"
+      - file: sdd/DOCUMENTATION.md
+        section: "(full)"
+        read_type: gate
+        extract: "Existing structure rules; identify what to keep, consolidate, or remove"
+      - file: sdd/CONTENT-RULES.md
+        section: "(full)"
+        read_type: gate
+        extract: "Existing longevity rules; identify back-reference hook to add"
+
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: "New AUTHORING.md is an authoritative process doc: dual, follows Authoritative Document Format"
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format"
+        read_type: gate
+        extract: "Required structure: Intent & Scope → Rules → Guides"
+
+  - id: write
+    name: Write AUTHORING.md and wire framework
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "(full — being authored)"
+        read_type: gate
+        extract: "New placement authority doc: file classification, single home, on-disk links, bridge, PR enforcement"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1–6"
+        read_type: reference
+        extract: "6-month test on every new sentence in AUTHORING.md"
+
+  - id: wire
+    name: Wire into entry points
+    steps:
+      - file: CLAUDE.md
+        section: "Documentation framework"
+        read_type: gate
+        extract: "Update to name three docs and their application order"
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format / Scope"
+        read_type: gate
+        extract: "Add AUTHORING.md to the named scope list with link"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        read_type: verify
+        extract: "CLAUDE.md framework section updated; CONTRIBUTING.md scope updated; sibling docs back-reference each other; CLAUDE-REFERENCE.md ripple table gains new-authority-doc row"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

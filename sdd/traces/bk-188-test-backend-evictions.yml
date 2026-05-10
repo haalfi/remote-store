@@ -1,0 +1,54 @@
+id: BK-188
+title: "tests/ root cleanup phase A: backend-specific evictions and seekable rename"
+trigger: "Spec 048 (BK-179) defined placement rules; tests/test_memory_coverage.py, tests/test_tls_ca_bundle.py, and tests/test_ext_seekable.py remained at the root despite belonging to backend-specific or core-API subtrees"
+source_items:
+  - BK-188
+  - BK-179
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-003, TEST-010"
+        read_type: gate
+        extract: "TEST-003: backend-specific tests must live under tests/backends/<x>/; TEST-010: canonical layout snapshot"
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "Authoritative placement table; identifies correct destination for each file"
+      - file: sdd/adrs/0028-testing-architecture-kind-stage-replay.md
+        section: "(full)"
+        read_type: reference
+        extract: "Rationale for conformance-as-spine layout and backend-specific subtrees"
+
+  - id: implement
+    name: Implement (file moves + rename)
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting and type annotations in moved files must remain conformant"
+      - file: scripts/mutate_scopes.py
+        section: "(full)"
+        read_type: reference
+        extract: "Scope definitions to update: backend-specific scopes must point to new paths"
+
+  - id: tests
+    name: Verify tests still pass
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 8: tests must survive refactoring — no test logic changes, only paths"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A spec section"
+        read_type: verify
+        extract: "TEST-010 layout updated; @pytest.mark.spec traces still valid at new paths"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

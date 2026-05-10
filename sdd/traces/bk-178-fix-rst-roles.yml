@@ -1,0 +1,37 @@
+id: BK-178
+title: "Fix all RST cross-reference roles in audit-013-touched files"
+trigger: "audit-013 identified RST inline roles (:class:, :meth:, :func:, :data:, :mod:) in docstrings; BK-178 fixes all 20 flagged sites plus additional roles found in the same files during broader sweep"
+source_items:
+  - BK-178
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 2: verify beyond the diff — same files hold additional roles not flagged by audit"
+      - file: sdd/audits/audit-013-docstring-style.md
+        section: "(full)"
+        read_type: gate
+        extract: "20 flagged sites across 10 files; scope of the fix"
+      - file: sdd/DESIGN.md
+        section: "4 (Docstrings)"
+        read_type: gate
+        extract: "RST role ban; double-backtick replacement pattern"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "4 (Docstrings)"
+        read_type: reference
+        extract: "Bad/good examples: :class:`Store` → ``Store`` or plain Store"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A public method signature"
+        read_type: verify
+        extract: "Docstring changes: confirm no RST role patterns remain in touched files"

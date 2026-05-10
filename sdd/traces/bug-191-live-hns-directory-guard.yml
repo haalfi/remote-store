@@ -1,0 +1,49 @@
+id: BUG-191
+title: "Add live HNS test class for write/write_atomic/open_atomic directory-path guard"
+trigger: "BUG-190/BUG-192 added unit-mocked tests for the directory-path InvalidPath guard but mocks rely on the same probe assumption as the code; a live integration test is needed to verify the guard on a real ADLS Gen2 account"
+source_items:
+  - BUG-191
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles / Principle 6"
+        read_type: gate
+        extract: "Run it: mocked tests verify logic but not real-account behaviour"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021, BE-008, BE-010"
+        read_type: gate
+        extract: "InvalidPath on directory-path for write/write_atomic; postconditions"
+
+  - id: tests
+    name: Tests (live integration)
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "Placement: tests/backends/test_azure_live_hns.py::TestAzureLiveHnsDirectoryGuard"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 6: real ADLS Gen2; rule 1: meaningful assertions with match="
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(BE-021/BE-008/BE-010)"
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: sdd/DOCUMENTATION.md
+        section: "PR documentation review checklist"
+        read_type: reference
+        extract: "Confirm azure-hns-setup.md guide updated to describe new gating layer"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, test present"

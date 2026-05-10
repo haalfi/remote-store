@@ -1,0 +1,94 @@
+id: BK-171
+title: "Reliable link validation for docs-only files in both repo and docs-site presentations"
+trigger: "docs-src/ files contained virtual-URL-form links (../design/adrs/...) that resolved in the built site but not on-disk in the GitHub browser; audit-012 F-01 remained open because BK-167b's closure had exempted docs-src/ from the on-disk link rule"
+source_items:
+  - BK-171
+  - BK-167b
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 2: verify beyond the diff; principle 4: single source of truth"
+      - file: sdd/specs/047-docs-framework-tooling.md
+        section: "DOCFRAME-008"
+        read_type: gate
+        extract: "Universal on-disk link rule: authors write on-disk repo paths everywhere; bridge rewrites at build time"
+      - file: sdd/AUTHORING.md
+        section: "Rules / Rule 3"
+        read_type: gate
+        extract: "Every relative ](path) link must resolve to a real on-disk file"
+      - file: sdd/AUTHORING.md
+        section: "Rules / Rule 4"
+        read_type: gate
+        extract: "One bridge mechanism; bridge rewrites on-disk links to docs-site URLs at build"
+
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/000-process.md
+        section: "Spec format"
+        read_type: gate
+        extract: "DOCFRAME-NNN skeleton for new spec section"
+      - file: sdd/000-process.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: spec before code; Rule 6: SPEC → TEST → IMPLEMENT"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "tests/scripts/ for check_links.py and mkdocs_hooks.py tests"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: meaningful assertions; rule 6: pytest-httpserver over mocks for HTTP"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(DOCFRAME-008)"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, module docstrings for mkdocs_hooks.py and check_links.py"
+      - file: docs-src/_path_rules.yml
+        section: "(full)"
+        read_type: reference
+        extract: "SDD kind rules to hoist from hardcoded Python into YAML"
+
+  - id: migration
+    name: Migrate 76 docs-src links
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Rules / Rule 3"
+        read_type: gate
+        extract: "On-disk form for every relative link; external URLs exempt"
+      - file: sdd/DOCUMENTATION.md
+        section: "4 (Cross-linking requirements)"
+        read_type: reference
+        extract: "Required cross-links between guide/API/example pages"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs navigation"
+        read_type: verify
+        extract: "Per-section _nav.yml files; check-links wired into hatch run all"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A spec section"
+        read_type: verify
+        extract: "DOCFRAME-008 spec: tests with @pytest.mark.spec updated"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

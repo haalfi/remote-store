@@ -1,0 +1,81 @@
+id: BUG-189
+title: "AsyncMemoryBackend did not mirror sync error fidelity for type-mismatched paths"
+trigger: "AsyncMemoryBackend raised NotFound in cases where sync MemoryBackend and Dafny contract require InvalidPath; copy(src, src, overwrite=False) also raised AlreadyExists instead of being a no-op"
+source_items:
+  - BUG-189
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Bug fix pipeline; update spec if bug contradicts spec invariant"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: "Confirm item tracked"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "Add stub"
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-004..ASYNC-024"
+        read_type: gate
+        extract: "Full async error contracts for read/read_bytes/delete_folder/get_file_info/get_folder_info/move/copy"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-006..BE-021"
+        read_type: gate
+        extract: "Sync error contracts that async must mirror"
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: pytest.raises with match=; rule 7: parametrize over copy-paste for 15 cases"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(ASYNC-004..ASYNC-024) on all new tests"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, docstrings for aio/backends/_memory.py"
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: sdd/DOCUMENTATION.md
+        section: "3 (Docstring completeness)"
+        read_type: gate
+        extract: "AsyncBackend ABC methods need Raises: InvalidPath documented"
+      - file: sdd/DESIGN.md
+        section: "4 (Docstrings)"
+        read_type: gate
+        extract: "Google Raises: format; mirror verbatim from sync ABC"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, failing test before fix"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / An error type"
+        read_type: verify
+        extract: "InvalidPath: async backend error mapping and docstring Raised by list"

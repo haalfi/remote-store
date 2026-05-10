@@ -1,0 +1,46 @@
+id: BK-185
+title: "Refactor flat-namespace gating from backend identity to capability/kind"
+trigger: "Identity sets keyed by backend.name caused Azure emulator (Azurite) and live ADLS Gen2 to share gating even though they have different namespace shapes"
+source_items:
+  - BK-185
+  - BK-186
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 5: specs are source of truth; code vs spec → code is wrong"
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-005"
+        read_type: gate
+        extract: "Capability gating as the authoritative mechanism for test skipping"
+      - file: FEATURES.md
+        section: "Capabilities"
+        read_type: reference
+        extract: "Capability semantics; gate vs quality-flag distinction"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "(full)"
+        read_type: reference
+        extract: "Backend ABC capability declaration contract"
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, docstrings"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A capability"
+        read_type: verify
+        extract: "Check every backend's capabilities(); conformance tests; capabilities matrix page"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

@@ -1,0 +1,78 @@
+id: BK-167a
+title: "Documentation framework tooling"
+trigger: "BK-167 defined the three-doc framework; BK-167a implements the single bridge mechanism (scan + render), inline classification markers, directory defaults, and DOCFRAME gate checks G-01..G-07"
+source_items:
+  - BK-167a
+  - BK-167
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 4: single source of truth; principle 1: ship complete"
+      - file: sdd/AUTHORING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rules 1–5: classification, single home, on-disk links, one bridge, PR-time enforcement"
+      - file: sdd/DOCUMENTATION.md
+        section: "1 (Diataxis placement), 2 (Content homes)"
+        read_type: gate
+        extract: "Content location decisions the tooling must encode"
+
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: spec before code; tooling specs use DOCFRAME prefix"
+      - file: sdd/000-process.md
+        section: "Spec format"
+        read_type: gate
+        extract: "DOCFRAME-NNN skeleton; Scope: Build & CI tooling near top"
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: "Tooling specs coexist in flat sdd/specs/NNN-*.md numbering"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "tests/scripts/ for scan.py, render.py, check_links.py tests"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: assertions on check output; rule 6: tmp_path fixture trees"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(DOCFRAME-NNN) on gate tests; G-02..G-06 unit tests deferred to BK-169"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, module docstrings for scripts/docs/ modules"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A spec section"
+        read_type: verify
+        extract: "DOCFRAME-001..DOCFRAME-009: tests with @pytest.mark.spec wired"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs navigation"
+        read_type: verify
+        extract: "docs-src/_path_rules.yml; _nav.yml files unaffected by tooling"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

@@ -1,0 +1,75 @@
+id: BK-167b
+title: "Apply documentation framework; close audit-012 findings"
+trigger: "BK-167a built the tooling (bridge, check_links, DOCFRAME gates); BK-167b applies it: classify every .md, migrate docs-src/ virtual-URL links to on-disk form, restructure nav to Diataxis-pure top level, close all 11 audit-012 findings"
+source_items:
+  - BK-167b
+  - BK-167a
+  - BK-165
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-012-docs-structure.md
+        section: "(full)"
+        read_type: gate
+        extract: "11 findings + 1 warning to close; affected files and rules"
+      - file: sdd/specs/047-docs-framework-tooling.md
+        section: "(full)"
+        read_type: gate
+        extract: "DOCFRAME-001..DOCFRAME-009: all gate rules to satisfy"
+      - file: sdd/AUTHORING.md
+        section: "(full)"
+        read_type: gate
+        extract: "Classification markers; directory defaults; single home rule"
+      - file: sdd/DOCUMENTATION.md
+        section: "1 (Diataxis placement), 9 (Top-level nav structure)"
+        read_type: gate
+        extract: "Four quadrants at top level only; Changelog under Reference; no Further Reading"
+
+  - id: classify
+    name: Classify all .md files
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Classification markers"
+        read_type: gate
+        extract: "<!-- doc: dual dest=… -->, <!-- doc: repo-only -->, <!-- doc: docs-only --> forms"
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "Which directories have defaults so markers can be omitted"
+
+  - id: migrate_links
+    name: Migrate docs-src links to on-disk form
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Rules / Rule 3"
+        read_type: gate
+        extract: "On-disk relative path form; bridge rewrites to docs-site URLs at build"
+      - file: sdd/DOCUMENTATION.md
+        section: "4 (Cross-linking requirements)"
+        read_type: reference
+        extract: "Required cross-links between guides, API pages, and examples"
+
+  - id: nav_restructure
+    name: Nav restructure
+    steps:
+      - file: sdd/DOCUMENTATION.md
+        section: "9 (Top-level nav structure)"
+        read_type: gate
+        extract: "Only Tutorial, Guides, Reference, Explanation at top level"
+      - file: sdd/DOCUMENTATION.md
+        section: "7 (URL alignment)"
+        read_type: gate
+        extract: "URL path must correspond to nav position"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Docs navigation"
+        read_type: verify
+        extract: "All _nav.yml files updated; check-links passes; mkdocs build --strict passes"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

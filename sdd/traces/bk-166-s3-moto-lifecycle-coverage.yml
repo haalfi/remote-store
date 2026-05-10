@@ -1,0 +1,62 @@
+id: BK-166
+title: "S3 control-path moto-backed lifecycle coverage"
+trigger: "BUG-178 and BUG-185 escaped to users because the S3 control path with tuned client_options was never exercised by hatch run test — conformance tests covered it but only against Docker (not default suite)"
+source_items:
+  - BK-166
+  - BUG-185
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles / Principle 6"
+        read_type: gate
+        extract: "Run it: verify behaviour not signatures; bugs must be reproducible before claiming fix"
+      - file: sdd/specs/008-s3-backend.md
+        section: "S3-026"
+        read_type: gate
+        extract: "s3fs control-path contract and client_options invariant"
+      - file: sdd/specs/011-s3-pyarrow-backend.md
+        section: "S3PA-026"
+        read_type: gate
+        extract: "S3PA delta against S3-026: s3fs control path only for surrounding operations"
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "tests/backends/ (not tests/e2e/) so regression is caught by hatch run test"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 6: real moto ThreadedMotoServer over mocks for lifecycle; rule 1: failure-path pytest.raises with match="
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(S3-026/S3PA-026)"
+      - file: sdd/DESIGN.md
+        section: "11 (Test style)"
+        read_type: reference
+        extract: "Class docstring references spec IDs"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, docstrings for test_s3_moto.py"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A new test file"
+        read_type: verify
+        extract: "os_sensitive mark: S3 control-path tests use ThreadedMotoServer, not OS-specific code — mark not needed"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"

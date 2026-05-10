@@ -1,0 +1,54 @@
+id: BUG-188
+title: "Benchmark SVG images broken on performance docs page"
+trigger: "BK-171 LinkResolver rewrites every ](…) token including image syntax ![alt](path); build_source_map indexed only *.md and *.html so SVG assets fell through to the GitHub blob URL fallback and rendered as broken images on RTD"
+source_items:
+  - BUG-188
+  - BK-171
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Bug fix pipeline"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "Add stub"
+      - file: sdd/specs/047-docs-framework-tooling.md
+        section: "DOCFRAME-008"
+        read_type: gate
+        extract: "Universal on-disk link rule: all file types must resolve, not just .md/.html"
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1: meaningful assertions; regression tests for image syntax rewriting"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(DOCFRAME-008) on regression tests"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types for scripts/docs/mkdocs_hooks.py changes"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, failing test before fix"

@@ -1,0 +1,74 @@
+id: BK-179
+title: "Implement Spec 048 Phase 1: fixture registry + conformance reorganisation"
+trigger: "BK-175 produced spec 048 and ADR-0028; Phase 1 implements the fixture registry and reorganises conformance into topic files before any new live fixtures are added"
+source_items:
+  - BK-179
+  - BK-175
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/048-testing-architecture.md
+        section: "(full)"
+        read_type: gate
+        extract: "Full spec: BackendFixture record, registry helpers, stage/kind axes, --stage flag, conformance topic split, TEST-001..TEST-010"
+      - file: sdd/adrs/0028-testing-architecture-kind-stage-replay.md
+        section: "(full)"
+        read_type: gate
+        extract: "Design rationale for kind × stage; conformance-as-spine decision"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A spec section"
+        read_type: gate
+        extract: "Tests with @pytest.mark.spec must trace to spec IDs"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "New layout: tests/backends/conformance/, tests/backends/<x>/, tests/backends/fixtures/"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rules 4, 5, 6, 7: mocks, real deps, parametrize"
+      - file: sdd/000-process.md
+        section: "Test traceability"
+        read_type: gate
+        extract: "@pytest.mark.spec(TEST-001/004/005/006/010) on 14 pin tests"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, module docstring, Google docstrings"
+      - file: sdd/DESIGN.md
+        section: "6 (Method ordering)"
+        read_type: reference
+        extract: "Ordering within BackendFixture dataclass helpers"
+
+  - id: docs_update
+    name: Docs update
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement"
+        read_type: gate
+        extract: "Update placement table to match new layout"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1–6"
+        read_type: reference
+        extract: "6-month test on placement table entries"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A spec section"
+        read_type: verify
+        extract: "All 14 @pytest.mark.spec tests trace to TEST-NNN IDs"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line stub"
