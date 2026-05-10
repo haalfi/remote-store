@@ -563,6 +563,50 @@ class TestAsyncMemoryLifecycle:
             assert await backend.read_bytes("f.txt") == b"data"
 
 
+class TestAsyncMemoryMetadataRoundTrip:
+    """BK-176 / ASYNC-016: metadata round-trips through all FileInfo-producing sites."""
+
+    @pytest.mark.spec("ASYNC-016")
+    @pytest.mark.parametrize("path", ["f.txt", "sub/f.txt"], ids=["root", "nested"])
+    async def test_get_file_info_preserves_metadata(self, path: str) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write(path, b"x", metadata={"k": "v"})
+        info = await backend.get_file_info(path)
+        assert info.metadata == {"k": "v"}
+
+    @pytest.mark.spec("ASYNC-016")
+    async def test_list_files_non_recursive_preserves_metadata(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("f.txt", b"x", metadata={"k": "v"})
+        entries = [e async for e in backend.list_files("")]
+        assert len(entries) == 1
+        assert entries[0].metadata == {"k": "v"}
+
+    @pytest.mark.spec("ASYNC-016")
+    async def test_list_files_recursive_preserves_metadata(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("sub/f.txt", b"x", metadata={"k": "v"})
+        entries = [e async for e in backend.list_files("", recursive=True)]
+        assert len(entries) == 1
+        assert entries[0].metadata == {"k": "v"}
+
+    @pytest.mark.spec("ASYNC-016")
+    async def test_iter_children_preserves_metadata(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("f.txt", b"x", metadata={"k": "v"})
+        entries = [e async for e in backend.iter_children("")]
+        file_entries = [e for e in entries if isinstance(e, FileInfo)]
+        assert len(file_entries) == 1
+        assert file_entries[0].metadata == {"k": "v"}
+
+    @pytest.mark.spec("ASYNC-016")
+    async def test_metadata_none_when_not_written(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("f.txt", b"x")
+        info = await backend.get_file_info("f.txt")
+        assert info.metadata is None
+
+
 class TestAsyncMemoryDeleteFolderEdgeCases:
     """Cover delete_folder parent-not-found branches (lines 256-258)."""
 

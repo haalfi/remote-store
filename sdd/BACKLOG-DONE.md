@@ -8,6 +8,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
+  Added `metadata=node.metadata` to all four `FileInfo`-constructing sites in
+  `src/remote_store/aio/backends/_memory.py`: `get_file_info`, `list_files`
+  non-recursive, `iter_children`, and `_collect_files_from_snapshot`. Added a
+  parametrized regression test class `TestAsyncMemoryMetadataRoundTrip` in
+  `tests/backends/memory/aio/test_basics.py` covering all four sites plus a
+  `None`-metadata control case. Spec: ASYNC-016.
+
 - [x] **BK-190 — tests/ root cleanup phase C: enforce + document**
   Three CI-enforced placement rules in
   `scripts/check_test_placement.py`, all derived from spec 048:

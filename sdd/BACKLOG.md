@@ -247,20 +247,6 @@ and the highest ID already in this file, then take the next integer. Run
   BK-180 (live fixtures the recording mode runs against). Spec: TEST-007,
   TEST-008, TEST-009.
 
-- [ ] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
-  `AsyncMemoryBackend.get_file_info` returns
-  `FileInfo(... content_type=node.content_type)` without
-  `metadata=node.metadata`, while sync `MemoryBackend.get_file_info`
-  (`src/remote_store/backends/_memory.py:331`) passes it through. The same
-  asymmetry exists at the other `FileInfo`-constructing sites in
-  `src/remote_store/aio/backends/_memory.py`: `list_files` non-recursive
-  (~L374), `iter_children` (~L427), `_collect_files_from_snapshot` (~L769).
-  Out-of-scope from BUG-189 (which targeted error fidelity only). Add
-  `metadata=node.metadata` to all four sites and a parametrized regression
-  test that round-trips `metadata={"k": "v"}` through `write` →
-  `get_file_info` and through `write` → `list_files` for the native async
-  backend. Spec: ASYNC-016 § metadata round-trip.
-
 - [ ] **BK-177 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/conformance/test_atomic.py`**
   Two TESTING.md alignments to apply on the sync side of
   `TestMoveCopySelfOperation`, mirroring fixes that landed in the async
