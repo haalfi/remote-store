@@ -1,0 +1,155 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://github.com/haalfi/remote-store/blob/master/sdd/traces/_schema.yml"
+title: "Agent use-case trace"
+description: |
+  Schema for sdd/traces/*.yml files. Each trace records the ordered sequence
+  of files and sections an agent reads to complete a specific type of work,
+  tagged with a read_type so cross-trace aggregation can identify hotspot
+  files, gate-density rankings, and co-read pairs — signals that drive
+  optimisation of the sdd/ documentation structure.
+
+  Files prefixed with an underscore (this file: _schema.yml) are
+  infrastructure, not traces. Aggregator scripts should glob
+  "sdd/traces/[!_]*.yml" to skip them.
+
+type: object
+required: [id, title, trigger, source_items, phases]
+additionalProperties: false
+
+properties:
+  id:
+    type: string
+    pattern: "^(BK|BUG|ID|AF|BL|UC)-[0-9]+[a-z]?$"
+    description: |
+      Unique identifier for the use case. Backlog-derived traces reuse the
+      backlog ID (BK-NNN, BUG-NNN, ID-NNN, AF-NNN, BL-NNN per
+      sdd/BACKLOG.md "ID prefixes"); hypothetical / generic use cases use
+      UC-NNN. The trailing letter form (BK-167a, BK-167b) is allowed for
+      split items.
+
+  title:
+    type: string
+    minLength: 1
+    description: One-line title; mirrors the backlog item title where applicable.
+
+  trigger:
+    type: string
+    minLength: 1
+    description: |
+      The state of the world that caused this work to be needed. Describes
+      what an agent would observe before recognising this use case applies.
+      Past tense for backlog-derived traces; present tense for generic ones.
+
+  source_items:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^(BK|BUG|ID|AF|BL)-[0-9]+[a-z]?$"
+    description: |
+      Backlog IDs this trace was derived from. Convention: the trace's own
+      id (without the UC- prefix case) is the first entry; related or
+      predecessor items follow.
+
+  phases:
+    type: array
+    minItems: 1
+    items:
+      $ref: "#/$defs/phase"
+    description: |
+      Ordered list of phases the work moved through. Common phase ids:
+      orient, spec, tests, implement, fix, docs, verify, reproduce,
+      design, classify, audit, report, wire. The schema does not enum
+      these — phases are contextual; aggregators discover them.
+
+$defs:
+  phase:
+    type: object
+    required: [id, name, steps]
+    additionalProperties: false
+    properties:
+      id:
+        type: string
+        pattern: "^[a-z][a-z0-9_]*$"
+        description: |
+          Short snake_case identifier, stable across traces so an
+          aggregator can count phase occurrences (e.g. "orient appears in
+          92% of traces"). Reuse existing ids when the meaning matches.
+      name:
+        type: string
+        minLength: 1
+        description: Human-readable phase name shown to readers.
+      steps:
+        type: array
+        minItems: 1
+        items:
+          $ref: "#/$defs/step"
+
+  step:
+    type: object
+    required: [file, section, read_type, extract]
+    additionalProperties: false
+    properties:
+      file:
+        type: string
+        minLength: 1
+        description: |
+          Repo-relative file path (e.g. "CLAUDE.md", "sdd/specs/001-store-api.md",
+          "pyproject.toml") OR a guidance placeholder:
+          - "sdd/specs/{analog}" — pick one similar spec as a structural reference
+          - directory paths like "tests/aio/ext/" — "browse this tree"
+          External URLs and absolute paths are not allowed.
+
+      section:
+        type: string
+        minLength: 1
+        description: |
+          Section reference within the file. Accepted forms:
+          - Heading text: "Principles", "Bug-fix protocol"
+          - Numbered heading: "4 (Docstrings)", "12 (Extension API contract)"
+          - Spec ID or list: "WR-001a, WR-004", "BE-008, BE-010, BE-021"
+          - Cross-doc table row: "Ripple-check table / A bug fix"
+          - Special markers: "(full)", "(item)", "[Unreleased]"
+          The section text should be precise enough for an agent to find
+          the section without re-reading the whole file.
+
+      read_type:
+        type: string
+        enum: [gate, reference, verify]
+        description: |
+          gate      — must be read and satisfied before the phase can
+                      proceed; blocks progress if skipped.
+          reference — consulted during the phase; conditional on specifics.
+          verify    — checked at the end to confirm completeness; the
+                      ripple-check phase is all verify.
+
+      extract:
+        type: string
+        minLength: 1
+        description: |
+          One short phrase capturing what to take from this read — the
+          information that justifies the step appearing in this phase.
+          Imperative mood, no terminal period required.
+
+examples:
+  - id: BK-176
+    title: "AsyncMemoryBackend metadata round-tripping parity"
+    trigger: "AsyncMemoryBackend.get_file_info omitted metadata=node.metadata while sync MemoryBackend passed it through"
+    source_items:
+      - BK-176
+    phases:
+      - id: orient
+        name: Orient
+        steps:
+          - file: sdd/specs/029-async-store-backend-api.md
+            section: "ASYNC-016"
+            read_type: gate
+            extract: "AsyncMemoryBackend metadata round-trip contract"
+      - id: verify
+        name: Verify
+        steps:
+          - file: sdd/CLAUDE-REFERENCE.md
+            section: "Ripple-check table / A bug fix"
+            read_type: verify
+            extract: "BACKLOG item, CHANGELOG stub, failing test before fix"
