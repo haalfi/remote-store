@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-176: `AsyncMemoryBackend` now preserves user metadata through `get_file_info`, `list_files` (recursive and non-recursive), and `iter_children` — sync `MemoryBackend` parity (ASYNC-016, WR-013)
 - BK-190: tests/ root cleanup — placement checks (rules S, B, E) + TESTING.md and spec 048 update
 - BK-189: tests/ root cleanup — `tests/ext/` package + ext-module moves (TEST-002 / TEST-010)
 - BK-188: tests/ root cleanup — backend-specific evictions and seekable rename (TEST-003 / TEST-010)

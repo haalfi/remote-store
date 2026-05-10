@@ -378,6 +378,7 @@ class AsyncMemoryBackend(AsyncBackend):
                     size=child.size,
                     modified_at=child.modified_at,
                     content_type=child.content_type,
+                    metadata=child.metadata,
                 )
 
     async def list_folders(self, path: str) -> AsyncIterator[FolderEntry]:
@@ -431,6 +432,7 @@ class AsyncMemoryBackend(AsyncBackend):
                     size=child.size,
                     modified_at=child.modified_at,
                     content_type=child.content_type,
+                    metadata=child.metadata,
                 )
             elif isinstance(child, _DirNode):
                 child_path = f"{prefix}/{name}" if prefix else name
@@ -464,6 +466,7 @@ class AsyncMemoryBackend(AsyncBackend):
                 size=len(node.data),
                 modified_at=node.modified_at,
                 content_type=node.content_type,
+                metadata=node.metadata,
             )
 
     async def get_folder_info(self, path: str) -> FolderInfo:
@@ -773,6 +776,7 @@ def _collect_files_from_snapshot(
                         size=child.size,
                         modified_at=child.modified_at,
                         content_type=child.content_type,
+                        metadata=child.metadata,
                     )
                 )
             elif isinstance(child, dict):

@@ -247,19 +247,17 @@ and the highest ID already in this file, then take the next integer. Run
   BK-180 (live fixtures the recording mode runs against). Spec: TEST-007,
   TEST-008, TEST-009.
 
-- [ ] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
-  `AsyncMemoryBackend.get_file_info` returns
-  `FileInfo(... content_type=node.content_type)` without
-  `metadata=node.metadata`, while sync `MemoryBackend.get_file_info`
-  (`src/remote_store/backends/_memory.py:331`) passes it through. The same
-  asymmetry exists at the other `FileInfo`-constructing sites in
-  `src/remote_store/aio/backends/_memory.py`: `list_files` non-recursive
-  (~L374), `iter_children` (~L427), `_collect_files_from_snapshot` (~L769).
-  Out-of-scope from BUG-189 (which targeted error fidelity only). Add
-  `metadata=node.metadata` to all four sites and a parametrized regression
-  test that round-trips `metadata={"k": "v"}` through `write` →
-  `get_file_info` and through `write` → `list_files` for the native async
-  backend. Spec: ASYNC-016 § metadata round-trip.
+- [ ] **BK-192 — `copy()` drops metadata on both `MemoryBackend` and `AsyncMemoryBackend`**
+  `MemoryBackend.copy()` (`src/remote_store/backends/_memory.py`) and
+  `AsyncMemoryBackend.copy()` (`src/remote_store/aio/backends/_memory.py`)
+  construct the destination `_FileEntry` without `metadata=src_node.metadata`.
+  A `write(path, data, metadata={...}) → copy(path, dst) → get_file_info(dst)`
+  flow therefore returns `metadata is None`. Both backends are equally affected
+  (no async/sync parity gap, but a shared defect). Surfaced as a review note on
+  PR #607 (BK-176). Fix: add `metadata=src_node.metadata` to the `_FileEntry`
+  constructor in both `copy()` implementations and add regression tests covering
+  the `write → copy → get_file_info` and `write → copy → list_files` round-trips.
+  Spec: WR-013, ASYNC-019, BE-019.
 
 - [ ] **BK-177 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/conformance/test_atomic.py`**
   Two TESTING.md alignments to apply on the sync side of
