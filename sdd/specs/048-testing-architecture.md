@@ -328,11 +328,28 @@ drift data is available. This spec does not mandate either.
 
 ## TEST-010: Directory Layout
 
-**Invariant:** The `tests/` tree groups files by concern. The
-backend concern is one self-contained subtree under
-`tests/backends/`. Other concerns (`Store`, `RemotePath`, registry,
-errors, capabilities) live at the top level alongside their own
-helpers.
+**Invariant:** Each source subpackage has exactly one corresponding
+test subpackage at a parallel path: `src/remote_store/<x>/` ↔
+`tests/<x>/`, with `src/remote_store/` as the core root mapping to
+`tests/`. Each source file `src/remote_store/<x>/<f>.py` has at most
+one test file at `tests/<x>/test_<f>.py`. The `tests/` tree groups
+files by concern, and the concerns are the source subpackages.
+
+**Backend exemption.** `src/remote_store/backends/` and
+`src/remote_store/aio/backends/` map to *N* test subpackages — one per
+concrete backend at `tests/backends/<backend>/` (sync) and
+`tests/backends/<backend>/aio/` (async) — to satisfy TEST-003. Sibling
+subtrees `tests/backends/conformance/`, `tests/backends/fixtures/`,
+and `tests/backends/cassettes/` are infrastructure for the backend
+exemption (cross-backend conformance, fixture registry, HTTP recordings),
+not additional source-to-test correspondences. No other source
+subpackage may break the 1:1 rule; new exemptions require a spec
+amendment.
+
+**Top-level scope.** Top-level non-backend tests
+(`test_store.py`, `test_path.py`, etc.) do not import the fixture
+registry and do not parametrise across backends. They use a single
+concrete backend (typically `MemoryBackend`) when one is needed.
 
 ```
 tests/
@@ -391,14 +408,6 @@ tests/
   scripts/                       # tests for scripts/ utilities
   e2e/                           # end-to-end workflows
 ```
-
-**Backend concern isolation:** Everything backend-related lives
-under `tests/backends/`. Conformance, backend-specific tests,
-fixtures, and cassettes share that one subtree because they share
-the backend concern. Top-level non-backend tests (`test_store.py`,
-`test_path.py`, etc.) do not import the fixture registry and do not
-parametrise across backends. They use a single concrete backend
-(typically `MemoryBackend`) when one is needed.
 
 **Backend isolation:** Only files inside the backend subtree may
 import from the fixture registry. A concrete backend's name appears

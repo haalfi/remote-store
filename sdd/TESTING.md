@@ -14,9 +14,12 @@ and [ADR-0028](adrs/0028-testing-architecture-kind-stage-replay.md).
 
 ## Test Subpackage Placement
 
-Each test file belongs in the subpackage matching its subject. The layout
-below reflects spec 048 / [TEST-010](specs/048-testing-architecture.md);
-that spec is the canonical reference.
+Each source subpackage maps 1:1 to a test subpackage at the parallel path
+([TEST-010](specs/048-testing-architecture.md) is the canonical
+reference). Backends are the only exemption: `src/remote_store/backends/`
+fans out into one test subpackage per concrete backend under
+`tests/backends/<backend>/` to satisfy TEST-003. The table below restates
+the invariant in lookup form.
 
 | Subject | Subpackage | Naming |
 |---------|------------|--------|
