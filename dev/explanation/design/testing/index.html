@@ -9174,54 +9174,102 @@ are wired into it), see
 <a href="../specs/048-testing-architecture/"><code>sdd/specs/048-testing-architecture.md</code></a>
 and <a href="../adrs/0028-testing-architecture-kind-stage-replay/">ADR-0028</a>.</p>
 <h2 id="test-subpackage-placement">Test Subpackage Placement<a class="headerlink" href="#test-subpackage-placement" title="Permanent link">&para;</a></h2>
-<p>Each test file belongs in the subpackage matching its subject. The layout
-below reflects spec 048 / <a href="../specs/048-testing-architecture/">TEST-010</a>;
-that spec is the canonical reference.</p>
+<p>Each source subpackage maps 1:1 to a test subpackage at the parallel path
+(<a href="../specs/048-testing-architecture/">TEST-010</a> is the canonical
+reference). Backends are the only exemption: <code>src/remote_store/backends/</code>
+fans out into one test subpackage per concrete backend under
+<code>tests/backends/&lt;backend&gt;/</code> to satisfy TEST-003. The table below restates
+the invariant in lookup form.</p>
 <table>
 <thead>
 <tr>
 <th>Subject</th>
 <th>Subpackage</th>
+<th>Naming</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Library source (<code>src/remote_store/</code>)</td>
+<td>Core library source (<code>src/remote_store/_&lt;x&gt;.py</code>)</td>
 <td><code>tests/</code> root</td>
+<td><code>test_&lt;x&gt;.py</code> (or feature-named for cross-cutting)</td>
 </tr>
 <tr>
-<td>Async cross-cutting tests (drift guard, adapters, async Store/Backend ABC, ext)</td>
+<td>Sync ext-module source (<code>src/remote_store/ext/&lt;x&gt;.py</code>)</td>
+<td><code>tests/ext/</code></td>
+<td><code>test_&lt;x&gt;.py</code> (no <code>ext_</code> prefix; mirrors src layout)</td>
+</tr>
+<tr>
+<td>Async ext-module source (<code>src/remote_store/aio/ext/&lt;x&gt;.py</code>)</td>
+<td><code>tests/aio/ext/</code></td>
+<td><code>test_async_&lt;x&gt;.py</code></td>
+</tr>
+<tr>
+<td>Async cross-cutting tests (drift guard, adapters, async Store/Backend ABC)</td>
 <td><code>tests/aio/</code></td>
+<td><code>test_async_*.py</code></td>
 </tr>
 <tr>
 <td>Cross-backend conformance (parametrised over the registry)</td>
 <td><code>tests/backends/conformance/</code></td>
+<td>per spec 048 TEST-002</td>
 </tr>
 <tr>
 <td>Backend-specific tests (one home per backend, sync + per-backend <code>aio/</code>)</td>
 <td><code>tests/backends/&lt;backend&gt;/</code></td>
+<td>per spec 048 TEST-003 / TEST-010</td>
 </tr>
 <tr>
 <td>Backend fixture registry + per-backend factories</td>
 <td><code>tests/backends/fixtures/</code></td>
+<td>—</td>
 </tr>
 <tr>
 <td>HTTP cassettes (BK-181 onward; HTTP-transport backends only)</td>
 <td><code>tests/backends/cassettes/&lt;backend&gt;/</code></td>
+<td>—</td>
 </tr>
 <tr>
 <td>End-to-end workflow tests (require Docker services)</td>
 <td><code>tests/e2e/</code></td>
+<td>—</td>
 </tr>
 <tr>
 <td><code>scripts/</code> utilities and build tooling</td>
 <td><code>tests/scripts/</code></td>
+<td><code>test_&lt;script&gt;.py</code></td>
 </tr>
 </tbody>
 </table>
-<p>Tests that load modules from <code>scripts/</code> via <code>sys.path</code> manipulation must live
-in <code>tests/scripts/</code>. The <code>check-test-placement</code> lint enforces this for <code>sys.path</code>
-patterns; tests using <code>importlib.util.spec_from_file_location</code> are review-enforced.</p>
+<p>The <code>check-test-placement</code> lint
+(<a href="https://github.com/haalfi/remote-store/blob/master/scripts/check_test_placement.py"><code>scripts/check_test_placement.py</code></a>)
+enforces three rules at CI time, all derived from spec 048:</p>
+<ul>
+<li><strong>S</strong> — tests that load modules from <code>scripts/</code> via <code>sys.path</code> manipulation
+  must live in <code>tests/scripts/</code>. Tests using
+  <code>importlib.util.spec_from_file_location</code> are review-enforced.</li>
+<li><strong>B</strong> — top-level <code>tests/test_*.py</code> and <code>tests/aio/test_async_*.py</code> may
+  import from <code>remote_store.backends</code> only the in-process backend modules
+  (<code>_memory</code>, <code>_local</code>) and the shared <code>_fileinfo</code> helper module; every
+  symbol in those modules is allowed. Concrete cloud / network backends
+  belong under <code>tests/backends/&lt;backend&gt;/</code> per TEST-003. The banned-class
+  roster is derived at script import via a static AST scan of
+  <code>src/remote_store/backends/</code> and <code>src/remote_store/aio/backends/</code>
+  (see <code>_discover_banned_backend_names</code>); a new backend file added under
+  either directory joins the banned set automatically. Wildcard imports
+  (<code>from remote_store.backends import *</code>) are flagged unconditionally
+  because they may pull in any current or future banned class. The
+  grandfathered allow-list (<code>_BACKEND_AT_ROOT_GRANDFATHERED</code>) is
+  self-pruning: an entry whose underlying file no longer triggers a
+  violation is reported as a stale entry, so the list shrinks
+  monotonically without manual audits. Per-file migration is tracked as a
+  follow-up audit.</li>
+<li><strong>E</strong> — ext-module tests live at <code>tests/ext/test_&lt;x&gt;.py</code> (mirroring
+  <code>src/remote_store/ext/</code>). Top-level <code>tests/test_ext_*.py</code> is banned, and
+  every <code>tests/ext/test_&lt;x&gt;.py</code> must have a matching
+  <code>src/remote_store/ext/&lt;x&gt;.py</code>. The single namespace-wide contract test
+  (<code>tests/ext/test_contract.py</code>) is on the script's allow-list.</li>
+</ul>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
