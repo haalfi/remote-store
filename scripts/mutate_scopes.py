@@ -7,10 +7,15 @@ definitions feed ``hatch run mutate <scope>`` (via
 
 Every scope is derived. Backend scopes read
 ``tests/backends/fixtures/backends.toml`` + ``fixtures.toml`` via
-``_loader.py``. Non-backend scopes pair each ``src/remote_store/_<x>.py``
-or ``src/remote_store/ext/<x>.py`` with the prefix-matching
-``tests/test_<x>*.py`` (and ``tests/test_ext_<x>*.py`` for ext); test
-files that match no src file roll into a single ``core-misc`` scope.
+``_loader.py``. Core scopes pair each ``src/remote_store/_<x>.py`` (and
+``src/remote_store/backends/_<x>.py`` once the loader recognises one)
+with prefix-matching top-level tests at ``tests/test_<x>*.py``. Ext
+scopes pair each ``src/remote_store/ext/<x>.py`` with the single file at
+``tests/ext/test_<x>.py`` (BK-189 collapsed the prior dual ``test_ext_``
+/ bare-named matching). Top-level tests with no matching src by prefix
+roll into ``core-misc``; ``tests/ext/test_*.py`` files with no matching
+ext source (e.g., the namespace-wide ``test_contract.py``) roll into
+``ext-misc``.
 
 Cmdline split
 =============
@@ -104,14 +109,54 @@ def _toplevel_test_files() -> list[Path]:
     return [p for p in sorted(_TESTS_ROOT.glob("test_*.py")) if p.parent == _TESTS_ROOT]
 
 
-def _matching_tests(name: str, *, ext_prefix: bool) -> list[str]:
-    """Test filenames matching ``test_<name>*.py`` (and ``test_ext_<name>*.py``
-    for ext) at the top of ``tests/``.
-    """
+def _ext_test_files() -> list[Path]:
+    """``tests/ext/test_*.py`` (one level only, no subdirs)."""
+    ext_dir = _TESTS_ROOT / "ext"
+    if not ext_dir.is_dir():
+        return []
+    return [p for p in sorted(ext_dir.glob("test_*.py")) if p.parent == ext_dir]
+
+
+def _matching_core_tests(name: str) -> list[str]:
+    """Top-level test filenames matching ``test_<name>*.py``."""
     matches = set(_TESTS_ROOT.glob(f"test_{name}.py")) | set(_TESTS_ROOT.glob(f"test_{name}_*.py"))
-    if ext_prefix:
-        matches |= set(_TESTS_ROOT.glob(f"test_ext_{name}.py")) | set(_TESTS_ROOT.glob(f"test_ext_{name}_*.py"))
     return sorted(p.name for p in matches if p.parent == _TESTS_ROOT)
+
+
+def _matching_ext_test(name: str) -> str | None:
+    """``tests/ext/test_<name>.py`` if present, else ``None``.
+
+    Per BK-189 the ``test_ext_`` root prefix is gone; every ext-module
+    test lives at ``tests/ext/test_<name>.py``.
+    """
+    candidate = _TESTS_ROOT / "ext" / f"test_{name}.py"
+    return candidate.name if candidate.is_file() else None
+
+
+def _add_misc_scope(
+    out: dict[str, Scope],
+    *,
+    name: str,
+    test_files: list[Path],
+    matched: set[str],
+    test_path_prefix: str,
+    targets: list[str],
+) -> None:
+    """Bundle orphan tests under a misc scope.
+
+    Orphans are entries in ``test_files`` whose name is not in
+    ``matched`` (i.e. not already paired with a per-file scope). They
+    are bundled with ``targets`` — typically the full source list for
+    the surrounding namespace — under ``name``. No-op when no orphans
+    are present, so the scope inventory stays sparse.
+
+    The pattern collapses two near-identical blocks (``core-misc`` /
+    ``ext-misc``) and keeps the next orphan-catch one helper call away.
+    """
+    orphan_tests = [f"{test_path_prefix}{p.name}" for p in test_files if p.name not in matched]
+    if not orphan_tests:
+        return
+    out[name] = Scope(targets=targets, tests=orphan_tests)
 
 
 # ---------------------------------------------------------------------------
@@ -124,17 +169,21 @@ def _build() -> dict[str, Scope]:
     all_src = sorted({s for b in backends for s in _src(b)})
     full_needs = _needs(None)
     out: dict[str, Scope] = {}
-    matched_tests: set[str] = set()
+    matched_core_tests: set[str] = set()
+    matched_ext_tests: set[str] = set()
 
-    # Per-file non-backend scopes: each src/remote_store/_<x>.py,
-    # src/remote_store/ext/<x>.py, and src/remote_store/backends/_<x>.py
-    # paired with prefix-matching test files at tests/test_<x>*.py. The
-    # third loop catches `backends/_memory.py` paired with
-    # `test_memory_coverage.py`; other backend src files have no
-    # top-level test and roll into ``backends-*`` instead.
-    def _add_per_file(p: Path, scope_name: str, src_rel: str, *, ext_prefix: bool) -> None:
+    # Per-file non-backend scopes: each ``src/remote_store/_<x>.py`` is
+    # paired with prefix-matching top-level tests at
+    # ``tests/test_<x>*.py``; each ``src/remote_store/ext/<x>.py`` is
+    # paired with the single file at ``tests/ext/test_<x>.py`` (BK-189
+    # collapsed the dual ``test_ext_`` / bare-named layout into one
+    # canonical home). The ``backends/_<x>.py`` loop currently produces
+    # no scopes — every backend src file is claimed by a ``backends-*``
+    # transport scope and any backend-specific top-level test has been
+    # migrated under ``tests/backends/<backend>/``.
+    def _add_core_scope(p: Path, scope_name: str, src_rel: str) -> None:
         stem = p.stem.lstrip("_")
-        tests = _matching_tests(stem, ext_prefix=ext_prefix)
+        tests = _matching_core_tests(stem)
         if not tests:
             return
         # Fail loud rather than silently overwrite if a future src layout
@@ -147,17 +196,29 @@ def _build() -> dict[str, Scope]:
             targets=[src_rel],
             tests=[f"tests/{t}" for t in tests],
         )
-        matched_tests.update(tests)
+        matched_core_tests.update(tests)
+
+    def _add_ext_scope(p: Path, scope_name: str, src_rel: str) -> None:
+        test_name = _matching_ext_test(p.stem)
+        if test_name is None:
+            return
+        if scope_name in out:
+            raise ValueError(f"mutate scope name collision: {scope_name!r} (src_rel={src_rel!r})")
+        out[scope_name] = Scope(
+            targets=[src_rel],
+            tests=[f"tests/ext/{test_name}"],
+        )
+        matched_ext_tests.add(test_name)
 
     for p in sorted(_SRC_ROOT.glob("_*.py")):
         if p.name != "__init__.py":
-            _add_per_file(p, f"core-{p.stem.lstrip('_')}", f"src/remote_store/{p.name}", ext_prefix=False)
+            _add_core_scope(p, f"core-{p.stem.lstrip('_')}", f"src/remote_store/{p.name}")
     for p in sorted((_SRC_ROOT / "ext").glob("*.py")):
         if p.name != "__init__.py":
-            _add_per_file(p, f"ext-{p.stem}", f"src/remote_store/ext/{p.name}", ext_prefix=True)
+            _add_ext_scope(p, f"ext-{p.stem}", f"src/remote_store/ext/{p.name}")
     for p in sorted((_SRC_ROOT / "backends").glob("_*.py")):
         if p.name != "__init__.py":
-            _add_per_file(p, f"core-{p.stem.lstrip('_')}", f"src/remote_store/backends/{p.name}", ext_prefix=False)
+            _add_core_scope(p, f"core-{p.stem.lstrip('_')}", f"src/remote_store/backends/{p.name}")
 
     # Orphan-catch: top-level test files matching no src by prefix
     # (test_open_atomic, test_ping, test_pbt_*, test_snippets, ...). These
@@ -181,9 +242,30 @@ def _build() -> dict[str, Scope]:
             if p.name != "__init__.py" and f"src/remote_store/backends/{p.name}" not in known_backend_src
         ]
     )
-    orphan_tests = [f"tests/{p.name}" for p in _toplevel_test_files() if p.name not in matched_tests]
-    if orphan_tests:
-        out["core-misc"] = Scope(targets=orphan_targets, tests=orphan_tests)
+    # Bundle orphan tests (those not paired with a per-file scope above)
+    # with a target list spanning the surrounding namespace. Two
+    # invocations today; ``tests/aio/`` and ``tests/aio/ext/`` will plug
+    # in here when their orphan-catches arrive.
+    _add_misc_scope(
+        out,
+        name="core-misc",
+        test_files=_toplevel_test_files(),
+        matched=matched_core_tests,
+        test_path_prefix="tests/",
+        targets=orphan_targets,
+    )
+    _add_misc_scope(
+        out,
+        name="ext-misc",
+        test_files=_ext_test_files(),
+        matched=matched_ext_tests,
+        test_path_prefix="tests/ext/",
+        targets=[
+            f"src/remote_store/ext/{p.name}"
+            for p in sorted((_SRC_ROOT / "ext").glob("*.py"))
+            if p.name != "__init__.py"
+        ],
+    )
 
     # Per-transport backend scopes — collapses old backends-local/cloud.
     for t in _TRANSPORTS:

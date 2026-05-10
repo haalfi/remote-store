@@ -8,6 +8,99 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-190 — tests/ root cleanup phase C: enforce + document**
+  Three CI-enforced placement rules in
+  `scripts/check_test_placement.py`, all derived from spec 048:
+  - **S** (existing): tests loading `scripts/` modules via `sys.path`
+    must live in `tests/scripts/`.
+  - **B** (new): top-level `tests/test_*.py` may import from
+    `remote_store.backends._*` only the in-process backends (`_memory`,
+    `_local`) and the shared `_fileinfo` helper. Concrete cloud /
+    network classes imported via either the private module path or the
+    public `remote_store.backends` namespace are TEST-003 violations.
+    The banned class roster is computed at script import via
+    `_discover_banned_backend_names`, a static AST scan over
+    `src/remote_store/backends/_*.py` and
+    `src/remote_store/aio/backends/_*.py` that excludes modules in
+    `_ALLOWED_BACKEND_MODULES`; a new backend file added under either
+    directory automatically extends the banned set with no
+    hand-maintained list to drift. A grandfathered allow-list of
+    cross-cutting legacy files (each also importing `MemoryBackend` or
+    `LocalBackend`) lives in `_BACKEND_AT_ROOT_GRANDFATHERED`. Per-file
+    migration tracked as **BK-191**. New top-level files are held to
+    the strict standard.
+  - **E** (new): top-level `tests/test_ext_*.py` is banned, and every
+    `tests/ext/test_<x>.py` must have a matching
+    `src/remote_store/ext/<x>.py`. The single namespace-wide contract
+    (`tests/ext/test_contract.py`) is on a small allow-list inside the
+    script.
+  New scope-check classes under
+  `tests/scripts/test_check_test_placement.py`
+  (`TestBackendImportsAtRoot`, `TestRootExtNaming`, `TestExtOrphans`)
+  cover positive and negative paths plus the grandfather skip and the
+  contract allow-list. `sdd/TESTING.md` § Test Subpackage Placement
+  table extended with `tests/ext/` and `tests/aio/ext/` rows and the
+  new naming column; rule prose links to the script's
+  `_BACKEND_AT_ROOT_GRANDFATHERED` and `_BANNED_BACKEND_NAMES` rather
+  than enumerating. `sdd/specs/048-testing-architecture.md` TEST-010
+  directory-layout snippet now shows `tests/ext/` and `tests/aio/ext/`.
+  BK-182 and BK-177 re-scoped to current paths after BK-179's reorg
+  (their original locations no longer exist). Spec: TEST-002, TEST-003,
+  TEST-010.
+
+- [x] **BK-189 — tests/ root cleanup phase B: `tests/ext/` package + ext-module moves**
+  Mirrors `src/remote_store/ext/`'s layout (the async sibling at
+  `tests/aio/ext/` already followed this shape). Created
+  `tests/ext/__init__.py`. Migrated 15 ext-module tests plus the
+  namespace-contract test under it, dropping the inconsistent
+  `test_ext_` prefix in 5 of them:
+  - bare-named (kept the name): `test_arrow.py`, `test_batch.py`,
+    `test_cache.py`, `test_dagster.py`, `test_integrity.py`,
+    `test_observe.py`, `test_otel.py`, `test_partition.py`,
+    `test_streams.py`, `test_transfer.py`.
+  - prefixed (renamed): `test_ext_parquet.py` →
+    `tests/ext/test_parquet.py`; same for `pydantic`, `write`, `yaml`,
+    `contract`.
+  `tests/test_glob.py` split: core `_glob` helpers and
+  `Store.glob`/`Backend.glob` (Tier 1 + Tier 2 + GLOB-012/013/014 helper
+  tests) stay at root; `ext.glob.glob_files` Tier 3 (`TestGlobFiles`)
+  moves to `tests/ext/test_glob.py` with its own minimal fixture set.
+  `tests/ext/test_batch.py` and `tests/ext/test_transfer.py` switch
+  `from .conftest import RestrictedBackend` to `from tests.conftest
+  import RestrictedBackend` (matching the `tests/aio/ext/` absolute-
+  import pattern). `tests/ext/test_contract.py`'s `_SRC =
+  Path(__file__).resolve().parent.parent / "src" / "remote_store"` walks
+  one level deeper now (`.parent.parent.parent`) to land on the repo
+  root. `scripts/mutate_scopes.py` collapses the dual
+  `test_<name>*.py` + `test_ext_<name>*.py` matching: `_matching_tests`
+  is split into `_matching_core_tests(name)` and
+  `_matching_ext_test(name)`, the `ext_prefix=True` knob is gone, and a
+  new `ext-misc` orphan-catch covers `tests/ext/test_*.py` files with
+  no matching `ext/<x>.py` source (today only `test_contract.py`). The
+  per-module `ext-*` scopes still cover every ext source file, and
+  `core-glob` and `ext-glob` are now cleanly separated. Spec: TEST-002,
+  TEST-010.
+
+- [x] **BK-188 — tests/ root cleanup phase A: backend-specific evictions + seekable rename**
+  Three TEST-003 / TEST-010 placement fixes at `tests/` root, each a pure
+  move with no behaviour change:
+  - `tests/test_memory_coverage.py` → `tests/backends/memory/test_coverage.py`
+    (covers `backends/_memory.py` MemoryBackend internals — TEST-003 home).
+  - `tests/test_tls_ca_bundle.py` → `tests/backends/s3/test_tls_ca_bundle.py`
+    (covers `backends/_s3_base.py` `_resolve_tls_ca_bundle` /
+    `_validate_tls_ca_bundle` — S3-only).
+  - `tests/test_ext_seekable.py` → `tests/test_seekable.py` (subject is
+    `Store.read_seekable()` on the core `Store` API per spec 036
+    SEEK-001..SEEK-012, not an ext module — drop misleading `ext_`
+    prefix).
+  `scripts/mutate_scopes.py`'s `core-memory` per-file scope folds away
+  (no top-level test paired with `backends/_memory.py` after the move);
+  the moved file is picked up by the existing `backends-memory` /
+  `backends-http` transport scopes via the registry walk. Comment in
+  `_add_per_file` updated to match. Phases B (`tests/ext/` package) and
+  C (placement checks + TESTING.md / spec 048 update) follow under
+  BK-189 / BK-190. Spec: TEST-003, TEST-010.
+
 - [x] **BK-184 — `s3_live` Stage 3 conformance fixture**
   Per-call fresh bucket (`rs-conformance-<uuid>`), mirroring `azure_live.py` shape.
   Files: `fixtures.toml` `[fixture.s3_live]`, `_live_env.require_s3_live_credentials`,

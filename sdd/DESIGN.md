@@ -189,5 +189,5 @@ modules, not external consumers. Two tiers apply:
   public path exists. When unavoidable due to tight architectural coupling, add
   an inline comment explaining why no public equivalent exists.
 
-The `test_no_private_module_imports` test in `tests/test_ext_contract.py`
+The `test_no_private_module_imports` test in `tests/ext/test_contract.py`
 enforces the MUST tier automatically.

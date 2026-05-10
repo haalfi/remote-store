@@ -203,18 +203,36 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-182 — Shrink legacy `test_azure_live_hns.py` per Spec 048**
-  Once BK-179, BK-180, and BK-181 land, the hand-written live HNS suites
-  (`tests/backends/test_azure_live_hns.py`, `tests/aio/test_async_azure_live_hns.py`,
-  ~1,840 lines combined) duplicate ~40 % of conformance against a real ADLS Gen2
-  account. After conformance parametrizes over `azure_live` (BK-180) and
-  `azure_replay` (BK-181), delete the duplicated happy-path cases and keep only
-  HNS-unique tests under `tests/backends/azure/test_hns.py`: DFS AsyncIterator
-  protocol (BUG-194 regression guard), etag normalisation cross-check
+- [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
+  BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
+  `tests/` root) but grandfathers a set of legacy cross-cutting files
+  that each import multiple cloud backends to verify cross-protocol
+  features (config loaders, depth-limited listing, example demos, PBT
+  oracles, ping / health checks, seekable reads, coverage padding). The
+  authoritative roster lives in
+  `scripts/check_test_placement.py::_BACKEND_AT_ROOT_GRANDFATHERED`. For
+  each entry, decide: (a) move backend-specific assertions to
+  `tests/backends/<backend>/`, (b) reshape into conformance parametrize
+  (`tests/backends/conformance/`), or (c) keep at root and document why.
+  Coverage-padding tests are the most obvious candidates for split.
+  Each entry removed from the allow-list closes part of this item.
+  Spec: TEST-003, TEST-010.
+
+- [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
+  Originally targeted the now-removed top-level
+  `tests/backends/test_azure_live_hns.py` /
+  `tests/aio/test_async_azure_live_hns.py` pair; BK-179's reorg moved them
+  to `tests/backends/azure/test_live_hns.py` and
+  `tests/backends/azure/aio/test_live_hns.py`. BK-180 added live `azure_live`
+  / `azure_live_async` conformance fixtures, so most happy-path coverage
+  in the moved files is now duplicated against a real ADLS Gen2 account.
+  Once BK-181 lands HTTP cassette/replay, delete the duplicated cases and
+  keep only HNS-unique tests at the new paths: DFS AsyncIterator protocol
+  (BUG-194 regression guard), etag normalisation cross-check
   (`get_file_properties` vs `get_file_info`), directory-blob `hdi_isfolder`
-  probes, and any remaining deviation guards. Async equivalents follow under
-  `tests/backends/azure/aio/test_hns.py` only where sync/async behaviour
-  differs. Spec: TEST-002, TEST-003.
+  probes, and any remaining deviation guards. Async equivalents stay under
+  `tests/backends/azure/aio/test_live_hns.py` only where sync / async
+  behaviour differs. Spec: TEST-002, TEST-003.
 
 - [ ] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
   Add `<backend>_replay` Stage 1 fixtures for HTTP-transport backends
@@ -243,9 +261,14 @@ and the highest ID already in this file, then take the next integer. Run
   `get_file_info` and through `write` → `list_files` for the native async
   backend. Spec: ASYNC-016 § metadata round-trip.
 
-- [ ] **BK-177 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/test_conformance_extended.py`**
-  Two TESTING.md alignments to apply on the sync extended-conformance suite,
-  mirroring fixes that landed in the async mirror via PR #580:
+- [ ] **BK-177 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/conformance/test_atomic.py`**
+  Two TESTING.md alignments to apply on the sync side of
+  `TestMoveCopySelfOperation`, mirroring fixes that landed in the async
+  mirror (`tests/backends/conformance/test_async_extended.py`) via PR #580.
+  Originally referenced the now-removed
+  `tests/backends/test_conformance_extended.py`; BK-179's split moved the
+  self-op tests into
+  `tests/backends/conformance/test_atomic.py::TestMoveCopySelfOperation`.
   1. **Parametrize `TestMoveCopySelfOperation`.** The sync class has five
      near-duplicate methods that differ only in `op ∈ {move, copy}` and
      `overwrite ∈ {True, False}` — a TESTING.md Rule 7 violation. The async
@@ -259,7 +282,7 @@ and the highest ID already in this file, then take the next integer. Run
      async mirror was tightened in PR #580.
   No spec change; marker tags (`BE-018`, `BE-019`, the BE counterpart of
   `ASYNC-047`) stay on the parametrized methods. Verify behavior unchanged
-  via `hatch run pytest tests/backends/test_conformance_extended.py -k SelfOperation`.
+  via `hatch run pytest tests/backends/conformance/test_atomic.py -k SelfOperation`.
 
 ---
 

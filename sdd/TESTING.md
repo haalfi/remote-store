@@ -14,24 +14,54 @@ and [ADR-0028](adrs/0028-testing-architecture-kind-stage-replay.md).
 
 ## Test Subpackage Placement
 
-Each test file belongs in the subpackage matching its subject. The layout
-below reflects spec 048 / [TEST-010](specs/048-testing-architecture.md);
-that spec is the canonical reference.
+Each source subpackage maps 1:1 to a test subpackage at the parallel path
+([TEST-010](specs/048-testing-architecture.md) is the canonical
+reference). Backends are the only exemption: `src/remote_store/backends/`
+fans out into one test subpackage per concrete backend under
+`tests/backends/<backend>/` to satisfy TEST-003. The table below restates
+the invariant in lookup form.
 
-| Subject | Subpackage |
-|---------|------------|
-| Library source (`src/remote_store/`) | `tests/` root |
-| Async cross-cutting tests (drift guard, adapters, async Store/Backend ABC, ext) | `tests/aio/` |
-| Cross-backend conformance (parametrised over the registry) | `tests/backends/conformance/` |
-| Backend-specific tests (one home per backend, sync + per-backend `aio/`) | `tests/backends/<backend>/` |
-| Backend fixture registry + per-backend factories | `tests/backends/fixtures/` |
-| HTTP cassettes (BK-181 onward; HTTP-transport backends only) | `tests/backends/cassettes/<backend>/` |
-| End-to-end workflow tests (require Docker services) | `tests/e2e/` |
-| `scripts/` utilities and build tooling | `tests/scripts/` |
+| Subject | Subpackage | Naming |
+|---------|------------|--------|
+| Core library source (`src/remote_store/_<x>.py`) | `tests/` root | `test_<x>.py` (or feature-named for cross-cutting) |
+| Sync ext-module source (`src/remote_store/ext/<x>.py`) | `tests/ext/` | `test_<x>.py` (no `ext_` prefix; mirrors src layout) |
+| Async ext-module source (`src/remote_store/aio/ext/<x>.py`) | `tests/aio/ext/` | `test_async_<x>.py` |
+| Async cross-cutting tests (drift guard, adapters, async Store/Backend ABC) | `tests/aio/` | `test_async_*.py` |
+| Cross-backend conformance (parametrised over the registry) | `tests/backends/conformance/` | per spec 048 TEST-002 |
+| Backend-specific tests (one home per backend, sync + per-backend `aio/`) | `tests/backends/<backend>/` | per spec 048 TEST-003 / TEST-010 |
+| Backend fixture registry + per-backend factories | `tests/backends/fixtures/` | — |
+| HTTP cassettes (BK-181 onward; HTTP-transport backends only) | `tests/backends/cassettes/<backend>/` | — |
+| End-to-end workflow tests (require Docker services) | `tests/e2e/` | — |
+| `scripts/` utilities and build tooling | `tests/scripts/` | `test_<script>.py` |
 
-Tests that load modules from `scripts/` via `sys.path` manipulation must live
-in `tests/scripts/`. The `check-test-placement` lint enforces this for `sys.path`
-patterns; tests using `importlib.util.spec_from_file_location` are review-enforced.
+The `check-test-placement` lint
+([`scripts/check_test_placement.py`](../scripts/check_test_placement.py))
+enforces three rules at CI time, all derived from spec 048:
+
+- **S** — tests that load modules from `scripts/` via `sys.path` manipulation
+  must live in `tests/scripts/`. Tests using
+  `importlib.util.spec_from_file_location` are review-enforced.
+- **B** — top-level `tests/test_*.py` and `tests/aio/test_async_*.py` may
+  import from `remote_store.backends` only the in-process backend modules
+  (`_memory`, `_local`) and the shared `_fileinfo` helper module; every
+  symbol in those modules is allowed. Concrete cloud / network backends
+  belong under `tests/backends/<backend>/` per TEST-003. The banned-class
+  roster is derived at script import via a static AST scan of
+  `src/remote_store/backends/` and `src/remote_store/aio/backends/`
+  (see `_discover_banned_backend_names`); a new backend file added under
+  either directory joins the banned set automatically. Wildcard imports
+  (`from remote_store.backends import *`) are flagged unconditionally
+  because they may pull in any current or future banned class. The
+  grandfathered allow-list (`_BACKEND_AT_ROOT_GRANDFATHERED`) is
+  self-pruning: an entry whose underlying file no longer triggers a
+  violation is reported as a stale entry, so the list shrinks
+  monotonically without manual audits. Per-file migration is tracked as a
+  follow-up audit.
+- **E** — ext-module tests live at `tests/ext/test_<x>.py` (mirroring
+  `src/remote_store/ext/`). Top-level `tests/test_ext_*.py` is banned, and
+  every `tests/ext/test_<x>.py` must have a matching
+  `src/remote_store/ext/<x>.py`. The single namespace-wide contract test
+  (`tests/ext/test_contract.py`) is on the script's allow-list.
 
 ## Rules
 
