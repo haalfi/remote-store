@@ -208,7 +208,11 @@ class TestMain:
         (scripts_dir / "__init__.py").write_text("", encoding="utf-8")
         good = scripts_dir / "test_correct.py"
         good.write_text(_PLAIN_ASSIGN, encoding="utf-8")
-        assert main([str(tmp_path)]) == 0
+        # ``grandfathered=frozenset()`` opts out of stale-entry detection;
+        # we're testing rule S in isolation here, not rule B's grandfather
+        # tracking. Synthetic trees lack the seven legacy files entirely,
+        # so the real grandfather list would otherwise fire as "stale".
+        assert main([str(tmp_path)], grandfathered=frozenset()) == 0
 
     def test_flags_misplaced_file_in_subdir(self, tmp_path):
         # A scripts-loading test under tests/backends/ must also be flagged.
@@ -223,7 +227,8 @@ class TestMain:
         (tmp_path / "scripts").mkdir()
         f = tmp_path / "test_ok.py"
         f.write_text("def test_simple():\n    assert 1 + 1 == 2\n", encoding="utf-8")
-        assert main([str(tmp_path)]) == 0
+        # See note above: opt out of grandfather tracking on a synthetic tree.
+        assert main([str(tmp_path)], grandfathered=frozenset()) == 0
 
 
 # ---------------------------------------------------------------------------
@@ -293,6 +298,13 @@ import remote_store.backends._memory
 
 def test_bare_memory():
     assert remote_store.backends._memory is not None
+"""
+
+_STAR_IMPORT_PUBLIC = """\
+from remote_store.backends import *  # noqa: F403
+
+def test_star():
+    pass
 """
 
 
@@ -370,11 +382,116 @@ class TestBackendImportsAtRoot:
         f.write_text(_BARE_IMPORT_MEMORY, encoding="utf-8")
         assert _check_backend_imports_at_root(f) == []
 
+    def test_flags_wildcard_import_from_public_namespace(self, tmp_path):
+        # ``from remote_store.backends import *`` could pull in any
+        # banned class; flag unconditionally regardless of whether the
+        # banned set knows specific names. Bypass-prevention.
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_STAR_IMPORT_PUBLIC, encoding="utf-8")
+        violations = _check_backend_imports_at_root(f)
+        assert len(violations) == 1
+        assert "wildcard import" in violations[0]
+        assert "remote_store.backends" in violations[0]
+
+    def test_banned_names_parameter_overrides_module_global(self, tmp_path):
+        # Rule B's banned roster must be drivable per-call so synthetic
+        # ``src_root`` trees in tests can pin the public-namespace branch
+        # without fighting the module-global computed at import.
+        f = tmp_path / "test_at_root.py"
+        f.write_text(
+            "from remote_store.backends import FakeBackend\n",
+            encoding="utf-8",
+        )
+        # With the synthetic banned set, the import is flagged.
+        violations = _check_backend_imports_at_root(f, banned_names=frozenset({"FakeBackend"}))
+        assert len(violations) == 1
+        assert "FakeBackend" in violations[0]
+        # With the empty banned set, the same import is clean.
+        assert _check_backend_imports_at_root(f, banned_names=frozenset()) == []
+
     def test_main_flags_new_root_violation(self, tmp_path):
         bad = tmp_path / "test_new_module.py"
         bad.write_text(_AZURE_AT_ROOT, encoding="utf-8")
         rc = main([str(tmp_path)], src_root=tmp_path / "missing_src")
         assert rc == 1
+
+    def test_main_scans_top_level_aio_test_async_files(self, tmp_path):
+        # tests/aio/test_async_*.py is the async analog of top-level
+        # tests/test_*.py and must be subject to Rule B per spec 048
+        # TEST-010 + TEST-003. A test under tests/aio/ext/ or
+        # tests/aio/backends/ is *not* in scope.
+        aio = tmp_path / "aio"
+        aio.mkdir()
+        bad = aio / "test_async_misplaced.py"
+        bad.write_text(_AZURE_AT_ROOT, encoding="utf-8")
+        rc = main([str(tmp_path)], src_root=tmp_path / "missing_src", grandfathered=frozenset())
+        assert rc == 1
+
+    def test_main_does_not_scan_tests_aio_ext(self, tmp_path):
+        # tests/aio/ext/ is governed by Rule E + the ext placement
+        # contract, not Rule B. A banned-import file there must not
+        # trigger Rule B (the ext file would still be flagged separately
+        # only if it doesn't have a matching ext source — that's Rule E).
+        ext_dir = tmp_path / "aio" / "ext"
+        ext_dir.mkdir(parents=True)
+        f = ext_dir / "test_async_foo.py"
+        f.write_text(_AZURE_AT_ROOT, encoding="utf-8")
+        # Build a synthetic src with the ext source so Rule E doesn't fire.
+        src = tmp_path / "src"
+        (src / "ext").mkdir(parents=True)
+        (src / "ext" / "foo.py").write_text("", encoding="utf-8")
+        # No tests/ext/ either, so Rule E's tests/ext/ orphan check doesn't
+        # apply. Real banned set still empty (synthetic src has no backends).
+        rc = main([str(tmp_path)], src_root=src, grandfathered=frozenset())
+        assert rc == 0
+
+
+# ---------------------------------------------------------------------------
+# Stale grandfather entry detection
+# ---------------------------------------------------------------------------
+
+
+class TestStaleGrandfatherDetection:
+    """The grandfather list (``_BACKEND_AT_ROOT_GRANDFATHERED``) is a
+    transitional measure (BK-191). Entries whose underlying file no longer
+    violates Rule B are dead weight; the script self-prunes by reporting
+    them as stale so the list shrinks monotonically.
+    """
+
+    def test_main_reports_stale_entry_when_file_absent(self, tmp_path):
+        # No grandfathered files exist in the tmp tree → all entries
+        # in the supplied grandfather set are stale.
+        rc = main(
+            [str(tmp_path)],
+            src_root=tmp_path / "fake",
+            grandfathered=frozenset({"test_legacy.py"}),
+        )
+        assert rc == 1
+
+    def test_main_reports_stale_entry_when_file_clean(self, tmp_path):
+        # File exists but doesn't violate → still stale.
+        clean = tmp_path / "test_legacy.py"
+        clean.write_text("def test_clean(): assert True\n", encoding="utf-8")
+        rc = main(
+            [str(tmp_path)],
+            src_root=tmp_path / "fake",
+            grandfathered=frozenset({"test_legacy.py"}),
+        )
+        assert rc == 1
+
+    def test_main_clean_when_grandfathered_file_actually_violates(self, tmp_path):
+        # Grandfathered file exists and DOES violate → grandfather skip
+        # applies → no Rule B violation surfaces, and the entry is *not*
+        # stale (it fired). Use a private-path import (no banned_names
+        # required) to drive the check via the synthetic src.
+        violating = tmp_path / "test_legacy.py"
+        violating.write_text(_AZURE_AT_ROOT, encoding="utf-8")
+        rc = main(
+            [str(tmp_path)],
+            src_root=tmp_path / "fake",
+            grandfathered=frozenset({"test_legacy.py"}),
+        )
+        assert rc == 0
 
 
 # ---------------------------------------------------------------------------

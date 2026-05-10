@@ -142,6 +142,7 @@ class TestGlobFiles:
         with pytest.raises(CapabilityNotSupported):
             list(glob_files(store, "*.txt"))
 
+    @pytest.mark.spec("GLOB-007")
     @pytest.mark.spec("GLOB-009")
     @pytest.mark.parametrize(
         ("child_path", "pattern", "expected"),
@@ -153,9 +154,11 @@ class TestGlobFiles:
     def test_glob_files_with_child_store(
         self, mem_store: Store, child_path: str, pattern: str, expected: list[str]
     ) -> None:
-        # GLOB-009: ``glob_files(store, pattern)`` accepts any ``Store``,
-        # including a child wrapper. Also exercises GLOB-015 (no backend
-        # coupling — operates only through the public Store API).
+        # Stacked markers: GLOB-007 (Store path scoping with root_path —
+        # the child's root prepends correctly) and GLOB-009 (signature
+        # accepts any Store, including a child wrapper). GLOB-015 (no
+        # backend coupling) is exercised implicitly by the same call:
+        # glob_files reaches into the child only through public Store API.
         child = mem_store.child(child_path)
         results = sorted(str(f.path) for f in glob_files(child, pattern))
         assert results == expected

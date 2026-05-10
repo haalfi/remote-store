@@ -41,16 +41,21 @@ enforces three rules at CI time, all derived from spec 048:
 - **S** — tests that load modules from `scripts/` via `sys.path` manipulation
   must live in `tests/scripts/`. Tests using
   `importlib.util.spec_from_file_location` are review-enforced.
-- **B** — top-level `tests/test_*.py` may import from `remote_store.backends`
-  only the in-process backends (`MemoryBackend`, `LocalBackend`) plus the
-  shared `_fileinfo` helper. Concrete cloud / network backends belong under
-  `tests/backends/<backend>/` per TEST-003. The banned-class roster is
-  derived at script import via a static AST scan of
+- **B** — top-level `tests/test_*.py` and `tests/aio/test_async_*.py` may
+  import from `remote_store.backends` only the in-process backend modules
+  (`_memory`, `_local`) and the shared `_fileinfo` helper module; every
+  symbol in those modules is allowed. Concrete cloud / network backends
+  belong under `tests/backends/<backend>/` per TEST-003. The banned-class
+  roster is derived at script import via a static AST scan of
   `src/remote_store/backends/` and `src/remote_store/aio/backends/`
   (see `_discover_banned_backend_names`); a new backend file added under
-  either directory joins the banned set automatically. The script holds a
-  grandfathered allow-list of legacy cross-cutting files in
-  `_BACKEND_AT_ROOT_GRANDFATHERED`; their migration is tracked as a
+  either directory joins the banned set automatically. Wildcard imports
+  (`from remote_store.backends import *`) are flagged unconditionally
+  because they may pull in any current or future banned class. The
+  grandfathered allow-list (`_BACKEND_AT_ROOT_GRANDFATHERED`) is
+  self-pruning: an entry whose underlying file no longer triggers a
+  violation is reported as a stale entry, so the list shrinks
+  monotonically without manual audits. Per-file migration is tracked as a
   follow-up audit.
 - **E** — ext-module tests live at `tests/ext/test_<x>.py` (mirroring
   `src/remote_store/ext/`). Top-level `tests/test_ext_*.py` is banned, and

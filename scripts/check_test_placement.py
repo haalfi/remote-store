@@ -10,11 +10,21 @@ S — **scripts/ sys.path.** A test file anywhere under ``tests/`` (except
 ``tests/scripts/``) that loads modules from ``scripts/`` via ``sys.path``
 manipulation belongs in ``tests/scripts/``.
 
-B — **backend imports at root.** Top-level ``tests/test_*.py`` may import
-from ``remote_store.backends`` only the in-process backends
-(``MemoryBackend``, ``LocalBackend``). Concrete cloud / network backends
-(Azure / S3 / SFTP / SQL / HTTP) are TEST-003 violations at root and
-belong under ``tests/backends/<backend>/``.
+B — **backend imports at root.** Top-level ``tests/test_*.py`` and
+``tests/aio/test_async_*.py`` may import from ``remote_store.backends``
+only the in-process backend modules (``_memory``, ``_local``) and the
+shared ``_fileinfo`` helper module — every public class in those
+modules is allowed. Concrete cloud / network backends (Azure / S3 /
+SFTP / SQL / HTTP) are TEST-003 violations and belong under
+``tests/backends/<backend>/``. Banned class names are derived at script
+import via ``_discover_banned_backend_names``; star-imports
+(``from remote_store.backends import *``) are flagged unconditionally
+because they may pull in any current or future banned class.
+
+A grandfathered allow-list (``_BACKEND_AT_ROOT_GRANDFATHERED``) covers
+legacy cross-cutting test files. The list is *self-pruning*: an entry
+that no longer triggers a violation (file removed, refactored, or
+moved) is reported as a stale entry so the list shrinks monotonically.
 
 E — **ext placement.** Ext-module tests live in
 ``tests/ext/test_<x>.py`` (BK-189). Top-level ``tests/test_ext_*.py`` is
@@ -206,15 +216,26 @@ def _check_file(path: Path) -> str | None:
     return None
 
 
-def _check_backend_imports_at_root(path: Path) -> list[str]:
-    """Rule B. Flag concrete-backend imports in a top-level ``tests/test_*.py``.
+def _compute_backend_violations(path: Path, banned_names: frozenset[str]) -> list[str]:
+    """Raw Rule B scan: returns concrete-backend import violations for one file.
 
-    Returns a list of ``"<path>:<lineno>: <message>"`` strings; empty when
-    the file is clean. Files in
-    ``_BACKEND_AT_ROOT_GRANDFATHERED`` are skipped (BK-190 audit follow-up).
+    Does *not* apply the grandfather-skip; callers who need that should
+    use ``_check_backend_imports_at_root``. Splitting the two lets
+    ``main()`` detect stale grandfather entries (entries that no longer
+    have any actual violation to skip).
+
+    Three import styles are inspected:
+      1. ``from remote_store.backends._<x> import …``
+         (private path; flagged when ``<x>`` is not in
+         ``_ALLOWED_BACKEND_MODULES``)
+      2. ``import remote_store.backends._<x>`` (with or without alias)
+         (same allow-list)
+      3. ``from remote_store.backends import <Name>, …``
+         (public namespace; flagged when any name is in ``banned_names``,
+         and unconditionally when the import is a wildcard
+         ``import *`` — the wildcard could pull in any current or future
+         banned class)
     """
-    if path.name in _BACKEND_AT_ROOT_GRANDFATHERED:
-        return []
     try:
         source = path.read_text(encoding="utf-8")
     except (UnicodeDecodeError, OSError) as exc:
@@ -255,9 +276,17 @@ def _check_backend_imports_at_root(path: Path) -> list[str]:
                     f"{node.module!r}: move to tests/backends/<backend>/ (TEST-003)"
                 )
             continue
-        # ``from remote_store.backends import <Name>, …`` — flag banned names.
+        # ``from remote_store.backends import <Name>, …`` and
+        # ``from remote_store.backends import *``.
         if node.module == "remote_store.backends":
-            banned = sorted(a.name for a in node.names if a.name in _BANNED_BACKEND_NAMES)
+            star_import = any(a.name == "*" for a in node.names)
+            banned = sorted(a.name for a in node.names if a.name in banned_names)
+            if star_import:
+                violations.append(
+                    f"{path}:{node.lineno}: wildcard import from "
+                    "remote_store.backends may pull in concrete backend "
+                    "classes: list explicit imports instead (TEST-003)"
+                )
             if banned:
                 violations.append(
                     f"{path}:{node.lineno}: imports concrete backend(s) "
@@ -265,6 +294,22 @@ def _check_backend_imports_at_root(path: Path) -> list[str]:
                     "move to tests/backends/<backend>/ (TEST-003)"
                 )
     return violations
+
+
+def _check_backend_imports_at_root(path: Path, banned_names: frozenset[str] | None = None) -> list[str]:
+    """Rule B with grandfather-skip applied. Wrapper around
+    ``_compute_backend_violations`` for direct callers (e.g. unit tests)
+    that don't need the stale-entry tracking ``main()`` does.
+
+    ``banned_names`` defaults to the module-level
+    ``_BANNED_BACKEND_NAMES`` discovered at import. Pass a custom set to
+    drive the check from a synthetic ``src_root`` (e.g. in unit tests).
+    """
+    if path.name in _BACKEND_AT_ROOT_GRANDFATHERED:
+        return []
+    if banned_names is None:
+        banned_names = _BANNED_BACKEND_NAMES
+    return _compute_backend_violations(path, banned_names)
 
 
 def _check_root_ext_naming(tests_dir: Path) -> list[str]:
@@ -307,15 +352,46 @@ def _check_ext_orphans(tests_dir: Path, src_root: Path) -> list[str]:
     return violations
 
 
-def main(directories: list[str] | None = None, src_root: Path | None = None) -> int:
+def _is_rule_b_candidate(path: Path, tests_dir: Path) -> bool:
+    """True if ``path`` is a top-level cross-cutting test that Rule B applies to.
+
+    Two homes per spec 048 TEST-010:
+      - sync top-level: ``<tests_dir>/test_*.py``
+      - async top-level: ``<tests_dir>/aio/test_async_*.py``
+
+    Async backend-specific tests live under ``tests/backends/<backend>/aio/``
+    (TEST-003) and ext-module async tests live under ``tests/aio/ext/``;
+    both are *not* candidates here.
+    """
+    if path.parent == tests_dir:
+        return True
+    aio_dir = tests_dir / "aio"
+    return path.parent == aio_dir and path.name.startswith("test_async_")
+
+
+def main(
+    directories: list[str] | None = None,
+    src_root: Path | None = None,
+    grandfathered: frozenset[str] | None = None,
+) -> int:
     if directories is None:
         directories = ["tests"]
     if src_root is None:
         src_root = ROOT / "src" / "remote_store"
+    if grandfathered is None:
+        grandfathered = _BACKEND_AT_ROOT_GRANDFATHERED
+
+    # Thread src_root through Rule B: discover banned names once for this
+    # run instead of relying on the module-global computed at import.
+    # Synthetic src trees in unit tests now drive Rule B correctly.
+    banned_names = _discover_banned_backend_names(src_root)
 
     scripts_violations: list[str] = []
     backend_violations: list[str] = []
     ext_violations: list[str] = []
+    # Track which grandfather entries actually fired so we can report
+    # stale ones (entries where the file is absent or no longer violates).
+    grandfather_actually_violating: set[str] = set()
 
     for directory in directories:
         tests_dir = Path(directory)
@@ -326,13 +402,31 @@ def main(directories: list[str] | None = None, src_root: Path | None = None) -> 
                 msg = _check_file(path)
                 if msg is not None:
                     scripts_violations.append(msg)
-            # Rule B — top-level tests/test_*.py only.
-            if path.parent == tests_dir:
-                backend_violations.extend(_check_backend_imports_at_root(path))
+            # Rule B — top-level sync and top-level async cross-cutting tests.
+            if _is_rule_b_candidate(path, tests_dir):
+                raw = _compute_backend_violations(path, banned_names)
+                if not raw:
+                    continue
+                if path.name in grandfathered:
+                    grandfather_actually_violating.add(path.name)
+                else:
+                    backend_violations.extend(raw)
 
         # Rule E — directory-level scans.
         ext_violations.extend(_check_root_ext_naming(tests_dir))
         ext_violations.extend(_check_ext_orphans(tests_dir, src_root))
+
+    # Stale grandfather entries: any name in ``grandfathered`` that didn't
+    # fire is dead weight (file removed, refactored, or no longer
+    # importing a banned backend). Keeps the list shrinking monotonically
+    # without manual audits.
+    stale = grandfathered - grandfather_actually_violating
+    if stale:
+        backend_violations.append(
+            f"stale grandfather entry/ies: {sorted(stale)!r} no longer "
+            "import a banned backend (file absent or clean) — remove from "
+            "_BACKEND_AT_ROOT_GRANDFATHERED in scripts/check_test_placement.py"
+        )
 
     total = len(scripts_violations) + len(backend_violations) + len(ext_violations)
     if total:

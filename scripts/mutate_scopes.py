@@ -133,6 +133,32 @@ def _matching_ext_test(name: str) -> str | None:
     return candidate.name if candidate.is_file() else None
 
 
+def _add_misc_scope(
+    out: dict[str, Scope],
+    *,
+    name: str,
+    test_files: list[Path],
+    matched: set[str],
+    test_path_prefix: str,
+    targets: list[str],
+) -> None:
+    """Bundle orphan tests under a misc scope.
+
+    Orphans are entries in ``test_files`` whose name is not in
+    ``matched`` (i.e. not already paired with a per-file scope). They
+    are bundled with ``targets`` — typically the full source list for
+    the surrounding namespace — under ``name``. No-op when no orphans
+    are present, so the scope inventory stays sparse.
+
+    The pattern collapses two near-identical blocks (``core-misc`` /
+    ``ext-misc``) and keeps the next orphan-catch one helper call away.
+    """
+    orphan_tests = [f"{test_path_prefix}{p.name}" for p in test_files if p.name not in matched]
+    if not orphan_tests:
+        return
+    out[name] = Scope(targets=targets, tests=orphan_tests)
+
+
 # ---------------------------------------------------------------------------
 # SCOPES — every entry derived from the registry or filesystem
 # ---------------------------------------------------------------------------
@@ -216,23 +242,30 @@ def _build() -> dict[str, Scope]:
             if p.name != "__init__.py" and f"src/remote_store/backends/{p.name}" not in known_backend_src
         ]
     )
-    orphan_tests = [f"tests/{p.name}" for p in _toplevel_test_files() if p.name not in matched_core_tests]
-    # ``tests/ext/`` orphan-catch: namespace-level tests like
-    # ``test_contract.py`` have no matching ``ext/<x>.py`` source. Bundle
-    # them with the full ext target list so their mutation runs against
-    # the whole namespace they police.
-    ext_orphan_tests = [f"tests/ext/{p.name}" for p in _ext_test_files() if p.name not in matched_ext_tests]
-    if ext_orphan_tests:
-        out["ext-misc"] = Scope(
-            targets=[
-                f"src/remote_store/ext/{p.name}"
-                for p in sorted((_SRC_ROOT / "ext").glob("*.py"))
-                if p.name != "__init__.py"
-            ],
-            tests=ext_orphan_tests,
-        )
-    if orphan_tests:
-        out["core-misc"] = Scope(targets=orphan_targets, tests=orphan_tests)
+    # Bundle orphan tests (those not paired with a per-file scope above)
+    # with a target list spanning the surrounding namespace. Two
+    # invocations today; ``tests/aio/`` and ``tests/aio/ext/`` will plug
+    # in here when their orphan-catches arrive.
+    _add_misc_scope(
+        out,
+        name="core-misc",
+        test_files=_toplevel_test_files(),
+        matched=matched_core_tests,
+        test_path_prefix="tests/",
+        targets=orphan_targets,
+    )
+    _add_misc_scope(
+        out,
+        name="ext-misc",
+        test_files=_ext_test_files(),
+        matched=matched_ext_tests,
+        test_path_prefix="tests/ext/",
+        targets=[
+            f"src/remote_store/ext/{p.name}"
+            for p in sorted((_SRC_ROOT / "ext").glob("*.py"))
+            if p.name != "__init__.py"
+        ],
+    )
 
     # Per-transport backend scopes — collapses old backends-local/cloud.
     for t in _TRANSPORTS:
