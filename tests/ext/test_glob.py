@@ -1,6 +1,14 @@
 """Tests for ext.glob -- portable Tier 3 fallback for glob_files().
 
-Tier 3: ext.glob.glob_files() -- portable fallback (GLOB-009 through GLOB-017)
+Markers in this file: GLOB-009 (signature accepts any Store, including
+child wrappers), GLOB-010 (native delegation when supported), GLOB-011
+(client-side fallback patterns), GLOB-016 (capability gating
+propagation). GLOB-012 / GLOB-013 / GLOB-014 (internal helpers in
+``_glob.py``) are covered in ``tests/test_glob.py``. GLOB-015 (no
+backend coupling) and GLOB-017 (empty results) are exercised
+implicitly: GLOB-015 by ``test_glob_files_with_child_store`` (operates
+through the public ``Store`` API on a wrapped child) and GLOB-017 by
+the ``no_matches`` parametrize case in ``test_fallback_patterns``.
 
 Companion to tests/test_glob.py, which covers the core ``_glob`` helpers
 (extract_prefix / needs_recursive / pattern_to_regex) and the
@@ -139,7 +147,7 @@ class TestGlobFiles:
         with pytest.raises(CapabilityNotSupported):
             list(glob_files(store, "*.txt"))
 
-    @pytest.mark.spec("GLOB-007")
+    @pytest.mark.spec("GLOB-009")
     @pytest.mark.parametrize(
         ("child_path", "pattern", "expected"),
         [
@@ -150,6 +158,9 @@ class TestGlobFiles:
     def test_glob_files_with_child_store(
         self, mem_store: Store, child_path: str, pattern: str, expected: list[str]
     ) -> None:
+        # GLOB-009: ``glob_files(store, pattern)`` accepts any ``Store``,
+        # including a child wrapper. Also exercises GLOB-015 (no backend
+        # coupling — operates only through the public Store API).
         child = mem_store.child(child_path)
         results = sorted(str(f.path) for f in glob_files(child, pattern))
         assert results == expected

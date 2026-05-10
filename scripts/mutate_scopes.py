@@ -7,10 +7,15 @@ definitions feed ``hatch run mutate <scope>`` (via
 
 Every scope is derived. Backend scopes read
 ``tests/backends/fixtures/backends.toml`` + ``fixtures.toml`` via
-``_loader.py``. Non-backend scopes pair each ``src/remote_store/_<x>.py``
-or ``src/remote_store/ext/<x>.py`` with the prefix-matching
-``tests/test_<x>*.py`` (and ``tests/test_ext_<x>*.py`` for ext); test
-files that match no src file roll into a single ``core-misc`` scope.
+``_loader.py``. Core scopes pair each ``src/remote_store/_<x>.py`` (and
+``src/remote_store/backends/_<x>.py`` once the loader recognises one)
+with prefix-matching top-level tests at ``tests/test_<x>*.py``. Ext
+scopes pair each ``src/remote_store/ext/<x>.py`` with the single file at
+``tests/ext/test_<x>.py`` (BK-189 collapsed the prior dual ``test_ext_``
+/ bare-named matching). Top-level tests with no matching src by prefix
+roll into ``core-misc``; ``tests/ext/test_*.py`` files with no matching
+ext source (e.g., the namespace-wide ``test_contract.py``) roll into
+``ext-misc``.
 
 Cmdline split
 =============

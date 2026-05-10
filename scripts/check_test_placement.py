@@ -202,6 +202,20 @@ def _check_backend_imports_at_root(path: Path) -> list[str]:
 
     violations: list[str] = []
     for node in ast.walk(tree):
+        # ``import remote_store.backends._<x>`` (and ``... as alias``).
+        # ``ast.Import`` is a separate node type from ``ast.ImportFrom``;
+        # walking only the latter would silently miss this style.
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if not alias.name.startswith("remote_store.backends._"):
+                    continue
+                submodule = alias.name.removeprefix("remote_store.backends.").split(".", 1)[0]
+                if submodule not in _ALLOWED_BACKEND_MODULES:
+                    violations.append(
+                        f"{path}:{node.lineno}: imports backend module "
+                        f"{alias.name!r}: move to tests/backends/<backend>/ (TEST-003)"
+                    )
+            continue
         if not isinstance(node, ast.ImportFrom) or node.module is None:
             continue
         # ``from remote_store.backends._<x> import …``

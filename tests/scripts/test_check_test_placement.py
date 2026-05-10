@@ -264,6 +264,35 @@ def test_fileinfo():
     assert build_file_info is not None
 """
 
+_MIXED_BANNED_ALLOWED = """\
+from remote_store.backends import S3Backend, MemoryBackend
+
+def test_mixed():
+    assert S3Backend is not None
+    assert MemoryBackend is not None
+"""
+
+_BARE_IMPORT_AZURE = """\
+import remote_store.backends._azure
+
+def test_bare():
+    assert remote_store.backends._azure is not None
+"""
+
+_BARE_IMPORT_AZURE_AS = """\
+import remote_store.backends._sftp as _sftp_mod
+
+def test_bare_as():
+    assert _sftp_mod is not None
+"""
+
+_BARE_IMPORT_MEMORY = """\
+import remote_store.backends._memory
+
+def test_bare_memory():
+    assert remote_store.backends._memory is not None
+"""
+
 
 class TestBackendImportsAtRoot:
     def test_flags_private_module_import(self, tmp_path):
@@ -302,6 +331,41 @@ class TestBackendImportsAtRoot:
         # still report no violations — the BK-190 audit owns the migration.
         f = tmp_path / "test_seekable.py"
         f.write_text(_AZURE_AT_ROOT, encoding="utf-8")
+        assert _check_backend_imports_at_root(f) == []
+
+    def test_mixed_banned_allowed_flags_only_banned(self, tmp_path):
+        # ``from remote_store.backends import S3Backend, MemoryBackend`` —
+        # one banned + one allowed name on the same line. The check must
+        # report S3Backend and not flag MemoryBackend; pin the filter so a
+        # future refactor cannot accidentally drop or invert it.
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_MIXED_BANNED_ALLOWED, encoding="utf-8")
+        violations = _check_backend_imports_at_root(f)
+        assert len(violations) == 1
+        assert "S3Backend" in violations[0]
+        assert "MemoryBackend" not in violations[0]
+
+    def test_flags_bare_import_of_banned_module(self, tmp_path):
+        # ``import remote_store.backends._azure`` — bare ``ast.Import`` form,
+        # not ``from … import``. Must be flagged the same as the ``from``-form
+        # so a new file can't sneak through by switching import styles.
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_BARE_IMPORT_AZURE, encoding="utf-8")
+        violations = _check_backend_imports_at_root(f)
+        assert len(violations) == 1
+        assert "remote_store.backends._azure" in violations[0]
+
+    def test_flags_bare_import_with_alias(self, tmp_path):
+        # ``import remote_store.backends._sftp as _sftp_mod`` — alias form.
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_BARE_IMPORT_AZURE_AS, encoding="utf-8")
+        violations = _check_backend_imports_at_root(f)
+        assert len(violations) == 1
+        assert "remote_store.backends._sftp" in violations[0]
+
+    def test_allows_bare_import_of_memory(self, tmp_path):
+        f = tmp_path / "test_at_root.py"
+        f.write_text(_BARE_IMPORT_MEMORY, encoding="utf-8")
         assert _check_backend_imports_at_root(f) == []
 
     def test_main_flags_new_root_violation(self, tmp_path):
