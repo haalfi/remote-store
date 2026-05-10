@@ -39,13 +39,12 @@ enforces three rules at CI time, all derived from spec 048:
   must live in `tests/scripts/`. Tests using
   `importlib.util.spec_from_file_location` are review-enforced.
 - **B** — top-level `tests/test_*.py` may import from `remote_store.backends`
-  only the in-process backends (`MemoryBackend`, `LocalBackend`, plus the
-  shared `_fileinfo` helper). Concrete cloud / network backends (Azure / S3
-  / SFTP / SQL / HTTP) belong under `tests/backends/<backend>/` per
-  TEST-003. A grandfathered allow-list inside the script covers cross-cutting
-  legacy files (`test_config.py`, `test_coverage_gaps.py`, `test_depth_listing.py`,
-  `test_examples.py`, `test_pbt_write_result.py`, `test_ping.py`,
-  `test_seekable.py`); their migration is tracked as a follow-up audit.
+  only the in-process backends (`MemoryBackend`, `LocalBackend`) plus the
+  shared `_fileinfo` helper. Concrete cloud / network backends belong under
+  `tests/backends/<backend>/` per TEST-003. The script holds a
+  grandfathered allow-list of legacy cross-cutting files; their migration
+  is tracked as a follow-up audit. Allow-list and banned-class roster live
+  in `_BACKEND_AT_ROOT_GRANDFATHERED` and `_BANNED_BACKEND_NAMES`.
 - **E** — ext-module tests live at `tests/ext/test_<x>.py` (mirroring
   `src/remote_store/ext/`). Top-level `tests/test_ext_*.py` is banned, and
   every `tests/ext/test_<x>.py` must have a matching

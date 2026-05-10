@@ -205,21 +205,18 @@ and the highest ID already in this file, then take the next integer. Run
 
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
   BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
-  `tests/` root) but grandfathers seven legacy files that import multiple
-  cloud backends to verify cross-cutting features:
-  `test_config.py` (config-loader construction across backends),
-  `test_coverage_gaps.py` (explicit module-level coverage padding),
-  `test_depth_listing.py` (depth-limited listing across backends),
-  `test_examples.py` (example demos), `test_pbt_write_result.py` (PBT
-  oracle), `test_ping.py` (ping/health-check across protocols),
-  `test_seekable.py` (Store.read_seekable across backends).
-  For each file, decide: (a) move backend-specific assertions to
+  `tests/` root) but grandfathers a set of legacy cross-cutting files
+  that each import multiple cloud backends to verify cross-protocol
+  features (config loaders, depth-limited listing, example demos, PBT
+  oracles, ping / health checks, seekable reads, coverage padding). The
+  authoritative roster lives in
+  `scripts/check_test_placement.py::_BACKEND_AT_ROOT_GRANDFATHERED`. For
+  each entry, decide: (a) move backend-specific assertions to
   `tests/backends/<backend>/`, (b) reshape into conformance parametrize
-  (`tests/backends/conformance/`), or (c) keep at root if genuinely
-  cross-cutting and document why. `test_coverage_gaps.py` is the most
-  obvious candidate for split — its sections are explicit per-backend
-  coverage padding. Each file removed from the allow-list closes part of
-  this item. Spec: TEST-003, TEST-010.
+  (`tests/backends/conformance/`), or (c) keep at root and document why.
+  Coverage-padding tests are the most obvious candidates for split.
+  Each entry removed from the allow-list closes part of this item.
+  Spec: TEST-003, TEST-010.
 
 - [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
   Originally targeted the now-removed top-level

@@ -1,18 +1,13 @@
 """Tests for ext.glob -- portable Tier 3 fallback for glob_files().
 
-Markers in this file: GLOB-009 (signature accepts any Store, including
-child wrappers), GLOB-010 (native delegation when supported), GLOB-011
-(client-side fallback patterns), GLOB-016 (capability gating
-propagation). GLOB-012 / GLOB-013 / GLOB-014 (internal helpers in
-``_glob.py``) are covered in ``tests/test_glob.py``. GLOB-015 (no
-backend coupling) and GLOB-017 (empty results) are exercised
-implicitly: GLOB-015 by ``test_glob_files_with_child_store`` (operates
-through the public ``Store`` API on a wrapped child) and GLOB-017 by
-the ``no_matches`` parametrize case in ``test_fallback_patterns``.
+Tier 3 surface: ``glob_files`` signature, native delegation when the
+backend declares ``Capability.GLOB``, client-side fallback patterns, and
+capability-gating propagation. The ``@pytest.mark.spec`` markers below
+record the precise spec IDs each test pins.
 
-Companion to tests/test_glob.py, which covers the core ``_glob`` helpers
-(extract_prefix / needs_recursive / pattern_to_regex) and the
-``Store.glob`` / ``Backend.glob`` Tier 2 native path.
+Companion to ``tests/test_glob.py``, which covers the internal helpers
+in ``_glob.py`` (extract_prefix / needs_recursive / pattern_to_regex)
+and the Tier 2 native path through ``Store.glob`` / ``Backend.glob``.
 
 Covers spec 018-glob.md.
 """
