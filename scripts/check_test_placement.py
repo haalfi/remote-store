@@ -313,7 +313,15 @@ def _check_backend_imports_at_root(path: Path, banned_names: frozenset[str] | No
 
 
 def _check_root_ext_naming(tests_dir: Path) -> list[str]:
-    """Rule E (a). Flag any top-level ``tests/test_ext_*.py`` (banned by BK-189)."""
+    """Rule E (a). Flag banned top-level ext-prefix test files in both the
+    sync and async trees.
+
+    - ``tests/test_ext_*.py`` (sync) is banned by BK-189; canonical
+      home is ``tests/ext/test_<x>.py``.
+    - ``tests/aio/test_async_ext_*.py`` (async) follows the same
+      1:1 invariant per the TEST-010 amendment; canonical home is
+      ``tests/aio/ext/test_async_<x>.py``.
+    """
     violations: list[str] = []
     for path in sorted(tests_dir.glob("test_ext_*.py")):
         if path.parent != tests_dir:
@@ -322,33 +330,52 @@ def _check_root_ext_naming(tests_dir: Path) -> list[str]:
         violations.append(
             f"{path}: top-level test_ext_*.py is banned: move to tests/ext/test_{target_stem}.py (TEST-002 / TEST-010)"
         )
+    aio_dir = tests_dir / "aio"
+    if aio_dir.is_dir():
+        for path in sorted(aio_dir.glob("test_async_ext_*.py")):
+            if path.parent != aio_dir:
+                continue
+            target_stem = path.stem.removeprefix("test_async_ext_")
+            violations.append(
+                f"{path}: top-level tests/aio/test_async_ext_*.py is banned: "
+                f"move to tests/aio/ext/test_async_{target_stem}.py (TEST-002 / TEST-010)"
+            )
     return violations
 
 
 def _check_ext_orphans(tests_dir: Path, src_root: Path) -> list[str]:
-    """Rule E (b). Each ``tests/ext/test_<x>.py`` must have a matching
-    ``src/remote_store/ext/<x>.py``, or be on the namespace-contract allow-list.
+    """Rule E (b). Each ext test must pair with a matching ext source.
+
+    Two parallel scans, mirroring the TEST-010 1:1 invariant:
+      - sync: ``tests/ext/test_<x>.py`` ↔ ``src/remote_store/ext/<x>.py``
+      - async: ``tests/aio/ext/test_async_<x>.py`` ↔
+        ``src/remote_store/aio/ext/<x>.py``
+
+    Files in ``_EXT_ORPHAN_ALLOWLIST`` (namespace-wide invariants like
+    ``test_contract.py``) are exempt.
     """
-    ext_dir = tests_dir / "ext"
-    if not ext_dir.is_dir():
-        return []
-    ext_src_dir = src_root / "ext"
-    known_modules = (
-        {p.stem for p in ext_src_dir.glob("*.py") if p.name != "__init__.py"} if ext_src_dir.is_dir() else set()
-    )
     violations: list[str] = []
-    for path in sorted(ext_dir.glob("test_*.py")):
-        if path.parent != ext_dir:
+    for ext_test_dir, src_ext_dir, prefix, src_label in (
+        (tests_dir / "ext", src_root / "ext", "test_", "src/remote_store/ext"),
+        (tests_dir / "aio" / "ext", src_root / "aio" / "ext", "test_async_", "src/remote_store/aio/ext"),
+    ):
+        if not ext_test_dir.is_dir():
             continue
-        if path.name in _EXT_ORPHAN_ALLOWLIST:
-            continue
-        target_stem = path.stem.removeprefix("test_")
-        if target_stem not in known_modules:
-            violations.append(
-                f"{path}: no matching src/remote_store/ext/{target_stem}.py: "
-                "rename, remove, or add to the contract allow-list "
-                "in scripts/check_test_placement.py (TEST-002)"
-            )
+        known_modules = (
+            {p.stem for p in src_ext_dir.glob("*.py") if p.name != "__init__.py"} if src_ext_dir.is_dir() else set()
+        )
+        for path in sorted(ext_test_dir.glob("test_*.py")):
+            if path.parent != ext_test_dir:
+                continue
+            if path.name in _EXT_ORPHAN_ALLOWLIST:
+                continue
+            target_stem = path.stem.removeprefix(prefix)
+            if target_stem not in known_modules:
+                violations.append(
+                    f"{path}: no matching {src_label}/{target_stem}.py: "
+                    "rename, remove, or add to the contract allow-list "
+                    "in scripts/check_test_placement.py (TEST-002)"
+                )
     return violations
 
 

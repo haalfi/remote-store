@@ -418,8 +418,10 @@ class TestBackendImportsAtRoot:
     def test_main_scans_top_level_aio_test_async_files(self, tmp_path):
         # tests/aio/test_async_*.py is the async analog of top-level
         # tests/test_*.py and must be subject to Rule B per spec 048
-        # TEST-010 + TEST-003. A test under tests/aio/ext/ or
-        # tests/aio/backends/ is *not* in scope.
+        # TEST-010 + TEST-003. Async ext-module tests under tests/aio/ext/
+        # are governed by Rule E; async backend-specific tests live under
+        # tests/backends/<backend>/aio/ per TEST-010 (not under
+        # tests/aio/backends/, which the spec does not define).
         aio = tmp_path / "aio"
         aio.mkdir()
         bad = aio / "test_async_misplaced.py"
@@ -428,20 +430,20 @@ class TestBackendImportsAtRoot:
         assert rc == 1
 
     def test_main_does_not_scan_tests_aio_ext(self, tmp_path):
-        # tests/aio/ext/ is governed by Rule E + the ext placement
-        # contract, not Rule B. A banned-import file there must not
-        # trigger Rule B (the ext file would still be flagged separately
-        # only if it doesn't have a matching ext source — that's Rule E).
+        # tests/aio/ext/ is governed by Rule E (async branch), not
+        # Rule B. A banned-import file there must not trigger Rule B;
+        # the async-ext orphan check (Rule E) is satisfied by pairing
+        # the test with src/remote_store/aio/ext/<x>.py.
         ext_dir = tmp_path / "aio" / "ext"
         ext_dir.mkdir(parents=True)
         f = ext_dir / "test_async_foo.py"
         f.write_text(_AZURE_AT_ROOT, encoding="utf-8")
-        # Build a synthetic src with the ext source so Rule E doesn't fire.
+        # Synthetic src must include both ext trees so neither Rule E
+        # branch fires; the test isolates Rule B's (non-)scan behaviour.
         src = tmp_path / "src"
         (src / "ext").mkdir(parents=True)
-        (src / "ext" / "foo.py").write_text("", encoding="utf-8")
-        # No tests/ext/ either, so Rule E's tests/ext/ orphan check doesn't
-        # apply. Real banned set still empty (synthetic src has no backends).
+        (src / "aio" / "ext").mkdir(parents=True)
+        (src / "aio" / "ext" / "foo.py").write_text("", encoding="utf-8")
         rc = main([str(tmp_path)], src_root=src, grandfathered=frozenset())
         assert rc == 0
 
@@ -561,18 +563,40 @@ class TestRootExtNaming:
         assert "test_ext_foo.py" in violations[0]
         assert "tests/ext/test_foo.py" in violations[0]
 
+    def test_flags_root_aio_test_async_ext_prefix(self, tmp_path):
+        # tests/aio/test_async_ext_*.py is the async analog of the banned
+        # sync prefix. Per the TEST-010 1:1 invariant, the canonical home
+        # is tests/aio/ext/test_async_<x>.py.
+        aio = tmp_path / "aio"
+        aio.mkdir()
+        bad = aio / "test_async_ext_foo.py"
+        bad.write_text("def test_x(): assert True\n", encoding="utf-8")
+        violations = _check_root_ext_naming(tmp_path)
+        assert len(violations) == 1
+        assert "test_async_ext_foo.py" in violations[0]
+        assert "tests/aio/ext/test_async_foo.py" in violations[0]
+
     def test_clean_root_returns_empty(self, tmp_path):
         (tmp_path / "test_seekable.py").write_text("", encoding="utf-8")
+        # An aio sibling without the banned prefix is also clean.
+        aio = tmp_path / "aio"
+        aio.mkdir()
+        (aio / "test_async_drift.py").write_text("", encoding="utf-8")
         assert _check_root_ext_naming(tmp_path) == []
 
 
 class TestExtOrphans:
-    def _setup_src(self, tmp_path: Path, modules: list[str]) -> Path:
+    def _setup_src(self, tmp_path: Path, modules: list[str], async_modules: list[str] | None = None) -> Path:
         src = tmp_path / "src"
         ext = src / "ext"
         ext.mkdir(parents=True)
         for m in modules:
             (ext / f"{m}.py").write_text("", encoding="utf-8")
+        if async_modules:
+            aio_ext = src / "aio" / "ext"
+            aio_ext.mkdir(parents=True)
+            for m in async_modules:
+                (aio_ext / f"{m}.py").write_text("", encoding="utf-8")
         return src
 
     def test_flags_unmatched_ext_test(self, tmp_path):
@@ -586,6 +610,20 @@ class TestExtOrphans:
         assert "test_typo.py" in violations[0]
         assert "no matching src/remote_store/ext/typo.py" in violations[0]
 
+    def test_flags_unmatched_async_ext_test(self, tmp_path):
+        # tests/aio/ext/test_async_<x>.py without
+        # src/remote_store/aio/ext/<x>.py is the async analog of the
+        # sync orphan check. Pinned by the TEST-010 1:1 invariant.
+        src_root = self._setup_src(tmp_path, [], async_modules=["write"])
+        aio_ext_tests = tmp_path / "tests" / "aio" / "ext"
+        aio_ext_tests.mkdir(parents=True)
+        (aio_ext_tests / "test_async_write.py").write_text("", encoding="utf-8")
+        (aio_ext_tests / "test_async_typo.py").write_text("", encoding="utf-8")
+        violations = _check_ext_orphans(tmp_path / "tests", src_root)
+        assert len(violations) == 1
+        assert "test_async_typo.py" in violations[0]
+        assert "no matching src/remote_store/aio/ext/typo.py" in violations[0]
+
     def test_allows_namespace_contract_test(self, tmp_path):
         src_root = self._setup_src(tmp_path, [])
         ext_tests = tmp_path / "tests" / "ext"
@@ -597,10 +635,28 @@ class TestExtOrphans:
         src_root = self._setup_src(tmp_path, [])
         assert _check_ext_orphans(tmp_path / "tests", src_root) == []
 
+    def test_async_ext_pairing_passes(self, tmp_path):
+        # Positive: a properly paired async ext test does not violate.
+        src_root = self._setup_src(tmp_path, [], async_modules=["write"])
+        aio_ext_tests = tmp_path / "tests" / "aio" / "ext"
+        aio_ext_tests.mkdir(parents=True)
+        (aio_ext_tests / "test_async_write.py").write_text("", encoding="utf-8")
+        assert _check_ext_orphans(tmp_path / "tests", src_root) == []
+
     def test_main_flags_ext_violations(self, tmp_path):
         src_root = self._setup_src(tmp_path, [])
         ext_tests = tmp_path / "tests" / "ext"
         ext_tests.mkdir(parents=True)
         (ext_tests / "test_orphan.py").write_text("", encoding="utf-8")
         rc = main([str(tmp_path / "tests")], src_root=src_root)
+        assert rc == 1
+
+    def test_main_flags_async_ext_violations(self, tmp_path):
+        # End-to-end: the rule fires from main() for both async-ext
+        # asymmetries (Rule E (a) ban + Rule E (b) orphan).
+        src_root = self._setup_src(tmp_path, [], async_modules=[])
+        aio_ext_tests = tmp_path / "tests" / "aio" / "ext"
+        aio_ext_tests.mkdir(parents=True)
+        (aio_ext_tests / "test_async_orphan.py").write_text("", encoding="utf-8")
+        rc = main([str(tmp_path / "tests")], src_root=src_root, grandfathered=frozenset())
         assert rc == 1
