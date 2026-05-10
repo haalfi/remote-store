@@ -37,6 +37,8 @@ _check_file = _mod._check_file
 _check_backend_imports_at_root = _mod._check_backend_imports_at_root
 _check_root_ext_naming = _mod._check_root_ext_naming
 _check_ext_orphans = _mod._check_ext_orphans
+_discover_banned_backend_names = _mod._discover_banned_backend_names
+_BANNED_BACKEND_NAMES = _mod._BANNED_BACKEND_NAMES
 main = _mod.main
 
 
@@ -373,6 +375,59 @@ class TestBackendImportsAtRoot:
         bad.write_text(_AZURE_AT_ROOT, encoding="utf-8")
         rc = main([str(tmp_path)], src_root=tmp_path / "missing_src")
         assert rc == 1
+
+
+# ---------------------------------------------------------------------------
+# Banned-backend discovery (Rule B's ground truth)
+# ---------------------------------------------------------------------------
+
+
+class TestDiscoverBannedBackendNames:
+    """``_discover_banned_backend_names`` is the SSoT for Rule B's class
+    roster; the previous hand-maintained ``_BANNED_BACKEND_NAMES`` constant
+    drifted whenever a new backend landed.
+    """
+
+    def test_includes_known_concrete_backends(self):
+        # A representative sample — the function returns whatever currently
+        # exists under src/, so any new backend joins automatically.
+        assert "S3Backend" in _BANNED_BACKEND_NAMES
+        assert "AzureBackend" in _BANNED_BACKEND_NAMES
+        assert "SFTPBackend" in _BANNED_BACKEND_NAMES
+
+    def test_excludes_in_process_backends(self):
+        assert "MemoryBackend" not in _BANNED_BACKEND_NAMES
+        assert "LocalBackend" not in _BANNED_BACKEND_NAMES
+
+    def test_excludes_async_in_process_backends(self):
+        # ``aio/backends/_memory.py`` is excluded because its file stem
+        # (``_memory``) is in ``_ALLOWED_BACKEND_MODULES``; the async sibling
+        # gets the same allow-list treatment as the sync one.
+        assert "AsyncMemoryBackend" not in _BANNED_BACKEND_NAMES
+
+    def test_synthetic_src_tree_returns_only_backend_classes(self, tmp_path: Path) -> None:
+        # Build a minimal fake src tree to pin the static-AST contract:
+        # one banned class, one allowed module, one helper class with a
+        # non-Backend suffix.
+        src = tmp_path / "remote_store"
+        backends = src / "backends"
+        backends.mkdir(parents=True)
+        (backends / "_fake_cloud.py").write_text(
+            "class FakeCloudBackend:\n    pass\n\nclass FakeCloudOptions:\n    pass\n",
+            encoding="utf-8",
+        )
+        (backends / "_memory.py").write_text(
+            "class FakeMemoryBackend:\n    pass\n",
+            encoding="utf-8",
+        )
+        result = _discover_banned_backend_names(src)
+        assert result == frozenset({"FakeCloudBackend"})
+
+    def test_handles_missing_src_tree(self, tmp_path: Path) -> None:
+        # When src doesn't exist (e.g., script run outside the repo), the
+        # function returns an empty set rather than raising.
+        result = _discover_banned_backend_names(tmp_path / "nonexistent")
+        assert result == frozenset()
 
 
 # ---------------------------------------------------------------------------

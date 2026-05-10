@@ -18,11 +18,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     `_local`) and the shared `_fileinfo` helper. Concrete cloud /
     network classes imported via either the private module path or the
     public `remote_store.backends` namespace are TEST-003 violations.
-    The banned roster lives in `_BANNED_BACKEND_NAMES`; a grandfathered
-    allow-list of cross-cutting legacy files (each also importing
-    `MemoryBackend` or `LocalBackend`) lives in
-    `_BACKEND_AT_ROOT_GRANDFATHERED`. Per-file migration tracked as
-    **BK-191**. New top-level files are held to the strict standard.
+    The banned class roster is computed at script import via
+    `_discover_banned_backend_names`, a static AST scan over
+    `src/remote_store/backends/_*.py` and
+    `src/remote_store/aio/backends/_*.py` that excludes modules in
+    `_ALLOWED_BACKEND_MODULES`; a new backend file added under either
+    directory automatically extends the banned set with no
+    hand-maintained list to drift. A grandfathered allow-list of
+    cross-cutting legacy files (each also importing `MemoryBackend` or
+    `LocalBackend`) lives in `_BACKEND_AT_ROOT_GRANDFATHERED`. Per-file
+    migration tracked as **BK-191**. New top-level files are held to
+    the strict standard.
   - **E** (new): top-level `tests/test_ext_*.py` is banned, and every
     `tests/ext/test_<x>.py` must have a matching
     `src/remote_store/ext/<x>.py`. The single namespace-wide contract

@@ -33,31 +33,59 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Concrete backends that may NOT be imported from a top-level ``tests/test_*.py``.
-# Mirrors the ``_BACKEND_CLASS_NAMES`` list in
-# ``tests/backends/fixtures/test_registry.py`` minus the in-process backends
-# (``MemoryBackend`` / ``LocalBackend``) which are explicitly allowed at root
-# per spec 048's note "Top-level non-backend tests use a single concrete
-# backend (typically MemoryBackend)".
-_BANNED_BACKEND_NAMES: frozenset[str] = frozenset(
-    {
-        "AzureBackend",
-        "AsyncAzureBackend",
-        "S3Backend",
-        "S3PyArrowBackend",
-        "SFTPBackend",
-        "SQLBlobBackend",
-        "SQLQueryBackend",
-        "ReadOnlyHttpBackend",
-    }
-)
-
-# Backend modules under ``remote_store.backends._*`` that may be imported at root.
-# ``_memory`` / ``_local`` are explicitly allowed (in-process backends, see TEST-010).
-# ``_fileinfo`` is a shared backend helper (FileInfo / FolderEntry construction
-# utilities), not a backend. Anything else (``_azure``, ``_s3``, ``_sftp``,
-# ``_sqlalchemy`` …) is banned.
+# Backend modules under ``remote_store.backends._*`` and
+# ``remote_store.aio.backends._*`` that may be imported at root.
+# ``_memory`` / ``_local`` are explicitly allowed (in-process backends, see
+# TEST-010). ``_fileinfo`` is a shared backend helper (FileInfo /
+# FolderEntry construction utilities), not a backend. Anything else
+# (``_azure``, ``_s3``, ``_sftp``, ``_sqlalchemy`` …) is banned.
 _ALLOWED_BACKEND_MODULES: frozenset[str] = frozenset({"_memory", "_local", "_fileinfo"})
+
+
+def _discover_banned_backend_names(src_root: Path) -> frozenset[str]:
+    """Discover concrete backend class names that are TEST-003 violations
+    when imported into a top-level ``tests/test_*.py``.
+
+    AST-walks ``src/remote_store/backends/_*.py`` and
+    ``src/remote_store/aio/backends/_*.py`` (the only two homes for
+    ``Backend`` / ``AsyncBackend`` implementations), collects every
+    top-level class whose name ends in ``Backend`` (the repo-wide naming
+    convention), and excludes classes defined in modules listed in
+    ``_ALLOWED_BACKEND_MODULES``.
+
+    Static-only: never imports the package, so optional backend deps
+    are not required to compute the list. A new backend file added under
+    either backends directory automatically extends the banned set —
+    no hand-maintained roster to drift.
+    """
+    banned: set[str] = set()
+    for backends_dir in (src_root / "backends", src_root / "aio" / "backends"):
+        if not backends_dir.is_dir():
+            continue
+        for py in sorted(backends_dir.glob("_*.py")):
+            if py.name == "__init__.py" or py.stem in _ALLOWED_BACKEND_MODULES:
+                continue
+            try:
+                source = py.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError) as exc:
+                sys.stderr.write(f"Skipping {py}: {type(exc).__name__}\n")
+                continue
+            try:
+                tree = ast.parse(source, filename=str(py))
+            except SyntaxError:
+                sys.stderr.write(f"Skipping {py}: SyntaxError\n")
+                continue
+            for node in tree.body:
+                if isinstance(node, ast.ClassDef) and node.name.endswith("Backend"):
+                    banned.add(node.name)
+    return frozenset(banned)
+
+
+# Concrete backends that may NOT be imported from a top-level
+# ``tests/test_*.py``. Discovered dynamically at script import via
+# ``_discover_banned_backend_names`` — see that function for the contract
+# and for why a hand-maintained list was unsuitable.
+_BANNED_BACKEND_NAMES: frozenset[str] = _discover_banned_backend_names(ROOT / "src" / "remote_store")
 
 # Grandfathered top-level test files that import concrete cloud / network
 # backends today. These exercise cross-cutting features whose contracts are

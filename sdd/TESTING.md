@@ -41,10 +41,14 @@ enforces three rules at CI time, all derived from spec 048:
 - **B** — top-level `tests/test_*.py` may import from `remote_store.backends`
   only the in-process backends (`MemoryBackend`, `LocalBackend`) plus the
   shared `_fileinfo` helper. Concrete cloud / network backends belong under
-  `tests/backends/<backend>/` per TEST-003. The script holds a
-  grandfathered allow-list of legacy cross-cutting files; their migration
-  is tracked as a follow-up audit. Allow-list and banned-class roster live
-  in `_BACKEND_AT_ROOT_GRANDFATHERED` and `_BANNED_BACKEND_NAMES`.
+  `tests/backends/<backend>/` per TEST-003. The banned-class roster is
+  derived at script import via a static AST scan of
+  `src/remote_store/backends/` and `src/remote_store/aio/backends/`
+  (see `_discover_banned_backend_names`); a new backend file added under
+  either directory joins the banned set automatically. The script holds a
+  grandfathered allow-list of legacy cross-cutting files in
+  `_BACKEND_AT_ROOT_GRANDFATHERED`; their migration is tracked as a
+  follow-up audit.
 - **E** — ext-module tests live at `tests/ext/test_<x>.py` (mirroring
   `src/remote_store/ext/`). Top-level `tests/test_ext_*.py` is banned, and
   every `tests/ext/test_<x>.py` must have a matching
