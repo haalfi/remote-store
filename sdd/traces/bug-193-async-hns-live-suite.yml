@@ -3,6 +3,16 @@ title: "Async HNS live test suite missing; sync HNS live tests lacking WriteResu
 trigger: "TestAsyncAzureLiveHNS used the Azurite-backed fixture so write_atomic silently delegated to write (HNS never exercised); sole assertion was isinstance(result, WriteResult) violating TESTING.md Rule 2"
 source_items:
   - BUG-193
+audience:
+  - infra.test
+discovery_followups:
+  - BUG-194
+  - BUG-196
+  - BUG-197
+co_shipped_items:
+  - BUG-194
+  - BK-175
+review_rounds: 3
 phases:
   - id: orient
     name: Orient

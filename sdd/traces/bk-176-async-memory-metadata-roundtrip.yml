@@ -4,6 +4,13 @@ trigger: "AsyncMemoryBackend.get_file_info and three other FileInfo-constructing
 source_items:
   - BK-176
   - BUG-189
+audience:
+  - user.api
+discovery_followups:
+  - BK-192
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

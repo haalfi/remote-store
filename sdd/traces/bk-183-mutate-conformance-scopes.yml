@@ -4,6 +4,8 @@ trigger: "Conformance tests in tests/backends/conformance/ were not included in 
 source_items:
   - BK-183
   - BK-179
+audience:
+  - infra.ci
 phases:
   - id: orient
     name: Orient

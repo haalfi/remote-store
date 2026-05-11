@@ -3,6 +3,8 @@ title: "Verify HNS write_atomic user metadata survives the atomic rename in inte
 trigger: "BUG-181 verified metadata forwarding and WriteResult echo in unit tests but could not verify that ADLS Gen2 rename_file preserves user metadata — a service-side semantics question only a real account answers"
 source_items:
   - BUG-182
+audience:
+  - infra.test
 phases:
   - id: orient
     name: Orient

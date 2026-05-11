@@ -3,6 +3,8 @@ title: "Author templates folder (sdd/templates/)"
 trigger: "RFC/spec/ADR/audit/research starters were absent or scattered; contributors had no canonical starting point for new SDD artefacts"
 source_items:
   - ID-175
+audience:
+  - contributor.process
 phases:
   - id: orient
     name: Orient

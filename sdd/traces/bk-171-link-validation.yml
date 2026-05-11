@@ -4,6 +4,9 @@ trigger: "docs-src/ files contained virtual-URL-form links (../design/adrs/...) 
 source_items:
   - BK-171
   - BK-167b
+audience:
+  - contributor.tooling
+  - user.site
 phases:
   - id: orient
     name: Orient

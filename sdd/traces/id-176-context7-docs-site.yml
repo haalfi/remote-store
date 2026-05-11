@@ -3,6 +3,11 @@ title: "Wire stable docs site to context7"
 trigger: "remote-store's rendered docs site at docs.remotestore.dev/stable/ was not indexed by context7, reducing LLM discoverability of the Diataxis-structured user docs"
 source_items:
   - ID-176
+audience:
+  - user.discoverability.llm
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 7
 phases:
   - id: orient
     name: Orient

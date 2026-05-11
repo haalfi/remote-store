@@ -8,12 +8,22 @@ description: |
   files, gate-density rankings, and co-read pairs — signals that drive
   optimisation of the sdd/ documentation structure.
 
+  Traces record what actually happened, not what was supposed to happen.
+  Authoring discipline: when a step led nowhere, surfaced an unrelated
+  followup, or felt misleading, the step still belongs in the trace —
+  tagged with an `outcome` other than `ok`. Cleaned-up "ideal" traces
+  silently lie to the aggregator and defeat the whole point of the data.
+  The same principle applies to top-level fields: `surprising_ripples`,
+  `discovery_followups`, and `review_rounds` are where the messy reality
+  of the work lands, and they are the most analytically valuable parts
+  of the trace.
+
   Files prefixed with an underscore (this file: _schema.yml) are
   infrastructure, not traces. Aggregator scripts should glob
   "sdd/traces/[!_]*.yml" to skip them.
 
 type: object
-required: [id, title, trigger, source_items, phases]
+required: [id, title, trigger, source_items, audience, phases]
 additionalProperties: false
 
 properties:
@@ -51,6 +61,137 @@ properties:
       Backlog IDs this trace was derived from. Convention: the trace's own
       id (without the UC- prefix case) is the first entry; related or
       predecessor items follow.
+
+  audience:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items:
+      type: string
+      enum:
+        - user.api
+        - user.api_docs
+        - user.site
+        - user.discoverability.llm
+        - user.discoverability.human
+        - contributor.process
+        - contributor.tooling
+        - infra.test
+        - infra.ci
+        - internal.style
+    description: |
+      Who this change is for. List sorted by priority — the dominant
+      audience first; secondary audiences follow when a single change
+      legitimately serves multiple constituencies (e.g. a docs-framework
+      rollout that also restructures end-user nav).
+
+      Values:
+      - user.api                    Runtime behavior, signature, or error
+                                    visible to package consumers.
+      - user.api_docs               New information in a public docstring
+                                    (added Raises:, new param semantics).
+                                    Surfaces via help() / IDE hover.
+      - user.site                   docs.remotestore.dev pages, layout,
+                                    rendering, images.
+      - user.discoverability.llm    Outside-package metadata for LLM /
+                                    agent discovery (context7.json,
+                                    llms.txt, MCP-targeted metadata).
+      - user.discoverability.human  Outside-package signals for humans
+                                    (README badges, GitHub topics, social
+                                    cards).
+      - contributor.process         Repo-internal "how we work" artefacts:
+                                    specs, ADRs, audits, AUTHORING,
+                                    templates.
+      - contributor.tooling         hatch scripts, lint / check scripts,
+                                    gen scripts, pre-commit hooks.
+      - infra.test                  Fixtures, registries, conformance,
+                                    placement, live-cloud coverage.
+      - infra.ci                    Workflow files, mutation matrix,
+                                    scheduled jobs.
+      - internal.style              Format-only normalisation with no
+                                    content or behavior delta (RST→backtick
+                                    sweep, em-dash policing).
+
+      Derived rule: CHANGELOG entry required iff any entry in `audience`
+      starts with `user.`, or `contributor.process` introduces a new
+      user-facing framework / spec. Items tagged only `contributor.tooling`,
+      `infra.test`, `infra.ci`, or `internal.style` are not user-facing
+      and skip CHANGELOG.
+
+  discovery_followups:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^(BK|BUG|ID|AF|BL)-[0-9]+[a-z]?$"
+    description: |
+      Backlog IDs born during this PR's review or implementation that did
+      not exist when the trace was first written. Filled post-merge to
+      capture the discovery-cascade pattern (a fix-for-X reveals Y, Z).
+      Optional; absent on traces with no surprises.
+
+  co_shipped_items:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^(BK|BUG|ID|AF|BL)-[0-9]+[a-z]?$"
+    description: |
+      Other backlog IDs closed by the same PR. Use when one PR roll-up
+      ships multiple related items so trace aggregators do not double-count
+      shared file reads. The owning trace's id is implicit and not
+      repeated here.
+
+  expected_ripples:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+    description: |
+      File paths mechanically touched alongside the work because the
+      ripple-check table (or another anticipatory authority) already
+      covers them. Examples: `sdd/backlogid.json` after any
+      `BACKLOG`/`BACKLOG-DONE` edit; `docs-src/_data/graph/graph.json`
+      and `docs-src/explanation/graph_viz.html` after public-API
+      docstring changes per the "A public method signature" ripple-check
+      row; `src/remote_store/_proxy.py` and `src/remote_store/ext/*.py`
+      after a new Store method per the "A Store method" row. These tag
+      along by design; recording them lets aggregators distinguish
+      "files the schema anticipated" from the cited reads in `phases`.
+
+  surprising_ripples:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+    description: |
+      File paths the work needed to touch but neither the trace's cited
+      reads nor the ripple-check table anticipated — places where doc /
+      gate coverage failed. These are the analytically valuable ripples:
+      a recurring entry here points at a missing ripple-check row, a
+      stale spec, or a doc that did not flag a downstream dependency.
+      Examples observed in Phase 3: `.github/workflows/ci.yml` after a
+      `pyproject.toml` lint-scope expansion (caught only in PR review);
+      `docs-src/_data/graph/graph.json` after a docstring sweep when the
+      ripple-check table did not flag graph regen.
+
+  review_rounds:
+    type: integer
+    minimum: 0
+    description: |
+      Count of review-driven iterations on the merged PR — commits that
+      exist specifically because review feedback was incorporated.
+      Filled post-merge by the trace author's judgement; the assessment
+      is human (a `fix:`-prefixed commit is the easy case, but a commit
+      following the repo's `BK-NNN: ...` / `BUG-NNN: ...` convention can
+      also be review-driven and should be counted). 0 means the first
+      push merged without revision; higher counts signal the trace
+      under-modelled the actual work surface. Where a deterministic
+      independent measurement is needed (e.g. for aggregator code), use
+      GitHub's review-submission count from
+      `gh pr view --json reviews | length` instead — it counts a
+      different thing (formal review events, not fix commits) and is
+      reported separately.
 
   phases:
     type: array
@@ -130,7 +271,35 @@ $defs:
         description: |
           One short phrase capturing what to take from this read — the
           information that justifies the step appearing in this phase.
-          Imperative mood, no terminal period required.
+          Imperative mood, no terminal period required. When the
+          motivation for the read is non-obvious from the section name
+          alone (e.g., the agent reached for this doc to clarify an
+          edge case the previous step did not cover), encode the
+          motivation here too rather than splitting it into a separate
+          field. Pair with `outcome` when the read did not deliver
+          what was hoped for.
+
+      outcome:
+        type: string
+        enum: [ok, unclear, misleading]
+        description: |
+          Optional retrospective tag for how the read landed:
+          - ok          (default if absent) — the read delivered the
+                        information the `extract` describes; no further
+                        work needed at this step.
+          - unclear     the section was on-topic but vague or
+                        incomplete; the agent had to compensate (read
+                        adjacent sections, ask for clarification, infer
+                        from code). Recurring `unclear` on a section is
+                        a doc-improvement signal.
+          - misleading  the section told the agent something that
+                        proved wrong, stale, or contradictory with
+                        another authority. The strongest doc-failure
+                        signal in the schema.
+          Authors fill this post-merge when known; aggregators treat
+          absent values as `ok` for ranking but should still surface
+          coverage gaps (e.g., "12% of steps carry an explicit outcome
+          tag" is itself a signal about authoring discipline).
 
 examples:
   - id: BK-176
@@ -138,6 +307,13 @@ examples:
     trigger: "AsyncMemoryBackend.get_file_info omitted metadata=node.metadata while sync MemoryBackend passed it through"
     source_items:
       - BK-176
+    audience:
+      - user.api
+    discovery_followups:
+      - BK-192
+    expected_ripples:
+      - sdd/backlogid.json
+    review_rounds: 1
     phases:
       - id: orient
         name: Orient
@@ -146,6 +322,7 @@ examples:
             section: "ASYNC-016"
             read_type: gate
             extract: "AsyncMemoryBackend metadata round-trip contract"
+            outcome: ok
       - id: verify
         name: Verify
         steps:
@@ -153,3 +330,4 @@ examples:
             section: "Ripple-check table / A bug fix"
             read_type: verify
             extract: "BACKLOG item, CHANGELOG stub, failing test before fix"
+            outcome: ok

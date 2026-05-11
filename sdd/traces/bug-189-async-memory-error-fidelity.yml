@@ -3,6 +3,8 @@ title: "AsyncMemoryBackend did not mirror sync error fidelity for type-mismatche
 trigger: "AsyncMemoryBackend raised NotFound in cases where sync MemoryBackend and Dafny contract require InvalidPath; copy(src, src, overwrite=False) also raised AlreadyExists instead of being a no-op"
 source_items:
   - BUG-189
+audience:
+  - user.api
 phases:
   - id: orient
     name: Orient

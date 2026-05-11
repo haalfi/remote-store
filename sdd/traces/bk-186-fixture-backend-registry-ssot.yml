@@ -4,6 +4,8 @@ trigger: "Identity-set constants (_FLAT_NAMESPACE_BACKENDS, _NO_SELF_OP_BACKENDS
 source_items:
   - BK-186
   - BK-185
+audience:
+  - infra.test
 phases:
   - id: orient
     name: Orient

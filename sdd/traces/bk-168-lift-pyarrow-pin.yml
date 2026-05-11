@@ -3,6 +3,8 @@ title: "Lift pyarrow <24 pin; require moto >=5.2.0"
 trigger: "pyarrow 23 was blocked by moto multipart-checksum bugs fixed in moto 5.2.0; pin could be raised after adopting the fixed moto version"
 source_items:
   - BK-168
+audience:
+  - user.api
 phases:
   - id: orient
     name: Orient

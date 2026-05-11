@@ -4,6 +4,8 @@ trigger: "BK-171 LinkResolver rewrites every ](…) token including image syntax
 source_items:
   - BUG-188
   - BK-171
+audience:
+  - user.site
 phases:
   - id: orient
     name: Orient

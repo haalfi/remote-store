@@ -3,6 +3,8 @@ title: "AsyncAzureBackend.write_atomic broken for all payloads on real ADLS Gen2
 trigger: "_count_and_pass_hns wrapped bytes in an async generator; Azure SDK get_length() returns None for async generators causing flush_data(position=None) to omit required DFS query parameter; Azurite tolerated the missing position but real ADLS Gen2 did not"
 source_items:
   - BUG-194
+audience:
+  - user.api
 phases:
   - id: orient
     name: Orient

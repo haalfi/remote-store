@@ -3,6 +3,8 @@ title: "Add live HNS test class for write/write_atomic/open_atomic directory-pat
 trigger: "BUG-190/BUG-192 added unit-mocked tests for the directory-path InvalidPath guard but mocks rely on the same probe assumption as the code; a live integration test is needed to verify the guard on a real ADLS Gen2 account"
 source_items:
   - BUG-191
+audience:
+  - infra.test
 phases:
   - id: orient
     name: Orient

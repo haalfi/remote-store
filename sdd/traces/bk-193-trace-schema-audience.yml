@@ -1,0 +1,168 @@
+id: BK-193
+title: "Trace schema: audience field + post-hoc fields; re-tag unreleased traces"
+trigger: "PR #608 introduced sdd/traces/ as 39 anticipated-read records for unreleased work; question whether the schema captures the actual work surface or needs extensions. Retrospective: this trace is itself authored after the BK-193 work landed, as the last retrospective trace before the CLAUDE.md live-authoring rule takes effect. Future traces (starting with BK-194) will be live-authored, exercising the discipline this item ships."
+source_items:
+  - BK-193
+audience:
+  - contributor.tooling
+  - contributor.process
+discovery_followups:
+  - BK-194
+  - ID-179
+  - ID-180
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Existing trace schema: step shape, read_type enum, phase free-form, no audience / post-hoc / outcome fields"
+        outcome: ok
+      - file: sdd/traces/
+        section: "(directory)"
+        read_type: reference
+        extract: "39 trace YAMLs spanning BK / BUG / ID items; sample for Phase 1 aggregation"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Principle 7: be critical, not agreeable; mandate to challenge the trace data rather than aggregate it uncritically"
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rules / rule 6"
+        read_type: gate
+        extract: "SDD pipeline; specs vs code authority; document types lifecycle"
+        outcome: ok
+
+  - id: analyse
+    name: Analyse (Phases 1 + 2 + 3 + audience survey)
+    steps:
+      - file: sdd/traces/
+        section: "(aggregation over all 39 files)"
+        read_type: gate
+        extract: "Phase 1: file rank-frequency, phase-vocabulary distribution, read-type by phase, Jaccard co-occurrence, section-string conventions"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: gate
+        extract: "Phase 2 anchor: confirm Phase 1 spine match against the actual ripple-check authority"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement, Rules"
+        read_type: reference
+        extract: "Phase 2 anchor for the other gate-heavy file in the spine"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: gate
+        extract: "Audience-taxonomy survey: 39 closed items, each with its own rationale; data source for the 10-value enum"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "(full)"
+        read_type: reference
+        extract: "Phase 2 cross-check: why CONTRIBUTING.md misses the top-6 spine; surfaced Authoritative Document Format duplication"
+        outcome: unclear
+      - file: sdd/traces/bk-176-async-memory-metadata-roundtrip.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Phase 3 sample 1 of 9: clean-fix pattern; fan-out 0.4×"
+        outcome: ok
+      - file: sdd/traces/bk-178-fix-rst-roles.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Phase 3 sample: RST + audit re-sweep pattern; fan-out 3.6× (surprising_ripples: graph.json regen)"
+        outcome: ok
+      - file: sdd/traces/bug-193-async-hns-live-suite.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Phase 3 sample: discovery cascade pattern (BUG-194/196/197 born in the work); fan-out 0.7×"
+        outcome: ok
+
+  - id: design
+    name: Design schema extensions
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "examples"
+        read_type: reference
+        extract: "Existing example block as the field-shape baseline; design the new fields to fit the same indentation and ordering"
+        outcome: ok
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting / types / docstring style for the schema description prose"
+        outcome: ok
+
+  - id: implement
+    name: Implement (schema + 39 traces + research doc + CLAUDE.md)
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "properties, $defs/step"
+        read_type: gate
+        extract: "Add 5 top-level fields (audience required, 4 optional); add step-level outcome; rename known_ripples to expected_ripples; add surprising_ripples; sharpen description prose"
+        outcome: ok
+      - file: sdd/traces/
+        section: "(all 39 files)"
+        read_type: gate
+        extract: "Re-tag every trace with audience; fill retrospective discovery_followups / co_shipped_items / expected_ripples / surprising_ripples / review_rounds on the 9 Phase-3-sampled traces from their merged PRs"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Backlog (Prioritized), Ideas"
+        read_type: gate
+        extract: "Add BK-194 to Prioritised section; add ID-179 and ID-180 to Ideas section per BK-vs-ID taxonomy (committed vs idea)"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: gate
+        extract: "Add BK-193 entry with cross-reference to the research doc"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Trace authoring (mandatory)"
+        read_type: gate
+        extract: "Add live-authoring discipline section between Backlog (mandatory) and Dev commands; five timing-ordered bullets covering before-starting / during reads / as events occur / before submitting / ship with PR"
+        outcome: ok
+
+  - id: docs
+    name: Docs (research doc)
+    steps:
+      - file: sdd/templates/research-template.md
+        section: "(full)"
+        read_type: gate
+        extract: "Four-section template: Problem Statement, Survey, Evaluation, Recommendation; adapt to the empirical-investigation shape (three Phases as Survey subsections)"
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "Research docs default to dual; no explicit marker needed; renders at explanation/design/research/<slug>.md on docs site"
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "6-month test, principles-not-enumerations, source-of-truth — applied to the research-doc prose"
+        outcome: ok
+      - file: sdd/DOCUMENTATION.md
+        section: "Rule 6 (Typography)"
+        read_type: gate
+        extract: "Em-dash sparingly; table N/A uses em-dash not 'No'; both surfaced as failures during self-validation pass"
+        outcome: misleading
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        read_type: verify
+        extract: "Confirm research doc carries dual marker by directory default; backref from BACKLOG-DONE; no orphan cross-links"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "(jsonschema validation)"
+        read_type: verify
+        extract: "All 39 re-tagged traces validate against the extended schema; example block self-validates"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: verify
+        extract: "check_docs_framework / check_rst_roles / check-links all green across the 14 commits"
+        outcome: ok
