@@ -21,13 +21,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   priority-sorted list, 10 enum values: `user.api`, `user.api_docs`,
   `user.site`, `user.discoverability.{llm,human}`, `contributor.process`,
   `contributor.tooling`, `infra.test`, `infra.ci`, `internal.style`);
-  `discovery_followups`, `co_shipped_items`, `known_ripples` (optional
+  `discovery_followups`, `co_shipped_items`, `expected_ripples` (optional
   lists); `review_rounds` (optional int). Derived rule: CHANGELOG
   required iff any `audience` entry starts with `user.`, or
   `contributor.process` introduces a new framework. All 39 unreleased
   traces under `sdd/traces/` re-tagged; 9 sampled traces additionally
   carry retrospective `discovery_followups` / `co_shipped_items` /
-  `known_ripples` / `review_rounds` filled from their merged PRs
+  `expected_ripples` / `review_rounds` filled from their merged PRs
   (#579, #582, #590, #591, #592, #597, #604, #606, #607). No validator
   wired — the `required` field acts as authoring convention; future
   traces failing to tag will fail visibly on the next aggregator run

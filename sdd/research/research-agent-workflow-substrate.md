@@ -82,6 +82,7 @@ A secondary finding from this phase: a paragraph-level enumeration of [`CONTRIBU
 | BK-174 | #582 | 8 | 7 | 4 | 8 | 0.9× | docstring grew into code-fix |
 
 \* Fan-out = PR files / trace-cited files. Median 1.2×, mean 3.2×.
+† Reviews = count of GitHub formal review-submission events (from `gh pr view --json reviews | length`), distinct from the `review_rounds` field in the trace files, which counts review-driven fix commits. The two numbers measure different things; BK-174's row shows Reviews=8 while its trace records `review_rounds: 3`.
 
 Five patterns the trace schema could not model emerged:
 
@@ -157,10 +158,10 @@ Combining the four surveys against the constraint set (model what's missing with
 | Distinguishes LLM-discoverability (context7) from contributor-tooling (lint scope) | no | yes |
 | Surfaces doc-failure at step level | no | yes (`outcome` enum) |
 | Carries CHANGELOG-required rule derivation | no | yes (derived from `audience` prefix) |
-| Field count | 5 top-level + 4 step | 10 top-level + 5 step |
+| Field count | 5 top-level + 4 step | 11 top-level + 5 step |
 | Authoring discipline (records actual, not ideal) | not stated | tightened in schema description |
 
-The extended schema costs five new top-level fields and one new step-level field. Each closes a specific signal-loss observed in Phase 3 or in the audience survey. No field invents structure not already present in the empirical evidence.
+The extended schema costs six new top-level fields and one new step-level field. Each closes a specific signal-loss observed in Phase 3 or in the audience survey. No field invents structure not already present in the empirical evidence.
 
 Cross-phase consistency check: Phase 1's "CHANGELOG is a near-universal verify gate" claim (79% of traces) is consistent with Phase 3's actual hit-rate (78%), but only the audience taxonomy explains *which* 22% correctly skip it (pure `contributor.tooling`, `infra.test`, `infra.ci`, `internal.style`). The check is methodologically load-bearing: had Phase 3's PR-actual rate diverged sharply from Phase 1's trace-claimed rate (say 50% vs 79%), Phase 1's spine claim would have been falsified and the audience taxonomy would have lacked an empirical anchor.
 
@@ -174,7 +175,7 @@ The substrate question (§ 1) was answered in two schema-extension waves shipped
 
 Two on-thesis actions:
 
-- **(in this PR) Live-trace authoring discipline.** A new "Trace authoring (live, not retrospective)" section in [`CLAUDE.md`](../../CLAUDE.md) instructs every session in this repo to maintain `sdd/traces/<id>-<slug>.yml` as work proceeds, not after merge. This is the directly on-thesis recommendation: the substrate (§§ 1–3) only carries honest signal when authoring is live; Phase 3 showed retrospective traces sanitise away the discovery cascades and surprising ripples the schema was designed to capture. Without this prompt, every future trace continues to be fresh-agent reconstruction and the schema additions cannot pay back.
+- **(in this PR) Live-trace authoring discipline.** A new "Trace authoring (mandatory)" section in [`CLAUDE.md`](../../CLAUDE.md) instructs every session in this repo to maintain `sdd/traces/<id>-<slug>.yml` as work proceeds, not after merge. This is the directly on-thesis recommendation: the substrate (§§ 1–3) only carries honest signal when authoring is live; Phase 3 showed retrospective traces sanitise away the discovery cascades and surprising ripples the schema was designed to capture. Without this prompt, every future trace continues to be fresh-agent reconstruction and the schema additions cannot pay back.
 - **(next PR) BK-194: Ripple-check rewrite into two presentations.** Compact "Quick reference" index at the top of [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) for pre-work scanning; detailed checklist below for verify-end and reviewer use. Two presentations, one data source. Addresses the 3/9 sampled PRs in § 2.3 that missed ripples because the table was treated as closing-only. Surfaced by Phase 3 as a specific action; ships with the first live-authored trace and so doubles as the substrate's proof case.
 
 ### 4.2 Mid-term
