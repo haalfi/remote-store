@@ -203,6 +203,19 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-194 — Ripple-check rewrite: compact pre-work index + detailed verify checklist**
+  `sdd/CLAUDE-REFERENCE.md` § Ripple-check table currently serves only the
+  verify-end purpose (a checklist after the diff is made). Trace research
+  ([research-agent-workflow-substrate.md](research/research-agent-workflow-substrate.md))
+  surfaced that 3/9 sampled PRs missed ripples (#604 `ci.yml`, #591
+  `graph.json` + `graph_viz.html`, #592 `_proxy.py` + extension wrappers)
+  because agents consulted ripple-check only at the end. Add a compact
+  "Quick reference" index at the top of CLAUDE-REFERENCE.md (trigger →
+  ripples one-liner per row, scannable before starting work); keep the
+  existing detailed checklist below for verify-end use. Two presentations,
+  one data source. Add a header section explaining the two purposes.
+  Driven by `surprising_ripples` data from the trace schema.
+
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
   BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
   `tests/` root) but grandfathers a set of legacy cross-cutting files
@@ -287,6 +300,25 @@ and the highest ID already in this file, then take the next integer. Run
 ## Ideas
 
 ### Docs & Tooling
+
+- [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
+  `sdd/traces/_schema.yml` declares `audience` as `required` but no
+  validator runs it. Add `scripts/check_traces.py` that jsonschema-validates
+  every `sdd/traces/[!_]*.yml` against the schema. Wire into the existing
+  `hatch run lint` script list and into the lint CI job. Per
+  `feedback_check_scripts_dual_wire`. Closes the convention-vs-enforcement
+  gap left open by BK-193. No priority while trace authoring is still
+  ad-hoc; promote to BK-prefix when trace volume justifies enforcement.
+
+- [ ] **ID-180 — Stable HTML-anchor IDs across non-spec docs under `sdd/`**
+  Specs already have stable IDs (`ASYNC-016`, `WR-013`); non-spec docs
+  (CLAUDE.md "Principles", CLAUDE-REFERENCE row pointers, AUTHORING /
+  DOCUMENTATION / CONTENT-RULES rules) do not. Trace `section:` fields
+  reference these by heading text, which rots when sections are renamed.
+  Add HTML-anchor comments (`<!-- id: ripple-bug-fix -->`) to stable
+  reference points in seven `sdd/` framework docs plus `CLAUDE.md`. No
+  priority until trace aggregation exists or first heading-text drift
+  breaks a trace reference; promote to BK-prefix at that point.
 
 - [ ] **ID-173 — `check_api_docs.py` — `__all__` ↔ `docs-src/reference/api/index.md`**
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).

@@ -32,9 +32,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   wired — the `required` field acts as authoring convention; future
   traces failing to tag will fail visibly on the next aggregator run
   rather than at commit time.
-  Research: [`sdd/research/research-trace-vs-pr-fidelity.md`](research/research-trace-vs-pr-fidelity.md)
-  captures the empirical investigation (3 phases, 9-PR sample, taxonomy
-  derivation) that motivated the schema additions.
+  Research: [`sdd/research/research-agent-workflow-substrate.md`](research/research-agent-workflow-substrate.md)
+  identifies the substrate the workflow-improvement programme needs;
+  trace-vs-PR fidelity analysis (3 phases, 9-PR sample) was the empirical
+  method that motivated the schema additions.
   Schema-review iteration added two more fields and one rename to close
   the "traces describe ideal, not actual" gap: optional step-level
   `outcome` (`ok` / `unclear` / `misleading`) for descriptive→diagnostic

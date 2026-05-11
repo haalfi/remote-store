@@ -1,4 +1,4 @@
-# Research: Trace-vs-PR Fidelity Analysis (BK-193)
+# Research: Substrate for Data-Driven Improvement of Agent Workflows (BK-193)
 
 **Date:** 2026-05-11
 **Backlog items:** BK-193 (Trace schema: `audience` field + post-hoc fields; re-tag unreleased traces)
@@ -165,76 +165,39 @@ Cross-phase consistency check: Phase 1's "CHANGELOG is a near-universal verify g
 
 ## 4. Recommendation
 
-This research closes the substrate question only. The recommendation below answers (a) and (b) from § 1 so the downstream workflow-improvement programme has a defensible base to build on; the actual evolution of agent behaviour, doc structure, and process gates from trace aggregation remains outside this doc's scope and unexplored.
+The substrate question (§ 1) was answered in two schema-extension waves shipped under BK-193: the full set of fields and the accepted / rejected proposals are summarised in § 3's right column and recorded in [`sdd/BACKLOG-DONE.md`](../BACKLOG-DONE.md). The recommendation below is forward-looking: what to do now that the substrate is in place. Three timeframes plus the explicit non-actions.
 
-Extend the schema in two waves, both shipped under BK-193. All 39 unreleased traces re-tagged; the nine Phase-3-sampled traces additionally carry retrospective fields filled from their merged PRs.
+### 4.1 Quick wins (in this PR)
 
-### 4.1 Initial wave: anchored in Phase 3 patterns
+- *Land BK-194 plus the two ideas (ID-179, ID-180) in [`sdd/BACKLOG.md`](../BACKLOG.md).* Done in this PR.
+- *Restructure this research doc's recommendation into actionable timeframes.* Done.
 
-Five new top-level fields:
+### 4.2 Mid-term (next several PRs)
 
-- `audience` (required, priority-sorted list, 10-value enum): closes the conflation that motivated the audience survey. Derived rule: CHANGELOG required iff any entry in `audience` starts with `user.`, or `contributor.process` introduces a new framework.
-- `discovery_followups` (optional list of backlog IDs): captures items born during review.
-- `co_shipped_items` (optional list of backlog IDs): captures bundled scope.
-- `expected_ripples` (optional list of paths): mechanical tag-along files anticipated by the ripple-check table.
-- `review_rounds` (optional int): review-driven fix-commit count.
+One committed item, two ideas held without priority:
 
-### 4.2 Schema-review wave: external review acceptance/rejection
+- **BK-194: Ripple-check rewrite into two presentations.** Add a compact "Quick reference" index at the top of [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) (trigger → ripples one-liner per row, scannable before starting work); keep the detailed verify checklist below. Add a header explaining the two purposes (pre-work quick reference, before-finish / reviewer checklist). Two presentations, one data source. Addresses the 3/9 sampled PRs that missed ripples because the table was treated as a closing checklist only.
+- **ID-179: Trace schema validator** (`scripts/check_traces.py` wired into `hatch run lint`). Useful but not yet justified — trace authoring volume is too small for an enforcement gate to pay back. Promote to BK-prefix when trace volume grows.
+- **ID-180: Stable HTML-anchor IDs across non-spec docs under `sdd/`.** Inoculation against heading-text drift; speculative until a trace aggregator (§ 4.3) exists or until the first drift breaks a trace reference. Promote to BK-prefix at that point.
 
-A structured external review of the schema-as-data surfaced one design risk (clean-narrative bias) and six tactical suggestions. Three accepted, three rejected.
+### 4.3 Long-term (workflow improvement programme)
 
-**Accepted:**
+The actual workflow improvements the trace substrate exists for. Out of scope here; the schema now carries the signals each needs. Each item below requires the BK-194 / BK-195 / BK-196 quick wins as preconditions to be efficient.
 
-- `outcome` (optional, step-level, enum `ok` / `unclear` / `misleading`): step-local doc-failure signal. Recurring `misleading` on a section is a doc-rewrite candidate; recurring `unclear` flags underspecified areas.
-- `surprising_ripples` (optional, top-level list of paths) paired with `expected_ripples`. The rename of `known_ripples` to `expected_ripples` made the distinction load-bearing in the name: expected = anticipated, surprising = where coverage failed. A recurring entry in `surprising_ripples` is direct evidence the ripple-check table is missing a row.
-- Schema description text tightened: traces record what actually happened, not what should have happened. Authoring discipline is the only defence against cleanup-on-write.
+- *Aggregator scaffolding.* Build `scripts/trace_aggregate.py` that computes the metrics below and feeds a small dashboard. Until this exists, every analysis is hand-rolled (as this research was).
+- *Doc structure optimisation.* Cluster `outcome: unclear|misleading` per section to surface doc-rewrite candidates; rank `surprising_ripples` to propose new ripple-check rows. Data-driven doc evolution.
+- *Process-gate tightening.* `review_rounds` distributions per `audience` slice reveal where review cost concentrates. The PR-#579 pattern (eleven commits on seventeen lines of context7 prose) is one data point; a recurring spike on a specific audience slice would motivate a pre-review gate.
+- *Agent-behaviour heuristics.* Co-read graphs plus the `audience` field hint at "if you are doing X, also read Y" prompts that could be wired into agent skill files. The async-Azure cluster in § 2.1 is the clearest candidate.
+- *Ripple-check evolution.* `surprising_ripples` accumulates as a proposal list for new ripple-check rows. Once an entry recurs in three or more traces, the table owes a row. Most direct data-to-doc feedback loop the schema supports.
 
-**Rejected and why:**
+### 4.4 Settled decisions and known limitations
 
-- *`effort: 1-5` step-level scoring.* Subjective integer effort rots across authors. The signal it promises (rank pain) is already covered at PR level by `review_rounds` and Phase-3 fan-out math, both objective. Step-local pain lands in `outcome: misleading` instead.
-- *Separate `reason:` field on each step.* Motivation and product of a read overlap enough that splitting them invites both fields being thin. The `extract:` description was tightened instead to require motivation when non-obvious.
-- *Step-reuse tracking as a schema field.* The data is already there: counting `(file, section)` pairs per trace is one line of aggregator code. Reframed as an aggregator metric.
+Closed during this research and the interview that produced § 4.1 / 4.2 / 4.3, recorded here so they are not re-opened as questions:
 
-### 4.3 Open questions
-
-- *Extend sample to all 39.* Re-run the trace-vs-PR comparison on every unreleased item to confirm the median fan-out (1.2×) and identify whether the three outliers (BK-187 5.2×, BK-179 6.4×, BK-178 3.6×) generalise.
-- *Model review-driven phases.* Three patterns appeared in real commits but no trace recorded them: `rebase_fix`, `address_review_thread`, `regenerate_artefacts`. Open whether the schema should enumerate them or whether `discovery_followups`, `review_rounds`, and `outcome` capture enough.
-- *Promote ripple-check from verify to also-implement-start.* The cheapest fix is doc: rewrite the trigger phrases in [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) so the table reads usefully before coding, not only after. The `surprising_ripples` field now makes this measurable: a recurring entry is direct evidence of a missing row.
-- *Stable section anchors for non-spec docs.* Specs already have stable IDs (`ASYNC-016`, `WR-013`); non-spec docs ([`CLAUDE.md`](../../CLAUDE.md) "Principles", [`CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) row pointers) do not. Adding HTML-anchor IDs across [`sdd/`](..) would inoculate traces against heading-text drift. Significant authoring work; tracked for when trace data grows.
-- *Content-churn flag.* PR #579 (ID-176) had eleven commits on a 17-line file. `outcome: unclear` carries the signal for the underlying spec/doc, but does not flag that the change itself is editorially volatile. One example is not enough to establish the pattern.
-- *Validator.* The `audience` field is `required` in the schema but unenforced. Wiring a check into `hatch run lint` would turn the convention into a gate. Cost is small; risk is that authors learn to tag mechanically without thinking. Same risk applies to `outcome` defaulting to `ok`.
-
-### 4.4 Downstream programme: what the schema now enables
-
-This research stops at the substrate. The actual workflow improvements
-the data is supposed to drive are out of scope and unexplored, but the
-schema now carries the signals each would need. Sketched as guidance for
-whoever picks up the next phase:
-
-- **Doc structure optimisation.** Aggregate the six-file spine in § 2.1
-  against `outcome: unclear|misleading` and `surprising_ripples`
-  recurrence. Sections that recur as `unclear` are doc-rewrite
-  candidates; paths that recur in `surprising_ripples` are missing
-  ripple-check rows. Both are evidence, not opinion.
-- **Process-gate tightening.** `review_rounds` distributions per
-  `audience` slice reveal where review cost concentrates. The PR-#579
-  pattern (eleven commits on seventeen lines of context7 prose) is one
-  data point; a recurring spike on a specific audience slice would
-  motivate a pre-review gate.
-- **Agent-behaviour heuristics.** Co-read graphs (which two files
-  appear in the same trace) plus the `audience` field hint at "if you
-  are doing X, also read Y" heuristics that could be wired into agent
-  prompts or skill files. The async-Azure cluster in § 2.1 is the
-  clearest candidate.
-- **Ripple-check evolution.** `surprising_ripples` accumulates to a
-  proposal list for new ripple-check rows. Once an entry recurs in
-  three or more traces, the doc owes a row. This is the most direct
-  data-to-doc feedback loop the schema supports.
-- **Aggregator scaffolding.** None of the above runs yet. Building a
-  `scripts/trace_aggregate.py` that computes the metrics above and
-  feeds them into a small dashboard is the next concrete artifact.
-  Until it exists, this research is the only synthesis of the trace
-  data, and it is hand-rolled.
+- *9-PR sample only.* Phase 3 covered iteration-cost regimes (1 to 22 commits) but not every audience slice. Known limitation; revisit if a counter-example surfaces.
+- *Review-driven phases not modelled as schema enum.* `rebase_fix`, `address_review_thread`, `regenerate_artefacts` are real patterns in commit history but already captured by `discovery_followups`, `review_rounds`, and step-level `outcome`. Adding enum values would invite mechanical tagging.
+- *No `content_churn` flag.* PR #579 is the single observation; one data point is not a pattern. Revisit if a second example surfaces.
+- *Rejected schema additions (from the schema-review wave).* `effort: 1-5` step scoring (subjective, rots across authors; pain signal already at PR level); separate `reason:` field per step (overlaps with `extract:`); step-reuse tracking as schema field (reframed as aggregator metric). All three covered structurally by the fields that did ship.
 
 ### 4.5 Method provenance
 
