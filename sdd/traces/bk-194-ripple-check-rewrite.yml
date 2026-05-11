@@ -11,6 +11,8 @@ surprising_ripples:
   - .claude/skills/review-pr/SKILL.md
   - .claude/skills/release/SKILL.md
   - .claude/skills/orchestrate/SKILL.md
+  - sdd/rfcs/rfc-0009-multi-agent-orchestration.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -74,6 +76,11 @@ phases:
         read_type: reference
         extract: "Mechanical rename of 50 'Ripple-check table / A <X>' section strings across 35 existing traces + _schema.yml example + this trace itself — done via tmp/migrate_ripple_section_strings.py one-shot script (kept under tmp/, not committed)."
         outcome: ok
+      - file: sdd/rfcs/rfc-0009-multi-agent-orchestration.md
+        section: "References (line 134)"
+        read_type: reference
+        extract: "PR-review surprising ripple: line 134 quoted the old column header 'If you changed…' as a live pointer (`§ \"If you changed…\"`). Renaming the column to 'Trigger' broke the pointer. Replaced with `§ Ripple-check table > Detailed checklist` matching the skill-files pattern. Exactly the 'agent missed ripple' case BK-194 is designed to prevent — flagged in PR review, not by the ripple-check table."
+        outcome: misleading
 
   - id: verify
     name: Verify

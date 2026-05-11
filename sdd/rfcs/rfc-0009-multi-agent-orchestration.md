@@ -131,7 +131,7 @@ All experts and the orchestrator enforce these rules:
 ## References
 
 - **SDD workflow:** `sdd/000-process.md`
-- **Ripple-check table:** `sdd/CLAUDE-REFERENCE.md` (§ "If you changed…") — orchestrator must verify post-implementation
+- **Ripple-check table:** `sdd/CLAUDE-REFERENCE.md` (§ Ripple-check table > Detailed checklist) — orchestrator must verify post-implementation
 - **Code conventions:** `sdd/DESIGN.md` (experts follow domain-specific conventions)
 - **Documentation standards:** `sdd/DOCUMENTATION.md`, `CONTRIBUTING.md` (authoritative document format)
 - **Expert domain specs:**
