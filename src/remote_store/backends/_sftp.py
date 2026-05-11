@@ -127,6 +127,66 @@ def load_private_key(source: str, *, from_file: bool = False) -> Any:  # pragma:
         return paramiko.RSAKey.from_private_key(buf)
 
 
+def enable_ssh_rsa_compat() -> None:
+    """Restore ``ssh-rsa`` (SHA-1) acceptance across paramiko's four removal sites.
+
+    Required for legacy SFTP servers (e.g. PSFTPd) that only offer
+    ``ssh-rsa`` as a host-key algorithm. Paramiko 3.x+ removed ``ssh-rsa``
+    from defaults at four levels, each blocking a different stage of the
+    SSH handshake:
+
+    1. ``paramiko.Transport._preferred_keys`` -- KEX host-key-algorithm
+       negotiation.
+    2. ``paramiko.Transport._key_info`` -- host-key parsing dispatch.
+    3. ``paramiko.rsakey.RSAKey.HASHES`` -- signature-verification hash
+       dispatch.
+    4. ``paramiko.Transport._preferred_pubkeys`` -- client RSA public-key
+       authentication signatures.
+
+    ``disabled_algorithms`` cannot re-add a default-removed algorithm, so
+    class-level patching is the only path. The patches are idempotent;
+    calling this multiple times in the same process is safe.
+
+    Warning:
+        This is **process-global**. Every paramiko transport in this
+        process will accept SHA-1 host keys for the lifetime of the
+        process. Only call this if the consumer connects exclusively to
+        servers under your operational control, or if you have explicitly
+        evaluated the tradeoff for every server in the process.
+
+        ``ssh-rsa`` is appended (not prepended) to the preferred lists, so
+        modern algorithms are still negotiated first when the server
+        offers them.
+
+    !!! example
+
+        ```python
+        from remote_store.backends import SFTPUtils
+
+        # Call once at process startup, before any SFTPBackend connect.
+        SFTPUtils.enable_ssh_rsa_compat()
+        ```
+    """
+    import paramiko
+    from cryptography.hazmat.primitives import hashes
+    from paramiko.rsakey import RSAKey
+
+    if "ssh-rsa" not in paramiko.Transport._preferred_keys:
+        paramiko.Transport._preferred_keys = (
+            *paramiko.Transport._preferred_keys,
+            "ssh-rsa",
+        )
+    if "ssh-rsa" not in paramiko.Transport._key_info:
+        paramiko.Transport._key_info["ssh-rsa"] = RSAKey
+    if "ssh-rsa" not in RSAKey.HASHES:
+        RSAKey.HASHES["ssh-rsa"] = hashes.SHA1
+    if "ssh-rsa" not in paramiko.Transport._preferred_pubkeys:
+        paramiko.Transport._preferred_pubkeys = (
+            *paramiko.Transport._preferred_pubkeys,
+            "ssh-rsa",
+        )
+
+
 class SFTPUtils:
     """SFTP setup utilities for key loading and host verification.
 
@@ -134,6 +194,9 @@ class SFTPUtils:
 
     - ``SFTPUtils.load_private_key(...)`` -- load RSA keys from file or PEM string
     - ``SFTPUtils.HostKeyPolicy`` -- enum controlling unknown host key behavior
+    - ``SFTPUtils.enable_ssh_rsa_compat()`` -- restore ``ssh-rsa`` (SHA-1)
+      acceptance for legacy SFTP servers (see method docstring for the
+      security tradeoff)
 
     !!! example
 
@@ -151,6 +214,7 @@ class SFTPUtils:
 
     HostKeyPolicy = HostKeyPolicy
     load_private_key = staticmethod(load_private_key)
+    enable_ssh_rsa_compat = staticmethod(enable_ssh_rsa_compat)
 
 
 # endregion
@@ -1044,6 +1108,14 @@ class SFTPBackend(Backend):
             if code == errno.EEXIST:
                 return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
             return RemoteStoreError(str(exc), path=path, backend=self.name)
+        if isinstance(exc, paramiko.ssh_exception.IncompatiblePeer):
+            return BackendUnavailable(
+                f"{exc} [hint: server may only offer ssh-rsa (SHA-1) host keys; "
+                f"call SFTPUtils.enable_ssh_rsa_compat() at process startup "
+                f"if connecting to a legacy SFTP server]",
+                path=path,
+                backend=self.name,
+            )
         if isinstance(exc, paramiko.SSHException):
             return BackendUnavailable(str(exc), path=path, backend=self.name)
         return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover

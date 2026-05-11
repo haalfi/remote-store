@@ -17,6 +17,13 @@
       heading_level: 4
       show_root_heading: false
 
+### enable_ssh_rsa_compat
+
+::: remote_store.backends._sftp.enable_ssh_rsa_compat
+    options:
+      heading_level: 4
+      show_root_heading: false
+
 ## Enums
 
 ### HostKeyPolicy

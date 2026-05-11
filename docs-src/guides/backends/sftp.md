@@ -103,6 +103,52 @@ backend = SFTPBackend(
 )
 ```
 
+## Legacy Servers (`ssh-rsa` / SHA-1)
+
+Paramiko 3.x removed `ssh-rsa` (SHA-1) host keys from defaults across four
+levels of its stack. Servers like **PSFTPd** that only offer `ssh-rsa`
+produce one of these errors during the handshake:
+
+| Error | Stage that failed |
+|-------|-------------------|
+| `IncompatiblePeer: no acceptable host key` | KEX host-key-algorithm negotiation |
+| `KeyError: 'ssh-rsa'` (during connect) | Host-key parsing dispatch |
+| `SSHException: Signature verification (ssh-rsa) failed.` | Signature verification |
+
+`disabled_algorithms` cannot re-enable a default-removed algorithm.
+`SFTPUtils.enable_ssh_rsa_compat()` patches all four removal sites in one
+call:
+
+```python
+from remote_store.backends import SFTPUtils
+
+# Call once, before any SFTPBackend connect to a legacy server.
+SFTPUtils.enable_ssh_rsa_compat()
+```
+
+!!! warning "Security tradeoff"
+    This is **process-global**: every paramiko transport in the process
+    will then accept SHA-1 host keys. Only enable this if every server
+    your process connects to is under your operational control, and push
+    server operators to upgrade to `rsa-sha2-256`/`rsa-sha2-512` so the
+    shim can be removed.
+
+### Alternative: pin `paramiko<3`
+
+Paramiko 2.x kept `ssh-rsa` in defaults natively. Pinning is a
+legitimate alternative when the consumer runs in an isolated environment
+(e.g. a build-agent task connecting only to one legacy server). The
+tradeoffs:
+
+| Approach | Loses |
+|----------|-------|
+| `paramiko<3` pin | Terrapin (CVE-2023-48795) mitigation; caps `cryptography<40`; paramiko 2.x is EOL with no CVE backports |
+| `enable_ssh_rsa_compat()` | Process-wide SHA-1 host-key acceptance only |
+
+The library's `[sftp]` extra requires `paramiko>=3.0` (paramiko 2.x
+lacks `channel_timeout=` on `SSHClient.connect`); to pin paramiko 2.x
+the consumer must override at their own dependency layer.
+
 ## Connection Behaviour
 
 - **Lazy connect** — no network call happens during construction. The SSH/SFTP connection is established on the first operation.

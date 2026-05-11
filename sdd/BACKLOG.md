@@ -215,25 +215,6 @@ and the highest ID already in this file, then take the next integer. Run
   to forward `disabled_algorithms` and the like for legacy servers.
   Spec: new SFTP-029.
 
-- [ ] **BK-198 — SFTP legacy-server (`ssh-rsa` / SHA-1) compatibility**
-  Paramiko 3.x removed `ssh-rsa` (SHA-1) from defaults across four
-  sites: `Transport._preferred_keys`, `Transport._key_info`,
-  `RSAKey.HASHES`, `Transport._preferred_pubkeys`. Servers like PSFTPd
-  that only offer `ssh-rsa` produce `IncompatiblePeer: no acceptable
-  host key`, and `disabled_algorithms` cannot re-add a default-removed
-  algorithm. Today users hit a multi-error cascade with no in-library
-  remedy. Ship:
-  (a) `SFTPUtils.enable_ssh_rsa_compat()` static method applying all
-      four patches idempotently. Process-global, documented as a
-      security reduction (SHA-1 acceptance widens to every paramiko
-      transport in the process).
-  (b) `_map_exception` hint when `paramiko.IncompatiblePeer` is
-      wrapped, pointing at the helper.
-  (c) Docs section in the SFTP backend guide covering symptoms,
-      remedy, security tradeoff, and recommendation to pursue server
-      upgrade.
-  Spec: new SFTP-030.
-
 - [ ] **BK-196 — Dafny formal-spec gap: `Copy` postcondition does not pin metadata**
   `sdd/formal/MemoryBackend.dfy::Copy` builds the destination via
   `BasicFileInfo(dst, dst, srcEntry.info.size)`, which drops user metadata.

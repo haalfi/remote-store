@@ -1,0 +1,103 @@
+id: BK-195
+title: "SFTP legacy-server (ssh-rsa / SHA-1) compatibility"
+trigger: |
+  Connecting to a legacy SFTP server (PSFTPd at 217.110.44.62, used by Six
+  Group) raised `paramiko.ssh_exception.IncompatiblePeer: Incompatible ssh
+  peer (no acceptable host key)`. Paramiko 3.x removed `ssh-rsa` (SHA-1)
+  host keys from defaults across four sites; `disabled_algorithms` cannot
+  re-add a default-removed algorithm. No in-library remedy existed; users
+  hit a multi-error cascade as each patched layer revealed the next
+  missing piece.
+
+source_items:
+  - BK-195
+
+audience:
+  - user.api
+  - user.site
+
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - docs-src/reference/api/sftp-utils.md
+
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception (lines 1013-1036)"
+        read_type: reference
+        extract: "All SSHException subclasses fall through to BackendUnavailable(str(exc)); IncompatiblePeer is not distinguished"
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPErrorMapping"
+        read_type: reference
+        extract: "Existing pattern: instantiate backend with dummy host + AUTO_ADD, call _map_exception directly"
+
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPUtils (lines 117-141)"
+        read_type: reference
+        extract: "Public namespace for SFTP helpers; new method belongs as a staticmethod wrapping a module-level function"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public API"
+        read_type: gate
+        extract: "Secondary public API (e.g. SFTPUtils) needs its own api/*.md page and index entry; sftp-utils.md exists and gets a new method block"
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPEnableSshRsaCompat, TestSFTPIncompatiblePeerHint"
+        read_type: gate
+        extract: |
+          Snapshot/restore fixture for paramiko class-attr state; tests
+          assert the four-site patch and idempotency, plus the hint
+          presence on IncompatiblePeer and absence on plain SSHException.
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "enable_ssh_rsa_compat + SFTPUtils.enable_ssh_rsa_compat"
+        read_type: reference
+        extract: |
+          Module-level function applies four idempotent patches:
+          Transport._preferred_keys (append ssh-rsa), Transport._key_info
+          (register RSAKey), RSAKey.HASHES (register SHA1),
+          Transport._preferred_pubkeys (append ssh-rsa). Wrapped as a
+          staticmethod on SFTPUtils for the public API.
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception IncompatiblePeer branch"
+        read_type: reference
+        extract: "Detect paramiko.ssh_exception.IncompatiblePeer before the generic SSHException branch; map to BackendUnavailable with appended hint pointing at SFTPUtils.enable_ssh_rsa_compat"
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/backends/sftp.md
+        section: "Legacy Servers (ssh-rsa / SHA-1)"
+        read_type: reference
+        extract: "New section: four-site removal table, helper usage, security tradeoff, paramiko<3 pin alternative with EOL/cryptography caveats"
+      - file: docs-src/reference/api/sftp-utils.md
+        section: "Methods / enable_ssh_rsa_compat"
+        read_type: reference
+        extract: "mkdocstrings directive for the new function rendered on the api page"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public method signature"
+        read_type: verify
+        extract: "Docstring Args/Returns/Raises updated; example added"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Error type"
+        read_type: verify
+        extract: "_map_exception now distinguishes IncompatiblePeer; covered by TestSFTPIncompatiblePeerHint"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public API"
+        read_type: verify
+        extract: "SFTPUtils api page entry added; index summary description still covers the new method conceptually"

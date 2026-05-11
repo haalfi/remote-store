@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-195 — SFTP legacy-server (`ssh-rsa` / SHA-1) compatibility**
+  Paramiko 3.x removed `ssh-rsa` (SHA-1) from defaults across four
+  sites: `Transport._preferred_keys`, `Transport._key_info`,
+  `RSAKey.HASHES`, `Transport._preferred_pubkeys`. Servers like PSFTPd
+  that only offer `ssh-rsa` produced `IncompatiblePeer: no acceptable
+  host key` with no in-library remedy. Ships three coordinated changes:
+  (a) `SFTPUtils.enable_ssh_rsa_compat()` static method applying all
+  four patches idempotently. Process-global; documented as a security
+  reduction. (b) `SFTPBackend._map_exception` now annotates
+  `paramiko.ssh_exception.IncompatiblePeer` with a hint pointing at
+  the helper. (c) New "Legacy Servers (`ssh-rsa` / SHA-1)" section in
+  the SFTP backend guide covering symptoms, remedy, security tradeoff,
+  and the paramiko 2.x pin alternative with explicit cost. Tests in
+  `TestSFTPEnableSshRsaCompat` (idempotency + four-site coverage with
+  paramiko state restored after) and `TestSFTPIncompatiblePeerHint`
+  (hint present on `IncompatiblePeer`, absent on other `SSHException`).
+  Audience: `user.api`, `user.site`.
+  Trace: [`sdd/traces/BK-195-ssh-rsa-compat.yml`](traces/BK-195-ssh-rsa-compat.yml).
+
 - [x] **BK-197 — `HostKeyPolicy` accepts enum-name aliases**
   Value strings of `HostKeyPolicy` are `"strict"`, `"tofu"`, `"auto"`
   (`src/remote_store/backends/_sftp.py:68-70`); the latter two do not

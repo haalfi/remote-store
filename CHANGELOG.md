@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-195: `SFTPUtils.enable_ssh_rsa_compat()` restores `ssh-rsa` (SHA-1) host-key acceptance for legacy SFTP servers (e.g. PSFTPd) that paramiko 3.x rejects across four removal sites. `SFTPBackend._map_exception` now annotates `IncompatiblePeer` with a pointer to the helper. New SFTP guide section "Legacy Servers (ssh-rsa / SHA-1)" documents symptoms, remedy, and the security tradeoff vs. `paramiko<3` pin alternative.
 - BK-197: `HostKeyPolicy` accepts enum-name aliases (`"auto_add"`, `"trust_on_first_use"`) in addition to the canonical value strings (`"auto"`, `"tofu"`, `"strict"`); case-insensitive.
 - BUG-204: SFTP `[sftp]` extra now requires `paramiko>=3.0` (was `>=2.2`). `SFTPBackend._connect` passes `channel_timeout=`, a paramiko 3.0+ kwarg; the prior lower bound let resolvers pick paramiko 2.x and produced a confusing runtime `TypeError`.
 - BK-192: `MemoryBackend.copy()` and `AsyncMemoryBackend.copy()` now preserve user metadata on the destination — fixes a silent metadata drop on the `write → copy → get_file_info` round-trip (BE-019, ASYNC-019, WR-013)

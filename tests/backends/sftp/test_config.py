@@ -37,6 +37,7 @@ from remote_store._models import FolderInfo  # noqa: E402
 from remote_store.backends._sftp import (  # noqa: E402
     HostKeyPolicy,
     SFTPBackend,
+    SFTPUtils,
     _sanitize_pem,
 )
 
@@ -77,6 +78,100 @@ class TestSFTPParamikoVersionSurface:
 
         params = inspect.signature(paramiko.SSHClient.connect).parameters
         assert "channel_timeout" in params
+
+
+# endregion
+
+
+# region: Legacy server compatibility (BK-195)
+
+
+@pytest.fixture
+def restore_paramiko_state() -> Iterator[None]:
+    """Snapshot paramiko class-attr state and restore after each test.
+
+    Tests that exercise ``SFTPUtils.enable_ssh_rsa_compat`` mutate process-
+    global paramiko state. This fixture preserves test isolation.
+    """
+    from cryptography.hazmat.primitives import hashes  # noqa: F401
+    from paramiko.rsakey import RSAKey
+
+    saved_preferred_keys = paramiko.Transport._preferred_keys
+    saved_preferred_pubkeys = paramiko.Transport._preferred_pubkeys
+    saved_key_info = dict(paramiko.Transport._key_info)
+    saved_hashes = dict(RSAKey.HASHES)
+    try:
+        yield
+    finally:
+        paramiko.Transport._preferred_keys = saved_preferred_keys
+        paramiko.Transport._preferred_pubkeys = saved_preferred_pubkeys
+        paramiko.Transport._key_info.clear()
+        paramiko.Transport._key_info.update(saved_key_info)
+        RSAKey.HASHES.clear()
+        RSAKey.HASHES.update(saved_hashes)
+
+
+class TestSFTPEnableSshRsaCompat:
+    """BK-195: SFTPUtils.enable_ssh_rsa_compat restores ssh-rsa across the
+    four sites paramiko 3.x removed it from."""
+
+    def test_helper_adds_ssh_rsa_to_all_four_sites(
+        self,
+        restore_paramiko_state: None,  # noqa: ARG002
+    ) -> None:
+        from paramiko.rsakey import RSAKey
+
+        # Strip ssh-rsa from anywhere it might already exist, so we observe
+        # the helper's effect, not a no-op.
+        paramiko.Transport._preferred_keys = tuple(k for k in paramiko.Transport._preferred_keys if k != "ssh-rsa")
+        paramiko.Transport._preferred_pubkeys = tuple(
+            k for k in paramiko.Transport._preferred_pubkeys if k != "ssh-rsa"
+        )
+        paramiko.Transport._key_info.pop("ssh-rsa", None)
+        RSAKey.HASHES.pop("ssh-rsa", None)
+
+        SFTPUtils.enable_ssh_rsa_compat()
+
+        assert "ssh-rsa" in paramiko.Transport._preferred_keys
+        assert "ssh-rsa" in paramiko.Transport._preferred_pubkeys
+        assert paramiko.Transport._key_info.get("ssh-rsa") is RSAKey
+        assert "ssh-rsa" in RSAKey.HASHES
+
+    def test_helper_is_idempotent(self, restore_paramiko_state: None) -> None:  # noqa: ARG002
+        from paramiko.rsakey import RSAKey
+
+        SFTPUtils.enable_ssh_rsa_compat()
+        keys_count_first = paramiko.Transport._preferred_keys.count("ssh-rsa")
+        pubkeys_count_first = paramiko.Transport._preferred_pubkeys.count("ssh-rsa")
+
+        SFTPUtils.enable_ssh_rsa_compat()
+
+        assert paramiko.Transport._preferred_keys.count("ssh-rsa") == keys_count_first
+        assert paramiko.Transport._preferred_pubkeys.count("ssh-rsa") == pubkeys_count_first
+        # Sanity: still present
+        assert "ssh-rsa" in paramiko.Transport._key_info
+        assert "ssh-rsa" in RSAKey.HASHES
+
+
+class TestSFTPIncompatiblePeerHint:
+    """BK-195: _map_exception annotates IncompatiblePeer with a remediation
+    pointer to ``SFTPUtils.enable_ssh_rsa_compat``."""
+
+    def test_incompatible_peer_hint_present(self) -> None:
+        """IncompatiblePeer maps to BackendUnavailable with a hint message."""
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        exc = paramiko.ssh_exception.IncompatiblePeer("no acceptable host key")
+        result = backend._map_exception(exc, "")
+        assert isinstance(result, BackendUnavailable)
+        assert "enable_ssh_rsa_compat" in str(result)
+
+    def test_other_ssh_exception_unchanged(self) -> None:
+        """Non-IncompatiblePeer SSHException keeps the generic mapping (no hint)."""
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        exc = paramiko.SSHException("session not active")
+        result = backend._map_exception(exc, "")
+        assert isinstance(result, BackendUnavailable)
+        assert "enable_ssh_rsa_compat" not in str(result)
 
 
 # endregion
