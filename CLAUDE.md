@@ -41,16 +41,7 @@ the failing test, run it, see it fail** before implementing the fix.
 
 ## Trace authoring (live, not retrospective)
 
-When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` AS YOU WORK, not after the fact. Schema: `sdd/traces/_schema.yml`. Reconstructed-from-PR-record traces sanitise away the discovery cascades and surprising ripples the schema is designed to capture; live traces are the only ones that carry analytically valuable data. Discipline:
-
-- **Open / create the trace before starting work.** If a trace already exists for the item, read it; otherwise create one from the relevant template and the schema example.
-- **Record each gate and reference read as you do it.** Section pointer must be precise enough that the reader does not need to re-skim the source.
-- **Fill `outcome: unclear | misleading`** on any read that did not deliver what was hoped for. `ok` is the default; absent means unfilled, which is itself a signal.
-- **Fill the post-hoc fields as events occur**, not at PR-merge time: `discovery_followups` (new backlog IDs born during the work), `surprising_ripples` (paths touched that neither the trace nor the ripple-check table anticipated), `co_shipped_items` (other backlog items closed by the same PR).
-- **Tag `audience` priority-sorted** before submitting. Required field; the CHANGELOG-required rule derives from it.
-- **The trace ships in the same PR as the work it describes.** Not a separate later commit.
-
-The substrate exists for data-driven improvement of how agents work in this repo. Live authoring is the only way the data is honest.
+When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you work, not after merge. Record reads, outcomes, and surprising ripples as they happen; ship the trace in the same PR as the work. Schema (fields, `audience` taxonomy, the `outcome` enum, the difference between `expected_ripples` and `surprising_ripples`): `sdd/traces/_schema.yml`.
 
 ## Dev commands
 
