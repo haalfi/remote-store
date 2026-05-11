@@ -11965,6 +11965,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-192: <code>MemoryBackend.copy()</code> and <code>AsyncMemoryBackend.copy()</code> now preserve user metadata on the destination — fixes a silent metadata drop on the <code>write → copy → get_file_info</code> round-trip (BE-019, ASYNC-019, WR-013)</li>
 <li>BK-176: <code>AsyncMemoryBackend</code> now preserves user metadata through <code>get_file_info</code>, <code>list_files</code> (recursive and non-recursive), and <code>iter_children</code> — sync <code>MemoryBackend</code> parity (ASYNC-016, WR-013)</li>
 <li>BK-190: tests/ root cleanup — placement checks (rules S, B, E) + TESTING.md and spec 048 update</li>
 <li>BK-189: tests/ root cleanup — <code>tests/ext/</code> package + ext-module moves (TEST-002 / TEST-010)</li>
