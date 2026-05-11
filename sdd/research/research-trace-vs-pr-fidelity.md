@@ -8,15 +8,15 @@
 
 ## 1. Problem Statement
 
-PR #608 added `sdd/traces/` to record the ordered reads an agent performs while doing backlog work, intending to drive documentation optimisation (hotspot detection, gate-density ranking, co-read clustering). The stated goal: identify the spine of files an agent must read, then refactor `sdd/` so that spine shrinks.
+**The bigger programme.** PR #608 added `sdd/traces/` as the substrate for **data-driven improvement of agent workflows**. The schema's immediate stated use — "optimisation of the sdd/ documentation structure" via hotspot and co-read aggregation — is one application. The broader intent: turn the way agents move through documentation into analysable structure so the workflow itself can be evolved on evidence rather than intuition. Cross-trace aggregation should be able to surface where docs slow agents down, where reads recur (suggesting consolidation), where review iteration spikes (suggesting unclear guidance), and where the agent process itself should be tightened. The outcome to be explored — actually using trace data to drive documentation, process, and agent-behaviour changes — is downstream of this research and not in its scope.
 
-**Current limitation.** Traces were authored by the same agents that did the work — often before or during the work, not after the PR merged. The data therefore describes *anticipated* reads, not necessarily the reads the work actually required. If the gap is large, aggregator outputs optimise for the rule-following spine, not for the surface where real work happens.
+**Current limitation.** Traces are not written by the agents doing the work. They are authored after the fact by a fresh agent session — one with access to the merged PR record, the backlog item, and the existing docs, but no first-hand experience of the implementation chaos. This produces a sanitized "best-practice" trace: a rule-following spine that walks cleanly down the SDD pipeline. The unresolved question is how far that retrospective reconstruction tracks the reads the work *actually* required versus the reads the work *would have* required under the ideal process.
 
-**Affected.** Agents working on backlog items; future authors of trace tooling; doc maintainers who would act on aggregator findings.
+**Affected.** Agents working on backlog items (whose workflow is the optimisation target); future authors of trace tooling and aggregators; doc maintainers and process owners who would act on aggregator findings.
 
 **Constraints from existing artefacts.** The SDD pipeline (`sdd/000-process.md` § Rule 6) treats specs as authoritative; the ripple-check table in `sdd/CLAUDE-REFERENCE.md` enumerates expected cross-cuts; PR #608's trace schema (`sdd/traces/_schema.yml`) models step-level reads but not the messy aggregate signals (review iteration, discovery cascades, ripple omissions). Research docs are point-in-time snapshots per `sdd/000-process.md` § Document types.
 
-**Decision this research is meant to inform.** Ship the trace data as-is and let aggregator design absorb the gaps, or extend the schema first so the data can carry the missing signals? Specifically: which signals are missing, how can they be modelled without bloating the schema, and which taxonomy correctly represents who a change is *for* (the polysemous "is this user-facing?" question that motivates the CHANGELOG gate).
+**Decision this research is meant to inform.** Before any aggregator-driven workflow change is built on this data, two questions need empirical grounding: (a) does the trace data have enough fidelity to the work that actually happens for aggregator outputs to be trustworthy? (b) if not, can the schema be extended to carry the missing signals without bloating? The downstream programme — using the data to drive doc, process, and agent-behaviour changes — depends on both answers being yes. This research investigates (a) empirically and proposes a minimal-bloat answer to (b).
 
 ---
 
@@ -54,7 +54,7 @@ Three phases, each blind to the next, to keep early-phase intuitions from biasin
 
 ### 2.3 Phase 3 — Trace vs merged PR (n=9)
 
-**Pattern.** For nine sampled merged PRs spanning iteration-cost regimes (high ≥ 11 commits, medium 4–8, low 1–2), compare the trace's anticipated reads to the PR's actual files, commits, review rounds, and follow-up items.
+**Pattern.** For nine sampled merged PRs spanning iteration-cost regimes (high ≥ 11 commits, medium 4–8, low 1–2), compare the trace's reconstructed reads to the PR's actual files, commits, review rounds, and follow-up items. Since traces are fresh-agent retrospectives over the merged record, the gap between trace and PR measures specifically what the retrospective agent flattened away — not what the implementing agent forgot to log.
 
 **How it works.** Sample:
 
@@ -153,6 +153,8 @@ Cross-phase consistency check: Phase 1's "CHANGELOG is a near-universal verify g
 
 ## 4. Recommendation
 
+This research closes the substrate question only. The recommendation below answers (a) and (b) from § 1 so the downstream workflow-improvement programme has a defensible base to build on; the actual evolution of agent behaviour, doc structure, and process gates from trace aggregation remains outside this doc's scope and unexplored.
+
 Extend the schema in two waves, both shipped under BK-193. All 39 unreleased traces re-tagged; the nine Phase-3-sampled traces additionally carry retrospective fields filled from their merged PRs.
 
 ### 4.1 Initial wave — anchored in Phase 3 patterns
@@ -190,7 +192,39 @@ A structured external review of the schema-as-data surfaced one design risk (cle
 - *Content-churn flag.* PR #579 (ID-176) had eleven commits on a 17-line file. `outcome: unclear` carries the signal for the underlying spec/doc, but does not flag that the change itself is editorially volatile. One example is not enough to establish the pattern.
 - *Validator.* The `audience` field is `required` in the schema but unenforced. Wiring a check into `hatch run lint` would turn the convention into a gate. Cost is small; risk is that authors learn to tag mechanically without thinking. Same risk applies to `outcome` defaulting to `ok`.
 
-### 4.4 Method provenance
+### 4.4 Downstream programme — what the schema now enables
+
+This research stops at the substrate. The actual workflow improvements
+the data is supposed to drive are out of scope and unexplored, but the
+schema now carries the signals each would need. Sketched as guidance for
+whoever picks up the next phase:
+
+- **Doc structure optimisation.** Aggregate the six-file spine in § 2.1
+  against `outcome: unclear|misleading` and `surprising_ripples`
+  recurrence. Sections that recur as `unclear` are doc-rewrite
+  candidates; paths that recur in `surprising_ripples` are missing
+  ripple-check rows. Both are evidence, not opinion.
+- **Process-gate tightening.** `review_rounds` distributions per
+  `audience` slice reveal where review cost concentrates. The PR-#579
+  pattern (eleven commits on seventeen lines of context7 prose) is one
+  data point; a recurring spike on a specific audience slice would
+  motivate a pre-review gate.
+- **Agent-behaviour heuristics.** Co-read graphs (which two files
+  appear in the same trace) plus the `audience` field hint at "if you
+  are doing X, also read Y" heuristics that could be wired into agent
+  prompts or skill files. The async-Azure cluster in § 2.1 is the
+  clearest candidate.
+- **Ripple-check evolution.** `surprising_ripples` accumulates to a
+  proposal list for new ripple-check rows. Once an entry recurs in
+  three or more traces, the doc owes a row. This is the most direct
+  data-to-doc feedback loop the schema supports.
+- **Aggregator scaffolding.** None of the above runs yet. Building a
+  `scripts/trace_aggregate.py` that computes the metrics above and
+  feeds them into a small dashboard is the next concrete artifact.
+  Until it exists, this research is the only synthesis of the trace
+  data, and it is hand-rolled.
+
+### 4.5 Method provenance
 
 All evidence derives from:
 
