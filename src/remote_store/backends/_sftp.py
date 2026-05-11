@@ -238,18 +238,22 @@ def enable_ssh_rsa_compat() -> None:
     from cryptography.hazmat.primitives import hashes
     from paramiko.rsakey import RSAKey
 
-    if "ssh-rsa" not in paramiko.Transport._preferred_keys:
-        paramiko.Transport._preferred_keys = (
-            *paramiko.Transport._preferred_keys,
+    # types-paramiko does not expose these private class attributes that
+    # paramiko maintains for algorithm negotiation; mutating them is the
+    # only supported path for re-enabling a default-removed algorithm.
+    transport_cls: Any = paramiko.Transport
+    if "ssh-rsa" not in transport_cls._preferred_keys:
+        transport_cls._preferred_keys = (
+            *transport_cls._preferred_keys,
             "ssh-rsa",
         )
-    if "ssh-rsa" not in paramiko.Transport._key_info:
-        paramiko.Transport._key_info["ssh-rsa"] = RSAKey
+    if "ssh-rsa" not in transport_cls._key_info:
+        transport_cls._key_info["ssh-rsa"] = RSAKey
     if "ssh-rsa" not in RSAKey.HASHES:
         RSAKey.HASHES["ssh-rsa"] = hashes.SHA1
-    if "ssh-rsa" not in paramiko.Transport._preferred_pubkeys:
-        paramiko.Transport._preferred_pubkeys = (
-            *paramiko.Transport._preferred_pubkeys,
+    if "ssh-rsa" not in transport_cls._preferred_pubkeys:
+        transport_cls._preferred_pubkeys = (
+            *transport_cls._preferred_pubkeys,
             "ssh-rsa",
         )
 
