@@ -5,7 +5,7 @@ source_items:
   - ID-176
 audience:
   - user.discoverability.llm
-known_ripples:
+expected_ripples:
   - sdd/backlogid.json
 review_rounds: 7
 phases:

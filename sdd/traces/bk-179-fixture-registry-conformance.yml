@@ -8,9 +8,10 @@ audience:
   - infra.test
 discovery_followups:
   - BK-183
-known_ripples:
-  - .github/workflows/ci.yml
+expected_ripples:
   - sdd/backlogid.json
+surprising_ripples:
+  - .github/workflows/ci.yml
 review_rounds: 5
 phases:
   - id: orient

@@ -5,10 +5,11 @@ source_items:
   - BK-178
 audience:
   - internal.style
-known_ripples:
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
-  - sdd/backlogid.json
 review_rounds: 3
 phases:
   - id: orient

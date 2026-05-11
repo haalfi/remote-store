@@ -35,6 +35,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Research: [`sdd/research/research-trace-vs-pr-fidelity.md`](research/research-trace-vs-pr-fidelity.md)
   captures the empirical investigation (3 phases, 9-PR sample, taxonomy
   derivation) that motivated the schema additions.
+  Schema-review iteration added two more fields and one rename to close
+  the "traces describe ideal, not actual" gap: optional step-level
+  `outcome` (`ok` / `unclear` / `misleading`) for descriptive→diagnostic
+  doc-failure signal; top-level `surprising_ripples` for ripples that
+  neither the trace nor the ripple-check table anticipated (where a
+  recurring entry points at a missing ripple-check row or stale spec).
+  `known_ripples` renamed to `expected_ripples` to make the distinction
+  load-bearing in the name; six tagged traces re-classified accordingly
+  — BK-178 / BK-179 / BK-187 each carry a `surprising_ripples` entry
+  (graph regen after docstring sweep; `ci.yml` after lint-scope or
+  test-job change), the remaining three are pure expected. Schema
+  description prose tightened to instruct authors that traces record
+  what actually happened, not what was supposed to happen.
 
 - [x] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   Added `metadata=node.metadata` to all four `FileInfo`-constructing sites in

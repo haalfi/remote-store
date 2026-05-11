@@ -279,18 +279,37 @@ tooling without losing the secondary signal.
 
 ## 7. Outcome — What Shipped Under BK-193
 
-`sdd/traces/_schema.yml` gained five fields:
+`sdd/traces/_schema.yml` gained six fields plus sharpened description
+prose, in two waves:
+
+**Initial wave** (from Phase 3 findings, § 5):
 
 - `audience` (required list, priority-sorted, 10-value enum)
 - `discovery_followups` (optional list of backlog IDs born in review)
 - `co_shipped_items` (optional list of other items closed by the same PR)
-- `known_ripples` (optional list of mechanically-touched files)
+- `expected_ripples` (originally `known_ripples`; renamed below)
 - `review_rounds` (optional int)
+
+**Schema-review wave** (after a structured external review of the
+schema as data; § 8.1 captures what was rejected):
+
+- `outcome` (optional, step-level, enum `ok` / `unclear` /
+  `misleading`) — step-local doc-failure signal; the descriptive-to-
+  diagnostic lever for "which sections actually confuse readers."
+- `surprising_ripples` (optional, top-level list) — paired with
+  `expected_ripples`. The rename of `known_ripples` to
+  `expected_ripples` made the distinction load-bearing: expected =
+  mechanical, anticipated by ripple-check; surprising = pain ripples
+  that point at missing coverage. Three of the nine sampled traces
+  carry surprising entries (BK-178, BK-179, BK-187).
+- Schema description text tightened to instruct authors that traces
+  record what actually happened. Authoring discipline is the only
+  defence against cleanup-on-write distorting aggregator results.
 
 All 39 unreleased trace YAMLs were re-tagged with `audience` lists. The
 nine traces in the Phase-3 sample additionally carry retrospective
-`discovery_followups`, `co_shipped_items`, `known_ripples`, and
-`review_rounds` filled from their merged PRs.
+`discovery_followups`, `co_shipped_items`, `expected_ripples`,
+`surprising_ripples`, and `review_rounds` filled from their merged PRs.
 
 No validator is wired — the `required: audience` constraint acts as
 authoring convention. Future traces missing `audience` will fail at the
@@ -310,23 +329,60 @@ verification at full scale:
 - **Model review-driven phases.** Three patterns appeared in real
   commits but no trace recorded them: `rebase_fix`,
   `address_review_thread`, `regenerate_artefacts`. Worth asking whether
-  the schema should enumerate them or whether `discovery_followups` and
-  `review_rounds` capture enough.
+  the schema should enumerate them or whether `discovery_followups`,
+  `review_rounds`, and step-level `outcome` capture enough.
 - **Promote ripple-check from verify to also-implement-start.** Three of
   the nine sampled PRs missed ripples (`.github/workflows/ci.yml` in
   #604, `graph.json` + `graph_viz.html` in #591, `_proxy.py` + extension
   wrappers in #592) because `CLAUDE-REFERENCE.md` was treated as a
   closing checklist, not an opening one. The cheapest fix is doc:
   rewrite the trigger phrases in the ripple-check table so the table
-  reads usefully *before* coding, not only after.
+  reads usefully *before* coding, not only after. The schema-review
+  wave's `surprising_ripples` field now gives this a measurable signal
+  — a recurring entry in `surprising_ripples` is direct evidence that
+  the ripple-check table is missing a row.
+- **Stable section anchors for non-spec docs.** Specs already have
+  stable IDs (`ASYNC-016`, `WR-013`); non-spec docs (CLAUDE.md
+  "Principles", CLAUDE-REFERENCE "Ripple-check table / A bug fix") do
+  not. Adding HTML-anchor IDs (`<!-- id: ripple-bug-fix -->`) across
+  `sdd/` would inoculate traces against heading-text drift. Significant
+  authoring work; deferred but worth tracking as the trace data grows.
 - **Content-churn flag.** PR #579 (ID-176) had eleven commits on a
-  seventeen-line file. The trace schema has no signal that a change is
-  primarily prose/messaging and likely to iterate. Considered tagging
-  but deferred: one example is not enough to establish the pattern.
+  seventeen-line file. The schema-review wave deliberately rejected a
+  numeric `effort: 1-5` field on inconsistency grounds; `outcome:
+  unclear` carries the signal for the underlying spec/doc, but does
+  not flag that the change *itself* is editorially volatile. One
+  example is not enough to establish the pattern.
+- **Aggregator metric: within-trace duplication.** A schema-review
+  suggestion to model "did the agent re-read the same section because
+  it was unclear, or because it is central?" was reframed as an
+  aggregator concern — the data is in the existing fields, count the
+  `(file, section)` pairs per trace. Worth implementing once a real
+  aggregator exists.
 - **Validator.** The audience field is `required` in the schema but
   unenforced. Wiring a check into `hatch run lint` would turn the
   convention into a gate. Cost is small; risk is that authors learn to
-  tag mechanically without thinking. Open question.
+  tag mechanically without thinking. Same risk applies to `outcome` —
+  defaulting to `ok` invites rubber-stamping. Open question.
+
+### 8.1 What the schema-review wave rejected
+
+The same external review that drove the `outcome` / `surprising_ripples`
+additions also proposed three changes that were judged net-negative and
+not shipped:
+
+- **`effort: 1-5` step-level scoring.** Subjective integer effort rots
+  across authors. The signal it promises (rank pain) is already covered
+  at PR level by `review_rounds` and Phase-3 fan-out math, both of
+  which are objective. Step-local pain lands in `outcome: misleading`
+  instead.
+- **A separate `reason:` field on each step.** The motivation and the
+  product of a read overlap enough that splitting them invites both
+  fields being thin. Tightening `extract`'s description to require
+  motivation when non-obvious does the same work in one field. The
+  schema description text was updated accordingly.
+- **Step-reuse tracking.** Suggested as a schema field; reframed as an
+  aggregator metric (above).
 
 ---
 
