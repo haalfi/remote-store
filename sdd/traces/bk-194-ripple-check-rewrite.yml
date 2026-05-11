@@ -7,6 +7,10 @@ audience:
   - contributor.process
 expected_ripples:
   - sdd/backlogid.json
+surprising_ripples:
+  - .claude/skills/review-pr/SKILL.md
+  - .claude/skills/release/SKILL.md
+  - .claude/skills/orchestrate/SKILL.md
 phases:
   - id: orient
     name: Orient
@@ -60,3 +64,27 @@ phases:
         read_type: reference
         extract: "Restate principle 2 to mention both pre-work index and verify-end checklist usages — was written for verify-end-only world"
         outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        read_type: verify
+        extract: "Is this a *new* process doc? No — restructuring an existing section. Skip framework / sibling back-reference updates."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / A backlog item touched"
+        read_type: verify
+        extract: "Trace at sdd/traces/bk-194-ripple-check-rewrite.yml ships with the PR; audience contributor.process; CHANGELOG skipped per derived rule"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Backlog (Prioritized)"
+        read_type: verify
+        extract: "BK-194 removed from BACKLOG.md; added to BACKLOG-DONE.md § Unreleased with audience tag"
+        outcome: ok
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "Re-stamped BK 193 -> 194 via hatch run gen-backlogid; was already stale before this PR (master had BK-194 in BACKLOG.md but JSON at 193)"
+        outcome: misleading
