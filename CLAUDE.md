@@ -39,7 +39,7 @@ the failing test, run it, see it fail** before implementing the fix.
 - **Completing work:** done → move item to `BACKLOG-DONE.md` (same commit). Partially done → split: ship done part to `BACKLOG-DONE.md`, create new ID here for remainder, link both.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
-## Trace authoring
+## Trace authoring (mandatory)
 
 When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you work, not after merge. Schema: `sdd/traces/_schema.yml`.
 
