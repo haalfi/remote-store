@@ -457,6 +457,7 @@ class MemoryBackend(Backend):
                 data=bytearray(src_node.data),
                 modified_at=datetime.now(timezone.utc),
                 content_type=src_node.content_type,
+                metadata=src_node.metadata,
             )
 
             if not isinstance(dst_existing, _FileEntry):

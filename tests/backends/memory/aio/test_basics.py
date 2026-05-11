@@ -606,6 +606,47 @@ class TestAsyncMemoryMetadataRoundTrip:
         info = await backend.get_file_info("f.txt")
         assert info.metadata is None
 
+    @pytest.mark.spec("ASYNC-019", "WR-013")
+    async def test_copy_preserves_metadata_via_get_file_info(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("src.txt", b"x", metadata={"k": "v"})
+        await backend.copy("src.txt", "dst.txt")
+        info = await backend.get_file_info("dst.txt")
+        assert info.metadata == {"k": "v"}
+
+    @pytest.mark.spec("ASYNC-019", "WR-013")
+    async def test_copy_preserves_metadata_via_list_files_non_recursive(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("src.txt", b"x", metadata={"author": "alice"})
+        await backend.copy("src.txt", "dst.txt")
+        infos = {e.name: e async for e in backend.list_files("")}
+        assert infos["dst.txt"].metadata == {"author": "alice"}
+
+    @pytest.mark.spec("ASYNC-019", "WR-013")
+    async def test_copy_preserves_metadata_via_list_files_recursive(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("a/src.txt", b"x", metadata={"k": "v"})
+        await backend.copy("a/src.txt", "b/dst.txt")
+        infos = {str(e.path): e async for e in backend.list_files("", recursive=True)}
+        assert infos["b/dst.txt"].metadata == {"k": "v"}
+
+    @pytest.mark.spec("ASYNC-019", "WR-013")
+    async def test_copy_with_no_metadata_yields_none(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("src.txt", b"x")
+        await backend.copy("src.txt", "dst.txt")
+        info = await backend.get_file_info("dst.txt")
+        assert info.metadata is None
+
+    @pytest.mark.spec("ASYNC-019", "WR-013")
+    async def test_copy_overwrite_replaces_metadata(self) -> None:
+        backend = AsyncMemoryBackend()
+        await backend.write("src.txt", b"new", metadata={"k": "new"})
+        await backend.write("dst.txt", b"old", metadata={"k": "old"})
+        await backend.copy("src.txt", "dst.txt", overwrite=True)
+        info = await backend.get_file_info("dst.txt")
+        assert info.metadata == {"k": "new"}
+
 
 class TestAsyncMemoryDeleteFolderEdgeCases:
     """Cover delete_folder parent-not-found branches (lines 256-258)."""
