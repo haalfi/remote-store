@@ -39,9 +39,15 @@ the failing test, run it, see it fail** before implementing the fix.
 - **Completing work:** done → move item to `BACKLOG-DONE.md` (same commit). Partially done → split: ship done part to `BACKLOG-DONE.md`, create new ID here for remainder, link both.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
-## Trace authoring (live, not retrospective)
+## Trace authoring
 
-When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you work, not after merge. Record reads, outcomes, and surprising ripples as they happen; ship the trace in the same PR as the work. Schema (fields, `audience` taxonomy, the `outcome` enum, the difference between `expected_ripples` and `surprising_ripples`): `sdd/traces/_schema.yml`.
+When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you work, not after merge. Schema: `sdd/traces/_schema.yml`.
+
+- **Before starting:** open the trace if it exists, otherwise create one from the schema example.
+- **As you read:** record each gate and reference read as a step. Tag `outcome: unclear | misleading` on any read that did not deliver.
+- **As events occur:** fill `discovery_followups` (new backlog IDs born during the work), `surprising_ripples` (paths the ripple-check table did not anticipate), `co_shipped_items` (other items closed by the same PR).
+- **Before submitting:** tag `audience` priority-sorted; the CHANGELOG-required rule derives from it.
+- **Ship the trace in the same PR as the work.** Not a separate later commit.
 
 ## Dev commands
 
