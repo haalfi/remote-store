@@ -13,7 +13,7 @@ description: |
   "sdd/traces/[!_]*.yml" to skip them.
 
 type: object
-required: [id, title, trigger, source_items, phases]
+required: [id, title, trigger, source_items, audience, phases]
 additionalProperties: false
 
 properties:
@@ -51,6 +51,108 @@ properties:
       Backlog IDs this trace was derived from. Convention: the trace's own
       id (without the UC- prefix case) is the first entry; related or
       predecessor items follow.
+
+  audience:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items:
+      type: string
+      enum:
+        - user.api
+        - user.api_docs
+        - user.site
+        - user.discoverability.llm
+        - user.discoverability.human
+        - contributor.process
+        - contributor.tooling
+        - infra.test
+        - infra.ci
+        - internal.style
+    description: |
+      Who this change is for. List sorted by priority — the dominant
+      audience first; secondary audiences follow when a single change
+      legitimately serves multiple constituencies (e.g. a docs-framework
+      rollout that also restructures end-user nav).
+
+      Values:
+      - user.api                    Runtime behavior, signature, or error
+                                    visible to package consumers.
+      - user.api_docs               New information in a public docstring
+                                    (added Raises:, new param semantics).
+                                    Surfaces via help() / IDE hover.
+      - user.site                   docs.remotestore.dev pages, layout,
+                                    rendering, images.
+      - user.discoverability.llm    Outside-package metadata for LLM /
+                                    agent discovery (context7.json,
+                                    llms.txt, MCP-targeted metadata).
+      - user.discoverability.human  Outside-package signals for humans
+                                    (README badges, GitHub topics, social
+                                    cards).
+      - contributor.process         Repo-internal "how we work" artefacts:
+                                    specs, ADRs, audits, AUTHORING,
+                                    templates.
+      - contributor.tooling         hatch scripts, lint / check scripts,
+                                    gen scripts, pre-commit hooks.
+      - infra.test                  Fixtures, registries, conformance,
+                                    placement, live-cloud coverage.
+      - infra.ci                    Workflow files, mutation matrix,
+                                    scheduled jobs.
+      - internal.style              Format-only normalisation with no
+                                    content or behavior delta (RST→backtick
+                                    sweep, em-dash policing).
+
+      Derived rule: CHANGELOG entry required iff any entry in `audience`
+      starts with `user.`, or `contributor.process` introduces a new
+      framework / spec. Items tagged only `contributor.tooling`,
+      `infra.test`, `infra.ci`, or `internal.style` are not user-facing
+      and skip CHANGELOG.
+
+  discovery_followups:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^(BK|BUG|ID|AF|BL)-[0-9]+[a-z]?$"
+    description: |
+      Backlog IDs born during this PR's review or implementation that did
+      not exist when the trace was first written. Filled post-merge to
+      capture the discovery-cascade pattern (a fix-for-X reveals Y, Z).
+      Optional; absent on traces with no surprises.
+
+  co_shipped_items:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      pattern: "^(BK|BUG|ID|AF|BL)-[0-9]+[a-z]?$"
+    description: |
+      Other backlog IDs closed by the same PR. Use when one PR roll-up
+      ships multiple related items so trace aggregators do not double-count
+      shared file reads. The owning trace's id is implicit and not
+      repeated here.
+
+  known_ripples:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+    description: |
+      File paths mechanically touched as ripples but outside the trace's
+      cited reads — backlogid.json, graph.json, graph_viz.html,
+      .github/workflows/*.yml when their triggers fire. Recorded so
+      aggregators can distinguish "files trace authors anticipated" from
+      "files that always tag along."
+
+  review_rounds:
+    type: integer
+    minimum: 0
+    description: |
+      Count of distinct review-driven fix commits on the merged PR
+      (commits whose messageHeadline starts with "fix:" or "address PR
+      #NNN review"). Filled post-merge. 0 means the first push merged
+      without revision; higher counts signal the trace under-modelled
+      the actual work surface.
 
   phases:
     type: array
@@ -138,6 +240,13 @@ examples:
     trigger: "AsyncMemoryBackend.get_file_info omitted metadata=node.metadata while sync MemoryBackend passed it through"
     source_items:
       - BK-176
+    audience:
+      - user.api
+    discovery_followups:
+      - BK-192
+    known_ripples:
+      - sdd/backlogid.json
+    review_rounds: 1
     phases:
       - id: orient
         name: Orient
