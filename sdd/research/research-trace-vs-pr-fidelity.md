@@ -14,7 +14,13 @@
 
 **Affected.** Agents working on backlog items (whose workflow is the optimisation target); future authors of trace tooling and aggregators; doc maintainers and process owners who would act on aggregator findings.
 
-**Constraints from existing artefacts.** The SDD pipeline ([`sdd/000-process.md`](../000-process.md) § Rule 6) treats specs as authoritative; the ripple-check table in [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) enumerates expected cross-cuts; PR #608's trace schema ([`sdd/traces/_schema.yml`](../traces/_schema.yml)) models step-level reads but not the messy aggregate signals (review iteration, discovery cascades, ripple omissions). Research docs are point-in-time snapshots per [`sdd/000-process.md`](../000-process.md) § Document types.
+**Constraints from existing artefacts.** Three classes of authoritative docs are in scope, and the analysis must keep them distinct because they answer different questions:
+
+- *Process authorities* define the rules of how work is done. They gate reads. The inventory: [`CLAUDE.md`](../../CLAUDE.md) (Claude-Code principles), [`CONTRIBUTING.md`](../../CONTRIBUTING.md) (contributor workflow, release flow, signing), [`sdd/AUTHORING.md`](../AUTHORING.md), [`sdd/DOCUMENTATION.md`](../DOCUMENTATION.md), [`sdd/CONTENT-RULES.md`](../CONTENT-RULES.md), [`sdd/000-process.md`](../000-process.md), [`sdd/DESIGN.md`](../DESIGN.md), [`sdd/TESTING.md`](../TESTING.md), [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md), plus the specs, ADRs, RFCs, and audits under [`sdd/`](..).
+- *Content authority (special case).* [`FEATURES.md`](../../FEATURES.md) is the only authoritative doc that lives at the repo root rather than under `sdd/`, and the only one machine-generated. Per [`sdd/DOCUMENTATION.md`](../DOCUMENTATION.md) § 2 it is the "feature inventory (exception)": generated from the graph IR by `scripts/gen_features.py`, it is the authoritative answer to *what exists* (backends, capabilities, extensions, install extras), complementary to the process authorities which answer *how to work*. It is read for verification of inventory claims, not for rules.
+- *Log artifacts* record outcomes after the fact and do not define rules: [`CHANGELOG.md`](../../CHANGELOG.md) (release history), [`sdd/BACKLOG.md`](../BACKLOG.md) (active work), [`sdd/BACKLOG-DONE.md`](../BACKLOG-DONE.md) (closed-work history). Traces cite these with `read_type: verify` because the read is "have I added my stub?", not "what rule governs me?". Conflating them with process authorities would treat them as rule-defining when they are receive-targets.
+
+The SDD pipeline ([`sdd/000-process.md`](../000-process.md) § Rule 6) and the ripple-check table in [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) are the load-bearing process authorities for backlog work. PR #608's trace schema ([`sdd/traces/_schema.yml`](../traces/_schema.yml)) models step-level reads but not the messy aggregate signals (review iteration, discovery cascades, ripple omissions). Research docs are point-in-time snapshots per [`sdd/000-process.md`](../000-process.md) § Document types.
 
 **Decision this research is meant to inform.** Before any aggregator-driven workflow change is built on this data, two questions need empirical grounding: (a) does the trace data have enough fidelity to the work that actually happens for aggregator outputs to be trustworthy? (b) if not, can the schema be extended to carry the missing signals without bloating? The downstream programme, using the data to drive doc, process, and agent-behaviour changes, depends on both answers being yes. This research investigates (a) empirically and proposes a minimal-bloat answer to (b).
 
@@ -31,6 +37,8 @@ Three phases, each blind to the next, to keep early-phase intuitions from biasin
 **How it works.** Aggregation over ~280 step references across 39 traces:
 
 - *File rank-frequency.* Six files account for 60% of all reads: [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) (41), [`sdd/000-process.md`](../000-process.md) (28), [`sdd/TESTING.md`](../TESTING.md) (24), [`sdd/DESIGN.md`](../DESIGN.md) (22), [`CHANGELOG.md`](../../CHANGELOG.md) (19), [`CLAUDE.md`](../../CLAUDE.md) (17). Long tail of 29 files cited 1–3 times.
+- *Top-6 split by class.* Five of the top six are process authorities; the sixth ([`CHANGELOG.md`](../../CHANGELOG.md)) is a log artifact. The spine therefore mixes "rules I must obey" with "stub I must write" at roughly 80/20. Aggregator code that ranks "files agents stall on" should keep the two apart: log artifacts cannot be improved by rewriting the doc, only by changing whether a stub is needed (the audience-derived CHANGELOG rule in § 2.4 does exactly this).
+- *Notable absences from the top tier.* [`CONTRIBUTING.md`](../../CONTRIBUTING.md) and [`FEATURES.md`](../../FEATURES.md) sit in the long tail despite being authoritative. CONTRIBUTING.md is contributor / release process, and the 39 sampled items are library and infra work; no release-flow trace exists in the unreleased section yet, so the absence is expected. FEATURES.md is auto-generated and the inventory it holds (capabilities, extras) is derived from specs and code; agents reach for the specs directly, not the projection. Both absences are evidence that traces follow source-of-truth, not derived presentations.
 - *Phase-vocabulary instability.* Seven phases appear in ≥ 25% of traces (orient, implement, verify, tests, fix, spec, docs); ten more appear ≤ 2 times. Outliers (`spec_review`, `reproduce`, `classify`, `wire`) suggest authors reach for new phase IDs when the standard set does not capture the work shape.
 - *Read-type by phase.* `orient` reads are 87% gate; `verify` reads are 100% verify; `implement` reads are 78% reference. The `orient → middle → verify` envelope is stable.
 - *Section-string convention.* 19% of section references use the "X / Y" form. All of them are ripple-check table row pointers. Outside the ripple-check table this pattern does not appear.
@@ -46,6 +54,8 @@ Three phases, each blind to the next, to keep early-phase intuitions from biasin
 **Pattern.** Validate Phase 1's data-only claims against the actual content of [`sdd/`](..) and [`CLAUDE.md`](../../CLAUDE.md).
 
 **How it works.** The six-file spine survives scrutiny: [`CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) carries the ripple-check table and is the most cross-cited file in the repo; [`000-process.md`](../000-process.md) § Rule 6 contains the canonical bug-fix pipeline that traces cite verbatim 14 times; [`TESTING.md`](../TESTING.md) § Test Subpackage Placement and § Rules are the authoritative references and traces treat them as gates accordingly. One Phase-1 claim partially failed: the "doc-framework cluster" splits into two sub-clusters under closer reading: pure content edits (BK-178 RST roles) versus framework rollout (BK-167 family). Jaccard distance did not distinguish them because both touch the same authority docs.
+
+A secondary finding from this phase: a paragraph-level enumeration of [`CONTRIBUTING.md`](../../CONTRIBUTING.md) against [`sdd/`](..) surfaced that the "Authoritative Document Format" section is placement guidance and belongs in [`sdd/AUTHORING.md`](../AUTHORING.md), not in CONTRIBUTING.md. Carrying the section in CONTRIBUTING.md is one of two reasons CONTRIBUTING.md does not appear in the rank-frequency spine: where it does carry rule-defining content, the rule already lives elsewhere; for the rest, it is a contributor-onboarding doc that backlog traces do not consult. Not in scope to relocate as part of this research, but recorded so a future authoring-framework cleanup has a starting point.
 
 **Trade-offs.**
 
@@ -94,7 +104,7 @@ Systematic ripple omissions across the nine PRs:
 | `examples/**` | 1/9 | public API change |
 | Stale mock tests | 1/9 | SDK-level fix |
 
-Trace authors mark `CHANGELOG [Unreleased]` as a verify gate in 31/39 traces (79%). The 9-PR sample matches this rate: 7/9 touched CHANGELOG. The two that skipped (BK-179 fixture registry, BK-187 lint scope) were both pure tooling/infra work. The schema offered no way to record this distinction.
+Trace authors mark `CHANGELOG [Unreleased]` as a `verify` read in 31/39 traces (79%). The 9-PR sample matches this rate: 7/9 touched CHANGELOG. The two that skipped (BK-179 fixture registry, BK-187 lint scope) were both pure tooling/infra work. Since CHANGELOG is a log artifact (§ 1), the `verify` read here is "did I add my stub?", not "what rule governs me?". The pre-BK-193 schema offered no way to distinguish stub-required from stub-skipped reads; the audience field added in § 4.1 closes that gap by deriving the requirement.
 
 **Trade-offs.**
 
@@ -103,7 +113,7 @@ Trace authors mark `CHANGELOG [Unreleased]` as a verify gate in 31/39 traces (79
 
 ### 2.4 Audience-taxonomy survey
 
-Phase 3 motivated a follow-on survey: going through the 39 unreleased entries in [`sdd/BACKLOG-DONE.md`](../BACKLOG-DONE.md) § Unreleased one by one, what is each change *for*?
+Phase 3 motivated a follow-on survey. The data source is [`sdd/BACKLOG-DONE.md`](../BACKLOG-DONE.md) § Unreleased: 39 entries, each describing one shipped backlog item. The file is a log artifact (§ 1), not a process authority, but it is the only place where every closed item carries a written rationale, so it serves as the empirical sample for "what is each change *for*?".
 
 | Audience | Items (n=39) | Count | CHANGELOG? |
 |---|---|---|---|
