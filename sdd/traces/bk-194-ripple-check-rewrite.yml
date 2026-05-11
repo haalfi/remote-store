@@ -1,0 +1,33 @@
+id: BK-194
+title: "Ripple-check rewrite: compact pre-work index + detailed verify checklist"
+trigger: "Trace research (sdd/research/research-agent-workflow-substrate.md § 2.3) sampled 9 merged PRs and found 3/9 missed ripples — PR #604 missed .github/workflows/ci.yml, PR #591 missed graph.json + graph_viz.html, PR #592 missed _proxy.py + extension wrappers — because agents consulted the ripple-check table only at verify-end. The detailed table is structured for closing-checks; nothing in CLAUDE-REFERENCE.md prompts the agent to scan triggers before starting work. First live-authored trace under the BK-193 CLAUDE.md rule."
+source_items:
+  - BK-194
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Backlog (Prioritized) / BK-194"
+        read_type: gate
+        extract: "Spec: compact Quick reference index at top + detailed checklist below; header explains two purposes; two presentations one data source; driven by surprising_ripples"
+        outcome: ok
+      - file: sdd/research/research-agent-workflow-substrate.md
+        section: "2.3 Phase 3: Trace vs merged PR (n=9)"
+        read_type: reference
+        extract: "Empirical motivation: 3/9 PRs missed ripples (#604 ci.yml, #591 graph.json+graph_viz.html, #592 _proxy.py+extension wrappers) — table consulted only at verify-end"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Trace authoring (mandatory)"
+        read_type: gate
+        extract: "Live-authored discipline: open trace before work, fill as it proceeds, surprising_ripples + audience priority-sort before submit, ships in same PR"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: gate
+        extract: "audience enum + derived CHANGELOG rule (contributor.process without new framework skips CHANGELOG); surprising_ripples are the analytically valuable signal"
+        outcome: ok
