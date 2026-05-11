@@ -75,12 +75,14 @@ class HostKeyPolicy(Enum):
 
     @classmethod
     def _missing_(cls, value: object) -> HostKeyPolicy | None:
-        # Map enum-name aliases to their canonical members, case-insensitive.
-        # Returning None falls through to ValueError.
+        # Map enum-name aliases to their canonical members, case-insensitive
+        # on the name only (e.g. "auto_add" -> AUTO_ADD). Value-form aliasing
+        # (e.g. "AUTO" for value "auto") is intentionally not folded: that
+        # contract is locked in by TestSFTPHostKeyPolicyAliases. Returning
+        # None falls through to ValueError.
         if not isinstance(value, str):
             return None
-        normalized = value.upper()
-        return cls._member_map_.get(normalized)  # type: ignore[return-value]
+        return cls.__members__.get(value.upper())
 
 
 # endregion
@@ -171,9 +173,14 @@ def scan_host_keys(host: str, port: int = 22, *, timeout: float = 10.0) -> str:
 
     # Connect the socket ourselves so a refused / unreachable target raises
     # cleanly without leaking a half-bound socket through paramiko's
-    # tuple-handling path.
+    # tuple-handling path. The Transport constructor is also guarded so the
+    # socket is closed if Transport.__init__ raises before ownership transfers.
     sock = socket.create_connection((host, port), timeout=timeout)
-    transport = paramiko.Transport(sock)
+    try:
+        transport = paramiko.Transport(sock)
+    except Exception:
+        sock.close()
+        raise
     try:
         transport.banner_timeout = timeout
         transport.start_client(timeout=timeout)
@@ -214,12 +221,13 @@ def enable_ssh_rsa_compat() -> None:
     class-level patching is the only path. The patches are idempotent;
     calling this multiple times in the same process is safe.
 
-    Warning:
-        This is **process-global**. Every paramiko transport in this
-        process will accept SHA-1 host keys for the lifetime of the
-        process. Only call this if the consumer connects exclusively to
-        servers under your operational control, or if you have explicitly
-        evaluated the tradeoff for every server in the process.
+    !!! warning "Process-global side effect"
+
+        Every paramiko transport in this process will accept SHA-1 host
+        keys for the lifetime of the process. Only call this if the
+        consumer connects exclusively to servers under your operational
+        control, or if you have explicitly evaluated the tradeoff for
+        every server in the process.
 
         ``ssh-rsa`` is appended (not prepended) to the preferred lists, so
         modern algorithms are still negotiated first when the server
@@ -1184,6 +1192,9 @@ class SFTPBackend(Backend):
                 return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
             return RemoteStoreError(str(exc), path=path, backend=self.name)
         if isinstance(exc, paramiko.ssh_exception.IncompatiblePeer):
+            # The literal symbol "enable_ssh_rsa_compat" is asserted by
+            # TestSFTPIncompatiblePeerHint; rename the helper and this string
+            # plus that test together.
             return BackendUnavailable(
                 f"{exc} [hint: server may only offer ssh-rsa (SHA-1) host keys; "
                 f"call SFTPUtils.enable_ssh_rsa_compat() at process startup "

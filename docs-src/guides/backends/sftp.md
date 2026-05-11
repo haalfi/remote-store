@@ -80,6 +80,7 @@ first, use `SFTPUtils.scan_host_keys(host, port=22)`. It opens a transport,
 captures the server's offered host key (no authentication), and returns a
 single `known_hosts`-formatted line ready to commit:
 
+<!-- Rule 6 exemption: requires a live SFTP server; cannot execute in CI. -->
 ```python
 from pathlib import Path
 from remote_store.backends import SFTPUtils
@@ -140,10 +141,7 @@ produce one of these errors during the handshake:
 call:
 
 ```python
-from remote_store.backends import SFTPUtils
-
-# Call once, before any SFTPBackend connect to a legacy server.
-SFTPUtils.enable_ssh_rsa_compat()
+--8<-- "examples/snippets/sftp_legacy_servers.py:enable-ssh-rsa-compat"
 ```
 
 !!! warning "Security tradeoff"

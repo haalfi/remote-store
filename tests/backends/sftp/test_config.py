@@ -201,27 +201,35 @@ class TestSFTPScanHostKeys:
         assert key_type == fix_type
         assert key_b64 == fix_b64
 
+    @staticmethod
+    def _stub_key() -> object:
+        """Minimal paramiko-PKey-shaped stub for formatter unit tests.
+
+        Avoids the ~0.5-1s cost of ``RSAKey.generate(2048)``; the formatter
+        only consults ``get_name()`` and ``get_base64()``.
+        """
+        from unittest.mock import MagicMock
+
+        stub = MagicMock(spec=paramiko.PKey)
+        stub.get_name.return_value = "ssh-rsa"
+        stub.get_base64.return_value = "AAAA"
+        return stub
+
     def test_format_default_port_omits_brackets(self) -> None:
         """For port 22, ``_format_known_hosts_line`` emits the bare hostname
         (matches OpenSSH known_hosts convention).
         """
-        from paramiko.rsakey import RSAKey
-
         from remote_store.backends._sftp import _format_known_hosts_line
 
-        key = RSAKey.generate(2048)
-        line = _format_known_hosts_line("example.com", 22, key)
+        line = _format_known_hosts_line("example.com", 22, self._stub_key())
         host_label = line.split(maxsplit=1)[0]
         assert host_label == "example.com"
 
     def test_format_non_default_port_uses_brackets(self) -> None:
         """For non-default ports, the label is ``[host]:port``."""
-        from paramiko.rsakey import RSAKey
-
         from remote_store.backends._sftp import _format_known_hosts_line
 
-        key = RSAKey.generate(2048)
-        line = _format_known_hosts_line("example.com", 2222, key)
+        line = _format_known_hosts_line("example.com", 2222, self._stub_key())
         host_label = line.split(maxsplit=1)[0]
         assert host_label == "[example.com]:2222"
 
@@ -742,6 +750,30 @@ class TestSFTPHostKeyPolicyAliases:
         """Unknown values continue to raise ValueError."""
         with pytest.raises(ValueError, match="not a valid HostKeyPolicy"):
             HostKeyPolicy("totally_made_up")
+
+    @pytest.mark.parametrize(
+        "value_form",
+        [
+            # "AUTO" is the uppercase of value "auto", and is NOT an enum
+            # name (the name is "AUTO_ADD"); the hook should not resolve it.
+            pytest.param("AUTO", id="AUTO-upper-value"),
+            # "Tofu" -> "TOFU" is neither value nor name (name is
+            # "TRUST_ON_FIRST_USE"); should not resolve.
+            pytest.param("Tofu", id="Tofu-mixed-value"),
+        ],
+    )
+    def test_value_form_aliasing_raises(self, value_form: str) -> None:
+        """_missing_ only case-folds enum-NAME forms; value-form upper/mixed
+        case (e.g. "AUTO" for value "auto", "Tofu" for value "tofu") still
+        raises. Locks in the scope of the alias hook so the CHANGELOG
+        "case-insensitive on the name" wording stays accurate.
+
+        Caveat: ``"Strict"`` happens to resolve because uppercase yields
+        ``"STRICT"``, which IS an enum-name form. That's the same code path
+        as ``test_enum_name_aliases_resolve``; not a value-form alias bug.
+        """
+        with pytest.raises(ValueError, match="not a valid HostKeyPolicy"):
+            HostKeyPolicy(value_form)
 
     def test_constructor_accepts_alias_string(self) -> None:
         """SFTPBackend constructor accepts the alias string form."""
