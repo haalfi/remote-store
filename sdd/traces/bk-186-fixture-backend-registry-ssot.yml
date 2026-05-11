@@ -19,7 +19,7 @@ phases:
         read_type: gate
         extract: "Fixture registry contract; transport-driven scope partitioning"
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A spec section"
+        section: "Ripple-check table / Spec section"
         read_type: gate
         extract: "Tests with @pytest.mark.spec must be updated when spec sections change"
 
@@ -67,7 +67,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A spec section"
+        section: "Ripple-check table / Spec section"
         read_type: verify
         extract: "All @pytest.mark.spec(TEST-NNN) tests updated"
       - file: CHANGELOG.md

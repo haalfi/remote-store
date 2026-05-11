@@ -40,6 +40,6 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A public method signature"
+        section: "Ripple-check table / Public method signature"
         read_type: verify
         extract: "Docstring changes: confirm no RST role patterns remain in touched files"

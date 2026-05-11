@@ -203,19 +203,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-194 — Ripple-check rewrite: compact pre-work index + detailed verify checklist**
-  `sdd/CLAUDE-REFERENCE.md` § Ripple-check table currently serves only the
-  verify-end purpose (a checklist after the diff is made). Trace research
-  ([research-agent-workflow-substrate.md](research/research-agent-workflow-substrate.md))
-  surfaced that 3/9 sampled PRs missed ripples (#604 `ci.yml`, #591
-  `graph.json` + `graph_viz.html`, #592 `_proxy.py` + extension wrappers)
-  because agents consulted ripple-check only at the end. Add a compact
-  "Quick reference" index at the top of CLAUDE-REFERENCE.md (trigger →
-  ripples one-liner per row, scannable before starting work); keep the
-  existing detailed checklist below for verify-end use. Two presentations,
-  one data source. Add a header section explaining the two purposes.
-  Driven by `surprising_ripples` data from the trace schema.
-
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
   BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
   `tests/` root) but grandfathers a set of legacy cross-cutting files

@@ -62,7 +62,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        section: "Ripple-check table / New authoritative process doc in `sdd/`"
         read_type: verify
         extract: "CLAUDE.md framework section updated; CONTRIBUTING.md scope updated; sibling docs back-reference each other; CLAUDE-REFERENCE.md ripple table gains new-authority-doc row"
       - file: CHANGELOG.md

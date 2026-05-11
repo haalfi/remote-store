@@ -43,7 +43,7 @@ a feedstock exists, only the bot-PR verification step remains.
 ## What's Changed
 
 <Extract sections from [Unreleased] in CHANGELOG.md and condense by section,
- following the section order in sdd/CLAUDE-REFERENCE.md § Ripple-check table.
+ following the section order in sdd/CLAUDE-REFERENCE.md § Ripple-check table > Detailed checklist.
  For each section with content, use brief bullet points (1 line per item, bold topic prefix)>
 
 **Links:**

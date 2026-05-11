@@ -35,6 +35,6 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A public method signature"
+        section: "Ripple-check table / Public method signature"
         read_type: verify
         extract: "Raises: clauses on nine SyncBackendAdapter methods now mirror ABC verbatim"

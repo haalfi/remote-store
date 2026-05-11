@@ -15,7 +15,7 @@ phases:
         read_type: gate
         extract: "Project-wide working rules"
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A new test file"
+        section: "Ripple-check table / New test file"
         read_type: gate
         extract: "os_sensitive mark obligation; ask whether code touches OS-specific paths"
 
@@ -71,7 +71,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A new test file"
+        section: "Ripple-check table / New test file"
         read_type: verify
         extract: "Confirm os_sensitive mark decision documented"
       - file: CHANGELOG.md

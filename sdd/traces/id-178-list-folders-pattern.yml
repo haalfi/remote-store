@@ -24,7 +24,7 @@ phases:
         read_type: gate
         extract: "Current list_folders signature and description"
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A Store method"
+        section: "Ripple-check table / Store method"
         read_type: gate
         extract: "All artifacts to update for a new Store method"
 
@@ -100,11 +100,11 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A Store method"
+        section: "Ripple-check table / Store method"
         read_type: verify
         extract: "README Store API table, __init__.py __all__, specs, guides, CHANGELOG"
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A public method signature"
+        section: "Ripple-check table / Public method signature"
         read_type: verify
         extract: "Docstring Args/Returns/Raises, examples that call it"
       - file: CHANGELOG.md

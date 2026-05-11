@@ -14,7 +14,7 @@ phases:
         read_type: gate
         extract: "Current s3-pyarrow, sql-query, and arrow extra definitions"
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A dependency"
+        section: "Ripple-check table / Dependency"
         read_type: gate
         extract: "pyproject.toml extras + minimum pins, README install instructions, docs prerequisites"
 
@@ -34,7 +34,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A dependency"
+        section: "Ripple-check table / Dependency"
         read_type: verify
         extract: "Extras, README install instructions, docs prerequisites all consistent"
       - file: CHANGELOG.md

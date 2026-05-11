@@ -26,7 +26,7 @@ phases:
         read_type: gate
         extract: "Authoritative placement table; rule S already documented; rules B and E to add"
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A spec section"
+        section: "Ripple-check table / Spec section"
         read_type: gate
         extract: "Tests with @pytest.mark.spec must trace to spec IDs for all new gate tests"
 
@@ -90,7 +90,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A spec section"
+        section: "Ripple-check table / Spec section"
         read_type: verify
         extract: "TEST-003/TEST-010 now have 33 @pytest.mark.spec tests; TESTING.md placement table updated"
       - file: CHANGELOG.md

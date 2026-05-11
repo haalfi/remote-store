@@ -8,6 +8,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-194 — Ripple-check rewrite: compact pre-work index + detailed verify checklist**
+  `sdd/CLAUDE-REFERENCE.md` § Ripple-check table previously served only
+  the verify-end purpose (a closing checklist after the diff was made).
+  Trace research ([`research-agent-workflow-substrate.md`](research/research-agent-workflow-substrate.md)
+  § 2.3) sampled 9 merged PRs and found 3 missed ripples (#604 `ci.yml`,
+  #591 `graph.json` + `graph_viz.html`, #592 `_proxy.py` + extension
+  wrappers) because agents consulted ripple-check only at the end. The
+  section now carries two presentations of the same set of triggers:
+  Pre-work index (one-liner per trigger, scanned before starting) and
+  Detailed checklist (full ripples, verify-end + reviewer use). H2
+  anchor `## Ripple-check table` preserved so the 30+ existing trace
+  section strings (`Ripple-check table / <row>`) still resolve.
+  CLAUDE.md principle 2 extended to mention both presentations.
+  `.claude/skills/review-pr`, `release`, and `orchestrate` updated to
+  point at the right H3 (Pre-work index at orient, Detailed checklist
+  at verify-end). Consistency between the two tables is reviewer-enforced;
+  if drift recurs, a check script can be promoted into BACKLOG. First
+  live-authored trace under the BK-193 rule.
+  Audience: `contributor.process`. CHANGELOG: — (process restructuring,
+  not a new framework; matches BK-193 precedent).
+  Trace: [`sdd/traces/bk-194-ripple-check-rewrite.yml`](traces/bk-194-ripple-check-rewrite.yml).
+
 - [x] **BK-193 — Trace schema: `audience` field + post-hoc fields; re-tag unreleased traces**
   Cross-checking 9 sampled traces against their merged PRs surfaced
   five gaps the original schema could not represent: (1) which

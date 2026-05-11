@@ -67,7 +67,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A spec section"
+        section: "Ripple-check table / Spec section"
         read_type: verify
         extract: "DOCFRAME-001..DOCFRAME-009: tests with @pytest.mark.spec wired"
       - file: sdd/CLAUDE-REFERENCE.md
