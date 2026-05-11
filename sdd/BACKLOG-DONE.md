@@ -8,7 +8,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-- [x] **BK-196 — `SFTPUtils.scan_host_keys(host, port=22) -> str` preflight host-key discovery**
+- [x] **BK-199 — `SFTPUtils.scan_host_keys(host, port=22) -> str` preflight host-key discovery**
   Static helper that opens a `paramiko.Transport`, performs key exchange
   without authenticating, captures `transport.get_remote_server_key()`,
   and returns a single `known_hosts`-formatted line ready to commit into
@@ -21,10 +21,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   full-server flow (matches the in-process fixture's
   `host_key_entry`), bracket/no-bracket formatting via the small
   `_format_known_hosts_line` helper, and unreachable-port failure.
+  Renumbered from BK-196 (PR's original ID) due to master collision:
+  BK-192's PR took BK-196.
   Audience: `user.api`, `user.site`.
-  Trace: [`sdd/traces/BK-196-scan-host-keys.yml`](traces/BK-196-scan-host-keys.yml).
+  Trace: [`sdd/traces/BK-199-scan-host-keys.yml`](traces/BK-199-scan-host-keys.yml).
 
-- [x] **BK-195 — SFTP legacy-server (`ssh-rsa` / SHA-1) compatibility**
+- [x] **BK-198 — SFTP legacy-server (`ssh-rsa` / SHA-1) compatibility**
   Paramiko 3.x removed `ssh-rsa` (SHA-1) from defaults across four
   sites: `Transport._preferred_keys`, `Transport._key_info`,
   `RSAKey.HASHES`, `Transport._preferred_pubkeys`. Servers like PSFTPd
@@ -40,8 +42,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `TestSFTPEnableSshRsaCompat` (idempotency + four-site coverage with
   paramiko state restored after) and `TestSFTPIncompatiblePeerHint`
   (hint present on `IncompatiblePeer`, absent on other `SSHException`).
+  Renumbered from BK-195 (PR's original ID) due to master collision:
+  BK-192's PR took BK-195.
   Audience: `user.api`, `user.site`.
-  Trace: [`sdd/traces/BK-195-ssh-rsa-compat.yml`](traces/BK-195-ssh-rsa-compat.yml).
+  Trace: [`sdd/traces/BK-198-ssh-rsa-compat.yml`](traces/BK-198-ssh-rsa-compat.yml).
 
 - [x] **BK-197 — `HostKeyPolicy` accepts enum-name aliases**
   Value strings of `HostKeyPolicy` are `"strict"`, `"tofu"`, `"auto"`

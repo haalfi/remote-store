@@ -1,4 +1,4 @@
-id: BK-195
+id: BK-198
 title: "SFTP legacy-server (ssh-rsa / SHA-1) compatibility"
 trigger: |
   Connecting to a legacy SFTP server (PSFTPd at 217.110.44.62, used by Six
@@ -10,7 +10,7 @@ trigger: |
   missing piece.
 
 source_items:
-  - BK-195
+  - BK-198
 
 audience:
   - user.api

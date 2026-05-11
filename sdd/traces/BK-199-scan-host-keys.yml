@@ -1,4 +1,4 @@
-id: BK-196
+id: BK-199
 title: "SFTPUtils.scan_host_keys preflight host-key discovery"
 trigger: |
   No first-class way to discover an SFTP server's host key for review
@@ -10,7 +10,7 @@ trigger: |
   equivalent.
 
 source_items:
-  - BK-196
+  - BK-199
 
 audience:
   - user.api

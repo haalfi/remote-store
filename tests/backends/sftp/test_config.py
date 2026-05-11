@@ -83,7 +83,7 @@ class TestSFTPParamikoVersionSurface:
 # endregion
 
 
-# region: Legacy server compatibility (BK-195)
+# region: Legacy server compatibility (BK-198)
 
 
 @pytest.fixture
@@ -112,7 +112,7 @@ def restore_paramiko_state() -> Iterator[None]:
 
 
 class TestSFTPEnableSshRsaCompat:
-    """BK-195: SFTPUtils.enable_ssh_rsa_compat restores ssh-rsa across the
+    """BK-198: SFTPUtils.enable_ssh_rsa_compat restores ssh-rsa across the
     four sites paramiko 3.x removed it from."""
 
     def test_helper_adds_ssh_rsa_to_all_four_sites(
@@ -154,7 +154,7 @@ class TestSFTPEnableSshRsaCompat:
 
 
 class TestSFTPIncompatiblePeerHint:
-    """BK-195: _map_exception annotates IncompatiblePeer with a remediation
+    """BK-198: _map_exception annotates IncompatiblePeer with a remediation
     pointer to ``SFTPUtils.enable_ssh_rsa_compat``."""
 
     def test_incompatible_peer_hint_present(self) -> None:
@@ -177,11 +177,11 @@ class TestSFTPIncompatiblePeerHint:
 # endregion
 
 
-# region: Preflight host-key discovery (BK-196)
+# region: Preflight host-key discovery (BK-199)
 
 
 class TestSFTPScanHostKeys:
-    """BK-196: SFTPUtils.scan_host_keys returns a known_hosts-formatted line
+    """BK-199: SFTPUtils.scan_host_keys returns a known_hosts-formatted line
     after performing KEX against the server, without authentication."""
 
     def test_scan_returns_known_hosts_line(self, sftp_server: tuple[int, str]) -> None:
