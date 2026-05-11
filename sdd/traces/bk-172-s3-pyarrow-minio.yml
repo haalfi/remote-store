@@ -15,7 +15,7 @@ phases:
         read_type: gate
         extract: "S3PyArrowBackend capabilities and extra; understand what must keep working"
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A dependency"
+        section: "Ripple-check table / Dependency"
         read_type: gate
         extract: "pyproject.toml extras, README install instructions, docs prerequisites"
       - file: sdd/specs/011-s3-pyarrow-backend.md
@@ -51,7 +51,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A dependency"
+        section: "Ripple-check table / Dependency"
         read_type: verify
         extract: "pyarrow < 25 cap lifted in pyproject.toml extras; README install unchanged"
       - file: CHANGELOG.md

@@ -39,7 +39,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A capability"
+        section: "Ripple-check table / Capability"
         read_type: verify
         extract: "Check every backend's capabilities(); conformance tests; capabilities matrix page"
       - file: CHANGELOG.md

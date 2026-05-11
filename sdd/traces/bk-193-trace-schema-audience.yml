@@ -152,7 +152,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        section: "Ripple-check table / New authoritative process doc in `sdd/`"
         read_type: verify
         extract: "Confirm research doc carries dual marker by directory default; backref from BACKLOG-DONE; no orphan cross-links"
         outcome: ok

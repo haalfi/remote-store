@@ -70,6 +70,6 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A bug fix"
+        section: "Ripple-check table / Bug fix"
         read_type: verify
         extract: "BACKLOG item, CHANGELOG stub, failing test, spec if bug contradicts invariant"

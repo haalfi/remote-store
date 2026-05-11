@@ -90,10 +90,10 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A bug fix"
+        section: "Ripple-check table / Bug fix"
         read_type: verify
         extract: "BACKLOG item, CHANGELOG stub, failing test before fix"
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A new test file"
+        section: "Ripple-check table / New test file"
         read_type: verify
         extract: "os_sensitive mark decision for live HNS test file"

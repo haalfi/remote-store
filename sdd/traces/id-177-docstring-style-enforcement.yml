@@ -47,7 +47,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        section: "Ripple-check table / New authoritative process doc in `sdd/`"
         read_type: verify
         extract: "DESIGN.md is an existing authority doc; ripple check for sibling back-references"
       - file: CHANGELOG.md

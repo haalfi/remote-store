@@ -250,7 +250,7 @@ $defs:
           - Heading text: "Principles", "Bug-fix protocol"
           - Numbered heading: "4 (Docstrings)", "12 (Extension API contract)"
           - Spec ID or list: "WR-001a, WR-004", "BE-008, BE-010, BE-021"
-          - Cross-doc table row: "Ripple-check table / A bug fix"
+          - Cross-doc table row: "Ripple-check table / Bug fix"
           - Special markers: "(full)", "(item)", "[Unreleased]"
           The section text should be precise enough for an agent to find
           the section without re-reading the whole file.
@@ -327,7 +327,7 @@ examples:
         name: Verify
         steps:
           - file: sdd/CLAUDE-REFERENCE.md
-            section: "Ripple-check table / A bug fix"
+            section: "Ripple-check table / Bug fix"
             read_type: verify
             extract: "BACKLOG item, CHANGELOG stub, failing test before fix"
             outcome: ok

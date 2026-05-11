@@ -42,8 +42,8 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table"
         read_type: reference
-        extract: "Rewrite: keep H2 'Ripple-check table' intact so 30+ existing trace section strings still resolve; add header explaining the two presentations; add Pre-work index H3 above Detailed checklist H3; row count parity 24 == 24"
-        outcome: ok
+        extract: "Initial rewrite: keep H2 'Ripple-check table' intact so existing trace section strings still resolve; add header explaining the two presentations; add Pre-work index H3 above Detailed checklist H3; row count parity 24 == 24. Reviewer pushback came after this commit — see rev. 2 step below."
+        outcome: unclear
       - file: .claude/skills/review-pr/SKILL.md
         section: "Ripple check"
         read_type: reference
@@ -64,17 +64,27 @@ phases:
         read_type: reference
         extract: "Restate principle 2 to mention both pre-work index and verify-end checklist usages — was written for verify-end-only world"
         outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table (rev. 2)"
+        read_type: reference
+        extract: "Reviewer feedback: Pre-work index had no ordering, trigger phrasing mixed article-form ('A backend') with bare-topic ('Version number'). Restructured: 5 H4 groups by SDD lifecycle phase (Spec & contract / Code surface / Tests / Docs / Release & meta); all 24 rows renamed to bare-topic form; column header changed from 'If you changed…' to 'Trigger' to match the noun form."
+        outcome: ok
+      - file: sdd/traces/
+        section: "(36 files)"
+        read_type: reference
+        extract: "Mechanical rename of 50 'Ripple-check table / A <X>' section strings across 35 existing traces + _schema.yml example + this trace itself — done via tmp/migrate_ripple_section_strings.py one-shot script (kept under tmp/, not committed)."
+        outcome: ok
 
   - id: verify
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        section: "Ripple-check table / New authoritative process doc in `sdd/`"
         read_type: verify
         extract: "Is this a *new* process doc? No — restructuring an existing section. Skip framework / sibling back-reference updates."
         outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A backlog item touched"
+        section: "Ripple-check table / Backlog item touched"
         read_type: verify
         extract: "Trace at sdd/traces/bk-194-ripple-check-rewrite.yml ships with the PR; audience contributor.process; CHANGELOG skipped per derived rule"
         outcome: ok

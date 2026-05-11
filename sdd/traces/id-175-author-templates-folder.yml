@@ -42,7 +42,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A new authoritative process doc in sdd/"
+        section: "Ripple-check table / New authoritative process doc in `sdd/`"
         read_type: verify
         extract: "Update CONTRIBUTING.md and CLAUDE-REFERENCE.md links to templates; update AUTHORING.md directory defaults table"
       - file: CONTRIBUTING.md

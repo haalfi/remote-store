@@ -26,7 +26,7 @@ phases:
         read_type: gate
         extract: "Design rationale for kind × stage; conformance-as-spine decision"
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A spec section"
+        section: "Ripple-check table / Spec section"
         read_type: gate
         extract: "Tests with @pytest.mark.spec must trace to spec IDs"
 
@@ -74,7 +74,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A spec section"
+        section: "Ripple-check table / Spec section"
         read_type: verify
         extract: "All 14 @pytest.mark.spec tests trace to TEST-NNN IDs"
       - file: CHANGELOG.md

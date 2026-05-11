@@ -47,7 +47,7 @@ phases:
     name: Verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
-        section: "Ripple-check table / A spec section"
+        section: "Ripple-check table / Spec section"
         read_type: verify
         extract: "TEST-010 layout updated; @pytest.mark.spec traces still valid at new paths"
       - file: CHANGELOG.md
