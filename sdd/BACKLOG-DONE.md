@@ -8,6 +8,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-197 — `HostKeyPolicy` accepts enum-name aliases**
+  Value strings of `HostKeyPolicy` are `"strict"`, `"tofu"`, `"auto"`
+  (`src/remote_store/backends/_sftp.py:68-70`); the latter two do not
+  match their enum names (`TRUST_ON_FIRST_USE`, `AUTO_ADD`). Callers
+  typing `"auto_add"` or `"trust_on_first_use"` hit
+  `ValueError: 'auto_add' is not a valid HostKeyPolicy`. Added
+  `_missing_` hook that maps the enum-name forms (case-insensitive)
+  to canonical members; existing YAML configs using `"auto"` /
+  `"tofu"` / `"strict"` continue to work unchanged. New test class
+  `TestSFTPHostKeyPolicyAliases` covers the supported alias forms
+  and confirms unknown values still raise.
+  Audience: `user.api`.
+  Trace: [`sdd/traces/BK-197-host-key-policy-aliases.yml`](traces/BK-197-host-key-policy-aliases.yml).
+
 - [x] **BUG-204 — SFTP backend declared `paramiko>=2.2` but used paramiko 3.0+ API (`channel_timeout`)**
   `SFTPBackend._connect()` passes `channel_timeout=self._timeout` to
   `paramiko.SSHClient.connect()` (`src/remote_store/backends/_sftp.py:864`).

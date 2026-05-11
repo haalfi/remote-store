@@ -1,0 +1,55 @@
+id: BK-197
+title: "HostKeyPolicy accepts enum-name aliases"
+trigger: |
+  Author of a consumer task script tried `sftp_host_key_policy="auto_add"`
+  and got `ValueError: 'auto_add' is not a valid HostKeyPolicy`. The enum
+  value strings (``strict``, ``tofu``, ``auto``) diverge from the member
+  names (``STRICT``, ``TRUST_ON_FIRST_USE``, ``AUTO_ADD``), and the value
+  forms are not obvious from the member names alone.
+
+source_items:
+  - BK-197
+
+audience:
+  - user.api
+
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "HostKeyPolicy (lines 59-70)"
+        read_type: reference
+        extract: "Value strings are 'strict', 'tofu', 'auto'; member names are STRICT, TRUST_ON_FIRST_USE, AUTO_ADD"
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPHostKeyPolicyCoercion"
+        read_type: reference
+        extract: "Existing parametrized coercion test uses the canonical value strings"
+
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPHostKeyPolicyAliases"
+        read_type: gate
+        extract: "Assert HostKeyPolicy('auto_add'), HostKeyPolicy('AUTO_ADD'), etc. resolve to the canonical members; assert unknown values still raise"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "HostKeyPolicy._missing_"
+        read_type: reference
+        extract: "_missing_ classmethod maps case-insensitive enum-name forms to canonical members via _member_map_"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public method signature"
+        read_type: verify
+        extract: "Docstring (Args/Returns/Raises) updated to document accepted alias forms"

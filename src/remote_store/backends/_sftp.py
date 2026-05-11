@@ -63,11 +63,24 @@ class HostKeyPolicy(Enum):
         STRICT: Reject unknown hosts (production default).
         TRUST_ON_FIRST_USE: Save on first connect, verify after.
         AUTO_ADD: Accept any key (dev/testing ONLY).
+
+    Accepts the enum-name forms (``"auto_add"``, ``"trust_on_first_use"``,
+    ``"STRICT"``) in addition to the canonical value strings (``"auto"``,
+    ``"tofu"``, ``"strict"``).
     """
 
     STRICT = "strict"
     TRUST_ON_FIRST_USE = "tofu"
     AUTO_ADD = "auto"
+
+    @classmethod
+    def _missing_(cls, value: object) -> HostKeyPolicy | None:
+        # Map enum-name aliases to their canonical members, case-insensitive.
+        # Returning None falls through to ValueError.
+        if not isinstance(value, str):
+            return None
+        normalized = value.upper()
+        return cls._member_map_.get(normalized)  # type: ignore[return-value]
 
 
 # endregion

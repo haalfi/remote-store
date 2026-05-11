@@ -566,6 +566,36 @@ class TestSFTPHostKeyPolicyCoercion:
             assert backend._host_key_policy is expected
 
 
+class TestSFTPHostKeyPolicyAliases:
+    """BK-197: HostKeyPolicy accepts enum-name aliases for the values whose
+    string forms (``auto``, ``tofu``) diverge from the enum names
+    (``AUTO_ADD``, ``TRUST_ON_FIRST_USE``)."""
+
+    @pytest.mark.parametrize(
+        ("alias", "expected"),
+        [
+            pytest.param("auto_add", HostKeyPolicy.AUTO_ADD, id="auto_add"),
+            pytest.param("AUTO_ADD", HostKeyPolicy.AUTO_ADD, id="AUTO_ADD"),
+            pytest.param("trust_on_first_use", HostKeyPolicy.TRUST_ON_FIRST_USE, id="trust_on_first_use"),
+            pytest.param("TRUST_ON_FIRST_USE", HostKeyPolicy.TRUST_ON_FIRST_USE, id="TRUST_ON_FIRST_USE"),
+            pytest.param("STRICT", HostKeyPolicy.STRICT, id="STRICT-upper-name"),
+        ],
+    )
+    def test_enum_name_aliases_resolve(self, alias: str, expected: HostKeyPolicy) -> None:
+        """Enum-name forms (uppercase or lowercase) resolve to the same member."""
+        assert HostKeyPolicy(alias) is expected
+
+    def test_invalid_value_still_raises(self) -> None:
+        """Unknown values continue to raise ValueError."""
+        with pytest.raises(ValueError, match="not a valid HostKeyPolicy"):
+            HostKeyPolicy("totally_made_up")
+
+    def test_constructor_accepts_alias_string(self) -> None:
+        """SFTPBackend constructor accepts the alias string form."""
+        backend = SFTPBackend(host="dummy", host_key_policy="auto_add")
+        assert backend._host_key_policy is HostKeyPolicy.AUTO_ADD
+
+
 class TestSFTPToKey:
     """BK-005: to_key() all branches (lines 324, 326, 328)."""
 

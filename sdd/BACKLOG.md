@@ -251,17 +251,6 @@ and the highest ID already in this file, then take the next integer. Run
       upgrade.
   Spec: new SFTP-030.
 
-- [ ] **BK-197 — `HostKeyPolicy` accepts enum-name aliases**
-  `HostKeyPolicy` value strings are `"strict"`, `"tofu"`, `"auto"`
-  (`src/remote_store/backends/_sftp.py:68-70`); the latter two do not
-  match their enum names (`TRUST_ON_FIRST_USE`, `AUTO_ADD`). Callers
-  typing `"auto_add"` or `"trust_on_first_use"` get
-  `ValueError: 'auto_add' is not a valid HostKeyPolicy`. Surfaced
-  repeatedly in real usage. Fix: add `__missing__` to `HostKeyPolicy`
-  that maps the enum-name forms to existing values. Strictly additive;
-  existing YAML configs using `"auto"` / `"tofu"` continue to work.
-  Spec: SFTP-006.
-
 - [ ] **BK-196 — Dafny formal-spec gap: `Copy` postcondition does not pin metadata**
   `sdd/formal/MemoryBackend.dfy::Copy` builds the destination via
   `BasicFileInfo(dst, dst, srcEntry.info.size)`, which drops user metadata.
