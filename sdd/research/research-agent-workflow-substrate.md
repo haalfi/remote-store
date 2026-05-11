@@ -1,4 +1,4 @@
-# Research: Substrate for Data-Driven Improvement of Agent Workflows (BK-193)
+# Research: Substrate for Data-Driven Improvement of Agent Workflows
 
 **Date:** 2026-05-11
 **Backlog items:** BK-193 (Trace schema: `audience` field + post-hoc fields; re-tag unreleased traces)
