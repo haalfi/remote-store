@@ -55,3 +55,8 @@ phases:
         read_type: reference
         extract: "Two call-sites: orient → Pre-work index; verify-end audit → Detailed checklist. Line 292 (CHANGELOG entry row reference) unchanged — row name preserved."
         outcome: ok
+      - file: CLAUDE.md
+        section: "Principles / 2"
+        read_type: reference
+        extract: "Restate principle 2 to mention both pre-work index and verify-end checklist usages — was written for verify-end-only world"
+        outcome: ok
