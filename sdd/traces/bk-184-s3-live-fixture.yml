@@ -4,6 +4,8 @@ trigger: "Live S3 conformance coverage gap after BK-180 shipped Azure live fixtu
 source_items:
   - BK-184
   - BK-180
+audience:
+  - infra.test
 phases:
   - id: orient
     name: Orient

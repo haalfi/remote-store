@@ -4,6 +4,8 @@ trigger: "pyarrow >= 24 C++ S3 client rejects CompleteMultipartUpload response s
 source_items:
   - BK-172
   - BK-168
+audience:
+  - infra.test
 phases:
   - id: orient
     name: Orient

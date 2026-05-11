@@ -3,6 +3,14 @@ title: "list_folders(pattern=…) — name-based glob filter"
 trigger: "list_files() had a pattern= keyword for name filtering but list_folders() did not, creating an inconsistent Store API surface"
 source_items:
   - ID-178
+audience:
+  - user.api
+known_ripples:
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+  - examples/getting_started/file_operations.py
+  - sdd/backlogid.json
+review_rounds: 0
 phases:
   - id: orient
     name: Orient

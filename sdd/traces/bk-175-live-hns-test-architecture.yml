@@ -3,6 +3,8 @@ title: "Live HNS test architecture: design phase"
 trigger: "Azure HNS live tests needed a parametrize + cassette design; scope expanded to the full testing tree once the kind × stage axes were recognized as the right abstraction"
 source_items:
   - BK-175
+audience:
+  - contributor.process
 phases:
   - id: orient
     name: Orient

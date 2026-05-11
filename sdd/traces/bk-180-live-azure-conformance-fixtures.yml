@@ -4,6 +4,8 @@ trigger: "Spec 048 Phase 1 (BK-179) landed the fixture registry; Phase 2 adds az
 source_items:
   - BK-180
   - BK-175
+audience:
+  - infra.test
 phases:
   - id: orient
     name: Orient

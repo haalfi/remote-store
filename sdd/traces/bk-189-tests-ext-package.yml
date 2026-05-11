@@ -5,6 +5,12 @@ source_items:
   - BK-189
   - BK-188
   - BK-179
+audience:
+  - infra.test
+co_shipped_items:
+  - BK-188
+  - BK-190
+review_rounds: 3
 phases:
   - id: orient
     name: Orient

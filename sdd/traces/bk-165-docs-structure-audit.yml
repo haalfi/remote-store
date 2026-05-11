@@ -3,6 +3,8 @@ title: "Docs structure audit for the post-ID-174 layout (audit phase)"
 trigger: "ID-174 reorganised the docs filesystem into a Diataxis layout; an audit was needed to verify the new structure against documentation quality rules before any further docs work"
 source_items:
   - BK-165
+audience:
+  - contributor.process
 phases:
   - id: orient
     name: Orient

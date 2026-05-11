@@ -4,6 +4,8 @@ trigger: "BK-167a implemented G-01..G-06 checks but deferred unit tests for G-02
 source_items:
   - BK-169
   - BK-167a
+audience:
+  - contributor.tooling
 phases:
   - id: orient
     name: Orient

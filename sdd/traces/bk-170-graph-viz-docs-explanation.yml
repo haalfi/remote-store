@@ -3,6 +3,8 @@ title: "Host API graph visualization in docs Explanation section"
 trigger: "graph_viz.html lived under docs-src/_data/graph/ (a private MkDocs dir) so it was not reachable as a page in the rendered site navigation"
 source_items:
   - BK-170
+audience:
+  - user.site
 phases:
   - id: orient
     name: Orient

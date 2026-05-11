@@ -4,6 +4,9 @@ trigger: "BUG-190 fixed the runtime but AsyncBackend ABC, SyncBackendAdapter, an
 source_items:
   - BK-174
   - BK-173
+audience:
+  - user.api_docs
+review_rounds: 3
 phases:
   - id: orient
     name: Orient

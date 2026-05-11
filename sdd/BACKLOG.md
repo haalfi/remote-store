@@ -203,26 +203,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [~] **BK-193 — Trace schema: `audience` field + post-hoc fields; re-tag unreleased traces**
-  PR #608 traces are anticipated workflows. Cross-checking 9 sampled
-  traces against merged PRs surfaced gaps the current schema cannot
-  represent: (1) which constituency the change is *for* (the
-  `not_user_facing` boolean conflates context7-LLM presentation, lint
-  tooling, test infra, and internal style); (2) discovery cascades
-  during review (one fix surfaces another); (3) bundled scope (one PR
-  closes several backlog items); (4) mechanical ripples authors do not
-  cite (backlogid.json, graph.json, ci.yml); (5) review iteration count.
-  Schema additions land in PR 1; the 39 unreleased traces are re-tagged
-  with `audience` lists in PR 2 (the new field is currently required by
-  the schema but unenforced — no validator wired — so trace files added
-  before tagging will warn rather than fail).
-  Done in PR 1: schema fields `audience`, `discovery_followups`,
-  `co_shipped_items`, `known_ripples`, `review_rounds`; example block
-  updated.
-  Pending in PR 2: tag all 39 traces under `sdd/traces/` with audience
-  lists (priority-sorted); fill `review_rounds` and `known_ripples`
-  retrospectively from the merged PRs sampled in Phase 3 analysis.
-
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
   BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
   `tests/` root) but grandfathers a set of legacy cross-cutting files

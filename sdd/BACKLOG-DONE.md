@@ -8,6 +8,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-193 — Trace schema: `audience` field + post-hoc fields; re-tag unreleased traces**
+  Cross-checking 9 sampled traces against their merged PRs surfaced
+  five gaps the original schema could not represent: (1) which
+  constituency a change is *for* (the `not_user_facing` boolean
+  conflated context7-LLM presentation, lint tooling, test infra, and
+  internal style); (2) discovery cascades during review (one fix
+  surfaces another); (3) bundled scope (one PR closes several backlog
+  items); (4) mechanical ripples authors do not cite (backlogid.json,
+  graph.json, ci.yml); (5) review iteration count.
+  `sdd/traces/_schema.yml` gains five fields: `audience` (required,
+  priority-sorted list, 10 enum values: `user.api`, `user.api_docs`,
+  `user.site`, `user.discoverability.{llm,human}`, `contributor.process`,
+  `contributor.tooling`, `infra.test`, `infra.ci`, `internal.style`);
+  `discovery_followups`, `co_shipped_items`, `known_ripples` (optional
+  lists); `review_rounds` (optional int). Derived rule: CHANGELOG
+  required iff any `audience` entry starts with `user.`, or
+  `contributor.process` introduces a new framework. All 39 unreleased
+  traces under `sdd/traces/` re-tagged; 9 sampled traces additionally
+  carry retrospective `discovery_followups` / `co_shipped_items` /
+  `known_ripples` / `review_rounds` filled from their merged PRs
+  (#579, #582, #590, #591, #592, #597, #604, #606, #607). No validator
+  wired — the `required` field acts as authoring convention; future
+  traces failing to tag will fail visibly on the next aggregator run
+  rather than at commit time.
+
 - [x] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   Added `metadata=node.metadata` to all four `FileInfo`-constructing sites in
   `src/remote_store/aio/backends/_memory.py`: `get_file_info`, `list_files`

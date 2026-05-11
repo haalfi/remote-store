@@ -4,6 +4,8 @@ trigger: "BUG-189 PR review surfaced that the four-layer ripple chain (concrete 
 source_items:
   - BK-173
   - BUG-189
+audience:
+  - user.api_docs
 phases:
   - id: orient
     name: Orient

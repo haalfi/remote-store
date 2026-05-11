@@ -4,6 +4,8 @@ trigger: "BK-167 defined the three-doc framework; BK-167a implements the single 
 source_items:
   - BK-167a
   - BK-167
+audience:
+  - contributor.tooling
 phases:
   - id: orient
     name: Orient

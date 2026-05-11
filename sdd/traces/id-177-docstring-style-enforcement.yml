@@ -4,6 +4,8 @@ trigger: "RST inline roles (:class:, :meth:, etc.) found in docstrings during au
 source_items:
   - ID-177
   - BK-178
+audience:
+  - contributor.tooling
 phases:
   - id: orient
     name: Orient

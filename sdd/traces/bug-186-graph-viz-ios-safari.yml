@@ -3,6 +3,8 @@ title: "API graph visualization blank on iOS Safari"
 trigger: "Four root causes in gen_graph_viz.py template: missing viewport meta, missing touch-action:none on SVG, missing viewBox combined with forceX/forceY constants, 100vh unstable under Safari dynamic URL bar"
 source_items:
   - BUG-186
+audience:
+  - user.site
 phases:
   - id: orient
     name: Orient

@@ -4,6 +4,8 @@ trigger: "open_atomic HNS branch only checked hdi_isfolder under overwrite=False
 source_items:
   - BUG-192
   - BUG-190
+audience:
+  - user.api
 phases:
   - id: orient
     name: Orient

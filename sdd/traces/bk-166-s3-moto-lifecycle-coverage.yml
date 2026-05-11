@@ -4,6 +4,8 @@ trigger: "BUG-178 and BUG-185 escaped to users because the S3 control path with 
 source_items:
   - BK-166
   - BUG-185
+audience:
+  - infra.test
 phases:
   - id: orient
     name: Orient

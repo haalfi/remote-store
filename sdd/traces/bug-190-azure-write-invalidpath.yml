@@ -3,6 +3,8 @@ title: "Azure write/write_atomic on directory path does not raise InvalidPath pe
 trigger: "AzureBackend and AsyncAzureBackend: get_blob_properties() succeeds for HNS dirs returning hdi_isfolder=true, causing AlreadyExists on overwrite=False or silent upload on overwrite=True instead of InvalidPath"
 source_items:
   - BUG-190
+audience:
+  - user.api
 phases:
   - id: orient
     name: Orient

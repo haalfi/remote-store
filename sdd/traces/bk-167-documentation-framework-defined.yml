@@ -3,6 +3,8 @@ title: "Documentation framework defined and wired in"
 trigger: "Documentation placement, structure, and longevity rules existed in scattered locations; no single entry point told contributors or agents where to look first and in what order"
 source_items:
   - BK-167
+audience:
+  - contributor.process
 phases:
   - id: orient
     name: Orient

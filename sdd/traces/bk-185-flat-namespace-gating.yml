@@ -4,6 +4,8 @@ trigger: "Identity sets keyed by backend.name caused Azure emulator (Azurite) an
 source_items:
   - BK-185
   - BK-186
+audience:
+  - infra.test
 phases:
   - id: orient
     name: Orient

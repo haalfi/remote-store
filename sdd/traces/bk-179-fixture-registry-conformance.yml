@@ -4,6 +4,14 @@ trigger: "BK-175 produced spec 048 and ADR-0028; Phase 1 implements the fixture 
 source_items:
   - BK-179
   - BK-175
+audience:
+  - infra.test
+discovery_followups:
+  - BK-183
+known_ripples:
+  - .github/workflows/ci.yml
+  - sdd/backlogid.json
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
