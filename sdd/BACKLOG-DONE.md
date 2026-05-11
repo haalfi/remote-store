@@ -36,6 +36,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   identifies the substrate the workflow-improvement programme needs;
   trace-vs-PR fidelity analysis (3 phases, 9-PR sample) was the empirical
   method that motivated the schema additions.
+  Trace: [`sdd/traces/bk-193-trace-schema-audience.yml`](traces/bk-193-trace-schema-audience.yml)
+  documents this work; declared retrospective in its `trigger` field
+  because BK-193 itself ships the live-authoring rule that future
+  traces (starting with BK-194) will follow.
   Schema-review iteration added two more fields and one rename to close
   the "traces describe ideal, not actual" gap: optional step-level
   `outcome` (`ok` / `unclear` / `misleading`) for descriptive→diagnostic
