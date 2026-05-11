@@ -32,6 +32,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   wired — the `required` field acts as authoring convention; future
   traces failing to tag will fail visibly on the next aggregator run
   rather than at commit time.
+  Research: [`sdd/research/research-trace-vs-pr-fidelity.md`](research/research-trace-vs-pr-fidelity.md)
+  captures the empirical investigation (3 phases, 9-PR sample, taxonomy
+  derivation) that motivated the schema additions.
 
 - [x] **BK-176 — `AsyncMemoryBackend` metadata round-tripping parity with sync `MemoryBackend`**
   Added `metadata=node.metadata` to all four `FileInfo`-constructing sites in
