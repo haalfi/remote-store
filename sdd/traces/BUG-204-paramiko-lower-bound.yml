@@ -1,0 +1,59 @@
+id: BUG-204
+title: "SFTP backend declares paramiko>=2.2 but uses paramiko 3.0+ API (channel_timeout)"
+trigger: |
+  User pinned `paramiko<3` in their consumer requirements.txt (workaround for
+  legacy-server compatibility) and saw `SFTPBackend._connect` fail with
+  `TypeError: SSHClient.connect() got an unexpected keyword argument
+  'channel_timeout'`. Library's declared `paramiko>=2.2` lower bound did not
+  reflect the API it actually requires.
+
+source_items:
+  - BUG-204
+
+audience:
+  - user.api
+
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_do_connect (line 855-866)"
+        read_type: reference
+        extract: "channel_timeout=self._timeout is passed unconditionally"
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] / sftp"
+        read_type: reference
+        extract: "paramiko>=2.2 lower bound predates the channel_timeout addition"
+
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPParamikoVersionSurface"
+        read_type: gate
+        extract: "Assert channel_timeout is in paramiko.SSHClient.connect signature; would fail on paramiko 2.x"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] / sftp"
+        read_type: reference
+        extract: "Bump paramiko>=2.2 -> paramiko>=3.0"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Dependency"
+        read_type: verify
+        extract: "pyproject extras + pins, README install, docs prerequisites"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, failing test before fix"

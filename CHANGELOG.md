@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-204: SFTP `[sftp]` extra now requires `paramiko>=3.0` (was `>=2.2`). `SFTPBackend._connect` passes `channel_timeout=`, a paramiko 3.0+ kwarg; the prior lower bound let resolvers pick paramiko 2.x and produced a confusing runtime `TypeError`.
 - BK-192: `MemoryBackend.copy()` and `AsyncMemoryBackend.copy()` now preserve user metadata on the destination — fixes a silent metadata drop on the `write → copy → get_file_info` round-trip (BE-019, ASYNC-019, WR-013)
 - BK-176: `AsyncMemoryBackend` now preserves user metadata through `get_file_info`, `list_files` (recursive and non-recursive), and `iter_children` — sync `MemoryBackend` parity (ASYNC-016, WR-013)
 - BK-190: tests/ root cleanup — placement checks (rules S, B, E) + TESTING.md and spec 048 update

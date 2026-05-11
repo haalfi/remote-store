@@ -8,6 +8,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-204 — SFTP backend declared `paramiko>=2.2` but used paramiko 3.0+ API (`channel_timeout`)**
+  `SFTPBackend._connect()` passes `channel_timeout=self._timeout` to
+  `paramiko.SSHClient.connect()` (`src/remote_store/backends/_sftp.py:864`).
+  The `channel_timeout` keyword was added in paramiko 3.0; paramiko 2.x
+  raised `TypeError: SSHClient.connect() got an unexpected keyword
+  argument 'channel_timeout'` at runtime. `pyproject.toml` `[sftp]`
+  extra now requires `paramiko>=3.0`, matching what the code actually
+  uses. Surfaced when a user pinned `paramiko<3` to recover ssh-rsa
+  (SHA-1) host-key support for a legacy SFTP server (PSFTPd). New
+  test `TestSFTPParamikoVersionSurface` asserts `channel_timeout` is in
+  the installed paramiko's `SSHClient.connect` signature, guarding the
+  lower bound against future drift.
+  Audience: `user.api`.
+  Trace: [`sdd/traces/BUG-204-paramiko-lower-bound.yml`](traces/BUG-204-paramiko-lower-bound.yml).
+
 - [x] **BK-192 — `copy()` metadata parity on `MemoryBackend` and `AsyncMemoryBackend`**
   Both backends constructed the destination `_FileEntry` in `copy()` without
   `metadata=src_node.metadata`, so `write(path, data, metadata={...}) → copy(path, dst) → get_file_info(dst)`

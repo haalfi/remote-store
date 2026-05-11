@@ -67,18 +67,6 @@ and the highest ID already in this file, then take the next integer. Run
   inline from `missing_host_key`), making persistence independent of
   close lifecycle. Spec: SFTP-028.
 
-- [ ] **BUG-204 — SFTP backend declares `paramiko>=2.2` but uses paramiko 3.0+ API (`channel_timeout`)**
-  `SFTPBackend._connect()` passes `channel_timeout=self._timeout` to
-  `paramiko.SSHClient.connect()` (`src/remote_store/backends/_sftp.py:864`).
-  The `channel_timeout` keyword was added in paramiko 3.0; paramiko 2.x
-  raises `TypeError: SSHClient.connect() got an unexpected keyword
-  argument 'channel_timeout'` at runtime. `pyproject.toml:57` declares
-  `paramiko>=2.2`, so users pinning paramiko 2.x to support legacy SFTP
-  servers (e.g. PSFTPd, which only offers `ssh-rsa` SHA-1 host keys
-  paramiko 3.x removed from defaults) hit the runtime error instead of
-  a clean resolver failure. Fix: bump the lower bound in `pyproject.toml`
-  to `paramiko>=3.0` and add a corresponding CHANGELOG note.
-
 - [ ] **BUG-203 — `AzureBackend.is_file()` returns `True` for HNS folder paths**
   Sync `AzureBackend.is_file('a.txt')` returns `True` when `a.txt` exists as
   an HNS directory blob (marker `hdi_isfolder=true`). Conformance contract

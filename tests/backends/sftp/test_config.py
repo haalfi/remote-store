@@ -64,6 +64,24 @@ def sftp_backend(sftp_server: tuple[int, str]) -> Iterator[Backend]:
     backend.close()
 
 
+# region: Dependency surface (BUG-204)
+class TestSFTPParamikoVersionSurface:
+    """BUG-204: production code relies on paramiko 3.0+ API (channel_timeout)."""
+
+    def test_ssh_client_connect_accepts_channel_timeout(self) -> None:
+        """SFTPBackend._connect passes channel_timeout=; guard that the installed
+        paramiko exposes the kwarg. Tightens the pyproject.toml lower bound to
+        catch a too-loose pin at import time rather than at runtime.
+        """
+        import inspect
+
+        params = inspect.signature(paramiko.SSHClient.connect).parameters
+        assert "channel_timeout" in params
+
+
+# endregion
+
+
 # region: Construction (SFTP-001 through SFTP-005)
 class TestSFTPConstruction:
     """SFTP-001 through SFTP-005: construction and identity."""
