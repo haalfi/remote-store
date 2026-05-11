@@ -8,7 +8,51 @@ Scope: cross-file dependency checks, repo navigation, and layout.
 
 ## Ripple-check table
 
-Before committing, check whether your change has cross-file dependencies:
+The ripple-check has two presentations of the same set of triggers:
+
+- The **Pre-work index** below is a one-line-per-trigger scan you read **before starting work** that might touch backends, errors, capabilities, versions, specs, dependencies, or anything in the trigger column. It exists because 3/9 sampled PRs missed ripples by consulting the table only at verify-end (`sdd/research/research-agent-workflow-substrate.md` § 2.3).
+- The **Detailed checklist** below it lists the same triggers with the full ripple set, used at verify-end after the diff is complete and by PR reviewers.
+
+Both tables are presentations of the same set of triggers. If you add, remove, or rename a row, update both.
+
+<!-- Two-presentations-one-source: every row in "Pre-work index" must have a
+matching row in "Detailed checklist" and vice versa. Reviewer-enforced; if
+drift recurs, consider promoting a check script (gen or lint) into BACKLOG. -->
+
+### Pre-work index
+
+Read this before starting. One line per trigger:
+
+| Trigger                       | Ripples (at a glance)                                                              |
+|-------------------------------|------------------------------------------------------------------------------------|
+| A backend                     | README backends table, `pyproject` extras, guides, docs nav, examples, specs, `_registry.py` |
+| An error type                 | `005-error-model.md` spec, every backend's error mapping + tests, docstring "raised by", troubleshooting guide |
+| A capability                  | `003-backend-adapter-contract.md` spec, every backend's `capabilities()`, Store surface, capability matrix |
+| Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in CONTRIBUTING § Phase 2 |
+| A spec section                | Tests tagged `@pytest.mark.spec("ID")`, BACKLOG if related                         |
+| A dependency                  | `pyproject` extras + pins, README install, docs prerequisites                      |
+| Store or Backend ABC          | All backend implementations, conformance tests                                     |
+| A public method signature     | Docstring (Args/Returns/Raises), examples that call it, guides referencing it      |
+| A Store method                | README Store API table + comparison count, `__init__.py` `__all__`, README examples table, `examples/`, spec, guides, CHANGELOG |
+| Public API (`__all__`)        | README Store API table, `reference/api/*.md` directive + index summary + `_nav.yml`, `examples/`, user guides; check `backends/__init__.py` `__all__` too |
+| An extension                  | `__init__.py` exports (ADR-0013 rules), `pyproject` extras, README extensions table, `reference/api/extensions/*` + index + `_nav.yml`, guides, examples, CHANGELOG, BACKLOG |
+| An example script             | README examples table, generated `tutorial/examples/<slug>.md`, `tests/test_examples.py` import |
+| Docs navigation               | Per-section `_nav.yml` files, `docs-src/guides/backends/index.md`, AUTHORING Rule 1, DOCUMENTATION § Content homes |
+| An API reference page         | DOCUMENTATION § API page building blocks + required sections                       |
+| A bug fix                     | BACKLOG item, CHANGELOG stub under `[Unreleased]`, failing test **before** fix, spec if invariant contradicted |
+| A backlog item touched        | Live trace at `sdd/traces/<id>-<slug>.yml` (CLAUDE.md § Trace authoring); schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
+| Source/test/spec counts       | README badge + CI coverage report (no manual table)                                |
+| A new test file               | OS-sensitive code? Add `pytestmark = pytest.mark.os_sensitive`; periodically re-audit |
+| CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`; release skill expands and groups |
+| `CAPABILITIES` ClassVar       | `003-backend-adapter-contract.md` (BE-003), `test_capabilities.py`, `test_conformance.py`, custom-backend guide, `examples/snippets/` |
+| `_GATING` dict (`_store.py`)  | `001-store-api.md` (STORE-gate entries), `test_store.py`, guides if a method's cap docs change, `store.md` admonitions (verified by `gen-api-check`, ID-170) |
+| `_BACKEND_GATING` dict (`gen_graph.py`) | `003-backend-adapter-contract.md` (BE-gate entries), `backend.md` admonitions (verified by `gen-api-check`, ID-171) |
+| `__mirror__` attribute        | Async spec (mirror invariant), `gen_graph.py` (mirrors-edge), `tests/` mirror test on add/remove |
+| A new authoritative process doc in `sdd/` | CLAUDE.md § Documentation framework (if part of the trio), CONTRIBUTING § Authoritative Document Format Scope, sibling authority back-references, `.claude/skills/*/SKILL.md` foundation lists, `docs-src/explanation/design/_nav.yml`, and this ripple-check |
+
+### Detailed checklist
+
+Read this at verify-end (after the diff is complete) and during PR review. Each row expands the Pre-work index above:
 
 | If you changed…            | Also check / update                                       |
 |----------------------------|-----------------------------------------------------------|
@@ -102,7 +146,7 @@ Before committing, check whether your change has cross-file dependencies:
 |                            | § Scope, sibling authority docs (back-references in       |
 |                            | their Intent & Scope), `.claude/skills/*/SKILL.md`        |
 |                            | foundation lists, `docs-src/explanation/design/_nav.yml`, |
-|                            | and this ripple-check table                               |
+|                            | and this ripple-check                                     |
 
 ---
 

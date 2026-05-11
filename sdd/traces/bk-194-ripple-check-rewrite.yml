@@ -31,3 +31,12 @@ phases:
         read_type: gate
         extract: "audience enum + derived CHANGELOG rule (contributor.process without new framework skips CHANGELOG); surprising_ripples are the analytically valuable signal"
         outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: reference
+        extract: "Rewrite: keep H2 'Ripple-check table' intact so 30+ existing trace section strings still resolve; add header explaining the two presentations; add Pre-work index H3 above Detailed checklist H3; row count parity 24 == 24"
+        outcome: ok
