@@ -1,147 +1,62 @@
 # Research: Trace-vs-PR Fidelity Analysis (BK-193)
 
 **Date:** 2026-05-11
-**Status:** Research complete; informed BK-193 schema additions and the
-re-tagging of all 39 unreleased traces under `sdd/traces/`.
-**Scope:** Empirical investigation of how the trace YAMLs introduced in
-PR #608 compare to the work that actually shipped in the corresponding
-merged PRs. The analysis was deliberately staged so each phase could
-falsify the previous one's claims.
+**Backlog items:** BK-193 (Trace schema: `audience` field + post-hoc fields; re-tag unreleased traces)
+**Status:** Research complete — informed BK-193 schema additions and re-tagging of all 39 unreleased traces under `sdd/traces/`.
 
 ---
 
-## 1. Intent & Scope
+## 1. Problem Statement
 
-PR #608 added `sdd/traces/` to record the ordered files and sections an
-agent reads while doing backlog work. The stated purpose is documentation
-optimisation: identify hotspot files, gate-density rankings, and co-read
-pairs, then refactor `sdd/` so the spine an agent must read shrinks.
+PR #608 added `sdd/traces/` to record the ordered reads an agent performs while doing backlog work, intending to drive documentation optimisation (hotspot detection, gate-density ranking, co-read clustering). The stated goal: identify the spine of files an agent must read, then refactor `sdd/` so that spine shrinks.
 
-Before optimising on the trace data, this research asked a more basic
-question: does the data describe what agents actually did, or what trace
-authors thought they should do? The two are not the same. Traces were
-written as anticipated workflows, then committed alongside the items they
-describe. The merged PR is the only ground truth for what work the item
-required. If the gap is large, optimisation guided by trace data
-optimises for the rule-following spine, not for the surface where real
-work happens.
+**Current limitation.** Traces were authored by the same agents that did the work — often before or during the work, not after the PR merged. The data therefore describes *anticipated* reads, not necessarily the reads the work actually required. If the gap is large, aggregator outputs optimise for the rule-following spine, not for the surface where real work happens.
 
-This doc is the frozen snapshot of that investigation. It is not a living
-doc. Subsequent findings (e.g., expanding the sample beyond nine PRs)
-belong in a new research doc; this one stands as written.
+**Affected.** Agents working on backlog items; future authors of trace tooling; doc maintainers who would act on aggregator findings.
+
+**Constraints from existing artefacts.** The SDD pipeline (`sdd/000-process.md` § Rule 6) treats specs as authoritative; the ripple-check table in `sdd/CLAUDE-REFERENCE.md` enumerates expected cross-cuts; PR #608's trace schema (`sdd/traces/_schema.yml`) models step-level reads but not the messy aggregate signals (review iteration, discovery cascades, ripple omissions). Research docs are point-in-time snapshots per `sdd/000-process.md` § Document types.
+
+**Decision this research is meant to inform.** Ship the trace data as-is and let aggregator design absorb the gaps, or extend the schema first so the data can carry the missing signals? Specifically: which signals are missing, how can they be modelled without bloating the schema, and which taxonomy correctly represents who a change is *for* (the polysemous "is this user-facing?" question that motivates the CHANGELOG gate).
 
 ---
 
-## 2. Method
+## 2. Survey: Three-Phase Empirical Investigation
 
-Three phases, each blind to the next:
+Three phases, each blind to the next, to keep early-phase intuitions from biasing later evidence.
 
-1. **Pure data analysis.** Treat the 39 trace YAMLs as opaque records.
-   Compute distributions, phase sequences, file rank-frequency,
-   co-occurrence clusters, read-type by phase. No repo knowledge.
-2. **Cross-check with real docs.** Validate the data-only claims against
-   the actual `sdd/` and `CLAUDE.md` content. Test which hypotheses hold.
-3. **Trace-vs-PR cross-check.** For nine randomly-picked traces, fetch
-   the merged PR (commits, file changes, review rounds, follow-up items)
-   and compare against the trace's anticipated reads.
+### 2.1 Phase 1 — Pure data analysis
 
-The point of staging was to keep early-phase intuitions from contaminating
-later evidence. In particular Phase 3 needed to be willing to overturn
-Phase 1 and 2's optimisation suggestions if the PRs told a different
-story.
+**Pattern.** Treat the 39 trace YAMLs as opaque records. Compute distributions, phase sequences, file rank-frequency, co-occurrence clusters, read-type by phase, section-string patterns. No repo knowledge.
 
----
+**How it works.** Aggregation over ~280 step references across 39 traces:
 
-## 3. Phase 1 — Pure Data Findings
+- *File rank-frequency.* Six files account for 60% of all reads. `sdd/CLAUDE-REFERENCE.md` (41), `sdd/000-process.md` (28), `sdd/TESTING.md` (24), `sdd/DESIGN.md` (22), `CHANGELOG.md` (19), `CLAUDE.md` (17). Long tail of 29 files cited 1–3 times.
+- *Phase-vocabulary instability.* Seven phases appear in ≥ 25% of traces (orient, implement, verify, tests, fix, spec, docs); ten more appear ≤ 2 times. Outliers (`spec_review`, `reproduce`, `classify`, `wire`) suggest authors reach for new phase IDs when the standard set does not capture the work shape.
+- *Read-type by phase.* `orient` reads are 87% gate; `verify` reads are 100% verify; `implement` reads are 78% reference. The `orient → middle → verify` envelope is stable.
+- *Section-string convention.* 19% of section references use the "X / Y" form. All of them are ripple-check table row pointers. Outside the ripple-check table this pattern does not appear.
+- *Jaccard co-occurrence clusters.* Two arcs emerge: a doc-framework cluster (BK-167 family, BK-171, BK-178, ID-177) sharing the authoring/process docs; and an async-Azure cluster (BK-173, BK-174, BUG-189–194) sharing the backend / WriteResult / Azure specs.
 
-### 3.1 File rank-frequency
+**Trade-offs.**
 
-Across 39 traces and ~280 step references, file citation follows a strong
-Zipf shape. Six files account for 60% of all reads:
+- Pro: reveals structural facts that are robust regardless of doc content; cheap to compute.
+- Con: cannot say whether the structure matches what the work actually required — only what was anticipated.
 
-| File | Citations | Role-by-data |
-|---|---|---|
-| `sdd/CLAUDE-REFERENCE.md` | 41 | verify hub |
-| `sdd/000-process.md` | 28 | gate (rules, pipeline) |
-| `sdd/TESTING.md` | 24 | gate (rules, placement) |
-| `sdd/DESIGN.md` | 22 | reference (style) |
-| `CHANGELOG.md` | 19 | verify (gate stub) |
-| `CLAUDE.md` | 17 | gate (principles) |
+### 2.2 Phase 2 — Cross-check against the real docs
 
-The long tail (29 files cited 1–3 times) covers specs, ADRs, and
-backend-specific source files.
+**Pattern.** Validate Phase 1's data-only claims against the actual content of `sdd/` and `CLAUDE.md`.
 
-### 3.2 Phase-vocabulary instability
+**How it works.** The six-file spine survives scrutiny: `CLAUDE-REFERENCE.md` carries the ripple-check table and is the most cross-cited file in the repo; `000-process.md` § Rule 6 contains the canonical bug-fix pipeline that traces cite verbatim 14 times; `TESTING.md` § Test Subpackage Placement and § Rules are the authoritative references and traces treat them as gates accordingly. One Phase-1 claim partially failed: the "doc-framework cluster" splits into two sub-clusters under closer reading — pure content edits (BK-178 RST roles) versus framework rollout (BK-167 family). Jaccard distance did not distinguish them because both touch the same authority docs.
 
-Phase IDs are author-chosen; the schema enumerates none. The data shows
-seven phases appearing in ≥ 25% of traces (orient, implement, verify,
-tests, fix, spec, docs) and ten more appearing ≤ 2 times. Outliers like
-`spec_review`, `reproduce`, `classify`, `wire` suggest authors reach for
-new phase IDs when the standard set does not capture the work shape.
+**Trade-offs.**
 
-### 3.3 Read-type distribution by phase
+- Pro: catches data artefacts (a hot file in the data might be hot because authors paraphrase it, not because the doc is authoritative).
+- Con: still measures the trace data against the docs, not against the work the docs are meant to support.
 
-- `orient` phase reads are 87% gate.
-- `verify` phase reads are 100% verify.
-- `implement` phase reads are 78% reference, 22% gate.
+### 2.3 Phase 3 — Trace vs merged PR (n=9)
 
-The `orient → middle → verify` envelope is stable. Authors treat the
-middle phases as situation-dependent. Gates cluster at entry, verifies at
-exit.
+**Pattern.** For nine sampled merged PRs spanning iteration-cost regimes (high ≥ 11 commits, medium 4–8, low 1–2), compare the trace's anticipated reads to the PR's actual files, commits, review rounds, and follow-up items.
 
-### 3.4 Section-string patterns
-
-19% of section references use the "X / Y" form. All of these are
-ripple-check table row pointers (e.g., `Ripple-check table / A bug fix`).
-The convention is consistent. Outside the ripple-check table, "X / Y"
-does not appear — meaning the table is a uniquely deep navigational
-target that the schema's `section` field handles via a per-row dotted
-path convention.
-
-### 3.5 Jaccard co-occurrence clusters
-
-Pairwise Jaccard similarity on the file sets reveals two arcs:
-
-- **Doc-framework cluster** — BK-167 family, BK-171, BK-178, ID-177
-  share `CLAUDE.md`, `sdd/AUTHORING.md`, `sdd/DOCUMENTATION.md`,
-  `sdd/CONTENT-RULES.md`, `sdd/CLAUDE-REFERENCE.md`.
-- **Async-Azure cluster** — BK-173, BK-174, BUG-189, BUG-190, BUG-192,
-  BUG-193, BUG-194 share `sdd/specs/003-backend-adapter-contract.md`,
-  `sdd/specs/029-async-store-backend-api.md`,
-  `sdd/specs/045-write-result.md`, `sdd/specs/012-azure-backend.md`.
-
-Suggests the spec lookups, not the source files, are the true cost
-centre for backend-bug work.
-
----
-
-## 4. Phase 2 — Cross-Check Against Real Docs
-
-The data-only spine (`CLAUDE-REFERENCE`, `000-process`, `TESTING`,
-`DESIGN`, `CHANGELOG`, `CLAUDE.md`) holds against the actual content:
-
-- `CLAUDE-REFERENCE.md` carries the ripple-check table and is the most
-  cross-cited file in the repo. Its central role is real, not an
-  artefact of trace authoring.
-- `000-process.md` § Rule 6 contains the canonical bug-fix pipeline
-  (BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together). Traces
-  cite this section verbatim 14 times.
-- `TESTING.md` § Test Subpackage Placement and § Rules are the
-  authoritative placement and quality references. Trace data treats
-  them as gates, matching their authoritative role.
-
-One Phase-1 claim partially failed under Phase-2 scrutiny: the
-"doc-framework cluster" splits into two sub-clusters under closer
-reading — pure-content edits (BK-178 RST roles) versus framework rollout
-(BK-167 family). The Jaccard distance did not distinguish them because
-both touch the same authority docs.
-
----
-
-## 5. Phase 3 — Trace vs Merged PR (n=9)
-
-Nine traces sampled across iteration-cost regimes — high (≥ 11 commits),
-medium (4–8), low (1–2):
+**How it works.** Sample:
 
 | Trace | PR | Trace steps | PR files | PR commits | Reviews | Fan-out\* | Pattern |
 |---|---|---|---|---|---|---|---|
@@ -157,45 +72,21 @@ medium (4–8), low (1–2):
 
 \* Fan-out = PR files / trace-cited files. Median 1.2×, mean 3.2×.
 
-### 5.1 Five patterns the trace schema could not model
+Five patterns the trace schema could not model emerged:
 
-**Trace verbosity does not predict iteration cost.** ID-178 had the
-longest trace (18 steps) and merged in one commit. ID-176 had one of the
-shortest traces and required eleven commits, all wordsmithing a
-seventeen-line file. BK-179 (medium trace) needed 22 commits.
+- *Trace verbosity does not predict iteration cost.* ID-178 had the longest trace (18 steps) and merged in one commit; ID-176 had one of the shortest traces and required eleven commits.
+- *Single-commit is not always simple.* ID-178 trace anticipated six files; the PR touched nineteen — proxy wrapper, two extension files, graph regen, an example, `backlogid.json`.
+- *Multi-commit is not always complex.* PR #579 (ID-176) touched four files, +29 / −1, yet had eleven commits of editorial pushback on a 17-line file.
+- *Discovery cascades are unmodeled.* BUG-193 started as one bug and surfaced BUG-194 (a real SDK bug), BUG-196, BUG-197, BK-175 supersession of ID-175, TESTING.md rule violations, RST role cleanup, and stale mock tests broken by the chained fix.
+- *Bundled scope inflates apparent coverage.* PR #606 traced as two items (BK-189, BK-190); shipped three (BK-188 joined during implementation).
 
-**Single-commit is not always simple.** ID-178 trace anticipated six
-files; the PR touched nineteen — proxy wrapper, two extension files,
-graph regen, an example, backlogid.json. The "A Store method"
-ripple-check row covers these implicitly but no trace cited them
-explicitly.
-
-**Multi-commit is not always complex.** PR #579 (ID-176) touched four
-files, +29 / −1 — a tiny diff over eleven commits of editorial pushback
-(rewrites, schema validation fix, em-dash sweep). The schema has no
-field for content-churn risk.
-
-**Discovery cascades are unmodeled.** BUG-193 started as one bug and
-surfaced BUG-194 (a real SDK bug), BUG-196, BUG-197, the BK-175
-supersession of ID-175, TESTING.md rule violations in the new test file,
-RST role cleanup, and stale mock tests broken by the chained fix. The
-trace had thirteen careful steps; the PR had 21 commits and 4 review
-rounds.
-
-**Bundled scope inflates apparent coverage.** PR #606 was traced as two
-items (BK-189, BK-190); it shipped three (BK-188 joined during
-implementation). Trace aggregators would double-count shared file reads
-without a `co_shipped_items` signal.
-
-### 5.2 Systematic ripple omissions
-
-Across nine PRs, these files were touched but cited by no trace:
+Systematic ripple omissions across the nine PRs:
 
 | Ripple | Hits | Trigger |
 |---|---|---|
 | `sdd/backlogid.json` | 5/9 | mechanical on backlog moves |
-| `.github/workflows/ci.yml` | 3/9 | pyproject lint scope or test layout changes |
-| `docs-src/_data/graph/graph.json` | 2/9 | docstring or public-API changes |
+| `.github/workflows/ci.yml` | 3/9 | `pyproject.toml` lint scope or test-layout change |
+| `docs-src/_data/graph/graph.json` | 2/9 | docstring or public-API change |
 | `docs-src/explanation/graph_viz.html` | 2/9 | same trigger as graph.json |
 | `pyproject.toml` lint scope | 2/9 | tooling work |
 | `src/remote_store/_proxy.py` | 1/9 | new Store method |
@@ -203,28 +94,16 @@ Across nine PRs, these files were touched but cited by no trace:
 | `examples/**` | 1/9 | public API change |
 | Stale mock tests | 1/9 | SDK-level fix |
 
-The three already documented as gotchas in memory
-(`gotcha_sftp_base_path_must_preexist`,
-`gotcha_pytest_generate_tests_scope`,
-`gotcha_async_docstring_ripple_chain`) surfaced in PR #597 and PR #582
-fix commits. They were not in any trace's orient phase.
+Trace authors mark `CHANGELOG [Unreleased]` as a verify gate in 31/39 traces (79%). The 9-PR sample matches this rate: 7/9 touched CHANGELOG. The two that skipped (BK-179 fixture registry, BK-187 lint scope) were both pure tooling/infra work. The schema offered no way to record this distinction.
 
-### 5.3 CHANGELOG gate hit-rate
+**Trade-offs.**
 
-Trace authors mark `CHANGELOG.md [Unreleased]` as a verify gate in 31/39
-traces (79%). The 9-PR sample matches this rate: 7/9 PRs touched
-CHANGELOG. The two that skipped (BK-179 fixture registry, BK-187 lint
-scope) were both pure tooling/infra work. The schema did not let trace
-authors record this distinction.
+- Pro: ground truth — what the work actually required.
+- Con: nine-trace sample only; covers iteration-cost regimes but not every item-type slice.
 
----
+### 2.4 Audience-taxonomy survey
 
-## 6. Audience Taxonomy Derivation
-
-The pattern in § 5.3 motivated a richer way to record what a change is
-*for*. Going item-by-item through the 39 unreleased entries in
-`sdd/BACKLOG-DONE.md` § Unreleased, the audiences sort into a stable set
-of ten values:
+Phase 3 motivated a follow-on survey: going through the 39 unreleased entries in `sdd/BACKLOG-DONE.md` § Unreleased one by one, what is each change *for*?
 
 | Audience | Items (n=39) | Count | CHANGELOG? |
 |---|---|---|---|
@@ -235,167 +114,88 @@ of ten values:
 | `user.discoverability.human` | (none in unreleased) | 0 | yes |
 | `contributor.process` | BK-167, BK-167b, BK-165, BK-175, ID-175 | 5 | sometimes |
 | `contributor.tooling` | BK-187, ID-177, BK-169, BK-167a + 1 secondary | 4+1 | no |
-| `infra.test` | 13 items (BK-179/180/183-186/188-190, BK-166/172, BUG-182/191/193) | 13 | no |
+| `infra.test` | 13 items | 13 | no |
 | `infra.ci` | BK-183 | 1 | no |
 | `internal.style` | BK-178 | 1 | no |
 
-The split that motivated the taxonomy:
+Three gray-case splits drove the taxonomy:
 
-- **BK-174 vs BK-178** — both docstring edits, but BK-174 adds new
-  `Raises:` info (`user.api_docs`, CHANGELOG yes) while BK-178 just
-  swaps RST roles for double-backticks (`internal.style`, CHANGELOG no).
-- **BK-168 vs BK-172** — both pyarrow work, but BK-168 lifts the
-  user-facing pin (`user.api`) while BK-172 reroutes tests to MinIO so
-  the lift is safe (`infra.test`).
-- **ID-176 (context7) vs BK-187 (lint scope)** — both originally
-  candidates for "not user-facing", but context7 is outside-package
-  presentation that users (or their LLMs) reach the package through
-  (`user.discoverability.llm`, CHANGELOG yes), while lint scope is
-  contributor-only (`contributor.tooling`, CHANGELOG no).
-
-### 6.1 Derived rule
-
-```
-changelog_required = any(a.startswith("user.") for a in audience)
-                  OR ("contributor.process" in audience AND new framework/spec)
-```
-
-Validates on all nine sampled PRs. The split `user.discoverability` into
-`.llm` and `.human` was kept even though only `.llm` has unreleased
-examples; future README badge work would land in `.human` and the rule
-applies either way.
-
-### 6.2 Why a list, not a primary
-
-Three of 39 items are honestly multi-audience (BK-167b applies the doc
-framework *and* restructures end-user nav; BK-171 adds a contributor
-link-validation gate *and* keeps user-site pages from breaking; BK-190
-tightens test placement *and* adds a contributor-tooling check script).
-A primary + secondary split would force a false choice. A
-priority-sorted list lets the first entry act as primary for downstream
-tooling without losing the secondary signal.
+- BK-174 vs BK-178 — both docstring edits, but BK-174 adds new `Raises:` info (`user.api_docs`, CHANGELOG yes) while BK-178 just swaps RST roles for double-backticks (`internal.style`, CHANGELOG no).
+- BK-168 vs BK-172 — both pyarrow work, but BK-168 lifts the user-facing pin (`user.api`) while BK-172 reroutes tests to MinIO so the lift is safe (`infra.test`).
+- ID-176 vs BK-187 — both candidates for "not user-facing", but context7 is outside-package presentation users (or their LLMs) reach the package through (`user.discoverability.llm`, CHANGELOG yes), while lint scope is contributor-only (`contributor.tooling`, CHANGELOG no).
 
 ---
 
-## 7. Outcome — What Shipped Under BK-193
+## 3. Evaluation
 
-`sdd/traces/_schema.yml` gained six fields plus sharpened description
-prose, in two waves:
+Combining the four surveys against the constraint set (model what's missing without bloating the schema; preserve authoring discipline; remain analytically useful):
 
-**Initial wave** (from Phase 3 findings, § 5):
+| Criterion | Trace-as-shipped (PR #608) | Extended schema |
+|---|---|---|
+| Models anticipated reads | yes | yes |
+| Models discovery cascades (BUG-193 → BUG-194/196/197) | no | yes (`discovery_followups`) |
+| Models bundled scope (PR #606 closing BK-188/189/190) | no | yes (`co_shipped_items`) |
+| Models ripple omissions (#604 missing `ci.yml`) | no | yes (`expected_ripples` + `surprising_ripples`) |
+| Models review-iteration cost | no | yes (`review_rounds`) |
+| Distinguishes user-facing from infra | bool flag only | yes (`audience` list, 10 enum values) |
+| Distinguishes `user.api_docs` (BK-174) from `internal.style` (BK-178) | no | yes |
+| Distinguishes LLM-discoverability (context7) from contributor-tooling (lint scope) | no | yes |
+| Surfaces doc-failure at step level | no | yes (`outcome` enum) |
+| Carries CHANGELOG-required rule derivation | no | yes (derived from `audience` prefix) |
+| Field count | 5 top-level + 4 step | 10 top-level + 5 step |
+| Authoring discipline (records actual, not ideal) | not stated | tightened in schema description |
 
-- `audience` (required list, priority-sorted, 10-value enum)
-- `discovery_followups` (optional list of backlog IDs born in review)
-- `co_shipped_items` (optional list of other items closed by the same PR)
-- `expected_ripples` (originally `known_ripples`; renamed below)
-- `review_rounds` (optional int)
+The extended schema costs five new top-level fields and one new step-level field. Each closes a specific signal-loss observed in Phase 3 or in the audience survey. No field invents structure not already present in the empirical evidence.
 
-**Schema-review wave** (after a structured external review of the
-schema as data; § 8.1 captures what was rejected):
-
-- `outcome` (optional, step-level, enum `ok` / `unclear` /
-  `misleading`) — step-local doc-failure signal; the descriptive-to-
-  diagnostic lever for "which sections actually confuse readers."
-- `surprising_ripples` (optional, top-level list) — paired with
-  `expected_ripples`. The rename of `known_ripples` to
-  `expected_ripples` made the distinction load-bearing: expected =
-  mechanical, anticipated by ripple-check; surprising = pain ripples
-  that point at missing coverage. Three of the nine sampled traces
-  carry surprising entries (BK-178, BK-179, BK-187).
-- Schema description text tightened to instruct authors that traces
-  record what actually happened. Authoring discipline is the only
-  defence against cleanup-on-write distorting aggregator results.
-
-All 39 unreleased trace YAMLs were re-tagged with `audience` lists. The
-nine traces in the Phase-3 sample additionally carry retrospective
-`discovery_followups`, `co_shipped_items`, `expected_ripples`,
-`surprising_ripples`, and `review_rounds` filled from their merged PRs.
-
-No validator is wired — the `required: audience` constraint acts as
-authoring convention. Future traces missing `audience` will fail at the
-next aggregator run rather than at commit time.
+Cross-phase consistency check: Phase 1's "CHANGELOG is a near-universal verify gate" claim (79% of traces) is consistent with Phase 3's actual hit-rate (78%) — but only the audience taxonomy explains *which* 22% correctly skip it (pure `contributor.tooling`, `infra.test`, `infra.ci`, `internal.style`).
 
 ---
 
-## 8. Open Questions
+## 4. Recommendation
 
-The Phase-3 sample was nine traces. Several findings deserve
-verification at full scale:
+Extend the schema in two waves, both shipped under BK-193. All 39 unreleased traces re-tagged; the nine Phase-3-sampled traces additionally carry retrospective fields filled from their merged PRs.
 
-- **Extend sample to all 39.** Re-run the trace-vs-PR comparison on
-  every unreleased item to confirm the median fan-out (1.2×) and identify
-  whether the three outliers (BK-187 5.2×, BK-179 6.4×, BK-178 3.6×)
-  generalise or are coincidental.
-- **Model review-driven phases.** Three patterns appeared in real
-  commits but no trace recorded them: `rebase_fix`,
-  `address_review_thread`, `regenerate_artefacts`. Worth asking whether
-  the schema should enumerate them or whether `discovery_followups`,
-  `review_rounds`, and step-level `outcome` capture enough.
-- **Promote ripple-check from verify to also-implement-start.** Three of
-  the nine sampled PRs missed ripples (`.github/workflows/ci.yml` in
-  #604, `graph.json` + `graph_viz.html` in #591, `_proxy.py` + extension
-  wrappers in #592) because `CLAUDE-REFERENCE.md` was treated as a
-  closing checklist, not an opening one. The cheapest fix is doc:
-  rewrite the trigger phrases in the ripple-check table so the table
-  reads usefully *before* coding, not only after. The schema-review
-  wave's `surprising_ripples` field now gives this a measurable signal
-  — a recurring entry in `surprising_ripples` is direct evidence that
-  the ripple-check table is missing a row.
-- **Stable section anchors for non-spec docs.** Specs already have
-  stable IDs (`ASYNC-016`, `WR-013`); non-spec docs (CLAUDE.md
-  "Principles", CLAUDE-REFERENCE "Ripple-check table / A bug fix") do
-  not. Adding HTML-anchor IDs (`<!-- id: ripple-bug-fix -->`) across
-  `sdd/` would inoculate traces against heading-text drift. Significant
-  authoring work; deferred but worth tracking as the trace data grows.
-- **Content-churn flag.** PR #579 (ID-176) had eleven commits on a
-  seventeen-line file. The schema-review wave deliberately rejected a
-  numeric `effort: 1-5` field on inconsistency grounds; `outcome:
-  unclear` carries the signal for the underlying spec/doc, but does
-  not flag that the change *itself* is editorially volatile. One
-  example is not enough to establish the pattern.
-- **Aggregator metric: within-trace duplication.** A schema-review
-  suggestion to model "did the agent re-read the same section because
-  it was unclear, or because it is central?" was reframed as an
-  aggregator concern — the data is in the existing fields, count the
-  `(file, section)` pairs per trace. Worth implementing once a real
-  aggregator exists.
-- **Validator.** The audience field is `required` in the schema but
-  unenforced. Wiring a check into `hatch run lint` would turn the
-  convention into a gate. Cost is small; risk is that authors learn to
-  tag mechanically without thinking. Same risk applies to `outcome` —
-  defaulting to `ok` invites rubber-stamping. Open question.
+### 4.1 Initial wave — anchored in Phase 3 patterns
 
-### 8.1 What the schema-review wave rejected
+Five new top-level fields:
 
-The same external review that drove the `outcome` / `surprising_ripples`
-additions also proposed three changes that were judged net-negative and
-not shipped:
+- `audience` (required, priority-sorted list, 10-value enum) — closes the conflation that motivated the audience survey. Derived rule: CHANGELOG required iff any entry in `audience` starts with `user.`, or `contributor.process` introduces a new framework.
+- `discovery_followups` (optional list of backlog IDs) — captures items born during review.
+- `co_shipped_items` (optional list of backlog IDs) — captures bundled scope.
+- `expected_ripples` (optional list of paths) — mechanical tag-along files anticipated by the ripple-check table.
+- `review_rounds` (optional int) — review-driven fix-commit count.
 
-- **`effort: 1-5` step-level scoring.** Subjective integer effort rots
-  across authors. The signal it promises (rank pain) is already covered
-  at PR level by `review_rounds` and Phase-3 fan-out math, both of
-  which are objective. Step-local pain lands in `outcome: misleading`
-  instead.
-- **A separate `reason:` field on each step.** The motivation and the
-  product of a read overlap enough that splitting them invites both
-  fields being thin. Tightening `extract`'s description to require
-  motivation when non-obvious does the same work in one field. The
-  schema description text was updated accordingly.
-- **Step-reuse tracking.** Suggested as a schema field; reframed as an
-  aggregator metric (above).
+### 4.2 Schema-review wave — external review acceptance/rejection
 
----
+A structured external review of the schema-as-data surfaced one design risk (clean-narrative bias) and six tactical suggestions. Three accepted, three rejected.
 
-## 9. Method Provenance
+**Accepted:**
 
-All evidence in this doc derives from:
+- `outcome` (optional, step-level, enum `ok` / `unclear` / `misleading`) — step-local doc-failure signal. Recurring `misleading` on a section is a doc-rewrite candidate; recurring `unclear` flags underspecified areas.
+- `surprising_ripples` (optional, top-level list of paths) — paired with `expected_ripples`. The rename of `known_ripples` to `expected_ripples` made the distinction load-bearing in the name: expected = anticipated, surprising = where coverage failed. A recurring entry in `surprising_ripples` is direct evidence the ripple-check table is missing a row.
+- Schema description text tightened: traces record what actually happened, not what should have happened. Authoring discipline is the only defence against cleanup-on-write.
 
-- 39 trace files under `sdd/traces/` (committed in PR #608 and the
-  follow-ups BK-176, BK-179, BK-184, BK-187 etc.).
-- Merged PRs #579, #582, #590, #591, #592, #597, #604, #606, #607
-  fetched via `gh pr view --json files,commits,reviews`.
-- `sdd/BACKLOG-DONE.md` § Unreleased for audience derivation.
+**Rejected and why:**
 
-Phase 1 and 2 aggregator scripts were prototyped under `tmp/` during the
-investigation; they are not retained because the findings they produced
-are now in this doc and the trace data they aggregated is stable.
+- *`effort: 1-5` step-level scoring.* Subjective integer effort rots across authors. The signal it promises (rank pain) is already covered at PR level by `review_rounds` and Phase-3 fan-out math, both objective. Step-local pain lands in `outcome: misleading` instead.
+- *Separate `reason:` field on each step.* Motivation and product of a read overlap enough that splitting them invites both fields being thin. The `extract:` description was tightened instead to require motivation when non-obvious.
+- *Step-reuse tracking as a schema field.* The data is already there — counting `(file, section)` pairs per trace is one line of aggregator code. Reframed as an aggregator metric.
+
+### 4.3 Open questions
+
+- *Extend sample to all 39.* Re-run the trace-vs-PR comparison on every unreleased item to confirm the median fan-out (1.2×) and identify whether the three outliers (BK-187 5.2×, BK-179 6.4×, BK-178 3.6×) generalise.
+- *Model review-driven phases.* Three patterns appeared in real commits but no trace recorded them: `rebase_fix`, `address_review_thread`, `regenerate_artefacts`. Open whether the schema should enumerate them or whether `discovery_followups`, `review_rounds`, and `outcome` capture enough.
+- *Promote ripple-check from verify to also-implement-start.* The cheapest fix is doc: rewrite the trigger phrases in the ripple-check table so the table reads usefully before coding, not only after. The `surprising_ripples` field now makes this measurable — a recurring entry is direct evidence of a missing row.
+- *Stable section anchors for non-spec docs.* Specs already have stable IDs (`ASYNC-016`, `WR-013`); non-spec docs (CLAUDE.md "Principles", CLAUDE-REFERENCE row pointers) do not. Adding HTML-anchor IDs across `sdd/` would inoculate traces against heading-text drift. Significant authoring work; tracked for when trace data grows.
+- *Content-churn flag.* PR #579 (ID-176) had eleven commits on a 17-line file. `outcome: unclear` carries the signal for the underlying spec/doc, but does not flag that the change itself is editorially volatile. One example is not enough to establish the pattern.
+- *Validator.* The `audience` field is `required` in the schema but unenforced. Wiring a check into `hatch run lint` would turn the convention into a gate. Cost is small; risk is that authors learn to tag mechanically without thinking. Same risk applies to `outcome` defaulting to `ok`.
+
+### 4.4 Method provenance
+
+All evidence derives from:
+
+- 39 trace files under `sdd/traces/` (committed in PR #608 and the per-item follow-ups: BK-176, BK-179, BK-184, BK-187, BK-188–190, BUG-182, BUG-186–194, ID-175–178).
+- Merged PRs #579, #582, #590, #591, #592, #597, #604, #606, #607 fetched via `gh pr view --json files,commits,reviews`.
+- `sdd/BACKLOG-DONE.md` § Unreleased for the audience-taxonomy derivation.
+
+Phase 1 and 2 aggregator scripts were prototyped under `tmp/` during the investigation; they are not retained because the findings they produced are now in this doc and the trace data is stable enough for re-derivation.
