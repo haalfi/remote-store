@@ -127,6 +127,73 @@ def load_private_key(source: str, *, from_file: bool = False) -> Any:  # pragma:
         return paramiko.RSAKey.from_private_key(buf)
 
 
+def scan_host_keys(host: str, port: int = 22, *, timeout: float = 10.0) -> str:
+    """Discover an SFTP server's host key without authenticating.
+
+    Opens a ``paramiko.Transport`` to *host*:*port*, performs key exchange,
+    captures the server's offered host key, closes the connection, and
+    returns the key as a single ``known_hosts``-formatted line. No
+    authentication is attempted; only the SSH key-exchange handshake runs.
+
+    Use this to populate a committed ``host.keys`` file for production
+    `STRICT` policy use, without going through a TOFU connect first.
+
+    Args:
+        host: Hostname or IP address of the SFTP server.
+        port: SSH port (default: 22).
+        timeout: Socket and KEX timeout in seconds (default: 10).
+
+    Returns:
+        A single ``known_hosts``-format line:
+        ``"<host_label> <key_type> <base64_key>"``. Per OpenSSH convention,
+        *host_label* is ``"[host]:port"`` when *port* is not 22, and the
+        bare hostname otherwise. The trailing newline is not included.
+
+    Raises:
+        paramiko.SSHException: Negotiation failed (e.g. legacy server
+            offering only ``ssh-rsa``; call ``enable_ssh_rsa_compat()``
+            first if so).
+        OSError: Socket-level failure (host unreachable, port refused,
+            DNS error, timeout).
+
+    !!! example
+
+        ```python
+        from remote_store.backends import SFTPUtils
+
+        entry = SFTPUtils.scan_host_keys("sftp.example.com")
+        Path("host.keys").write_text(entry + "\\n")
+        ```
+    """
+    import socket
+
+    import paramiko
+
+    # Connect the socket ourselves so a refused / unreachable target raises
+    # cleanly without leaking a half-bound socket through paramiko's
+    # tuple-handling path.
+    sock = socket.create_connection((host, port), timeout=timeout)
+    transport = paramiko.Transport(sock)
+    try:
+        transport.banner_timeout = timeout
+        transport.start_client(timeout=timeout)
+        key = transport.get_remote_server_key()
+    finally:
+        transport.close()
+
+    return _format_known_hosts_line(host, port, key)
+
+
+def _format_known_hosts_line(host: str, port: int, key: Any) -> str:
+    """Format a paramiko ``PKey`` into a single ``known_hosts``-style line.
+
+    Per OpenSSH convention, the label is ``[host]:port`` when *port* is
+    not 22; the bare hostname otherwise.
+    """
+    host_label = f"[{host}]:{port}" if port != 22 else host
+    return f"{host_label} {key.get_name()} {key.get_base64()}"
+
+
 def enable_ssh_rsa_compat() -> None:
     """Restore ``ssh-rsa`` (SHA-1) acceptance across paramiko's four removal sites.
 
@@ -194,6 +261,9 @@ class SFTPUtils:
 
     - ``SFTPUtils.load_private_key(...)`` -- load RSA keys from file or PEM string
     - ``SFTPUtils.HostKeyPolicy`` -- enum controlling unknown host key behavior
+    - ``SFTPUtils.scan_host_keys(host, port=22)`` -- preflight host-key
+      discovery; returns a ``known_hosts``-formatted line for committing
+      into a ``host.keys`` file
     - ``SFTPUtils.enable_ssh_rsa_compat()`` -- restore ``ssh-rsa`` (SHA-1)
       acceptance for legacy SFTP servers (see method docstring for the
       security tradeoff)
@@ -215,6 +285,7 @@ class SFTPUtils:
     HostKeyPolicy = HostKeyPolicy
     load_private_key = staticmethod(load_private_key)
     enable_ssh_rsa_compat = staticmethod(enable_ssh_rsa_compat)
+    scan_host_keys = staticmethod(scan_host_keys)
 
 
 # endregion

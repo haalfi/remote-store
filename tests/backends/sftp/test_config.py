@@ -177,6 +177,64 @@ class TestSFTPIncompatiblePeerHint:
 # endregion
 
 
+# region: Preflight host-key discovery (BK-196)
+
+
+class TestSFTPScanHostKeys:
+    """BK-196: SFTPUtils.scan_host_keys returns a known_hosts-formatted line
+    after performing KEX against the server, without authentication."""
+
+    def test_scan_returns_known_hosts_line(self, sftp_server: tuple[int, str]) -> None:
+        port, host_key_entry = sftp_server
+        result = SFTPUtils.scan_host_keys("127.0.0.1", port=port)
+        # Result is a single non-empty line, matching the host_key_entry the
+        # fixture publishes (same RSAKey on both sides).
+        assert result.strip(), "scan_host_keys returned empty"
+        # known_hosts format: <host_label> <key_type> <base64_key>
+        parts = result.strip().split(maxsplit=2)
+        assert len(parts) == 3
+        host_label, key_type, key_b64 = parts
+        # Port != 22 -> [host]:port form
+        assert host_label == f"[127.0.0.1]:{port}"
+        # Same key type and base64 as the fixture-published entry
+        _fix_label, fix_type, fix_b64 = host_key_entry.split(maxsplit=2)
+        assert key_type == fix_type
+        assert key_b64 == fix_b64
+
+    def test_format_default_port_omits_brackets(self) -> None:
+        """For port 22, ``_format_known_hosts_line`` emits the bare hostname
+        (matches OpenSSH known_hosts convention).
+        """
+        from paramiko.rsakey import RSAKey
+
+        from remote_store.backends._sftp import _format_known_hosts_line
+
+        key = RSAKey.generate(2048)
+        line = _format_known_hosts_line("example.com", 22, key)
+        host_label = line.split(maxsplit=1)[0]
+        assert host_label == "example.com"
+
+    def test_format_non_default_port_uses_brackets(self) -> None:
+        """For non-default ports, the label is ``[host]:port``."""
+        from paramiko.rsakey import RSAKey
+
+        from remote_store.backends._sftp import _format_known_hosts_line
+
+        key = RSAKey.generate(2048)
+        line = _format_known_hosts_line("example.com", 2222, key)
+        host_label = line.split(maxsplit=1)[0]
+        assert host_label == "[example.com]:2222"
+
+    def test_scan_unreachable_raises(self) -> None:
+        """Unreachable host propagates a connection error to the caller."""
+        # Use a guaranteed-unroutable address; should fail fast.
+        with pytest.raises((OSError, paramiko.SSHException)):
+            SFTPUtils.scan_host_keys("127.0.0.1", port=1, timeout=0.5)
+
+
+# endregion
+
+
 # region: Construction (SFTP-001 through SFTP-005)
 class TestSFTPConstruction:
     """SFTP-001 through SFTP-005: construction and identity."""

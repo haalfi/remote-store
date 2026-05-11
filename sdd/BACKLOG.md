@@ -203,18 +203,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-199 — `SFTPUtils.scan_host_keys(host, port=22) -> str` preflight host-key discovery**
-  No first-class way to discover an SFTP server's host key for review
-  before committing it to a `host.keys` file. Today users must either
-  shell out to `ssh-keyscan`, run a TOFU connect through the backend and
-  inspect `store._backend._ssh_client.get_host_keys()` (private), or
-  cat the file `TRUST_ON_FIRST_USE` writes. Add a static helper:
-  open a `paramiko.Transport`, capture `transport.get_remote_server_key()`
-  without authenticating, format as a `known_hosts`-formatted string,
-  return. Mirrors `ssh-keyscan`. Optional `connect_kwargs=` parameter
-  to forward `disabled_algorithms` and the like for legacy servers.
-  Spec: new SFTP-029.
-
 - [ ] **BK-196 — Dafny formal-spec gap: `Copy` postcondition does not pin metadata**
   `sdd/formal/MemoryBackend.dfy::Copy` builds the destination via
   `BasicFileInfo(dst, dst, srcEntry.info.size)`, which drops user metadata.

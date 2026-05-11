@@ -73,6 +73,26 @@ pkey = SFTPUtils.load_private_key(pem_string)
 | `timeout` | `int` | `10` | SSH connection timeout in seconds |
 | `connect_kwargs` | `dict` | `None` | Extra kwargs passed to `SSHClient.connect()` |
 
+## Preflight host-key discovery
+
+To populate a committed `host.keys` file without going through a TOFU connect
+first, use `SFTPUtils.scan_host_keys(host, port=22)`. It opens a transport,
+captures the server's offered host key (no authentication), and returns a
+single `known_hosts`-formatted line ready to commit:
+
+```python
+from pathlib import Path
+from remote_store.backends import SFTPUtils
+
+entry = SFTPUtils.scan_host_keys("sftp.example.com")
+Path("host.keys").write_text(entry + "\n")
+```
+
+For non-default ports the entry uses the OpenSSH `[host]:port` form.
+Network failures (host unreachable, port refused, DNS error) raise `OSError`;
+KEX failures (legacy server offering only `ssh-rsa`) raise
+`paramiko.SSHException` — call `enable_ssh_rsa_compat()` first in that case.
+
 ## Host Key Verification
 
 The `HostKeyPolicy` enum controls how unknown host keys are handled:

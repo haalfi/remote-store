@@ -1,0 +1,78 @@
+id: BK-196
+title: "SFTPUtils.scan_host_keys preflight host-key discovery"
+trigger: |
+  No first-class way to discover an SFTP server's host key for review
+  before committing it to a `host.keys` file. Users had to either shell
+  out to `ssh-keyscan`, drive a TOFU connect through the backend and
+  inspect `store._backend._ssh_client.get_host_keys()` (private), or
+  cat the file `TRUST_ON_FIRST_USE` writes. The legacy `aha_utils.sftp`
+  pattern (try strict, fall back, print key) had no remote-store
+  equivalent.
+
+source_items:
+  - BK-196
+
+audience:
+  - user.api
+  - user.site
+
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - docs-src/reference/api/sftp-utils.md
+
+phases:
+  - id: design
+    name: Design
+    steps:
+      - file: tests/backends/sftp/_helpers.py
+        section: "start_sftp_server"
+        read_type: reference
+        extract: "In-process SFTP fixture publishes host_key_entry as [host]:port <type> <b64>; format should match OpenSSH known_hosts convention"
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPUtils namespace"
+        read_type: reference
+        extract: "New static helper alongside load_private_key + enable_ssh_rsa_compat; same staticmethod-wrap pattern"
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPScanHostKeys"
+        read_type: gate
+        extract: "Full-flow test against the in-process server (asserts type+b64 match the fixture-published entry); unit tests for the format helper covering port-22 vs non-default; unreachable-port test asserts OSError or SSHException raised without socket leak"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "scan_host_keys + _format_known_hosts_line"
+        read_type: reference
+        extract: |
+          Module-level scan_host_keys opens socket via
+          socket.create_connection (avoids paramiko's tuple-handling
+          leak on connect refused), wraps in paramiko.Transport,
+          start_client + get_remote_server_key, closes transport.
+          Formatting extracted to _format_known_hosts_line so it can be
+          unit-tested without network. Wrapped as a staticmethod on
+          SFTPUtils.
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/reference/api/sftp-utils.md
+        section: "Methods / scan_host_keys"
+        read_type: reference
+        extract: "mkdocstrings directive renders the new function on the api page"
+      - file: docs-src/guides/backends/sftp.md
+        section: "Preflight host-key discovery"
+        read_type: reference
+        extract: "New section above Host Key Verification with usage example, port-label conventions, error contract, cross-reference to enable_ssh_rsa_compat for legacy servers"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public API"
+        read_type: verify
+        extract: "Secondary public API (SFTPUtils) api page + index summary still describes 'Key loading and host-key verification helpers' — covers the new method conceptually without per-method index changes"

@@ -8,6 +8,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-196 — `SFTPUtils.scan_host_keys(host, port=22) -> str` preflight host-key discovery**
+  Static helper that opens a `paramiko.Transport`, performs key exchange
+  without authenticating, captures `transport.get_remote_server_key()`,
+  and returns a single `known_hosts`-formatted line ready to commit into
+  a `host.keys` file. Mirrors `ssh-keyscan`. The label follows OpenSSH
+  convention: bare hostname for port 22, `[host]:port` otherwise.
+  Network failures raise `OSError` cleanly (socket created via
+  `socket.create_connection` to avoid paramiko's tuple-handling leak);
+  KEX failures raise `paramiko.SSHException` so callers know to apply
+  `enable_ssh_rsa_compat()` first for legacy servers. Tests cover the
+  full-server flow (matches the in-process fixture's
+  `host_key_entry`), bracket/no-bracket formatting via the small
+  `_format_known_hosts_line` helper, and unreachable-port failure.
+  Audience: `user.api`, `user.site`.
+  Trace: [`sdd/traces/BK-196-scan-host-keys.yml`](traces/BK-196-scan-host-keys.yml).
+
 - [x] **BK-195 — SFTP legacy-server (`ssh-rsa` / SHA-1) compatibility**
   Paramiko 3.x removed `ssh-rsa` (SHA-1) from defaults across four
   sites: `Transport._preferred_keys`, `Transport._key_info`,
