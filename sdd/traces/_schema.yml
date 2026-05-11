@@ -114,7 +114,7 @@ properties:
 
       Derived rule: CHANGELOG entry required iff any entry in `audience`
       starts with `user.`, or `contributor.process` introduces a new
-      framework / spec. Items tagged only `contributor.tooling`,
+      user-facing framework / spec. Items tagged only `contributor.tooling`,
       `infra.test`, `infra.ci`, or `internal.style` are not user-facing
       and skip CHANGELOG.
 
@@ -179,11 +179,19 @@ properties:
     type: integer
     minimum: 0
     description: |
-      Count of distinct review-driven fix commits on the merged PR
-      (commits whose messageHeadline starts with "fix:" or "address PR
-      #NNN review"). Filled post-merge. 0 means the first push merged
-      without revision; higher counts signal the trace under-modelled
-      the actual work surface.
+      Count of review-driven iterations on the merged PR — commits that
+      exist specifically because review feedback was incorporated.
+      Filled post-merge by the trace author's judgement; the assessment
+      is human (a `fix:`-prefixed commit is the easy case, but a commit
+      following the repo's `BK-NNN: ...` / `BUG-NNN: ...` convention can
+      also be review-driven and should be counted). 0 means the first
+      push merged without revision; higher counts signal the trace
+      under-modelled the actual work surface. Where a deterministic
+      independent measurement is needed (e.g. for aggregator code), use
+      GitHub's review-submission count from
+      `gh pr view --json reviews | length` instead — it counts a
+      different thing (formal review events, not fix commits) and is
+      reported separately.
 
   phases:
     type: array

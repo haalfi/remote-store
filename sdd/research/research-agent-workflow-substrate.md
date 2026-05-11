@@ -130,7 +130,7 @@ Phase 3 motivated a follow-on survey. The data source is [`sdd/BACKLOG-DONE.md`]
 | `infra.ci` | BK-183 | 1 | — |
 | `internal.style` | BK-178 | 1 | — |
 
-¹ `contributor.process` triggers a CHANGELOG entry only when the change introduces a new framework, spec, or ADR; routine process edits (audit reports, template additions) do not.
+¹ `contributor.process` triggers a CHANGELOG entry only when the change introduces a new user-facing framework, spec, or ADR; routine process edits (audit reports, template additions) and internal-only frameworks (e.g. trace authoring discipline, agent-tooling schemas) do not.
 
 Three gray-case splits drove the taxonomy:
 

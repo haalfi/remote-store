@@ -63,6 +63,11 @@ Before committing, check whether your change has cross-file dependencies:
 | **A bug fix**              | `sdd/BACKLOG.md` (item), `CHANGELOG.md` (stub line under  |
 |                            | `[Unreleased]`), failing test **before** the fix, spec if |
 |                            | the bug contradicts a spec invariant                      |
+| **A backlog item touched** | Live trace at `sdd/traces/<id>-<slug>.yml` per `CLAUDE.md`|
+|                            | § Trace authoring (mandatory). Created/updated as work    |
+|                            | proceeds (not retrospectively); ships in same PR; schema  |
+|                            | at `sdd/traces/_schema.yml`. `audience` priority-sorted   |
+|                            | drives the CHANGELOG-required rule.                       |
 | **Source/test/spec counts**| README badge + CI coverage report (no manual table)       |
 | **A new test file**        | Ask: does it exercise OS-specific code (path separators,  |
 |                            | `os.replace`, `tempfile`, local filesystem, atomic writes)?|

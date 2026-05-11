@@ -24,7 +24,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `discovery_followups`, `co_shipped_items`, `expected_ripples` (optional
   lists); `review_rounds` (optional int). Derived rule: CHANGELOG
   required iff any `audience` entry starts with `user.`, or
-  `contributor.process` introduces a new framework. All 39 unreleased
+  `contributor.process` introduces a new user-facing framework. All 39 unreleased
   traces under `sdd/traces/` re-tagged; 9 sampled traces additionally
   carry retrospective `discovery_followups` / `co_shipped_items` /
   `expected_ripples` / `review_rounds` filled from their merged PRs
@@ -40,17 +40,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   documents this work; declared retrospective in its `trigger` field
   because BK-193 itself ships the live-authoring rule that future
   traces (starting with BK-194) will follow.
-  Schema-review iteration added two more fields and one rename to close
+  Schema-review iteration added two more fields and renamed one to close
   the "traces describe ideal, not actual" gap: optional step-level
   `outcome` (`ok` / `unclear` / `misleading`) for descriptive→diagnostic
-  doc-failure signal; top-level `surprising_ripples` for ripples that
-  neither the trace nor the ripple-check table anticipated (where a
-  recurring entry points at a missing ripple-check row or stale spec).
-  `known_ripples` renamed to `expected_ripples` to make the distinction
-  load-bearing in the name; six tagged traces re-classified accordingly
-  — BK-178 / BK-179 / BK-187 each carry a `surprising_ripples` entry
-  (graph regen after docstring sweep; `ci.yml` after lint-scope or
-  test-job change), the remaining three are pure expected. Schema
+  doc-failure signal; top-level `surprising_ripples` paired with
+  `expected_ripples` (the latter introduced in the first review wave on
+  this branch as `known_ripples`, then renamed before merge so the
+  expected-vs-surprising distinction is load-bearing in the name).
+  Six tagged traces carry `expected_ripples`; three of those
+  (BK-178 / BK-179 / BK-187) additionally carry `surprising_ripples`
+  for paths the ripple-check table did not anticipate (graph regen after
+  docstring sweep; `ci.yml` after lint-scope or test-job change). Schema
   description prose tightened to instruct authors that traces record
   what actually happened, not what was supposed to happen.
 
