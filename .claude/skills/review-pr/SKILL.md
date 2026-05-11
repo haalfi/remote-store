@@ -30,7 +30,7 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **Skip:** style (ruff handles it), docstrings on unchanged code, "consider X" without reason, praise.
 
-**Ripple check:** Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table. For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
+**Ripple check:** Read `sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist. For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
 
 **Search discipline:** Use `Grep` and `Glob` for all local codebase searches. Use `Read` for full file reads. Never use `Bash` or Python scripts to search — only the dedicated search tools.
 

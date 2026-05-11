@@ -40,3 +40,18 @@ phases:
         read_type: reference
         extract: "Rewrite: keep H2 'Ripple-check table' intact so 30+ existing trace section strings still resolve; add header explaining the two presentations; add Pre-work index H3 above Detailed checklist H3; row count parity 24 == 24"
         outcome: ok
+      - file: .claude/skills/review-pr/SKILL.md
+        section: "Ripple check"
+        read_type: reference
+        extract: "Verify-time → point at '§ Ripple-check table > Detailed checklist'"
+        outcome: ok
+      - file: .claude/skills/release/SKILL.md
+        section: "Description (line 46)"
+        read_type: reference
+        extract: "Release follows the section order of the Detailed checklist; point at '§ Ripple-check table > Detailed checklist'"
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 1: Pre-check (line 18); Step 7: Finish (line 287)"
+        read_type: reference
+        extract: "Two call-sites: orient → Pre-work index; verify-end audit → Detailed checklist. Line 292 (CHANGELOG entry row reference) unchanged — row name preserved."
+        outcome: ok
