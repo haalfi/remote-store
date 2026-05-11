@@ -184,9 +184,12 @@ properties:
       Filled post-merge by the trace author's judgement; the assessment
       is human (a `fix:`-prefixed commit is the easy case, but a commit
       following the repo's `BK-NNN: ...` / `BUG-NNN: ...` convention can
-      also be review-driven and should be counted). 0 means the first
-      push merged without revision; higher counts signal the trace
-      under-modelled the actual work surface. Where a deterministic
+      also be review-driven and should be counted). Feedback received
+      before the PR was opened (e.g., reviewer notes during development)
+      counts the same as post-creation PR-review feedback if it produced
+      a commit on the branch. 0 means the first push merged without
+      revision; higher counts signal the trace under-modelled the actual
+      work surface. Where a deterministic
       independent measurement is needed (e.g. for aggregator code), use
       GitHub's review-submission count from
       `gh pr view --json reviews | length` instead — it counts a
