@@ -12,7 +12,7 @@ surprising_ripples:
   - .claude/skills/release/SKILL.md
   - .claude/skills/orchestrate/SKILL.md
   - sdd/rfcs/rfc-0009-multi-agent-orchestration.md
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -66,6 +66,11 @@ phases:
         read_type: reference
         extract: "Restate principle 2 to mention both pre-work index and verify-end checklist usages — was written for verify-end-only world"
         outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Backlog (Prioritized)"
+        read_type: reference
+        extract: "Move BK-194 entry to sdd/BACKLOG-DONE.md § Unreleased with audience: contributor.process and CHANGELOG: — explanation (matches BK-193 precedent: process restructuring, not new framework). Side-discovery: sdd/backlogid.json was already stale on master (BK: 193 in JSON, BK-194 already in BACKLOG.md), forcing a re-stamp via `hatch run gen-backlogid` as part of this PR."
+        outcome: misleading
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table (rev. 2)"
         read_type: reference
