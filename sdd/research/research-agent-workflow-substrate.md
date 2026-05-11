@@ -165,30 +165,28 @@ Cross-phase consistency check: Phase 1's "CHANGELOG is a near-universal verify g
 
 ## 4. Recommendation
 
-The substrate question (§ 1) was answered in two schema-extension waves shipped under BK-193: the full set of fields and the accepted / rejected proposals are summarised in § 3's right column and recorded in [`sdd/BACKLOG-DONE.md`](../BACKLOG-DONE.md). The recommendation below is forward-looking: what to do now that the substrate is in place. Three timeframes plus the explicit non-actions.
+The substrate question (§ 1) was answered in two schema-extension waves shipped under BK-193: the full set of fields and the accepted / rejected proposals are summarised in § 3's right column and recorded in [`sdd/BACKLOG-DONE.md`](../BACKLOG-DONE.md). The recommendation below is forward-looking.
 
-### 4.1 Quick wins (in this PR)
+### 4.1 Quick win
 
-- *Land BK-194 plus the two ideas (ID-179, ID-180) in [`sdd/BACKLOG.md`](../BACKLOG.md).* Done in this PR.
-- *Restructure this research doc's recommendation into actionable timeframes.* Done.
+**Implement BK-194** (ripple-check rewrite into two presentations) as the next PR after this one. Compact "Quick reference" index at the top of [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) for pre-work scanning; detailed checklist below for verify-end and reviewer use. Two presentations, one data source. Addresses the 3/9 sampled PRs in § 2.3 that missed ripples because the table was treated as a closing checklist only.
 
-### 4.2 Mid-term (next several PRs)
+**Precondition added in this PR.** A new "Trace authoring (live, not retrospective)" section in [`CLAUDE.md`](../../CLAUDE.md) instructs every session in this repo to maintain its trace as work proceeds, not after merge. Without this, BK-194's own trace would be a fresh-agent reconstruction — the very pattern Phase 3 showed to sanitise away discovery cascades and surprising ripples. With it, BK-194 ships with the first live-authored trace in the repo and serves as the proof case for whether the substrate works in practice.
 
-One committed item, two ideas held without priority:
+### 4.2 Mid-term
 
-- **BK-194: Ripple-check rewrite into two presentations.** Add a compact "Quick reference" index at the top of [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) (trigger → ripples one-liner per row, scannable before starting work); keep the detailed verify checklist below. Add a header explaining the two purposes (pre-work quick reference, before-finish / reviewer checklist). Two presentations, one data source. Addresses the 3/9 sampled PRs that missed ripples because the table was treated as a closing checklist only.
-- **ID-179: Trace schema validator** (`scripts/check_traces.py` wired into `hatch run lint`). Useful but not yet justified — trace authoring volume is too small for an enforcement gate to pay back. Promote to BK-prefix when trace volume grows.
-- **ID-180: Stable HTML-anchor IDs across non-spec docs under `sdd/`.** Inoculation against heading-text drift; speculative until a trace aggregator (§ 4.3) exists or until the first drift breaks a trace reference. Promote to BK-prefix at that point.
+Two ideas held without priority until conditions justify promotion:
 
-### 4.3 Long-term (workflow improvement programme)
+- **ID-179: Trace schema validator** (`scripts/check_traces.py` wired into `hatch run lint`). Promote to BK-prefix when trace authoring volume justifies enforcement.
+- **ID-180: Stable HTML-anchor IDs across non-spec docs under `sdd/`.** Promote once a trace aggregator exists or once the first heading-text drift breaks a trace reference.
 
-The actual workflow improvements the trace substrate exists for. Out of scope here; the schema now carries the signals each needs. Each item below requires the BK-194 / BK-195 / BK-196 quick wins as preconditions to be efficient.
+### 4.3 Long-term: evidence-based improvement of the full authoritative-doc structure
 
-- *Aggregator scaffolding.* Build `scripts/trace_aggregate.py` that computes the metrics below and feeds a small dashboard. Until this exists, every analysis is hand-rolled (as this research was).
-- *Doc structure optimisation.* Cluster `outcome: unclear|misleading` per section to surface doc-rewrite candidates; rank `surprising_ripples` to propose new ripple-check rows. Data-driven doc evolution.
-- *Process-gate tightening.* `review_rounds` distributions per `audience` slice reveal where review cost concentrates. The PR-#579 pattern (eleven commits on seventeen lines of context7 prose) is one data point; a recurring spike on a specific audience slice would motivate a pre-review gate.
-- *Agent-behaviour heuristics.* Co-read graphs plus the `audience` field hint at "if you are doing X, also read Y" prompts that could be wired into agent skill files. The async-Azure cluster in § 2.1 is the clearest candidate.
-- *Ripple-check evolution.* `surprising_ripples` accumulates as a proposal list for new ripple-check rows. Once an entry recurs in three or more traces, the table owes a row. Most direct data-to-doc feedback loop the schema supports.
+This is the benefit the substrate was built for, and the only reason the schema effort is justified. Once enough live-authored traces accumulate, the aggregate signals — `outcome: unclear | misleading` clustered per section, `surprising_ripples` recurring on a path, co-read graphs revealing implicit coupling, `review_rounds` spiking per `audience` slice — should drive concrete restructuring of the full authoritative-doc landscape from § 1: [`CLAUDE.md`](../../CLAUDE.md), [`CONTRIBUTING.md`](../../CONTRIBUTING.md), all seven `sdd/` framework docs ([`AUTHORING`](../AUTHORING.md), [`DOCUMENTATION`](../DOCUMENTATION.md), [`CONTENT-RULES`](../CONTENT-RULES.md), [`000-process`](../000-process.md), [`DESIGN`](../DESIGN.md), [`TESTING`](../TESTING.md), [`CLAUDE-REFERENCE`](../CLAUDE-REFERENCE.md)), the ripple-check table, plus the specs / ADRs / RFCs. Where the data says a section confuses, rewrite. Where surprising ripples recur, add a ripple-check row or consolidate the missing concept into the right authority doc. Where co-reads cluster across audience slices, the docs are coupled and should either be linked or merged. Where review-round spikes correlate with an audience, that audience needs a pre-review gate.
+
+The result: an authoritative-doc structure that evolves on evidence rather than intuition. That is the workflow-improvement programme the schema work was the precondition for.
+
+Enabling tooling (one line): `scripts/trace_aggregate.py` to compute the cross-trace metrics above; until it exists, every analysis is hand-rolled (as this research was).
 
 ### 4.4 Settled decisions and known limitations
 
