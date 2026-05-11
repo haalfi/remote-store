@@ -8,6 +8,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-192 — `copy()` metadata parity on `MemoryBackend` and `AsyncMemoryBackend`**
+  Both backends constructed the destination `_FileEntry` in `copy()` without
+  `metadata=src_node.metadata`, so `write(path, data, metadata={...}) → copy(path, dst) → get_file_info(dst)`
+  returned `metadata=None`. Fix: pass `metadata=src_node.metadata` to the
+  `_FileEntry(...)` constructor in `src/remote_store/backends/_memory.py::copy`
+  and `src/remote_store/aio/backends/_memory.py::copy`. Regression coverage:
+  `TestMemoryCopyMetadataRoundTrip` in `tests/backends/memory/test_coverage.py`
+  and five new methods on `TestAsyncMemoryMetadataRoundTrip` in
+  `tests/backends/memory/aio/test_basics.py`, covering `get_file_info`,
+  `list_files` (recursive + non-recursive), the `None`-metadata control, and
+  the `overwrite=True` path. Surfaced as a review note on PR #607 (BK-176).
+  Audience: `user.api`. Spec: BE-019, ASYNC-019, WR-013.
+  Trace: [`sdd/traces/bk-192-copy-metadata-parity.yml`](traces/bk-192-copy-metadata-parity.yml).
+
 - [x] **BK-194 — Ripple-check rewrite: compact pre-work index + detailed verify checklist**
   `sdd/CLAUDE-REFERENCE.md` § Ripple-check table previously served only
   the verify-end purpose (a closing checklist after the diff was made).

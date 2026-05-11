@@ -203,6 +203,28 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-196 — Dafny formal-spec gap: `Copy` postcondition does not pin metadata**
+  `sdd/formal/MemoryBackend.dfy::Copy` builds the destination via
+  `BasicFileInfo(dst, dst, srcEntry.info.size)`, which drops user metadata.
+  The `Copy` postcondition does not pin metadata, so the model verifies
+  cleanly today but encodes the same defect the Python code had before
+  BK-192. Two fix shapes: (a) tighten the postcondition to require
+  `dstEntry.info.userMetadata == srcEntry.info.userMetadata` and adjust
+  `BasicFileInfo` / the constructor to carry it; (b) extend `Copy` to
+  thread metadata through explicitly. Surfaced during BK-192 work. Spec:
+  WR-013, BE-019, ASYNC-019. Trace: `sdd/traces/bk-192-copy-metadata-parity.yml`.
+
+- [ ] **BK-195 — Conformance test: `copy()` preserves user metadata**
+  `tests/backends/conformance/test_atomic.py::TestWriteResultConformance`
+  covers `write → get_file_info` metadata round-trip but no test exercises
+  `write → copy → get_file_info` metadata for any backend. The gap is why
+  BK-192 shipped to master: only memory backends had targeted tests, and
+  no cross-backend gate caught the same omission. Add a conformance test
+  that runs against every backend declaring `USER_METADATA` capability
+  (Local, S3, SFTP via metadata files, Azure, memory, async-memory).
+  Surfaced during BK-192 work. Spec: WR-013, BE-019, ASYNC-019.
+  Trace: `sdd/traces/bk-192-copy-metadata-parity.yml`.
+
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
   BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
   `tests/` root) but grandfathers a set of legacy cross-cutting files
@@ -246,18 +268,6 @@ and the highest ID already in this file, then take the next integer. Run
   skip (TEST-007). Sequencing: depends on BK-179 (registry) and
   BK-180 (live fixtures the recording mode runs against). Spec: TEST-007,
   TEST-008, TEST-009.
-
-- [ ] **BK-192 — `copy()` drops metadata on both `MemoryBackend` and `AsyncMemoryBackend`**
-  `MemoryBackend.copy()` (`src/remote_store/backends/_memory.py`) and
-  `AsyncMemoryBackend.copy()` (`src/remote_store/aio/backends/_memory.py`)
-  construct the destination `_FileEntry` without `metadata=src_node.metadata`.
-  A `write(path, data, metadata={...}) → copy(path, dst) → get_file_info(dst)`
-  flow therefore returns `metadata is None`. Both backends are equally affected
-  (no async/sync parity gap, but a shared defect). Surfaced as a review note on
-  PR #607 (BK-176). Fix: add `metadata=src_node.metadata` to the `_FileEntry`
-  constructor in both `copy()` implementations and add regression tests covering
-  the `write → copy → get_file_info` and `write → copy → list_files` round-trips.
-  Spec: WR-013, ASYNC-019, BE-019.
 
 - [ ] **BK-177 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/conformance/test_atomic.py`**
   Two TESTING.md alignments to apply on the sync side of

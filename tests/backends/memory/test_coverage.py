@@ -470,3 +470,40 @@ class TestMemoryWriteResult:
         mb.write("f.txt", b"x", metadata={"k": "v"})
         info = mb.get_file_info("f.txt")
         assert info.metadata == {"k": "v"}
+
+
+class TestMemoryCopyMetadataRoundTrip:
+    """BK-192 / BE-019 / WR-013: copy() preserves user metadata on the destination."""
+
+    @pytest.mark.spec("BE-019", "WR-013")
+    def test_copy_preserves_metadata_via_get_file_info(self, mb: MemoryBackend) -> None:
+        mb.write("src.txt", b"x", metadata={"k": "v"})
+        mb.copy("src.txt", "dst.txt")
+        assert mb.get_file_info("dst.txt").metadata == {"k": "v"}
+
+    @pytest.mark.spec("BE-019", "WR-013")
+    def test_copy_preserves_metadata_via_list_files_non_recursive(self, mb: MemoryBackend) -> None:
+        mb.write("src.txt", b"x", metadata={"author": "alice"})
+        mb.copy("src.txt", "dst.txt")
+        infos = {info.name: info for info in mb.list_files("")}
+        assert infos["dst.txt"].metadata == {"author": "alice"}
+
+    @pytest.mark.spec("BE-019", "WR-013")
+    def test_copy_preserves_metadata_via_list_files_recursive(self, mb: MemoryBackend) -> None:
+        mb.write("a/src.txt", b"x", metadata={"k": "v"})
+        mb.copy("a/src.txt", "b/dst.txt")
+        infos = {str(info.path): info for info in mb.list_files("", recursive=True)}
+        assert infos["b/dst.txt"].metadata == {"k": "v"}
+
+    @pytest.mark.spec("BE-019", "WR-013")
+    def test_copy_with_no_metadata_yields_none(self, mb: MemoryBackend) -> None:
+        mb.write("src.txt", b"x")
+        mb.copy("src.txt", "dst.txt")
+        assert mb.get_file_info("dst.txt").metadata is None
+
+    @pytest.mark.spec("BE-019", "WR-013")
+    def test_copy_overwrite_replaces_metadata(self, mb: MemoryBackend) -> None:
+        mb.write("src.txt", b"new", metadata={"k": "new"})
+        mb.write("dst.txt", b"old", metadata={"k": "old"})
+        mb.copy("src.txt", "dst.txt", overwrite=True)
+        assert mb.get_file_info("dst.txt").metadata == {"k": "new"}

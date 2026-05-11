@@ -1,0 +1,95 @@
+id: BK-192
+title: "MemoryBackend.copy() and AsyncMemoryBackend.copy() preserve user metadata"
+trigger: "MemoryBackend.copy() and AsyncMemoryBackend.copy() constructed the destination _FileEntry without metadata=src_node.metadata; write→copy→get_file_info returned metadata=None for both backends. Surfaced as a review note on PR #607 (BK-176) and tracked separately as BK-192."
+source_items:
+  - BK-192
+  - BK-176
+audience:
+  - user.api
+discovery_followups:
+  - BK-195
+  - BK-196
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles / Principle 2, Bug-fix protocol"
+        read_type: gate
+        extract: "Verify beyond the diff; BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-013"
+        read_type: gate
+        extract: "User metadata round-trip invariant: write→get_file_info must return the same mapping"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-019"
+        read_type: gate
+        extract: "Sync copy() invariant: duplicates a file (the spec does not explicitly mention metadata, but WR-013 + BE-008 round-trip semantics require it on USER_METADATA-declaring backends)"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-019"
+        read_type: gate
+        extract: "Async copy() invariant — defers to BE-019"
+
+  - id: reproduce
+    name: Reproduce gap
+    steps:
+      - file: src/remote_store/backends/_memory.py
+        section: "copy()"
+        read_type: gate
+        extract: "Sync defect: _FileEntry(...) destination constructor omits metadata=src_node.metadata"
+      - file: src/remote_store/aio/backends/_memory.py
+        section: "copy()"
+        read_type: gate
+        extract: "Async defect: same omission; both backends fail identically (no async/sync parity gap, shared defect)"
+      - file: src/remote_store/backends/_memory.py
+        section: "write()"
+        read_type: reference
+        extract: "Reference pattern: write() already passes stored_meta to _FileEntry(...)"
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement, Rules"
+        read_type: gate
+        extract: "Placement: tests/backends/memory/ (sync) and tests/backends/memory/aio/ (async); Rule 1 assertion depth"
+      - file: tests/backends/memory/aio/test_basics.py
+        section: "TestAsyncMemoryMetadataRoundTrip"
+        read_type: reference
+        extract: "BK-176 class is the right home for the async additions; sync side gets a new TestMemoryCopyMetadataRoundTrip class in test_coverage.py"
+      - file: sdd/000-process.md
+        section: "Rule 6 (Bug fixes)"
+        read_type: gate
+        extract: "Bug-fix pipeline mandates failing TEST before FIX; same commit"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/DESIGN.md
+        section: "Code conventions"
+        read_type: reference
+        extract: "Style for the one-line additions"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG item, CHANGELOG stub, failing test before fix, no spec edit (invariant is not contradicted; code violates it)"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "One-line entry under [Unreleased] referencing BE-019, ASYNC-019, WR-013"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: verify
+        extract: "BK-192 moved here with [x] status, same commit"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "Regenerate via hatch run gen-backlogid after BACKLOG → BACKLOG-DONE move"
