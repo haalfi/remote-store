@@ -50,6 +50,35 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Bugs
 
+- [ ] **BUG-205 — TOFU host-key persistence unreachable through `Registry.get_store()`**
+  `SFTPBackend` with `HostKeyPolicy.TRUST_ON_FIRST_USE` persists the
+  accepted host key to disk only inside `_close_clients()`
+  (`src/remote_store/backends/_sftp.py:947-949`). When the backend is
+  obtained via `Registry.get_store("sftp")`, the returned `Store` has
+  `_owns_backend=False` (`src/remote_store/_registry.py:138`), so
+  `Store.close()` skips the backend close, and `_close_clients()` is
+  never reached for the lifetime of the registry. `SFTPBackend.__del__`
+  (`_sftp.py:771-787`) does inline socket cleanup but does not call
+  `save_host_keys`. Net: through the idiomatic Registry path, TOFU
+  silently never writes `host_keys_path`. Existing test
+  `test_tofu_creates_and_persists_key` passes because it closes the
+  backend directly, not through a Registry-issued Store. Fix: persist on
+  key acceptance (subclass `AutoAddPolicy` and call `save_host_keys`
+  inline from `missing_host_key`), making persistence independent of
+  close lifecycle. Spec: SFTP-028.
+
+- [ ] **BUG-204 — SFTP backend declares `paramiko>=2.2` but uses paramiko 3.0+ API (`channel_timeout`)**
+  `SFTPBackend._connect()` passes `channel_timeout=self._timeout` to
+  `paramiko.SSHClient.connect()` (`src/remote_store/backends/_sftp.py:864`).
+  The `channel_timeout` keyword was added in paramiko 3.0; paramiko 2.x
+  raises `TypeError: SSHClient.connect() got an unexpected keyword
+  argument 'channel_timeout'` at runtime. `pyproject.toml:57` declares
+  `paramiko>=2.2`, so users pinning paramiko 2.x to support legacy SFTP
+  servers (e.g. PSFTPd, which only offers `ssh-rsa` SHA-1 host keys
+  paramiko 3.x removed from defaults) hit the runtime error instead of
+  a clean resolver failure. Fix: bump the lower bound in `pyproject.toml`
+  to `paramiko>=3.0` and add a corresponding CHANGELOG note.
+
 - [ ] **BUG-203 — `AzureBackend.is_file()` returns `True` for HNS folder paths**
   Sync `AzureBackend.is_file('a.txt')` returns `True` when `a.txt` exists as
   an HNS directory blob (marker `hdi_isfolder=true`). Conformance contract
@@ -202,6 +231,48 @@ and the highest ID already in this file, then take the next integer. Run
 ---
 
 ## Backlog (Prioritized)
+
+- [ ] **BK-199 — `SFTPUtils.scan_host_keys(host, port=22) -> str` preflight host-key discovery**
+  No first-class way to discover an SFTP server's host key for review
+  before committing it to a `host.keys` file. Today users must either
+  shell out to `ssh-keyscan`, run a TOFU connect through the backend and
+  inspect `store._backend._ssh_client.get_host_keys()` (private), or
+  cat the file `TRUST_ON_FIRST_USE` writes. Add a static helper:
+  open a `paramiko.Transport`, capture `transport.get_remote_server_key()`
+  without authenticating, format as a `known_hosts`-formatted string,
+  return. Mirrors `ssh-keyscan`. Optional `connect_kwargs=` parameter
+  to forward `disabled_algorithms` and the like for legacy servers.
+  Spec: new SFTP-029.
+
+- [ ] **BK-198 — SFTP legacy-server (`ssh-rsa` / SHA-1) compatibility**
+  Paramiko 3.x removed `ssh-rsa` (SHA-1) from defaults across four
+  sites: `Transport._preferred_keys`, `Transport._key_info`,
+  `RSAKey.HASHES`, `Transport._preferred_pubkeys`. Servers like PSFTPd
+  that only offer `ssh-rsa` produce `IncompatiblePeer: no acceptable
+  host key`, and `disabled_algorithms` cannot re-add a default-removed
+  algorithm. Today users hit a multi-error cascade with no in-library
+  remedy. Ship:
+  (a) `SFTPUtils.enable_ssh_rsa_compat()` static method applying all
+      four patches idempotently. Process-global, documented as a
+      security reduction (SHA-1 acceptance widens to every paramiko
+      transport in the process).
+  (b) `_map_exception` hint when `paramiko.IncompatiblePeer` is
+      wrapped, pointing at the helper.
+  (c) Docs section in the SFTP backend guide covering symptoms,
+      remedy, security tradeoff, and recommendation to pursue server
+      upgrade.
+  Spec: new SFTP-030.
+
+- [ ] **BK-197 — `HostKeyPolicy` accepts enum-name aliases**
+  `HostKeyPolicy` value strings are `"strict"`, `"tofu"`, `"auto"`
+  (`src/remote_store/backends/_sftp.py:68-70`); the latter two do not
+  match their enum names (`TRUST_ON_FIRST_USE`, `AUTO_ADD`). Callers
+  typing `"auto_add"` or `"trust_on_first_use"` get
+  `ValueError: 'auto_add' is not a valid HostKeyPolicy`. Surfaced
+  repeatedly in real usage. Fix: add `__missing__` to `HostKeyPolicy`
+  that maps the enum-name forms to existing values. Strictly additive;
+  existing YAML configs using `"auto"` / `"tofu"` continue to work.
+  Spec: SFTP-006.
 
 - [ ] **BK-196 — Dafny formal-spec gap: `Copy` postcondition does not pin metadata**
   `sdd/formal/MemoryBackend.dfy::Copy` builds the destination via
