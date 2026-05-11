@@ -50,23 +50,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Bugs
 
-- [ ] **BUG-205 — TOFU host-key persistence unreachable through `Registry.get_store()`**
-  `SFTPBackend` with `HostKeyPolicy.TRUST_ON_FIRST_USE` persists the
-  accepted host key to disk only inside `_close_clients()`
-  (`src/remote_store/backends/_sftp.py:947-949`). When the backend is
-  obtained via `Registry.get_store("sftp")`, the returned `Store` has
-  `_owns_backend=False` (`src/remote_store/_registry.py:138`), so
-  `Store.close()` skips the backend close, and `_close_clients()` is
-  never reached for the lifetime of the registry. `SFTPBackend.__del__`
-  (`_sftp.py:771-787`) does inline socket cleanup but does not call
-  `save_host_keys`. Net: through the idiomatic Registry path, TOFU
-  silently never writes `host_keys_path`. Existing test
-  `test_tofu_creates_and_persists_key` passes because it closes the
-  backend directly, not through a Registry-issued Store. Fix: persist on
-  key acceptance (subclass `AutoAddPolicy` and call `save_host_keys`
-  inline from `missing_host_key`), making persistence independent of
-  close lifecycle. Spec: SFTP-028.
-
 - [ ] **BUG-203 — `AzureBackend.is_file()` returns `True` for HNS folder paths**
   Sync `AzureBackend.is_file('a.txt')` returns `True` when `a.txt` exists as
   an HNS directory blob (marker `hdi_isfolder=true`). Conformance contract
