@@ -8,6 +8,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-203 — Dual-wire gen-checks into `hatch run lint`**
+  `gen_graph.py --check`, `gen_features.py --check`, and `gen_graph_viz.py --check`
+  ran in CI (`.github/workflows/ci.yml:72-75`) but not in `hatch run lint`, so
+  generated-file staleness was only caught post-push. Added the three `--check`
+  invocations to the `lint` array in `pyproject.toml` to close the local/CI gap.
+  Surfaced during BK-202 work when the BK-202 SFTPUtils refactor invalidated
+  `graph.json` and `graph_viz.html` but lint did not flag it. Per
+  `[[feedback_check_scripts_dual_wire]]`.
+
 - [x] **BK-202 — `SFTPUtils` helpers rendered as true `@staticmethod` on docs.remotestore.dev**
   The four `SFTPUtils` helpers (`load_private_key`, `scan_host_keys`,
   `scan_host_algorithms`, `enable_ssh_rsa_compat`) were exposed via the

@@ -1,0 +1,52 @@
+id: BK-203
+title: "Dual-wire gen-checks into hatch run lint"
+trigger: "gen_graph.py --check, gen_features.py --check, and gen_graph_viz.py --check ran in CI but not in hatch run lint; contributors only learned about generated-file staleness after pushing"
+source_items:
+  - BK-203
+audience:
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: C:\Users\Harald\.claude\projects\F--Coding-Code-remote-store\memory\todo_dual_wire_gen_checks.md
+        section: "(full)"
+        read_type: gate
+        extract: "gap description, three scripts to add, BK-203 candidate scope"
+      - file: .github/workflows/ci.yml
+        section: "lint job steps (lines 70-76)"
+        read_type: gate
+        extract: "confirm exact --check commands CI runs"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: gate
+        extract: "current lint array; confirm three gen-checks absent"
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: gate
+        extract: "append gen_graph --check, gen_features --check, gen_graph_viz --check"
+      - file: scripts/gen_graph.py
+        section: "argument parser (--check flag)"
+        read_type: verify
+        extract: "confirm --check flag exists before wiring"
+      - file: scripts/gen_features.py
+        section: "argument parser (--check flag)"
+        read_type: verify
+        extract: "confirm --check flag exists before wiring"
+      - file: scripts/gen_graph_viz.py
+        section: "argument parser (--check flag)"
+        read_type: verify
+        extract: "confirm --check flag exists before wiring"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Tooling change"
+        read_type: verify
+        extract: "no public-API or spec ripples; BACKLOG-DONE entry and trace sufficient"
