@@ -17,17 +17,40 @@ in ``tests.backends.fixtures._state``. Per-backend factory modules
 (``memory``, ``local``, ``azurite``, ...) each register one or more
 ``BackendFixture`` records by appending to ``_FIXTURES`` in
 ``tests.backends.fixtures.registry``.
+
+The public names are re-exported **lazily** via ``__getattr__``. Eager
+re-export from ``registry`` would pull ``import pytest`` and
+``from remote_store...`` into every consumer of this package — including
+``scripts/mutate_scopes.py``, which imports ``_loader`` at scope
+introspection time on a vanilla ``actions/setup-python`` runner that has
+neither pytest nor remote_store installed (see BUG-206). With lazy
+re-export, ``import tests.backends.fixtures._loader`` only runs this
+``__init__``; ``registry`` is loaded the first time a caller dereferences
+one of its names, which is always inside a pytest session.
 """
 
 from __future__ import annotations
 
-from tests.backends.fixtures.registry import (
-    AnyBackend,
-    BackendFixture,
-    all_fixtures,
-    fixture_params,
-    fixtures,
-)
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from tests.backends.fixtures.registry import (
+        AnyBackend,
+        BackendFixture,
+        all_fixtures,
+        fixture_params,
+        fixtures,
+    )
+
+_LAZY_REGISTRY_NAMES = frozenset({"AnyBackend", "BackendFixture", "all_fixtures", "fixture_params", "fixtures"})
+
+
+def __getattr__(name: str) -> Any:
+    if name in _LAZY_REGISTRY_NAMES:
+        from tests.backends.fixtures import registry
+
+        return getattr(registry, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def _load_all() -> None:
