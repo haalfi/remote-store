@@ -203,6 +203,7 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
+- [ ] **BK-196 — Dafny formal-spec gap: `Copy` postcondition does not pin metadata**
   `sdd/formal/MemoryBackend.dfy::Copy` builds the destination via
   `BasicFileInfo(dst, dst, srcEntry.info.size)`, which drops user metadata.
   The `Copy` postcondition does not pin metadata, so the model verifies

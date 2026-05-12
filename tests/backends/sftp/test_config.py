@@ -1621,7 +1621,12 @@ class TestSFTPInlineHostKeysVerification:
             retry=RetryPolicy(max_attempts=1, backoff_base=0, backoff_max=0),
         )
         try:
-            with pytest.raises((BackendUnavailable, RemoteStoreError)):
+            # Paramiko raises BadHostKeyException (subclass of SSHException),
+            # which _map_exception translates to BackendUnavailable carrying
+            # the original "Host key for server ... does not match" text.
+            # The match= pins the host-key-mismatch failure path, not any
+            # other RemoteStoreError (timeout, auth, transient SSH error).
+            with pytest.raises(BackendUnavailable, match=r"(?i)host key"):
                 backend.exists("nonexistent.txt")
         finally:
             backend.close()

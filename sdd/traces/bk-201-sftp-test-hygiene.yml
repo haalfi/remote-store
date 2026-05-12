@@ -22,9 +22,11 @@ audience:
 # scope for BK-201's test-hygiene fix.
 discovery_followups: []
 
-expected_ripples:
-  - sdd/backlogid.json
-  - CHANGELOG.md
+# expected_ripples intentionally omitted: BK-201 < the running BK max
+# (backlogid.json already current), and the audience derivation rule
+# (`infra.test` + `contributor.process` with no new framework) skips
+# CHANGELOG. Per the schema, `expected_ripples` lists files actually
+# touched, not files anticipated and then determined unnecessary.
 
 phases:
   - id: orient
