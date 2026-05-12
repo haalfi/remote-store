@@ -1,0 +1,139 @@
+id: BK-201
+title: "SFTP test-hygiene: remove TESTING.md Rule 3 violations on SFTPBackend private state"
+trigger: |
+  PR 613 (BK-198 / BK-197 work) review round 4 surfaced three pre-existing
+  assertions on `SFTPBackend` private attributes in
+  `tests/backends/sftp/test_config.py` that lacked the
+  `# internal: no public observable` exception tag required by TESTING.md
+  Rule 3. The review deferred the cleanup to its own item rather than
+  bundling it into the BK-198 PR.
+
+source_items:
+  - BK-201
+
+audience:
+  - infra.test
+  - contributor.process
+
+# Stray paragraph at sdd/BACKLOG.md:225-233 (the MemoryBackend.dfy::Copy
+# block with no item header, ending with the BK-192 trace reference) is
+# bleed-through from a separate item, not part of BK-201. Flagged in the
+# planning conversation and deferred to a future cleanup commit; out of
+# scope for BK-201's test-hygiene fix.
+discovery_followups: []
+
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules / 3 (Never assert on private attributes)"
+        read_type: gate
+        extract: "Per-site refactor to observable behavior, OR add `# internal: no public observable` with a concrete reason; bulk-tagging is forbidden."
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-201 (item)"
+        read_type: gate
+        extract: "Three sites enumerated with reviewer-suggested fix shapes per site."
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "L1417 (TestSFTPBug144SshClientLeak / test_ssh_client_closed_on_connect_failure)"
+        read_type: reference
+        extract: "Reference pattern for the `# internal: no public observable` tag inline with the assertion."
+        outcome: ok
+
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_create_ssh_client (lines 1244-1267)"
+        read_type: reference
+        extract: |
+          Inline `known_host_keys` enters via `_load_host_keys_from_string`
+          and bypasses the TOFU/STRICT file-load branches. With STRICT
+          policy, paramiko's default RejectPolicy applies, so a matching
+          key allows connect and a mismatched key raises
+          BadHostKeyException -> BackendUnavailable. That is the
+          observable behavior for site 1.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "__repr__ (lines 1151-1158)"
+        read_type: reference
+        extract: |
+          repr does not surface `_host_key_policy`, so site 2 cannot be
+          observed without extending repr; AUTO_ADD and TOFU both call
+          AutoAddPolicy(), so a connection-only test cannot distinguish
+          the two coerced values. Tag-with-reason is the right call.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPTofuPersistence / test_tofu_save_failure_suppressed (L1732+)"
+        read_type: reference
+        extract: |
+          Mock pattern: patch backend._ssh_client.save_host_keys before
+          close(), then assert on the mock. Touching `_ssh_client` to
+          install the patch is consistent with the existing TOFU class
+          (Rule 3 bans asserting on private attrs, not accessing them).
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-007 (Host Key Resolution Chain)"
+        read_type: reference
+        extract: "Spec marker for the new behavioral tests at site 1."
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPHelpers / test_resolve_host_keys_direct (removed)"
+        read_type: reference
+        extract: |
+          Removed the private-attribute assertion test from the helpers
+          class; its dummy-host construction was the only thing keeping
+          it in a `no server needed` region.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "Inline host-key verification (SFTP-007) / TestSFTPInlineHostKeysVerification"
+        read_type: reference
+        extract: |
+          New region + class with two straight-line tests using
+          sftp_server: STRICT + matching inline key connects; STRICT +
+          mismatched inline key (fresh RSAKey.generate) raises
+          BackendUnavailable / RemoteStoreError. Bad-key backend uses
+          RetryPolicy(max_attempts=1, ...) to avoid the 3x retry cost.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPHostKeyPolicyCoercion / test_host_key_policy_string_coercion"
+        read_type: reference
+        extract: |
+          Added a `# internal: no public observable` block citing the
+          downstream behavioral coverage (TestSFTPInlineHostKeysVerification
+          for STRICT, TestSFTPTofuPersistence for TOFU). The assertion
+          stays; only the justification is new.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPTofuPersistence / test_tofu_inline_keys_not_persisted"
+        read_type: reference
+        extract: |
+          Replaced `assert backend._tofu_keys_path is None` with the
+          save_host_keys mock pattern (mirrors
+          test_tofu_save_failure_suppressed). The downstream
+          empty-file check stays as a secondary assertion.
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item completed"
+        read_type: verify
+        extract: "Move BK-201 to BACKLOG-DONE.md, regen sdd/backlogid.json, CHANGELOG entry under audience contributor.process."
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules / 3"
+        read_type: verify
+        extract: "All three sites now either refactored to observable or carry a concrete `# internal: no public observable` justification."
+        outcome: ok
