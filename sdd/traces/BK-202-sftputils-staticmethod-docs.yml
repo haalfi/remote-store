@@ -15,6 +15,7 @@ expected_ripples:
 surprising_ripples:
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -111,3 +112,22 @@ phases:
         read_type: verify
         extract: "Table anticipates graph regen for signature changes but not for in-file reorganization that only shifts line numbers. Caught post-PR by user prompt; ran `hatch run gen-graph` and `hatch run gen-graph-viz` (single-line shift: SFTPBackend line 524 -> 525). Candidate ripple-check refinement: extend the 'Public method signature' row to cover any line-number drift in src/ files indexed by gen_graph.py."
         outcome: misleading
+
+  - id: review
+    name: Address PR review
+    steps:
+      - file: docs-src/reference/api/sftp-utils.md
+        section: "::: remote_store.backends._sftp.HostKeyPolicy"
+        read_type: gate
+        extract: "Reviewer claimed griffe distinguishes plain class rebindings (HostKeyPolicy = HostKeyPolicy) from staticmethod rebindings and would resolve SFTPUtils.HostKeyPolicy correctly. Tried the change, built with mkdocs --strict, captured rendered HTML: target produced doc-symbol-attribute label, class-attribute + instance-attribute badges, literal 'HostKeyPolicy = HostKeyPolicy' as signature, empty content div (no enum members). Reverted target back to _sftp.HostKeyPolicy. Posted detailed pushback on the thread with HTML diff and the underlying griffe behaviour (rebinding patterns are class-attribute assignments regardless of RHS). Thread left open for maintainer call."
+        outcome: misleading
+      - file: sdd/DOCUMENTATION.md
+        section: "Page-type templates (table row for SFTPUtils)"
+        read_type: gate
+        extract: "Reviewer noted SFTPUtils still listed under 'Support class' row, but the new sftp-utils.md uses the 'Rich class' pattern (per-member ::: with show_root_heading: true). Moved SFTPUtils from the Support class row to the Rich class row (now listed alongside Store and AsyncStore). Thread resolved."
+        outcome: ok
+      - file: tmp/build-fix/reference/api/sftp-utils/index.html
+        section: "rendered HostKeyPolicy block under SFTPUtils.HostKeyPolicy target"
+        read_type: verify
+        extract: "Empirical evidence for the pushback. Captured the broken HTML (attribute label + literal-rebinding signature + empty body) to support the verdict against changing the target."
+        outcome: ok

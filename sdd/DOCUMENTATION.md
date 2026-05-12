@@ -265,9 +265,9 @@ Verify against actual code before relying on these in production.
 
 | Page type | Required blocks | Optional blocks |
 |---|---|---|
-| **Rich class** (Store, AsyncStore) | Class header, Method sections, See also | Info notes, Constraint notes, Warning block, Behavior matrix, Related types |
+| **Rich class** (Store, AsyncStore, SFTPUtils) | Class header, Method sections, See also | Info notes, Constraint notes, Warning block, Behavior matrix, Related types |
 | **Protocol / ABC** (Backend) | Class header, Method sections, See also | Info notes, Constraint notes |
-| **Support class** (ProxyStore, Registry, Config, Models, RemotePath, Info, SFTPUtils) | Intro prose or class header, `:::` (all members), See also | Info notes, Constraint notes |
+| **Support class** (ProxyStore, Registry, Config, Models, RemotePath, Info) | Intro prose or class header, `:::` (all members), See also | Info notes, Constraint notes |
 | **Enum / flags** (Capability, CapabilitySet) | `:::` per type, See also | — |
 | **Error hierarchy** (Errors) | Flat `:::` per error class, See also | — |
 
