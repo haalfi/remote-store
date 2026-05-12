@@ -27,6 +27,18 @@ expected_ripples:
   - CHANGELOG.md
   - docs-src/reference/api/sftp-utils.md
 
+# Round 1: socket leak guard in scan_host_keys (Transport(sock)
+#          construction inside try/except so a constructor failure
+#          closes the OS socket); perf-mock substitution in the
+#          _format_known_hosts_line unit tests (Mock(spec=paramiko.PKey)
+#          replaces RSAKey.generate(2048)); negotiated-key caveat
+#          added to the docstring; scrubbed legacy `aha_utils.sftp`
+#          reference from the trigger block.
+# Round 4: test_scan_unreachable_raises switched from port=1 to OS-assigned
+#          released ephemeral port (deterministic refusal across OSes);
+#          PT011 match= added with cross-OS error-message regex.
+review_rounds: 2
+
 phases:
   - id: design
     name: Design

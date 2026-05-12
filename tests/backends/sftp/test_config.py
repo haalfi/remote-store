@@ -933,7 +933,19 @@ class TestSFTPHostKeyPolicyAliases:
             HostKeyPolicy(value_form)
 
     def test_constructor_accepts_alias_string(self) -> None:
-        """SFTPBackend constructor accepts the alias string form."""
+        """SFTPBackend constructor accepts the alias string form and
+        coerces to the canonical enum member.
+
+        The coercion semantics themselves are tested in
+        ``test_enum_name_aliases_resolve``; this test adds that the
+        SFTPBackend constructor delegates to that coercion rather than
+        storing the raw string.
+        """
+        # internal: no public observable -- SFTPBackend's constructor
+        # coercion has no public reflection (no repr surface, no
+        # method that returns the policy); asserting on the private
+        # attribute is the only way to verify the coerced storage.
+        # The coercion logic itself is tested at the enum level above.
         backend = SFTPBackend(host="dummy", host_key_policy="auto_add")
         assert backend._host_key_policy is HostKeyPolicy.AUTO_ADD
 

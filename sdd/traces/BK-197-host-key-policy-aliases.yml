@@ -23,6 +23,17 @@ expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
 
+# Round 1: CHANGELOG scope tightening ("enum-name aliases,
+#          case-insensitive on the name" — value-form upper-case still
+#          raises); value-form-aliasing negative tests added; non-string
+#          input parametrise added; _missing_ type-ignore cleaned via
+#          __members__.get().
+# Round 5: L938 internal-state assertion in test_constructor_accepts_alias_string
+#          tagged with "# internal: no public observable" + rationale
+#          (constructor coercion has no public reflection surface; the
+#          coercion logic itself is tested at the enum level).
+review_rounds: 2
+
 phases:
   - id: orient
     name: Orient

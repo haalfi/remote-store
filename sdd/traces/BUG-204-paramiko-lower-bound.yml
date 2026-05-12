@@ -23,6 +23,13 @@ expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
 
+# Round 1: initial review confirmed lower-bound bump and the
+#          signature-introspection regression test as the right shape;
+#          no code change required. CHANGELOG framing later clarified
+#          (round 3) to disambiguate BUG-204's 2.x->3.x channel_timeout
+#          motivation from BK-198's 4.x->5.x ssh-rsa motivation.
+review_rounds: 1
+
 phases:
   - id: reproduce
     name: Reproduce
