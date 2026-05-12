@@ -9618,7 +9618,7 @@ call the helper described below.</p>
 failures — host key, KEX, cipher, or MAC — and only the first is fixed
 by <code>enable_ssh_rsa_compat()</code>. The other three need
 <code>connect_kwargs={"disabled_algorithms": ...}</code> instead.
-<a href="../../../reference/api/sftp-utils/#scan_host_algorithms"><code>SFTPUtils.scan_host_algorithms()</code></a>
+<a href="../../../reference/api/sftp-utils/#remote_store.backends.SFTPUtils.scan_host_algorithms"><code>SFTPUtils.scan_host_algorithms()</code></a>
 parses the server's <code>SSH_MSG_KEXINIT</code> advertisement (RFC 4253 § 7.1)
 over a raw socket — no paramiko, no authentication, so the result
 reflects exactly what the server advertises:</p>
@@ -9745,7 +9745,7 @@ Concurrent writers can both pass the check.</p>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">password</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../../reference/api/config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">pkey</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">base_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">host_key_policy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="remote_store.backends._sftp.HostKeyPolicy" href="../../../reference/api/sftp-utils/#remote_store.backends._sftp.HostKeyPolicy">HostKeyPolicy</a></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="remote_store.backends._sftp.HostKeyPolicy.STRICT">STRICT</span></span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">host_key_policy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            HostKeyPolicy (remote_store.backends._sftp.HostKeyPolicy)" href="../../../reference/api/sftp-utils/#remote_store.backends._sftp.HostKeyPolicy">HostKeyPolicy</a></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="remote_store.backends._sftp.HostKeyPolicy.STRICT">STRICT</span></span><span class="p">,</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">known_host_keys</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">host_keys_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -9846,7 +9846,7 @@ you need parallel operations.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>host_key_policy</code></b>
-              (<code><a class="autorefs autorefs-internal" title="remote_store.backends._sftp.HostKeyPolicy" href="../../../reference/api/sftp-utils/#remote_store.backends._sftp.HostKeyPolicy">HostKeyPolicy</a> | <span title="str">str</span></code>, default:
+              (<code><a class="autorefs autorefs-internal" title="            HostKeyPolicy (remote_store.backends._sftp.HostKeyPolicy)" href="../../../reference/api/sftp-utils/#remote_store.backends._sftp.HostKeyPolicy">HostKeyPolicy</a> | <span title="str">str</span></code>, default:
                   <code><span title="remote_store.backends._sftp.HostKeyPolicy.STRICT">STRICT</span></code>
 )
           –

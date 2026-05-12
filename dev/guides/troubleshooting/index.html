@@ -9302,7 +9302,7 @@ peer (no acceptable {host key | kex algorithm | cipher | MAC})</code> during
 <code>SFTPBackend</code> connect. The error wraps four distinct negotiation
 failures; the actionable next step depends on which one.</p>
 <p><strong>Diagnose first.</strong>
-<a href="../../reference/api/sftp-utils/#scan_host_algorithms"><code>SFTPUtils.scan_host_algorithms()</code></a>
+<a href="../../reference/api/sftp-utils/#remote_store.backends.SFTPUtils.scan_host_algorithms"><code>SFTPUtils.scan_host_algorithms()</code></a>
 parses the server's <code>SSH_MSG_KEXINIT</code> advertisement over a raw socket
 (no paramiko, no authentication). Print the relevant name-list to
 identify which list the server narrowed.</p>
