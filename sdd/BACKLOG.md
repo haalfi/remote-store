@@ -527,6 +527,20 @@ and the highest ID already in this file, then take the next integer. Run
 
 ### Formal Verification
 
+Goal: Dafny spec as authoritative contract, compiled oracle as reference backend,
+conformance tests as proof obligations — tightly coupled and machine-verifiable.
+Two patterns: **A** (oracle differential — run op on target + `DafnyOracleBackend`,
+assert outputs match) and **B** (inline postcondition assertions citing spec ID and
+line number).
+
+**Execution order:**
+
+| Wave | Items | Notes |
+|---|---|---|
+| 0 — no prereqs | ID-183, ID-184, ID-189, BK-195 + BK-196 | Start in parallel; ID-183 is infrastructure |
+| 1 — after ID-183 | ID-185, ID-187, ID-188 | Pattern A work; needs oracle helper |
+| 2 — long-horizon | ID-190, ID-191 | No blocker; pick up when scope allows |
+
 - [ ] **ID-191 — Move atomicity formal model in `ResourceSafety.dfy`**
   `ResourceSafety.dfy` § 2 models `AtomicMove` and `CopyDeleteMove` as state
   machines and proves `MoveFinalStateEquivalence` (both reach `DeleteDone`).
