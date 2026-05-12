@@ -213,6 +213,163 @@ def _format_known_hosts_line(host: str, port: int, key: Any) -> str:
     return f"{host_label} {key.get_name()} {key.get_base64()}"
 
 
+# Per RFC 4253 § 7.1, SSH_MSG_KEXINIT carries ten name-lists in this
+# fixed order after the 16-byte cookie.
+_KEXINIT_FIELDS: tuple[str, ...] = (
+    "kex_algorithms",
+    "server_host_key_algorithms",
+    "encryption_algorithms_ctos",
+    "encryption_algorithms_stoc",
+    "mac_algorithms_ctos",
+    "mac_algorithms_stoc",
+    "compression_algorithms_ctos",
+    "compression_algorithms_stoc",
+    "languages_ctos",
+    "languages_stoc",
+)
+_SSH_MSG_KEXINIT = 20
+
+
+def _recv_exact(sock: Any, n: int) -> bytes:
+    """Read exactly *n* bytes from *sock* or raise ``OSError`` on short read."""
+    buf = bytearray()
+    while len(buf) < n:
+        chunk = sock.recv(n - len(buf))
+        if not chunk:
+            raise OSError(f"unexpected EOF: needed {n} bytes, got {len(buf)}")
+        buf.extend(chunk)
+    return bytes(buf)
+
+
+def scan_host_algorithms(
+    host: str,
+    port: int = 22,
+    *,
+    timeout: float = 10.0,
+) -> dict[str, list[str] | str]:
+    """Discover an SFTP server's algorithm advertisement without authenticating.
+
+    Opens a raw TCP socket, exchanges SSH banners, reads the server's
+    first ``SSH_MSG_KEXINIT`` packet (RFC 4253 § 7.1), parses the ten
+    name-lists it carries, and returns them as a dictionary. No
+    paramiko, no key exchange completes, no authentication is attempted.
+
+    Use this to identify the failure shape behind an
+    ``IncompatiblePeer`` error. ``IncompatiblePeer`` wraps four distinct
+    negotiation failures (host key / KEX / cipher / MAC), and only the
+    first is addressable by ``enable_ssh_rsa_compat()``. Inspecting
+    the four corresponding name-lists in the result tells you which
+    list the server narrowed and to what.
+
+    Pure-socket parsing (rather than driving ``paramiko.Transport``) is
+    deliberate: the result reflects what the *server* advertises,
+    independent of any process-global paramiko state mutated by
+    ``enable_ssh_rsa_compat()`` or downstream code.
+
+    Args:
+        host: Hostname or IP address of the SFTP server.
+        port: SSH port (default: 22).
+        timeout: Socket timeout in seconds (default: 10).
+
+    Returns:
+        A dictionary with eleven entries:
+
+        - ``"banner"`` -- the server's identification string (e.g.
+          ``"SSH-2.0-OpenSSH_8.9p1"``).
+        - The ten RFC 4253 § 7.1 name-lists, each as a Python ``list[str]``:
+          ``kex_algorithms``, ``server_host_key_algorithms``,
+          ``encryption_algorithms_ctos``, ``encryption_algorithms_stoc``,
+          ``mac_algorithms_ctos``, ``mac_algorithms_stoc``,
+          ``compression_algorithms_ctos``,
+          ``compression_algorithms_stoc``, ``languages_ctos``,
+          ``languages_stoc``.
+
+    Raises:
+        OSError: Socket-level failure (host unreachable, port refused,
+            timeout, connection reset, unexpected EOF, or the server's
+            first packet was not ``SSH_MSG_KEXINIT``).
+
+    !!! example "Diagnose an `ssh-rsa`-only legacy server"
+
+        ```python
+        from remote_store.backends import SFTPUtils
+
+        info = SFTPUtils.scan_host_algorithms("legacy.example.com")
+        print(info["server_host_key_algorithms"])
+        # ['ssh-rsa']  -> classic legacy server; on paramiko 5+,
+        # call SFTPUtils.enable_ssh_rsa_compat() at process startup.
+        ```
+
+    !!! example "Diagnose a narrow-KEX server"
+
+        ```python
+        info = SFTPUtils.scan_host_algorithms("legacy.example.com")
+        print(info["kex_algorithms"])
+        # ['diffie-hellman-group14-sha1']  -> KEX narrowing;
+        # widen via SFTPBackend(connect_kwargs={"disabled_algorithms": ...}).
+        ```
+    """
+    import socket
+    import struct
+
+    sock = socket.create_connection((host, port), timeout=timeout)
+    try:
+        sock.settimeout(timeout)
+
+        # RFC 4253 § 4.2: server MAY send extra lines before its SSH banner.
+        # Read line-by-line until we see one starting with "SSH-"; cap total
+        # to bound the loop on a misbehaving peer.
+        banner = ""
+        for _ in range(16):
+            line = bytearray()
+            while not line.endswith(b"\r\n") and len(line) < 8192:
+                chunk = sock.recv(1)
+                if not chunk:
+                    raise OSError("server closed during banner exchange")
+                line += chunk
+            decoded = bytes(line).rstrip(b"\r\n").decode("ascii", errors="replace")
+            if decoded.startswith("SSH-"):
+                banner = decoded
+                break
+        else:  # pragma: no cover -- pathological server
+            raise OSError("did not receive SSH banner within 16 lines")
+
+        sock.sendall(b"SSH-2.0-remote-store-probe\r\n")
+
+        # SSH binary packet: uint32 packet_length + byte padding_length +
+        # payload + padding. The first packet from the server is
+        # SSH_MSG_KEXINIT (type 20).
+        header = _recv_exact(sock, 5)
+        packet_length, padding_length = struct.unpack(">IB", header)
+        if not 1 <= packet_length <= 35000:
+            raise OSError(f"implausible packet_length: {packet_length}")
+        payload_length = packet_length - 1 - padding_length
+        if payload_length < 1:
+            raise OSError(f"implausible payload_length: {payload_length}")
+        payload = _recv_exact(sock, payload_length)
+        _recv_exact(sock, padding_length)
+
+        if payload[0] != _SSH_MSG_KEXINIT:
+            raise OSError(f"expected SSH_MSG_KEXINIT ({_SSH_MSG_KEXINIT}), got {payload[0]}")
+
+        # Skip msg type byte + 16-byte cookie, then parse ten name-lists.
+        offset = 1 + 16
+        result: dict[str, list[str] | str] = {"banner": banner}
+        for name in _KEXINIT_FIELDS:
+            if offset + 4 > len(payload):
+                raise OSError(f"truncated KEXINIT while reading length for {name}")
+            (length,) = struct.unpack(">I", payload[offset : offset + 4])
+            offset += 4
+            if offset + length > len(payload):
+                raise OSError(f"truncated KEXINIT while reading body for {name}")
+            namelist = payload[offset : offset + length].decode("ascii", errors="replace")
+            offset += length
+            result[name] = namelist.split(",") if namelist else []
+        return result
+    finally:
+        sock.close()
+
+
 def enable_ssh_rsa_compat() -> None:
     """Guarantee ``ssh-rsa`` (SHA-1) acceptance across paramiko's four host-key sites.
 
@@ -228,15 +385,20 @@ def enable_ssh_rsa_compat() -> None:
     4. ``paramiko.Transport._preferred_pubkeys`` -- client RSA public-key
        authentication signatures.
 
-    On every paramiko version verified (2.12, 3.0, 3.5, 4.0) all four
-    sites contain ``ssh-rsa`` by default, so a freshly-imported
-    paramiko already negotiates against an ``ssh-rsa``-only server
-    without this helper. The helper is therefore a no-op on a clean
-    process and only changes behavior when:
+    Empirically verified across paramiko 2.12 / 3.0 / 3.5 / 4.0 / 5.0
+    (see ``sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md``):
 
-    - downstream code or a transport subclass has stripped ``ssh-rsa``
-      from one of the four sites;
-    - or a future paramiko major release follows through on removal.
+    - On paramiko **< 5.0** all four sites contain ``ssh-rsa`` by
+      default, so a freshly-imported paramiko already negotiates against
+      an ``ssh-rsa``-only server. The helper is a no-op (all four guards
+      short-circuit) and is safe to call eagerly for forward
+      compatibility.
+    - On paramiko **>= 5.0** all four sites have ``ssh-rsa`` removed.
+      Bare connect to an ``ssh-rsa``-only server fails immediately in
+      ``Transport._parse_kex_init`` with ``IncompatiblePeer: no
+      acceptable host key``. Calling this helper at process startup is
+      the only way to restore the connection without monkey-patching
+      ``connect_kwargs["disabled_algorithms"]`` on every connect.
 
     For KEX / cipher / MAC negotiation failures (e.g.
     ``IncompatiblePeer: no acceptable kex algorithm``), this helper is
@@ -259,6 +421,13 @@ def enable_ssh_rsa_compat() -> None:
         ``ssh-rsa`` is appended (not prepended) to the preferred lists, so
         modern algorithms are still negotiated first when the server
         offers them.
+
+    !!! warning "Single-threaded startup only"
+
+        The four read-then-write patches are not atomic; if two threads
+        enter the helper at the same time they race on the rebind. Call
+        once at process startup before any backend connect, not from a
+        request-handling code path.
 
     !!! example
 
@@ -303,6 +472,10 @@ class SFTPUtils:
     - ``SFTPUtils.scan_host_keys(host, port=22)`` -- preflight host-key
       discovery; returns a ``known_hosts``-formatted line for committing
       into a ``host.keys`` file
+    - ``SFTPUtils.scan_host_algorithms(host, port=22)`` -- raw-socket SSH
+      KEXINIT probe; returns the server's algorithm advertisement
+      (kex / host-key / cipher / MAC / compression name-lists) for
+      diagnosing ``IncompatiblePeer`` failures
     - ``SFTPUtils.enable_ssh_rsa_compat()`` -- restore ``ssh-rsa`` (SHA-1)
       acceptance for legacy SFTP servers (see method docstring for the
       security tradeoff)
@@ -325,6 +498,7 @@ class SFTPUtils:
     load_private_key = staticmethod(load_private_key)
     enable_ssh_rsa_compat = staticmethod(enable_ssh_rsa_compat)
     scan_host_keys = staticmethod(scan_host_keys)
+    scan_host_algorithms = staticmethod(scan_host_algorithms)
 
 
 # endregion
@@ -1232,11 +1406,26 @@ class SFTPBackend(Backend):
                     f"`paramiko.Transport._preferred_keys`. If ssh-rsa is "
                     f"absent, call SFTPUtils.enable_ssh_rsa_compat() at "
                     f"process startup. See "
-                    f"docs.remotestore.dev/guides/backends/sftp/#legacy-servers-ssh-rsa-sha-1]",
+                    f"docs.remotestore.dev/guides/backends/sftp/#legacy-ssh-rsa]",
                     path=path,
                     backend=self.name,
                 )
-            return BackendUnavailable(str(exc), path=path, backend=self.name)
+            # KEX / cipher / MAC variants are not addressable by
+            # enable_ssh_rsa_compat. Point users at scan_host_algorithms so
+            # they can identify which name-list the server narrowed before
+            # reaching for connect_kwargs["disabled_algorithms"]. The literal
+            # symbol "scan_host_algorithms" is asserted by
+            # TestSFTPIncompatiblePeerHint::test_incompatible_peer_kex_hint;
+            # rename the helper and this string plus that test together.
+            return BackendUnavailable(
+                f"{exc} [hint: run "
+                f"SFTPUtils.scan_host_algorithms(host, port) to see which "
+                f"algorithm list the server narrowed, then widen the "
+                f"corresponding list via "
+                f"SFTPBackend(connect_kwargs={{'disabled_algorithms': ...}}).]",
+                path=path,
+                backend=self.name,
+            )
         if isinstance(exc, paramiko.SSHException):
             return BackendUnavailable(str(exc), path=path, backend=self.name)
         return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover

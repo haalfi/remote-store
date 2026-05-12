@@ -31,6 +31,13 @@
       heading_level: 4
       show_root_heading: false
 
+### scan_host_algorithms
+
+::: remote_store.backends._sftp.scan_host_algorithms
+    options:
+      heading_level: 4
+      show_root_heading: false
+
 ## Enums
 
 ### HostKeyPolicy

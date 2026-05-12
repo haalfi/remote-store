@@ -132,28 +132,55 @@ backend = SFTPBackend(
 )
 ```
 
-## Legacy Servers (`ssh-rsa` / SHA-1)
+## Legacy Servers (`ssh-rsa` / SHA-1) { #legacy-ssh-rsa }
 
-Paramiko has deprecated `ssh-rsa` (SHA-1) and reserves removal for a future
-major release. Empirically, a freshly-imported paramiko 2.12 / 3.0 / 3.5 /
-4.0 already negotiates against an `ssh-rsa`-only server out of the box —
-including against a server that also restricts KEX to legacy SHA-1
-variants. `ssh-rsa` is therefore not the root cause of
-most legacy-SFTP connection failures today; it becomes one only when
-something has cleared `ssh-rsa` from paramiko's defaults. Concretely you
-will see one of these errors when that state is reached:
+**What changed.** Paramiko 5.0 removed `ssh-rsa` from its host-key
+defaults. Empirically (verified across paramiko 2.12 / 3.0 / 3.5 / 4.0 /
+5.0):
 
-| Error | Stage that failed |
-|-------|-------------------|
-| `IncompatiblePeer: no acceptable host key` | KEX host-key-algorithm negotiation |
-| `KeyError: 'ssh-rsa'` (during connect) | Host-key parsing dispatch |
-| `SSHException: Signature verification (ssh-rsa) failed.` | Signature verification |
+- **paramiko `< 5`** ships `ssh-rsa` in defaults at all four negotiation
+  sites. A freshly-imported paramiko already negotiates against an
+  `ssh-rsa`-only server out of the box.
+- **paramiko `>= 5`** has `ssh-rsa` removed from all four sites.
+  Connecting to an `ssh-rsa`-only server raises
+  `IncompatiblePeer: Incompatible ssh peer (no acceptable host key)`
+  during KEX, before authentication is attempted.
 
-`disabled_algorithms` cannot re-add a default-removed algorithm.
+Fresh `pip install remote-store[sftp]` resolves to paramiko 5+ today, so
+this affects new installs.
+
+### Diagnose first
+
+Before mutating paramiko's defaults, confirm the failure shape. An
+`IncompatiblePeer` error from paramiko wraps four distinct negotiation
+failures — host key, KEX, cipher, or MAC — and only the first is fixed
+by `enable_ssh_rsa_compat()`. The other three need
+`connect_kwargs={"disabled_algorithms": ...}` instead.
+[`SFTPUtils.scan_host_algorithms()`](../../reference/api/sftp-utils.md#scan_host_algorithms)
+parses the server's `SSH_MSG_KEXINIT` advertisement (RFC 4253 § 7.1)
+over a raw socket — no paramiko, no authentication, so the result
+reflects exactly what the server advertises:
+
+```python
+from remote_store.backends import SFTPUtils
+
+info = SFTPUtils.scan_host_algorithms("legacy.example.com")
+print("host-key algos:", info["server_host_key_algorithms"])
+print("kex algos:     ", info["kex_algorithms"])
+```
+
+If `server_host_key_algorithms == ["ssh-rsa"]`, this guide applies and
+the next subsection is the fix. If it's `kex_algorithms` that's narrow
+(e.g. only `diffie-hellman-group14-sha1`), `enable_ssh_rsa_compat()`
+will not help; widen the relevant list via
+`SFTPBackend(connect_kwargs={"disabled_algorithms": ...})`.
+
+### Fix: re-enable `ssh-rsa` at process startup
+
 [`SFTPUtils.enable_ssh_rsa_compat()`](../../reference/api/sftp-utils.md)
-ensures `ssh-rsa` is present at all four sites in one call — a no-op on
-freshly-imported paramiko, and a recovery / forward-compatibility shim
-otherwise:
+adds `ssh-rsa` to all four paramiko host-key sites in one call. It is a
+no-op on paramiko `< 5` (all four guards short-circuit) and the required
+recovery path on paramiko `>= 5`:
 
 ```python
 --8<-- "examples/snippets/sftp_legacy_servers.py:enable-ssh-rsa-compat"
@@ -172,21 +199,20 @@ otherwise:
     server operators to upgrade to `rsa-sha2-256`/`rsa-sha2-512` so the
     shim can be removed.
 
-### Alternative: pin `paramiko<3`
+### Alternative: pin `paramiko<5`
 
-Paramiko 2.x and 3.x both ship `ssh-rsa` in defaults natively (verified).
-Pinning paramiko 2.x is a legitimate alternative when the consumer runs
-in an isolated environment (e.g. a build-agent task connecting only to
-one legacy server). The tradeoffs:
+Pinning `paramiko<5` keeps the consumer on the empirically-verified
+compatible range (`>= 3.0,< 5`) and avoids the helper entirely. The
+tradeoff is freezing on paramiko 4.x while upstream moves on:
 
 | Approach | Loses |
 |----------|-------|
-| `paramiko<3` pin | Terrapin (CVE-2023-48795) mitigation; caps `cryptography<40`; paramiko 2.x is EOL with no CVE backports |
+| `paramiko<5` pin | Future paramiko 5+ improvements (perf, protocol features, CVE fixes once 4.x EOLs) |
 | `enable_ssh_rsa_compat()` | Process-wide SHA-1 host-key acceptance only |
 
-The library's `[sftp]` extra requires `paramiko>=3.0` (paramiko 2.x
-lacks `channel_timeout=` on `SSHClient.connect`); to pin paramiko 2.x
-the consumer must override at their own dependency layer.
+Either composes cleanly with the library's `[sftp]` floor of
+`paramiko>=3.0`. To pin the consumer must override at their own dependency
+layer (e.g. `requirements.txt` line `paramiko>=3.0,<5`).
 
 ## Connection Behaviour
 

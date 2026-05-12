@@ -471,6 +471,24 @@ and the highest ID already in this file, then take the next integer. Run
 
 ### Testing & Verification
 
+- [ ] **ID-182 — Scheduled CI drift guard for unbounded extra-dependency floors**
+  Applies library-wide, not to `[sftp]` alone. Every `[<extra>]` in
+  `pyproject.toml` declares a floor and (today) no ceiling — `[s3]`,
+  `[azure]`, `[sftp]`, `[sql]`, `[arrow]`, etc. A silent transitive
+  upgrade on day N+3 can break a working pin set on day N. PR 613
+  addressed two such incidents in the same shape: `paramiko` 2.x → 3.x
+  (BUG-204, `channel_timeout`) and 4.x → 5.x (BK-198, `ssh-rsa`).
+  Without a guard, the next one is just a matter of time. Shape that
+  would catch this class of drift before users do: scheduled job
+  (weekly), resolve each `remote-store[<extra>]` against
+  `pip install --upgrade --pre` with no consumer-side pins, diff
+  resolved versions against a committed observed-lock, and for each
+  delta run the most-likely-to-break smoke tests against deterministic
+  fixtures (the `benchmarks/infra/legacy-sftp` e2e is the model). Open
+  an issue on drift; do not auto-merge a pin update — the point is
+  early warning, not automated remediation. Audience:
+  `library.maintainer`. Surfaced during BK-198 (PR 613) review.
+
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   First revisit ticket for the informational `verify-tla` job landed under
   ID-147 on 2026-04-19. Per `sdd/formal/README.md` § Authoring rules (3),
@@ -487,6 +505,22 @@ and the highest ID already in this file, then take the next integer. Run
   `sdd/formal/README.md` is updated.
 
 ### API Surface Enhancements
+
+- [ ] **ID-181 — Per-backend `ssh-rsa` opt-in via `paramiko.Transport` subclass**
+  `SFTPUtils.enable_ssh_rsa_compat()` mutates paramiko's class attributes
+  so every `Transport` instance in the process accepts SHA-1 host keys
+  thereafter. For single-server use cases this is fine and documented as
+  a security tradeoff. For processes that talk to a mix of modern and
+  legacy SFTP backends (e.g. a Dagster job, a multi-tenant pipeline),
+  the shim leaks SHA-1 acceptance into every other transport. A
+  per-backend escape hatch would scope the tradeoff to one backend.
+  Sketch: `BackendConfig(type="sftp", options={..., "allow_legacy_ssh_rsa": True})`
+  constructs a `Transport` subclass whose instance-level `_preferred_keys`
+  / `_preferred_pubkeys` include `ssh-rsa`, leaving `paramiko.Transport`
+  class attrs untouched. `Transport._key_info` and `RSAKey.HASHES` are
+  read at class scope so they still need a module-level patch — but
+  those are algorithm-name → impl lookup tables, not security policy.
+  Audience: `user.api`. Surfaced during BK-198 (PR 613) review.
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   `ext.cache` derives cache keys from `ResolutionPlan` fields instead of

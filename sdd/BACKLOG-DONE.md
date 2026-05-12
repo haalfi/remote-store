@@ -24,30 +24,58 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Audience: `user.api`, `user.site`.
   Trace: [`sdd/traces/BK-199-scan-host-keys.yml`](traces/BK-199-scan-host-keys.yml).
 
-- [x] **BK-198 — SFTP legacy-server (`ssh-rsa` / SHA-1) compatibility**
-  Paramiko has deprecated `ssh-rsa` (SHA-1) and reserves removal for a
-  future major release across four host-key sites:
-  `Transport._preferred_keys`, `Transport._key_info`, `RSAKey.HASHES`,
-  `Transport._preferred_pubkeys`. Empirical test against Dockerized
-  legacy SSH servers (`ssh-rsa`-only host key, optionally with SHA-1
-  KEX) across paramiko 2.12 / 3.0 / 3.5 / 4.0 (see
-  [`sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md`](research/research-bk-198-paramiko-ssh-rsa-empirical.md)) confirmed that paramiko's
-  defaults already negotiate cleanly with `ssh-rsa`-only servers — the
-  legacy-server connection failures (`IncompatiblePeer: no acceptable
-  host key`) only manifest when downstream code, a custom transport, or
-  a future paramiko has cleared `ssh-rsa` from those four sites. The
-  helper provides a recovery / forward-compatibility shim for that
-  scenario. Ships three coordinated changes:
-  (a) `SFTPUtils.enable_ssh_rsa_compat()` static method applying all
-  four patches idempotently. Process-global; documented as a security
-  reduction. (b) `SFTPBackend._map_exception` now annotates
-  `paramiko.ssh_exception.IncompatiblePeer` with a hint pointing at
-  the helper. (c) New "Legacy Servers (`ssh-rsa` / SHA-1)" section in
-  the SFTP backend guide covering symptoms, remedy, security tradeoff,
-  and the paramiko 2.x pin alternative with explicit cost. Tests in
+- [x] **BK-200 — SFTP `scan_host_algorithms()` raw-socket KEXINIT diagnostic**
+  Companion to `scan_host_keys()`, but returns the server's full RFC
+  4253 § 7.1 algorithm advertisement (kex / host-key / cipher / MAC /
+  compression name-lists) instead of the negotiated key. Pure socket
+  + manual KEXINIT parse, so the result reflects exactly what the
+  server advertises — independent of any process-global paramiko state
+  mutated by `enable_ssh_rsa_compat()` or downstream code. Surfaces
+  the diagnostic needed to triage `IncompatiblePeer` errors:
+  `IncompatiblePeer` wraps four distinct negotiation failures (host
+  key, KEX, cipher, MAC) and only the first is addressable by
+  `enable_ssh_rsa_compat()`. Hooked into `SFTPBackend._map_exception`:
+  the non-host-key `IncompatiblePeer` hint now points at
+  `scan_host_algorithms()` and `connect_kwargs={"disabled_algorithms":
+  ...}`. New "Diagnose first" subsection in the SFTP backend guide.
+  Tests: `TestSFTPScanHostAlgorithms` (unit/integration against the
+  benchmarks/infra sftp fixture, asserts the eleven documented entries
+  and shape) and `TestSFTPScanHostAlgorithmsLegacy` in
+  `tests/e2e/test_sftp_legacy_recovery.py` (asserts
+  `server_host_key_algorithms == ["ssh-rsa"]` against the legacy-sftp
+  container — the exact diagnostic that motivated the helper).
+  `TestSFTPIncompatiblePeerHint::test_incompatible_peer_kex_hint_points_at_scan_host_algorithms`
+  locks the new KEX-variant hint. Audience: `user.api`, `user.site`.
+  Trace: [`sdd/traces/BK-200-scan-host-algorithms.yml`](traces/BK-200-scan-host-algorithms.yml).
+
+- [x] **BK-198 — SFTP `enable_ssh_rsa_compat()` for paramiko 5+ legacy-server compatibility**
+  Paramiko 5.0 removed `ssh-rsa` (SHA-1) from its host-key defaults
+  across all four negotiation sites (`Transport._preferred_keys`,
+  `Transport._preferred_pubkeys`, `Transport._key_info`,
+  `RSAKey.HASHES`). Fresh `pip install remote-store[sftp]` resolves to
+  paramiko 5+ today, so connecting to an `ssh-rsa`-only legacy SFTP
+  server raises `IncompatiblePeer: no acceptable host key` during KEX
+  on a default install. Empirical test against a Dockerized
+  `ssh-rsa`-only server across paramiko 2.12 / 3.0 / 3.5 / 4.0 / 5.0
+  (see [`sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md`](research/research-bk-198-paramiko-ssh-rsa-empirical.md))
+  confirms: paramiko `< 5` ships `ssh-rsa` in defaults and connects
+  out of the box; paramiko `>= 5` requires the helper. Ships three
+  coordinated changes:
+  (a) `SFTPUtils.enable_ssh_rsa_compat()` static method appending
+  `ssh-rsa` to all four sites idempotently — required on paramiko 5+,
+  no-op on `< 5`. Process-global; documented as a security reduction.
+  (b) `SFTPBackend._map_exception` annotates
+  `paramiko.ssh_exception.IncompatiblePeer` with a hint scoped to the
+  `"host key"` substring (so KEX / cipher / MAC variants pass through
+  as plain `BackendUnavailable`). (c) New "Legacy Servers (`ssh-rsa` /
+  SHA-1)" guide section covering symptoms, remedy, security tradeoff,
+  and the `paramiko<5` pin alternative with explicit cost. Tests in
   `TestSFTPEnableSshRsaCompat` (idempotency + four-site coverage with
-  paramiko state restored after) and `TestSFTPIncompatiblePeerHint`
-  (hint present on `IncompatiblePeer`, absent on other `SSHException`).
+  paramiko state restored after), `TestSFTPIncompatiblePeerHint` (hint
+  present on host-key `IncompatiblePeer`, absent on KEX / other
+  `SSHException`), and the e2e
+  `tests/e2e/test_sftp_legacy_recovery.py` (parametrised on
+  `paramiko.__version__` against a real Dockerized legacy server).
   Audience: `user.api`, `user.site`.
   Trace: [`sdd/traces/BK-198-ssh-rsa-compat.yml`](traces/BK-198-ssh-rsa-compat.yml).
 

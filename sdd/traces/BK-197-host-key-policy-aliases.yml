@@ -17,6 +17,7 @@ co_shipped_items:
   - BUG-204
   - BK-198
   - BK-199
+  - BK-200
 
 expected_ripples:
   - sdd/backlogid.json

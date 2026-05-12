@@ -187,22 +187,25 @@ class TestSFTPIncompatiblePeerHint:
         assert "ssh-rsa" in message
         assert "enable_ssh_rsa_compat" in message
 
-    def test_incompatible_peer_no_hint_for_kex(self) -> None:
-        """IncompatiblePeer for KEX (or cipher / MAC) maps to a plain
-        BackendUnavailable without the ssh-rsa hint, because
-        ``enable_ssh_rsa_compat`` does not address those failure modes —
-        callers need ``connect_kwargs={"disabled_algorithms": ...}``.
-        Empirically: paramiko 2.12/3.0/3.5/4.0 raise
-        ``IncompatiblePeer("no acceptable kex algorithm")`` for that case;
-        the helper is irrelevant.
+    def test_incompatible_peer_kex_hint_points_at_scan_host_algorithms(self) -> None:
+        """IncompatiblePeer for KEX (or cipher / MAC) maps to a
+        BackendUnavailable carrying a *different* hint: it points at
+        ``scan_host_algorithms`` for diagnosis and at
+        ``connect_kwargs={"disabled_algorithms": ...}`` for the remedy.
+        ``enable_ssh_rsa_compat`` does not address those failure modes
+        and must NOT appear in this hint.
         """
         backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
         exc = paramiko.ssh_exception.IncompatiblePeer("no acceptable kex algorithm")
         result = backend._map_exception(exc, "")
         assert isinstance(result, BackendUnavailable)
         message = str(result)
+        assert "[hint:" in message
+        assert "scan_host_algorithms" in message
+        assert "disabled_algorithms" in message
+        # The host-key remedy must not bleed into the KEX hint.
         assert "enable_ssh_rsa_compat" not in message
-        assert "[hint:" not in message
+        assert "ssh-rsa" not in message
 
     def test_other_ssh_exception_unchanged(self) -> None:
         """Non-IncompatiblePeer SSHException keeps the generic mapping (no hint)."""
@@ -211,6 +214,7 @@ class TestSFTPIncompatiblePeerHint:
         result = backend._map_exception(exc, "")
         assert isinstance(result, BackendUnavailable)
         assert "enable_ssh_rsa_compat" not in str(result)
+        assert "scan_host_algorithms" not in str(result)
 
 
 # endregion
@@ -276,9 +280,95 @@ class TestSFTPScanHostKeys:
 
     def test_scan_unreachable_raises(self) -> None:
         """Unreachable host propagates a connection error to the caller."""
-        # Use a guaranteed-unroutable address; should fail fast.
+        # Bind an OS-assigned ephemeral port and immediately close it, then
+        # pass that just-released port to scan_host_keys: nothing else can
+        # have raced into the same port before the connect attempt, so the
+        # connection is deterministically refused. Beats RFC 5737 TEST-NET-1
+        # (192.0.2.1) which may be silently dropped by local firewalls and
+        # would force us to widen the timeout.
+        import socket
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        unreachable_port = sock.getsockname()[1]
+        sock.close()
         with pytest.raises((OSError, paramiko.SSHException)):
-            SFTPUtils.scan_host_keys("127.0.0.1", port=1, timeout=0.5)
+            SFTPUtils.scan_host_keys("127.0.0.1", port=unreachable_port, timeout=0.5)
+
+
+# endregion
+
+
+# region: Preflight algorithm discovery (BK-200)
+
+
+class TestSFTPScanHostAlgorithms:
+    """BK-200: SFTPUtils.scan_host_algorithms parses the server's SSH
+    KEXINIT advertisement (RFC 4253 § 7.1) over a raw socket without
+    authenticating or completing key exchange.
+    """
+
+    pytestmark = pytest.mark.spec("BK-200")
+
+    _EXPECTED_FIELDS = (
+        "banner",
+        "kex_algorithms",
+        "server_host_key_algorithms",
+        "encryption_algorithms_ctos",
+        "encryption_algorithms_stoc",
+        "mac_algorithms_ctos",
+        "mac_algorithms_stoc",
+        "compression_algorithms_ctos",
+        "compression_algorithms_stoc",
+        "languages_ctos",
+        "languages_stoc",
+    )
+
+    def test_scan_returns_kexinit_namelists(self, sftp_server: tuple[int, str]) -> None:
+        """Returned dict has all eleven documented entries with the right shapes.
+
+        Drives the helper against the in-process modern SSH fixture
+        ``sftp_server`` (atmoz/sftp-style); asserts that the algorithm
+        lists are non-empty for the universally-required entries
+        (``kex_algorithms``, ``server_host_key_algorithms``,
+        encryption / MAC c2s and s2c) and that the banner is a valid SSH
+        identification string.
+        """
+        port, _ = sftp_server
+        result = SFTPUtils.scan_host_algorithms("127.0.0.1", port=port)
+
+        assert set(result) == set(self._EXPECTED_FIELDS)
+        assert isinstance(result["banner"], str)
+        assert result["banner"].startswith("SSH-2.0")
+        for required in (
+            "kex_algorithms",
+            "server_host_key_algorithms",
+            "encryption_algorithms_ctos",
+            "encryption_algorithms_stoc",
+            "mac_algorithms_ctos",
+            "mac_algorithms_stoc",
+        ):
+            value = result[required]
+            assert isinstance(value, list), f"{required} should be a list, got {type(value).__name__}"
+            assert value, f"{required} should be non-empty, got {value!r}"
+            assert all(isinstance(name, str) for name in value), required
+            assert all(name for name in value), required
+
+    def test_scan_unreachable_raises(self) -> None:
+        """Unreachable host propagates a connection error to the caller.
+
+        Uses the same just-released-ephemeral-port pattern as
+        ``scan_host_keys`` so the connection is deterministically refused
+        without depending on RFC 5737 reachability behavior.
+        """
+        import socket
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        unreachable_port = sock.getsockname()[1]
+        sock.close()
+        with pytest.raises(OSError):
+            SFTPUtils.scan_host_algorithms("127.0.0.1", port=unreachable_port, timeout=0.5)
 
 
 # endregion

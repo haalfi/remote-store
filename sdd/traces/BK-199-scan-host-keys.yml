@@ -5,8 +5,8 @@ trigger: |
   before committing it to a `host.keys` file. Users had to either shell
   out to `ssh-keyscan`, drive a TOFU connect through the backend and
   inspect `store._backend._ssh_client.get_host_keys()` (private), or
-  cat the file `TRUST_ON_FIRST_USE` writes. The legacy `aha_utils.sftp`
-  pattern (try strict, fall back, print key) had no remote-store
+  cat the file `TRUST_ON_FIRST_USE` writes. The "try strict, fall back,
+  print key" pattern common in legacy SFTP wrappers had no remote-store
   equivalent.
 
 source_items:
@@ -20,6 +20,7 @@ co_shipped_items:
   - BUG-204
   - BK-197
   - BK-198
+  - BK-200
 
 expected_ripples:
   - sdd/backlogid.json

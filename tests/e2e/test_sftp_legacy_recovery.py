@@ -1,13 +1,18 @@
 """BK-198: SFTPUtils.enable_ssh_rsa_compat recovery semantics against a real
 legacy SSH server (ssh-rsa-only host key).
 
-This is the durable counterpart to the one-off probe in
+This is the durable counterpart to the one-off probe matrix in
 ``sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md``: that note
-ran an out-of-tree matrix across four paramiko versions to characterise
-the helper's behaviour. This module locks the result that matters for the
-shipping code — namely that the helper recovers the connection when (and
-only when) ``ssh-rsa`` has been cleared from paramiko's defaults —
-against the currently-installed paramiko, using a Dockerized server.
+ran an out-of-tree matrix across paramiko 2.12 / 3.0 / 3.5 / 4.0 / 5.0 to
+characterise the helper's behaviour. This module locks the two results
+that matter for the shipping code against the currently-installed
+paramiko, using a Dockerized server:
+
+- on paramiko < 5, ``ssh-rsa`` ships in defaults so bare connect works
+  and the helper is a no-op;
+- on paramiko >= 5, ``ssh-rsa`` was cleared from defaults so bare connect
+  fails with ``IncompatiblePeer: no acceptable host key`` and the helper
+  re-adds the four entries to restore the connection.
 
 Requires:
     docker compose -f benchmarks/infra/docker-compose.yml up -d legacy-sftp
@@ -30,6 +35,9 @@ from tests.e2e.conftest import (  # noqa: E402
     LEGACY_SFTP_USER,
     legacy_sftp_skip,
 )
+
+_PARAMIKO_MAJOR = int(paramiko.__version__.split(".", 1)[0])
+_SSH_RSA_IN_DEFAULTS = _PARAMIKO_MAJOR < 5
 
 
 def _try_connect() -> tuple[bool, str]:
@@ -101,18 +109,38 @@ class TestSFTPLegacyRecovery:
 
     Locks the empirical findings recorded in
     ``sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md``:
-    paramiko's defaults already negotiate against the server (S1); the
-    helper is a no-op when defaults contain ssh-rsa (S2, asserted
-    implicitly by S1 success); the failure reproduces only after
-    clearing ssh-rsa (S3); the helper recovers it (S4).
+
+    - paramiko < 5 ships ``ssh-rsa`` in defaults: S1 bare connect
+      succeeds, S2 helper is a no-op (asserted implicitly by S1 success).
+    - paramiko >= 5 cleared ``ssh-rsa`` from defaults: S1 bare connect
+      fails with ``IncompatiblePeer: no acceptable host key`` -- the
+      exact failure mode the helper exists to repair.
+    - In both ranges, clearing ssh-rsa from a paramiko < 5 process (S3)
+      reproduces the paramiko 5 failure, and the helper recovers it (S4).
     """
 
-    def test_S1_bare_connect_succeeds_on_defaults(self) -> None:
-        """Paramiko defaults already accept ssh-rsa host keys; no helper
-        required for the legacy server. Falsifies the original PR claim
-        that the helper is *required* for legacy servers."""
+    def test_S1_bare_connect_against_legacy_server(self) -> None:
+        """Bare connect outcome is paramiko-version-conditional.
+
+        On paramiko < 5, ssh-rsa is in defaults and the legacy server
+        connects out of the box. On paramiko >= 5, ssh-rsa was removed
+        from the four host-key sites and the connect fails immediately in
+        ``Transport._parse_kex_init`` with ``IncompatiblePeer: no
+        acceptable host key`` -- the exact failure the helper repairs.
+        """
         ok, exc_desc = _try_connect()
-        assert ok, f"bare connect should succeed on paramiko defaults; got {exc_desc}"
+        if _SSH_RSA_IN_DEFAULTS:
+            assert ok, (
+                f"paramiko {paramiko.__version__}: bare connect should succeed "
+                f"(ssh-rsa is in defaults on paramiko < 5); got {exc_desc}"
+            )
+        else:
+            assert not ok, (
+                f"paramiko {paramiko.__version__}: bare connect should fail "
+                f"(ssh-rsa was removed from defaults on paramiko >= 5)"
+            )
+            assert "IncompatiblePeer" in exc_desc, exc_desc
+            assert "host key" in exc_desc, exc_desc
 
     def test_S3_connect_fails_after_clearing_ssh_rsa(
         self,
@@ -121,7 +149,9 @@ class TestSFTPLegacyRecovery:
         """When ssh-rsa is stripped from the four sites, the legacy server
         becomes unreachable and paramiko raises
         ``IncompatiblePeer: ... no acceptable host key``. This is the
-        scenario the helper is designed to recover."""
+        scenario the helper is designed to recover. On paramiko >= 5 the
+        defaults are already cleared so the explicit clear is a no-op.
+        """
         _clear_ssh_rsa_from_paramiko()
         ok, exc_desc = _try_connect()
         assert not ok, "connect should fail after clearing ssh-rsa from defaults"
@@ -134,8 +164,10 @@ class TestSFTPLegacyRecovery:
     ) -> None:
         """After clearing ssh-rsa and then calling
         ``enable_ssh_rsa_compat()``, the connection succeeds again. This
-        is the only scenario in which the helper meaningfully changes
-        behaviour on a modern paramiko."""
+        is the scenario in which the helper meaningfully changes
+        behaviour: paramiko < 5 with explicitly-cleared defaults, or
+        paramiko >= 5 where the defaults already lack ssh-rsa.
+        """
         _clear_ssh_rsa_from_paramiko()
         ok_before, exc_before = _try_connect()
         assert not ok_before, f"cleared state should fail; got {exc_before}"
@@ -144,3 +176,31 @@ class TestSFTPLegacyRecovery:
 
         ok_after, exc_after = _try_connect()
         assert ok_after, f"helper should recover; got {exc_after}"
+
+
+@pytest.mark.integration
+@pytest.mark.spec("BK-200")
+@legacy_sftp_skip
+class TestSFTPScanHostAlgorithmsLegacy:
+    """End-to-end verification that scan_host_algorithms identifies the
+    legacy-server failure shape -- the exact diagnostic that motivated
+    the helper. Against the legacy-sftp container, the server's
+    advertised host-key algorithm list is exactly ``["ssh-rsa"]``.
+    """
+
+    def test_scan_identifies_ssh_rsa_only_server(self) -> None:
+        result = SFTPUtils.scan_host_algorithms(LEGACY_SFTP_HOST, port=LEGACY_SFTP_PORT)
+        assert isinstance(result["banner"], str)
+        assert result["banner"].startswith("SSH-2.0")
+        host_key_algos = result["server_host_key_algorithms"]
+        assert host_key_algos == ["ssh-rsa"], (
+            f"legacy-sftp container should advertise only ssh-rsa; got {host_key_algos}"
+        )
+        # kex / cipher / mac lists should still be non-empty (only the
+        # host-key list is forced narrow on this container).
+        kex = result["kex_algorithms"]
+        assert isinstance(kex, list)
+        assert kex, f"kex_algorithms should be non-empty; got {kex!r}"
+        ciphers = result["encryption_algorithms_stoc"]
+        assert isinstance(ciphers, list)
+        assert ciphers, f"encryption_algorithms_stoc should be non-empty; got {ciphers!r}"
