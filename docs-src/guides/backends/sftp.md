@@ -157,7 +157,7 @@ Before mutating paramiko's defaults, confirm the failure shape. An
 failures — host key, KEX, cipher, or MAC — and only the first is fixed
 by `enable_ssh_rsa_compat()`. The other three need
 `connect_kwargs={"disabled_algorithms": ...}` instead.
-[`SFTPUtils.scan_host_algorithms()`](../../reference/api/sftp-utils.md#scan_host_algorithms)
+[`SFTPUtils.scan_host_algorithms()`](../../reference/api/sftp-utils.md#remote_store.backends.SFTPUtils.scan_host_algorithms)
 parses the server's `SSH_MSG_KEXINIT` advertisement (RFC 4253 § 7.1)
 over a raw socket — no paramiko, no authentication, so the result
 reflects exactly what the server advertises:

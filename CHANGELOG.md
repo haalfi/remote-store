@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-202: `SFTPUtils` helpers documented as true `@staticmethod` (correct `meth` rendering, signatures restored on docs.remotestore.dev)
 - BK-200: `SFTPUtils.scan_host_algorithms()` raw-socket SSH KEXINIT probe for diagnosing `IncompatiblePeer` failures
 - BK-199: `SFTPUtils.scan_host_keys()` preflight host-key discovery
 - BK-198: `SFTPUtils.enable_ssh_rsa_compat()` for paramiko 5+ legacy-server (`ssh-rsa` / SHA-1) compatibility

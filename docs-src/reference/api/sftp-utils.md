@@ -10,42 +10,32 @@
 
 ## Methods
 
-### load_private_key
-
-::: remote_store.backends._sftp.load_private_key
+::: remote_store.backends.SFTPUtils.load_private_key
     options:
-      heading_level: 4
-      show_root_heading: false
+      show_root_heading: true
+      heading_level: 3
 
-### enable_ssh_rsa_compat
-
-::: remote_store.backends._sftp.enable_ssh_rsa_compat
+::: remote_store.backends.SFTPUtils.enable_ssh_rsa_compat
     options:
-      heading_level: 4
-      show_root_heading: false
+      show_root_heading: true
+      heading_level: 3
 
-### scan_host_keys
-
-::: remote_store.backends._sftp.scan_host_keys
+::: remote_store.backends.SFTPUtils.scan_host_keys
     options:
-      heading_level: 4
-      show_root_heading: false
+      show_root_heading: true
+      heading_level: 3
 
-### scan_host_algorithms
-
-::: remote_store.backends._sftp.scan_host_algorithms
+::: remote_store.backends.SFTPUtils.scan_host_algorithms
     options:
-      heading_level: 4
-      show_root_heading: false
+      show_root_heading: true
+      heading_level: 3
 
 ## Enums
 
-### HostKeyPolicy
-
 ::: remote_store.backends._sftp.HostKeyPolicy
     options:
-      heading_level: 4
-      show_root_heading: false
+      show_root_heading: true
+      heading_level: 3
 
 ## See also
 

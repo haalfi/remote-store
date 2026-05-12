@@ -1,0 +1,133 @@
+id: BK-202
+title: "SFTPUtils helpers rendered as true @staticmethod on docs.remotestore.dev"
+trigger: |
+  User reported that docs.remotestore.dev/.../sftp-utils/ rendered the four
+  SFTPUtils helpers with the `func` label, no signature, and an awkward
+  heading style — visibly different from the `meth`/signature/parameters
+  card pattern used on the Store API reference page.
+source_items:
+  - BK-202
+audience:
+  - user.site
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: docs-src/reference/api/sftp-utils.md
+        section: "(full)"
+        read_type: reference
+        extract: "Confirm the page uses show_root_heading:false + manual ### name + module-level _sftp targets — three off-pattern choices versus store.md"
+        outcome: ok
+      - file: docs-src/reference/api/store.md
+        section: "(full)"
+        read_type: reference
+        extract: "Reference pattern for the rendering shape sftp-utils.md should match"
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPUtils class (lines 465-501)"
+        read_type: reference
+        extract: "Identify the name = staticmethod(name) rebinding as the documentation-unfriendly source pattern"
+        outcome: ok
+
+  - id: classify
+    name: Classify root cause
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "load_private_key = staticmethod(load_private_key)"
+        read_type: gate
+        extract: "Griffe sees the rebinding as a class-attribute assignment, not a method; class-attribute label, no signature, empty body"
+        outcome: ok
+      - file: tmp/build-test/reference/api/sftp-utils/index.html
+        section: "rendered HTML for SFTPUtils.load_private_key"
+        read_type: verify
+        extract: "Confirm the rebinding rendered as doc-symbol-attribute with literal `load_private_key = staticmethod(load_private_key)` as the 'signature' and empty content div"
+        outcome: ok
+
+  - id: implement
+    name: Refactor source + docs
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPUtils class body"
+        read_type: gate
+        extract: "Move load_private_key, scan_host_keys, scan_host_algorithms, enable_ssh_rsa_compat inside the class with @staticmethod; keep HostKeyPolicy rebinding (backward-compat for module-level imports in tests/benchmarks)"
+        outcome: ok
+      - file: docs-src/reference/api/sftp-utils.md
+        section: "Methods / Enums"
+        read_type: gate
+        extract: "Switch targets to remote_store.backends.SFTPUtils.<method>; show_root_heading:true; heading_level:3; drop manual ### name wrappers"
+        outcome: ok
+      - file: docs-src/guides/troubleshooting.md
+        section: "scan_host_algorithms() link"
+        read_type: reference
+        extract: "Anchor changes from #scan_host_algorithms to #remote_store.backends.SFTPUtils.scan_host_algorithms"
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "scan_host_algorithms() link"
+        read_type: reference
+        extract: "Same anchor update as troubleshooting.md"
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: tmp/build-final/reference/api/sftp-utils/index.html
+        section: "rendered HTML for SFTPUtils.load_private_key"
+        read_type: verify
+        extract: "Confirm doc-symbol-method label, doc-label-staticmethod badge, full signature in doc-signature div, populated parameters and returns sections"
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "import-time smoke test"
+        read_type: verify
+        extract: "SFTPUtils.load_private_key resolves as <function SFTPUtils.load_private_key>; SFTPUtils.HostKeyPolicy is HostKeyPolicy still True"
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "(full)"
+        read_type: verify
+        extract: "131 passed, 1 skipped — no regression from the source reorganization"
+        outcome: ok
+      - file: tests/test_config.py
+        section: "HostKeyPolicy / SFTPBackend imports"
+        read_type: verify
+        extract: "Module-level HostKeyPolicy import path preserved; 285 passed across config/ping/coverage/depth"
+        outcome: ok
+      - file: pyproject.toml
+        section: "hatch run lint, hatch run typecheck"
+        read_type: verify
+        extract: "ruff clean; mypy: 106 files, no issues; mkdocs --strict clean"
+        outcome: ok
+      - file: src/
+        section: "Search for other `= staticmethod(` / `= classmethod(` rebindings"
+        read_type: verify
+        extract: "Zero remaining instances of the anti-pattern; SFTPUtils was the only occurrence"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public method signature"
+        read_type: verify
+        extract: "Table anticipates graph regen for signature changes but not for in-file reorganization that only shifts line numbers. Caught post-PR by user prompt; ran `hatch run gen-graph` and `hatch run gen-graph-viz` (single-line shift: SFTPBackend line 524 -> 525). Candidate ripple-check refinement: extend the 'Public method signature' row to cover any line-number drift in src/ files indexed by gen_graph.py."
+        outcome: misleading
+
+  - id: review
+    name: Address PR review
+    steps:
+      - file: docs-src/reference/api/sftp-utils.md
+        section: "::: remote_store.backends._sftp.HostKeyPolicy"
+        read_type: gate
+        extract: "Reviewer claimed griffe distinguishes plain class rebindings (HostKeyPolicy = HostKeyPolicy) from staticmethod rebindings and would resolve SFTPUtils.HostKeyPolicy correctly. Tried the change, built with mkdocs --strict, captured rendered HTML: target produced doc-symbol-attribute label, class-attribute + instance-attribute badges, literal 'HostKeyPolicy = HostKeyPolicy' as signature, empty content div (no enum members). Reverted target back to _sftp.HostKeyPolicy. Posted detailed pushback on the thread with HTML diff and the underlying griffe behaviour (rebinding patterns are class-attribute assignments regardless of RHS). Thread left open for maintainer call."
+        outcome: misleading
+      - file: sdd/DOCUMENTATION.md
+        section: "Page-type templates (table row for SFTPUtils)"
+        read_type: gate
+        extract: "Reviewer noted SFTPUtils still listed under 'Support class' row, but the new sftp-utils.md uses the 'Rich class' pattern (per-member ::: with show_root_heading: true). Moved SFTPUtils from the Support class row to the Rich class row (now listed alongside Store and AsyncStore). Thread resolved."
+        outcome: ok
+      - file: tmp/build-fix/reference/api/sftp-utils/index.html
+        section: "rendered HostKeyPolicy block under SFTPUtils.HostKeyPolicy target"
+        read_type: verify
+        extract: "Empirical evidence for the pushback. Captured the broken HTML (attribute label + literal-rebinding signature + empty body) to support the verdict against changing the target."
+        outcome: ok
