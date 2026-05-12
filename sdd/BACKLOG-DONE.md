@@ -27,11 +27,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Trace: [`sdd/traces/BK-199-scan-host-keys.yml`](traces/BK-199-scan-host-keys.yml).
 
 - [x] **BK-198 — SFTP legacy-server (`ssh-rsa` / SHA-1) compatibility**
-  Paramiko 3.x removed `ssh-rsa` (SHA-1) from defaults across four
-  sites: `Transport._preferred_keys`, `Transport._key_info`,
-  `RSAKey.HASHES`, `Transport._preferred_pubkeys`. Servers like PSFTPd
-  that only offer `ssh-rsa` produced `IncompatiblePeer: no acceptable
-  host key` with no in-library remedy. Ships three coordinated changes:
+  Paramiko has deprecated `ssh-rsa` (SHA-1) and reserves removal for a
+  future major release across four host-key sites:
+  `Transport._preferred_keys`, `Transport._key_info`, `RSAKey.HASHES`,
+  `Transport._preferred_pubkeys`. On the pinned `paramiko>=3.0` floor
+  all four still ship `ssh-rsa` by default, but servers like PSFTPd that
+  only offer `ssh-rsa` produced `IncompatiblePeer: no acceptable host
+  key` whenever downstream code, a custom transport subclass, or a future
+  paramiko release cleared those entries — with no in-library remedy.
+  Ships three coordinated changes:
   (a) `SFTPUtils.enable_ssh_rsa_compat()` static method applying all
   four patches idempotently. Process-global; documented as a security
   reduction. (b) `SFTPBackend._map_exception` now annotates
@@ -75,6 +79,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   lower bound against future drift.
   Audience: `user.api`.
   Trace: [`sdd/traces/BUG-204-paramiko-lower-bound.yml`](traces/BUG-204-paramiko-lower-bound.yml).
+
+- [x] **BUG-205 — TOFU persistence through `Registry.get_store()` (withdrawn — not a bug)**
+  Hypothesized that `SFTPBackend`'s TOFU flow did not persist newly
+  accepted host keys to disk when the backend was constructed via the
+  store registry; investigation under the failing-test-first protocol
+  showed paramiko's `AutoAddPolicy.missing_host_key` already auto-saves
+  to the path that `SFTPBackend.load_host_keys` sets on the client. No
+  code change; recorded here so future contributors who form the same
+  hypothesis can find the prior reasoning without re-filing the ID.
+  Audience: `dev.process`.
+  Discussion: [`sdd/traces/BK-198-ssh-rsa-compat.yml:25-26`](traces/BK-198-ssh-rsa-compat.yml).
 
 - [x] **BK-192 — `copy()` metadata parity on `MemoryBackend` and `AsyncMemoryBackend`**
   Both backends constructed the destination `_FileEntry` in `copy()` without

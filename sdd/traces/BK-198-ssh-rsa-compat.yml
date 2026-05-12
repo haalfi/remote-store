@@ -3,11 +3,12 @@ title: "SFTP legacy-server (ssh-rsa / SHA-1) compatibility"
 trigger: |
   Connecting to a legacy third-party SFTP service (a PSFTPd server) raised
   `paramiko.ssh_exception.IncompatiblePeer: Incompatible ssh peer (no
-  acceptable host key)`. Paramiko 3.x removed `ssh-rsa` (SHA-1) host keys
-  from defaults across four sites; `disabled_algorithms` cannot re-add a
-  default-removed algorithm. No in-library remedy existed; users hit a
-  multi-error cascade as each patched layer revealed the next missing
-  piece.
+  acceptable host key)`. Paramiko has deprecated `ssh-rsa` (SHA-1) and
+  reserves removal for a future major release across four host-key sites;
+  `disabled_algorithms` cannot re-add a default-removed algorithm. No in-
+  library remedy existed for the future-removal path or for downstream
+  code that clears these defaults; users would hit a multi-error cascade
+  as each patched layer revealed the next missing piece.
 
 source_items:
   - BK-198
@@ -15,6 +16,11 @@ source_items:
 audience:
   - user.api
   - user.site
+
+co_shipped_items:
+  - BUG-204
+  - BK-197
+  - BK-199
 
 # BUG-205 was filed during this work after I misread the SFTP backend's
 # TOFU close-side save_host_keys path and concluded persistence was

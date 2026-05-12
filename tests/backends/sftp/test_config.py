@@ -69,6 +69,8 @@ def sftp_backend(sftp_server: tuple[int, str]) -> Iterator[Backend]:
 class TestSFTPParamikoVersionSurface:
     """BUG-204: production code relies on paramiko 3.0+ API (channel_timeout)."""
 
+    pytestmark = pytest.mark.spec("BUG-204")
+
     def test_ssh_client_connect_accepts_channel_timeout(self) -> None:
         """SFTPBackend._connect passes channel_timeout=; guard that the installed
         paramiko exposes the kwarg. Tightens the pyproject.toml lower bound to
@@ -112,8 +114,10 @@ def restore_paramiko_state() -> Iterator[None]:
 
 
 class TestSFTPEnableSshRsaCompat:
-    """BK-198: SFTPUtils.enable_ssh_rsa_compat restores ssh-rsa across the
-    four sites paramiko 3.x removed it from."""
+    """BK-198: SFTPUtils.enable_ssh_rsa_compat ensures ssh-rsa is present at
+    the four paramiko sites that govern host-key negotiation."""
+
+    pytestmark = pytest.mark.spec("BK-198")
 
     def test_helper_adds_ssh_rsa_to_all_four_sites(
         self,
@@ -136,6 +140,11 @@ class TestSFTPEnableSshRsaCompat:
         assert "ssh-rsa" in paramiko.Transport._preferred_pubkeys
         assert paramiko.Transport._key_info.get("ssh-rsa") is RSAKey
         assert "ssh-rsa" in RSAKey.HASHES
+        # Security contract: ssh-rsa is appended (not prepended) so modern
+        # algorithms remain negotiated first. Locks in the docstring
+        # promise at _sftp.py "ssh-rsa is appended (not prepended)...".
+        assert paramiko.Transport._preferred_keys[-1] == "ssh-rsa"
+        assert paramiko.Transport._preferred_pubkeys[-1] == "ssh-rsa"
 
     def test_helper_is_idempotent(self, restore_paramiko_state: None) -> None:  # noqa: ARG002
         from paramiko.rsakey import RSAKey
@@ -157,13 +166,23 @@ class TestSFTPIncompatiblePeerHint:
     """BK-198: _map_exception annotates IncompatiblePeer with a remediation
     pointer to ``SFTPUtils.enable_ssh_rsa_compat``."""
 
+    pytestmark = pytest.mark.spec("BK-198")
+
     def test_incompatible_peer_hint_present(self) -> None:
-        """IncompatiblePeer maps to BackendUnavailable with a hint message."""
+        """IncompatiblePeer maps to BackendUnavailable with a hint message
+        carrying all three user-actionable signals: the ``[hint:`` framing,
+        the ``ssh-rsa`` identifier, and the ``enable_ssh_rsa_compat`` helper
+        name. Locks in the documented shape so a refactor that drops any
+        single signal does not pass silently.
+        """
         backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
         exc = paramiko.ssh_exception.IncompatiblePeer("no acceptable host key")
         result = backend._map_exception(exc, "")
         assert isinstance(result, BackendUnavailable)
-        assert "enable_ssh_rsa_compat" in str(result)
+        message = str(result)
+        assert "[hint:" in message
+        assert "ssh-rsa" in message
+        assert "enable_ssh_rsa_compat" in message
 
     def test_other_ssh_exception_unchanged(self) -> None:
         """Non-IncompatiblePeer SSHException keeps the generic mapping (no hint)."""
@@ -183,6 +202,8 @@ class TestSFTPIncompatiblePeerHint:
 class TestSFTPScanHostKeys:
     """BK-199: SFTPUtils.scan_host_keys returns a known_hosts-formatted line
     after performing KEX against the server, without authentication."""
+
+    pytestmark = pytest.mark.spec("BK-199")
 
     def test_scan_returns_known_hosts_line(self, sftp_server: tuple[int, str]) -> None:
         port, host_key_entry = sftp_server
@@ -732,6 +753,8 @@ class TestSFTPHostKeyPolicyAliases:
     string forms (``auto``, ``tofu``) diverge from the enum names
     (``AUTO_ADD``, ``TRUST_ON_FIRST_USE``)."""
 
+    pytestmark = pytest.mark.spec("BK-197")
+
     @pytest.mark.parametrize(
         ("alias", "expected"),
         [
@@ -779,6 +802,22 @@ class TestSFTPHostKeyPolicyAliases:
         """SFTPBackend constructor accepts the alias string form."""
         backend = SFTPBackend(host="dummy", host_key_policy="auto_add")
         assert backend._host_key_policy is HostKeyPolicy.AUTO_ADD
+
+    @pytest.mark.parametrize(
+        "non_string",
+        [
+            pytest.param(42, id="int"),
+            pytest.param(None, id="None"),
+            pytest.param(b"auto", id="bytes"),
+        ],
+    )
+    def test_non_string_input_raises(self, non_string: object) -> None:
+        """_missing_ guards with ``isinstance(value, str)``; non-string
+        inputs fall through to ValueError rather than crashing on .upper().
+        Locks the typing contract so the guard cannot be silently deleted.
+        """
+        with pytest.raises(ValueError, match="not a valid HostKeyPolicy"):
+            HostKeyPolicy(non_string)
 
 
 class TestSFTPToKey:

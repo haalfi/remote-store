@@ -151,6 +151,16 @@ def scan_host_keys(host: str, port: int = 22, *, timeout: float = 10.0) -> str:
         *host_label* is ``"[host]:port"`` when *port* is not 22, and the
         bare hostname otherwise. The trailing newline is not included.
 
+        Returns only the **negotiated** key for one handshake (whichever
+        key type paramiko picked: usually one of ed25519, ecdsa, rsa),
+        not every key the server offers. ``ssh-keyscan`` returns one line
+        per offered type by default; this helper does not. If the server
+        offers multiple key types and paramiko later negotiates a
+        different one than the pinned line, the connection fails with
+        ``BadHostKeyException``. Callers that need full-type coverage
+        must call this helper multiple times under different
+        ``disabled_algorithms`` settings to force each type in turn.
+
     Raises:
         paramiko.SSHException: Negotiation failed (e.g. legacy server
             offering only ``ssh-rsa``; call ``enable_ssh_rsa_compat()``
@@ -161,6 +171,8 @@ def scan_host_keys(host: str, port: int = 22, *, timeout: float = 10.0) -> str:
     !!! example
 
         ```python
+        from pathlib import Path
+
         from remote_store.backends import SFTPUtils
 
         entry = SFTPUtils.scan_host_keys("sftp.example.com")
@@ -202,12 +214,14 @@ def _format_known_hosts_line(host: str, port: int, key: Any) -> str:
 
 
 def enable_ssh_rsa_compat() -> None:
-    """Restore ``ssh-rsa`` (SHA-1) acceptance across paramiko's four removal sites.
+    """Guarantee ``ssh-rsa`` (SHA-1) acceptance across paramiko's four host-key sites.
 
-    Required for legacy SFTP servers (e.g. PSFTPd) that only offer
-    ``ssh-rsa`` as a host-key algorithm. Paramiko 3.x+ removed ``ssh-rsa``
-    from defaults at four levels, each blocking a different stage of the
-    SSH handshake:
+    Intended for legacy SFTP servers (e.g. PSFTPd) that only offer
+    ``ssh-rsa`` as a host-key algorithm. Paramiko has deprecated SHA-1
+    ``ssh-rsa`` and reserves removal for a future major release; this
+    helper appends ``ssh-rsa`` at four sites if it is missing, future-
+    proofing the consumer against that removal and recovering state if
+    downstream code (or a custom transport subclass) has cleared it:
 
     1. ``paramiko.Transport._preferred_keys`` -- KEX host-key-algorithm
        negotiation.
@@ -217,9 +231,12 @@ def enable_ssh_rsa_compat() -> None:
     4. ``paramiko.Transport._preferred_pubkeys`` -- client RSA public-key
        authentication signatures.
 
-    ``disabled_algorithms`` cannot re-add a default-removed algorithm, so
-    class-level patching is the only path. The patches are idempotent;
-    calling this multiple times in the same process is safe.
+    On the currently pinned paramiko floor (``>=3.0``) all four sites
+    still ship ``ssh-rsa`` by default, so the helper is a no-op until
+    paramiko follows through on removal. ``disabled_algorithms`` cannot
+    re-add a default-removed algorithm, so class-level patching is the
+    only forward-compatible path. The patches are idempotent; calling
+    this multiple times in the same process is safe.
 
     !!! warning "Process-global side effect"
 

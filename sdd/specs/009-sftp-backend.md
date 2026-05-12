@@ -83,9 +83,13 @@ host raises `ValueError` at construction time.
 - `AUTO_ADD`: Accept any key. **Development/testing only — not safe for production.**
 
 String values (`"strict"`, `"tofu"`, `"auto"`) passed from TOML/YAML config are
-coerced to the enum in `__init__` via `HostKeyPolicy(value)`. Invalid strings
-raise `ValueError`. See [020-credential-hygiene.md](020-credential-hygiene.md)
-SEC-005.
+coerced to the enum in `__init__` via `HostKeyPolicy(value)`. The enum-name
+forms (`"STRICT"`, `"TRUST_ON_FIRST_USE"`, `"AUTO_ADD"`) are also accepted,
+case-insensitive on the name (`"auto_add"` and `"Auto_Add"` both resolve to
+`AUTO_ADD`); value-form aliasing (e.g. `"AUTO"` for canonical value `"auto"`)
+is not folded and continues to raise `ValueError`. Invalid strings, and any
+non-string input, raise `ValueError`. See
+[020-credential-hygiene.md](020-credential-hygiene.md) SEC-005.
 
 ### SFTP-007: Host Key Resolution Chain
 

@@ -13,6 +13,11 @@ source_items:
 audience:
   - user.api
 
+co_shipped_items:
+  - BUG-204
+  - BK-198
+  - BK-199
+
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md

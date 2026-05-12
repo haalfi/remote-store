@@ -76,9 +76,10 @@ pkey = SFTPUtils.load_private_key(pem_string)
 ## Preflight host-key discovery
 
 To populate a committed `host.keys` file without going through a TOFU connect
-first, use `SFTPUtils.scan_host_keys(host, port=22)`. It opens a transport,
-captures the server's offered host key (no authentication), and returns a
-single `known_hosts`-formatted line ready to commit:
+first, use [`SFTPUtils.scan_host_keys(host, port=22)`](../../reference/api/sftp-utils.md).
+It opens a transport, captures the server's *negotiated* host key (no
+authentication), and returns a single `known_hosts`-formatted line ready to
+commit:
 
 <!-- Rule 6 exemption: requires a live SFTP server; cannot execute in CI. -->
 ```python
@@ -93,6 +94,13 @@ For non-default ports the entry uses the OpenSSH `[host]:port` form.
 Network failures (host unreachable, port refused, DNS error) raise `OSError`;
 KEX failures (legacy server offering only `ssh-rsa`) raise
 `paramiko.SSHException` — call `enable_ssh_rsa_compat()` first in that case.
+
+`scan_host_keys()` returns the **negotiated** key for one handshake, not
+every key type the server offers. If the server publishes multiple key types
+and paramiko later negotiates a type other than the pinned line, the
+connection fails with `BadHostKeyException`. Call the helper multiple times
+under different `disabled_algorithms` settings if you need full-type
+coverage.
 
 ## Host Key Verification
 
@@ -126,9 +134,11 @@ backend = SFTPBackend(
 
 ## Legacy Servers (`ssh-rsa` / SHA-1)
 
-Paramiko 3.x removed `ssh-rsa` (SHA-1) host keys from defaults across four
-levels of its stack. Servers like **PSFTPd** that only offer `ssh-rsa`
-produce one of these errors during the handshake:
+Paramiko has deprecated `ssh-rsa` (SHA-1) and reserves removal for a future
+major release. Servers like **PSFTPd** that only offer `ssh-rsa` can produce
+one of these errors during the handshake — either now, if downstream code
+or a custom transport has cleared `ssh-rsa` from paramiko's defaults, or in
+the future, when paramiko follows through on removal:
 
 | Error | Stage that failed |
 |-------|-------------------|
@@ -136,9 +146,11 @@ produce one of these errors during the handshake:
 | `KeyError: 'ssh-rsa'` (during connect) | Host-key parsing dispatch |
 | `SSHException: Signature verification (ssh-rsa) failed.` | Signature verification |
 
-`disabled_algorithms` cannot re-enable a default-removed algorithm.
-`SFTPUtils.enable_ssh_rsa_compat()` patches all four removal sites in one
-call:
+`disabled_algorithms` cannot re-add a default-removed algorithm.
+[`SFTPUtils.enable_ssh_rsa_compat()`](../../reference/api/sftp-utils.md)
+ensures `ssh-rsa` is present at all four sites in one call — a no-op on the
+currently pinned paramiko floor (`>=3.0`, which still ships `ssh-rsa` by
+default), and forward-compatible against future removal:
 
 ```python
 --8<-- "examples/snippets/sftp_legacy_servers.py:enable-ssh-rsa-compat"
@@ -209,6 +221,7 @@ sftp_client.listdir_attr("/custom/path")
 
 - [Capabilities matrix](../../reference/capabilities-matrix.md)
 - [API reference](../../reference/api/store.md)
+- [SFTP utilities reference](../../reference/api/sftp-utils.md) — `scan_host_keys`, `enable_ssh_rsa_compat`, `HostKeyPolicy`
 - [Example script](../../../examples/backends/sftp_backend.py)
 
 ## API Reference

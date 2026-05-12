@@ -1,12 +1,14 @@
 """SFTP legacy-server snippets — sourced by the SFTP backend guide.
 
-Demonstrates the helpers shipped with BK-198 / BK-199 against process state
-only (no network). Each snippet exercises the helper end to end so CI
-catches drift between docs and the API shape.
+Demonstrates the SFTP legacy-server compatibility helpers
+(`enable_ssh_rsa_compat`, `scan_host_keys`) against process state only
+(no network). Each snippet exercises the helper end to end so CI catches
+drift between docs and the API shape.
 
-The `scan_host_keys` example in the guide is hand-written (Rule 6 exemption,
-documented inline there): it requires a live SFTP server to be meaningful,
-and snippets run via `hatch run examples` without test fixtures.
+The `scan_host_keys` example in the guide is hand-written (Rule 6
+exemption, documented inline there): it requires a live SFTP server to
+be meaningful, and snippets run via `hatch run examples` without test
+fixtures.
 """
 
 from __future__ import annotations
