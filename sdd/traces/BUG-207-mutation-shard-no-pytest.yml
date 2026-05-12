@@ -1,0 +1,67 @@
+id: BUG-207
+title: "Mutation Testing matrix shard: hatch + uv installer left features out of the venv"
+trigger: |
+  Surfaced as a downstream failure of BUG-206 once the lazy
+  fixture-package re-export let the setup job complete. The first
+  matrix shard run (`mutate-core-errors` in dispatched run 25746292527)
+  failed at the `Run mutate <scope>` step with
+  ``/home/runner/work/remote-store/remote-store/.venv/bin/python: No
+  module named pytest``. Pre-BUG-206 the setup job blocked every cron
+  before the matrix ever started, so the broken matrix shard had not
+  been observable since BK-186 PR 2 changed the introspection chain.
+
+source_items:
+  - BUG-207
+
+audience:
+  - infra.ci
+
+co_shipped_items:
+  - BUG-206
+
+review_rounds: 0
+
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: .github/workflows/mutation.yml
+        section: "jobs.mutate.steps[Run mutate]"
+        read_type: gate
+        extract: "Dispatched scope=core-errors against the PR branch; setup passed in 5s, mutate-core-errors failed in 29s at `hatch run mutate core-errors` with `No module named pytest`"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default]"
+        read_type: reference
+        extract: "installer = uv, path = .venv, features = [dev, docs, bench]; dev extra lists pytest + pytest-cov + pytest-asyncio etc. — should land in the venv via features"
+      - file: pyproject.toml
+        section: "[project.optional-dependencies].dev"
+        read_type: reference
+        extract: "dev includes a self-referential `remote-store[s3-pyarrow,...]` followed by pytest and friends — uv 0.11.13 + hatch 1.16.5 silently drops these from the resulting venv"
+      - file: .github/workflows/ci.yml
+        section: "jobs[*].steps[uv pip install -e .[dev]]"
+        read_type: reference
+        extract: "Every other CI workflow installs deps via `uv pip install -e \".[dev]\"` directly — mutation.yml was the only one routing through hatch, and the only one with this failure mode"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/mutation.yml
+        section: "jobs.mutate.steps[Python + deps] and [Run mutate]"
+        read_type: reference
+        extract: |
+          Replace `uv pip install hatch` + `hatch run mutate <scope>` with
+          `uv pip install -e ".[dev]" "pytest-gremlins>=1.5"` +
+          `python scripts/run_mutate.py <scope>`. The hatch script alias
+          (`mutate = "python scripts/run_mutate.py {args}"`) only
+          delegated to the same runner; direct invocation drops the
+          hatch env-management surface where features handling is
+          broken. `pytest-gremlins` is the only mutate-specific dep
+          outside `[dev]`, so it lifts into the same install command.
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: .github/workflows/mutation.yml
+        section: "(workflow_dispatch run on fix branch)"
+        read_type: verify
+        extract: "Dispatched scope=core-errors against the branch post-fix; setup + mutate-core-errors both pass; mutation report uploads as artifact."

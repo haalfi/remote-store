@@ -20,6 +20,12 @@ audience:
   - infra.ci
   - infra.test
 
+discovery_followups:
+  - BUG-207
+
+co_shipped_items:
+  - BUG-207
+
 expected_ripples:
   - sdd/backlogid.json
 

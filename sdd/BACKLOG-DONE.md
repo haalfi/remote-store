@@ -8,6 +8,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-207 — `Mutation Testing` matrix shard ran `python -m pytest` against a venv without pytest**
+  Surfaced once BUG-206's setup-job fix let the matrix run for the first
+  time since BK-186 PR 2. `.github/workflows/mutation.yml`'s mutate job
+  was the only workflow that drove the venv through `hatch run …` (every
+  other workflow in the repo does `uv pip install -e ".[dev]"`
+  directly). Hatch 1.16.5 + `installer = "uv"` + `features = ["dev",
+  "docs", "bench"]` silently produces a venv without the features
+  installed; `scripts/run_mutate.py` then shells `subprocess.run([
+  sys.executable, "-m", "pytest", ...])` and the venv answers
+  `No module named pytest`. The hatch/uv interaction was confirmed
+  locally by hatch failing to remove a partially-pruned `.venv` and the
+  subsequent re-sync not restoring missing deps.
+  Fix: replace the mutate step's `uv pip install hatch` +
+  `hatch run mutate …` pair with the same uv-based pattern the rest of
+  CI uses — `uv pip install -e ".[dev]" "pytest-gremlins>=1.5"` followed
+  by `python scripts/run_mutate.py …`. `pytest-gremlins` is the only
+  mutate-specific dep not in `[dev]`, so it lifts into the install
+  command directly; the hatch shim was only an alias for the same
+  script invocation, so nothing else moves. The setup job stays as-is —
+  BUG-206's lazy fixture-package re-export already makes it run on bare
+  `actions/setup-python` without project install.
+  Audience: `infra.ci`.
+  Trace: [`sdd/traces/BUG-207-mutation-shard-no-pytest.yml`](traces/BUG-207-mutation-shard-no-pytest.yml).
+
 - [x] **BUG-206 — scheduled `Mutation Testing` cron failed at the setup job**
   The `mutation.yml` setup job runs `python scripts/run_mutate.py
   --list-scopes` (and `--container-needs <name>`) on a vanilla

@@ -103,13 +103,21 @@ jobs:
           nc -z 127.0.0.1 2222 || { echo "::error::SFTP failed to start"; exit 1; }
 
       # --- Python + deps ---
+      # Install the dev extra directly via uv (same pattern every other CI
+      # workflow uses — see .github/workflows/ci.yml). Going through
+      # ``hatch run`` here would re-derive the environment via hatch's
+      # features key; hatch 1.16.5 + uv installer silently leaves features
+      # out of the venv, so the matrix shard ran ``python -m pytest`` against
+      # a venv that did not have pytest. ``pytest-gremlins`` is the only
+      # mutate-specific dep that isn't in ``[dev]``, so it goes in the same
+      # install command.
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
-      - run: uv pip install hatch
+      - run: uv pip install -e ".[dev]" "pytest-gremlins>=1.5"
 
       # --- Gremlins cache (content-hash based, survives across runs) ---
       - name: Restore gremlins cache
@@ -121,13 +129,12 @@ jobs:
             gremlins-${{ matrix.scope }}-
 
       # --- Run mutation testing ---
-      # Hatch shim delegates to scripts/run_mutate.py which builds the
-      # pytest command from the manifest. Report flags are injected via
-      # PYTEST_ADDOPTS (pytest picks them up automatically).
+      # Invoke the manifest-driven scope runner directly. Report flags
+      # are injected via PYTEST_ADDOPTS (pytest picks them up automatically).
       - name: Run mutate ${{ matrix.scope }}
         env:
           PYTEST_ADDOPTS: "--no-cov -W ignore::UserWarning:pytest_gremlins.plugin --gremlin-report=html --gremlins-html-dir=mutation-report"
-        run: hatch run mutate ${{ matrix.scope }}
+        run: python scripts/run_mutate.py ${{ matrix.scope }}
 
       # --- Upload HTML report ---
       - name: Upload mutation report
