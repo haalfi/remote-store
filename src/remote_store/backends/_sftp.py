@@ -216,12 +216,9 @@ def _format_known_hosts_line(host: str, port: int, key: Any) -> str:
 def enable_ssh_rsa_compat() -> None:
     """Guarantee ``ssh-rsa`` (SHA-1) acceptance across paramiko's four host-key sites.
 
-    Intended for legacy SFTP servers (e.g. PSFTPd) that only offer
-    ``ssh-rsa`` as a host-key algorithm. Paramiko has deprecated SHA-1
-    ``ssh-rsa`` and reserves removal for a future major release; this
-    helper appends ``ssh-rsa`` at four sites if it is missing, future-
-    proofing the consumer against that removal and recovering state if
-    downstream code (or a custom transport subclass) has cleared it:
+    Appends ``ssh-rsa`` to four paramiko class attributes if it is
+    missing — future-proofing the consumer against eventual removal,
+    and restoring state if downstream code has cleared it:
 
     1. ``paramiko.Transport._preferred_keys`` -- KEX host-key-algorithm
        negotiation.
@@ -231,12 +228,25 @@ def enable_ssh_rsa_compat() -> None:
     4. ``paramiko.Transport._preferred_pubkeys`` -- client RSA public-key
        authentication signatures.
 
-    On the currently pinned paramiko floor (``>=3.0``) all four sites
-    still ship ``ssh-rsa`` by default, so the helper is a no-op until
-    paramiko follows through on removal. ``disabled_algorithms`` cannot
-    re-add a default-removed algorithm, so class-level patching is the
-    only forward-compatible path. The patches are idempotent; calling
-    this multiple times in the same process is safe.
+    On every paramiko version verified (2.12, 3.0, 3.5, 4.0) all four
+    sites contain ``ssh-rsa`` by default, so a freshly-imported
+    paramiko already negotiates against an ``ssh-rsa``-only server
+    without this helper. The helper is therefore a no-op on a clean
+    process and only changes behavior when:
+
+    - downstream code or a transport subclass has stripped ``ssh-rsa``
+      from one of the four sites;
+    - or a future paramiko major release follows through on removal.
+
+    For KEX / cipher / MAC negotiation failures (e.g.
+    ``IncompatiblePeer: no acceptable kex algorithm``), this helper is
+    not the right tool — use ``connect_kwargs={"disabled_algorithms":
+    ...}`` to widen those instead.
+
+    ``disabled_algorithms`` cannot re-add a default-removed algorithm,
+    so class-level patching is the only forward-compatible path. The
+    patches are idempotent; calling this multiple times in the same
+    process is safe.
 
     !!! warning "Process-global side effect"
 
@@ -1209,16 +1219,23 @@ class SFTPBackend(Backend):
                 return AlreadyExists(f"Already exists: {path}", path=path, backend=self.name)
             return RemoteStoreError(str(exc), path=path, backend=self.name)
         if isinstance(exc, paramiko.ssh_exception.IncompatiblePeer):
+            # IncompatiblePeer wraps host-key / KEX / cipher / MAC negotiation
+            # failures; only the host-key variant is addressable by
+            # enable_ssh_rsa_compat. Match the paramiko message substring so the
+            # hint does not mislead callers hitting KEX/cipher/MAC failures.
             # The literal symbol "enable_ssh_rsa_compat" is asserted by
             # TestSFTPIncompatiblePeerHint; rename the helper and this string
             # plus that test together.
-            return BackendUnavailable(
-                f"{exc} [hint: server may only offer ssh-rsa (SHA-1) host keys; "
-                f"call SFTPUtils.enable_ssh_rsa_compat() at process startup "
-                f"if connecting to a legacy SFTP server]",
-                path=path,
-                backend=self.name,
-            )
+            if "host key" in str(exc):
+                return BackendUnavailable(
+                    f"{exc} [hint: if ssh-rsa has been cleared from paramiko's "
+                    f"defaults (by downstream code or a future paramiko release), "
+                    f"call SFTPUtils.enable_ssh_rsa_compat() at process startup "
+                    f"to restore it]",
+                    path=path,
+                    backend=self.name,
+                )
+            return BackendUnavailable(str(exc), path=path, backend=self.name)
         if isinstance(exc, paramiko.SSHException):
             return BackendUnavailable(str(exc), path=path, backend=self.name)
         return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover

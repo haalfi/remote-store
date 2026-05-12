@@ -135,10 +135,14 @@ backend = SFTPBackend(
 ## Legacy Servers (`ssh-rsa` / SHA-1)
 
 Paramiko has deprecated `ssh-rsa` (SHA-1) and reserves removal for a future
-major release. Servers like **PSFTPd** that only offer `ssh-rsa` can produce
-one of these errors during the handshake — either now, if downstream code
-or a custom transport has cleared `ssh-rsa` from paramiko's defaults, or in
-the future, when paramiko follows through on removal:
+major release. Empirically (verified against paramiko 2.12, 3.0, 3.5, 4.0
+in `sandbox/bk-198-empirical-verification.md`), a freshly-imported paramiko
+of any of those versions already negotiates against an `ssh-rsa`-only
+server out of the box — including against a server that also restricts KEX
+to legacy SHA-1 variants. `ssh-rsa` is therefore not the root cause of
+most legacy-SFTP connection failures today; it becomes one only when
+something has cleared `ssh-rsa` from paramiko's defaults. Concretely you
+will see one of these errors when that state is reached:
 
 | Error | Stage that failed |
 |-------|-------------------|
@@ -148,13 +152,19 @@ the future, when paramiko follows through on removal:
 
 `disabled_algorithms` cannot re-add a default-removed algorithm.
 [`SFTPUtils.enable_ssh_rsa_compat()`](../../reference/api/sftp-utils.md)
-ensures `ssh-rsa` is present at all four sites in one call — a no-op on the
-currently pinned paramiko floor (`>=3.0`, which still ships `ssh-rsa` by
-default), and forward-compatible against future removal:
+ensures `ssh-rsa` is present at all four sites in one call — a no-op on
+freshly-imported paramiko, and a recovery / forward-compatibility shim
+otherwise:
 
 ```python
 --8<-- "examples/snippets/sftp_legacy_servers.py:enable-ssh-rsa-compat"
 ```
+
+!!! note "If you observe `IncompatiblePeer: no acceptable kex algorithm`"
+    KEX / cipher / MAC negotiation failures are a separate problem;
+    `enable_ssh_rsa_compat()` does not help. Widen the relevant
+    algorithm list via the `connect_kwargs={"disabled_algorithms": ...}`
+    SFTP constructor argument instead.
 
 !!! warning "Security tradeoff"
     This is **process-global**: every paramiko transport in the process
@@ -165,10 +175,10 @@ default), and forward-compatible against future removal:
 
 ### Alternative: pin `paramiko<3`
 
-Paramiko 2.x kept `ssh-rsa` in defaults natively. Pinning is a
-legitimate alternative when the consumer runs in an isolated environment
-(e.g. a build-agent task connecting only to one legacy server). The
-tradeoffs:
+Paramiko 2.x and 3.x both ship `ssh-rsa` in defaults natively (verified).
+Pinning paramiko 2.x is a legitimate alternative when the consumer runs
+in an isolated environment (e.g. a build-agent task connecting only to
+one legacy server). The tradeoffs:
 
 | Approach | Loses |
 |----------|-------|

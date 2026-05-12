@@ -30,12 +30,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Paramiko has deprecated `ssh-rsa` (SHA-1) and reserves removal for a
   future major release across four host-key sites:
   `Transport._preferred_keys`, `Transport._key_info`, `RSAKey.HASHES`,
-  `Transport._preferred_pubkeys`. On the pinned `paramiko>=3.0` floor
-  all four still ship `ssh-rsa` by default, but servers like PSFTPd that
-  only offer `ssh-rsa` produced `IncompatiblePeer: no acceptable host
-  key` whenever downstream code, a custom transport subclass, or a future
-  paramiko release cleared those entries — with no in-library remedy.
-  Ships three coordinated changes:
+  `Transport._preferred_pubkeys`. Empirical test against Dockerized
+  legacy SSH servers (`ssh-rsa`-only host key, optionally with SHA-1
+  KEX) across paramiko 2.12 / 3.0 / 3.5 / 4.0 (see
+  `sandbox/bk-198-empirical-verification.md`) confirmed that paramiko's
+  defaults already negotiate cleanly with `ssh-rsa`-only servers — the
+  legacy-server connection failures (`IncompatiblePeer: no acceptable
+  host key`) only manifest when downstream code, a custom transport, or
+  a future paramiko has cleared `ssh-rsa` from those four sites. The
+  helper provides a recovery / forward-compatibility shim for that
+  scenario. Ships three coordinated changes:
   (a) `SFTPUtils.enable_ssh_rsa_compat()` static method applying all
   four patches idempotently. Process-global; documented as a security
   reduction. (b) `SFTPBackend._map_exception` now annotates

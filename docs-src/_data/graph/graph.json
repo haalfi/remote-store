@@ -1464,7 +1464,7 @@
       "file": "src/remote_store/backends/_sftp.py",
       "id": "cls:remote_store.backends._sftp.SFTPBackend",
       "kind": "class",
-      "line": 340,
+      "line": 350,
       "role": "backend",
       "runtime": "sync",
       "summary": "SFTP backend using pure paramiko."

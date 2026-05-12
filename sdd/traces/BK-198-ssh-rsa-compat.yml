@@ -2,13 +2,17 @@ id: BK-198
 title: "SFTP legacy-server (ssh-rsa / SHA-1) compatibility"
 trigger: |
   Connecting to a legacy third-party SFTP service (a PSFTPd server) raised
-  `paramiko.ssh_exception.IncompatiblePeer: Incompatible ssh peer (no
-  acceptable host key)`. Paramiko has deprecated `ssh-rsa` (SHA-1) and
-  reserves removal for a future major release across four host-key sites;
-  `disabled_algorithms` cannot re-add a default-removed algorithm. No in-
-  library remedy existed for the future-removal path or for downstream
-  code that clears these defaults; users would hit a multi-error cascade
-  as each patched layer revealed the next missing piece.
+  `paramiko.ssh_exception.IncompatiblePeer` during the SSH handshake.
+  Initial analysis assumed paramiko 3.x+ had removed `ssh-rsa` from
+  defaults; empirical re-test against the same legacy server pattern
+  across paramiko 2.12 / 3.0 / 3.5 / 4.0
+  (`sandbox/bk-198-empirical-verification.md`) showed paramiko's defaults
+  already negotiate `ssh-rsa`-only servers. The user's empirical fix
+  worked because their environment had pre-mutated paramiko's
+  class-level defaults somewhere upstream; the helper restored them.
+  `disabled_algorithms` cannot re-add a removed algorithm, so no
+  consumer-side remedy existed for the recovery / future-removal case
+  without class-level patching.
 
 source_items:
   - BK-198

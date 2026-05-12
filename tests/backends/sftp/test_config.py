@@ -164,16 +164,19 @@ class TestSFTPEnableSshRsaCompat:
 
 class TestSFTPIncompatiblePeerHint:
     """BK-198: _map_exception annotates IncompatiblePeer with a remediation
-    pointer to ``SFTPUtils.enable_ssh_rsa_compat``."""
+    pointer to ``SFTPUtils.enable_ssh_rsa_compat`` only when the underlying
+    paramiko message identifies a host-key failure; KEX / cipher / MAC
+    variants of IncompatiblePeer pass through with no hint, because the
+    helper does not address those."""
 
     pytestmark = pytest.mark.spec("BK-198")
 
-    def test_incompatible_peer_hint_present(self) -> None:
-        """IncompatiblePeer maps to BackendUnavailable with a hint message
-        carrying all three user-actionable signals: the ``[hint:`` framing,
-        the ``ssh-rsa`` identifier, and the ``enable_ssh_rsa_compat`` helper
-        name. Locks in the documented shape so a refactor that drops any
-        single signal does not pass silently.
+    def test_incompatible_peer_hint_present_for_host_key(self) -> None:
+        """IncompatiblePeer carrying ``host key`` maps to BackendUnavailable
+        with a hint carrying all three user-actionable signals: the
+        ``[hint:`` framing, ``ssh-rsa``, and ``enable_ssh_rsa_compat``.
+        Locks in the documented shape so a refactor that drops any single
+        signal does not pass silently.
         """
         backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
         exc = paramiko.ssh_exception.IncompatiblePeer("no acceptable host key")
@@ -183,6 +186,23 @@ class TestSFTPIncompatiblePeerHint:
         assert "[hint:" in message
         assert "ssh-rsa" in message
         assert "enable_ssh_rsa_compat" in message
+
+    def test_incompatible_peer_no_hint_for_kex(self) -> None:
+        """IncompatiblePeer for KEX (or cipher / MAC) maps to a plain
+        BackendUnavailable without the ssh-rsa hint, because
+        ``enable_ssh_rsa_compat`` does not address those failure modes —
+        callers need ``connect_kwargs={"disabled_algorithms": ...}``.
+        Empirically: paramiko 2.12/3.0/3.5/4.0 raise
+        ``IncompatiblePeer("no acceptable kex algorithm")`` for that case;
+        the helper is irrelevant.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        exc = paramiko.ssh_exception.IncompatiblePeer("no acceptable kex algorithm")
+        result = backend._map_exception(exc, "")
+        assert isinstance(result, BackendUnavailable)
+        message = str(result)
+        assert "enable_ssh_rsa_compat" not in message
+        assert "[hint:" not in message
 
     def test_other_ssh_exception_unchanged(self) -> None:
         """Non-IncompatiblePeer SSHException keeps the generic mapping (no hint)."""
