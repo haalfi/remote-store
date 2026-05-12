@@ -48,7 +48,7 @@ _BLOCK_WRAPPER = textwrap.dedent(
     class _Block:
         def find_spec(self, name, path, target=None):
             if name.split(".", 1)[0] in _BLOCKED:
-                raise ImportError(f"{name}: blocked by regression test for BUG-206")
+                raise ModuleNotFoundError(f"{name}: blocked by regression test for BUG-206")
             return None
 
 
@@ -192,3 +192,11 @@ def test_run_mutate_introspection_runs_without_pytest_or_remote_store(
     )
     payload = json.loads(result.stdout)
     assert isinstance(payload, list)
+    # An empty ``--list-scopes`` JSON array would feed an empty matrix to
+    # ``mutation.yml`` and silently skip every mutation shard without CI
+    # failure — the same class of silent skip this test exists to catch.
+    # ``--container-needs`` is permissive: an empty list is the correct
+    # answer when no scope needs that container (e.g., a future no-cloud
+    # build).
+    if introspect_args == ["--list-scopes"]:
+        assert payload, "scope introspection returned an empty list; mutation matrix would be silently empty"

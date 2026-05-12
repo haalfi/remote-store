@@ -29,8 +29,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   subprocess-runs every introspection command (`--list-scopes` and
   the three `--container-needs` variants) under a `sys.meta_path`
   finder that blocks `pytest` and `remote_store`, mirroring the bare
-  CI environment. The next scheduled run touches the cron again on
-  Saturday 2026-05-16.
+  CI environment.
   Audience: `infra.ci`, `infra.test`.
   Trace: [`sdd/traces/BUG-206-mutation-setup-bare-python.yml`](traces/BUG-206-mutation-setup-bare-python.yml).
 
