@@ -102,7 +102,7 @@ peer (no acceptable {host key | kex algorithm | cipher | MAC})` during
 failures; the actionable next step depends on which one.
 
 **Diagnose first.**
-[`SFTPUtils.scan_host_algorithms()`](../reference/api/sftp-utils.md#scan_host_algorithms)
+[`SFTPUtils.scan_host_algorithms()`](../reference/api/sftp-utils.md#remote_store.backends.SFTPUtils.scan_host_algorithms)
 parses the server's `SSH_MSG_KEXINIT` advertisement over a raw socket
 (no paramiko, no authentication). Print the relevant name-list to
 identify which list the server narrowed.

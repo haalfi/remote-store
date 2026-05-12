@@ -8,6 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-202 — `SFTPUtils` helpers rendered as true `@staticmethod` on docs.remotestore.dev**
+  The four `SFTPUtils` helpers (`load_private_key`, `scan_host_keys`,
+  `scan_host_algorithms`, `enable_ssh_rsa_compat`) were exposed via the
+  `name = staticmethod(name)` rebinding pattern, which griffe's static
+  analysis cannot follow: the reference page rendered the methods with
+  the `func` label, no signature, and the `_sftp` private module path
+  leaking through the doc target. Moved the four function bodies inside
+  the `SFTPUtils` class with `@staticmethod` decorators; removed the
+  rebinding block. `HostKeyPolicy` stays at module level (preserves
+  `from remote_store.backends._sftp import HostKeyPolicy` import sites
+  in tests, benchmarks, and fixtures). `sftp-utils.md` now targets
+  `SFTPUtils.<method>` with `show_root_heading: true`, matching
+  `store.md`'s pattern; two cross-doc anchors in
+  `troubleshooting.md` and `backends/sftp.md` updated to the new
+  fully-qualified form. Verified by `mkdocs build --strict` (clean) and
+  the SFTP test suites (no regressions). Audience: `user.site`,
+  `user.api_docs`.
+
 - [x] **BUG-207 — `Mutation Testing` matrix shard ran `python -m pytest` against a venv without pytest**
   Surfaced once BUG-206's setup-job fix let the matrix run for the first
   time since BK-186 PR 2. `.github/workflows/mutation.yml`'s mutate job
