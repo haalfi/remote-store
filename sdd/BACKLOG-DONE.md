@@ -8,6 +8,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-203 — Dual-wire gen-checks into `hatch run lint`**
+  `gen_graph.py --check`, `gen_features.py --check`, `gen_graph_viz.py --check`, and
+  `check_api_docs.py` ran in CI but not in `hatch run lint`, so generated-file
+  staleness was only caught post-push. Added all four invocations to the `lint` array
+  in `pyproject.toml` to close the local/CI gap. Surfaced during BK-202 work when the
+  SFTPUtils refactor invalidated `graph.json` and `graph_viz.html` but lint did not
+  flag it. Custom check scripts belong in lint AND CI, not CI alone.
+
 - [x] **BK-202 — `SFTPUtils` helpers rendered as true `@staticmethod` on docs.remotestore.dev**
   The four `SFTPUtils` helpers (`load_private_key`, `scan_host_keys`,
   `scan_host_algorithms`, `enable_ssh_rsa_compat`) were exposed via the

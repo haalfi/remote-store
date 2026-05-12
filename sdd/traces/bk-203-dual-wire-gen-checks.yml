@@ -1,0 +1,52 @@
+id: BK-203
+title: "Dual-wire gen-checks into hatch run lint"
+trigger: "gen_graph.py --check, gen_features.py --check, gen_graph_viz.py --check, and check_api_docs.py ran in CI but not in hatch run lint; contributors only learned about generated-file staleness after pushing"
+source_items:
+  - BK-203
+audience:
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "lint job (gen_graph --check, check_api_docs, gen_features --check, gen_graph_viz --check)"
+        read_type: gate
+        extract: "confirm exact --check commands CI runs but are absent from hatch run lint"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: gate
+        extract: "current lint array; confirm four checks absent"
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: gate
+        extract: "append gen_graph --check, gen_features --check, gen_graph_viz --check, check_api_docs"
+      - file: scripts/gen_graph.py
+        section: "argument parser (--check flag)"
+        read_type: verify
+        extract: "confirm --check flag exists before wiring"
+      - file: scripts/gen_features.py
+        section: "argument parser (--check flag)"
+        read_type: verify
+        extract: "confirm --check flag exists before wiring"
+      - file: scripts/gen_graph_viz.py
+        section: "argument parser (--check flag)"
+        read_type: verify
+        extract: "confirm --check flag exists before wiring"
+      - file: scripts/check_api_docs.py
+        section: "(full)"
+        read_type: verify
+        extract: "runs in check-only mode by default; safe to add directly to lint array"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "no public-API or spec ripples; live trace + BACKLOG-DONE entry satisfy the backlog-item row"

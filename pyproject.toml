@@ -136,7 +136,7 @@ dependencies = [
 ]
 
 [tool.hatch.envs.default.scripts]
-lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py"]
+lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"
