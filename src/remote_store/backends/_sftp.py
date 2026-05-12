@@ -275,14 +275,14 @@ def scan_host_algorithms(
         A dictionary with eleven entries:
 
         - ``"banner"`` -- the server's identification string (e.g.
-          ``"SSH-2.0-OpenSSH_8.9p1"``).
+            ``"SSH-2.0-OpenSSH_8.9p1"``).
         - The ten RFC 4253 § 7.1 name-lists, each as a Python ``list[str]``:
-          ``kex_algorithms``, ``server_host_key_algorithms``,
-          ``encryption_algorithms_ctos``, ``encryption_algorithms_stoc``,
-          ``mac_algorithms_ctos``, ``mac_algorithms_stoc``,
-          ``compression_algorithms_ctos``,
-          ``compression_algorithms_stoc``, ``languages_ctos``,
-          ``languages_stoc``.
+            ``kex_algorithms``, ``server_host_key_algorithms``,
+            ``encryption_algorithms_ctos``, ``encryption_algorithms_stoc``,
+            ``mac_algorithms_ctos``, ``mac_algorithms_stoc``,
+            ``compression_algorithms_ctos``,
+            ``compression_algorithms_stoc``, ``languages_ctos``,
+            ``languages_stoc``.
 
     Raises:
         OSError: Socket-level failure (host unreachable, port refused,
