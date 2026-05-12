@@ -525,6 +525,164 @@ and the highest ID already in this file, then take the next integer. Run
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
+### Formal Verification
+
+- [ ] **ID-191 — Move atomicity formal model in `ResourceSafety.dfy`**
+  `ResourceSafety.dfy` § 2 models `AtomicMove` and `CopyDeleteMove` as state
+  machines and proves `MoveFinalStateEquivalence` (both reach `DeleteDone`).
+  What is missing is a contract that conformance tests can enforce: no test
+  today verifies that backends declaring `CapAtomicMove` do not expose the
+  `CopyDone` intermediate state (source gone, destination not yet written).
+  Two parts: (a) extend `ResourceSafety.dfy` to define a `MoveContract`
+  datatype that encodes the allowed observable states — either `DeleteDone`
+  (success) or `Failed` (rollback, src preserved), never `CopyDone`; (b) add
+  a conformance test that simulates a crash between copy and delete (via a
+  mock backend that raises on the delete step) and asserts the source path
+  is either intact or the destination is intact, never both gone.  The
+  abstract backend contract (BE-018, Gap 5) currently sidesteps intermediate
+  states; this item formalizes the contract for atomic-move-capable backends.
+  Spec: BE-018, ASYNC-018, ResourceSafety.dfy § 2.
+
+- [ ] **ID-190 — Path formalization: `WellFormedPath` predicate and round-trip invariant**
+  Two related gaps in the Dafny model. First: `BackendContract.dfy` treats
+  paths as opaque strings and assumes well-formedness without verifying how
+  it is produced. PATH-001..015 (normalization rules: backslash → slash, `..`
+  rejection, null-byte rejection, slash collapsing, empty-component removal)
+  are Python-only today. Add a `WellFormedPath(s: string): bool` predicate to
+  `BackendContract.dfy` encoding these rules, and declare it as a precondition
+  assumption on all contract methods. Update `MemoryBackend.dfy` to carry the
+  assumption through. Second: no formal guarantee that
+  `to_key(native_path(k)) == k` for all backend-relative keys. Add a
+  `NativePathRoundTrip` lemma (or axiom, if the full proof is out of scope for
+  now) to the contract. This enables future composition reasoning across
+  Store ↔ Backend layers. Spec: PATH-001–015, NPR-001, NPR-010, STORE-012.
+
+- [ ] **ID-189 — Dafny spec completeness sweep: missing error variant and field axioms**
+  Three small gaps with no current Tier-3 consumer but required for oracle
+  accuracy. (a) `ResourceLocked` (ERR-013, spec 005) is absent from the
+  `Error` datatype in `BackendContract.dfy`; add the variant and update
+  `_helpers.py::_raise_if_err` to dispatch it to the Python error class.
+  (b) WR-007 ("no default hashing"): add a postcondition to the abstract
+  `Write` contract stating `source == BasicSource ==> r.value.digest.None?`,
+  closing the gap where a non-native backend could silently populate `digest`.
+  (c) `FileInfo.name` consistency: add an axiom to the `GetFileInfo`
+  postcondition requiring `info.name == LastPathComponent(info.path)`,
+  preventing backends from returning a mismatched name field.
+  Spec: ERR-013, WR-007, MOD-001.
+
+- [ ] **ID-188 — Resource safety verification: `SafeWrapInvariant` and `open_atomic` cleanup**
+  Two test-gap closures plus one small Dafny extension.
+  (a) **Dafny (Tier 1):** add quality-flag postcondition axioms to
+  `BackendContract.dfy`: if `CapSeekableRead in capabilities` then every
+  stream returned by `Read` satisfies `stream.seekable()`; stub the
+  `CapLazyRead` flag analogously as a no-I/O-before-first-read advisory.
+  (b) **Pattern B — `test_streaming.py`:** add `assert stream.closed` after
+  every context-manager exit and after every explicit `.close()` call,
+  citing `ResourceSafety.dfy::SafeWrapInvariant` in the comment. The
+  `SafeWrapImpliesNoLeaks` lemma guarantees no handle is left in `Open`
+  state after a safe-wrap sequence; these assertions make that guarantee
+  visible in the test suite.
+  (c) **Pattern B — `test_atomic.py`:** after the exception-cleanup test for
+  `open_atomic`, add a `list_files` scan asserting no orphan temp files
+  remain anywhere under the test prefix, not just that the target path does
+  not exist.
+  Depends on ID-183 (oracle infrastructure) for any Pattern A additions.
+  Spec: SIO-001, SIO-008, SIO-009, SAW-004, ResourceSafety.dfy § 1.
+
+- [ ] **ID-187 — Aggregate verification: oracle differential and property-based tests for `GetFolderInfo`**
+  `TestGetFolderInfoAggregates` spot-checks `file_count` and `total_size`
+  against hardcoded expected values. Two upgrades: (a) **Pattern A:** run
+  each existing aggregate test against both the target backend and
+  `DafnyOracleBackend` within the same test body using the ID-183
+  infrastructure; assert `python_fi.file_count == oracle_fi.file_count` and
+  `python_fi.total_size == oracle_fi.total_size`. The oracle is the
+  ground-truth implementation of the `GetFolderInfo` postcondition
+  (`file_count == |ChildFiles(fs, path)|`, `total_size == SumSizes(fs,
+  ChildFiles(fs, path))`). (b) **Property-based:** add a
+  `hypothesis`-parametrized test that generates random file trees (varying
+  nesting depth 0–4, file count 1–20, size 1–10000 bytes) and compares
+  Python `MemoryBackend` vs oracle on `get_folder_info` — catches off-by-one
+  errors in recursive `ChildFiles` or `SumSizes` computation that deterministic
+  fixtures cannot reach. Depends on ID-183. Spec: BE-017, ID-134,
+  BackendContract.GetFolderInfo, MemoryBackend.SumSizesAddOne lemma.
+
+- [ ] **ID-186 — Copy metadata formal closure (co-ships BK-196)**
+  `MemoryBackend.dfy::Copy` builds the destination via
+  `BasicFileInfo(dst, dst, srcEntry.info.size)`, which drops user metadata.
+  The Python implementation preserves it (fixed in BK-192). Fix in two
+  parts that ship together to keep CI green: (a) **Dafny:** tighten the
+  `Copy` postcondition to require
+  `dstEntry.info.userMetadata == srcEntry.info.userMetadata`; adjust
+  `BasicFileInfo` / the destination constructor to carry metadata through;
+  verify Dafny still reports all lemmas verified. (b) **Pattern A:**
+  add an oracle differential test in
+  `tests/backends/memory/test_coverage.py::TestMemoryCopyMetadataRoundTrip`
+  using the ID-183 infrastructure — run `write(src, metadata={…})` then
+  `copy(src, dst)` on both Python `MemoryBackend` and `DafnyOracleBackend`,
+  assert `get_file_info(dst).metadata` matches on both sides. This closes
+  BK-196 (spec gap) and BK-195 (missing conformance test) simultaneously.
+  Spec: WR-013, BE-019, ASYNC-019. See BK-196 trace.
+
+- [ ] **ID-185 — Listing completeness and depth verification**
+  Two gap families in `tests/backends/conformance/test_listing.py`, both
+  resolvable without Dafny spec changes (`DepthCounting.dfy` is already
+  complete). (a) **Depth boundary (Pattern B):** the four
+  `test_list_files_recursive_max_depth` variants check name-sets only; add
+  `assert all(path.count("/") - prefix.count("/") - 1 <= max_depth for f in
+  files)` (or a shared `_depth(prefix, path)` helper) so a buggy backend
+  that ignores `max_depth` would fail, not silently pass. Cite
+  `DepthCounting.dfy` Properties 1–4 in the assertion comment. (b)
+  **Completeness (Pattern A):** `test_list_folders_completeness` and
+  `test_list_files_recursive` verify expected name-sets but not the
+  `forall` quantifier ("every matching path appears in the result"). Run
+  the same listing on `DafnyOracleBackend` via ID-183 and assert
+  `{f.path for f in python_result} == {f.path for f in oracle_result}`,
+  catching backends that silently truncate results. Depends on ID-183.
+  Spec: DEPTH-001, BackendContract.ListFiles completeness postcondition,
+  BackendContract.ListFolders completeness postcondition.
+
+- [ ] **ID-184 — Error contract verification: precondition ordering and completeness**
+  Paired Tier-1 Dafny change and Tier-3 test gaps; ship together.
+  (a) **Dafny (Tier 1):** lift `AllAncestorsTraversable` from
+  `MemoryBackend.dfy` into the abstract `BackendContract.dfy` postconditions
+  for `Exists`, `IsFileMethod`, `IsFolderMethod`, `ListFiles`, and
+  `ListFolders` — currently the predicate is only in the refinement, leaving
+  the abstract contract silent on file-as-directory-component behaviour
+  (BE-004, BE-005, BE-014, BE-015).
+  (b) **Pattern B — BE-008 ordering:** in `test_errors.py`, add inline
+  assertions confirming that `IsDir` fires *before* the `overwrite` and
+  `missing_ok` flags are evaluated — specifically
+  `test_write_on_directory_overwrite_still_raises_error` and
+  `test_delete_on_directory_missing_ok_still_raises`. The Dafny Write
+  postcondition chain (L359–372) encodes this ordering; the tests today
+  only check the error type, not the ordering invariant.
+  (c) **Pattern B — `delete_folder` completeness:** `test_delete_folder_recursive_removes_all`
+  asserts two specific paths are gone; add a scan asserting no path under
+  the deleted prefix exists, matching the Dafny quantifier
+  `forall p | IsChildOf(p, path) :: !PathExists(fs, p)`.
+  (d) **Pattern B — move/copy destination discrimination:** in
+  `test_destination_is_directory_raises_error`, tighten the `match=` regex
+  to assert the error message contains the *destination* path (not the
+  source), matching BackendContract Move/Copy L542–543.
+  Spec: BE-004, BE-005, BE-008, BE-014, BE-015, BE-021.
+
+- [ ] **ID-183 — Oracle differential testing infrastructure (Pattern A foundation)**
+  The `DafnyOracleBackend` already participates in every conformance test as
+  a parametrized backend, but no utility exists to run an operation on *both*
+  a target backend and the oracle within the same test and compare outputs.
+  This item adds that infrastructure as the shared foundation for ID-184
+  through ID-188. Concretely: a `assert_oracle_match(backend, method, *args,
+  **kwargs)` helper (or fixture variant) that (1) constructs a fresh
+  `DafnyOracleBackend`, (2) seeds it with the same state as `backend` via a
+  minimal write sequence, (3) calls `method` on both, (4) asserts results are
+  equal with a structured diff on mismatch. Also: document the Pattern A/B
+  conventions — which Dafny spec ID to cite in assertion comments, how to
+  reference postcondition line numbers — so all subsequent items follow the
+  same style. The helper lives in
+  `tests/backends/dafny/` alongside `_helpers.py`.
+  No spec change; no new tests. Prerequisite for ID-184, ID-185, ID-186,
+  ID-187, ID-188.
+
 ### API Surface Enhancements
 
 - [ ] **ID-181 — Per-backend `ssh-rsa` opt-in via `paramiko.Transport` subclass**
