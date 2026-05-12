@@ -135,11 +135,10 @@ backend = SFTPBackend(
 ## Legacy Servers (`ssh-rsa` / SHA-1)
 
 Paramiko has deprecated `ssh-rsa` (SHA-1) and reserves removal for a future
-major release. Empirically (verified against paramiko 2.12, 3.0, 3.5, 4.0
-in `sandbox/bk-198-empirical-verification.md`), a freshly-imported paramiko
-of any of those versions already negotiates against an `ssh-rsa`-only
-server out of the box — including against a server that also restricts KEX
-to legacy SHA-1 variants. `ssh-rsa` is therefore not the root cause of
+major release. Empirically, a freshly-imported paramiko 2.12 / 3.0 / 3.5 /
+4.0 already negotiates against an `ssh-rsa`-only server out of the box —
+including against a server that also restricts KEX to legacy SHA-1
+variants. `ssh-rsa` is therefore not the root cause of
 most legacy-SFTP connection failures today; it becomes one only when
 something has cleared `ssh-rsa` from paramiko's defaults. Concretely you
 will see one of these errors when that state is reached:

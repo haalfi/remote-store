@@ -87,3 +87,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  legacy-sftp:
+    # ssh-rsa-only legacy SSH server. Drives
+    # tests/e2e/test_sftp_legacy_recovery.py — the durable verification of
+    # SFTPUtils.enable_ssh_rsa_compat()'s recovery semantics.
+    build:
+      context: ./legacy-sftp
+    ports:
+      - "2223:22"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "22"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

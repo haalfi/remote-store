@@ -1228,10 +1228,11 @@ class SFTPBackend(Backend):
             # plus that test together.
             if "host key" in str(exc):
                 return BackendUnavailable(
-                    f"{exc} [hint: if ssh-rsa has been cleared from paramiko's "
-                    f"defaults (by downstream code or a future paramiko release), "
-                    f"call SFTPUtils.enable_ssh_rsa_compat() at process startup "
-                    f"to restore it]",
+                    f"{exc} [hint: diagnose by printing "
+                    f"`paramiko.Transport._preferred_keys`. If ssh-rsa is "
+                    f"absent, call SFTPUtils.enable_ssh_rsa_compat() at "
+                    f"process startup. See "
+                    f"docs.remotestore.dev/guides/backends/sftp/#legacy-servers-ssh-rsa-sha-1]",
                     path=path,
                     backend=self.name,
                 )

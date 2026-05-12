@@ -46,6 +46,11 @@ SFTP_PORT = int(os.environ.get("E2E_SFTP_PORT", "2222"))
 SFTP_USER = os.environ.get("E2E_SFTP_USER", "benchuser")
 SFTP_PASS = os.environ.get("E2E_SFTP_PASS", "benchpass")
 
+LEGACY_SFTP_HOST = os.environ.get("E2E_LEGACY_SFTP_HOST", "127.0.0.1")
+LEGACY_SFTP_PORT = int(os.environ.get("E2E_LEGACY_SFTP_PORT", "2223"))
+LEGACY_SFTP_USER = os.environ.get("E2E_LEGACY_SFTP_USER", "legacyuser")
+LEGACY_SFTP_PASS = os.environ.get("E2E_LEGACY_SFTP_PASS", "legacypass")
+
 
 # ---------------------------------------------------------------------------
 # Reachability helpers
@@ -91,6 +96,14 @@ def _sftp_available() -> bool:
     except ImportError:
         return False
     return _port_open(SFTP_HOST, SFTP_PORT)
+
+
+def _legacy_sftp_available() -> bool:
+    try:
+        import paramiko  # noqa: F401
+    except ImportError:
+        return False
+    return _port_open(LEGACY_SFTP_HOST, LEGACY_SFTP_PORT)
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +168,13 @@ s3_pyarrow_skip = pytest.mark.skipif(
 )
 azurite_skip = pytest.mark.skipif(not _azurite_available(), reason="Azurite not reachable or azure SDK not installed")
 sftp_skip = pytest.mark.skipif(not _sftp_available(), reason="SFTP container not reachable or paramiko not installed")
+legacy_sftp_skip = pytest.mark.skipif(
+    not _legacy_sftp_available(),
+    reason=(
+        "Legacy SFTP container not reachable "
+        "(start: docker compose -f benchmarks/infra/docker-compose.yml up -d legacy-sftp)"
+    ),
+)
 
 
 # ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@ trigger: |
   Initial analysis assumed paramiko 3.x+ had removed `ssh-rsa` from
   defaults; empirical re-test against the same legacy server pattern
   across paramiko 2.12 / 3.0 / 3.5 / 4.0
-  (`sandbox/bk-198-empirical-verification.md`) showed paramiko's defaults
+  (`sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md`) showed paramiko's defaults
   already negotiate `ssh-rsa`-only servers. The user's empirical fix
   worked because their environment had pre-mutated paramiko's
   class-level defaults somewhere upstream; the helper restored them.

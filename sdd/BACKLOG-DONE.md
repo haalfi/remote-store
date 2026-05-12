@@ -21,8 +21,6 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   full-server flow (matches the in-process fixture's
   `host_key_entry`), bracket/no-bracket formatting via the small
   `_format_known_hosts_line` helper, and unreachable-port failure.
-  Renumbered from BK-196 (PR's original ID) due to master collision:
-  BK-192's PR took BK-196.
   Audience: `user.api`, `user.site`.
   Trace: [`sdd/traces/BK-199-scan-host-keys.yml`](traces/BK-199-scan-host-keys.yml).
 
@@ -33,7 +31,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `Transport._preferred_pubkeys`. Empirical test against Dockerized
   legacy SSH servers (`ssh-rsa`-only host key, optionally with SHA-1
   KEX) across paramiko 2.12 / 3.0 / 3.5 / 4.0 (see
-  `sandbox/bk-198-empirical-verification.md`) confirmed that paramiko's
+  [`sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md`](research/research-bk-198-paramiko-ssh-rsa-empirical.md)) confirmed that paramiko's
   defaults already negotiate cleanly with `ssh-rsa`-only servers — the
   legacy-server connection failures (`IncompatiblePeer: no acceptable
   host key`) only manifest when downstream code, a custom transport, or
@@ -50,8 +48,6 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `TestSFTPEnableSshRsaCompat` (idempotency + four-site coverage with
   paramiko state restored after) and `TestSFTPIncompatiblePeerHint`
   (hint present on `IncompatiblePeer`, absent on other `SSHException`).
-  Renumbered from BK-195 (PR's original ID) due to master collision:
-  BK-192's PR took BK-195.
   Audience: `user.api`, `user.site`.
   Trace: [`sdd/traces/BK-198-ssh-rsa-compat.yml`](traces/BK-198-ssh-rsa-compat.yml).
 
