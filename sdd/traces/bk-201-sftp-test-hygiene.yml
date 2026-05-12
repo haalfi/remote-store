@@ -15,12 +15,21 @@ audience:
   - infra.test
   - contributor.process
 
-# No new backlog IDs were filed during this work. Round 1 review surfaced
-# that the "stray paragraph" at sdd/BACKLOG.md was actually BK-196's body
-# (the BK-201 entry from PR 613 had replaced the BK-196 header without
-# removing the body); the round-1 fix restored the BK-196 header. No new
-# ID born — BK-196 already existed.
-discovery_followups: []
+# Round 1 review surfaced that the "stray paragraph" at sdd/BACKLOG.md
+# was actually BK-196's body (the BK-201 entry from PR 613 had replaced
+# the BK-196 header without removing the body); the round-1 fix restored
+# the BK-196 header. No new ID born — BK-196 already existed.
+#
+# Round 2: BK-204 filed after the reviewer's question on where the
+# deleted test_resolve_host_keys_direct's logic is now covered.
+# TestSFTPInlineHostKeysVerification covers the "direct" tier of
+# SFTP-007's resolution chain behaviorally, but the config-dict and
+# env-var tiers (and the precedence ordering) remain uncovered — a
+# pre-existing gap, but now visible because the only test that touched
+# the resolution helper (even if only via private-attribute assertion)
+# is gone.
+discovery_followups:
+  - BK-204
 
 # expected_ripples intentionally omitted: BK-201 < the running BK max
 # (backlogid.json already current), and the audience derivation rule
