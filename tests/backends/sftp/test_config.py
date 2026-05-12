@@ -1777,16 +1777,14 @@ class TestSFTPTofuPersistence:
                 connect_kwargs={"allow_agent": False, "look_for_keys": False},
             )
             backend.exists("nonexistent.txt")
-            # Observable: with inline keys, TOFU persistence is bypassed —
-            # save_host_keys is never invoked during close. Mirrors the
-            # mock pattern in test_tofu_save_failure_suppressed below.
-            with patch.object(backend._ssh_client, "save_host_keys") as save_mock:
-                backend.close()
-            save_mock.assert_not_called()
-            # known_hosts file should not have been populated either
-            # (it may exist as an empty file from _ensure_known_hosts_file).
-            if os.path.isfile(keys_path):
-                assert os.path.getsize(keys_path) == 0
+            backend.close()
+            # Observable: with inline keys, the TRUST_ON_FIRST_USE
+            # file-load branch is bypassed entirely — _ensure_known_hosts_file
+            # is never called and _close_clients does not invoke
+            # save_host_keys (because _tofu_keys_path stays None). The
+            # public-observable proxy is therefore: the user's
+            # host_keys_path file was never created.
+            assert not os.path.isfile(keys_path)
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
 

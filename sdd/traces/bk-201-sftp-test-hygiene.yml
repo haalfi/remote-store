@@ -28,6 +28,15 @@ discovery_followups: []
 # CHANGELOG. Per the schema, `expected_ripples` lists files actually
 # touched, not files anticipated and then determined unnecessary.
 
+surprising_ripples:
+  # Round 2 review found a stale `# pragma: no cover -- tested via unit
+  # test` justification on _sftp.py:1247 whose underlying claim was
+  # invalidated by this PR (the original "unit test" was deleted and
+  # replaced with live-fixture tests that genuinely exercise the line).
+  # A source-file edit on a test-hygiene item — neither this trace's
+  # cited reads nor the ripple-check table anticipated touching src/.
+  - src/remote_store/backends/_sftp.py
+
 # Initial: three-site plan agreed during planning (site 1 -> live-fixture
 #          behavior test; site 2 -> tag with concrete reason; site 3 ->
 #          save_host_keys mock pattern). Trace authored alongside the
@@ -55,7 +64,26 @@ discovery_followups: []
 #          "not a blocker" by the reviewer and skipped — the paired
 #          mismatch test, now tightened with the host-key regex, already
 #          locks the wiring claim.
-review_rounds: 1
+# Round 2 (PR #618 review): two new findings raised, both fixed:
+#          (a) src/remote_store/backends/_sftp.py:1247 carried a stale
+#              `# pragma: no cover -- tested via unit test` justification
+#              that was always misleading (the deleted unit test only
+#              asserted on `_resolved_host_keys` and never executed the
+#              branch). The new TestSFTPInlineHostKeysVerification tests
+#              actually connect with `known_host_keys=` and exercise the
+#              branch. Verified with `hatch run test-cov tests/backends/sftp/`
+#              (line 1247 stays covered after pragma removal; _sftp.py
+#              coverage held at 96%). Pragma deleted.
+#          (b) tests/backends/sftp/test_config.py
+#              test_tofu_inline_keys_not_persisted's
+#              `patch.object(backend._ssh_client, "save_host_keys")` was a
+#              Rule 5 violation (mocking paramiko internals). The site is
+#              behaviorally observable: with inline keys the
+#              TRUST_ON_FIRST_USE file-load branch is bypassed entirely
+#              so the user's host_keys_path file is never created.
+#              Replaced the mock with `assert not os.path.isfile(keys_path)`,
+#              keeping behavioral coverage without the Rule 5 violation.
+review_rounds: 2
 
 phases:
   - id: orient
@@ -154,10 +182,27 @@ phases:
         section: "TestSFTPTofuPersistence / test_tofu_inline_keys_not_persisted"
         read_type: reference
         extract: |
-          Replaced `assert backend._tofu_keys_path is None` with the
-          save_host_keys mock pattern (mirrors
-          test_tofu_save_failure_suppressed). The downstream
-          empty-file check stays as a secondary assertion.
+          Round-1 draft replaced `assert backend._tofu_keys_path is None`
+          with a `patch.object(backend._ssh_client, "save_host_keys")`
+          mock + `save_mock.assert_not_called()` (mirroring
+          test_tofu_save_failure_suppressed). Round-2 review flagged the
+          mock as a Rule 5 site (mocking paramiko); replaced with
+          `assert not os.path.isfile(keys_path)` — the public-observable
+          proxy that follows directly from the inline-keys branch
+          bypassing _ensure_known_hosts_file. Stronger assertion (not
+          vacuous) and no Rule 5 violation.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_create_ssh_client / line 1247 inline-keys branch"
+        read_type: reference
+        extract: |
+          Round-2 review: removed the
+          `# pragma: no cover -- tested via unit test` comment. The
+          justification was always misleading (the deleted unit test
+          only asserted on `_resolved_host_keys` and never executed the
+          branch). The new TestSFTPInlineHostKeysVerification tests
+          actually exercise it; verified with `hatch run test-cov` that
+          the line stays covered after pragma removal.
         outcome: ok
       - file: sdd/BACKLOG.md
         section: '"Backlog (Prioritized)" / BK-196 (header restored)'
