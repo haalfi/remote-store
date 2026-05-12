@@ -1,8 +1,8 @@
 # SFTPUtils
 
 !!! warning "Backend-specific module"
-    `SFTPUtils`, `load_private_key`, and `HostKeyPolicy` are exclusive to the
-    SFTP backend. Using them ties your code to `SFTPBackend`.
+    The helpers and enums in this module are exclusive to the SFTP backend.
+    Using them ties your code to `SFTPBackend`.
 
 ::: remote_store.backends.SFTPUtils
     options:
@@ -13,6 +13,27 @@
 ### load_private_key
 
 ::: remote_store.backends._sftp.load_private_key
+    options:
+      heading_level: 4
+      show_root_heading: false
+
+### enable_ssh_rsa_compat
+
+::: remote_store.backends._sftp.enable_ssh_rsa_compat
+    options:
+      heading_level: 4
+      show_root_heading: false
+
+### scan_host_keys
+
+::: remote_store.backends._sftp.scan_host_keys
+    options:
+      heading_level: 4
+      show_root_heading: false
+
+### scan_host_algorithms
+
+::: remote_store.backends._sftp.scan_host_algorithms
     options:
       heading_level: 4
       show_root_heading: false

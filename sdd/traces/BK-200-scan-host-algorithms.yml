@@ -1,0 +1,152 @@
+id: BK-200
+title: "SFTPUtils.scan_host_algorithms raw-socket KEXINIT diagnostic"
+trigger: |
+  `SFTPUtils.scan_host_keys` (BK-199) returns the negotiated host key —
+  useful for pinning, but blind to the actual failure shape behind
+  `paramiko.ssh_exception.IncompatiblePeer`. `IncompatiblePeer` wraps
+  four distinct negotiation failures (host key / KEX / cipher / MAC),
+  and only the first is addressable by `enable_ssh_rsa_compat`. A real
+  field incident (the same one that motivated BK-198) was diagnosed by
+  hand-rolling a raw-socket SSH banner exchange + SSH_MSG_KEXINIT parse
+  on a Linux build agent to read out the server's
+  `server_host_key_algorithms` list and confirm the legacy server only
+  advertised `ssh-rsa`. Promoting that manual diagnostic to a
+  first-class helper closes the gap between "got an IncompatiblePeer"
+  and "I know which `disabled_algorithms` knob to turn" for users on
+  any OS (Unix `ssh -vvv` is unavailable on Windows / container build
+  agents / Jupyter sessions).
+
+source_items:
+  - BK-200
+
+audience:
+  - user.api
+  - user.site
+
+co_shipped_items:
+  - BUG-204
+  - BK-197
+  - BK-198
+  - BK-199
+
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - docs-src/reference/api/sftp-utils.md
+  - docs-src/guides/backends/sftp.md
+
+surprising_ripples:
+  - src/remote_store/backends/_sftp.py  # _map_exception KEX/cipher/MAC hint now points at scan_host_algorithms
+  - tests/backends/sftp/test_config.py  # TestSFTPIncompatiblePeerHint::test_incompatible_peer_kex_hint_points_at_scan_host_algorithms replaces the prior no-hint-for-kex test
+
+# Round 1: shipped alongside BK-198 round 3 (paramiko 5 reframing) —
+#          helper + KEX-variant IncompatiblePeer hint + e2e against
+#          legacy-sftp container.
+# Round 2: griffe-strict CI tripped on bullet-continuation indent in
+#          Returns: block (Returns body indent should be 8 spaces, was 6);
+#          fixed in 456cfc869.
+# Round 3: CONTENT-RULES Rule 6 exemption comment added on the
+#          scan_host_algorithms guide code-block (review round 4 sweep);
+#          PT011 match= on test_scan_unreachable_raises.
+review_rounds: 3
+
+phases:
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPUtils namespace + scan_host_keys"
+        read_type: reference
+        extract: |
+          New static helper alongside scan_host_keys; same
+          staticmethod-wrap pattern. Pure-socket KEXINIT parse rather
+          than driving paramiko.Transport, so the result is independent
+          of any process-global paramiko state mutated by
+          enable_ssh_rsa_compat.
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception IncompatiblePeer branch"
+        read_type: reference
+        extract: |
+          Host-key variant already gets a hint pointing at
+          enable_ssh_rsa_compat. The KEX/cipher/MAC variants previously
+          passed through as plain BackendUnavailable; with scan_host_algorithms
+          available, the non-host-key branch can carry an actionable hint
+          ("run scan_host_algorithms, widen disabled_algorithms").
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPScanHostAlgorithms"
+        read_type: gate
+        extract: |
+          Happy-path test against the in-process modern SSH fixture
+          asserts all eleven documented dict entries are present with
+          the right types and non-empty values for the universally-required
+          name-lists. Unreachable-host test reuses the
+          just-released-ephemeral-port pattern from scan_host_keys for
+          deterministic refusal.
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPIncompatiblePeerHint::test_incompatible_peer_kex_hint_points_at_scan_host_algorithms"
+        read_type: gate
+        extract: |
+          Replaces the prior "no hint for KEX" test (which locked the
+          asymmetry the new helper closes). Asserts the new hint
+          carries `scan_host_algorithms` + `disabled_algorithms`, and
+          that the host-key remedy (`enable_ssh_rsa_compat`, `ssh-rsa`)
+          does NOT bleed into the KEX-variant hint.
+      - file: tests/e2e/test_sftp_legacy_recovery.py
+        section: "TestSFTPScanHostAlgorithmsLegacy"
+        read_type: gate
+        extract: |
+          Against the Dockerized legacy-sftp container, assert
+          server_host_key_algorithms == ["ssh-rsa"] — the diagnostic
+          that motivated the helper. kex/cipher/mac lists asserted
+          non-empty (only host-key narrowing forced by the container).
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "scan_host_algorithms + _recv_exact + _KEXINIT_FIELDS"
+        read_type: reference
+        extract: |
+          Module-level scan_host_algorithms: socket.create_connection,
+          read banner lines until SSH- prefix, send our banner,
+          _recv_exact 5-byte SSH packet header (uint32 packet_length +
+          byte padding_length), _recv_exact payload, assert payload[0]
+          == SSH_MSG_KEXINIT (20), skip 16-byte cookie, parse ten
+          name-lists per RFC 4253 § 7.1. Wrapped as a staticmethod on
+          SFTPUtils.
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception IncompatiblePeer non-host-key branch"
+        read_type: reference
+        extract: |
+          When the IncompatiblePeer message does NOT contain "host key",
+          map to BackendUnavailable with a hint pointing at
+          scan_host_algorithms + connect_kwargs["disabled_algorithms"].
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/reference/api/sftp-utils.md
+        section: "Methods / scan_host_algorithms"
+        read_type: reference
+        extract: "mkdocstrings directive renders the new function on the api page"
+      - file: docs-src/guides/backends/sftp.md
+        section: "Legacy Servers / Diagnose first"
+        read_type: reference
+        extract: |
+          New subsection above "Fix: re-enable ssh-rsa": users run
+          scan_host_algorithms first to identify whether the failure is
+          host-key narrowing (apply enable_ssh_rsa_compat) or KEX/cipher/
+          MAC narrowing (widen via disabled_algorithms). Closes the gap
+          between observing IncompatiblePeer and choosing the right fix.
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public API"
+        read_type: verify
+        extract: "SFTPUtils api page entry added; SFTPUtils class docstring lists scan_host_algorithms alongside the other helpers"

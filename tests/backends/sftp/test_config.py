@@ -37,6 +37,7 @@ from remote_store._models import FolderInfo  # noqa: E402
 from remote_store.backends._sftp import (  # noqa: E402
     HostKeyPolicy,
     SFTPBackend,
+    SFTPUtils,
     _sanitize_pem,
 )
 
@@ -62,6 +63,339 @@ def sftp_backend(sftp_server: tuple[int, str]) -> Iterator[Backend]:
     )
     yield backend
     backend.close()
+
+
+# region: Dependency surface (BUG-204)
+class TestSFTPParamikoVersionSurface:
+    """BUG-204: production code relies on paramiko 3.0+ API (channel_timeout)."""
+
+    pytestmark = pytest.mark.spec("BUG-204")
+
+    def test_ssh_client_connect_accepts_channel_timeout(self) -> None:
+        """SFTPBackend._connect passes channel_timeout=; guard that the installed
+        paramiko exposes the kwarg. Tightens the pyproject.toml lower bound to
+        catch a too-loose pin at import time rather than at runtime.
+        """
+        import inspect
+
+        params = inspect.signature(paramiko.SSHClient.connect).parameters
+        assert "channel_timeout" in params
+
+
+# endregion
+
+
+# region: Legacy server compatibility (BK-198)
+
+
+@pytest.fixture
+def restore_paramiko_state() -> Iterator[None]:
+    """Snapshot paramiko class-attr state and restore after each test.
+
+    Tests that exercise ``SFTPUtils.enable_ssh_rsa_compat`` mutate process-
+    global paramiko state. This fixture preserves test isolation.
+    """
+    from cryptography.hazmat.primitives import hashes  # noqa: F401
+    from paramiko.rsakey import RSAKey
+
+    saved_preferred_keys = paramiko.Transport._preferred_keys
+    saved_preferred_pubkeys = paramiko.Transport._preferred_pubkeys
+    saved_key_info = dict(paramiko.Transport._key_info)
+    saved_hashes = dict(RSAKey.HASHES)
+    try:
+        yield
+    finally:
+        paramiko.Transport._preferred_keys = saved_preferred_keys
+        paramiko.Transport._preferred_pubkeys = saved_preferred_pubkeys
+        paramiko.Transport._key_info.clear()
+        paramiko.Transport._key_info.update(saved_key_info)
+        RSAKey.HASHES.clear()
+        RSAKey.HASHES.update(saved_hashes)
+
+
+class TestSFTPEnableSshRsaCompat:
+    """BK-198: SFTPUtils.enable_ssh_rsa_compat ensures ssh-rsa is present at
+    the four paramiko sites that govern host-key negotiation.
+
+    # internal: no public observable -- enable_ssh_rsa_compat's contract IS
+    # the mutation of paramiko's four private class attributes
+    # (Transport._preferred_keys, Transport._preferred_pubkeys,
+    # Transport._key_info, RSAKey.HASHES). Paramiko exposes no public API
+    # to query "is ssh-rsa in the negotiated set"; mutating these four
+    # sites is the only forward-compatible path documented in
+    # _sftp.py::enable_ssh_rsa_compat. The helper's docstring names them
+    # as the contract. All assertions in this class on those attributes
+    # are observing the helper's documented effect, not poking at
+    # implementation detail.
+    """
+
+    pytestmark = pytest.mark.spec("BK-198")
+
+    def test_helper_adds_ssh_rsa_to_all_four_sites(
+        self,
+        restore_paramiko_state: None,  # noqa: ARG002
+    ) -> None:
+        from paramiko.rsakey import RSAKey
+
+        # Strip ssh-rsa from anywhere it might already exist, so we observe
+        # the helper's effect, not a no-op.
+        paramiko.Transport._preferred_keys = tuple(k for k in paramiko.Transport._preferred_keys if k != "ssh-rsa")
+        paramiko.Transport._preferred_pubkeys = tuple(
+            k for k in paramiko.Transport._preferred_pubkeys if k != "ssh-rsa"
+        )
+        paramiko.Transport._key_info.pop("ssh-rsa", None)
+        RSAKey.HASHES.pop("ssh-rsa", None)
+
+        SFTPUtils.enable_ssh_rsa_compat()
+
+        assert "ssh-rsa" in paramiko.Transport._preferred_keys
+        assert "ssh-rsa" in paramiko.Transport._preferred_pubkeys
+        assert paramiko.Transport._key_info.get("ssh-rsa") is RSAKey
+        assert "ssh-rsa" in RSAKey.HASHES
+        # Security contract: ssh-rsa is appended (not prepended) so modern
+        # algorithms remain negotiated first. Locks in the docstring
+        # promise at _sftp.py "ssh-rsa is appended (not prepended)...".
+        assert paramiko.Transport._preferred_keys[-1] == "ssh-rsa"
+        assert paramiko.Transport._preferred_pubkeys[-1] == "ssh-rsa"
+
+    def test_helper_is_idempotent(self, restore_paramiko_state: None) -> None:  # noqa: ARG002
+        from paramiko.rsakey import RSAKey
+
+        SFTPUtils.enable_ssh_rsa_compat()
+        keys_count_first = paramiko.Transport._preferred_keys.count("ssh-rsa")
+        pubkeys_count_first = paramiko.Transport._preferred_pubkeys.count("ssh-rsa")
+
+        SFTPUtils.enable_ssh_rsa_compat()
+
+        assert paramiko.Transport._preferred_keys.count("ssh-rsa") == keys_count_first
+        assert paramiko.Transport._preferred_pubkeys.count("ssh-rsa") == pubkeys_count_first
+        # Sanity: still present
+        assert "ssh-rsa" in paramiko.Transport._key_info
+        assert "ssh-rsa" in RSAKey.HASHES
+
+
+class TestSFTPIncompatiblePeerHint:
+    """BK-198: _map_exception annotates IncompatiblePeer with a remediation
+    pointer to ``SFTPUtils.enable_ssh_rsa_compat`` only when the underlying
+    paramiko message identifies a host-key failure; KEX / cipher / MAC
+    variants of IncompatiblePeer pass through with no hint, because the
+    helper does not address those."""
+
+    pytestmark = pytest.mark.spec("BK-198")
+
+    def test_incompatible_peer_hint_present_for_host_key(self) -> None:
+        """IncompatiblePeer carrying ``host key`` maps to BackendUnavailable
+        with a hint carrying all three user-actionable signals: the
+        ``[hint:`` framing, ``ssh-rsa``, and ``enable_ssh_rsa_compat``.
+        Locks in the documented shape so a refactor that drops any single
+        signal does not pass silently.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        exc = paramiko.ssh_exception.IncompatiblePeer("no acceptable host key")
+        result = backend._map_exception(exc, "")
+        assert isinstance(result, BackendUnavailable)
+        message = str(result)
+        assert "[hint:" in message
+        assert "ssh-rsa" in message
+        assert "enable_ssh_rsa_compat" in message
+
+    def test_incompatible_peer_kex_hint_points_at_scan_host_algorithms(self) -> None:
+        """IncompatiblePeer for KEX (or cipher / MAC) maps to a
+        BackendUnavailable carrying a *different* hint: it points at
+        ``scan_host_algorithms`` for diagnosis and at
+        ``connect_kwargs={"disabled_algorithms": ...}`` for the remedy.
+        ``enable_ssh_rsa_compat`` does not address those failure modes
+        and must NOT appear in this hint.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        exc = paramiko.ssh_exception.IncompatiblePeer("no acceptable kex algorithm")
+        result = backend._map_exception(exc, "")
+        assert isinstance(result, BackendUnavailable)
+        message = str(result)
+        assert "[hint:" in message
+        assert "scan_host_algorithms" in message
+        assert "disabled_algorithms" in message
+        # The host-key remedy must not bleed into the KEX hint.
+        assert "enable_ssh_rsa_compat" not in message
+        assert "ssh-rsa" not in message
+
+    def test_other_ssh_exception_unchanged(self) -> None:
+        """Non-IncompatiblePeer SSHException keeps the generic mapping (no hint)."""
+        backend = SFTPBackend(host="dummy", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        exc = paramiko.SSHException("session not active")
+        result = backend._map_exception(exc, "")
+        assert isinstance(result, BackendUnavailable)
+        assert "enable_ssh_rsa_compat" not in str(result)
+        assert "scan_host_algorithms" not in str(result)
+
+
+# endregion
+
+
+# region: Preflight host-key discovery (BK-199)
+
+
+class TestSFTPScanHostKeys:
+    """BK-199: SFTPUtils.scan_host_keys returns a known_hosts-formatted line
+    after performing KEX against the server, without authentication."""
+
+    pytestmark = pytest.mark.spec("BK-199")
+
+    def test_scan_returns_known_hosts_line(self, sftp_server: tuple[int, str]) -> None:
+        port, host_key_entry = sftp_server
+        result = SFTPUtils.scan_host_keys("127.0.0.1", port=port)
+        # Result is a single non-empty line, matching the host_key_entry the
+        # fixture publishes (same RSAKey on both sides).
+        assert result.strip(), "scan_host_keys returned empty"
+        # known_hosts format: <host_label> <key_type> <base64_key>
+        parts = result.strip().split(maxsplit=2)
+        assert len(parts) == 3
+        host_label, key_type, key_b64 = parts
+        # Port != 22 -> [host]:port form
+        assert host_label == f"[127.0.0.1]:{port}"
+        # Same key type and base64 as the fixture-published entry
+        _fix_label, fix_type, fix_b64 = host_key_entry.split(maxsplit=2)
+        assert key_type == fix_type
+        assert key_b64 == fix_b64
+
+    @staticmethod
+    def _stub_key() -> object:
+        """Minimal paramiko-PKey-shaped stub for formatter unit tests.
+
+        Avoids the ~0.5-1s cost of ``RSAKey.generate(2048)``; the formatter
+        only consults ``get_name()`` and ``get_base64()``.
+        """
+        from unittest.mock import MagicMock
+
+        stub = MagicMock(spec=paramiko.PKey)
+        stub.get_name.return_value = "ssh-rsa"
+        stub.get_base64.return_value = "AAAA"
+        return stub
+
+    def test_format_default_port_omits_brackets(self) -> None:
+        """For port 22, ``_format_known_hosts_line`` emits the bare hostname
+        (matches OpenSSH known_hosts convention).
+        """
+        from remote_store.backends._sftp import _format_known_hosts_line
+
+        line = _format_known_hosts_line("example.com", 22, self._stub_key())
+        host_label = line.split(maxsplit=1)[0]
+        assert host_label == "example.com"
+
+    def test_format_non_default_port_uses_brackets(self) -> None:
+        """For non-default ports, the label is ``[host]:port``."""
+        from remote_store.backends._sftp import _format_known_hosts_line
+
+        line = _format_known_hosts_line("example.com", 2222, self._stub_key())
+        host_label = line.split(maxsplit=1)[0]
+        assert host_label == "[example.com]:2222"
+
+    def test_scan_unreachable_raises(self) -> None:
+        """Unreachable host propagates a connection error to the caller."""
+        # Bind an OS-assigned ephemeral port and immediately close it, then
+        # pass that just-released port to scan_host_keys: nothing else can
+        # have raced into the same port before the connect attempt, so the
+        # connection is deterministically refused. Beats RFC 5737 TEST-NET-1
+        # (192.0.2.1) which may be silently dropped by local firewalls and
+        # would force us to widen the timeout.
+        import socket
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        unreachable_port = sock.getsockname()[1]
+        sock.close()
+        # match= covers Linux ("Connection refused" / Errno 111), Windows
+        # ("actively refused" / WinError 10061), and connection-reset
+        # variants — what we care about is "connect-side OS failure", not
+        # any specific message.
+        with pytest.raises(
+            (OSError, paramiko.SSHException),
+            match=r"(?i)refused|reset|timed|timeout|unreachable|10061|10054|10060|connect",
+        ):
+            SFTPUtils.scan_host_keys("127.0.0.1", port=unreachable_port, timeout=0.5)
+
+
+# endregion
+
+
+# region: Preflight algorithm discovery (BK-200)
+
+
+class TestSFTPScanHostAlgorithms:
+    """BK-200: SFTPUtils.scan_host_algorithms parses the server's SSH
+    KEXINIT advertisement (RFC 4253 § 7.1) over a raw socket without
+    authenticating or completing key exchange.
+    """
+
+    pytestmark = pytest.mark.spec("BK-200")
+
+    _EXPECTED_FIELDS = (
+        "banner",
+        "kex_algorithms",
+        "server_host_key_algorithms",
+        "encryption_algorithms_ctos",
+        "encryption_algorithms_stoc",
+        "mac_algorithms_ctos",
+        "mac_algorithms_stoc",
+        "compression_algorithms_ctos",
+        "compression_algorithms_stoc",
+        "languages_ctos",
+        "languages_stoc",
+    )
+
+    def test_scan_returns_kexinit_namelists(self, sftp_server: tuple[int, str]) -> None:
+        """Returned dict has all eleven documented entries with the right shapes.
+
+        Drives the helper against the in-process modern SSH fixture
+        ``sftp_server`` (atmoz/sftp-style); asserts that the algorithm
+        lists are non-empty for the universally-required entries
+        (``kex_algorithms``, ``server_host_key_algorithms``,
+        encryption / MAC c2s and s2c) and that the banner is a valid SSH
+        identification string.
+        """
+        port, _ = sftp_server
+        result = SFTPUtils.scan_host_algorithms("127.0.0.1", port=port)
+
+        assert set(result) == set(self._EXPECTED_FIELDS)
+        assert isinstance(result["banner"], str)
+        assert result["banner"].startswith("SSH-2.0")
+        for required in (
+            "kex_algorithms",
+            "server_host_key_algorithms",
+            "encryption_algorithms_ctos",
+            "encryption_algorithms_stoc",
+            "mac_algorithms_ctos",
+            "mac_algorithms_stoc",
+        ):
+            value = result[required]
+            assert isinstance(value, list), f"{required} should be a list, got {type(value).__name__}"
+            assert value, f"{required} should be non-empty, got {value!r}"
+            assert all(isinstance(name, str) for name in value), required
+            assert all(name for name in value), required
+
+    def test_scan_unreachable_raises(self) -> None:
+        """Unreachable host propagates a connection error to the caller.
+
+        Uses the same just-released-ephemeral-port pattern as
+        ``scan_host_keys`` so the connection is deterministically refused
+        without depending on RFC 5737 reachability behavior.
+        """
+        import socket
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        unreachable_port = sock.getsockname()[1]
+        sock.close()
+        # match= rationale matches scan_host_keys test_scan_unreachable_raises;
+        # cross-OS messaging for "connect failed" varies.
+        with pytest.raises(
+            OSError,
+            match=r"(?i)refused|reset|timed|timeout|unreachable|10061|10054|10060|connect",
+        ):
+            SFTPUtils.scan_host_algorithms("127.0.0.1", port=unreachable_port, timeout=0.5)
+
+
+# endregion
 
 
 # region: Construction (SFTP-001 through SFTP-005)
@@ -546,6 +880,90 @@ class TestSFTPHostKeyPolicyCoercion:
         else:
             backend = SFTPBackend(host="dummy", host_key_policy=input_str)
             assert backend._host_key_policy is expected
+
+
+class TestSFTPHostKeyPolicyAliases:
+    """BK-197: HostKeyPolicy accepts enum-name aliases for the values whose
+    string forms (``auto``, ``tofu``) diverge from the enum names
+    (``AUTO_ADD``, ``TRUST_ON_FIRST_USE``)."""
+
+    pytestmark = pytest.mark.spec("BK-197")
+
+    @pytest.mark.parametrize(
+        ("alias", "expected"),
+        [
+            pytest.param("auto_add", HostKeyPolicy.AUTO_ADD, id="auto_add"),
+            pytest.param("AUTO_ADD", HostKeyPolicy.AUTO_ADD, id="AUTO_ADD"),
+            pytest.param("trust_on_first_use", HostKeyPolicy.TRUST_ON_FIRST_USE, id="trust_on_first_use"),
+            pytest.param("TRUST_ON_FIRST_USE", HostKeyPolicy.TRUST_ON_FIRST_USE, id="TRUST_ON_FIRST_USE"),
+            pytest.param("STRICT", HostKeyPolicy.STRICT, id="STRICT-upper-name"),
+        ],
+    )
+    def test_enum_name_aliases_resolve(self, alias: str, expected: HostKeyPolicy) -> None:
+        """Enum-name forms (uppercase or lowercase) resolve to the same member."""
+        assert HostKeyPolicy(alias) is expected
+
+    def test_invalid_value_still_raises(self) -> None:
+        """Unknown values continue to raise ValueError."""
+        with pytest.raises(ValueError, match="not a valid HostKeyPolicy"):
+            HostKeyPolicy("totally_made_up")
+
+    @pytest.mark.parametrize(
+        "value_form",
+        [
+            # "AUTO" is the uppercase of value "auto", and is NOT an enum
+            # name (the name is "AUTO_ADD"); the hook should not resolve it.
+            pytest.param("AUTO", id="AUTO-upper-value"),
+            # "Tofu" -> "TOFU" is neither value nor name (name is
+            # "TRUST_ON_FIRST_USE"); should not resolve.
+            pytest.param("Tofu", id="Tofu-mixed-value"),
+        ],
+    )
+    def test_value_form_aliasing_raises(self, value_form: str) -> None:
+        """_missing_ only case-folds enum-NAME forms; value-form upper/mixed
+        case (e.g. "AUTO" for value "auto", "Tofu" for value "tofu") still
+        raises. Locks in the scope of the alias hook so the CHANGELOG
+        "case-insensitive on the name" wording stays accurate.
+
+        Caveat: ``"Strict"`` happens to resolve because uppercase yields
+        ``"STRICT"``, which IS an enum-name form. That's the same code path
+        as ``test_enum_name_aliases_resolve``; not a value-form alias bug.
+        """
+        with pytest.raises(ValueError, match="not a valid HostKeyPolicy"):
+            HostKeyPolicy(value_form)
+
+    def test_constructor_accepts_alias_string(self) -> None:
+        """SFTPBackend constructor accepts the alias string form and
+        coerces to the canonical enum member.
+
+        The coercion semantics themselves are tested in
+        ``test_enum_name_aliases_resolve``; this test adds that the
+        SFTPBackend constructor delegates to that coercion rather than
+        storing the raw string.
+        """
+        # internal: no public observable -- SFTPBackend's constructor
+        # coercion has no public reflection (no repr surface, no
+        # method that returns the policy); asserting on the private
+        # attribute is the only way to verify the coerced storage.
+        # The coercion logic itself is tested at the enum level above.
+        backend = SFTPBackend(host="dummy", host_key_policy="auto_add")
+        assert backend._host_key_policy is HostKeyPolicy.AUTO_ADD
+
+    @pytest.mark.parametrize(
+        "non_string",
+        [
+            pytest.param(42, id="int"),
+            pytest.param(None, id="None"),
+            pytest.param(b"auto", id="bytes"),
+        ],
+    )
+    def test_non_string_input_raises(self, non_string: object) -> None:
+        """_missing_ guards with ``isinstance(value, str)``; non-string
+        inputs fall through to ValueError rather than crashing on .upper().
+        Locks the typing contract so the guard cannot be silently deleted.
+        """
+        with pytest.raises(ValueError, match="not a valid HostKeyPolicy"):
+            HostKeyPolicy(non_string)
 
 
 class TestSFTPToKey:

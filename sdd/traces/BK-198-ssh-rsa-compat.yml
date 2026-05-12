@@ -1,0 +1,181 @@
+id: BK-198
+title: "SFTP enable_ssh_rsa_compat() for paramiko 5+ legacy-server compatibility"
+trigger: |
+  Connecting to a legacy third-party SFTP service (a PSFTPd server) raised
+  `paramiko.ssh_exception.IncompatiblePeer` during the SSH handshake.
+  Initial analysis assumed paramiko 3.x+ had removed `ssh-rsa` from
+  defaults; a first corrective sweep then over-corrected to "the helper
+  is a no-op on every shipping paramiko". The full empirical re-test
+  across paramiko 2.12 / 3.0 / 3.5 / 4.0 / 5.0 against a Dockerized
+  `ssh-rsa`-only server
+  (`sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md`)
+  resolves the framing: paramiko 5.0 IS the version that cleared
+  `ssh-rsa` from all four host-key sites; on paramiko `>= 5` against an
+  `ssh-rsa`-only peer, bare connect fails immediately in
+  `Transport._parse_kex_init` and the helper is the only recovery path
+  without per-call `connect_kwargs["disabled_algorithms"]` mutation.
+  `disabled_algorithms` cannot re-add a default-removed algorithm, so
+  class-level patching is the only forward-compatible path.
+
+source_items:
+  - BK-198
+
+audience:
+  - user.api
+  - user.site
+
+co_shipped_items:
+  - BUG-204
+  - BK-197
+  - BK-199
+  - BK-200
+
+# BUG-205 was filed during this work after I misread the SFTP backend's
+# TOFU close-side save_host_keys path and concluded persistence was
+# unreachable through Registry.get_store(). Empirical reproduction (failing
+# test first, per Rule 6) showed paramiko's AutoAddPolicy already auto-saves
+# via client._host_keys_filename, which SFTPBackend.load_host_keys sets in
+# the TOFU branch. Withdrawn the same session in commit 57fb6c291.
+#
+# ID-181 (per-backend ssh-rsa opt-in via Transport subclass) and ID-182
+# (CI drift guard for unbounded extra-dependency floors) surfaced during
+# the BK-198 reframing and are filed as ideas in BACKLOG.md.
+discovery_followups:
+  - BUG-205
+  - ID-181
+  - ID-182
+
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - docs-src/reference/api/sftp-utils.md
+
+surprising_ripples:
+  - sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md
+  - tests/e2e/test_sftp_legacy_recovery.py
+  - tests/e2e/conftest.py
+  - benchmarks/infra/legacy-sftp/Dockerfile
+  - benchmarks/infra/docker-compose.yml
+  - docs-src/guides/troubleshooting.md  # round 5: cross-link from troubleshooting -> Legacy Servers + scan_host_algorithms
+
+# Round 1: initial implementation (BK-198 first cut).
+# Round 2: empirical re-test against paramiko 2.12-4.0 -> corrective
+#          reframing (helper as recovery-only); promoted probe to
+#          benchmarks/infra/legacy-sftp + tests/e2e/test_sftp_legacy_recovery.py.
+# Round 3: paramiko 5.0 field-data finding -> matrix extended to 5.0,
+#          docstring/guide/CHANGELOG name 5.0 explicitly, pin alternative
+#          corrected to <5; T33 no-cap decision documented in research § 5;
+#          ID-181 / ID-182 filed; BK-200 (scan_host_algorithms) shipped
+#          alongside; KEX-variant IncompatiblePeer hint added.
+# Round 4: docs framework (CONTENT-RULES Rule 1/3/6) compliance fixes in
+#          guide; TESTING.md "# internal: no public observable" tag on
+#          paramiko.Transport.* assertions; PT011 match= on the unreachable
+#          tests; S1 e2e split into version-skipif'd S1a/S1b for single
+#          straight-line assertion paths per test. BK-201 filed for the
+#          pre-existing SFTPBackend private-state assertion cleanup.
+# Round 5: troubleshooting guide ripple -- added "SFTP IncompatiblePeer
+#          on connect" entry with diagnose-first flow (scan_host_algorithms)
+#          and per-failure-mode fixes (enable_ssh_rsa_compat vs
+#          disabled_algorithms), so users landing in troubleshooting.md
+#          first find the path to BK-198 / BK-200 helpers.
+review_rounds: 5
+
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception (lines 1013-1036)"
+        read_type: reference
+        extract: "All SSHException subclasses fall through to BackendUnavailable(str(exc)); IncompatiblePeer is not distinguished"
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPErrorMapping"
+        read_type: reference
+        extract: "Existing pattern: instantiate backend with dummy host + AUTO_ADD, call _map_exception directly"
+
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPUtils (lines 117-141)"
+        read_type: reference
+        extract: "Public namespace for SFTP helpers; new method belongs as a staticmethod wrapping a module-level function"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public API"
+        read_type: gate
+        extract: "Secondary public API (e.g. SFTPUtils) needs its own api/*.md page and index entry; sftp-utils.md exists and gets a new method block"
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPEnableSshRsaCompat, TestSFTPIncompatiblePeerHint"
+        read_type: gate
+        extract: |
+          Snapshot/restore fixture for paramiko class-attr state; tests
+          assert the four-site patch and idempotency, plus the hint
+          presence on host-key IncompatiblePeer and absence on KEX
+          IncompatiblePeer and plain SSHException.
+      - file: tests/e2e/test_sftp_legacy_recovery.py
+        section: "TestSFTPLegacyRecovery"
+        read_type: gate
+        extract: |
+          End-to-end S1/S3/S4 against the legacy-sftp container,
+          parametrised on paramiko.__version__: S1 expects success on
+          paramiko < 5 and IncompatiblePeer(host key) on >= 5; S3 always
+          fails after explicit clear; S4 always succeeds after helper.
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "enable_ssh_rsa_compat + SFTPUtils.enable_ssh_rsa_compat"
+        read_type: reference
+        extract: |
+          Module-level function applies four idempotent patches:
+          Transport._preferred_keys (append ssh-rsa), Transport._key_info
+          (register RSAKey), RSAKey.HASHES (register SHA1),
+          Transport._preferred_pubkeys (append ssh-rsa). Wrapped as a
+          staticmethod on SFTPUtils for the public API. Required on
+          paramiko >= 5; no-op on < 5 (all four guards short-circuit).
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception IncompatiblePeer branch"
+        read_type: reference
+        extract: |
+          Detect paramiko.ssh_exception.IncompatiblePeer before the
+          generic SSHException branch; if the message contains "host key",
+          map to BackendUnavailable with an appended hint pointing at
+          SFTPUtils.enable_ssh_rsa_compat and the guide anchor. KEX /
+          cipher / MAC variants pass through as plain BackendUnavailable.
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/backends/sftp.md
+        section: "Legacy Servers (ssh-rsa / SHA-1) { #legacy-ssh-rsa }"
+        read_type: reference
+        extract: |
+          New section (explicit anchor for the hint URL): version-split
+          framing (paramiko < 5 vs >= 5), helper usage, KEX-failure note,
+          security tradeoff, and the paramiko<5 pin alternative with
+          tradeoff table.
+      - file: docs-src/reference/api/sftp-utils.md
+        section: "Methods / enable_ssh_rsa_compat"
+        read_type: reference
+        extract: "mkdocstrings directive for the new function rendered on the api page"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public method signature"
+        read_type: verify
+        extract: "Docstring Args/Returns/Raises updated; example added"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Error type"
+        read_type: verify
+        extract: "_map_exception now distinguishes IncompatiblePeer; covered by TestSFTPIncompatiblePeerHint"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public API"
+        read_type: verify
+        extract: "SFTPUtils api page entry added; index summary description still covers the new method conceptually"

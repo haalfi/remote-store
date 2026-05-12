@@ -8,6 +8,117 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-199 — `SFTPUtils.scan_host_keys(host, port=22) -> str` preflight host-key discovery**
+  Static helper that opens a `paramiko.Transport`, performs key exchange
+  without authenticating, captures `transport.get_remote_server_key()`,
+  and returns a single `known_hosts`-formatted line ready to commit into
+  a `host.keys` file. Mirrors `ssh-keyscan`. The label follows OpenSSH
+  convention: bare hostname for port 22, `[host]:port` otherwise.
+  Network failures raise `OSError` cleanly (socket created via
+  `socket.create_connection` to avoid paramiko's tuple-handling leak);
+  KEX failures raise `paramiko.SSHException` so callers know to apply
+  `enable_ssh_rsa_compat()` first for legacy servers. Tests cover the
+  full-server flow (matches the in-process fixture's
+  `host_key_entry`), bracket/no-bracket formatting via the small
+  `_format_known_hosts_line` helper, and unreachable-port failure.
+  Audience: `user.api`, `user.site`.
+  Trace: [`sdd/traces/BK-199-scan-host-keys.yml`](traces/BK-199-scan-host-keys.yml).
+
+- [x] **BK-200 — SFTP `scan_host_algorithms()` raw-socket KEXINIT diagnostic**
+  Companion to `scan_host_keys()`, but returns the server's full RFC
+  4253 § 7.1 algorithm advertisement (kex / host-key / cipher / MAC /
+  compression name-lists) instead of the negotiated key. Pure socket
+  + manual KEXINIT parse, so the result reflects exactly what the
+  server advertises — independent of any process-global paramiko state
+  mutated by `enable_ssh_rsa_compat()` or downstream code. Surfaces
+  the diagnostic needed to triage `IncompatiblePeer` errors:
+  `IncompatiblePeer` wraps four distinct negotiation failures (host
+  key, KEX, cipher, MAC) and only the first is addressable by
+  `enable_ssh_rsa_compat()`. Hooked into `SFTPBackend._map_exception`:
+  the non-host-key `IncompatiblePeer` hint now points at
+  `scan_host_algorithms()` and `connect_kwargs={"disabled_algorithms":
+  ...}`. New "Diagnose first" subsection in the SFTP backend guide.
+  Tests: `TestSFTPScanHostAlgorithms` (unit/integration against the
+  benchmarks/infra sftp fixture, asserts the eleven documented entries
+  and shape) and `TestSFTPScanHostAlgorithmsLegacy` in
+  `tests/e2e/test_sftp_legacy_recovery.py` (asserts
+  `server_host_key_algorithms == ["ssh-rsa"]` against the legacy-sftp
+  container — the exact diagnostic that motivated the helper).
+  `TestSFTPIncompatiblePeerHint::test_incompatible_peer_kex_hint_points_at_scan_host_algorithms`
+  locks the new KEX-variant hint. Audience: `user.api`, `user.site`.
+  Trace: [`sdd/traces/BK-200-scan-host-algorithms.yml`](traces/BK-200-scan-host-algorithms.yml).
+
+- [x] **BK-198 — SFTP `enable_ssh_rsa_compat()` for paramiko 5+ legacy-server compatibility**
+  Paramiko 5.0 removed `ssh-rsa` (SHA-1) from its host-key defaults
+  across all four negotiation sites (`Transport._preferred_keys`,
+  `Transport._preferred_pubkeys`, `Transport._key_info`,
+  `RSAKey.HASHES`). Fresh `pip install remote-store[sftp]` resolves to
+  paramiko 5+ today, so connecting to an `ssh-rsa`-only legacy SFTP
+  server raises `IncompatiblePeer: no acceptable host key` during KEX
+  on a default install. Empirical test against a Dockerized
+  `ssh-rsa`-only server across paramiko 2.12 / 3.0 / 3.5 / 4.0 / 5.0
+  (see [`sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md`](research/research-bk-198-paramiko-ssh-rsa-empirical.md))
+  confirms: paramiko `< 5` ships `ssh-rsa` in defaults and connects
+  out of the box; paramiko `>= 5` requires the helper. Ships three
+  coordinated changes:
+  (a) `SFTPUtils.enable_ssh_rsa_compat()` static method appending
+  `ssh-rsa` to all four sites idempotently — required on paramiko 5+,
+  no-op on `< 5`. Process-global; documented as a security reduction.
+  (b) `SFTPBackend._map_exception` annotates
+  `paramiko.ssh_exception.IncompatiblePeer` with a hint scoped to the
+  `"host key"` substring (so KEX / cipher / MAC variants pass through
+  as plain `BackendUnavailable`). (c) New "Legacy Servers (`ssh-rsa` /
+  SHA-1)" guide section covering symptoms, remedy, security tradeoff,
+  and the `paramiko<5` pin alternative with explicit cost. Tests in
+  `TestSFTPEnableSshRsaCompat` (idempotency + four-site coverage with
+  paramiko state restored after), `TestSFTPIncompatiblePeerHint` (hint
+  present on host-key `IncompatiblePeer`, absent on KEX / other
+  `SSHException`), and the e2e
+  `tests/e2e/test_sftp_legacy_recovery.py` (parametrised on
+  `paramiko.__version__` against a real Dockerized legacy server).
+  Audience: `user.api`, `user.site`.
+  Trace: [`sdd/traces/BK-198-ssh-rsa-compat.yml`](traces/BK-198-ssh-rsa-compat.yml).
+
+- [x] **BK-197 — `HostKeyPolicy` accepts enum-name aliases**
+  Value strings of `HostKeyPolicy` are `"strict"`, `"tofu"`, `"auto"`
+  (`src/remote_store/backends/_sftp.py:68-70`); the latter two do not
+  match their enum names (`TRUST_ON_FIRST_USE`, `AUTO_ADD`). Callers
+  typing `"auto_add"` or `"trust_on_first_use"` hit
+  `ValueError: 'auto_add' is not a valid HostKeyPolicy`. Added
+  `_missing_` hook that maps the enum-name forms (case-insensitive)
+  to canonical members; existing YAML configs using `"auto"` /
+  `"tofu"` / `"strict"` continue to work unchanged. New test class
+  `TestSFTPHostKeyPolicyAliases` covers the supported alias forms
+  and confirms unknown values still raise.
+  Audience: `user.api`.
+  Trace: [`sdd/traces/BK-197-host-key-policy-aliases.yml`](traces/BK-197-host-key-policy-aliases.yml).
+
+- [x] **BUG-204 — SFTP backend declared `paramiko>=2.2` but used paramiko 3.0+ API (`channel_timeout`)**
+  `SFTPBackend._connect()` passes `channel_timeout=self._timeout` to
+  `paramiko.SSHClient.connect()` (`src/remote_store/backends/_sftp.py:864`).
+  The `channel_timeout` keyword was added in paramiko 3.0; paramiko 2.x
+  raised `TypeError: SSHClient.connect() got an unexpected keyword
+  argument 'channel_timeout'` at runtime. `pyproject.toml` `[sftp]`
+  extra now requires `paramiko>=3.0`, matching what the code actually
+  uses. Surfaced when a user pinned `paramiko<3` to recover ssh-rsa
+  (SHA-1) host-key support for a legacy SFTP server (PSFTPd). New
+  test `TestSFTPParamikoVersionSurface` asserts `channel_timeout` is in
+  the installed paramiko's `SSHClient.connect` signature, guarding the
+  lower bound against future drift.
+  Audience: `user.api`.
+  Trace: [`sdd/traces/BUG-204-paramiko-lower-bound.yml`](traces/BUG-204-paramiko-lower-bound.yml).
+
+- [x] **BUG-205 — TOFU persistence through `Registry.get_store()` (withdrawn — not a bug)**
+  Hypothesized that `SFTPBackend`'s TOFU flow did not persist newly
+  accepted host keys to disk when the backend was constructed via the
+  store registry; investigation under the failing-test-first protocol
+  showed paramiko's `AutoAddPolicy.missing_host_key` already auto-saves
+  to the path that `SFTPBackend.load_host_keys` sets on the client. No
+  code change; recorded here so future contributors who form the same
+  hypothesis can find the prior reasoning without re-filing the ID.
+  Audience: `dev.process`.
+  Discussion: [`sdd/traces/BK-198-ssh-rsa-compat.yml:25-26`](traces/BK-198-ssh-rsa-compat.yml).
+
 - [x] **BK-192 — `copy()` metadata parity on `MemoryBackend` and `AsyncMemoryBackend`**
   Both backends constructed the destination `_FileEntry` in `copy()` without
   `metadata=src_node.metadata`, so `write(path, data, metadata={...}) → copy(path, dst) → get_file_info(dst)`
