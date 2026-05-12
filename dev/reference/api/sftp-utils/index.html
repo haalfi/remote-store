@@ -3458,6 +3458,90 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#enable_ssh_rsa_compat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enable_ssh_rsa_compat
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="enable_ssh_rsa_compat">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.backends._sftp.enable_ssh_rsa_compat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;enable_ssh_rsa_compat
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scan_host_keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan_host_keys
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="scan_host_keys">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.backends._sftp.scan_host_keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;scan_host_keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scan_host_algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan_host_algorithms
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="scan_host_algorithms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.backends._sftp.scan_host_algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;scan_host_algorithms
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6846,6 +6930,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../explanation/design/research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../explanation/design/research/research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
@@ -9104,6 +9216,90 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#enable_ssh_rsa_compat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enable_ssh_rsa_compat
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="enable_ssh_rsa_compat">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.backends._sftp.enable_ssh_rsa_compat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;enable_ssh_rsa_compat
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scan_host_keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan_host_keys
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="scan_host_keys">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.backends._sftp.scan_host_keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;scan_host_keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scan_host_algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scan_host_algorithms
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="scan_host_algorithms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#remote_store.backends._sftp.scan_host_algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;scan_host_algorithms
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9188,8 +9384,8 @@
 <h1 id="sftputils">SFTPUtils<a class="headerlink" href="#sftputils" title="Permanent link">&para;</a></h1>
 <div class="admonition warning">
 <p class="admonition-title">Backend-specific module</p>
-<p><code>SFTPUtils</code>, <code>load_private_key</code>, and <code>HostKeyPolicy</code> are exclusive to the
-SFTP backend. Using them ties your code to <code>SFTPBackend</code>.</p>
+<p>The helpers and enums in this module are exclusive to the SFTP backend.
+Using them ties your code to <code>SFTPBackend</code>.</p>
 </div>
 
 
@@ -9213,6 +9409,16 @@ SFTP backend. Using them ties your code to <code>SFTPBackend</code>.</p>
 <ul>
 <li><code>SFTPUtils.load_private_key(...)</code> -- load RSA keys from file or PEM string</li>
 <li><code>SFTPUtils.HostKeyPolicy</code> -- enum controlling unknown host key behavior</li>
+<li><code>SFTPUtils.scan_host_keys(host, port=22)</code> -- preflight host-key
+  discovery; returns a <code>known_hosts</code>-formatted line for committing
+  into a <code>host.keys</code> file</li>
+<li><code>SFTPUtils.scan_host_algorithms(host, port=22)</code> -- raw-socket SSH
+  KEXINIT probe; returns the server's algorithm advertisement
+  (kex / host-key / cipher / MAC / compression name-lists) for
+  diagnosing <code>IncompatiblePeer</code> failures</li>
+<li><code>SFTPUtils.enable_ssh_rsa_compat()</code> -- restore <code>ssh-rsa</code> (SHA-1)
+  acceptance for legacy SFTP servers (see method docstring for the
+  security tradeoff)</li>
 </ul>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
@@ -9305,6 +9511,395 @@ SFTP backend. Using them ties your code to <code>SFTPBackend</code>.</p>
 
     </div>
 
+</div><h3 id="enable_ssh_rsa_compat">enable_ssh_rsa_compat<a class="headerlink" href="#enable_ssh_rsa_compat" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<a id="remote_store.backends._sftp.enable_ssh_rsa_compat"></a>
+    <div class="doc doc-contents first">
+
+        <p>Guarantee <code>ssh-rsa</code> (SHA-1) acceptance across paramiko's four host-key sites.</p>
+<p>Appends <code>ssh-rsa</code> to four paramiko class attributes if it is
+missing — future-proofing the consumer against eventual removal,
+and restoring state if downstream code has cleared it:</p>
+<ol>
+<li><code>paramiko.Transport._preferred_keys</code> -- KEX host-key-algorithm
+   negotiation.</li>
+<li><code>paramiko.Transport._key_info</code> -- host-key parsing dispatch.</li>
+<li><code>paramiko.rsakey.RSAKey.HASHES</code> -- signature-verification hash
+   dispatch.</li>
+<li><code>paramiko.Transport._preferred_pubkeys</code> -- client RSA public-key
+   authentication signatures.</li>
+</ol>
+<p>Empirically verified across paramiko 2.12 / 3.0 / 3.5 / 4.0 / 5.0
+(see <code>sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md</code>):</p>
+<ul>
+<li>On paramiko <strong>&lt; 5.0</strong> all four sites contain <code>ssh-rsa</code> by
+  default, so a freshly-imported paramiko already negotiates against
+  an <code>ssh-rsa</code>-only server. The helper is a no-op (all four guards
+  short-circuit) and is safe to call eagerly for forward
+  compatibility.</li>
+<li>On paramiko <strong>&gt;= 5.0</strong> all four sites have <code>ssh-rsa</code> removed.
+  Bare connect to an <code>ssh-rsa</code>-only server fails immediately in
+  <code>Transport._parse_kex_init</code> with <code>IncompatiblePeer: no
+  acceptable host key</code>. Calling this helper at process startup is
+  the only way to restore the connection without monkey-patching
+  <code>connect_kwargs["disabled_algorithms"]</code> on every connect.</li>
+</ul>
+<p>For KEX / cipher / MAC negotiation failures (e.g.
+<code>IncompatiblePeer: no acceptable kex algorithm</code>), this helper is
+not the right tool — use <code>connect_kwargs={"disabled_algorithms":
+...}</code> to widen those instead.</p>
+<p><code>disabled_algorithms</code> cannot re-add a default-removed algorithm,
+so class-level patching is the only forward-compatible path. The
+patches are idempotent; calling this multiple times in the same
+process is safe.</p>
+<div class="admonition warning">
+<p class="admonition-title">Process-global side effect</p>
+<p>Every paramiko transport in this process will accept SHA-1 host
+keys for the lifetime of the process. Only call this if the
+consumer connects exclusively to servers under your operational
+control, or if you have explicitly evaluated the tradeoff for
+every server in the process.</p>
+<p><code>ssh-rsa</code> is appended (not prepended) to the preferred lists, so
+modern algorithms are still negotiated first when the server
+offers them.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Single-threaded startup only</p>
+<p>The four read-then-write patches are not atomic; if two threads
+enter the helper at the same time they race on the rebind. Call
+once at process startup before any backend connect, not from a
+request-handling code path.</p>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPUtils</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Call once at process startup, before any SFTPBackend connect.</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">SFTPUtils</span><span class="o">.</span><span class="n">enable_ssh_rsa_compat</span><span class="p">()</span>
+</code></pre></div>
+</div>
+
+
+    </div>
+
+</div><h3 id="scan_host_keys">scan_host_keys<a class="headerlink" href="#scan_host_keys" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<a id="remote_store.backends._sftp.scan_host_keys"></a>
+    <div class="doc doc-contents first">
+
+        <p>Discover an SFTP server's host key without authenticating.</p>
+<p>Opens a <code>paramiko.Transport</code> to <em>host</em>:<em>port</em>, performs key exchange,
+captures the server's offered host key, closes the connection, and
+returns the key as a single <code>known_hosts</code>-formatted line. No
+authentication is attempted; only the SSH key-exchange handshake runs.</p>
+<p>Use this to populate a committed <code>host.keys</code> file for production
+<code>STRICT</code> policy use, without going through a TOFU connect first.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>host</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Hostname or IP address of the SFTP server.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>port</code></b>
+              (<code><span title="int">int</span></code>, default:
+                  <code>22</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>SSH port (default: 22).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>timeout</code></b>
+              (<code><span title="float">float</span></code>, default:
+                  <code>10.0</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Socket and KEX timeout in seconds (default: 10).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>A single <code>known_hosts</code>-format line:</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p><code>"&lt;host_label&gt; &lt;key_type&gt; &lt;base64_key&gt;"</code>. Per OpenSSH convention,</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p><em>host_label</em> is <code>"[host]:port"</code> when <em>port</em> is not 22, and the</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>bare hostname otherwise. The trailing newline is not included.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>Returns only the <strong>negotiated</strong> key for one handshake (whichever</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>key type paramiko picked: usually one of ed25519, ecdsa, rsa),</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>not every key the server offers. <code>ssh-keyscan</code> returns one line</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>per offered type by default; this helper does not. If the server</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>offers multiple key types and paramiko later negotiates a</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>different one than the pinned line, the connection fails with</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p><code>BadHostKeyException</code>. Callers that need full-type coverage</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p>must call this helper multiple times under different</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="str">str</span></code>
+          –
+          <div class="doc-md-description">
+            <p><code>disabled_algorithms</code> settings to force each type in turn.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="paramiko.SSHException">SSHException</span></code>
+            –
+          <div class="doc-md-description">
+            <p>Negotiation failed (e.g. legacy server
+offering only <code>ssh-rsa</code>; call <code>enable_ssh_rsa_compat()</code>
+first if so).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="OSError">OSError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>Socket-level failure (host unreachable, port refused,
+DNS error, timeout).</p>
+          </div>
+        </li>
+    </ul>
+        <div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPUtils</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">entry</span> <span class="o">=</span> <span class="n">SFTPUtils</span><span class="o">.</span><span class="n">scan_host_keys</span><span class="p">(</span><span class="s2">&quot;sftp.example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;host.keys&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">entry</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+
+
+    </div>
+
+</div><h3 id="scan_host_algorithms">scan_host_algorithms<a class="headerlink" href="#scan_host_algorithms" title="Permanent link">&para;</a></h3>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<a id="remote_store.backends._sftp.scan_host_algorithms"></a>
+    <div class="doc doc-contents first">
+
+        <p>Discover an SFTP server's algorithm advertisement without authenticating.</p>
+<p>Opens a raw TCP socket, exchanges SSH banners, reads the server's
+first <code>SSH_MSG_KEXINIT</code> packet (RFC 4253 § 7.1), parses the ten
+name-lists it carries, and returns them as a dictionary. No
+paramiko, no key exchange completes, no authentication is attempted.</p>
+<p>Use this to identify the failure shape behind an
+<code>IncompatiblePeer</code> error. <code>IncompatiblePeer</code> wraps four distinct
+negotiation failures (host key / KEX / cipher / MAC), and only the
+first is addressable by <code>enable_ssh_rsa_compat()</code>. Inspecting
+the four corresponding name-lists in the result tells you which
+list the server narrowed and to what.</p>
+<p>Pure-socket parsing (rather than driving <code>paramiko.Transport</code>) is
+deliberate: the result reflects what the <em>server</em> advertises,
+independent of any process-global paramiko state mutated by
+<code>enable_ssh_rsa_compat()</code> or downstream code.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>host</code></b>
+              (<code><span title="str">str</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Hostname or IP address of the SFTP server.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>port</code></b>
+              (<code><span title="int">int</span></code>, default:
+                  <code>22</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>SSH port (default: 22).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>timeout</code></b>
+              (<code><span title="float">float</span></code>, default:
+                  <code>10.0</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Socket timeout in seconds (default: 10).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="list">list</span>[<span title="str">str</span>] | <span title="str">str</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>A dictionary with eleven entries:</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="list">list</span>[<span title="str">str</span>] | <span title="str">str</span>]</code>
+          –
+          <div class="doc-md-description">
+            <ul>
+<li><code>"banner"</code> -- the server's identification string (e.g.
+<code>"SSH-2.0-OpenSSH_8.9p1"</code>).</li>
+</ul>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="list">list</span>[<span title="str">str</span>] | <span title="str">str</span>]</code>
+          –
+          <div class="doc-md-description">
+            <ul>
+<li>The ten RFC 4253 § 7.1 name-lists, each as a Python <code>list[str]</code>:
+<code>kex_algorithms</code>, <code>server_host_key_algorithms</code>,
+<code>encryption_algorithms_ctos</code>, <code>encryption_algorithms_stoc</code>,
+<code>mac_algorithms_ctos</code>, <code>mac_algorithms_stoc</code>,
+<code>compression_algorithms_ctos</code>,
+<code>compression_algorithms_stoc</code>, <code>languages_ctos</code>,
+<code>languages_stoc</code>.</li>
+</ul>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="OSError">OSError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>Socket-level failure (host unreachable, port refused,
+timeout, connection reset, unexpected EOF, or the server's
+first packet was not <code>SSH_MSG_KEXINIT</code>).</p>
+          </div>
+        </li>
+    </ul>
+        <div class="admonition example">
+<p class="admonition-title">Diagnose an <code>ssh-rsa</code>-only legacy server</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPUtils</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">SFTPUtils</span><span class="o">.</span><span class="n">scan_host_algorithms</span><span class="p">(</span><span class="s2">&quot;legacy.example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;server_host_key_algorithms&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># [&#39;ssh-rsa&#39;]  -&gt; classic legacy server; on paramiko 5+,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># call SFTPUtils.enable_ssh_rsa_compat() at process startup.</span>
+</code></pre></div>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Diagnose a narrow-KEX server</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">info</span> <span class="o">=</span> <span class="n">SFTPUtils</span><span class="o">.</span><span class="n">scan_host_algorithms</span><span class="p">(</span><span class="s2">&quot;legacy.example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;kex_algorithms&quot;</span><span class="p">])</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># [&#39;diffie-hellman-group14-sha1&#39;]  -&gt; KEX narrowing;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># widen via SFTPBackend(connect_kwargs={&quot;disabled_algorithms&quot;: ...}).</span>
+</code></pre></div>
+</div>
+
+
+    </div>
+
 </div><h2 id="enums">Enums<a class="headerlink" href="#enums" title="Permanent link">&para;</a></h2>
 <h3 id="hostkeypolicy">HostKeyPolicy<a class="headerlink" href="#hostkeypolicy" title="Permanent link">&para;</a></h3>
 
@@ -9347,6 +9942,9 @@ SFTP backend. Using them ties your code to <code>SFTPBackend</code>.</p>
           </div>
         </li>
     </ul>
+        <p>Accepts the enum-name forms (<code>"auto_add"</code>, <code>"trust_on_first_use"</code>,
+<code>"STRICT"</code>) in addition to the canonical value strings (<code>"auto"</code>,
+<code>"tofu"</code>, <code>"strict"</code>).</p>
 
 
 

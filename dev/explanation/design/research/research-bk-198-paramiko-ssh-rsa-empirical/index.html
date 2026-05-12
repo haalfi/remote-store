@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/specs/041-sql-query-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-bk-198-paramiko-ssh-rsa-empirical/">
       
       
-        <link rel="prev" href="../040-sql-blob-backend/">
+        <link rel="prev" href="../research-benchmark-suite-v2/">
       
       
-        <link rel="next" href="../042-ext-parquet/">
+        <link rel="next" href="../research-bug-prevention-beyond-testing/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>041: SQL Query Backend Specification - remote-store</title>
+        <title>paramiko ssh-rsa host-key compatibility — empirical findings (BK-198) - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sql-query-backend-specification" class="md-skip">
+        <a href="#research-paramiko-ssh-rsa-host-key-compatibility-empirical-findings-bk-198" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              041: SQL Query Backend Specification
+              paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
             
           </span>
         </div>
@@ -6459,6 +6459,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6469,15 +6471,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_10" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_10" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6501,7 +6503,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_10_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_10_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8_10">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6519,7 +6521,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-agent-workflow-substrate/" class="md-nav__link">
+      <a href="../research-agent-workflow-substrate/" class="md-nav__link">
         
   
   
@@ -6547,7 +6549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -6575,7 +6577,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6603,7 +6605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6631,7 +6633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -6659,7 +6661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6667,1977 +6669,6 @@
     
   
     Benchmark Suite v2 — User-Decision Framing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Bug Prevention Beyond Testing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Dagster Extension (ext.dagster, ID-075)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Depth-Limited Listing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-doc-content-longevity/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Documentation Content Longevity
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ID-090 — Docs Landing Page
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Example Testing Across Language Ecosystems
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FastAPI Documentation & CI/CD Patterns
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-feature-discoverability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Discoverability for Agents and Humans
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Google-Style Docstring Migration & Zensical Evaluation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend Health Check (store.ping() / backend.check_health())
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147-obs003-decomposition/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OBS-003 Hand Decomposition (ID-147)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147-tla-augmentation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TLA+ Spec Augmentation (ID-147)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147b-tla-poc/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TLA+ PoC — WriteResult Spec Consistency (ID-147b)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Logging, Monitoring & Tracing for remote-store
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Architecture: Medallion + Dagster Showcase
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-openrouter-integration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OpenRouter.ai Integration for Claude Code Workflow
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Read-Only HTTP Backend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    `resolve()` Specification Proposal
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy Configuration (ID-010)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable Read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-sftpgo-comparison/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SFTPGo — Comparison and Design Insights
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SQLAlchemy Backends & Composite Store
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Store API Refinement
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Configuration Loaders and Store Config Patterns
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Store Middleware Architecture
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Testing Best Practices for Long-Term Package Quality
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    v1.0 Communication & Announcement Plan
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_11" checked>
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Specs
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_5_8_11" id="__nav_5_8_11_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_11_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5_8_11">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Specs
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    001: Store API Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    002: Registry & Configuration Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    003: Backend Adapter Contract Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    004: Path Model Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    005: Error Model Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    006: Streaming I/O Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    007: Atomic Writes Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    008: S3 Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    009: SFTP Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    010: Native Path Resolution Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    011: S3-PyArrow Hybrid Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../012-azure-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    012: Azure Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    013: Memory Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    014: PyArrow FileSystem Adapter Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    015: Store.child() Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    016: ext.batch - Batch Operations Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    017: ext.transfer - Upload, Download, Cross-Store Transfer Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    018: Glob - Pattern Matching Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    019: ext.observe - Observability Hooks Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    020: Credential Hygiene Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    021: Config Loaders Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    022: Streaming Atomic Writes Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    023: ext.cache - Store-Level Caching Middleware Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    024: ext.partition - Hive-Style Partition Path Helpers Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    025: Retry Policy Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    026: Health Check Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    027: iter_children Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    028: read_text Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    029: Async Store and Backend API Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    030: write_text Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    031: ext.dagster - Dagster IO Manager Adapter Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../032-http-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    032: HTTP Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../033-ext-streams/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    033: ext.streams — Stream-Level Wrappers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../034-ext-integrity/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    034: ext.integrity — Checksum Verification Helpers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../035-content-digest/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    035: ContentDigest — Structured File Digest Model
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../036-seekable-read/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    036: Seekable Read Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../037-depth-limited-listing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    037: Depth-Limited Listing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    038: Non-Recursive get_folder_info Optimization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../039-tls-ca-bundle/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    039: TLS CA Bundle Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../040-sql-blob-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    040: SQL Blob Backend Specification
   
 
     
@@ -8674,7 +6705,7 @@
   <span class="md-ellipsis">
     
   
-    041: SQL Query Backend Specification
+    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
   
 
     
@@ -8692,7 +6723,7 @@
   <span class="md-ellipsis">
     
   
-    041: SQL Query Backend Specification
+    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
   
 
     
@@ -8718,10 +6749,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#1-test-rig" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        1. Test rig
       
     </span>
   </a>
@@ -8729,22 +6760,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#2-findings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        2. Findings
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="2. Findings">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sql-query-001-constructor" class="md-nav__link">
+  <a href="#21-default-_preferred_keys-and-rsakeyhashes-across-versions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SQL-QUERY-001: Constructor
+        2.1 Default _preferred_keys and RSAKey.HASHES across versions
       
     </span>
   </a>
@@ -8752,43 +6783,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sql-query-002-backend-name" class="md-nav__link">
+  <a href="#22-connection-outcomes-per-scenario" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SQL-QUERY-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-004-repr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-004: Repr
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-005-registration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-005: Registration
+        2.2 Connection outcomes per scenario
       
     </span>
   </a>
@@ -8801,436 +6799,57 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#key-resolution" class="md-nav__link">
+  <a href="#3-conclusions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Key Resolution
+        3. Conclusions
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Key Resolution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-010-explicit-query-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-010: Explicit Query Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-011-strict-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-011: Strict Mode
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-012-format-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-012: Format Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#serialization" class="md-nav__link">
+  <a href="#4-changes-derived-from-this-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Serialization
+        4. Changes derived from this verification
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Serialization">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-013-resultserializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-013: ResultSerializer Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-014-arrowserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-014: ArrowSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
+  <a href="#5-decision-no-library-side-paramiko5-cap" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations
+        5. Decision: no library-side paramiko&lt;5 cap
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-030-list_files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-030: list_files()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-031-list_folders" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-031: list_folders()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-032-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-032: glob()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#metadata" class="md-nav__link">
+  <a href="#6-open-questions-follow-ups" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Metadata
+        6. Open questions / follow-ups
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-040-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-040: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-041-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-041: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#existence-checks" class="md-nav__link">
+  <a href="#appendix-probe-script" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Existence Checks
+        Appendix: probe script
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Existence Checks">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-042-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-042: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-043-is_file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-043: is_file()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-044-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-044: is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#unsupported-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unsupported Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Unsupported Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-050-write-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-050: Write Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#engine-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Engine &amp; Connection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Engine &amp; Connection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-060-check_health" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-060: check_health()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-061-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-061: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-062-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-062: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-063-sqlite-pragmas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-063: SQLite PRAGMAs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-070-exception-translation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-070: Exception Translation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Handling
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Handling">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-080-path-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-080: Path Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-090-query-execution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-090: Query Execution
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-091-serialization-overhead" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-091: Serialization Overhead
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -9250,7 +6869,1976 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-ext-parquet/" class="md-nav__link">
+      <a href="../research-bug-prevention-beyond-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bug Prevention Beyond Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-dagster-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster Extension (ext.dagster, ID-075)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Depth-Limited Listing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-doc-content-longevity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation Content Longevity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-090 — Docs Landing Page
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-example-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example Testing Across Language Ecosystems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FastAPI Documentation & CI/CD Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Discoverability for Agents and Humans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Google-Style Docstring Migration & Zensical Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend Health Check (store.ping() / backend.check_health())
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-id-147-obs003-decomposition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OBS-003 Hand Decomposition (ID-147)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-id-147-tla-augmentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TLA+ Spec Augmentation (ID-147)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-id-147b-tla-poc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TLA+ PoC — WriteResult Spec Consistency (ID-147b)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging, Monitoring & Tracing for remote-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture: Medallion + Dagster Showcase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-openrouter-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenRouter.ai Integration for Claude Code Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read-Only HTTP Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    `resolve()` Specification Proposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy Configuration (ID-010)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-seekable-read/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seekable Read
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-sftpgo-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPGo — Comparison and Design Insights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQLAlchemy Backends & Composite Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store API Refinement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-store-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Loaders and Store Config Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store Middleware Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Best Practices for Long-Term Package Quality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1.0 Communication & Announcement Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_11" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../specs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_8_11" id="__nav_5_8_11_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    001: Store API Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    002: Registry & Configuration Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    003: Backend Adapter Contract Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    004: Path Model Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    005: Error Model Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    006: Streaming I/O Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    007: Atomic Writes Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    008: S3 Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    009: SFTP Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    010: Native Path Resolution Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    011: S3-PyArrow Hybrid Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    012: Azure Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    013: Memory Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    014: PyArrow FileSystem Adapter Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    015: Store.child() Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    016: ext.batch - Batch Operations Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    017: ext.transfer - Upload, Download, Cross-Store Transfer Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/018-glob/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    018: Glob - Pattern Matching Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    019: ext.observe - Observability Hooks Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    020: Credential Hygiene Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    021: Config Loaders Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    022: Streaming Atomic Writes Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    023: ext.cache - Store-Level Caching Middleware Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    024: ext.partition - Hive-Style Partition Path Helpers Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    025: Retry Policy Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    026: Health Check Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    027: iter_children Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    028: read_text Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    029: Async Store and Backend API Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    030: write_text Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    031: ext.dagster - Dagster IO Manager Adapter Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    032: HTTP Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    033: ext.streams — Stream-Level Wrappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    034: ext.integrity — Checksum Verification Helpers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    035: ContentDigest — Structured File Digest Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    036: Seekable Read Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    037: Depth-Limited Listing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    038: Non-Recursive get_folder_info Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    039: TLS CA Bundle Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    040: SQL Blob Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    041: SQL Query Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -9278,7 +8866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -9306,7 +8894,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../044-graph-backend/" class="md-nav__link">
+      <a href="../../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -9334,7 +8922,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../045-write-result/" class="md-nav__link">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -9362,7 +8950,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../046-ext-write/" class="md-nav__link">
+      <a href="../../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -9390,7 +8978,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../047-docs-framework-tooling/" class="md-nav__link">
+      <a href="../../specs/047-docs-framework-tooling/" class="md-nav__link">
         
   
   
@@ -9418,7 +9006,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../048-testing-architecture/" class="md-nav__link">
+      <a href="../../specs/048-testing-architecture/" class="md-nav__link">
         
   
   
@@ -9489,10 +9077,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#1-test-rig" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        1. Test rig
       
     </span>
   </a>
@@ -9500,22 +9088,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#2-findings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        2. Findings
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="2. Findings">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sql-query-001-constructor" class="md-nav__link">
+  <a href="#21-default-_preferred_keys-and-rsakeyhashes-across-versions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SQL-QUERY-001: Constructor
+        2.1 Default _preferred_keys and RSAKey.HASHES across versions
       
     </span>
   </a>
@@ -9523,43 +9111,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sql-query-002-backend-name" class="md-nav__link">
+  <a href="#22-connection-outcomes-per-scenario" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SQL-QUERY-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-004-repr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-004: Repr
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-005-registration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-005: Registration
+        2.2 Connection outcomes per scenario
       
     </span>
   </a>
@@ -9572,436 +9127,57 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#key-resolution" class="md-nav__link">
+  <a href="#3-conclusions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Key Resolution
+        3. Conclusions
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Key Resolution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-010-explicit-query-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-010: Explicit Query Mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-011-strict-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-011: Strict Mode
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-012-format-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-012: Format Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#serialization" class="md-nav__link">
+  <a href="#4-changes-derived-from-this-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Serialization
+        4. Changes derived from this verification
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Serialization">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-013-resultserializer-protocol" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-013: ResultSerializer Protocol
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-014-arrowserializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-014: ArrowSerializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
+  <a href="#5-decision-no-library-side-paramiko5-cap" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations
+        5. Decision: no library-side paramiko&lt;5 cap
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-030-list_files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-030: list_files()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-031-list_folders" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-031: list_folders()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-032-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-032: glob()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#metadata" class="md-nav__link">
+  <a href="#6-open-questions-follow-ups" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Metadata
+        6. Open questions / follow-ups
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-040-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-040: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-041-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-041: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#existence-checks" class="md-nav__link">
+  <a href="#appendix-probe-script" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Existence Checks
+        Appendix: probe script
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Existence Checks">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-042-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-042: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-043-is_file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-043: is_file()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-044-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-044: is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#unsupported-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unsupported Operations
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Unsupported Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-050-write-operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-050: Write Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#engine-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Engine &amp; Connection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Engine &amp; Connection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-060-check_health" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-060: check_health()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-061-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-061: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-062-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-062: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-063-sqlite-pragmas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-063: SQLite PRAGMAs
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Mapping
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-070-exception-translation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-070: Exception Translation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Handling
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Handling">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-080-path-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-080: Path Validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-090-query-execution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-090: Query Execution
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-query-091-serialization-overhead" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL-QUERY-091: Serialization Overhead
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -10022,265 +9198,258 @@
 
 
 
-<h1 id="sql-query-backend-specification">SQL Query Backend Specification<a class="headerlink" href="#sql-query-backend-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>SQLQueryBackend</code> implements the <code>Backend</code> ABC as a read-only query
-materializer. It maps path keys to SQL queries and serializes result sets to
-bytes in the format implied by the key's file extension (Parquet, CSV, Arrow
-IPC).</p>
-<p>Shares <code>_SQLAlchemyBaseBackend</code> with <code>SQLBlobBackend</code> (v1). This spec covers
-only <code>SQLQueryBackend</code> (v2).</p>
-<p><strong>Primary use cases:</strong> exposing SQL query results as portable data products,
-on-demand materialization of views/reports, bridging SQL databases into the
-Store abstraction for downstream consumers who don't need to know the source is
-a database.</p>
-<p><strong>Dependencies:</strong> <code>sqlalchemy&gt;=2.0</code>, <code>pyarrow&gt;=12.0.0</code> (optional extra:
-<code>sql-query</code>).</p>
-<p><strong>Architecture:</strong> Two-class design with shared base — see
-<a href="../../adrs/0018-sqlalchemy-two-class-architecture/">ADR-0018</a>.</p>
+<h1 id="research-paramiko-ssh-rsa-host-key-compatibility-empirical-findings-bk-198">Research: paramiko <code>ssh-rsa</code> host-key compatibility — empirical findings (BK-198)<a class="headerlink" href="#research-paramiko-ssh-rsa-host-key-compatibility-empirical-findings-bk-198" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-05-12
+<strong>Status:</strong> Complete; matrix extended to paramiko 5.0 and the BK-198 framing finalised in <a href="https://github.com/haalfi/remote-store/pull/613">PR 613</a>.
+<strong>Scope:</strong> Verify the empirical premise of <code>SFTPUtils.enable_ssh_rsa_compat()</code> against a Dockerized legacy SFTP server across the full paramiko 2.x / 3.x / 4.x / 5.x range, before locking in the docstring / guide / hint-message wording.
+<strong>Related:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">BK-198</a>, <a href="https://github.com/haalfi/remote-store/blob/master/sdd/traces/BK-198-ssh-rsa-compat.yml">trace</a>, <a href="https://github.com/haalfi/remote-store/pull/613">PR 613</a>.</p>
+<p><strong>Context.</strong> The first cut of BK-198 was reasoned out from one data point (paramiko 4.0.0 import surface) and shipped a helper whose docstring claimed "Paramiko 3.x+ removed <code>ssh-rsa</code> from defaults at four levels." That claim turned out to be version-shifted by two majors: paramiko 2.x / 3.x / 4.x all ship <code>ssh-rsa</code> in defaults; paramiko <strong>5.0</strong> is where the removal happened. A first corrective sweep over-corrected (claimed the helper was a no-op on every shipping paramiko); this note records the final empirical state after a 5.0 probe re-confirmed that the helper is in fact required against modern paramiko + legacy SFTP servers.</p>
 <hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-001-constructor">SQL-QUERY-001: Constructor<a class="headerlink" href="#sql-query-001-constructor" title="Permanent link">&para;</a></h3>
-<p><strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SQLQueryBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">engine</span><span class="p">:</span> <span class="n">Engine</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">queries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">serializer</span><span class="p">:</span> <span class="n">ResultSerializer</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
-</code></pre></div></p>
-<p><strong>Preconditions:</strong>
-- Exactly one of <code>url</code> or <code>engine</code> must be provided. Both or neither raises
-  <code>ValueError</code>.
-- <code>queries</code>, if provided, must have non-empty string keys and non-empty string
-  values. Empty keys or values raise <code>ValueError</code>.
-- If <code>strict=False</code>, raises <code>NotImplementedError</code> (view/convention discovery
-  deferred to future version).</p>
-<p><strong>Postconditions:</strong>
-- Engine is created (if <code>url</code>) or stored (if <code>engine</code>).
-- If SQLite: <code>PRAGMA journal_mode=WAL</code> and <code>PRAGMA synchronous=NORMAL</code> are set.
-- Key registry is built from the <code>queries</code> dict.
-- If <code>serializer</code> is <code>None</code>, defaults to <code>ArrowSerializer()</code>.</p>
-<h3 id="sql-query-002-backend-name">SQL-QUERY-002: Backend Name<a class="headerlink" href="#sql-query-002-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"sql-query"</code>.</p>
-<h3 id="sql-query-003-capability-declaration">SQL-QUERY-003: Capability Declaration<a class="headerlink" href="#sql-query-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>SQLQueryBackend</code> declares 5 capabilities: <code>READ</code>, <code>LIST</code>,
-<code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>.</p>
-<h3 id="sql-query-004-repr">SQL-QUERY-004: Repr<a class="headerlink" href="#sql-query-004-repr" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>repr(backend)</code> returns:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>SQLQueryBackend(dialect=&#39;sqlite&#39;, keys=3, strict=True)
-</code></pre></div></p>
-<p>Credential-bearing URL components are never included.</p>
-<h3 id="sql-query-005-registration">SQL-QUERY-005: Registration<a class="headerlink" href="#sql-query-005-registration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>"sql-query"</code> backend type is registered in
-<code>_register_builtin_backends()</code> behind a <code>try/except ImportError</code> guard.
-The registration guard checks for <code>sqlalchemy</code> (required for import).
-<code>pyarrow</code> is checked eagerly at construction time (<code>__init__</code>) with a
-clear error message directing users to install <code>remote-store[sql-query]</code>.</p>
-<hr />
-<h2 id="key-resolution">Key Resolution<a class="headerlink" href="#key-resolution" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-010-explicit-query-mapping">SQL-QUERY-010: Explicit Query Mapping<a class="headerlink" href="#sql-query-010-explicit-query-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Keys are resolved by exact lookup in the <code>queries</code> dict.
-If the key is not found, <code>NotFound</code> is raised. No partial matching, no
-normalization beyond standard path validation.</p>
-<p>Resolution precedence (v2 implements level 1 only):
-1. Explicit mapping (<code>queries</code> dict) — highest priority
-2. View-based (deferred)
-3. Convention-based (deferred)</p>
-<h3 id="sql-query-011-strict-mode">SQL-QUERY-011: Strict Mode<a class="headerlink" href="#sql-query-011-strict-mode" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>strict=True</code> (default) restricts resolution to the explicit
-<code>queries</code> dict only. Setting <code>strict=False</code> raises <code>NotImplementedError</code> in
-v2 — view-based and convention-based discovery are deferred to a future
-version.</p>
-<h3 id="sql-query-012-format-detection">SQL-QUERY-012: Format Detection<a class="headerlink" href="#sql-query-012-format-detection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The serialization format is determined by the key's file
-extension:</p>
+<h2 id="1-test-rig">1. Test rig<a class="headerlink" href="#1-test-rig" title="Permanent link">&para;</a></h2>
+<p>Two Docker images, both forcing the legacy-server shape:</p>
 <table>
 <thead>
 <tr>
-<th>Extension</th>
-<th>Format</th>
+<th>Image</th>
+<th>Forcing</th>
+<th>Port</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>.parquet</code></td>
-<td>Apache Parquet</td>
+<td><code>legacy-sftp</code> (durable)</td>
+<td>Only <code>ssh-rsa</code> host-key + pubkey algorithms; modern KEX defaults; <code>benchmarks/infra/legacy-sftp/Dockerfile</code></td>
+<td>2223</td>
 </tr>
 <tr>
-<td><code>.csv</code></td>
-<td>CSV</td>
-</tr>
-<tr>
-<td><code>.arrow</code>, <code>.ipc</code></td>
-<td>Arrow IPC</td>
+<td><code>legacy-sftp:kex</code> (research-only)</td>
+<td>Same as above PLUS <code>KexAlgorithms diffie-hellman-group14-sha1,diffie-hellman-group1-sha1</code></td>
+<td>2224</td>
 </tr>
 </tbody>
 </table>
-<p>Keys without a recognized extension raise <code>InvalidPath</code> with a message listing
-supported extensions.</p>
-<hr />
-<h2 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-013-resultserializer-protocol">SQL-QUERY-013: ResultSerializer Protocol<a class="headerlink" href="#sql-query-013-resultserializer-protocol" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>ResultSerializer</code> is a <code>typing.Protocol</code>:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@runtime_checkable</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResultSerializer</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">columns</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div></p>
-<p>The <code>format</code> parameter is the lowercase extension without the dot (e.g.,
-<code>"parquet"</code>, <code>"csv"</code>, <code>"arrow"</code>). The <code>rows</code> parameter is a sequence of
-row tuples. The <code>columns</code> parameter is the column name list.</p>
-<h3 id="sql-query-014-arrowserializer">SQL-QUERY-014: ArrowSerializer<a class="headerlink" href="#sql-query-014-arrowserializer" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The built-in <code>ArrowSerializer</code> converts rows + columns to a
-<code>pyarrow.Table</code>, then serializes to the requested format:
-- <code>"parquet"</code> — <code>pyarrow.parquet.write_table()</code>
-- <code>"csv"</code> — <code>pyarrow.csv.write_csv()</code>
-- <code>"arrow"</code> / <code>"ipc"</code> — <code>pyarrow.ipc.RecordBatchFileWriter</code></p>
-<p>An empty result set (zero rows) produces a valid file with schema but no data.</p>
-<p>Unsupported format strings raise <code>ValueError</code>.</p>
-<hr />
-<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-020-read">SQL-QUERY-020: read()<a class="headerlink" href="#sql-query-020-read" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read(path)</code> resolves the key to SQL, executes the query,
-serializes the result, and returns a seekable <code>BinaryIO</code>.</p>
-<p><strong>Pipeline:</strong>
-1. Validate path (same rules as SQL-BLOB-060).
-2. Resolve key to SQL string via the <code>queries</code> dict.
-3. Detect format from file extension.
-4. Execute SQL: <code>connection.execute(sa.text(sql))</code> within <code>_map_errors()</code>.
-5. Serialize: <code>self._serializer.serialize(rows, columns, format)</code>.
-6. Return <code>BufferedReader(BytesIO(data))</code>.</p>
-<p>An empty result set is valid — not an error.</p>
-<h3 id="sql-query-021-read_bytes">SQL-QUERY-021: read_bytes()<a class="headerlink" href="#sql-query-021-read_bytes" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same pipeline as <code>read()</code>, returns raw <code>bytes</code>.</p>
-<h3 id="sql-query-030-list_files">SQL-QUERY-030: list_files()<a class="headerlink" href="#sql-query-030-list_files" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Enumerates keys from the key registry (not database tables).
-Filters by prefix matching. Returns <code>FileInfo</code> for each matching key with
-<code>size=0</code> (sentinel — size unknown until materialized) and
-<code>modified_at=datetime.min(tzinfo=utc)</code>.</p>
+<p>The second image is kept only for research-time reproductions of the user's originally-reported <code>IncompatiblePeer: no acceptable kex algorithm</code> shape; the durable e2e test (<code>tests/e2e/test_sftp_legacy_recovery.py</code>) drives the first.</p>
+<p>Client matrix: five isolated <code>uv</code> venvs, all on Python 3.11/3.13, all sharing a recent <code>cryptography</code>, varying only paramiko:</p>
 <ul>
-<li>Non-recursive: only direct children of the prefix.</li>
-<li>Recursive: all keys under the prefix.</li>
-<li><code>max_depth</code>: limits depth of suffix beyond prefix.</li>
+<li><code>paramiko==2.12.0</code> (last 2.x release)</li>
+<li><code>paramiko==3.0.0</code> (claimed cut-off in the original PR docstring)</li>
+<li><code>paramiko==3.5.0</code> (mid-3.x sanity check)</li>
+<li><code>paramiko==4.0.0</code> (previous <code>[sftp]</code> floor)</li>
+<li><code>paramiko==5.0.0</code> (first major to actually clear <code>ssh-rsa</code>)</li>
 </ul>
-<h3 id="sql-query-031-list_folders">SQL-QUERY-031: list_folders()<a class="headerlink" href="#sql-query-031-list_folders" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Derives virtual folders from key registry paths. Same
-prefix-based deduplication logic as <code>SQLBlobBackend.list_folders()</code>.</p>
-<h3 id="sql-query-032-glob">SQL-QUERY-032: glob()<a class="headerlink" href="#sql-query-032-glob" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Applies <code>pattern_to_regex(pattern)</code> from <code>_glob.py</code> against
-the key registry. Returns <code>FileInfo</code> for all matching keys. No SQL-side
-narrowing needed since the key set is in-memory.</p>
-<hr />
-<h2 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-040-get_file_info">SQL-QUERY-040: get_file_info()<a class="headerlink" href="#sql-query-040-get_file_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Returns <code>FileInfo</code> with:
-- <code>path</code>: the requested key as <code>RemotePath</code>
-- <code>name</code>: final path component
-- <code>size</code>: <code>0</code> (sentinel — unknown until materialized)
-- <code>modified_at</code>: <code>datetime.min.replace(tzinfo=timezone.utc)</code>
-- <code>extra</code>: <code>{"materialized": False}</code></p>
-<p>Raises <code>NotFound</code> if the key is not in the registry.</p>
-<h3 id="sql-query-041-get_folder_info">SQL-QUERY-041: get_folder_info()<a class="headerlink" href="#sql-query-041-get_folder_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Computes folder info from the key registry:
-- <code>file_count</code>: number of keys under prefix
-- <code>total_size</code>: <code>0</code> (all files have sentinel size)
-- <code>modified_at</code>: <code>None</code></p>
-<p>Raises <code>NotFound</code> if no keys match the prefix and path is non-empty.</p>
-<hr />
-<h2 id="existence-checks">Existence Checks<a class="headerlink" href="#existence-checks" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-042-exists">SQL-QUERY-042: exists()<a class="headerlink" href="#sql-query-042-exists" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Returns <code>True</code> if path matches a registered key (file) or
-any key starts with <code>path/</code> (virtual folder). Empty path returns <code>True</code>
-(root).</p>
-<h3 id="sql-query-043-is_file">SQL-QUERY-043: is_file()<a class="headerlink" href="#sql-query-043-is_file" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Returns <code>True</code> if path is an exact key in the registry.
-Empty path returns <code>False</code>.</p>
-<h3 id="sql-query-044-is_folder">SQL-QUERY-044: is_folder()<a class="headerlink" href="#sql-query-044-is_folder" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Returns <code>True</code> if any registered key starts with <code>path/</code>.
-Empty path returns <code>True</code> (root).</p>
-<hr />
-<h2 id="unsupported-operations">Unsupported Operations<a class="headerlink" href="#unsupported-operations" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-050-write-operations">SQL-QUERY-050: Write Operations<a class="headerlink" href="#sql-query-050-write-operations" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The following methods raise <code>CapabilityNotSupported</code> with
-<code>backend=self.name</code>:</p>
-<ul>
-<li><code>write()</code> — capability <code>"write"</code></li>
-<li><code>write_atomic()</code> — capability <code>"atomic_write"</code></li>
-<li><code>open_atomic()</code> — capability <code>"atomic_write"</code></li>
-<li><code>delete()</code> — capability <code>"delete"</code></li>
-<li><code>delete_folder()</code> — capability <code>"delete"</code></li>
-<li><code>move()</code> — capability <code>"move"</code></li>
-<li><code>copy()</code> — capability <code>"copy"</code></li>
-</ul>
-<hr />
-<h2 id="engine-connection">Engine &amp; Connection<a class="headerlink" href="#engine-connection" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-060-check_health">SQL-QUERY-060: check_health()<a class="headerlink" href="#sql-query-060-check_health" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Inherited from <code>_SQLAlchemyBaseBackend</code>. Executes <code>SELECT 1</code>.
-Raises <code>BackendUnavailable</code> on failure.</p>
-<h3 id="sql-query-061-close">SQL-QUERY-061: close()<a class="headerlink" href="#sql-query-061-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Inherited. Disposes owned engines; no-op for borrowed.</p>
-<h3 id="sql-query-062-unwrap">SQL-QUERY-062: unwrap()<a class="headerlink" href="#sql-query-062-unwrap" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Inherited. <code>unwrap(Engine)</code> returns the SQLAlchemy <code>Engine</code>.</p>
-<h3 id="sql-query-063-sqlite-pragmas">SQL-QUERY-063: SQLite PRAGMAs<a class="headerlink" href="#sql-query-063-sqlite-pragmas" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Inherited. WAL mode and <code>synchronous=NORMAL</code> for SQLite.</p>
-<hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-070-exception-translation">SQL-QUERY-070: Exception Translation<a class="headerlink" href="#sql-query-070-exception-translation" title="Permanent link">&para;</a></h3>
+<p>Probe runs four scenarios per venv:</p>
 <table>
 <thead>
 <tr>
-<th>Condition</th>
-<th>remote-store error</th>
+<th>ID</th>
+<th>Scenario</th>
+<th>What it tests</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Key not in registry</td>
-<td><code>NotFound</code></td>
+<td>S1</td>
+<td>Bare connect on paramiko defaults</td>
+<td>Does the legacy server connect out of the box?</td>
 </tr>
 <tr>
-<td>Unsupported file extension</td>
-<td><code>InvalidPath</code></td>
+<td>S2</td>
+<td>Connect after <code>enable_ssh_rsa_compat()</code> on defaults</td>
+<td>Is the helper a no-op when defaults already contain <code>ssh-rsa</code>?</td>
 </tr>
 <tr>
-<td><code>strict=False</code></td>
-<td><code>NotImplementedError</code></td>
+<td>S3</td>
+<td>Strip <code>ssh-rsa</code> from all four sites, then connect</td>
+<td>Reproduces the cleared-defaults state</td>
 </tr>
 <tr>
-<td>SQL execution error (<code>ProgrammingError</code>, <code>OperationalError</code>)</td>
-<td><code>RemoteStoreError</code> / <code>BackendUnavailable</code></td>
-</tr>
-<tr>
-<td>Other <code>SQLAlchemyError</code></td>
-<td><code>RemoteStoreError</code></td>
-</tr>
-<tr>
-<td>Unsupported operation</td>
-<td><code>CapabilityNotSupported</code></td>
+<td>S4</td>
+<td>Run helper after S3, then connect</td>
+<td>Does the helper actually recover?</td>
 </tr>
 </tbody>
 </table>
-<p>Backend-native exceptions must never leak.</p>
 <hr />
-<h2 id="path-handling">Path Handling<a class="headerlink" href="#path-handling" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-080-path-validation">SQL-QUERY-080: Path Validation<a class="headerlink" href="#sql-query-080-path-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Same rules as SQL-BLOB-060:
-- No null bytes -&gt; <code>InvalidPath</code>
-- No absolute paths (leading <code>/</code>) -&gt; <code>InvalidPath</code>
-- No <code>..</code> segments -&gt; <code>InvalidPath</code>
-- Empty path allowed for folder operations (root), rejected for file operations.</p>
+<h2 id="2-findings">2. Findings<a class="headerlink" href="#2-findings" title="Permanent link">&para;</a></h2>
+<h3 id="21-default-_preferred_keys-and-rsakeyhashes-across-versions">2.1 Default <code>_preferred_keys</code> and <code>RSAKey.HASHES</code> across versions<a class="headerlink" href="#21-default-_preferred_keys-and-rsakeyhashes-across-versions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Site</th>
+<th>2.12.0</th>
+<th>3.0.0</th>
+<th>3.5.0</th>
+<th>4.0.0</th>
+<th>5.0.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Transport._preferred_keys</code></td>
+<td>present</td>
+<td>present</td>
+<td>present</td>
+<td>present</td>
+<td><strong>absent</strong></td>
+</tr>
+<tr>
+<td><code>Transport._preferred_pubkeys</code></td>
+<td>present</td>
+<td>present</td>
+<td>present</td>
+<td>present</td>
+<td><strong>absent</strong></td>
+</tr>
+<tr>
+<td><code>Transport._key_info["ssh-rsa"]</code></td>
+<td>present</td>
+<td>present</td>
+<td>present</td>
+<td>present</td>
+<td><strong>absent</strong></td>
+</tr>
+<tr>
+<td><code>RSAKey.HASHES["ssh-rsa"]</code></td>
+<td>present</td>
+<td>present</td>
+<td>present</td>
+<td>present</td>
+<td><strong>absent</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Paramiko 5.0 is the version where the removal lands. The 2.x → 4.x range still ships <code>ssh-rsa</code> at every site (deprecated, but present). The only other relevant inter-version difference is that paramiko 4.0 dropped <code>ssh-dss</code>.</p>
+<p>Defaults on paramiko 5.0 (post-removal): <code>ssh-ed25519</code>, <code>ecdsa-sha2-nistp256</code>, <code>ecdsa-sha2-nistp384</code>, <code>ecdsa-sha2-nistp521</code>, <code>rsa-sha2-512</code>, <code>rsa-sha2-256</code>.</p>
+<h3 id="22-connection-outcomes-per-scenario">2.2 Connection outcomes per scenario<a class="headerlink" href="#22-connection-outcomes-per-scenario" title="Permanent link">&para;</a></h3>
+<p>Outcomes split cleanly along the 4.x / 5.x divide:</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>paramiko 2.x–4.x</th>
+<th>paramiko 5.x</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1 (bare)</td>
+<td>✅ connect + open SFTP subsystem</td>
+<td>❌ <code>IncompatiblePeer: Incompatible ssh peer (no acceptable host key)</code></td>
+</tr>
+<tr>
+<td>S2 (helper on defaults)</td>
+<td>✅ succeeds; helper guards short-circuit (no-op)</td>
+<td>✅ succeeds; helper re-adds <code>ssh-rsa</code> and connection works</td>
+</tr>
+<tr>
+<td>S3 (cleared, then bare)</td>
+<td>❌ same <code>IncompatiblePeer</code> as 5.x S1</td>
+<td>❌ identical (defaults are already cleared)</td>
+</tr>
+<tr>
+<td>S4 (cleared, then helper, then connect)</td>
+<td>✅ helper re-adds <code>ssh-rsa</code>; connection succeeds</td>
+<td>✅ same</td>
+</tr>
+</tbody>
+</table>
+<p>The S1-5.x and S3-2.x–4.x failures share a byte-identical error string — same handler in <code>Transport._parse_kex_init</code>.</p>
 <hr />
-<h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
-<h3 id="sql-query-090-query-execution">SQL-QUERY-090: Query Execution<a class="headerlink" href="#sql-query-090-query-execution" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Queries execute via SQLAlchemy Core <code>connection.execute()</code>.
-Full materialization of result sets in memory. Streaming/chunked execution
-is deferred to a future version.</p>
-<h3 id="sql-query-091-serialization-overhead">SQL-QUERY-091: Serialization Overhead<a class="headerlink" href="#sql-query-091-serialization-overhead" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>ArrowSerializer</code> converts SQL rows to a PyArrow Table,
-then serializes. This is a full copy. Zero-copy paths (ADBC) are deferred
-to v3.</p>
+<h2 id="3-conclusions">3. Conclusions<a class="headerlink" href="#3-conclusions" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Paramiko 5.0 cleared <code>ssh-rsa</code> from all four sites.</strong> This is the version this PR addresses; the 2.x → 4.x range is unaffected by the BK-198 failure mode.</li>
+<li><strong>The helper is required on paramiko ≥ 5.0 to connect to an <code>ssh-rsa</code>-only server.</strong> Without it, bare connect fails immediately during KEX in <code>_parse_kex_init</code> before authentication is attempted.</li>
+<li><strong>The helper is a no-op on paramiko &lt; 5.0.</strong> All four guard clauses short-circuit because <code>ssh-rsa</code> is already present. Calling it eagerly is harmless and forward-compatible.</li>
+<li><strong>The <code>IncompatiblePeer</code> hint is correctly scoped.</strong> <code>IncompatiblePeer</code> also wraps <code>no acceptable {kex algorithm, cipher, MAC}</code> failures, which the helper does not address. Gating the hint on <code>"host key" in str(exc)</code> keeps it accurate.</li>
+</ol>
+<hr />
+<h2 id="4-changes-derived-from-this-verification">4. Changes derived from this verification<a class="headerlink" href="#4-changes-derived-from-this-verification" title="Permanent link">&para;</a></h2>
+<p>Tracked across PR 613:</p>
+<ol>
+<li><code>enable_ssh_rsa_compat</code> docstring: names paramiko 5.0 explicitly as the version that cleared <code>ssh-rsa</code>; describes the helper as required-on-5.0+, no-op-below.</li>
+<li><code>docs-src/guides/backends/sftp.md</code> Legacy Servers section: version-split framing (<code>&lt; 5</code> vs <code>&gt;= 5</code>); new "Diagnose first" subsection introduces <code>scan_host_algorithms</code> as the triage step; the "Alternative: pin" tradeoff names <code>paramiko&lt;5</code> (the <code>&lt;3</code> alternative previously listed was version-shifted and also conflicted with the <code>&gt;=3.0</code> floor).</li>
+<li><code>_map_exception</code> IncompatiblePeer branch: host-key variant carries the <code>enable_ssh_rsa_compat</code> hint (gated on <code>"host key"</code> substring); KEX / cipher / MAC variants carry a hint pointing at <code>scan_host_algorithms</code> + <code>connect_kwargs={"disabled_algorithms": ...}</code> (BK-200).</li>
+<li><code>SFTPUtils.scan_host_algorithms(host, port)</code> (BK-200): new raw-socket SSH KEXINIT probe; companion to <code>scan_host_keys</code>. Returns the server's full algorithm advertisement (kex / host-key / cipher / MAC / compression name-lists) so users can identify which negotiation list the server narrowed before reaching for a remedy. E2E-tested against the legacy-sftp Docker fixture (asserts <code>server_host_key_algorithms == ["ssh-rsa"]</code>).</li>
+<li><code>tests/e2e/test_sftp_legacy_recovery.py::test_S1_bare_connect_*</code> parametrised on <code>paramiko.__version__</code>: expects success on <code>&lt; 5</code>, <code>IncompatiblePeer</code> on <code>&gt;= 5</code>.</li>
+<li><code>sdd/BACKLOG-DONE.md</code> BK-198 entry + <code>sdd/traces/BK-198-ssh-rsa-compat.yml</code> trigger: corrected to the version-conditional framing.</li>
+</ol>
+<hr />
+<h2 id="5-decision-no-library-side-paramiko5-cap">5. Decision: no library-side <code>paramiko&lt;5</code> cap<a class="headerlink" href="#5-decision-no-library-side-paramiko5-cap" title="Permanent link">&para;</a></h2>
+<p>PR 613 deliberately keeps the <code>[sftp]</code> extra at <code>paramiko&gt;=3.0</code> with <strong>no
+upper bound</strong>, after weighing the alternatives.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Pro</th>
+<th>Con</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Add <code>&lt;5</code> cap to <code>[sftp]</code> extra</td>
+<td>Fresh installs do not hit the legacy-server failure on day one</td>
+<td>Locks every consumer out of paramiko 5+ (security fixes, protocol improvements, the eventual paramiko 6 floor) regardless of whether they ever touch a legacy server. Cap becomes load-bearing and decays.</td>
+</tr>
+<tr>
+<td>Opt-in <code>BackendConfig</code> flag (<code>allow_legacy_ssh_rsa: bool</code>)</td>
+<td>Expresses intent in config</td>
+<td>Adds public API surface that only matters to a narrow audience; still process-global underneath (mutates paramiko class attrs); per-backend solution would need a Transport subclass (the T40 follow-up).</td>
+</tr>
+<tr>
+<td><strong>No cap; helper + diagnostic + scoped hint (chosen)</strong></td>
+<td>Library evolves with paramiko; consumers who never touch legacy servers pay nothing; <code>scan_host_algorithms</code> + <code>enable_ssh_rsa_compat</code> + the <code>IncompatiblePeer</code> hint make the failure self-explanatory when it does occur</td>
+<td>First-time hit on a legacy server is a runtime failure, not an install-time guard</td>
+</tr>
+</tbody>
+</table>
+<p>The chosen option keeps the cost on the population that hits the
+failure (a runtime <code>IncompatiblePeer</code> with a hint pointing at the
+diagnostic) rather than on the population that doesn't (every other
+consumer of <code>[sftp]</code>). A consumer-side pin (<code>paramiko&gt;=3.0,&lt;5</code> in
+<code>requirements.txt</code>) remains available for environments where calling
+the helper at startup is not an option — documented in the SFTP
+backend guide's "Alternative: pin <code>paramiko&lt;5</code>" subsection.</p>
+<p>The decision is recorded here rather than as an ADR because there is
+no architecture-level commitment beyond this single dependency line;
+the relevant context is the empirical evidence in §§ 1–4 above. If
+the policy changes (e.g. paramiko 6 forces a re-evaluation), update
+this section together with the <code>pyproject.toml</code> line.</p>
+<hr />
+<h2 id="6-open-questions-follow-ups">6. Open questions / follow-ups<a class="headerlink" href="#6-open-questions-follow-ups" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Dependency policy.</strong> The <code>[sftp]</code> extra currently pins <code>paramiko&gt;=3.0</code> with no upper bound, so fresh installs resolve to paramiko 5.x and need the helper. Whether to add a <code>&lt;5</code> ceiling, an opt-in <code>BackendConfig</code> flag, or rely on the documented helper + hint is a separate decision tracked in PR 613 review.</li>
+<li><strong>Per-backend opt-in.</strong> The helper mutates paramiko's class attributes process-wide. For multi-backend processes that talk to a mix of modern and legacy SFTP servers, a per-Transport-subclass opt-in would scope the SHA-1 acceptance to one backend. Tracked as a non-blocking follow-up in the BK-198 trace's <code>discovery_followups</code>.</li>
+<li><strong>CI drift guard.</strong> The 4.x → 5.x ssh-rsa removal is the second transitive-bump incident the PR addresses (BUG-204 = the 2.x → 3.x <code>channel_timeout=</code> API surface). A scheduled CI job that re-resolves <code>[&lt;extra&gt;]</code> against <code>pip install --upgrade --pre</code> and runs the legacy-sftp e2e against each delta would catch the next one before users do. Tracked as a non-blocking follow-up in the BK-198 trace's <code>discovery_followups</code>.</li>
+</ul>
+<hr />
+<h2 id="appendix-probe-script">Appendix: probe script<a class="headerlink" href="#appendix-probe-script" title="Permanent link">&para;</a></h2>
+<p>The probe lives at <code>tmp/paramiko5-probe/probe.py</code> (not committed — Docker rig is regenerated as needed; see <code>tests/e2e/test_sftp_legacy_recovery.py</code> for the durable integration test).</p>
+<p>Probe sketch:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">snapshot</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">t</span> <span class="o">=</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">Transport</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="s2">&quot;paramiko&quot;</span><span class="p">:</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="s2">&quot;_preferred_keys&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">_preferred_keys</span><span class="p">),</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="c1"># ... and three more sites</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="p">}</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">clear_ssh_rsa</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">t</span> <span class="o">=</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">Transport</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">t</span><span class="o">.</span><span class="n">_preferred_keys</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">_preferred_keys</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">&quot;ssh-rsa&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="c1"># ... and three more sites</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">snapshot</span><span class="p">())</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">try_connect</span><span class="p">(</span><span class="s2">&quot;S1_bare&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">enable_ssh_rsa_compat</span><span class="p">()</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">try_connect</span><span class="p">(</span><span class="s2">&quot;S2_helper_on_defaults&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">clear_ssh_rsa</span><span class="p">()</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">try_connect</span><span class="p">(</span><span class="s2">&quot;S3_after_clear&quot;</span><span class="p">))</span>      <span class="c1"># fails: no acceptable host key</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">enable_ssh_rsa_compat</span><span class="p">()</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">try_connect</span><span class="p">(</span><span class="s2">&quot;S4_recovery&quot;</span><span class="p">))</span>         <span class="c1"># succeeds</span>
+</code></pre></div>
+<p>Per-venv run: <code>tmp/paramiko-test/v&lt;ver&gt;/Scripts/python.exe tmp/paramiko-test/probe.py</code>.</p>
 
 
 
@@ -10316,7 +9485,7 @@ to v3.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../040-sql-blob-backend/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 040: SQL Blob Backend Specification">
+          <a href="../research-benchmark-suite-v2/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Benchmark Suite v2 — User-Decision Framing">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -10326,20 +9495,20 @@ to v3.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                040: SQL Blob Backend Specification
+                Benchmark Suite v2 — User-Decision Framing
               </div>
             </div>
           </a>
         
         
           
-          <a href="../042-ext-parquet/" class="md-footer__link md-footer__link--next" aria-label="Next: 042: Parquet Dataset Storage Extension (ext.parquet)">
+          <a href="../research-bug-prevention-beyond-testing/" class="md-footer__link md-footer__link--next" aria-label="Next: Bug Prevention Beyond Testing">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                042: Parquet Dataset Storage Extension (ext.parquet)
+                Bug Prevention Beyond Testing
               </div>
             </div>
             <div class="md-footer__button md-icon">

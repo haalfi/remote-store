@@ -8233,6 +8233,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../explanation/design/research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../explanation/design/research/research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
@@ -11965,6 +11993,11 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-200: <code>SFTPUtils.scan_host_algorithms()</code> raw-socket SSH KEXINIT probe for diagnosing <code>IncompatiblePeer</code> failures</li>
+<li>BK-199: <code>SFTPUtils.scan_host_keys()</code> preflight host-key discovery</li>
+<li>BK-198: <code>SFTPUtils.enable_ssh_rsa_compat()</code> for paramiko 5+ legacy-server (<code>ssh-rsa</code> / SHA-1) compatibility</li>
+<li>BK-197: <code>HostKeyPolicy</code> accepts enum-name aliases (case-insensitive on the name)</li>
+<li>BUG-204: <code>[sftp]</code> extra requires <code>paramiko&gt;=3.0</code> for the <code>channel_timeout=</code> connect kwarg (paramiko 2.x floor lift)</li>
 <li>BK-192: <code>MemoryBackend.copy()</code> and <code>AsyncMemoryBackend.copy()</code> now preserve user metadata on the destination — fixes a silent metadata drop on the <code>write → copy → get_file_info</code> round-trip (BE-019, ASYNC-019, WR-013)</li>
 <li>BK-176: <code>AsyncMemoryBackend</code> now preserves user metadata through <code>get_file_info</code>, <code>list_files</code> (recursive and non-recursive), and <code>iter_children</code> — sync <code>MemoryBackend</code> parity (ASYNC-016, WR-013)</li>
 <li>BK-190: tests/ root cleanup — placement checks (rules S, B, E) + TESTING.md and spec 048 update</li>

@@ -2291,6 +2291,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#preflight-host-key-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preflight host-key discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#host-key-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2298,6 +2309,56 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-ssh-rsa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Servers (ssh-rsa / SHA-1)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Legacy Servers (ssh-rsa / SHA-1)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#diagnose-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnose first
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-re-enable-ssh-rsa-at-process-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fix: re-enable ssh-rsa at process startup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#alternative-pin-paramiko5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternative: pin paramiko&lt;5
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -6878,6 +6939,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../explanation/design/research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../explanation/design/research/research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
@@ -9136,6 +9225,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#preflight-host-key-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preflight host-key discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#host-key-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9143,6 +9243,56 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-ssh-rsa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Servers (ssh-rsa / SHA-1)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Legacy Servers (ssh-rsa / SHA-1)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#diagnose-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnose first
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-re-enable-ssh-rsa-at-process-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fix: re-enable ssh-rsa at process startup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#alternative-pin-paramiko5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternative: pin paramiko&lt;5
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -9377,6 +9527,29 @@
 </tr>
 </tbody>
 </table>
+<h2 id="preflight-host-key-discovery">Preflight host-key discovery<a class="headerlink" href="#preflight-host-key-discovery" title="Permanent link">&para;</a></h2>
+<p>To populate a committed <code>host.keys</code> file without going through a TOFU connect
+first, use <a href="../../../reference/api/sftp-utils/"><code>SFTPUtils.scan_host_keys(host, port=22)</code></a>.
+It opens a transport, captures the server's <em>negotiated</em> host key (no
+authentication), and returns a single <code>known_hosts</code>-formatted line ready to
+commit:</p>
+<!-- Rule 6 exemption: requires a live SFTP server; cannot execute in CI. -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPUtils</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">entry</span> <span class="o">=</span> <span class="n">SFTPUtils</span><span class="o">.</span><span class="n">scan_host_keys</span><span class="p">(</span><span class="s2">&quot;sftp.example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;host.keys&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">entry</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>For non-default ports the entry uses the OpenSSH <code>[host]:port</code> form.
+Network failures (host unreachable, port refused, DNS error) raise <code>OSError</code>;
+KEX failures (legacy server offering only <code>ssh-rsa</code>) raise
+<code>paramiko.SSHException</code> — call <code>enable_ssh_rsa_compat()</code> first in that case.</p>
+<p><code>scan_host_keys()</code> returns the <strong>negotiated</strong> key for one handshake, not
+every key type the server offers. If the server publishes multiple key types
+and paramiko later negotiates a type other than the pinned line, the
+connection fails with <code>BadHostKeyException</code>. Call the helper multiple times
+under different <code>disabled_algorithms</code> settings if you need full-type
+coverage.</p>
 <h2 id="host-key-verification">Host Key Verification<a class="headerlink" href="#host-key-verification" title="Permanent link">&para;</a></h2>
 <p>The <code>HostKeyPolicy</code> enum controls how unknown host keys are handled:</p>
 <table>
@@ -9412,17 +9585,105 @@
 <li><code>SFTP_KNOWN_HOST_KEYS</code> environment variable</li>
 <li><code>host_keys_path</code> file on disk (default: <code>~/.ssh/known_hosts</code>)</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPBackend</span><span class="p">,</span> <span class="n">SFTPUtils</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Development / testing</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">port</span><span class="o">=</span><span class="mi">2222</span><span class="p">,</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">username</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">host_key_policy</span><span class="o">=</span><span class="n">SFTPUtils</span><span class="o">.</span><span class="n">HostKeyPolicy</span><span class="o">.</span><span class="n">AUTO_ADD</span><span class="p">,</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPBackend</span><span class="p">,</span> <span class="n">SFTPUtils</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Development / testing</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">port</span><span class="o">=</span><span class="mi">2222</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">username</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">host_key_policy</span><span class="o">=</span><span class="n">SFTPUtils</span><span class="o">.</span><span class="n">HostKeyPolicy</span><span class="o">.</span><span class="n">AUTO_ADD</span><span class="p">,</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">)</span>
 </code></pre></div>
+<h2 id="legacy-ssh-rsa">Legacy Servers (<code>ssh-rsa</code> / SHA-1)<a class="headerlink" href="#legacy-ssh-rsa" title="Permanent link">&para;</a></h2>
+<p><strong>What changed.</strong> Paramiko 5.0 removed <code>ssh-rsa</code> from its host-key
+defaults — empirically verified, see the <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md">research note</a>
+for the version matrix.</p>
+<ul>
+<li><strong>paramiko <code>&lt; 5</code></strong> ships <code>ssh-rsa</code> in defaults at all four negotiation
+  sites. A freshly-imported paramiko already negotiates against an
+  <code>ssh-rsa</code>-only server out of the box.</li>
+<li><strong>paramiko <code>&gt;= 5</code></strong> has <code>ssh-rsa</code> removed from all four sites.
+  Connecting to an <code>ssh-rsa</code>-only server raises
+  <code>IncompatiblePeer: Incompatible ssh peer (no acceptable host key)</code>
+  during KEX, before authentication is attempted.</li>
+</ul>
+<p>The <code>[sftp]</code> extra has no upper bound on paramiko, so current resolvers
+pick paramiko 5+ by default. New installs hit the failure unless they
+call the helper described below.</p>
+<h3 id="diagnose-first">Diagnose first<a class="headerlink" href="#diagnose-first" title="Permanent link">&para;</a></h3>
+<p>Before mutating paramiko's defaults, confirm the failure shape. An
+<code>IncompatiblePeer</code> error from paramiko wraps four distinct negotiation
+failures — host key, KEX, cipher, or MAC — and only the first is fixed
+by <code>enable_ssh_rsa_compat()</code>. The other three need
+<code>connect_kwargs={"disabled_algorithms": ...}</code> instead.
+<a href="../../../reference/api/sftp-utils/#scan_host_algorithms"><code>SFTPUtils.scan_host_algorithms()</code></a>
+parses the server's <code>SSH_MSG_KEXINIT</code> advertisement (RFC 4253 § 7.1)
+over a raw socket — no paramiko, no authentication, so the result
+reflects exactly what the server advertises:</p>
+<!-- Rule 6 exemption: requires a live SFTP server; cannot execute in CI. -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPUtils</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">SFTPUtils</span><span class="o">.</span><span class="n">scan_host_algorithms</span><span class="p">(</span><span class="s2">&quot;legacy.example.com&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;host-key algos:&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;server_host_key_algorithms&quot;</span><span class="p">])</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;kex algos:     &quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;kex_algorithms&quot;</span><span class="p">])</span>
+</code></pre></div>
+<p>If <code>server_host_key_algorithms == ["ssh-rsa"]</code>, this guide applies and
+the next subsection is the fix. If it's <code>kex_algorithms</code> that's narrow
+(e.g. only <code>diffie-hellman-group14-sha1</code>), <code>enable_ssh_rsa_compat()</code>
+will not help; widen the relevant list via
+<code>SFTPBackend(connect_kwargs={"disabled_algorithms": ...})</code>.</p>
+<h3 id="fix-re-enable-ssh-rsa-at-process-startup">Fix: re-enable <code>ssh-rsa</code> at process startup<a class="headerlink" href="#fix-re-enable-ssh-rsa-at-process-startup" title="Permanent link">&para;</a></h3>
+<p><a href="../../../reference/api/sftp-utils/"><code>SFTPUtils.enable_ssh_rsa_compat()</code></a>
+adds <code>ssh-rsa</code> to all four paramiko host-key sites in one call. It is a
+no-op on paramiko <code>&lt; 5</code> (all four guards short-circuit) and the required
+recovery path on paramiko <code>&gt;= 5</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPUtils</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Call once, before any SFTPBackend connect to a legacy server.</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">SFTPUtils</span><span class="o">.</span><span class="n">enable_ssh_rsa_compat</span><span class="p">()</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">If you observe <code>IncompatiblePeer: no acceptable kex algorithm</code></p>
+<p>KEX / cipher / MAC negotiation failures are a separate problem;
+<code>enable_ssh_rsa_compat()</code> does not help. Widen the relevant
+algorithm list via the <code>connect_kwargs={"disabled_algorithms": ...}</code>
+SFTP constructor argument instead.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Security tradeoff</p>
+<p>This is <strong>process-global</strong>: every paramiko transport in the process
+will then accept SHA-1 host keys. Only enable this if every server
+your process connects to is under your operational control, and push
+server operators to upgrade to <code>rsa-sha2-256</code>/<code>rsa-sha2-512</code> so the
+shim can be removed.</p>
+</div>
+<h3 id="alternative-pin-paramiko5">Alternative: pin <code>paramiko&lt;5</code><a class="headerlink" href="#alternative-pin-paramiko5" title="Permanent link">&para;</a></h3>
+<p>Pinning <code>paramiko&lt;5</code> keeps the consumer on the empirically-verified
+compatible range (<code>&gt;= 3.0,&lt; 5</code>) and avoids the helper entirely. The
+tradeoff is freezing on paramiko 4.x while upstream moves on:</p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Loses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>paramiko&lt;5</code> pin</td>
+<td>Future paramiko 5+ improvements (perf, protocol features, CVE fixes once 4.x EOLs)</td>
+</tr>
+<tr>
+<td><code>enable_ssh_rsa_compat()</code></td>
+<td>Process-wide SHA-1 host-key acceptance only</td>
+</tr>
+</tbody>
+</table>
+<p>Either composes cleanly with the library's <code>[sftp]</code> floor of
+<code>paramiko&gt;=3.0</code>. To pin the consumer must override at their own dependency
+layer (e.g. <code>requirements.txt</code> line <code>paramiko&gt;=3.0,&lt;5</code>).</p>
 <h2 id="connection-behaviour">Connection Behaviour<a class="headerlink" href="#connection-behaviour" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Lazy connect</strong> — no network call happens during construction. The SSH/SFTP connection is established on the first operation.</li>
@@ -9452,15 +9713,16 @@ Concurrent writers can both pass the check.</p>
 <p>See the <a href="../../../explanation/concurrency/">Concurrency and Atomicity Guarantees</a> guide for details and workarounds.</p>
 <h2 id="escape-hatch">Escape Hatch<a class="headerlink" href="#escape-hatch" title="Permanent link">&para;</a></h2>
 <p>Access the underlying <code>paramiko.SFTPClient</code> when you need protocol-level features:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">paramiko</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">sftp_client</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">paramiko</span><span class="o">.</span><span class="n">SFTPClient</span><span class="p">)</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">sftp_client</span><span class="o">.</span><span class="n">listdir_attr</span><span class="p">(</span><span class="s2">&quot;/custom/path&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">paramiko</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">sftp_client</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">paramiko</span><span class="o">.</span><span class="n">SFTPClient</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">sftp_client</span><span class="o">.</span><span class="n">listdir_attr</span><span class="p">(</span><span class="s2">&quot;/custom/path&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../../reference/capabilities-matrix/">Capabilities matrix</a></li>
 <li><a href="../../../reference/api/store/">API reference</a></li>
+<li><a href="../../../reference/api/sftp-utils/">SFTP utilities reference</a> — <code>scan_host_keys</code>, <code>enable_ssh_rsa_compat</code>, <code>HostKeyPolicy</code></li>
 <li><a href="../../../tutorial/examples/sftp-backend/">Example script</a></li>
 </ul>
 <h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>

@@ -6687,6 +6687,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
@@ -9865,9 +9893,13 @@ host raises <code>ValueError</code> at construction time.
 - <code>TRUST_ON_FIRST_USE</code>: Accept and save on first connect, verify on subsequent connects.
 - <code>AUTO_ADD</code>: Accept any key. <strong>Development/testing only — not safe for production.</strong></p>
 <p>String values (<code>"strict"</code>, <code>"tofu"</code>, <code>"auto"</code>) passed from TOML/YAML config are
-coerced to the enum in <code>__init__</code> via <code>HostKeyPolicy(value)</code>. Invalid strings
-raise <code>ValueError</code>. See <a href="../020-credential-hygiene/">020-credential-hygiene.md</a>
-SEC-005.</p>
+coerced to the enum in <code>__init__</code> via <code>HostKeyPolicy(value)</code>. The enum-name
+forms (<code>"STRICT"</code>, <code>"TRUST_ON_FIRST_USE"</code>, <code>"AUTO_ADD"</code>) are also accepted,
+case-insensitive on the name (<code>"auto_add"</code> and <code>"Auto_Add"</code> both resolve to
+<code>AUTO_ADD</code>); value-form aliasing (e.g. <code>"AUTO"</code> for canonical value <code>"auto"</code>)
+is not folded and continues to raise <code>ValueError</code>. Invalid strings, and any
+non-string input, raise <code>ValueError</code>. See
+<a href="../020-credential-hygiene/">020-credential-hygiene.md</a> SEC-005.</p>
 <h3 id="sftp-007-host-key-resolution-chain">SFTP-007: Host Key Resolution Chain<a class="headerlink" href="#sftp-007-host-key-resolution-chain" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Known host keys are resolved with first-match precedence:
 1. <code>known_host_keys</code> constructor parameter (code-level override)

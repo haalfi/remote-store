@@ -2909,6 +2909,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sftp-incompatiblepeer-on-connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP IncompatiblePeer on connect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#azure-hns-vs-flat-namespace" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6842,6 +6853,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../explanation/design/research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../explanation/design/research/research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
@@ -9094,6 +9133,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sftp-incompatiblepeer-on-connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP IncompatiblePeer on connect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#azure-hns-vs-flat-namespace" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9246,6 +9296,29 @@ dict. Available policies: <code>STRICT</code> (default), <code>TRUST_ON_FIRST_US
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="p">}</span>
 </code></pre></div>
 <p>See the <a href="../backends/sftp/">SFTP backend guide</a> for full configuration details.</p>
+<h2 id="sftp-incompatiblepeer-on-connect">SFTP <code>IncompatiblePeer</code> on connect<a class="headerlink" href="#sftp-incompatiblepeer-on-connect" title="Permanent link">&para;</a></h2>
+<p><strong>Symptom:</strong> <code>paramiko.ssh_exception.IncompatiblePeer: Incompatible ssh
+peer (no acceptable {host key | kex algorithm | cipher | MAC})</code> during
+<code>SFTPBackend</code> connect. The error wraps four distinct negotiation
+failures; the actionable next step depends on which one.</p>
+<p><strong>Diagnose first.</strong>
+<a href="../../reference/api/sftp-utils/#scan_host_algorithms"><code>SFTPUtils.scan_host_algorithms()</code></a>
+parses the server's <code>SSH_MSG_KEXINIT</code> advertisement over a raw socket
+(no paramiko, no authentication). Print the relevant name-list to
+identify which list the server narrowed.</p>
+<p><strong>Fix per failure mode:</strong></p>
+<ul>
+<li><code>no acceptable host key</code> — typically a legacy server advertising only
+  <code>ssh-rsa</code> against a modern paramiko (5+) that removed it from
+  defaults. See the SFTP guide's
+  <a href="../backends/sftp/#legacy-ssh-rsa">Legacy Servers</a> section;
+  <code>SFTPUtils.enable_ssh_rsa_compat()</code> re-enables <code>ssh-rsa</code> at process
+  startup.</li>
+<li><code>no acceptable kex algorithm</code> / <code>cipher</code> / <code>MAC</code> — server narrowed a
+  different list. Widen the matching list via the SFTP constructor's
+  <code>connect_kwargs={"disabled_algorithms": ...}</code>; the
+  <code>enable_ssh_rsa_compat()</code> helper does not address these.</li>
+</ul>
 <h2 id="azure-hns-vs-flat-namespace">Azure: HNS vs flat namespace<a class="headerlink" href="#azure-hns-vs-flat-namespace" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> <code>move()</code> or <code>copy()</code> fails on Azure with unexpected errors.</p>
 <p><strong>Cause:</strong> Azure Blob Storage has two modes: flat namespace (default) and
