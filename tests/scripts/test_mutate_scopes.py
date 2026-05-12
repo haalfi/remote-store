@@ -15,7 +15,10 @@ flags the latter pattern outside ``tests/scripts/``.
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -24,7 +27,41 @@ from tests.backends.fixtures import _load_all, all_fixtures
 
 _load_all()
 
-_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "mutate_scopes.py"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_SCRIPT = _REPO_ROOT / "scripts" / "mutate_scopes.py"
+_RUN_MUTATE = _REPO_ROOT / "scripts" / "run_mutate.py"
+
+# Subprocess wrapper that simulates the bare ``actions/setup-python``
+# environment used by the ``mutation.yml`` setup job: pytest and
+# remote_store are blocked at import time via a ``sys.meta_path`` finder,
+# then the target script is exec'd with forwarded CLI args. Lives at
+# module scope so the parametrised test below shares one source string.
+_BLOCK_WRAPPER = textwrap.dedent(
+    """\
+    import runpy
+    import sys
+
+
+    _BLOCKED = ("pytest", "remote_store")
+
+
+    class _Block:
+        def find_spec(self, name, path, target=None):
+            if name.split(".", 1)[0] in _BLOCKED:
+                raise ImportError(f"{name}: blocked by regression test for BUG-206")
+            return None
+
+
+    for _mod in list(sys.modules):
+        if _mod.split(".", 1)[0] in _BLOCKED:
+            sys.modules.pop(_mod, None)
+    sys.meta_path.insert(0, _Block())
+
+    script_path, *script_args = sys.argv[1:]
+    sys.argv = [script_path, *script_args]
+    runpy.run_path(script_path, run_name="__main__")
+    """
+)
 
 
 def _load_manifest():
@@ -108,3 +145,50 @@ def test_every_async_fixture_matches_an_async_extended_scope() -> None:
         f"{uncovered}. Add a scope in scripts/mutate_scopes.py whose `-k` "
         "filter substring-matches the fixture name."
     )
+
+
+# ---------------------------------------------------------------------------
+# Bare-Python introspection contract (BUG-206 regression guard)
+# ---------------------------------------------------------------------------
+#
+# The ``mutation.yml`` setup job runs ``python scripts/run_mutate.py
+# --list-scopes`` (and ``--container-needs <name>``) on a vanilla
+# ``actions/setup-python@v6`` runner — no project install, no pytest, no
+# uv pip. The import chain ``run_mutate → mutate_scopes →
+# tests.backends.fixtures._loader`` must therefore not pull in pytest or
+# remote_store transitively, even though ``tests.backends.fixtures`` as a
+# package depends on both at test time.
+
+
+@pytest.mark.spec("TEST-004")
+@pytest.mark.parametrize(
+    "introspect_args",
+    [
+        pytest.param(["--list-scopes"], id="list-scopes"),
+        pytest.param(["--container-needs", "minio"], id="needs-minio"),
+        pytest.param(["--container-needs", "azurite"], id="needs-azurite"),
+        pytest.param(["--container-needs", "sftp"], id="needs-sftp"),
+    ],
+)
+def test_run_mutate_introspection_runs_without_pytest_or_remote_store(
+    tmp_path: Path,
+    introspect_args: list[str],
+) -> None:
+    wrapper = tmp_path / "block_and_run.py"
+    wrapper.write_text(_BLOCK_WRAPPER)
+
+    result = subprocess.run(
+        [sys.executable, str(wrapper), str(_RUN_MUTATE), *introspect_args],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"run_mutate.py {' '.join(introspect_args)} failed under the bare-Python env\n"
+        f"--- stdout ---\n{result.stdout}\n"
+        f"--- stderr ---\n{result.stderr}"
+    )
+    payload = json.loads(result.stdout)
+    assert isinstance(payload, list)

@@ -1,0 +1,97 @@
+id: BUG-206
+title: "Mutation Testing cron failed at setup: bare-python no longer satisfies the scope-introspection import chain"
+trigger: |
+  The scheduled `Mutation Testing` workflow on 2026-05-09 failed in the
+  `setup` job before any mutation matrix shard started, with
+  `ModuleNotFoundError: No module named 'pytest'`. The setup job runs
+  `python scripts/run_mutate.py --list-scopes` (and `--container-needs`)
+  on a vanilla `actions/setup-python@v6` runner with no project install.
+  BK-186 PR 2 (merged 2026-05-08, the day before) rewrote
+  `scripts/mutate_scopes.py` to derive scopes from the TOML registry, so
+  the script now imports `tests.backends.fixtures._loader`. That trips
+  the package init, which eagerly re-exports from `registry`, which
+  imports `pytest` and `remote_store._backend`. Both are absent at
+  setup-time.
+
+source_items:
+  - BUG-206
+
+audience:
+  - infra.ci
+  - infra.test
+
+expected_ripples:
+  - sdd/backlogid.json
+
+review_rounds: 0
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .github/workflows/mutation.yml
+        section: "jobs.setup.steps[id=set-scopes]"
+        read_type: reference
+        extract: "Setup job runs only actions/setup-python — no project install — before invoking python scripts/run_mutate.py for matrix introspection"
+      - file: scripts/run_mutate.py
+        section: "module imports"
+        read_type: reference
+        extract: "Stdlib-only at top; transitive blast radius lives in mutate_scopes"
+      - file: scripts/mutate_scopes.py
+        section: "import block (line 38)"
+        read_type: reference
+        extract: "Post-BK-186 PR 2: `from tests.backends.fixtures._loader import load_backends, load_fixtures` — triggers the fixture package __init__"
+      - file: tests/backends/fixtures/__init__.py
+        section: "eager re-export from registry (line 24)"
+        read_type: reference
+        extract: "Five public names re-exported eagerly; importing any submodule of the package runs this first"
+      - file: tests/backends/fixtures/registry.py
+        section: "module imports (lines 25-29)"
+        read_type: reference
+        extract: "`import pytest` at module scope; `from remote_store._backend import Backend` follows — both unavailable in the bare setup job"
+      - file: tests/backends/fixtures/_loader.py
+        section: "module imports"
+        read_type: reference
+        extract: "Pure stdlib + tomllib/tomli — would run cleanly on bare Python if not for the parent __init__"
+
+  - id: reproduce
+    name: Failing test first
+    steps:
+      - file: tests/scripts/test_mutate_scopes.py
+        section: "test_run_mutate_introspection_runs_without_pytest_or_remote_store"
+        read_type: gate
+        extract: "Parametrised across --list-scopes and the three --container-needs variants; subprocess wrapper installs a sys.meta_path finder blocking pytest + remote_store, runs runpy.run_path on scripts/run_mutate.py, asserts exit 0 and JSON-array stdout. Reproduced the CI trace verbatim before the fix."
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/fixtures/__init__.py
+        section: "module body (lazy __getattr__)"
+        read_type: reference
+        extract: |
+          Replace the eager `from .registry import ...` with a module-level
+          `__getattr__` that defers the `registry` import until a lazy name
+          is dereferenced. Public surface (`BackendFixture`, `all_fixtures`,
+          `fixtures`, `fixture_params`, `AnyBackend`) stays unchanged for
+          the 12 conformance/test callers that import from
+          `tests.backends.fixtures` directly. `from __future__ import
+          annotations` plus a `TYPE_CHECKING` block preserves the static
+          re-export shape for type-checkers / IDEs. `_load_all` stays as-is
+          — only called inside a pytest session, where the deps are
+          present.
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_mutate_scopes.py
+        section: "test_run_mutate_introspection_runs_without_pytest_or_remote_store"
+        read_type: verify
+        extract: "All 4 parametrised cases pass post-fix; subprocess wrapper now returns the JSON scope list and JSON container-needs lists exactly as the workflow expects"
+      - file: tests/backends/fixtures/
+        section: "(full directory)"
+        read_type: verify
+        extract: "160 tests in tests/scripts/test_mutate_scopes.py + tests/backends/fixtures/ + tests/scripts/test_check_test_placement.py pass; conformance collection (test_listing memory subset) runs the lazy re-export path under real pytest and stays green"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG-DONE entry + failing test before fix + trace ride along. CHANGELOG skipped per the trace-schema rule: audience is infra-only (infra.ci + infra.test), no user-visible API change."

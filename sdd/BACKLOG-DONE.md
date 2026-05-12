@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-206 — scheduled `Mutation Testing` cron failed at the setup job**
+  The `mutation.yml` setup job runs `python scripts/run_mutate.py
+  --list-scopes` (and `--container-needs <name>`) on a vanilla
+  `actions/setup-python@v6` runner with no project install. Before
+  BK-186 PR 2 the script was self-contained; after PR 2 it imports
+  `tests.backends.fixtures._loader`, which triggers
+  `tests/backends/fixtures/__init__.py`. The package init eagerly
+  re-exported five names from `registry`, and `registry` imports both
+  `pytest` and `remote_store._backend` at module scope. Neither is
+  available in the setup job, so the first scheduled run after PR 2
+  (2026-05-09) failed with `ModuleNotFoundError: No module named
+  'pytest'` before any mutation matrix shard started.
+  Fix: re-export the five public names lazily via `__getattr__` in
+  `tests/backends/fixtures/__init__.py`. Importing the package no
+  longer pulls `registry`, so the `_loader`-only path used by
+  `mutate_scopes.py` runs with stdlib + `tomllib` alone; the lazy path
+  is only exercised under pytest, where the deps are present.
+  Regression guard: `tests/scripts/test_mutate_scopes.py::test_run_mutate_introspection_runs_without_pytest_or_remote_store`
+  subprocess-runs every introspection command (`--list-scopes` and
+  the three `--container-needs` variants) under a `sys.meta_path`
+  finder that blocks `pytest` and `remote_store`, mirroring the bare
+  CI environment. The next scheduled run touches the cron again on
+  Saturday 2026-05-16.
+  Audience: `infra.ci`, `infra.test`.
+  Trace: [`sdd/traces/BUG-206-mutation-setup-bare-python.yml`](traces/BUG-206-mutation-setup-bare-python.yml).
+
 - [x] **BK-199 — `SFTPUtils.scan_host_keys(host, port=22) -> str` preflight host-key discovery**
   Static helper that opens a `paramiko.Transport`, performs key exchange
   without authenticating, captures `transport.get_remote_server_key()`,
