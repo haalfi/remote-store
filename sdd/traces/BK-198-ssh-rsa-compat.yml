@@ -56,6 +56,7 @@ surprising_ripples:
   - tests/e2e/conftest.py
   - benchmarks/infra/legacy-sftp/Dockerfile
   - benchmarks/infra/docker-compose.yml
+  - docs-src/guides/troubleshooting.md  # round 5: cross-link from troubleshooting -> Legacy Servers + scan_host_algorithms
 
 # Round 1: initial implementation (BK-198 first cut).
 # Round 2: empirical re-test against paramiko 2.12-4.0 -> corrective
@@ -70,8 +71,14 @@ surprising_ripples:
 #          guide; TESTING.md "# internal: no public observable" tag on
 #          paramiko.Transport.* assertions; PT011 match= on the unreachable
 #          tests; S1 e2e split into version-skipif'd S1a/S1b for single
-#          straight-line assertion paths per test.
-review_rounds: 4
+#          straight-line assertion paths per test. BK-201 filed for the
+#          pre-existing SFTPBackend private-state assertion cleanup.
+# Round 5: troubleshooting guide ripple -- added "SFTP IncompatiblePeer
+#          on connect" entry with diagnose-first flow (scan_host_algorithms)
+#          and per-failure-mode fixes (enable_ssh_rsa_compat vs
+#          disabled_algorithms), so users landing in troubleshooting.md
+#          first find the path to BK-198 / BK-200 helpers.
+review_rounds: 5
 
 phases:
   - id: reproduce

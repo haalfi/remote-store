@@ -94,6 +94,32 @@ config = {
 
 See the [SFTP backend guide](backends/sftp.md) for full configuration details.
 
+## SFTP `IncompatiblePeer` on connect
+
+**Symptom:** `paramiko.ssh_exception.IncompatiblePeer: Incompatible ssh
+peer (no acceptable {host key | kex algorithm | cipher | MAC})` during
+``SFTPBackend`` connect. The error wraps four distinct negotiation
+failures; the actionable next step depends on which one.
+
+**Diagnose first.**
+[`SFTPUtils.scan_host_algorithms()`](../reference/api/sftp-utils.md#scan_host_algorithms)
+parses the server's `SSH_MSG_KEXINIT` advertisement over a raw socket
+(no paramiko, no authentication). Print the relevant name-list to
+identify which list the server narrowed.
+
+**Fix per failure mode:**
+
+- `no acceptable host key` — typically a legacy server advertising only
+  `ssh-rsa` against a modern paramiko (5+) that removed it from
+  defaults. See the SFTP guide's
+  [Legacy Servers](backends/sftp.md#legacy-ssh-rsa) section;
+  `SFTPUtils.enable_ssh_rsa_compat()` re-enables `ssh-rsa` at process
+  startup.
+- `no acceptable kex algorithm` / `cipher` / `MAC` — server narrowed a
+  different list. Widen the matching list via the SFTP constructor's
+  `connect_kwargs={"disabled_algorithms": ...}`; the
+  `enable_ssh_rsa_compat()` helper does not address these.
+
 ## Azure: HNS vs flat namespace
 
 **Symptom:** `move()` or `copy()` fails on Azure with unexpected errors.
