@@ -586,7 +586,6 @@ and the highest ID already in this file, then take the next integer. Run
   `open_atomic`, add a `list_files` scan asserting no orphan temp files
   remain anywhere under the test prefix, not just that the target path does
   not exist.
-  Depends on ID-183 (oracle infrastructure) for any Pattern A additions.
   Spec: SIO-001, SIO-008, SIO-009, SAW-004, ResourceSafety.dfy § 1.
 
 - [ ] **ID-187 — Aggregate verification: oracle differential and property-based tests for `GetFolderInfo`**
@@ -605,23 +604,6 @@ and the highest ID already in this file, then take the next integer. Run
   errors in recursive `ChildFiles` or `SumSizes` computation that deterministic
   fixtures cannot reach. Depends on ID-183. Spec: BE-017, ID-134,
   BackendContract.GetFolderInfo, MemoryBackend.SumSizesAddOne lemma.
-
-- [ ] **ID-186 — Copy metadata formal closure (co-ships BK-196)**
-  `MemoryBackend.dfy::Copy` builds the destination via
-  `BasicFileInfo(dst, dst, srcEntry.info.size)`, which drops user metadata.
-  The Python implementation preserves it (fixed in BK-192). Fix in two
-  parts that ship together to keep CI green: (a) **Dafny:** tighten the
-  `Copy` postcondition to require
-  `dstEntry.info.userMetadata == srcEntry.info.userMetadata`; adjust
-  `BasicFileInfo` / the destination constructor to carry metadata through;
-  verify Dafny still reports all lemmas verified. (b) **Pattern A:**
-  add an oracle differential test in
-  `tests/backends/memory/test_coverage.py::TestMemoryCopyMetadataRoundTrip`
-  using the ID-183 infrastructure — run `write(src, metadata={…})` then
-  `copy(src, dst)` on both Python `MemoryBackend` and `DafnyOracleBackend`,
-  assert `get_file_info(dst).metadata` matches on both sides. This closes
-  BK-196 (spec gap) and BK-195 (missing conformance test) simultaneously.
-  Spec: WR-013, BE-019, ASYNC-019. See BK-196 trace.
 
 - [ ] **ID-185 — Listing completeness and depth verification**
   Two gap families in `tests/backends/conformance/test_listing.py`, both
@@ -660,10 +642,8 @@ and the highest ID already in this file, then take the next integer. Run
   asserts two specific paths are gone; add a scan asserting no path under
   the deleted prefix exists, matching the Dafny quantifier
   `forall p | IsChildOf(p, path) :: !PathExists(fs, p)`.
-  (d) **Pattern B — move/copy destination discrimination:** in
-  `test_destination_is_directory_raises_error`, tighten the `match=` regex
-  to assert the error message contains the *destination* path (not the
-  source), matching BackendContract Move/Copy L542–543.
+  For move/copy destination-path discrimination in `test_destination_is_directory_raises_error`,
+  see BK-177 which already tracks that `match=` tightening with a concrete fix recipe.
   Spec: BE-004, BE-005, BE-008, BE-014, BE-015, BE-021.
 
 - [ ] **ID-183 — Oracle differential testing infrastructure (Pattern A foundation)**
@@ -680,8 +660,7 @@ and the highest ID already in this file, then take the next integer. Run
   reference postcondition line numbers — so all subsequent items follow the
   same style. The helper lives in
   `tests/backends/dafny/` alongside `_helpers.py`.
-  No spec change; no new tests. Prerequisite for ID-184, ID-185, ID-186,
-  ID-187, ID-188.
+  No spec change; no new tests. Prerequisite for ID-185, ID-187, ID-188.
 
 ### API Surface Enhancements
 
