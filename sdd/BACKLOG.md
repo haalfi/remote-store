@@ -203,7 +203,21 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-196 — Dafny formal-spec gap: `Copy` postcondition does not pin metadata**
+- [ ] **BK-201 — SFTP test-hygiene: remove TESTING.md Rule 3 violations on `SFTPBackend` private state**
+  Four pre-existing assertions on `SFTPBackend` private attributes in
+  `tests/backends/sftp/test_config.py` lack the
+  `# internal: no public observable` exception tag that TESTING.md
+  Rule 3 requires. Per-site fix shape (suggested by PR 613 reviewer):
+  - L801 `test_resolve_host_keys_direct` — `backend._resolved_host_keys == "ssh-rsa AAAA..."`: replace with a behavior check (construct + connect via existing test fixture and verify the host-key path is used).
+  - L882 `test_host_key_policy_string_coercion` — `backend._host_key_policy is expected`: use `repr(backend)` if it includes the policy, or restructure as a behavior test (the policy is observable in connect flow).
+  - L938 `test_constructor_accepts_alias_string` — `backend._host_key_policy is HostKeyPolicy.AUTO_ADD`: same as L882.
+  - L1709 (TOFU teardown test) — `backend._tofu_keys_path is None`: observable equivalent is whether `save_host_keys` is called; the pattern is already demonstrated in `test_tofu_save_failure_suppressed`.
+
+  If a site has no realistic observable, add the `# internal: no public
+  observable` exception tag with the reason (per the pattern at
+  `test_config.py:1405`). Don't bulk-tag: each site must justify the
+  exemption or refactor to observable. Surfaced during PR 613 review
+  round 4. Audience: `dev.process`.
   `sdd/formal/MemoryBackend.dfy::Copy` builds the destination via
   `BasicFileInfo(dst, dst, srcEntry.info.size)`, which drops user metadata.
   The `Copy` postcondition does not pin metadata, so the model verifies
