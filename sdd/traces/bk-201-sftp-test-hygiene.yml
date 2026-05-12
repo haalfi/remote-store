@@ -1,0 +1,247 @@
+id: BK-201
+title: "SFTP test-hygiene: remove TESTING.md Rule 3 violations on SFTPBackend private state"
+trigger: |
+  PR 613 (BK-198 / BK-197 work) review round 4 surfaced three pre-existing
+  assertions on `SFTPBackend` private attributes in
+  `tests/backends/sftp/test_config.py` that lacked the
+  `# internal: no public observable` exception tag required by TESTING.md
+  Rule 3. The review deferred the cleanup to its own item rather than
+  bundling it into the BK-198 PR.
+
+source_items:
+  - BK-201
+
+audience:
+  - infra.test
+  - contributor.process
+
+# Round 1 review surfaced that the "stray paragraph" at sdd/BACKLOG.md
+# was actually BK-196's body (the BK-201 entry from PR 613 had replaced
+# the BK-196 header without removing the body); the round-1 fix restored
+# the BK-196 header. No new ID born — BK-196 already existed.
+#
+# Round 2: BK-204 filed after the reviewer's question on where the
+# deleted test_resolve_host_keys_direct's logic is now covered.
+# TestSFTPInlineHostKeysVerification covers the "direct" tier of
+# SFTP-007's resolution chain behaviorally, but the config-dict and
+# env-var tiers (and the precedence ordering) remain uncovered — a
+# pre-existing gap, but now visible because the only test that touched
+# the resolution helper (even if only via private-attribute assertion)
+# is gone.
+discovery_followups:
+  - BK-204
+
+# expected_ripples intentionally omitted: BK-201 < the running BK max
+# (backlogid.json already current), and the audience derivation rule
+# (`infra.test` + `contributor.process` with no new framework) skips
+# CHANGELOG. Per the schema, `expected_ripples` lists files actually
+# touched, not files anticipated and then determined unnecessary.
+
+surprising_ripples:
+  # Round 2 review found a stale `# pragma: no cover -- tested via unit
+  # test` justification on _sftp.py:1247 whose underlying claim was
+  # invalidated by this PR (the original "unit test" was deleted and
+  # replaced with live-fixture tests that genuinely exercise the line).
+  # A source-file edit on a test-hygiene item — neither this trace's
+  # cited reads nor the ripple-check table anticipated touching src/.
+  - src/remote_store/backends/_sftp.py
+
+# Initial: three-site plan agreed during planning (site 1 -> live-fixture
+#          behavior test; site 2 -> tag with concrete reason; site 3 ->
+#          save_host_keys mock pattern). Trace authored alongside the
+#          implementation; BK-201 moved to BACKLOG-DONE.md. PR opened
+#          against master. No review feedback yet.
+# Round 1 (PR #618 review): four findings raised. Fixed three:
+#          (a) sdd/BACKLOG.md: the "stray Dafny paragraph" was BK-196's
+#              body left behind by PR 613's BK-201 entry overwrite;
+#              restored the BK-196 header to keep the file structurally
+#              valid in the same commit that removes BK-201 (CLAUDE.md
+#              principle 3).
+#          (b) tests/backends/sftp/test_config.py: the mismatch-key STRICT
+#              test caught `(BackendUnavailable, RemoteStoreError)` which
+#              collapsed to "any RemoteStoreError" because the first
+#              subclasses the second. Tightened to
+#              `pytest.raises(BackendUnavailable, match=r"(?i)host key")`
+#              to pin the BadHostKeyException -> BackendUnavailable path
+#              the design extract already commits to.
+#          (c) this trace: dropped sdd/backlogid.json and CHANGELOG.md
+#              from expected_ripples since neither was actually touched
+#              (schema clarifies expected_ripples is for files touched,
+#              not anticipated-then-determined-unnecessary).
+#          Finding 4 (weak positive assertion on
+#          test_strict_accepts_matching_inline_key) was explicitly marked
+#          "not a blocker" by the reviewer and skipped — the paired
+#          mismatch test, now tightened with the host-key regex, already
+#          locks the wiring claim.
+# Round 2 (PR #618 review): two new findings raised, both fixed:
+#          (a) src/remote_store/backends/_sftp.py:1247 carried a stale
+#              `# pragma: no cover -- tested via unit test` justification
+#              that was always misleading (the deleted unit test only
+#              asserted on `_resolved_host_keys` and never executed the
+#              branch). The new TestSFTPInlineHostKeysVerification tests
+#              actually connect with `known_host_keys=` and exercise the
+#              branch. Verified with `hatch run test-cov tests/backends/sftp/`
+#              (line 1247 stays covered after pragma removal; _sftp.py
+#              coverage held at 96%). Pragma deleted.
+#          (b) tests/backends/sftp/test_config.py
+#              test_tofu_inline_keys_not_persisted's
+#              `patch.object(backend._ssh_client, "save_host_keys")` was a
+#              Rule 5 violation (mocking paramiko internals). The site is
+#              behaviorally observable: with inline keys the
+#              TRUST_ON_FIRST_USE file-load branch is bypassed entirely
+#              so the user's host_keys_path file is never created.
+#              Replaced the mock with `assert not os.path.isfile(keys_path)`,
+#              keeping behavioral coverage without the Rule 5 violation.
+review_rounds: 2
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules / 3 (Never assert on private attributes)"
+        read_type: gate
+        extract: "Per-site refactor to observable behavior, OR add `# internal: no public observable` with a concrete reason; bulk-tagging is forbidden."
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-201 (item)"
+        read_type: gate
+        extract: "Three sites enumerated with reviewer-suggested fix shapes per site."
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "L1417 (TestSFTPBug144SshClientLeak / test_ssh_client_closed_on_connect_failure)"
+        read_type: reference
+        extract: "Reference pattern for the `# internal: no public observable` tag inline with the assertion."
+        outcome: ok
+
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_create_ssh_client (lines 1244-1267)"
+        read_type: reference
+        extract: |
+          Inline `known_host_keys` enters via `_load_host_keys_from_string`
+          and bypasses the TOFU/STRICT file-load branches. With STRICT
+          policy, paramiko's default RejectPolicy applies, so a matching
+          key allows connect and a mismatched key raises
+          BadHostKeyException -> BackendUnavailable. That is the
+          observable behavior for site 1.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "__repr__ (lines 1151-1158)"
+        read_type: reference
+        extract: |
+          repr does not surface `_host_key_policy`, so site 2 cannot be
+          observed without extending repr; AUTO_ADD and TOFU both call
+          AutoAddPolicy(), so a connection-only test cannot distinguish
+          the two coerced values. Tag-with-reason is the right call.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPTofuPersistence / test_tofu_save_failure_suppressed (L1732+)"
+        read_type: reference
+        extract: |
+          Mock pattern: patch backend._ssh_client.save_host_keys before
+          close(), then assert on the mock. Touching `_ssh_client` to
+          install the patch is consistent with the existing TOFU class
+          (Rule 3 bans asserting on private attrs, not accessing them).
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-007 (Host Key Resolution Chain)"
+        read_type: reference
+        extract: "Spec marker for the new behavioral tests at site 1."
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPHelpers / test_resolve_host_keys_direct (removed)"
+        read_type: reference
+        extract: |
+          Removed the private-attribute assertion test from the helpers
+          class; its dummy-host construction was the only thing keeping
+          it in a `no server needed` region.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "Inline host-key verification (SFTP-007) / TestSFTPInlineHostKeysVerification"
+        read_type: reference
+        extract: |
+          New region + class with two straight-line tests using
+          sftp_server: STRICT + matching inline key connects; STRICT +
+          mismatched inline key (fresh RSAKey.generate) raises
+          `BackendUnavailable` matching `(?i)host key`, pinning the
+          BadHostKeyException -> BackendUnavailable path (initial draft
+          used the (BackendUnavailable, RemoteStoreError) union, which
+          collapsed to "any RemoteStoreError" because the first
+          subclasses the second; tightened in review round 1). Bad-key
+          backend uses RetryPolicy(max_attempts=1, ...) to avoid the 3x
+          retry cost.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPHostKeyPolicyCoercion / test_host_key_policy_string_coercion"
+        read_type: reference
+        extract: |
+          Added a `# internal: no public observable` block citing the
+          downstream behavioral coverage (TestSFTPInlineHostKeysVerification
+          for STRICT, TestSFTPTofuPersistence for TOFU). The assertion
+          stays; only the justification is new.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPTofuPersistence / test_tofu_inline_keys_not_persisted"
+        read_type: reference
+        extract: |
+          Round-1 draft replaced `assert backend._tofu_keys_path is None`
+          with a `patch.object(backend._ssh_client, "save_host_keys")`
+          mock + `save_mock.assert_not_called()` (mirroring
+          test_tofu_save_failure_suppressed). Round-2 review flagged the
+          mock as a Rule 5 site (mocking paramiko); replaced with
+          `assert not os.path.isfile(keys_path)` — the public-observable
+          proxy that follows directly from the inline-keys branch
+          bypassing _ensure_known_hosts_file. Stronger assertion (not
+          vacuous) and no Rule 5 violation.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_create_ssh_client / line 1247 inline-keys branch"
+        read_type: reference
+        extract: |
+          Round-2 review: removed the
+          `# pragma: no cover -- tested via unit test` comment. The
+          justification was always misleading (the deleted unit test
+          only asserted on `_resolved_host_keys` and never executed the
+          branch). The new TestSFTPInlineHostKeysVerification tests
+          actually exercise it; verified with `hatch run test-cov` that
+          the line stays covered after pragma removal.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: '"Backlog (Prioritized)" / BK-196 (header restored)'
+        read_type: reference
+        extract: |
+          Round 1 review caught that the BK-201 entry from PR 613 had
+          replaced BK-196's `**BK-196 — Dafny formal-spec gap...**` header
+          without removing the body, so removing BK-201 in this PR left a
+          headerless paragraph at the top of the prioritized list. Git
+          archaeology (`git show 3cbb52f -- sdd/BACKLOG.md`) recovered the
+          original header. Restored as a one-line edit so the file is
+          structurally valid in the same commit (CLAUDE.md principle 3).
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item completed"
+        read_type: verify
+        extract: |
+          Move BK-201 to BACKLOG-DONE.md (done). Two of the row's listed
+          ripples did not apply this time: sdd/backlogid.json was already
+          current (BK-201 < the running BK max of 203), and the CHANGELOG
+          entry is skipped because audience derivation (`infra.test` +
+          `contributor.process` with no new framework) resolves to
+          "no CHANGELOG required" per the schema rule.
+        outcome: misleading
+      - file: sdd/TESTING.md
+        section: "Rules / 3"
+        read_type: verify
+        extract: "All three sites now either refactored to observable or carry a concrete `# internal: no public observable` justification."
+        outcome: ok

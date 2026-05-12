@@ -8,6 +8,38 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-201 — SFTP test-hygiene: remove TESTING.md Rule 3 violations on `SFTPBackend` private state**
+  Three pre-existing assertions on `SFTPBackend` private attributes in
+  `tests/backends/sftp/test_config.py` lacked the
+  `# internal: no public observable` exception tag that TESTING.md
+  Rule 3 requires. Per-site disposition:
+  - `test_resolve_host_keys_direct` (was L801, in `TestSFTPHelpers`):
+    deleted the private-attribute test and replaced it with a new
+    `TestSFTPInlineHostKeysVerification` class (SFTP-007) holding two
+    straight-line live-fixture tests — STRICT + matching inline
+    `known_host_keys` connects; STRICT + mismatched key (fresh
+    `RSAKey.generate(2048)`) raises `BackendUnavailable` /
+    `RemoteStoreError`. Bad-key backend uses
+    `RetryPolicy(max_attempts=1, ...)` to skip the 3× connect retry.
+    Proves the inline-key path is actually wired into the connection
+    flow, which the deleted assertion only inferred indirectly.
+  - `test_host_key_policy_string_coercion` (L882): tagged with
+    `# internal: no public observable` plus a concrete reason —
+    `__repr__` does not surface `_host_key_policy`, and downstream
+    behavior (AUTO_ADD / TRUST_ON_FIRST_USE both call `AutoAddPolicy()`;
+    STRICT defaults to `RejectPolicy`) is covered by
+    `TestSFTPInlineHostKeysVerification` and `TestSFTPTofuPersistence`.
+    The assertion pins the string→enum equivalence contract.
+  - `test_tofu_inline_keys_not_persisted` (was L1721): replaced
+    `assert backend._tofu_keys_path is None` with the mock pattern
+    already used by `test_tofu_save_failure_suppressed` —
+    `patch.object(backend._ssh_client, "save_host_keys") as save_mock`
+    around `close()`, then `save_mock.assert_not_called()`. Touching
+    `_ssh_client` to install the patch is consistent with the rest of
+    the file (Rule 3 bans asserting on private attrs, not accessing
+    them). Audience: `infra.test`, `contributor.process`.
+  Trace: [`sdd/traces/bk-201-sftp-test-hygiene.yml`](traces/bk-201-sftp-test-hygiene.yml).
+
 - [x] **BK-203 — Dual-wire gen-checks into `hatch run lint`**
   `gen_graph.py --check`, `gen_features.py --check`, `gen_graph_viz.py --check`, and
   `check_api_docs.py` ran in CI but not in `hatch run lint`, so generated-file

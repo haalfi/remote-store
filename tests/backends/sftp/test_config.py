@@ -791,15 +791,6 @@ class TestSFTPHelpers:
         assert backend._sftp_path("file.txt") == "/data/file.txt"
         assert backend._sftp_path("") == "/data"
 
-    def test_resolve_host_keys_direct(self) -> None:
-        """Direct known_host_keys takes precedence."""
-        backend = SFTPBackend(
-            host="dummy",
-            known_host_keys="ssh-rsa AAAA...",
-            host_key_policy=HostKeyPolicy.AUTO_ADD,
-        )
-        assert backend._resolved_host_keys == "ssh-rsa AAAA..."
-
     def test_stat_to_fileinfo_no_mtime(self) -> None:
         """_stat_to_fileinfo handles None mtime."""
 
@@ -879,6 +870,13 @@ class TestSFTPHostKeyPolicyCoercion:
                 SFTPBackend(host="dummy", host_key_policy=input_str)
         else:
             backend = SFTPBackend(host="dummy", host_key_policy=input_str)
+            # internal: no public observable — coercion is constructor
+            # normalization; __repr__ does not surface the policy, and the
+            # downstream connect-path effect (set_missing_host_key_policy for
+            # AUTO_ADD vs TRUST_ON_FIRST_USE vs default-reject for STRICT) is
+            # covered behaviorally by TestSFTPInlineHostKeysVerification
+            # and TestSFTPTofuPersistence. This assertion pins the
+            # string-to-enum equivalence the constructor promises.
             assert backend._host_key_policy is expected
 
 
@@ -1576,6 +1574,67 @@ class TestSFTPBug142ReadHandleLeak:
 # endregion
 
 
+# region: Inline host-key verification (SFTP-007)
+
+
+class TestSFTPInlineHostKeysVerification:
+    """SFTP-007: ``known_host_keys`` (inline) is consulted for STRICT verification.
+
+    Direct keys passed at construction must be loaded into the SSH client so
+    that STRICT policy accepts a matching server key and rejects a mismatched
+    one — i.e. the resolution chain's top-priority source is actually wired
+    into the connection path, not merely stored on the backend.
+    """
+
+    pytestmark = pytest.mark.spec("SFTP-007")
+
+    def test_strict_accepts_matching_inline_key(self, sftp_server: tuple[int, str]) -> None:
+        """Correct inline ``known_host_keys`` lets STRICT connect succeed."""
+        port, host_key_entry = sftp_server
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=port,
+            username="testuser",
+            password="testpass",
+            known_host_keys=host_key_entry,
+            host_key_policy=HostKeyPolicy.STRICT,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+        )
+        try:
+            assert backend.exists("nonexistent.txt") is False
+        finally:
+            backend.close()
+
+    def test_strict_rejects_mismatched_inline_key(self, sftp_server: tuple[int, str]) -> None:
+        """A wrong inline ``known_host_keys`` causes STRICT to refuse the connection."""
+        port, _host_key_entry = sftp_server
+        wrong_key = paramiko.RSAKey.generate(2048)
+        wrong_entry = f"[127.0.0.1]:{port} ssh-rsa {wrong_key.get_base64()}"
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=port,
+            username="testuser",
+            password="testpass",
+            known_host_keys=wrong_entry,
+            host_key_policy=HostKeyPolicy.STRICT,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            retry=RetryPolicy(max_attempts=1, backoff_base=0, backoff_max=0),
+        )
+        try:
+            # Paramiko raises BadHostKeyException (subclass of SSHException),
+            # which _map_exception translates to BackendUnavailable carrying
+            # the original "Host key for server ... does not match" text.
+            # The match= pins the host-key-mismatch failure path, not any
+            # other RemoteStoreError (timeout, auth, transient SSH error).
+            with pytest.raises(BackendUnavailable, match=r"(?i)host key"):
+                backend.exists("nonexistent.txt")
+        finally:
+            backend.close()
+
+
+# endregion
+
+
 # region: TOFU persistence (SFTP-028)
 
 
@@ -1718,13 +1777,14 @@ class TestSFTPTofuPersistence:
                 connect_kwargs={"allow_agent": False, "look_for_keys": False},
             )
             backend.exists("nonexistent.txt")
-            assert backend._tofu_keys_path is None
             backend.close()
-            # known_hosts file should not have been created by TOFU persistence
-            # (it may exist as an empty file from _ensure, but _tofu_keys_path is None
-            # so save_host_keys was never called)
-            if os.path.isfile(keys_path):
-                assert os.path.getsize(keys_path) == 0
+            # Observable: with inline keys, the TRUST_ON_FIRST_USE
+            # file-load branch is bypassed entirely — _ensure_known_hosts_file
+            # is never called and _close_clients does not invoke
+            # save_host_keys (because _tofu_keys_path stays None). The
+            # public-observable proxy is therefore: the user's
+            # host_keys_path file was never created.
+            assert not os.path.isfile(keys_path)
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
 

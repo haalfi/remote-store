@@ -1244,7 +1244,7 @@ class SFTPBackend(Backend):
         ssh = paramiko.SSHClient()
 
         # Load known host keys from resolved source or file fallback
-        if self._resolved_host_keys:  # pragma: no cover -- tested via unit test
+        if self._resolved_host_keys:
             _load_host_keys_from_string(ssh, self._resolved_host_keys)
             self._tofu_keys_path = None  # inline keys are never persisted
         elif self._host_key_policy == HostKeyPolicy.TRUST_ON_FIRST_USE:

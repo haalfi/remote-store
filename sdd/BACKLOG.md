@@ -203,25 +203,28 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Backlog (Prioritized)
 
-- [ ] **BK-201 — SFTP test-hygiene: remove TESTING.md Rule 3 violations on `SFTPBackend` private state**
-  Three pre-existing assertions on `SFTPBackend` private attributes in
-  `tests/backends/sftp/test_config.py` lack the
-  `# internal: no public observable` exception tag that TESTING.md
-  Rule 3 requires. Per-site fix shape (suggested by PR 613 reviewer):
-  - L801 `test_resolve_host_keys_direct` — `backend._resolved_host_keys == "ssh-rsa AAAA..."`: replace with a behavior check (construct + connect via existing test fixture and verify the host-key path is used).
-  - L882 `test_host_key_policy_string_coercion` — `backend._host_key_policy is expected`: use `repr(backend)` if it includes the policy, or restructure as a behavior test (the policy is observable in connect flow).
-  - L1709 (TOFU teardown test) — `backend._tofu_keys_path is None`: observable equivalent is whether `save_host_keys` is called; the pattern is already demonstrated in `test_tofu_save_failure_suppressed`.
+- [ ] **BK-204 — SFTP-007 host-key resolution chain: config / env tiers uncovered**
+  `_resolve_host_keys` in `src/remote_store/backends/_sftp.py` documents a
+  four-tier precedence (direct param > `config["known_host_keys"]` >
+  `SFTP_KNOWN_HOST_KEYS` env > on-disk `host_keys_path` fallback). BK-201's
+  `TestSFTPInlineHostKeysVerification` exercises the "direct" tier end to
+  end (load + STRICT verify), but the config-dict and env-var branches
+  still carry `# pragma: no cover` at `_sftp.py:1285-1288` — no test ever
+  reaches them. The precedence claim (direct > config > env) is also
+  untested: today nothing would catch a regression that silently flipped
+  the order. Two shapes: (a) targeted unit tests on `_resolve_host_keys`
+  parametrised over (direct, config, env) combinations, asserting the
+  selected source via behavior (STRICT verifies against the expected key
+  using `sftp_server`'s entry, swapped through each tier) or via the
+  `_load_host_keys_from_string` boundary; (b) extend
+  `TestSFTPInlineHostKeysVerification` with a third pair of tests that
+  populate the config dict and env var with the live server's key, drop
+  the `direct` parameter, and assert STRICT connect succeeds — then
+  remove the two `pragma: no cover` markers. Spec: SFTP-007. Surfaced
+  during BK-201 round-2 review (user question: "where is the deleted
+  test's logic covered now?"). Audience: `infra.test`.
 
-  (L938 `test_constructor_accepts_alias_string` was originally listed
-  here too but is from BK-197's new test class in PR 613, not
-  pre-existing; it was tagged inline during PR 613 review round 5
-  rather than deferred.)
-
-  If a site has no realistic observable, add the `# internal: no public
-  observable` exception tag with the reason (per the pattern at
-  `test_config.py:1405`). Don't bulk-tag: each site must justify the
-  exemption or refactor to observable. Surfaced during PR 613 review
-  round 4. Audience: `dev.process`.
+- [ ] **BK-196 — Dafny formal-spec gap: `Copy` postcondition does not pin metadata**
   `sdd/formal/MemoryBackend.dfy::Copy` builds the destination via
   `BasicFileInfo(dst, dst, srcEntry.info.size)`, which drops user metadata.
   The `Copy` postcondition does not pin metadata, so the model verifies
