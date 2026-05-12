@@ -15,11 +15,11 @@ audience:
   - infra.test
   - contributor.process
 
-# Stray paragraph at sdd/BACKLOG.md:225-233 (the MemoryBackend.dfy::Copy
-# block with no item header, ending with the BK-192 trace reference) is
-# bleed-through from a separate item, not part of BK-201. Flagged in the
-# planning conversation and deferred to a future cleanup commit; out of
-# scope for BK-201's test-hygiene fix.
+# No new backlog IDs were filed during this work. Round 1 review surfaced
+# that the "stray paragraph" at sdd/BACKLOG.md was actually BK-196's body
+# (the BK-201 entry from PR 613 had replaced the BK-196 header without
+# removing the body); the round-1 fix restored the BK-196 header. No new
+# ID born — BK-196 already existed.
 discovery_followups: []
 
 # expected_ripples intentionally omitted: BK-201 < the running BK max
@@ -27,6 +27,35 @@ discovery_followups: []
 # (`infra.test` + `contributor.process` with no new framework) skips
 # CHANGELOG. Per the schema, `expected_ripples` lists files actually
 # touched, not files anticipated and then determined unnecessary.
+
+# Initial: three-site plan agreed during planning (site 1 -> live-fixture
+#          behavior test; site 2 -> tag with concrete reason; site 3 ->
+#          save_host_keys mock pattern). Trace authored alongside the
+#          implementation; BK-201 moved to BACKLOG-DONE.md. PR opened
+#          against master. No review feedback yet.
+# Round 1 (PR #618 review): four findings raised. Fixed three:
+#          (a) sdd/BACKLOG.md: the "stray Dafny paragraph" was BK-196's
+#              body left behind by PR 613's BK-201 entry overwrite;
+#              restored the BK-196 header to keep the file structurally
+#              valid in the same commit that removes BK-201 (CLAUDE.md
+#              principle 3).
+#          (b) tests/backends/sftp/test_config.py: the mismatch-key STRICT
+#              test caught `(BackendUnavailable, RemoteStoreError)` which
+#              collapsed to "any RemoteStoreError" because the first
+#              subclasses the second. Tightened to
+#              `pytest.raises(BackendUnavailable, match=r"(?i)host key")`
+#              to pin the BadHostKeyException -> BackendUnavailable path
+#              the design extract already commits to.
+#          (c) this trace: dropped sdd/backlogid.json and CHANGELOG.md
+#              from expected_ripples since neither was actually touched
+#              (schema clarifies expected_ripples is for files touched,
+#              not anticipated-then-determined-unnecessary).
+#          Finding 4 (weak positive assertion on
+#          test_strict_accepts_matching_inline_key) was explicitly marked
+#          "not a blocker" by the reviewer and skipped — the paired
+#          mismatch test, now tightened with the host-key regex, already
+#          locks the wiring claim.
+review_rounds: 1
 
 phases:
   - id: orient
@@ -104,8 +133,13 @@ phases:
           New region + class with two straight-line tests using
           sftp_server: STRICT + matching inline key connects; STRICT +
           mismatched inline key (fresh RSAKey.generate) raises
-          BackendUnavailable / RemoteStoreError. Bad-key backend uses
-          RetryPolicy(max_attempts=1, ...) to avoid the 3x retry cost.
+          `BackendUnavailable` matching `(?i)host key`, pinning the
+          BadHostKeyException -> BackendUnavailable path (initial draft
+          used the (BackendUnavailable, RemoteStoreError) union, which
+          collapsed to "any RemoteStoreError" because the first
+          subclasses the second; tightened in review round 1). Bad-key
+          backend uses RetryPolicy(max_attempts=1, ...) to avoid the 3x
+          retry cost.
         outcome: ok
       - file: tests/backends/sftp/test_config.py
         section: "TestSFTPHostKeyPolicyCoercion / test_host_key_policy_string_coercion"
@@ -125,6 +159,18 @@ phases:
           test_tofu_save_failure_suppressed). The downstream
           empty-file check stays as a secondary assertion.
         outcome: ok
+      - file: sdd/BACKLOG.md
+        section: '"Backlog (Prioritized)" / BK-196 (header restored)'
+        read_type: reference
+        extract: |
+          Round 1 review caught that the BK-201 entry from PR 613 had
+          replaced BK-196's `**BK-196 — Dafny formal-spec gap...**` header
+          without removing the body, so removing BK-201 in this PR left a
+          headerless paragraph at the top of the prioritized list. Git
+          archaeology (`git show 3cbb52f -- sdd/BACKLOG.md`) recovered the
+          original header. Restored as a one-line edit so the file is
+          structurally valid in the same commit (CLAUDE.md principle 3).
+        outcome: ok
 
   - id: verify
     name: Verify
@@ -132,8 +178,14 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Backlog item completed"
         read_type: verify
-        extract: "Move BK-201 to BACKLOG-DONE.md, regen sdd/backlogid.json, CHANGELOG entry under audience contributor.process."
-        outcome: ok
+        extract: |
+          Move BK-201 to BACKLOG-DONE.md (done). Two of the row's listed
+          ripples did not apply this time: sdd/backlogid.json was already
+          current (BK-201 < the running BK max of 203), and the CHANGELOG
+          entry is skipped because audience derivation (`infra.test` +
+          `contributor.process` with no new framework) resolves to
+          "no CHANGELOG required" per the schema rule.
+        outcome: misleading
       - file: sdd/TESTING.md
         section: "Rules / 3"
         read_type: verify
