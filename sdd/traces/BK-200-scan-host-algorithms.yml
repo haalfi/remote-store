@@ -39,6 +39,17 @@ surprising_ripples:
   - src/remote_store/backends/_sftp.py  # _map_exception KEX/cipher/MAC hint now points at scan_host_algorithms
   - tests/backends/sftp/test_config.py  # TestSFTPIncompatiblePeerHint::test_incompatible_peer_kex_hint_points_at_scan_host_algorithms replaces the prior no-hint-for-kex test
 
+# Round 1: shipped alongside BK-198 round 3 (paramiko 5 reframing) —
+#          helper + KEX-variant IncompatiblePeer hint + e2e against
+#          legacy-sftp container.
+# Round 2: griffe-strict CI tripped on bullet-continuation indent in
+#          Returns: block (Returns body indent should be 8 spaces, was 6);
+#          fixed in 456cfc869.
+# Round 3: CONTENT-RULES Rule 6 exemption comment added on the
+#          scan_host_algorithms guide code-block (review round 4 sweep);
+#          PT011 match= on test_scan_unreachable_raises.
+review_rounds: 3
+
 phases:
   - id: design
     name: Design

@@ -115,7 +115,19 @@ def restore_paramiko_state() -> Iterator[None]:
 
 class TestSFTPEnableSshRsaCompat:
     """BK-198: SFTPUtils.enable_ssh_rsa_compat ensures ssh-rsa is present at
-    the four paramiko sites that govern host-key negotiation."""
+    the four paramiko sites that govern host-key negotiation.
+
+    # internal: no public observable -- enable_ssh_rsa_compat's contract IS
+    # the mutation of paramiko's four private class attributes
+    # (Transport._preferred_keys, Transport._preferred_pubkeys,
+    # Transport._key_info, RSAKey.HASHES). Paramiko exposes no public API
+    # to query "is ssh-rsa in the negotiated set"; mutating these four
+    # sites is the only forward-compatible path documented in
+    # _sftp.py::enable_ssh_rsa_compat. The helper's docstring names them
+    # as the contract. All assertions in this class on those attributes
+    # are observing the helper's documented effect, not poking at
+    # implementation detail.
+    """
 
     pytestmark = pytest.mark.spec("BK-198")
 
@@ -292,7 +304,14 @@ class TestSFTPScanHostKeys:
         sock.bind(("127.0.0.1", 0))
         unreachable_port = sock.getsockname()[1]
         sock.close()
-        with pytest.raises((OSError, paramiko.SSHException)):
+        # match= covers Linux ("Connection refused" / Errno 111), Windows
+        # ("actively refused" / WinError 10061), and connection-reset
+        # variants — what we care about is "connect-side OS failure", not
+        # any specific message.
+        with pytest.raises(
+            (OSError, paramiko.SSHException),
+            match=r"(?i)refused|reset|timed|timeout|unreachable|10061|10054|10060|connect",
+        ):
             SFTPUtils.scan_host_keys("127.0.0.1", port=unreachable_port, timeout=0.5)
 
 
@@ -367,7 +386,12 @@ class TestSFTPScanHostAlgorithms:
         sock.bind(("127.0.0.1", 0))
         unreachable_port = sock.getsockname()[1]
         sock.close()
-        with pytest.raises(OSError):
+        # match= rationale matches scan_host_keys test_scan_unreachable_raises;
+        # cross-OS messaging for "connect failed" varies.
+        with pytest.raises(
+            OSError,
+            match=r"(?i)refused|reset|timed|timeout|unreachable|10061|10054|10060|connect",
+        ):
             SFTPUtils.scan_host_algorithms("127.0.0.1", port=unreachable_port, timeout=0.5)
 
 

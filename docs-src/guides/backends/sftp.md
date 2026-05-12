@@ -135,8 +135,8 @@ backend = SFTPBackend(
 ## Legacy Servers (`ssh-rsa` / SHA-1) { #legacy-ssh-rsa }
 
 **What changed.** Paramiko 5.0 removed `ssh-rsa` from its host-key
-defaults. Empirically (verified across paramiko 2.12 / 3.0 / 3.5 / 4.0 /
-5.0):
+defaults — empirically verified, see the [research note][bk-198-research]
+for the version matrix.
 
 - **paramiko `< 5`** ships `ssh-rsa` in defaults at all four negotiation
   sites. A freshly-imported paramiko already negotiates against an
@@ -146,8 +146,9 @@ defaults. Empirically (verified across paramiko 2.12 / 3.0 / 3.5 / 4.0 /
   `IncompatiblePeer: Incompatible ssh peer (no acceptable host key)`
   during KEX, before authentication is attempted.
 
-Fresh `pip install remote-store[sftp]` resolves to paramiko 5+ today, so
-this affects new installs.
+The `[sftp]` extra has no upper bound on paramiko, so current resolvers
+pick paramiko 5+ by default. New installs hit the failure unless they
+call the helper described below.
 
 ### Diagnose first
 
@@ -161,6 +162,7 @@ parses the server's `SSH_MSG_KEXINIT` advertisement (RFC 4253 § 7.1)
 over a raw socket — no paramiko, no authentication, so the result
 reflects exactly what the server advertises:
 
+<!-- Rule 6 exemption: requires a live SFTP server; cannot execute in CI. -->
 ```python
 from remote_store.backends import SFTPUtils
 
@@ -168,6 +170,8 @@ info = SFTPUtils.scan_host_algorithms("legacy.example.com")
 print("host-key algos:", info["server_host_key_algorithms"])
 print("kex algos:     ", info["kex_algorithms"])
 ```
+
+[bk-198-research]: https://github.com/haalfi/remote-store/blob/master/sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md
 
 If `server_host_key_algorithms == ["ssh-rsa"]`, this guide applies and
 the next subsection is the fix. If it's `kex_algorithms` that's narrow

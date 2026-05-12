@@ -39,6 +39,21 @@ from tests.e2e.conftest import (  # noqa: E402
 _PARAMIKO_MAJOR = int(paramiko.__version__.split(".", 1)[0])
 _SSH_RSA_IN_DEFAULTS = _PARAMIKO_MAJOR < 5
 
+_skip_unless_pre5 = pytest.mark.skipif(
+    not _SSH_RSA_IN_DEFAULTS,
+    reason=(
+        f"paramiko {paramiko.__version__} >= 5: ssh-rsa removed from defaults; "
+        "bare-connect-succeeds invariant only holds on paramiko < 5"
+    ),
+)
+_skip_unless_5plus = pytest.mark.skipif(
+    _SSH_RSA_IN_DEFAULTS,
+    reason=(
+        f"paramiko {paramiko.__version__} < 5: ssh-rsa in defaults; "
+        "bare-connect-fails invariant only holds on paramiko >= 5"
+    ),
+)
+
 
 def _try_connect() -> tuple[bool, str]:
     """Return (ok, exc_description). Uses paramiko directly so we can
@@ -108,39 +123,52 @@ class TestSFTPLegacyRecovery:
     semantics against an ssh-rsa-only server.
 
     Locks the empirical findings recorded in
-    ``sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md``:
+    ``sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md``.
+    S1 is split into two version-skipif'd siblings (S1a / S1b) so each
+    test has a single straight-line assertion path:
 
-    - paramiko < 5 ships ``ssh-rsa`` in defaults: S1 bare connect
-      succeeds, S2 helper is a no-op (asserted implicitly by S1 success).
-    - paramiko >= 5 cleared ``ssh-rsa`` from defaults: S1 bare connect
-      fails with ``IncompatiblePeer: no acceptable host key`` -- the
-      exact failure mode the helper exists to repair.
-    - In both ranges, clearing ssh-rsa from a paramiko < 5 process (S3)
-      reproduces the paramiko 5 failure, and the helper recovers it (S4).
+    - **S1a** (paramiko < 5): ssh-rsa is in defaults; bare connect
+      succeeds. S2 helper is a no-op (asserted implicitly by S1a success).
+    - **S1b** (paramiko >= 5): ssh-rsa was cleared from defaults; bare
+      connect fails with ``IncompatiblePeer: no acceptable host key`` --
+      the exact failure mode the helper exists to repair.
+    - **S3 / S4** (both ranges): clearing ssh-rsa from a paramiko < 5
+      process (S3) reproduces the paramiko 5 failure, and the helper
+      recovers it (S4).
     """
 
-    def test_S1_bare_connect_against_legacy_server(self) -> None:
-        """Bare connect outcome is paramiko-version-conditional.
+    @_skip_unless_pre5
+    def test_S1a_bare_connect_succeeds_on_paramiko_lt5(self) -> None:
+        """On paramiko < 5, ssh-rsa is in defaults at all four sites and
+        the legacy server connects out of the box -- no helper required.
 
-        On paramiko < 5, ssh-rsa is in defaults and the legacy server
-        connects out of the box. On paramiko >= 5, ssh-rsa was removed
-        from the four host-key sites and the connect fails immediately in
-        ``Transport._parse_kex_init`` with ``IncompatiblePeer: no
-        acceptable host key`` -- the exact failure the helper repairs.
+        Skipped on paramiko >= 5 where this invariant does not hold (see
+        the sibling test_S1b for that branch).
         """
         ok, exc_desc = _try_connect()
-        if _SSH_RSA_IN_DEFAULTS:
-            assert ok, (
-                f"paramiko {paramiko.__version__}: bare connect should succeed "
-                f"(ssh-rsa is in defaults on paramiko < 5); got {exc_desc}"
-            )
-        else:
-            assert not ok, (
-                f"paramiko {paramiko.__version__}: bare connect should fail "
-                f"(ssh-rsa was removed from defaults on paramiko >= 5)"
-            )
-            assert "IncompatiblePeer" in exc_desc, exc_desc
-            assert "host key" in exc_desc, exc_desc
+        assert ok, (
+            f"paramiko {paramiko.__version__}: bare connect should succeed "
+            f"(ssh-rsa is in defaults on paramiko < 5); got {exc_desc}"
+        )
+
+    @_skip_unless_5plus
+    def test_S1b_bare_connect_fails_on_paramiko_ge5(self) -> None:
+        """On paramiko >= 5, ssh-rsa was removed from all four host-key
+        sites and the bare connect fails immediately in
+        ``Transport._parse_kex_init`` with ``IncompatiblePeer: no
+        acceptable host key`` -- the exact failure mode the helper
+        exists to repair.
+
+        Skipped on paramiko < 5 where defaults already include ssh-rsa
+        (see the sibling test_S1a for that branch).
+        """
+        ok, exc_desc = _try_connect()
+        assert not ok, (
+            f"paramiko {paramiko.__version__}: bare connect should fail "
+            f"(ssh-rsa was removed from defaults on paramiko >= 5)"
+        )
+        assert "IncompatiblePeer" in exc_desc, exc_desc
+        assert "host key" in exc_desc, exc_desc
 
     def test_S3_connect_fails_after_clearing_ssh_rsa(
         self,
