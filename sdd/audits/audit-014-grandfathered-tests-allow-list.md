@@ -63,7 +63,7 @@ _BACKEND_AT_ROOT_GRANDFATHERED: frozenset[str] = frozenset(
 
 Every nested-import site is a **per-backend** assertion. The tests are not cross-cutting — each touches exactly one backend. They are bundled into `test_config.py` only because they all test "the config layer," but the config layer is itself per-backend. TEST-003 directly applies: move each backend's tests into `tests/backends/<x>/test_config.py`.
 
-**Refactor cost:** moderate. ~13 tests split across `sftp/`, `s3/`, `azure/`, `s3_pyarrow/`. Existing per-backend test files already exist (e.g., `tests/backends/sftp/test_config.py`), so the new tests land alongside neighbours.
+**Refactor cost:** moderate. ~13 tests split across `sftp/`, `s3/`, `azure/`, plus the S3-PyArrow tests (which append to `tests/backends/s3/test_pyarrow.py` — no `tests/backends/s3_pyarrow/` directory exists). Existing per-backend test files already exist (e.g., `tests/backends/sftp/test_config.py`), so the new tests land alongside neighbours.
 
 **Risk:** low. No shared fixtures across the per-backend tests; each is self-contained.
 
