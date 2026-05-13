@@ -133,7 +133,7 @@ BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
   `write`/`write_atomic`/`open_atomic` to the `is_file` HNS branch in
   `src/remote_store/backends/_azure.py`. Async sibling apparently
   unaffected (no `[azure_live_async]` failure for this test). Spec:
-  BE-005, BE-021.
+  BE-005 (or whichever spec covers `is_file` semantics), BE-021.
 
 - [ ] **BUG-201 — `AsyncAzureBackend.move`/`copy` self-op (src == dst) raises `AlreadyExists` instead of being a no-op**
   spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · effort: S · audience: library.maintainer
@@ -490,22 +490,20 @@ pattern (ID-193) can lock in the test shape.
 - [ ] **ID-194 — gen_graph.py async gate extension (prereq for ID-172)**
   spec: — · effort: M · audience: platform.tooling, library.maintainer
   `gen_graph.py` emits gating edges for `Store` and `Backend` but lacks async equivalents.
-  Without `_ASYNC_STORE_GATING` and async graph emission, `check_api_docs.py` has no
-  reference to validate the async API page, making any `PAGES` entry for `aio.md` vacuous.
-  Add `_ASYNC_STORE_GATING` to `src/remote_store/aio/_async_store.py`, extend
-  `gen_graph.py` to emit async gates via Griffe traversal of
-  `pkg.members["aio"].members["_async_store"].members["AsyncStore"]`, then wire
-  `AsyncStore` and `AsyncBackend` entries into `check_api_docs.py` PAGES pointing at
-  `aio.md`. Dual-wire `gen-api-check`: pyproject lint list and CI lint job. Blocked by ID-192.
+  Without a `_GATING` constant in `aio/_async_store.py` and async graph emission,
+  `check_api_docs.py` has nothing to compare against for the async page.
+  Add `_GATING` to `src/remote_store/aio/_async_store.py` (mirroring the sync
+  `_GATING` constant in `_store.py`), then extend `gen_graph.py` to emit async gates
+  via Griffe traversal of `pkg.members["aio"].members["_async_store"].members["AsyncStore"]`.
+  Blocked by ID-192. Unblocks ID-172 (PAGES wiring).
 
 - [ ] **ID-172 — `check_api_docs.py` — `AsyncStore`/`AsyncBackend` ↔ `docs-src/reference/api/aio.md`**
   spec: — · effort: M · audience: platform.tooling
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
-  Blocked on aio rework: the `aio.md` page and `AsyncStore`/`AsyncBackend`
-  classes need rework before the verifier can be wired in meaningfully.
-  Wire up after that rework lands: add `_ASYNC_STORE_GATING` (or equivalent)
-  to `_async_store.py`, extend gen_graph.py for async gates, add both
-  classes to `PAGES` pointing at `aio.md`.
+  Blocked on ID-192 (aio.md rework) and ID-194 (gen_graph async gate extension).
+  Once both land: add `AsyncStore` and `AsyncBackend` to `PAGES` in
+  `check_api_docs.py` pointing at `docs-src/reference/api/aio.md`, and
+  dual-wire `gen-api-check` into the pyproject lint list and CI lint job.
   Griffe traversal path (for the implementer):
   `pkg.members["aio"].members["_async_store"].members["AsyncStore"]`
 
@@ -890,17 +888,15 @@ pattern (ID-193) can lock in the test shape.
 
 - [ ] **BK-208 — Triage post-v0.23.0 lessons-learned into backlog items**
   spec: — · effort: M · audience: library.maintainer
-  A retrospective memo at `sandbox/post-v0.23.0-lessons-learned.md` covers the
-  v0.23.0→master cycle (~100 PRs, two headline features: WriteResult and
-  AsyncBackendSyncAdapter), cross-checked against two external reviews;
-  recommendations are stable but were deferred before v0.24.0 to avoid scope creep.
-  Open § 5 and triage the eight concrete recommendations — (a) feature-type DoD
+  A post-v0.23.0 retrospective covers the v0.23.0→master cycle (~100 PRs, two
+  headline features: WriteResult and AsyncBackendSyncAdapter). Eight concrete
+  recommendations were deferred before v0.24.0 to avoid scope creep. Triage them
+  into proper backlog items or close each with reasoning: (a) feature-type DoD
   checklists in `sdd/000-process.md`; (b) `guides/` and `examples/snippets/` rows
   in the ripple-check table; (c) `filterwarnings = error` to feature-DoD; (d)
   symmetric capability-declaration test; (e) streaming-iteration assertion;
-  (f) `tests/aio/README.md` update — file each as a proper backlog item or close
-  with reasoning. Closes the pattern-drift risk before ID-127 Graph backend repeats
-  conformance-lag and doc-ripple issues.
+  (f) `tests/aio/README.md` update. Closes the pattern-drift risk before ID-127
+  Graph backend repeats conformance-lag and doc-ripple issues.
 
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer
