@@ -537,8 +537,8 @@ line number).
 
 | Wave | Items | Notes |
 |---|---|---|
-| 0 — no prereqs | ID-183, ID-184, ID-189, BK-195 + BK-196 | Start in parallel; ID-183 is infrastructure |
-| 1 — after ID-183 | ID-185, ID-187, ID-188 | Pattern A work; needs oracle helper |
+| 0 — no prereqs | ID-183, ID-184, ID-188, ID-189, BK-195 + BK-196 | Start in parallel; ID-183 is infrastructure; ID-188 is Tier 1 + Pattern B only |
+| 1 — after ID-183 | ID-185, ID-187 | Pattern A work; needs oracle helper |
 | 2 — long-horizon | ID-190, ID-191 | No blocker; pick up when scope allows |
 
 - [ ] **ID-191 — Move atomicity formal model in `ResourceSafety.dfy`**
@@ -560,29 +560,28 @@ line number).
 - [ ] **ID-190 — Path formalization: `WellFormedPath` predicate and round-trip invariant**
   Two related gaps in the Dafny model. First: `BackendContract.dfy` treats
   paths as opaque strings and assumes well-formedness without verifying how
-  it is produced. PATH-001..015 (normalization rules: backslash → slash, `..`
-  rejection, null-byte rejection, slash collapsing, empty-component removal)
-  are Python-only today. Add a `WellFormedPath(s: string): bool` predicate to
-  `BackendContract.dfy` encoding these rules, and declare it as a precondition
-  assumption on all contract methods. Update `MemoryBackend.dfy` to carry the
-  assumption through. Second: no formal guarantee that
-  `to_key(native_path(k)) == k` for all backend-relative keys. Add a
-  `NativePathRoundTrip` lemma (or axiom, if the full proof is out of scope for
-  now) to the contract. This enables future composition reasoning across
-  Store ↔ Backend layers. Spec: PATH-001–015, NPR-001, NPR-010, STORE-012.
+  it is produced. PATH-002..008 (normalization rules: backslash → slash, `..`
+  rejection, slash stripping, slash collapsing, dot-segment removal, null-byte
+  rejection, empty-path rejection) are Python-only today. Add a
+  `WellFormedPath(s: string): bool` predicate to `BackendContract.dfy`
+  encoding these rules, and declare it as a precondition assumption on all
+  contract methods. Update `MemoryBackend.dfy` to carry the assumption
+  through. Second: no formal guarantee that `to_key(native_path(k)) == k`
+  for all backend-relative keys (NPR-020's stated identity). Add a
+  `NativePathRoundTrip` lemma (or axiom, if the full proof is out of scope
+  for now) to the contract. This enables future composition reasoning across
+  Store ↔ Backend layers. Spec: PATH-002–008, NPR-020, NPR-010, STORE-012.
 
-- [ ] **ID-189 — Dafny spec completeness sweep: missing error variant and field axioms**
-  Three small gaps with no current Tier-3 consumer but required for oracle
-  accuracy. (a) `ResourceLocked` (ERR-013, spec 005) is absent from the
-  `Error` datatype in `BackendContract.dfy`; add the variant and update
-  `_helpers.py::_raise_if_err` to dispatch it to the Python error class.
-  (b) WR-007 ("no default hashing"): add a postcondition to the abstract
-  `Write` contract stating `source == BasicSource ==> r.value.digest.None?`,
-  closing the gap where a non-native backend could silently populate `digest`.
-  (c) `FileInfo.name` consistency: add an axiom to the `GetFileInfo`
-  postcondition requiring `info.name == LastPathComponent(info.path)`,
-  preventing backends from returning a mismatched name field.
-  Spec: ERR-013, WR-007, MOD-001.
+- [ ] **ID-189 — Dafny spec completeness sweep: `ResourceLocked` error variant**
+  `ResourceLocked` (ERR-013, spec 005) is absent from the `Error` datatype in
+  `BackendContract.dfy` even though the Python `RemoteStoreResourceLockedError`
+  is a first-class exception. Add the `ResourceLocked(path: Path)` variant
+  and update `tests/backends/dafny/_helpers.py::_raise_if_err` to dispatch
+  it to the Python error class. Without the variant, an oracle run on a
+  backend that surfaces `ResourceLocked` (e.g. the future Graph backend,
+  ID-127) would crash the differential helper rather than report a clean
+  mismatch.
+  Spec: ERR-013.
 
 - [ ] **ID-188 — Resource safety verification: `SafeWrapInvariant` and `open_atomic` cleanup**
   Two test-gap closures plus one small Dafny extension.
@@ -617,7 +616,7 @@ line number).
   Python `MemoryBackend` vs oracle on `get_folder_info` — catches off-by-one
   errors in recursive `ChildFiles` or `SumSizes` computation that deterministic
   fixtures cannot reach. Depends on ID-183. Spec: BE-017, ID-134,
-  BackendContract.GetFolderInfo, MemoryBackend.SumSizesAddOne lemma.
+  BackendContract.GetFolderInfo, BackendContract.SumSizesAddOne lemma.
 
 - [ ] **ID-185 — Listing completeness and depth verification**
   Two gap families in `tests/backends/conformance/test_listing.py`, both
@@ -629,7 +628,7 @@ line number).
   that ignores `max_depth` would fail, not silently pass. Cite
   `DepthCounting.dfy` Properties 1–4 in the assertion comment. (b)
   **Completeness (Pattern A):** `test_list_folders_completeness` and
-  `test_list_files_recursive` verify expected name-sets but not the
+  `test_list_files_unlimited_depth` verify expected name-sets but not the
   `forall` quantifier ("every matching path appears in the result"). Run
   the same listing on `DafnyOracleBackend` via ID-183 and assert
   `{f.path for f in python_result} == {f.path for f in oracle_result}`,
@@ -639,12 +638,14 @@ line number).
 
 - [ ] **ID-184 — Error contract verification: precondition ordering and completeness**
   Paired Tier-1 Dafny change and Tier-3 test gaps; ship together.
-  (a) **Dafny (Tier 1):** lift `AllAncestorsTraversable` from
-  `MemoryBackend.dfy` into the abstract `BackendContract.dfy` postconditions
-  for `Exists`, `IsFileMethod`, `IsFolderMethod`, `ListFiles`, and
-  `ListFolders` — currently the predicate is only in the refinement, leaving
-  the abstract contract silent on file-as-directory-component behaviour
-  (BE-004, BE-005, BE-014, BE-015).
+  (a) **Dafny (Tier 1):** `AllAncestorsTraversable` is already defined in
+  `BackendContract.dfy` (L230) and used in the abstract postconditions of
+  `Exists`, `IsFileMethod`, and `IsFolderMethod` (L303, L312, L321), but
+  `ListFiles` (L469) and `ListFolders` (L496) postconditions are silent on
+  it — a backend that succeeds even when an ancestor is a file would satisfy
+  the contract today. Add the traversability requirement to both listing
+  methods (BE-014, BE-015) so the abstract contract matches what the
+  Memory refinement already proves.
   (b) **Pattern B — BE-008 ordering:** in `test_errors.py`, add inline
   assertions confirming that `IsDir` fires *before* the `overwrite` and
   `missing_ok` flags are evaluated — specifically
@@ -664,8 +665,9 @@ line number).
   The `DafnyOracleBackend` already participates in every conformance test as
   a parametrized backend, but no utility exists to run an operation on *both*
   a target backend and the oracle within the same test and compare outputs.
-  This item adds that infrastructure as the shared foundation for ID-184
-  through ID-188. Concretely: a `assert_oracle_match(backend, method, *args,
+  This item adds that infrastructure as the shared foundation for ID-185
+  and ID-187 (the Pattern A consumers). Concretely: a
+  `assert_oracle_match(backend, method, *args,
   **kwargs)` helper (or fixture variant) that (1) constructs a fresh
   `DafnyOracleBackend`, (2) seeds it with the same state as `backend` via a
   minimal write sequence, (3) calls `method` on both, (4) asserts results are
@@ -674,7 +676,7 @@ line number).
   reference postcondition line numbers — so all subsequent items follow the
   same style. The helper lives in
   `tests/backends/dafny/` alongside `_helpers.py`.
-  No spec change; no new tests. Prerequisite for ID-185, ID-187, ID-188.
+  No spec change; no new tests. Prerequisite for ID-185 and ID-187.
 
 ### API Surface Enhancements
 
