@@ -565,6 +565,34 @@ pattern (ID-193) can lock in the test shape.
 
 ---
 
+## S3 Correctness
+
+- [ ] **BUG-208 — `S3Backend.check_health()` silently no-ops (unawaited aiobotocore coroutine)**
+  spec: PING-004 · effort: S · audience: library.maintainer
+  `S3Backend.check_health()` calls `self._fs.s3.head_bucket(Bucket=self._bucket)`,
+  but `self._fs.s3` is an `aiobotocore.client.S3` (`AioBaseClient`) whose
+  `head_bucket` returns a coroutine. The current code never awaits it: the
+  HEAD never reaches the server, `check_health()` silently returns None
+  regardless of bucket state, and the leaked coroutine surfaces at GC time
+  as a `RuntimeWarning: coroutine 'AioBaseClient._make_api_call' was never
+  awaited` (escalated to an error by ``pytest`` `filterwarnings = ["error"]`).
+  Mocked tests have not caught this because every test in
+  `tests/test_ping.py` (pre-BK-217) and `tests/backends/s3/test_ping.py`
+  (post-BK-217) patches `head_bucket` on a `MagicMock` SDK client — the
+  real aio code path was never exercised. Surfaced by the
+  `tests/backends/conformance/test_check_health.py` conformance assertion
+  added in BK-217 (BK-191 slice 2/6), which runs `check_health()` against
+  the moto-backed `s3_moto` fixture for real. **Fix direction:** use
+  s3fs's sync wrapper (e.g. `s3fs.utils.sync(self._fs.loop,
+  self._fs.s3.head_bucket, Bucket=...)`) or call a synchronous s3fs
+  helper rather than the raw aiobotocore client. Verify the fix lands by
+  removing the `s3_moto` xfail from the conformance test. The same
+  pattern likely deserves an audit of every other use of
+  `self._fs.s3.<method>` in the S3 backend (none today, but worth a
+  guard).
+
+---
+
 ## Lint / CI Completeness
 
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**

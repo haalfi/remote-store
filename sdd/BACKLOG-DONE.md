@@ -8,6 +8,50 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-217 — Split `tests/test_ping.py` (conformance + per-backend) (BK-191 slice 2/6)**
+  Second migration-pending slice from BK-191's audit. Reframes the audit's
+  proposed (a) per-backend disposition into a hybrid (b)+(a) split after
+  re-reading the PING contract: `Backend.check_health()` is an ABC method
+  (PING-002), not a capability, and PING-009 requires every failure to
+  map to a `RemoteStoreError` subclass — combining the two yields a
+  universal invariant ("outcome is either None or a `RemoteStoreError`
+  subclass; native SDK exceptions never leak") that holds across the
+  whole fixture registry regardless of fixture-precondition variance.
+  New `tests/backends/conformance/test_check_health.py` parametrizes
+  that invariant over every registered backend. The genuinely
+  backend-specific parts — SDK-mocked probe identity
+  (`head_bucket(Bucket=...)` / `stat(base_path)` /
+  `get_container_properties()` / `get_file_info(bucket)`) and SDK
+  error-mapping branches (PING-009) — moved to
+  `tests/backends/{s3,sftp,azure,local}/test_ping.py`, with PING-005
+  appended to `tests/backends/s3/test_pyarrow.py` (no
+  `tests/backends/s3_pyarrow/` directory exists; mirrors BK-216).
+  Root `tests/test_ping.py` keeps only `Store.ping()` delegation (PING-001)
+  and observe `on_ping` / `on_error` integration (PING-010);
+  `test_default_check_health_is_noop` (PING-002 via memory),
+  `test_memory_backend_always_healthy` (PING-008), and `test_healthy_local`
+  (PING-003 happy) were dropped as duplicates of the new conformance
+  parametrize (memory and local fixtures cover those backends naturally).
+  `"test_ping.py"` removed from `_BACKEND_AT_ROOT_GRANDFATHERED` in
+  `scripts/check_test_placement.py`; the allow-list now holds the four
+  migration-pending entries (`test_coverage_gaps`, `test_depth_listing`,
+  `test_pbt_write_result`, `test_seekable`) plus the permanently-justified
+  `test_examples.py`. Four slices remain (BK-191 stays open as the umbrella).
+  Reconsidered against CLAUDE.md § Audits rule 3 (added in the same branch
+  as the divergence from audit-014's original prescription) — diagnosis
+  (the TEST-003 violation at root) authoritative; original prescription
+  (pure (a) split) advisory. The first naive "`check_health()` is None"
+  assertion surfaced three real signals: HTTP's check_health legitimately
+  fails on a directory URL even when files are reachable (per PING-004
+  spec note); SFTP's in-process fixture doesn't `mkdir base_path` at yield
+  time; and **`S3Backend.check_health()` silently no-ops** because
+  `self._fs.s3.head_bucket(...)` returns an aiobotocore coroutine the
+  current code never awaits — filed as BUG-208 (discovery_followup) under
+  a new `## S3 Correctness` section in BACKLOG.md; xfail-gated in the
+  conformance test until the fix lands. Audience: `infra.test`,
+  `contributor.process`. Spec: TEST-003, TEST-010, PING-002, PING-009.
+  Trace: [`sdd/traces/BK-217-test-ping-conformance-and-per-backend-split.yml`](traces/BK-217-test-ping-conformance-and-per-backend-split.yml).
+
 - [x] **BK-216 — Split `tests/test_config.py` per backend (BK-191 slice 1/6)**
   First migration-pending slice from BK-191's audit. The 13 concrete-backend
   tests in `tests/test_config.py` (SEC-005 SFTP enum coercion + RET-010..RET-013
