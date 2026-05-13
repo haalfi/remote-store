@@ -567,15 +567,6 @@ pattern (ID-193) can lock in the test shape.
 
 ## Lint / CI Completeness
 
-- [ ] **BK-206 — Bump CI actions from Node.js 20 to Node.js 22**
-  spec: — · effort: S · audience: library.maintainer
-  GitHub deprecated Node.js 20 actions; runners will enforce Node.js 24 by default
-  June 2026 and remove 20 entirely by September 2026. Audit all
-  `.github/workflows/*.yml` files and bump affected action versions
-  (`setup-dotnet`, `setup-node`, `configure-pages`, `deploy-pages`,
-  `upload-artifact`) to those that ship with Node.js 22 internally.
-  Ship as a separate cleanup PR.
-
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
   spec: TEST-003, TEST-010 · effort: L · audience: infra.test
   BK-190 enforces TEST-003 (no concrete cloud / network backend imports at

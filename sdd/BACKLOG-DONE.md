@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-206 — Bump CI actions from Node.js 20 to Node.js 22 (audit: no bump required)**
+  Audited every `uses:` line across `.github/workflows/*.yml` against each
+  action's published `action.yml` / release notes to determine the internal
+  Node runtime. All Node-based GitHub-org actions are already pinned at
+  versions whose runtime is Node 24, ahead of the June 2026 default-enforce
+  and September 2026 removal of Node 20:
+  - `actions/checkout@v6` — Node 24
+  - `actions/setup-python@v6` — Node 24
+  - `actions/setup-java@v5` — Node 24 (v5.0.0+ uses Node 24)
+  - `actions/cache@v5` — Node 24
+  - `actions/upload-artifact@v7` / `actions/download-artifact@v8` — Node 24
+  - `actions/configure-pages@v6` — Node 24
+  - `actions/deploy-pages@v5` — Node 24
+  - `actions/upload-pages-artifact@v5` — composite (delegates to upload-artifact)
+  - `actions/dependency-review-action@v5` — Node 24
+  - `astral-sh/setup-uv@v8.1.0` — Node 24
+  - `github/codeql-action/{init,analyze}@v4` — composite (no Node runtime)
+  - `codecov/codecov-action@v6` — composite
+  - `pypa/gh-action-pypi-publish@release/v1` — Docker (no Node runtime)
+  Third-party JS actions used by single workflows (`prefix-dev/rattler-build-action@v0.2.37`
+  in `conda-recipe.yml`, `dafny-lang/setup-dafny-action@v1.9.1` SHA-pinned in
+  `ci.yml`) are out of scope for the GitHub-org Node 20 deprecation sweep;
+  if they age into Node 20 enforcement they will be tracked under a new
+  item with the specific finding. Audience: `infra.ci`.
+  Trace: [`sdd/traces/BK-206-node-runtime-audit.yml`](traces/BK-206-node-runtime-audit.yml).
+
 - [x] **BK-207 — Scope non-package tests to Python 3.13 in CI matrix**
   The `test` job ran a Python 3.10–3.14 matrix over the entire `tests/` tree,
   including `tests/scripts/` (230 collected items) which verifies contributor
