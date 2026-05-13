@@ -67,6 +67,8 @@ def _sftp_backend(stat_side_effect: Any = None) -> Any:
 def test_sftp_probe_is_stat_basepath() -> None:
     backend, sftp_mock = _sftp_backend()
     backend.check_health()
+    # internal: no public observable — base_path is the SFTP-specific probe target;
+    # the assertion pins that stat() was called with it (Rule 3 exception).
     assert any(call.args == (backend._base_path,) for call in sftp_mock.stat.call_args_list)
 
 
