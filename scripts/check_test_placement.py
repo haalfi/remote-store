@@ -102,10 +102,22 @@ _BANNED_BACKEND_NAMES: frozenset[str] = _discover_banned_backend_names(ROOT / "s
 # protocol-spanning (config loaders, depth listing, ping/health, seekable
 # reads, PBT WriteResult, examples, coverage padding); each also imports
 # ``MemoryBackend`` or ``LocalBackend`` as the cross-cutting baseline.
-# Migrating them under ``tests/backends/<x>/`` (or to conformance) is tracked
-# as the BK-190 follow-up audit. Until then, the rule is grandfathered for
-# these specific files only — newly added top-level test files are still held
-# to the strict standard.
+#
+# Per-file disposition (BK-191 audit, sdd/audits/audit-014):
+#
+#   - ``test_examples.py`` is justified at root permanently: it harnesses the
+#     full ``examples/`` corpus and the example/test 1:1 invariant (ID-044)
+#     means each published example demo has exactly one postcondition test
+#     here. The single banned-backend site (``ReadOnlyHttpBackend`` for the
+#     HTTP read-only example) is structural, not migration-pending.
+#
+#   - The remaining six files are migration-pending follow-ups of BK-191
+#     (a per-backend split, or b conformance reshape); see the audit doc for
+#     the per-file plan. Each retires its allow-list entry when its slice
+#     lands.
+#
+# Newly added top-level test files are still held to the strict standard;
+# this allow-list is not a license to add new entries.
 _BACKEND_AT_ROOT_GRANDFATHERED: frozenset[str] = frozenset(
     {
         "test_config.py",

@@ -8,6 +8,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-215 — `test_examples.py` allow-list justification documented (BK-191 slice 7/7)**
+  First per-slice follow-up to BK-191, the only slice with disposition (c)
+  "keep at root with documented justification". Updated the comment block
+  above `_BACKEND_AT_ROOT_GRANDFATHERED` in `scripts/check_test_placement.py`
+  to distinguish `test_examples.py` (justified permanently by the ID-044
+  example/test 1:1 invariant — the HTTP read-only example demo binds the
+  only banned-backend site) from the six migration-pending files. The
+  allow-list entry stays in place. The remaining six slices (`test_config`,
+  `test_coverage_gaps`, `test_depth_listing`, `test_pbt_write_result`,
+  `test_ping`, `test_seekable`) are still tracked under BK-191; each retires
+  its entry when its `(a)` / `(b)` refactor lands. Audience: `contributor.process`,
+  `infra.test`. Spec: TEST-003.
+  Trace: [`sdd/traces/BK-215-test-examples-justification.yml`](traces/BK-215-test-examples-justification.yml).
+
 - [x] **BK-206 — Bump CI actions from Node.js 20 to Node.js 22 (audit: no bump required)**
   Audited every `uses:` line across `.github/workflows/*.yml` against each
   action's published `action.yml` / release notes to determine the internal
