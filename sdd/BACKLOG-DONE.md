@@ -8,6 +8,77 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-215 — `test_examples.py` allow-list justification documented (BK-191 slice 7/7)**
+  First per-slice follow-up to BK-191, the only slice with disposition (c)
+  "keep at root with documented justification". Updated the comment block
+  above `_BACKEND_AT_ROOT_GRANDFATHERED` in `scripts/check_test_placement.py`
+  to distinguish `test_examples.py` (justified permanently by the ID-044
+  example/test 1:1 invariant — the HTTP read-only example demo binds the
+  only banned-backend site) from the six migration-pending files. The
+  allow-list entry stays in place. The remaining six slices (`test_config`,
+  `test_coverage_gaps`, `test_depth_listing`, `test_pbt_write_result`,
+  `test_ping`, `test_seekable`) are still tracked under BK-191; each retires
+  its entry when its `(a)` / `(b)` refactor lands. Audience: `contributor.process`,
+  `infra.test`. Spec: TEST-003.
+  Trace: [`sdd/traces/BK-215-test-examples-justification.yml`](traces/BK-215-test-examples-justification.yml).
+
+- [x] **BK-206 — Bump CI actions from Node.js 20 to Node.js 22 (audit: no bump required)**
+  Audited every `uses:` line across `.github/workflows/*.yml` against each
+  action's published `action.yml` / release notes to determine the internal
+  Node runtime. All Node-based GitHub-org actions are already pinned at
+  versions whose runtime is Node 24, ahead of the June 2026 default-enforce
+  and September 2026 removal of Node 20:
+  - `actions/checkout@v6` — Node 24
+  - `actions/setup-python@v6` — Node 24
+  - `actions/setup-java@v5` — Node 24 (v5.0.0+ uses Node 24)
+  - `actions/cache@v5` — Node 24
+  - `actions/upload-artifact@v7` / `actions/download-artifact@v8` — Node 24
+  - `actions/configure-pages@v6` — Node 24
+  - `actions/deploy-pages@v5` — Node 24
+  - `actions/upload-pages-artifact@v5` — composite (delegates to upload-artifact)
+  - `actions/dependency-review-action@v5` — Node 24
+  - `astral-sh/setup-uv@v8.1.0` — Node 24
+  - `github/codeql-action/{init,analyze}@v4` — composite (no Node runtime)
+  - `codecov/codecov-action@v6` — composite
+  - `pypa/gh-action-pypi-publish@release/v1` — Docker (no Node runtime)
+  Third-party JS actions used by single workflows (`prefix-dev/rattler-build-action@v0.2.37`
+  in `conda-recipe.yml`, `dafny-lang/setup-dafny-action@v1.9.1` SHA-pinned in
+  `ci.yml`) are out of scope for the GitHub-org Node 20 deprecation sweep;
+  if they age into Node 20 enforcement they will be tracked under a new
+  item with the specific finding. Audience: `infra.ci`.
+
+  **Follow-on cleanup (PR #621 review):** dropped the
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"` env var at
+  `.github/workflows/mutation.yml:17` (added by BK-168 / commit b6f2a34 to
+  force then-Node-20 actions onto Node 24). The audit confirms every action
+  in `mutation.yml` is already pinned at a Node-24-runtime version, so the
+  flag is a no-op.
+  Trace: [`sdd/traces/BK-206-node-runtime-audit.yml`](traces/BK-206-node-runtime-audit.yml).
+
+- [x] **BK-207 — Scope non-package tests to Python 3.13 in CI matrix**
+  The `test` job ran a Python 3.10–3.14 matrix over the entire `tests/` tree,
+  including `tests/scripts/` (230 collected items) which verifies contributor
+  tooling in `scripts/` and does not exercise `remote_store` source. Added
+  `--ignore=tests/scripts` to the matrix pytest invocation and introduced a
+  single Python 3.13 `tooling-test` job that runs `pytest tests/scripts/ -q`.
+  Coverage gates are unaffected — the matrix coverage target is `remote_store`,
+  and the excluded tests do not exercise it (the few `from remote_store ...`
+  occurrences in `tests/scripts/test_check_test_placement.py` are inside
+  triple-quoted string fixtures fed to the placement checker, never imported).
+  TEST-003 (test placement) is unchanged. Audience: `infra.ci`.
+  Trace: [`sdd/traces/BK-207-tooling-test-job.yml`](traces/BK-207-tooling-test-job.yml).
+
+- [x] **BK-205 — Wire `check_rst_roles` and `check_docs_framework` into CI lint job**
+  `scripts/check_rst_roles.py` and `scripts/check_docs_framework.py` ran in the
+  local `hatch run lint` script but were absent from the CI `lint` job in
+  `.github/workflows/ci.yml` — `check_docs_framework.py` ran only in the `docs`
+  job, and `check_rst_roles.py` had no CI invocation at all. Added both
+  `python scripts/check_*.py` steps to the CI lint job alongside the other
+  `check_*` scripts, applying the dual-wire principle uniformly. Mirror of
+  BK-203 in the opposite direction (CI had what local lint lacked; this closes
+  the local-has, CI-lacks gap). Surfaced during BK-203 review (PR #617).
+  Trace: [`sdd/traces/BK-205-dual-wire-ci-checks.yml`](traces/BK-205-dual-wire-ci-checks.yml).
+
 - [x] **BK-201 — SFTP test-hygiene: remove TESTING.md Rule 3 violations on `SFTPBackend` private state**
   Three pre-existing assertions on `SFTPBackend` private attributes in
   `tests/backends/sftp/test_config.py` lacked the

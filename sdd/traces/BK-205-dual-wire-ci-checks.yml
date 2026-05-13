@@ -1,0 +1,45 @@
+id: BK-205
+title: "Dual-wire check_rst_roles and check_docs_framework into CI lint job"
+trigger: "scripts/check_rst_roles.py and scripts/check_docs_framework.py ran in the local hatch lint array but not in the CI lint job; check_docs_framework.py ran only in the docs job, check_rst_roles.py had no CI invocation at all"
+source_items:
+  - BK-205
+audience:
+  - infra.ci
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: gate
+        extract: "confirm both check_docs_framework.py and check_rst_roles.py are in the local lint array"
+      - file: .github/workflows/ci.yml
+        section: "lint job (steps after check_tla_no_emdash)"
+        read_type: gate
+        extract: "confirm both scripts absent from the CI lint job; check_docs_framework.py present only in the docs job"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-203"
+        read_type: reference
+        extract: "BK-203 was the inverse direction (CI had what local lint lacked); BK-205 closes the local-has, CI-lacks side of the same dual-wire principle"
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "lint job (steps after check_tla_no_emdash)"
+        read_type: gate
+        extract: "insert two run steps: python scripts/check_docs_framework.py and python scripts/check_rst_roles.py, adjacent to the other check_* scripts"
+      - file: scripts/check_docs_framework.py
+        section: "(full)"
+        read_type: verify
+        extract: "exits 0 with a single-line pass message; safe to wire as a CI step without flags"
+      - file: scripts/check_rst_roles.py
+        section: "(full)"
+        read_type: verify
+        extract: "exits 0 silently when no RST role violations exist; safe to wire as a CI step without flags"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "live trace + BACKLOG-DONE entry satisfy the row; audience=infra.ci skips CHANGELOG per _schema.yml audience-derived rule"

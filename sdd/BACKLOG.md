@@ -567,32 +567,6 @@ pattern (ID-193) can lock in the test shape.
 
 ## Lint / CI Completeness
 
-- [ ] **BK-205 — Wire check_rst_roles and check_docs_framework into CI lint job**
-  spec: — · effort: S · audience: library.maintainer
-  `scripts/check_rst_roles.py` and `scripts/check_docs_framework.py` run in
-  the local `lint` script but are absent from the CI lint job in
-  `.github/workflows/ci.yml`, creating a dual-wire gap. `check_docs_framework.py`
-  runs only in the `docs` job; `check_rst_roles.py` has no CI invocation at all.
-  Add both `python scripts/check_*.py` steps to the CI lint job to apply the
-  dual-wire principle uniformly. Flagged out-of-scope during BK-203 review (PR #617).
-
-- [ ] **BK-206 — Bump CI actions from Node.js 20 to Node.js 22**
-  spec: — · effort: S · audience: library.maintainer
-  GitHub deprecated Node.js 20 actions; runners will enforce Node.js 24 by default
-  June 2026 and remove 20 entirely by September 2026. Audit all
-  `.github/workflows/*.yml` files and bump affected action versions
-  (`setup-dotnet`, `setup-node`, `configure-pages`, `deploy-pages`,
-  `upload-artifact`) to those that ship with Node.js 22 internally.
-  Ship as a separate cleanup PR.
-
-- [ ] **BK-207 — Scope non-package tests to Python 3.13 in CI matrix**
-  spec: TEST-003 · effort: S · audience: library.maintainer
-  The Python 3.10–3.14 CI matrix verifies the published package; contributor
-  tooling tests under `tests/scripts/` are not package code and gain nothing
-  from multi-version coverage. Wire any new non-package test suite to a single
-  Python 3.13 job, and audit existing non-package tests to narrow them away
-  from the full matrix. Spec: TEST-003 (test placement).
-
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
   spec: TEST-003, TEST-010 · effort: L · audience: infra.test
   BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
@@ -608,6 +582,14 @@ pattern (ID-193) can lock in the test shape.
   Coverage-padding tests are the most obvious candidates for split.
   Each entry removed from the allow-list closes part of this item.
   Spec: TEST-003, TEST-010.
+
+  **Audit (2026-05-13):** per-file dispositions documented in
+  [`sdd/audits/audit-014-grandfathered-tests-allow-list.md`](audits/audit-014-grandfathered-tests-allow-list.md).
+  Findings: zero files qualify for an "easy remove from allow-list"
+  path — six need real refactoring (a/b), the seventh (`test_examples.py`)
+  shipped under BK-215 as a justification-comment update. Six per-slice
+  follow-up items remain to be filed; consult `sdd/backlogid.json` for the
+  next safe BK ID when scheduling.
 
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer

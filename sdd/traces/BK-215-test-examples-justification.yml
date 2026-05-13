@@ -1,0 +1,42 @@
+id: BK-215
+title: "test_examples.py allow-list justification documented (BK-191 slice 7/7)"
+trigger: "BK-191 audit (sdd/audits/audit-014) classified test_examples.py as disposition (c) keep-at-root with documented justification; the existing comment block above _BACKEND_AT_ROOT_GRANDFATHERED in scripts/check_test_placement.py treated all seven files as migration-pending and did not record the example-test 1:1 (ID-044) justification that makes test_examples.py the only permanently-grandfathered entry"
+source_items:
+  - BK-215
+  - BK-191
+audience:
+  - contributor.process
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "tests/test_examples.py — disposition: (c) keep at root with documented justification"
+        read_type: gate
+        extract: "the file is uniquely justified at root: example/test 1:1 invariant (ID-044) binds each examples/<demo>.py to one postcondition test; the HTTP read-only example is the single banned-backend site"
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_test_placement.py
+        section: "comment block above _BACKEND_AT_ROOT_GRANDFATHERED"
+        read_type: gate
+        extract: "extended the comment to distinguish the permanently-justified test_examples.py entry (disposition c) from the six migration-pending entries; pointed to sdd/audits/audit-014 for the per-file plan"
+      - file: sdd/BACKLOG-DONE.md
+        section: "[Unreleased] / BK-215"
+        read_type: gate
+        extract: "ship-complete entry under Unreleased; allow-list itself unchanged because (c) does not retire the entry"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_test_placement.py
+        section: "(full)"
+        read_type: verify
+        extract: "hatch run lint passes with the comment change; no behaviour or import change"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "live trace + BACKLOG-DONE entry satisfy the row; audience contributor.process + infra.test skip CHANGELOG per _schema.yml audience-derived rule"
+discovery_followups: []
+surprising_ripples: []
+review_rounds: 0

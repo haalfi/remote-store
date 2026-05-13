@@ -1,0 +1,79 @@
+id: BK-206
+title: "Bump CI actions from Node.js 20 to Node.js 22 (audit)"
+trigger: "GitHub deprecated Node.js 20 actions; June 2026 default-enforce on runners, September 2026 removal. The BACKLOG item presumed a CI bump was required; the audit checks whether any pinned action still ships with Node 20 internally"
+source_items:
+  - BK-206
+audience:
+  - infra.ci
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .github/workflows/
+        section: "all *.yml files (uses: lines)"
+        read_type: gate
+        extract: "enumerate every action pinned across ci.yml, codeql.yml, conda-recipe.yml, docs.yml, gh-pages-deploy.yml, mutation.yml, publish.yml, dependabot-auto-merge.yml"
+  - id: audit
+    name: Audit each action's internal Node runtime
+    steps:
+      - file: https://github.com/actions/checkout/releases
+        section: "v6"
+        read_type: verify
+        extract: "checkout@v6 internal runtime is Node 24"
+      - file: https://github.com/actions/setup-python/releases
+        section: "v6"
+        read_type: verify
+        extract: "setup-python@v6 internal runtime is Node 24"
+      - file: https://github.com/actions/setup-java/releases
+        section: "v5.0.0+"
+        read_type: verify
+        extract: "v5.0.0 introduced Node 24; v5.2.0 is the current pin baseline"
+      - file: https://github.com/actions/configure-pages/releases
+        section: "v6.0.0"
+        read_type: verify
+        extract: "v6.0.0 upgraded runtime to Node 24"
+      - file: https://github.com/actions/deploy-pages/releases
+        section: "v5.0.0"
+        read_type: verify
+        extract: "v5.0.0 updated Node.js version to 24.x"
+      - file: https://github.com/actions/upload-pages-artifact/blob/main/action.yml
+        section: "runs"
+        read_type: verify
+        extract: "composite action, delegates upload to actions/upload-artifact@v7"
+      - file: https://github.com/actions/dependency-review-action/releases
+        section: "v5.0.0"
+        read_type: verify
+        extract: "v5.0.0 update Node.js runtime from 20 to 24"
+      - file: https://github.com/astral-sh/setup-uv/blob/main/action.yml
+        section: "runs.using"
+        read_type: verify
+        extract: "action.yml declares using: node24"
+      - file: https://github.com/github/codeql-action/blob/v4/action.yml
+        section: "runs.using"
+        read_type: verify
+        extract: "composite action (no Node runtime, not subject to Node 20 deprecation)"
+      - file: https://github.com/codecov/codecov-action/blob/v6/action.yml
+        section: "runs.using"
+        read_type: verify
+        extract: "composite action"
+  - id: report
+    name: Report findings
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-206 (audit: no bump required)"
+        read_type: gate
+        extract: "every Node-based GitHub-org action used in workflows already pins a Node 24 version; pypa/gh-action-pypi-publish is Docker; third-party prefix-dev and dafny-lang actions are out-of-scope for this sweep and will be tracked separately if needed"
+  - id: followup
+    name: Follow-on cleanup (PR #621 review)
+    steps:
+      - file: .github/workflows/mutation.yml
+        section: "env block (line 17)"
+        read_type: gate
+        extract: "removed FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true (introduced by BK-168 / b6f2a34 to force Node 20 actions onto Node 24); audit confirmed every action in mutation.yml is already pinned at Node 24 — the flag is a no-op"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "live trace + BACKLOG-DONE entry satisfy the row; audience=infra.ci skips CHANGELOG per _schema.yml audience-derived rule; no code/yml diff because the audit conclusion is no-op"

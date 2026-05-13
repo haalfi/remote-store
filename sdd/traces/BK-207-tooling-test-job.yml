@@ -1,0 +1,49 @@
+id: BK-207
+title: "Scope non-package tests to Python 3.13 in CI matrix"
+trigger: "tests/scripts/ (contributor-tooling tests for scripts/) ran on every slot of the 3.10..3.14 CI matrix because testpaths=['tests'] in pyproject.toml collects them by default; they verify scripts/ behaviour and gain nothing from multi-version coverage"
+source_items:
+  - BK-207
+audience:
+  - infra.ci
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] testpaths"
+        read_type: gate
+        extract: "testpaths=['tests'] means pytest collects tests/scripts/ alongside package tests"
+      - file: .github/workflows/ci.yml
+        section: "test job (matrix python-version 3.10..3.14, Run tests with coverage step)"
+        read_type: gate
+        extract: "the matrix pytest invocation has no ignore for tests/scripts/, so the 230 tooling tests ran five times"
+      - file: tests/scripts/
+        section: "test_*.py listing"
+        read_type: reference
+        extract: "all 230 tests target scripts/ (gen_graph, gen_features, gen_graph_viz, check_*) — not remote_store source"
+      - file: tests/scripts/test_check_test_placement.py
+        section: "_AZURE_AT_ROOT and similar string fixtures (~L235-300)"
+        read_type: verify
+        extract: "the only file with 'from remote_store ...' lines — all inside triple-quoted string fixtures fed to the placement checker, never imported, so excluding the file from --cov=remote_store has no coverage impact"
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test job Run tests with coverage step"
+        read_type: gate
+        extract: "add --ignore=tests/scripts to the matrix pytest invocation"
+      - file: .github/workflows/ci.yml
+        section: "new tooling-test job (after test, before pyarrow24-check)"
+        read_type: gate
+        extract: "single Python 3.13 job that runs pytest tests/scripts/ -q with no docker services (the tests are pure-Python contributor tooling)"
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/
+        section: "(full)"
+        read_type: verify
+        extract: "pytest tests/scripts/ -q reports 230 passed in ~5s locally; standalone-job feasibility confirmed"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "live trace + BACKLOG-DONE entry satisfy the row; audience=infra.ci skips CHANGELOG per _schema.yml audience-derived rule"

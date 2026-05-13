@@ -69,6 +69,8 @@ jobs:
       - run: python scripts/check_mock_spec.py tests
       - run: python scripts/check_test_placement.py tests
       - run: python scripts/check_tla_no_emdash.py
+      - run: python scripts/check_docs_framework.py
+      - run: python scripts/check_rst_roles.py
       - run: python scripts/gen_graph.py --check
       - run: python scripts/check_api_docs.py
       - run: python scripts/gen_features.py --check
@@ -137,10 +139,33 @@ jobs:
       # Full 95% threshold on 3.13 (primary). Other versions enforce a lower
       # floor (90%) because some dev deps may lack wheels on pre-release
       # Python, causing test skips that reduce coverage.
+      # tests/scripts/ holds contributor-tooling tests (script checkers, gen
+      # scripts) that exercise scripts/, not remote_store. They gain nothing
+      # from multi-version coverage and run once on Python 3.13 via the
+      # tooling-test job below. BK-207.
       - name: Run tests with coverage
         run: >-
           pytest --cov=remote_store --cov-report=term-missing
+          --ignore=tests/scripts
           ${{ matrix.python-version == '3.13' && '--cov-fail-under=95' || '--cov-fail-under=90' }}
+
+  # BK-207: contributor-tooling tests (tests/scripts/) run once on the primary
+  # Python. They verify scripts/ behaviour and gain nothing from the 3.10..3.14
+  # matrix that the test job uses for the published package.
+  tooling-test:
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: false
+      - run: uv pip install -e ".[dev]"
+      - run: pytest tests/scripts/ -q
 
   # BK-172: verify that S3-PyArrow tests run (not skip) against MinIO when
   # pyarrow ≥ 24 is installed, and that other pyarrow-24 code paths still pass.
@@ -361,7 +386,7 @@ jobs:
           done
 
   gate:
-    needs: [changes, lint, typecheck, test, pyarrow24-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [changes, lint, typecheck, test, pyarrow24-check, test-cross-platform, tooling-test, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -379,6 +404,7 @@ jobs:
             "${{ needs.test.result }}" \
             "${{ needs.pyarrow24-check.result }}" \
             "${{ needs.test-cross-platform.result }}" \
+            "${{ needs.tooling-test.result }}" \
             "${{ needs.notebooks.result }}" \
             "${{ needs.examples.result }}" \
             "${{ needs.e2e.result }}" \
