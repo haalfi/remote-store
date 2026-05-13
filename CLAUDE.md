@@ -25,6 +25,7 @@ extensions, capabilities, and install extras for the current version.
 
 1. **Report only.** Present findings with evidence. Do not fix anything.
 2. **User decides next steps** — what to fix, whether to create backlog items or an audit doc.
+3. **An audit's authority is its diagnosis; its prescription is advisory.** When implementing a follow-up, re-evaluate the proposed disposition against the diagnosed pain — diverge if a different path fits better.
 
 ## Bug-fix protocol
 
