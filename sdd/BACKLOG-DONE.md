@@ -8,6 +8,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-207 — Scope non-package tests to Python 3.13 in CI matrix**
+  The `test` job ran a Python 3.10–3.14 matrix over the entire `tests/` tree,
+  including `tests/scripts/` (230 collected items) which verifies contributor
+  tooling in `scripts/` and does not exercise `remote_store` source. Added
+  `--ignore=tests/scripts` to the matrix pytest invocation and introduced a
+  single Python 3.13 `tooling-test` job that runs `pytest tests/scripts/ -q`.
+  Coverage gates are unaffected — the matrix coverage target is `remote_store`,
+  and the excluded tests do not exercise it (the few `from remote_store ...`
+  occurrences in `tests/scripts/test_check_test_placement.py` are inside
+  triple-quoted string fixtures fed to the placement checker, never imported).
+  TEST-003 (test placement) is unchanged. Audience: `infra.ci`.
+  Trace: [`sdd/traces/BK-207-tooling-test-job.yml`](traces/BK-207-tooling-test-job.yml).
+
 - [x] **BK-205 — Wire `check_rst_roles` and `check_docs_framework` into CI lint job**
   `scripts/check_rst_roles.py` and `scripts/check_docs_framework.py` ran in the
   local `hatch run lint` script but were absent from the CI `lint` job in

@@ -576,14 +576,6 @@ pattern (ID-193) can lock in the test shape.
   `upload-artifact`) to those that ship with Node.js 22 internally.
   Ship as a separate cleanup PR.
 
-- [ ] **BK-207 — Scope non-package tests to Python 3.13 in CI matrix**
-  spec: TEST-003 · effort: S · audience: library.maintainer
-  The Python 3.10–3.14 CI matrix verifies the published package; contributor
-  tooling tests under `tests/scripts/` are not package code and gain nothing
-  from multi-version coverage. Wire any new non-package test suite to a single
-  Python 3.13 job, and audit existing non-package tests to narrow them away
-  from the full matrix. Spec: TEST-003 (test placement).
-
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
   spec: TEST-003, TEST-010 · effort: L · audience: infra.test
   BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
