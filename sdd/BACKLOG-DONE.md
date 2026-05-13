@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-216 — Split `tests/test_config.py` per backend (BK-191 slice 1/6)**
+  First migration-pending slice from BK-191's audit. The 13 concrete-backend
+  tests in `tests/test_config.py` (SEC-005 SFTP enum coercion + RET-010..RET-013
+  backend retry acceptance and SDK retry mapping) moved to their per-backend
+  homes: `tests/backends/sftp/test_config.py`, `tests/backends/s3/test_config.py`,
+  `tests/backends/azure/test_config.py`, and `tests/backends/s3/test_pyarrow.py`
+  (no dedicated `tests/backends/s3_pyarrow/` directory exists — corrects the
+  audit doc's pointer). Pure config-layer tests (CFG-*, Secret/`SecretRedactionFilter`,
+  `RetryPolicy`, `TestFromToml*`, `TestResolveEnv*`) and the two cross-cutting
+  RET-014 / RET-020 tests (which use only `_local` / `_memory` / the `remote_store`
+  module) stay at root. With every banned-backend import gone from
+  `tests/test_config.py`, `"test_config.py"` was removed from
+  `_BACKEND_AT_ROOT_GRANDFATHERED` in `scripts/check_test_placement.py`; the
+  allow-list now holds the five migration-pending entries plus the
+  permanently-justified `test_examples.py`. Five slices remain (BK-191 stays
+  open as the umbrella). Audience: `infra.test`, `contributor.process`.
+  Spec: TEST-003, TEST-010.
+  Trace: [`sdd/traces/BK-216-test-config-per-backend-split.yml`](traces/BK-216-test-config-per-backend-split.yml).
+
 - [x] **BK-215 — `test_examples.py` allow-list justification documented (BK-191 slice 7/7)**
   First per-slice follow-up to BK-191, the only slice with disposition (c)
   "keep at root with documented justification". Updated the comment block

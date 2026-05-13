@@ -333,41 +333,8 @@ class TestFromDictSecretWrapping:
         assert "Secret('***')" in r
 
 
-# ---------------------------------------------------------------------------
-# SEC-005: SFTP enum coercion
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.spec("SEC-005")
-@pytest.mark.parametrize(
-    ("policy_str", "enum_name"),
-    [
-        pytest.param("auto", "AUTO_ADD", id="auto"),
-        pytest.param("tofu", "TRUST_ON_FIRST_USE", id="tofu"),
-        pytest.param("strict", "STRICT", id="strict"),
-    ],
-)
-def test_sftp_enum_coercion(policy_str: str, enum_name: str) -> None:
-    from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
-
-    backend = SFTPBackend(host="h", host_key_policy=policy_str)
-    assert backend._host_key_policy is HostKeyPolicy[enum_name]
-
-
-@pytest.mark.spec("SEC-005")
-def test_sftp_invalid_policy_raises() -> None:
-    from remote_store.backends._sftp import SFTPBackend
-
-    with pytest.raises(ValueError, match="not_a_policy"):
-        SFTPBackend(host="h", host_key_policy="not_a_policy")
-
-
-@pytest.mark.spec("SEC-005")
-def test_sftp_enum_passthrough() -> None:
-    from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
-
-    backend = SFTPBackend(host="h", host_key_policy=HostKeyPolicy.AUTO_ADD)
-    assert backend._host_key_policy is HostKeyPolicy.AUTO_ADD
+# SEC-005 SFTP host_key_policy enum coercion tests moved to
+# tests/backends/sftp/test_config.py (BK-216 / BK-191).
 
 
 # ---------------------------------------------------------------------------
@@ -743,51 +710,12 @@ def test_registry_retry_passthrough(retry_arg: Any, expect_none: bool) -> None:
 
 
 # ---------------------------------------------------------------------------
-# RET-010 through RET-014: Backend constructor retry acceptance
+# RET-014: in-process backend rejection of retry kwarg
 # ---------------------------------------------------------------------------
 
-
-@pytest.mark.spec("RET-010")
-@pytest.mark.parametrize(
-    ("retry_arg", "expect_none"),
-    [
-        pytest.param(RetryPolicy(max_attempts=5), False, id="with_retry"),
-        pytest.param(None, True, id="default_none"),
-    ],
-)
-def test_sftp_retry(retry_arg: Any, expect_none: bool) -> None:
-    from remote_store.backends._sftp import SFTPBackend
-
-    backend = SFTPBackend(host="h") if retry_arg is None else SFTPBackend(host="h", retry=retry_arg)
-    assert (backend._retry is None) is expect_none
-
-
-@pytest.mark.spec("RET-011")
-def test_s3_accepts_retry() -> None:
-    from remote_store.backends._s3 import S3Backend
-
-    rp = RetryPolicy(max_attempts=10)
-    assert S3Backend(bucket="b", retry=rp)._retry is rp
-
-
-@pytest.mark.spec("RET-012")
-def test_azure_accepts_retry() -> None:
-    from remote_store.backends._azure import AzureBackend
-
-    rp = RetryPolicy(max_attempts=7)
-    assert (
-        AzureBackend(container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;", retry=rp)._retry
-        is rp
-    )
-
-
-@pytest.mark.spec("RET-013")
-def test_s3_pyarrow_accepts_retry() -> None:
-    pytest.importorskip("pyarrow")
-    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-    rp = RetryPolicy(max_attempts=4)
-    assert S3PyArrowBackend(bucket="b", retry=rp)._retry is rp
+# RET-010..RET-013 per-backend retry acceptance + SDK-mapping tests moved to
+# tests/backends/{sftp,s3,azure}/test_config.py and tests/backends/s3/test_pyarrow.py
+# (BK-216 / BK-191).
 
 
 def _make_local_backend(**kwargs: Any) -> Any:
@@ -800,12 +728,6 @@ def _make_memory_backend(**kwargs: Any) -> Any:
     from remote_store.backends._memory import MemoryBackend
 
     return MemoryBackend(**kwargs)
-
-
-def _remote_store_module() -> Any:
-    import remote_store
-
-    return remote_store
 
 
 @pytest.mark.spec("RET-014")
@@ -822,75 +744,14 @@ def test_backend_rejects_retry(factory: Any) -> None:
 
 
 # ---------------------------------------------------------------------------
-# RET-011 / RET-012 / RET-013: Backend retry mapping
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.spec("RET-012")
-@pytest.mark.parametrize(
-    ("rp_kwargs", "expected_backoff", "expected_jitter"),
-    [
-        pytest.param({"max_attempts": 5, "backoff_base": 2.0, "jitter": 3.0}, 2, 3, id="integer_values"),
-        pytest.param({"max_attempts": 3, "backoff_base": 0.5, "jitter": 0.7}, 1, 1, id="fractional_rounds_up"),
-    ],
-)
-def test_azure_build_retry_mapping(rp_kwargs: dict[str, Any], expected_backoff: int, expected_jitter: int) -> None:
-    from remote_store.backends._azure import AzureBackend
-
-    rp = RetryPolicy(**rp_kwargs)
-    azure_retry = AzureBackend(
-        container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;", retry=rp
-    )._build_azure_retry()
-    assert azure_retry.total_retries == rp_kwargs["max_attempts"] - 1
-    assert azure_retry.initial_backoff == expected_backoff
-    assert azure_retry.random_jitter_range == expected_jitter
-
-
-@pytest.mark.spec("RET-012")
-def test_azure_build_retry_none() -> None:
-    from remote_store.backends._azure import AzureBackend
-
-    assert (
-        AzureBackend(
-            container="c", connection_string="DefaultEndpointsProtocol=http;AccountName=a;"
-        )._build_azure_retry()
-        is None
-    )
-
-
-@pytest.mark.spec("RET-011")
-def test_s3_retry_botocore_config() -> None:
-    from remote_store.backends._s3 import S3Backend
-
-    backend = S3Backend(bucket="b", retry=RetryPolicy(max_attempts=7))
-    # S3-026 / BUG-185: the merged Config flows to s3fs as config_kwargs (a dict),
-    # never as client_kwargs["config"] (which would collide with the
-    # config=AioConfig(...) s3fs passes to aiobotocore.create_client()).
-    config_kwargs = backend._fs.config_kwargs
-    assert "config" not in backend._fs.client_kwargs
-    assert config_kwargs["retries"]["max_attempts"] == 7
-    assert config_kwargs["retries"]["mode"] == "standard"
-    backend.close()
-
-
-@pytest.mark.spec("RET-013")
-def test_s3_pyarrow_retry_strategy() -> None:
-    pytest.importorskip("pyarrow")
-    from unittest.mock import patch
-
-    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
-
-    backend = S3PyArrowBackend(bucket="b", retry=RetryPolicy(max_attempts=9))
-    with patch("pyarrow.fs.S3FileSystem") as mock_s3fs:
-        mock_s3fs.return_value = mock_s3fs
-        _ = backend._pa_fs
-        assert mock_s3fs.call_args[1]["retry_strategy"].max_attempts == 9
-    backend.close()
-
-
-# ---------------------------------------------------------------------------
 # RET-020: RetryPolicy top-level export
 # ---------------------------------------------------------------------------
+
+
+def _remote_store_module() -> Any:
+    import remote_store
+
+    return remote_store
 
 
 @pytest.mark.spec("RET-020")

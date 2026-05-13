@@ -1499,3 +1499,43 @@ class TestAzureWriteOnHnsDirectory:
             f.write(b"data")
         assert tmp_fc.upload_data.call_count == 1
         tmp_fc.rename_file.assert_called_once_with("test/new.txt")
+
+
+# =============================================================================
+# RetryPolicy acceptance and azure-SDK retry mapping (RET-012)
+# Migrated from tests/test_config.py (BK-216 / BK-191).
+# =============================================================================
+
+
+_RETRY_CONN_STR = "DefaultEndpointsProtocol=http;AccountName=a;"
+
+
+@pytest.mark.spec("RET-012")
+def test_azure_accepts_retry() -> None:
+    from remote_store._config import RetryPolicy
+
+    rp = RetryPolicy(max_attempts=7)
+    assert AzureBackend(container="c", connection_string=_RETRY_CONN_STR, retry=rp)._retry is rp
+
+
+@pytest.mark.spec("RET-012")
+@pytest.mark.parametrize(
+    ("rp_kwargs", "expected_backoff", "expected_jitter"),
+    [
+        pytest.param({"max_attempts": 5, "backoff_base": 2.0, "jitter": 3.0}, 2, 3, id="integer_values"),
+        pytest.param({"max_attempts": 3, "backoff_base": 0.5, "jitter": 0.7}, 1, 1, id="fractional_rounds_up"),
+    ],
+)
+def test_azure_build_retry_mapping(rp_kwargs: dict[str, Any], expected_backoff: int, expected_jitter: int) -> None:
+    from remote_store._config import RetryPolicy
+
+    rp = RetryPolicy(**rp_kwargs)
+    azure_retry = AzureBackend(container="c", connection_string=_RETRY_CONN_STR, retry=rp)._build_azure_retry()
+    assert azure_retry.total_retries == rp_kwargs["max_attempts"] - 1
+    assert azure_retry.initial_backoff == expected_backoff
+    assert azure_retry.random_jitter_range == expected_jitter
+
+
+@pytest.mark.spec("RET-012")
+def test_azure_build_retry_none() -> None:
+    assert AzureBackend(container="c", connection_string=_RETRY_CONN_STR)._build_azure_retry() is None

@@ -853,7 +853,9 @@ class TestSFTPMetadata:
 
 
 class TestSFTPHostKeyPolicyCoercion:
-    """BK-005: string-to-enum coercion in constructor (line 167)."""
+    """SEC-005: string-to-enum coercion in constructor (line 167)."""
+
+    pytestmark = pytest.mark.spec("SEC-005")
 
     @pytest.mark.parametrize(
         ("input_str", "expected"),
@@ -878,6 +880,12 @@ class TestSFTPHostKeyPolicyCoercion:
             # and TestSFTPTofuPersistence. This assertion pins the
             # string-to-enum equivalence the constructor promises.
             assert backend._host_key_policy is expected
+
+    def test_enum_value_passthrough(self) -> None:
+        """An already-typed HostKeyPolicy member is stored unchanged (no coercion path).
+        Migrated from tests/test_config.py (BK-216 / BK-191)."""
+        backend = SFTPBackend(host="h", host_key_policy=HostKeyPolicy.AUTO_ADD)
+        assert backend._host_key_policy is HostKeyPolicy.AUTO_ADD
 
 
 class TestSFTPHostKeyPolicyAliases:
@@ -1872,6 +1880,23 @@ class TestSFTPResolve:
         )
         plan = backend.resolve("file.txt")
         assert "base_path" in plan.details
+
+
+# endregion
+
+
+# region: RetryPolicy acceptance (RET-010) — migrated from tests/test_config.py (BK-216 / BK-191)
+@pytest.mark.spec("RET-010")
+@pytest.mark.parametrize(
+    ("retry_arg", "expect_none"),
+    [
+        pytest.param(RetryPolicy(max_attempts=5), False, id="with_retry"),
+        pytest.param(None, True, id="default_none"),
+    ],
+)
+def test_sftp_retry(retry_arg: RetryPolicy | None, expect_none: bool) -> None:
+    backend = SFTPBackend(host="h") if retry_arg is None else SFTPBackend(host="h", retry=retry_arg)
+    assert (backend._retry is None) is expect_none
 
 
 # endregion

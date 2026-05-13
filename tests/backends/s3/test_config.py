@@ -305,3 +305,34 @@ class TestS3WriteResult:
         s3_backend.write("meta.txt", b"x", metadata={"env": "test"})
         info = s3_backend.get_file_info("meta.txt")
         assert info.metadata == {"env": "test"}
+
+
+# ---------------------------------------------------------------------------
+# RetryPolicy acceptance + botocore config wiring (RET-011)
+# Migrated from tests/test_config.py (BK-216 / BK-191).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.spec("RET-011")
+def test_s3_accepts_retry() -> None:
+    from remote_store._config import RetryPolicy
+    from remote_store.backends._s3 import S3Backend
+
+    rp = RetryPolicy(max_attempts=10)
+    assert S3Backend(bucket="b", retry=rp)._retry is rp
+
+
+@pytest.mark.spec("RET-011")
+def test_s3_retry_botocore_config() -> None:
+    from remote_store._config import RetryPolicy
+    from remote_store.backends._s3 import S3Backend
+
+    backend = S3Backend(bucket="b", retry=RetryPolicy(max_attempts=7))
+    # S3-026 / BUG-185: the merged Config flows to s3fs as config_kwargs (a dict),
+    # never as client_kwargs["config"] (which would collide with the
+    # config=AioConfig(...) s3fs passes to aiobotocore.create_client()).
+    config_kwargs = backend._fs.config_kwargs
+    assert "config" not in backend._fs.client_kwargs
+    assert config_kwargs["retries"]["max_attempts"] == 7
+    assert config_kwargs["retries"]["mode"] == "standard"
+    backend.close()
