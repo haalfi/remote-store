@@ -586,8 +586,10 @@ pattern (ID-193) can lock in the test shape.
   **Audit (2026-05-13):** per-file dispositions documented in
   [`sdd/audits/audit-014-grandfathered-tests-allow-list.md`](audits/audit-014-grandfathered-tests-allow-list.md).
   Findings: zero files qualify for an "easy remove from allow-list"
-  path — six need real refactoring (a/b), one needs only a justification
-  comment (c). Suggested per-slice follow-up items BK-209..BK-215.
+  path — six need real refactoring (a/b), the seventh (`test_examples.py`)
+  shipped under BK-215 as a justification-comment update. Six per-slice
+  follow-up items remain to be filed; consult `sdd/backlogid.json` for the
+  next safe BK ID when scheduling.
 
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer

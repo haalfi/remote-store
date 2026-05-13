@@ -63,6 +63,13 @@ phases:
         section: "BK-206 (audit: no bump required)"
         read_type: gate
         extract: "every Node-based GitHub-org action used in workflows already pins a Node 24 version; pypa/gh-action-pypi-publish is Docker; third-party prefix-dev and dafny-lang actions are out-of-scope for this sweep and will be tracked separately if needed"
+  - id: followup
+    name: Follow-on cleanup (PR #621 review)
+    steps:
+      - file: .github/workflows/mutation.yml
+        section: "env block (line 17)"
+        read_type: gate
+        extract: "removed FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true (introduced by BK-168 / b6f2a34 to force Node 20 actions onto Node 24); audit confirmed every action in mutation.yml is already pinned at Node 24 — the flag is a no-op"
   - id: verify
     name: Verify
     steps:

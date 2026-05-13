@@ -46,6 +46,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `ci.yml`) are out of scope for the GitHub-org Node 20 deprecation sweep;
   if they age into Node 20 enforcement they will be tracked under a new
   item with the specific finding. Audience: `infra.ci`.
+
+  **Follow-on cleanup (PR #621 review):** dropped the
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"` env var at
+  `.github/workflows/mutation.yml:17` (added by BK-168 / commit b6f2a34 to
+  force then-Node-20 actions onto Node 24). The audit confirms every action
+  in `mutation.yml` is already pinned at a Node-24-runtime version, so the
+  flag is a no-op.
   Trace: [`sdd/traces/BK-206-node-runtime-audit.yml`](traces/BK-206-node-runtime-audit.yml).
 
 - [x] **BK-207 — Scope non-package tests to Python 3.13 in CI matrix**
