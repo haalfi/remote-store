@@ -386,7 +386,7 @@ jobs:
           done
 
   gate:
-    needs: [changes, lint, typecheck, test, pyarrow24-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [changes, lint, typecheck, test, pyarrow24-check, test-cross-platform, tooling-test, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -404,6 +404,7 @@ jobs:
             "${{ needs.test.result }}" \
             "${{ needs.pyarrow24-check.result }}" \
             "${{ needs.test-cross-platform.result }}" \
+            "${{ needs.tooling-test.result }}" \
             "${{ needs.notebooks.result }}" \
             "${{ needs.examples.result }}" \
             "${{ needs.e2e.result }}" \

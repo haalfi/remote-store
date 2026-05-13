@@ -2,7 +2,6 @@
 
 **Backlog item:** BK-191
 **Date:** 2026-05-13
-**Branch:** `claude/review-lint-ci-tasks-PUx5H`
 **Scope:** The seven `tests/test_*.py` files grandfathered into the TEST-003
 placement exception via `scripts/check_test_placement.py::_BACKEND_AT_ROOT_GRANDFATHERED`.
 **Method:** AST-level enumeration of every `from remote_store.backends._<x>` / `import remote_store.backends._<x>` / `from remote_store.backends import <Name>` site (top-level and function-local). Each test was read in context to determine whether its assertions are per-backend, cross-backend, or example-driven.
@@ -201,14 +200,16 @@ A preceding chat-only audit (an Explore-agent classification of the same files) 
 
 ## Recommended follow-up backlog items
 
-Spin one new BK-prefix item per disposition slice when scheduling. Suggested IDs (next safe BK = 209 per `sdd/backlogid.json`):
+Spin one new BK-prefix item per disposition slice when scheduling. Consult
+`sdd/backlogid.json` for the next safe BK ID at the time of scheduling.
+The (c) `test_examples.py` slice was shipped together with this audit (see
+BACKLOG-DONE entry for slice 7/7); the remaining six slices stay migration-pending:
 
-- **BK-209** — Split `tests/test_config.py` into per-backend `tests/backends/<x>/test_config.py` (disposition (a)). Closes 1/7 of BK-191.
-- **BK-210** — Split `tests/test_ping.py` per backend (a). Closes 1/7 of BK-191.
-- **BK-211** — Reshape `tests/test_depth_listing.py` into conformance + lift 3 backend-specific snippets (b + a). Closes 1/7 of BK-191.
-- **BK-212** — Reshape `tests/test_seekable.py` + lift `_AzureRangeReader` cluster (b + a). Closes 1/7 of BK-191.
-- **BK-213** — Reshape `tests/test_pbt_write_result.py` PBT into conformance + per-backend metadata round-trip (b + a). Closes 1/7 of BK-191.
-- **BK-214** — Reshape `tests/test_coverage_gaps.py` secret-masking into conformance + per-backend init split (b + a). Closes 1/7 of BK-191.
-- **BK-215** — Document `tests/test_examples.py` justification in the allow-list comment block (c). Closes 1/7 of BK-191.
+- Split `tests/test_config.py` into per-backend `tests/backends/<x>/test_config.py` (disposition (a)).
+- Split `tests/test_ping.py` per backend (a).
+- Reshape `tests/test_depth_listing.py` into conformance + lift 3 backend-specific snippets (b + a).
+- Reshape `tests/test_seekable.py` + lift `_AzureRangeReader` cluster (b + a).
+- Reshape `tests/test_pbt_write_result.py` PBT into conformance + per-backend metadata round-trip (b + a).
+- Reshape `tests/test_coverage_gaps.py` secret-masking into conformance + per-backend init split (b + a).
 
-BK-191 stays open in `BACKLOG.md` as the umbrella until the seven follow-ups close.
+BK-191 stays open in `BACKLOG.md` as the umbrella until the six remaining slices close.
