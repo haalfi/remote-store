@@ -132,8 +132,7 @@ BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
   does not emulate HNS. Fix: extend the `hdi_isfolder` probe used by
   `write`/`write_atomic`/`open_atomic` to the `is_file` HNS branch in
   `src/remote_store/backends/_azure.py`. Async sibling apparently
-  unaffected (no `[azure_live_async]` failure for this test). Spec:
-  BE-005 (or whichever spec covers `is_file` semantics), BE-021.
+  unaffected (no `[azure_live_async]` failure for this test).
 
 - [ ] **BUG-201 — `AsyncAzureBackend.move`/`copy` self-op (src == dst) raises `AlreadyExists` instead of being a no-op**
   spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · effort: S · audience: library.maintainer
@@ -502,8 +501,9 @@ pattern (ID-193) can lock in the test shape.
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
   Blocked on ID-192 (aio.md rework) and ID-194 (gen_graph async gate extension).
   Once both land: add `AsyncStore` and `AsyncBackend` to `PAGES` in
-  `check_api_docs.py` pointing at `docs-src/reference/api/aio.md`, and
-  dual-wire `gen-api-check` into the pyproject lint list and CI lint job.
+  `check_api_docs.py` pointing at `docs-src/reference/api/aio.md`.
+  `check_api_docs.py` is already wired into the `hatch run lint` script and the
+  CI lint job (landed via BK-203); adding the entries is the only remaining step.
   Griffe traversal path (for the implementer):
   `pkg.members["aio"].members["_async_store"].members["AsyncStore"]`
 
