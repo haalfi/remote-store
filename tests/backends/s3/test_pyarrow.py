@@ -388,3 +388,34 @@ class TestS3PyArrowMinIOSentinel:
 
 
 # endregion
+
+
+# region: RetryPolicy acceptance + pyarrow retry strategy (RET-013)
+# Migrated from tests/test_config.py (BK-216 / BK-191).
+
+
+@pytest.mark.spec("RET-013")
+def test_s3_pyarrow_accepts_retry() -> None:
+    from remote_store._config import RetryPolicy
+    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+    rp = RetryPolicy(max_attempts=4)
+    assert S3PyArrowBackend(bucket="b", retry=rp)._retry is rp
+
+
+@pytest.mark.spec("RET-013")
+def test_s3_pyarrow_retry_strategy() -> None:
+    from unittest.mock import patch
+
+    from remote_store._config import RetryPolicy
+    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+    backend = S3PyArrowBackend(bucket="b", retry=RetryPolicy(max_attempts=9))
+    with patch("pyarrow.fs.S3FileSystem") as mock_s3fs:
+        mock_s3fs.return_value = mock_s3fs
+        _ = backend._pa_fs
+        assert mock_s3fs.call_args[1]["retry_strategy"].max_attempts == 9
+    backend.close()
+
+
+# endregion

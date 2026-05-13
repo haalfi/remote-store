@@ -1,0 +1,89 @@
+id: BK-216
+title: "Split tests/test_config.py per backend (BK-191 slice 1/6)"
+trigger: "BK-191 audit (sdd/audits/audit-014) classified tests/test_config.py as disposition (a) per-backend split: every nested concrete-backend import lives inside a per-backend test (SEC-005 SFTP enum coercion, RET-010..RET-013 backend retry acceptance + SDK retry mapping). The grandfather entry could be retired only by moving these tests into their existing per-backend homes (tests/backends/{sftp,s3,azure}/test_config.py; S3-PyArrow appends to tests/backends/s3/test_pyarrow.py since no tests/backends/s3_pyarrow/ directory exists)."
+source_items:
+  - BK-216
+  - BK-191
+audience:
+  - infra.test
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "tests/test_config.py — disposition: (a) per-backend split"
+        read_type: gate
+        extract: "13 tests across SFTP/S3/Azure/S3-PyArrow; existing per-backend test files already host neighbouring tests; risk low (no shared fixtures across the per-backend tests)"
+      - file: scripts/check_test_placement.py
+        section: "_BACKEND_AT_ROOT_GRANDFATHERED, _compute_backend_violations"
+        read_type: gate
+        extract: "removing test_config.py from the allow-list is safe once every per-backend test is moved; the checker walks the full AST so function-local imports count"
+      - file: tests/backends/s3/test_pyarrow.py
+        section: "module-level pytest.importorskip + existing S3PyArrowBackend tests"
+        read_type: reference
+        extract: "no tests/backends/s3_pyarrow/ directory exists; S3-PyArrow tests already live in tests/backends/s3/test_pyarrow.py — that is the correct landing spot"
+        outcome: misleading
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "(appended at end) TestSFTPHostKeyPolicyCoercion + test_sftp_retry"
+        read_type: gate
+        extract: "moved SEC-005 enum coercion (3 tests) and RET-010 retry-acceptance (1 parametrized test); hoisted SFTPBackend/HostKeyPolicy imports already present at module top"
+      - file: tests/backends/s3/test_config.py
+        section: "(appended at end) RetryPolicy acceptance + botocore config wiring (RET-011)"
+        read_type: gate
+        extract: "moved test_s3_accepts_retry and test_s3_retry_botocore_config; kept function-local imports matching the file's existing pattern"
+      - file: tests/backends/azure/test_config.py
+        section: "(appended at end) RetryPolicy acceptance and azure-SDK retry mapping (RET-012)"
+        read_type: gate
+        extract: "moved test_azure_accepts_retry, test_azure_build_retry_mapping (parametrized), test_azure_build_retry_none; introduced module-level _RETRY_CONN_STR to share the Azurite-compatible connection string across the three tests"
+      - file: tests/backends/s3/test_pyarrow.py
+        section: "(appended at end) RetryPolicy acceptance + pyarrow retry strategy (RET-013)"
+        read_type: gate
+        extract: "moved test_s3_pyarrow_accepts_retry and test_s3_pyarrow_retry_strategy; dropped per-test pytest.importorskip('pyarrow') since the module already skips at import time"
+      - file: tests/test_config.py
+        section: "deletions: SEC-005 SFTP enum block; RET-010..RET-013 backend retry blocks"
+        read_type: gate
+        extract: "kept RET-014 (memory/local rejection), RET-020 (top-level export), all pure config-layer tests (CFG-*, Secret, SecretRedactionFilter, TestFromToml*, TestResolveEnv*); only _local/_memory imports remain (both in _ALLOWED_BACKEND_MODULES)"
+      - file: scripts/check_test_placement.py
+        section: "_BACKEND_AT_ROOT_GRANDFATHERED"
+        read_type: gate
+        extract: "removed test_config.py entry; six entries remain (test_coverage_gaps, test_depth_listing, test_examples, test_pbt_write_result, test_ping, test_seekable)"
+      - file: sdd/BACKLOG.md
+        section: "BK-216 (Lint / CI Completeness)"
+        read_type: gate
+        extract: "added [~] BK-216 entry as the first migration-pending follow-up to BK-191; moves to BACKLOG-DONE.md in the same commit as the code change"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_test_placement.py
+        section: "stale-grandfather detection"
+        read_type: verify
+        extract: "hatch run lint reports zero Rule B violations and zero stale grandfather entries after removing test_config.py from the allow-list"
+      - file: tests/backends/sftp/test_config.py
+        section: "(collection)"
+        read_type: verify
+        extract: "hatch run pytest tests/backends/sftp/test_config.py collects and skips/passes; moved tests preserve spec markers and parametrize IDs"
+      - file: tests/backends/s3/test_config.py
+        section: "(collection)"
+        read_type: verify
+        extract: "hatch run pytest tests/backends/s3/test_config.py collects the new RET-011 tests; moto skips apply"
+      - file: tests/backends/azure/test_config.py
+        section: "(collection)"
+        read_type: verify
+        extract: "hatch run pytest tests/backends/azure/test_config.py collects the new RET-012 tests; importorskip on azure SDKs gates execution"
+      - file: tests/backends/s3/test_pyarrow.py
+        section: "(collection)"
+        read_type: verify
+        extract: "hatch run pytest tests/backends/s3/test_pyarrow.py collects the new RET-013 tests; pyarrow importorskip already gates the module"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "audience infra.test + contributor.process skips CHANGELOG per _schema.yml audience-derived rule; backlogid.json bumped via gen-backlogid after the BACKLOG-DONE move"
+discovery_followups: []
+surprising_ripples: []
+review_rounds: 0

@@ -120,7 +120,6 @@ _BANNED_BACKEND_NAMES: frozenset[str] = _discover_banned_backend_names(ROOT / "s
 # this allow-list is not a license to add new entries.
 _BACKEND_AT_ROOT_GRANDFATHERED: frozenset[str] = frozenset(
     {
-        "test_config.py",
         "test_coverage_gaps.py",
         "test_depth_listing.py",
         "test_examples.py",
