@@ -583,6 +583,12 @@ pattern (ID-193) can lock in the test shape.
   Each entry removed from the allow-list closes part of this item.
   Spec: TEST-003, TEST-010.
 
+  **Audit (2026-05-13):** per-file dispositions documented in
+  [`sdd/audits/audit-014-grandfathered-tests-allow-list.md`](audits/audit-014-grandfathered-tests-allow-list.md).
+  Findings: zero files qualify for an "easy remove from allow-list"
+  path — six need real refactoring (a/b), one needs only a justification
+  comment (c). Suggested per-slice follow-up items BK-209..BK-215.
+
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer
   `sdd/traces/_schema.yml` declares `audience` as `required` but no
