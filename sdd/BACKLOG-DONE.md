@@ -21,7 +21,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   module) stay at root. With every banned-backend import gone from
   `tests/test_config.py`, `"test_config.py"` was removed from
   `_BACKEND_AT_ROOT_GRANDFATHERED` in `scripts/check_test_placement.py`; the
-  allow-list now holds the six migration-pending entries plus the
+  allow-list now holds the five migration-pending entries plus the
   permanently-justified `test_examples.py`. Five slices remain (BK-191 stays
   open as the umbrella). Audience: `infra.test`, `contributor.process`.
   Spec: TEST-003, TEST-010.
