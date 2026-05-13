@@ -8,6 +8,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-205 — Wire `check_rst_roles` and `check_docs_framework` into CI lint job**
+  `scripts/check_rst_roles.py` and `scripts/check_docs_framework.py` ran in the
+  local `hatch run lint` script but were absent from the CI `lint` job in
+  `.github/workflows/ci.yml` — `check_docs_framework.py` ran only in the `docs`
+  job, and `check_rst_roles.py` had no CI invocation at all. Added both
+  `python scripts/check_*.py` steps to the CI lint job alongside the other
+  `check_*` scripts, applying the dual-wire principle uniformly. Mirror of
+  BK-203 in the opposite direction (CI had what local lint lacked; this closes
+  the local-has, CI-lacks gap). Surfaced during BK-203 review (PR #617).
+  Trace: [`sdd/traces/BK-205-dual-wire-ci-checks.yml`](traces/BK-205-dual-wire-ci-checks.yml).
+
 - [x] **BK-201 — SFTP test-hygiene: remove TESTING.md Rule 3 violations on `SFTPBackend` private state**
   Three pre-existing assertions on `SFTPBackend` private attributes in
   `tests/backends/sftp/test_config.py` lacked the

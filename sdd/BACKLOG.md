@@ -567,15 +567,6 @@ pattern (ID-193) can lock in the test shape.
 
 ## Lint / CI Completeness
 
-- [ ] **BK-205 — Wire check_rst_roles and check_docs_framework into CI lint job**
-  spec: — · effort: S · audience: library.maintainer
-  `scripts/check_rst_roles.py` and `scripts/check_docs_framework.py` run in
-  the local `lint` script but are absent from the CI lint job in
-  `.github/workflows/ci.yml`, creating a dual-wire gap. `check_docs_framework.py`
-  runs only in the `docs` job; `check_rst_roles.py` has no CI invocation at all.
-  Add both `python scripts/check_*.py` steps to the CI lint job to apply the
-  dual-wire principle uniformly. Flagged out-of-scope during BK-203 review (PR #617).
-
 - [ ] **BK-206 — Bump CI actions from Node.js 20 to Node.js 22**
   spec: — · effort: S · audience: library.maintainer
   GitHub deprecated Node.js 20 actions; runners will enforce Node.js 24 by default
