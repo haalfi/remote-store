@@ -1,0 +1,97 @@
+id: BUG-208
+title: "S3Backend.check_health() silently no-ops (unawaited aiobotocore coroutine)"
+trigger: |
+  BK-217's conformance assertion (tests/backends/conformance/test_check_health.py)
+  ran check_health() against the moto-backed s3_moto fixture for real and
+  surfaced a PytestUnraisableExceptionWarning: S3Backend.check_health() called
+  self._fs.s3.head_bucket(Bucket=...) on the raw aiobotocore client, whose
+  head_bucket returns a coroutine the code never awaited. The HEAD never
+  reached the server, check_health() silently returned None regardless of
+  bucket state, and the orphaned coroutine raised RuntimeWarning at GC. Every
+  mocked test patched the s3fs client, so the aiobotocore path was never
+  exercised.
+source_items:
+  - BUG-208
+  - BK-217
+audience:
+  - user.api
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-208 (S3 Correctness)"
+        read_type: gate
+        extract: "defect, fix direction (s3fs sync wrapper, not the raw aiobotocore client), and the ask to audit every other self._fs.s3.<method> use"
+      - file: sdd/000-process.md
+        section: "Rule 6 (Workflows / Bug fixes)"
+        read_type: gate
+        extract: "bug-fix pipeline BACKLOG -> CHANGELOG -> failing TEST -> FIX -> COMMIT together; update the spec when the bug contradicts a spec invariant"
+      - file: sdd/specs/026-health-check.md
+        section: "PING-004, PING-009"
+        read_type: gate
+        extract: "PING-004's code block codified the buggy call self._fs.s3.head_bucket(...) verbatim — the spec itself carried the defect"
+        outcome: misleading
+      - file: src/remote_store/backends/_s3.py
+        section: "check_health + write/get_file_info call_s3 usages"
+        read_type: gate
+        extract: "call_s3('head_object', ...) is the established synchronous s3fs wrapper, already used twice; check_health was the lone raw-client caller"
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_s3fs_errors, call_s3 usage across S3 backends"
+        read_type: reference
+        extract: "audit result: check_health is the only self._fs.s3.<method> call; _s3_base and _s3_pyarrow already route everything through call_s3 — no guard needed"
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_s3.py
+        section: "check_health (moto reproduction)"
+        read_type: verify
+        extract: "confirmed against moto: current code leaks the coroutine and returns None for a missing bucket; call_s3('head_bucket', Bucket=...) issues the HEAD and raises NotFound on a 404"
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/conformance/test_check_health.py
+        section: "TestCheckHealthConformance (BUG-208 xfail block)"
+        read_type: gate
+        extract: "removed the s3 xfail block and the now-unused request param; test fails for s3_moto on the leaked-coroutine warning before the fix"
+      - file: tests/backends/s3/test_ping.py
+        section: "TestS3CheckHealthMoto (new class)"
+        read_type: gate
+        extract: "new moto-backed regression class — live bucket -> None, missing bucket -> NotFound — exercises the real aiobotocore path the MagicMock tests skipped"
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_s3.py
+        section: "check_health"
+        read_type: gate
+        extract: "self._fs.s3.head_bucket(Bucket=...) -> self._fs.call_s3('head_bucket', Bucket=self._bucket)"
+      - file: tests/backends/s3/test_ping.py
+        section: "_s3_backend helper + test_s3_probe_is_head_bucket"
+        read_type: reference
+        extract: "mocked tests retargeted from s3.head_bucket to call_s3; probe-identity assertion now checks call_s3('head_bucket', Bucket=...)"
+      - file: sdd/specs/026-health-check.md
+        section: "PING-004"
+        read_type: gate
+        extract: "code block updated to call_s3('head_bucket', ...); note added on why the raw aiobotocore client returns an un-issued coroutine"
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/s3/test_ping.py
+        section: "(collection) + conformance test_check_health.py + s3/test_moto.py"
+        read_type: verify
+        extract: "all pass after the fix; conformance s3_moto no longer xfailed"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG item moved to BACKLOG-DONE, CHANGELOG stub under [Unreleased], failing test before fix, spec updated since the invariant was contradicted"
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule"
+        read_type: verify
+        extract: "audience user.api -> CHANGELOG entry required; stub added"
+discovery_followups: []
+co_shipped_items: []
+surprising_ripples: []
+review_rounds: 0
