@@ -101,6 +101,14 @@ _SCRUB_QUERY_PARAMS: tuple[str, ...] = (
 # Matches both ``conformance-12ab34cd`` (sync live) and
 # ``conformance-async-12ab34cd`` (async live); replaced with FAKE_FILESYSTEM.
 _FILESYSTEM_PATTERN: re.Pattern[str] = re.compile(r"conformance(?:-async)?-[0-9a-f]{8}")
+# Bytes version used when the response body is raw binary (non-decodable).
+_FILESYSTEM_PATTERN_BYTES: re.Pattern[bytes] = re.compile(_FILESYSTEM_PATTERN.pattern.encode())
+
+# Matches the 8-char hex UUID suffix that write_atomic appends to temp files:
+#   .~tmp.{basename}.{uuid8}
+# The suffix differs between record and replay runs, so normalise it out so
+# the cassette path matches on replay.  Applied to request URIs only.
+_TMP_UUID_PATTERN: re.Pattern[str] = re.compile(r"(\.~tmp\.[^?/]*)\.[0-9a-f]{8}(?=[?/]|$)")
 
 # Error-response XML body fragments that carry per-run identifiers.
 # Applied to bytes bodies and (if they somehow arrive as str) str bodies alike.
@@ -168,8 +176,17 @@ def build_vcr_config(real_account: str | None) -> dict[str, Any]:
 
     * Filesystem-UUID rewrite: ``conformance-<uuid8>`` → ``FAKE_FILESYSTEM``
       so live and replay fixtures share cassette URLs (plan challenge 2).
+    * Temp-file UUID normalisation: ``write_atomic`` appends a random 8-char
+      hex UUID to temp filenames (``_TMP_UUID_PATTERN``); normalising it out
+      keeps the cassette path deterministic across record and replay runs.
+    * ``x-ms-rename-source`` / ``x-ms-copy-source`` header scrubbing: the live
+      account name and container name leak into these headers during move/copy
+      operations; both are replaced with ``FAKE_ACCOUNT`` / ``FAKE_FILESYSTEM``.
     * Body-level ``RequestId:`` / ``Time:`` scrub for error-response XML
       (PoC gap; cosmetic but keeps cassette diffs clean).
+    * Binary-safe bytes handling: ``before_record_response`` operates on bytes
+      directly (using ``_FILESYSTEM_PATTERN_BYTES``) rather than decoding the
+      body as UTF-8, which would crash on raw binary payloads (e.g. ``\\xff``).
     * ``User-Agent`` normalisation to ``azsdk-python-replay`` so recording
       machine Python/OS details don't appear in committed cassettes.
     """
@@ -178,25 +195,53 @@ def build_vcr_config(real_account: str | None) -> dict[str, Any]:
         if real_account:
             request.uri = request.uri.replace(real_account, FAKE_ACCOUNT)
             request.uri = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, request.uri)
+        # Normalise the 8-char hex UUID in atomic write temp-file paths so the
+        # cassette path is deterministic across record and replay runs.
+        request.uri = _TMP_UUID_PATTERN.sub(r"\1", request.uri)
         for key in list(request.headers):
             lower = key.lower()
             if lower in _SCRUB_REQUEST_HEADERS:
                 del request.headers[key]
             elif lower == "user-agent":
                 request.headers[key] = _USER_AGENT_NORMALIZED
+            elif lower in ("x-ms-rename-source", "x-ms-copy-source"):
+                # These headers carry live account name and container; scrub both.
+                val = request.headers[key]
+                if real_account:
+                    val = val.replace(real_account, FAKE_ACCOUNT)
+                request.headers[key] = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, val)
         return request
 
     def before_record_response(response: dict[str, Any]) -> dict[str, Any]:
         headers = response.get("headers", {})
         for key in list(headers):
-            if key.lower() in _SCRUB_RESPONSE_HEADERS:
+            lower = key.lower()
+            if lower in _SCRUB_RESPONSE_HEADERS:
                 del headers[key]
+            elif lower == "x-ms-copy-source":
+                # Azure echoes the copy-source URL back in the response;
+                # apply the same account/filesystem replacement as on the request.
+                val = headers[key]
+                if isinstance(val, list):
+                    val = [
+                        _FILESYSTEM_PATTERN.sub(
+                            FAKE_FILESYSTEM,
+                            (v.replace(real_account, FAKE_ACCOUNT) if real_account else v),
+                        )
+                        for v in val
+                    ]
+                else:
+                    if real_account:
+                        val = val.replace(real_account, FAKE_ACCOUNT)
+                    val = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, val)
+                headers[key] = val
         body = response.get("body", {})
         raw = body.get("string")
         if real_account:
             if isinstance(raw, bytes):
-                raw_str = raw.replace(real_account.encode(), FAKE_ACCOUNT.encode()).decode()
-                raw = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, raw_str).encode()
+                # Stay in bytes throughout — don't decode() binary bodies.
+                raw = raw.replace(real_account.encode(), FAKE_ACCOUNT.encode())
+                raw = _FILESYSTEM_PATTERN_BYTES.sub(FAKE_FILESYSTEM.encode(), raw)
             elif isinstance(raw, str):
                 raw = raw.replace(real_account, FAKE_ACCOUNT)
                 raw = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, raw)

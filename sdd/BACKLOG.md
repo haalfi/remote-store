@@ -259,18 +259,17 @@ BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
   spec: TEST-007, TEST-008, TEST-009 · effort: L · audience: infra.test
   Add `<backend>_replay` Stage 1 fixtures for HTTP-transport backends
   (Azure first, S3 follows) per spec [TEST-007](specs/048-testing-architecture.md).
-  **Mechanism resolved** by the PoC in
-  [research-bk-181-cassette-replay-poc.md](research/research-bk-181-cassette-replay-poc.md):
-  `pytest-recording`/vcrpy, with an `AsyncioRequestsTransport` shim for the
-  async backend (vcrpy's aiohttp stub cannot stream response bodies). The
-  finding doc carries the 8 build recommendations. Remaining work: real-tree
-  fixture wiring (`tests/backends/fixtures/azure_replay*.py`, `fixtures.toml`
-  `kind = "replay"`), the `pytest-recording` dev dependency, body-level
-  request-ID scrubbing, `pytest --stage=3 --record` plumbing, the S3 second
-  mechanism (separate validation — `aiobotocore`, not `azure.core`), and the
-  `TESTING.md`/spec-048 migration notes. Cassettes live under
-  `tests/backends/cassettes/<backend>/`. Missing cassette ⇒ replay-fixture
-  skip (TEST-007). Depends on BK-179 (registry) and BK-180 (live fixtures).
+  **Done in PR 1a (#629):** `azure_replay` / `azure_replay_async` fixture wiring,
+  `pytest-recording` dev dependency, `--record` flag, conformance conftest vcr
+  hooks, scrubbing layer (`_cassettes.py`), cassette directory.
+  **Done in PR 1b (pending):** 253 Azure cassettes recorded from real ADLS Gen2;
+  scrubbing additions (binary-safe body scrub, `_TMP_UUID_PATTERN` for
+  `write_atomic` temp-file UUIDs, `x-ms-copy-source` request + response header
+  scrub); `AsyncioRequestsTransport` gated on `_RS_CASSETTE_RECORDING` sentinel;
+  `TESTING.md` cassette-refresh guide; 209 replay tests pass (28 HNS-bug
+  failures faithfully reproduced).
+  **Pending — PR 2:** S3 slice (`s3_replay` fixture + cassettes). Requires
+  separate validation: `s3fs` rides `aiobotocore`/`botocore`, not `azure.core`.
   Spec: TEST-007, TEST-008, TEST-009.
 
 ---

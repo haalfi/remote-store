@@ -115,3 +115,33 @@ phases:
         section: "(new file)"
         read_type: verify
         extract: "empty directory marker; cassettes committed here in PR 1b"
+  - id: record
+    name: PR 1b — record and commit Azure cassettes
+    steps:
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "_FILESYSTEM_PATTERN_BYTES, _TMP_UUID_PATTERN, build_vcr_config"
+        read_type: verify
+        extract: "four additions over PR 1a: (1) bytes-safe body scrub (_FILESYSTEM_PATTERN_BYTES) to avoid decode crash on binary payloads; (2) _TMP_UUID_PATTERN to normalise write_atomic temp-file UUIDs so cassette paths are replay-stable; (3) x-ms-rename-source / x-ms-copy-source request header scrub; (4) x-ms-copy-source response header scrub (Azure echoes source URL with live account+container names)"
+      - file: tests/backends/fixtures/azure_live_async.py
+        section: "_factory"
+        read_type: verify
+        extract: "_RS_CASSETTE_RECORDING sentinel read at factory call; AsyncioRequestsTransport injected only when recording — avoids altering live test behaviour outside record sessions"
+      - file: tests/conftest.py
+        section: "pytest_configure"
+        read_type: verify
+        extract: "sets _RS_CASSETTE_RECORDING=1 when --record is active so async fixture can detect the recording path"
+      - file: tests/backends/cassettes/azure/
+        section: "253 yaml files"
+        read_type: verify
+        extract: "181 sync [azure] + 72 async [azure_async] cassettes; verified no real account name (remotestorehns) in any cassette"
+      - file: sdd/TESTING.md
+        section: "Cassette Refresh guide"
+        read_type: verify
+        extract: "refresh procedure added: delete → re-record sync → re-record async → scrub-check → Stage-1 replay verify"
+discovery_followups: []
+surprising_ripples:
+  - "x-ms-copy-source echoed in response body with live account name — required both request and response header scrubbing; PoC had neither"
+  - "write_atomic generates .~tmp.{name}.{uuid8} temp filenames that differ between record and replay runs — required _TMP_UUID_PATTERN URI normalisation"
+  - "vcrpy aiohttp transport drops streaming bodies on record AND deadlocks on replay — required AsyncioRequestsTransport injection gated on _RS_CASSETTE_RECORDING sentinel so live tests are unaffected"
+  - "binary response bodies (\\xff payloads) crashed str.replace() in before_record_response — required bytes-level scrubbing via _FILESYSTEM_PATTERN_BYTES"
+co_shipped_items: []

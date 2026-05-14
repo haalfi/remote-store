@@ -162,6 +162,45 @@ haven't thought of. See rules 9–11.
 | PT018 | Composite assertions — use multiple `assert` statements |
 | PT006/PT007 | Inconsistent `@pytest.mark.parametrize` style |
 
+### Cassette Refresh (HTTP-transport backends)
+
+Cassettes under `tests/backends/cassettes/<backend>/` are committed
+snapshots of real HTTP traffic. Refresh them when the backend SDK,
+the scrubbing layer, or the real service responses change.
+
+**Prerequisite:** a real service account (Azure: set
+`RS_TEST_LIVE_HNS=1` and `AZURE_STORAGE_CONNECTION_STRING` in `.env`
+pointing at a real HNS-enabled ADLS Gen2 account, not Azurite).
+
+```bash
+# Delete existing cassettes for the backend.
+python -c "import pathlib; [f.unlink() for f in \
+    pathlib.Path('tests/backends/cassettes/azure').glob('*.yaml')]"
+
+# Re-record sync fixtures.
+hatch run pytest --stage=3 --record -m live -k "azure_live and not async" \
+    tests/backends/conformance/ --tb=no -q
+
+# Re-record async fixtures.
+hatch run pytest --stage=3 --record -m live -k "azure_live_async" \
+    tests/backends/conformance/ --tb=no -q
+
+# Verify no real credentials or account names survived scrubbing.
+python -c "
+import pathlib, sys
+files = list(pathlib.Path('tests/backends/cassettes/azure').glob('*.yaml'))
+bad = [f.name for f in files if 'REAL_ACCOUNT_NAME' in f.read_text()]
+sys.exit(bool(bad)) or print('clean')
+"
+
+# Confirm replay passes at Stage 1 (28 HNS-bug failures are expected).
+hatch run pytest tests/backends/conformance/ \
+    -k 'azure_replay or azure_replay_async' --stage=1 --tb=no -q
+```
+
+Per [TEST-009](specs/048-testing-architecture.md#test-009-cassette-refresh-is-explicit):
+CI does not auto-record; a refresh is a normal PR diff.
+
 ### Provenance
 
 Derived from [`sdd/research/research-testing-best-practices.md`](research/research-testing-best-practices.md).

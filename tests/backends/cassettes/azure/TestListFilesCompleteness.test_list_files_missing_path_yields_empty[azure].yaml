@@ -1,0 +1,125 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      ETag:
+      - '"0x8DEB1B6562222E9"'
+      Last-Modified:
+      - Thu, 14 May 2026 12:43:02 GMT
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      x-ms-account-kind:
+      - StorageV2
+      x-ms-is-hns-enabled:
+      - 'true'
+      x-ms-sku-name:
+      - Standard_LRS
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: GET
+    uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=ec_nonexistent_listing&recursive=false&resource=filesystem
+  response:
+    body:
+      string: '{"error":{"code":"PathNotFound","message":"The specified path does
+        not exist.\nRequestId:SCRUBBED\nTime:SCRUBBED"}}'
+    headers:
+      Content-Length:
+      - '163'
+      Content-Type:
+      - application/json;charset=utf-8
+      x-ms-error-code:
+      - PathNotFound
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 404
+      message: The specified path does not exist.
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: DELETE
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 202
+      message: Accepted
+version: 1
