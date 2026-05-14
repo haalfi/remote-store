@@ -147,6 +147,8 @@ test = "pytest"
 test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml"
 test-cov-strict = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
 test-cov-branch = "pytest --cov=remote_store --cov-branch --cov-report=term-missing --cov-report=xml"
+# Records HTTP cassettes from a live service; requires backend credentials.
+record-azure = "python scripts/record_cassettes.py --backend azure"
 # Auto-discovers examples in getting_started/, configuration/, errors/,
 # advanced/, extensions/, plus snippets.  Skips backends/ (needs credentials)
 # and integrations/ (needs optional deps like PyArrow/Dagster).

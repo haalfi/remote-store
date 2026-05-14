@@ -162,6 +162,27 @@ haven't thought of. See rules 9–11.
 | PT018 | Composite assertions — use multiple `assert` statements |
 | PT006/PT007 | Inconsistent `@pytest.mark.parametrize` style |
 
+### Cassette Refresh (HTTP-transport backends)
+
+Cassettes under `tests/backends/cassettes/<backend>/` are committed
+snapshots of real HTTP traffic. Refresh them when the backend SDK,
+the scrubbing layer, or the real service responses change.
+
+**Prerequisite (Azure):** see [Azure HNS account setup](../docs-src/guides/backends/azure-hns-setup.md)
+for credential and `.env` configuration.
+
+```bash
+hatch run record-azure
+```
+
+`scripts/record_cassettes.py --backend azure` deletes existing cassettes, re-records
+sync and async fixtures against a live ADLS Gen2 account, verifies no credentials
+survived scrubbing, and runs a Stage 1 replay smoke test. Pass `--verify-only` to
+skip recording and re-run only the verification steps.
+
+Per [TEST-009](specs/048-testing-architecture.md#test-009-cassette-refresh-is-explicit):
+CI does not auto-record; a refresh is a normal PR diff.
+
 ### Provenance
 
 Derived from [`sdd/research/research-testing-best-practices.md`](research/research-testing-best-practices.md).

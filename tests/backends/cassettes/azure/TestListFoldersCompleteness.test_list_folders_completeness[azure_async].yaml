@@ -1,0 +1,408 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      ETag:
+      - '"0x8DEB1B6933E8AD4"'
+      Last-Modified:
+      - Thu, 14 May 2026 12:44:44 GMT
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: GET
+    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      x-ms-account-kind:
+      - StorageV2
+      x-ms-is-hns-enabled:
+      - 'true'
+      x-ms-sku-name:
+      - Standard_LRS
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/lfc2/s1/a.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Transfer-Encoding:
+      - chunked
+      x-ms-error-code:
+      - BlobNotFound
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 404
+      message: The specified blob does not exist.
+- request:
+    body: a
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1'
+      Content-Type:
+      - application/octet-stream
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-version:
+      - '2026-02-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/lfc2/s1/a.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      Content-MD5:
+      - DMF1ucDxtqgxw5niaXcmYQ==
+      ETag:
+      - '"0x8DEB1B693CB630C"'
+      Last-Modified:
+      - Thu, 14 May 2026 12:44:45 GMT
+      x-ms-content-crc64:
+      - PPzLtEWEL4w=
+      x-ms-request-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/lfc2/s2/b.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Transfer-Encoding:
+      - chunked
+      x-ms-error-code:
+      - BlobNotFound
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 404
+      message: The specified blob does not exist.
+- request:
+    body: b
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1'
+      Content-Type:
+      - application/octet-stream
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-version:
+      - '2026-02-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/lfc2/s2/b.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      Content-MD5:
+      - kutf/uauL+w61xx3dTFXjw==
+      ETag:
+      - '"0x8DEB1B69415272C"'
+      Last-Modified:
+      - Thu, 14 May 2026 12:44:45 GMT
+      x-ms-content-crc64:
+      - t2eV5B2VnA0=
+      x-ms-request-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/lfc2/s3/c.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Transfer-Encoding:
+      - chunked
+      x-ms-error-code:
+      - BlobNotFound
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 404
+      message: The specified blob does not exist.
+- request:
+    body: c
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1'
+      Content-Type:
+      - application/octet-stream
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-version:
+      - '2026-02-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/lfc2/s3/c.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      Content-MD5:
+      - SooI8J03tzeVZJA4QItfMw==
+      ETag:
+      - '"0x8DEB1B694528CD4"'
+      Last-Modified:
+      - Thu, 14 May 2026 12:44:46 GMT
+      x-ms-content-crc64:
+      - zu6g1NVl8nI=
+      x-ms-request-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/lfc2/top.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Transfer-Encoding:
+      - chunked
+      x-ms-error-code:
+      - BlobNotFound
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 404
+      message: The specified blob does not exist.
+- request:
+    body: t
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '1'
+      Content-Type:
+      - application/octet-stream
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-version:
+      - '2026-02-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/lfc2/top.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      Content-MD5:
+      - 41jvpIn1gGLxDdcxa2Vkng==
+      ETag:
+      - '"0x8DEB1B6948F13F4"'
+      Last-Modified:
+      - Thu, 14 May 2026 12:44:46 GMT
+      x-ms-content-crc64:
+      - S6wBlMVuw0I=
+      x-ms-request-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: GET
+    uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=lfc2&recursive=false&resource=filesystem
+  response:
+    body:
+      string: '{"paths":[{"contentLength":"0","creationTime":"134232362854320496","etag":"0x8DEB1B693C20C88","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Thu,
+        14 May 2026 12:44:45 GMT","name":"lfc2/s1","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"0","creationTime":"134232362859139188","etag":"0x8DEB1B6940B92C8","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Thu,
+        14 May 2026 12:44:45 GMT","name":"lfc2/s2","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"0","creationTime":"134232362863662112","etag":"0x8DEB1B694509648","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Thu,
+        14 May 2026 12:44:46 GMT","name":"lfc2/s3","owner":"$superuser","permissions":"rwxr-x---"},{"contentLength":"1","creationTime":"134232362867758068","etag":"0x8DEB1B6948F13F4","expiryTime":"0","group":"$superuser","lastModified":"Thu,
+        14 May 2026 12:44:46 GMT","name":"lfc2/top.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+
+        '
+    headers:
+      Content-Type:
+      - application/json;charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: DELETE
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 202
+      message: Accepted
+version: 1

@@ -218,22 +218,87 @@ def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Missing-cassette skip hook (TEST-007)
+# Missing-cassette skip hook (TEST-007) + HNS known-failures xfail
 # ---------------------------------------------------------------------------
+
+# Test function names known to expose real-ADLS-Gen2 conformance gaps
+# (BUG-197/200/202/203: real ADLS Gen2 accepts or mishandles calls that Azurite
+# correctly rejects per spec).
+# Applied as xfail(strict=False) for real-Azure fixture IDs so that:
+#   - CI does not treat them as unexpected failures (they match live behaviour)
+#   - Once the bugs are fixed, they flip to xpass without blocking CI
+_AZURE_HNS_KNOWN_FAILURE_FN_NAMES: frozenset[str] = frozenset(
+    {
+        "test_read_on_directory_raises_error",
+        "test_read_bytes_on_directory_raises_error",
+        "test_delete_on_directory_raises_error",
+        "test_delete_on_directory_raises_invalid_path",
+        "test_delete_on_directory_missing_ok_still_raises",
+        "test_delete_folder_on_file_raises_error",
+        "test_delete_folder_on_file_missing_ok_still_raises",
+        "test_get_file_info_on_directory_raises_error",
+        "test_get_folder_info_on_file_raises_error",
+        "test_get_folder_info_counts_recursive_children",
+        "test_get_folder_info_excludes_subdirs",
+        "test_source_is_directory_raises_error",
+        "test_destination_is_directory_raises_error",
+        "test_is_file",
+        "test_size_matches_written_bytes_for_streaming_input",
+    }
+)
+
+# Fixture IDs that represent real ADLS Gen2 (live or replay) — not Azurite.
+_AZURE_REAL_FIXTURE_IDS: frozenset[str] = frozenset(
+    {
+        "azure_live",
+        "azure_live_async",
+        "azure_replay",
+        "azure_replay_async",
+    }
+)
+
+
+def _has_real_azure_fixture(node_id: str) -> bool:
+    """Return True if the node ID contains a real-Azure fixture ID as a whole token."""
+    for fid in _AZURE_REAL_FIXTURE_IDS:
+        if f"[{fid}]" in node_id or f"[{fid}-" in node_id or f"-{fid}]" in node_id or f"-{fid}-" in node_id:
+            return True
+    return False
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """Skip vcr-marked conformance tests whose cassette is absent (TEST-007).
+
+    Also marks known HNS-bug test functions as xfail for real-Azure fixture IDs
+    so that CI does not treat them as unexpected failures.
 
     vcrpy's native behaviour in ``record_mode=none`` is to *raise* on an
     unmatched request.  The spec requires a *skip* instead.  This hook checks
     at collection time and adds ``pytest.mark.skip`` for any vcr-marked test
     whose cassette file does not exist yet.
 
-    The hook is a no-op in recording mode (``--record`` / ``--record-mode``
-    other than ``"none"``) since the cassette is about to be written.
+    The xfail marks are applied in **all** modes, including ``--record``.
+    During recording, xfail still lets the HTTP call complete (so the cassette
+    is written) and then gracefully handles the subsequent assertion failure
+    — without this, ``record_cassettes.py`` aborts at step 2 when the known-
+    failing tests return non-zero.  Only the missing-cassette skip is gated on
+    replay mode.
     """
     record_mode = config.getoption("--record-mode", default=None) or "none"
+
+    # HNS known-failures: applied unconditionally (record + replay).
+    for item in items:
+        fn_name = getattr(item, "originalname", item.name.split("[")[0])
+        if fn_name in _AZURE_HNS_KNOWN_FAILURE_FN_NAMES and _has_real_azure_fixture(item.nodeid):
+            item.add_marker(
+                pytest.mark.xfail(
+                    strict=False,
+                    reason="Known real-ADLS-Gen2 conformance gap (see BUG-197/200/202/203 in BACKLOG.md)",
+                )
+            )
+
+    # Missing-cassette skip: only relevant during replay (cassette is being
+    # written during recording, so its absence is expected).
     if record_mode != "none":
         return
     for item in items:

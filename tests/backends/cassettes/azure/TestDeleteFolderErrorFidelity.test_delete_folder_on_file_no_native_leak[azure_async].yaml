@@ -1,0 +1,62 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: PUT
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      ETag:
+      - '"0x8DEB1B67B4D3AD6"'
+      Last-Modified:
+      - Thu, 14 May 2026 12:44:04 GMT
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-02-06'
+    method: DELETE
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 202
+      message: Accepted
+version: 1

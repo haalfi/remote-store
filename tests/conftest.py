@@ -364,6 +364,9 @@ def pytest_configure(config: object) -> None:
             # Map --record to --record-mode=rewrite for pytest-recording.
             # The record_mode session fixture reads config.option.record_mode.
             config.option.record_mode = "rewrite"
+            # Signal to async live fixtures to use AsyncioRequestsTransport so
+            # vcrpy captures streaming response bodies (aiohttp drops them).
+            os.environ["_RS_CASSETTE_RECORDING"] = "1"
         stage = config.getoption("--stage")
         if stage is None:
             env_override = os.environ.get("RS_TEST_STAGE")
