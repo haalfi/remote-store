@@ -6,7 +6,7 @@ source_items:
 audience:
   - infra.test
   - contributor.tooling
-review_rounds: 0
+review_rounds: 2
 expected_ripples:
   - sdd/BACKLOG.md
 phases:
