@@ -175,7 +175,10 @@ def fixture_params(*caps: Capability, is_async: bool = False) -> list[Any]:
     params = []
     for f in fixtures(*caps, is_async=is_async):
         marks = list(f.marks)
-        if f.container != "none":
+        if f.container == "sftp":
+            # SSH MaxStartups limit: group all sftp_docker tests to one worker so
+            # they run sequentially and never saturate the OpenSSH connection queue.
+            # HTTP containers (azurite, minio) handle concurrent requests fine.
             marks.append(pytest.mark.xdist_group(name=f.name))
         params.append(pytest.param(f, id=f.name, marks=marks))
     return params

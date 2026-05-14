@@ -82,6 +82,11 @@ services:
     ports:
       - "2222:22"
     command: benchuser:benchpass:::upload
+    volumes:
+      # Raise MaxStartups so 20 xdist workers probing port 2222 at session
+      # start don't saturate the default limit (10:30:100). atmoz/sftp merges
+      # /etc/sftp.d/*.conf into sshd_config at container startup.
+      - ./sftp/99-maxstartups.sh:/etc/sftp.d/99-maxstartups.sh:ro
     healthcheck:
       test: ["CMD", "nc", "-z", "127.0.0.1", "22"]
       interval: 5s

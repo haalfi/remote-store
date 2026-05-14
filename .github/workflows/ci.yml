@@ -131,7 +131,7 @@ jobs:
       # scripts) that exercise scripts/, not remote_store. They gain nothing
       # from multi-version coverage and run once on the primary Python via
       # test-primary below. BK-207.
-      - run: pytest -n auto -p no:benchmark --ignore=tests/scripts
+      - run: pytest -n auto --dist loadgroup -p no:benchmark --ignore=tests/scripts
 
   # Primary-Python job: coverage gate + contributor-tooling tests. Both run
   # once on the primary Python; sharing setup avoids a redundant runner.
@@ -152,7 +152,7 @@ jobs:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
       - run: uv pip install -e ".[dev]"
-      - run: pytest -n auto -p no:benchmark --cov=remote_store --cov-report=term-missing --cov-fail-under=95 --ignore=tests/scripts
+      - run: pytest -n auto --dist loadgroup -p no:benchmark --cov=remote_store --cov-report=term-missing --cov-fail-under=95 --ignore=tests/scripts
       - run: pytest tests/scripts/ -q
 
   # BK-172: verify that S3-PyArrow tests run (not skip) against MinIO when

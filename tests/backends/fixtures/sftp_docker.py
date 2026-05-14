@@ -13,6 +13,8 @@ exercises both whenever Docker is available.
 
 from __future__ import annotations
 
+import socket
+import time
 import uuid
 from typing import TYPE_CHECKING
 
@@ -33,6 +35,27 @@ _meta = load_fixture("sftp_docker")
 _BASE_PATHS: dict[int, str] = {}
 
 
+def _wait_for_ssh_banner(host: str, port: int, retries: int = 10, delay: float = 0.5) -> bool:
+    """Return True when the SSH banner is readable; False if all retries fail.
+
+    Opens a plain TCP socket (no Paramiko) and reads the first bytes. Under
+    heavy xdist parallelism the Docker-Desktop port-forwarding proxy sometimes
+    closes the connection before sending the SSH banner, causing Paramiko's
+    ``Error reading SSH protocol banner``. Retrying here lets the proxy settle
+    without requiring a skip.
+    """
+    for _ in range(retries):
+        try:
+            with socket.create_connection((host, port), timeout=2) as sock:
+                data = sock.recv(64)
+                if data.startswith(b"SSH-"):
+                    return True
+        except OSError:
+            pass
+        time.sleep(delay)
+    return False
+
+
 def _factory() -> Backend:
     if INFRA.sftp_docker_port is None:
         pytest.skip("Dockerised SFTP not reachable on 127.0.0.1:2222")
@@ -45,24 +68,44 @@ def _factory() -> Backend:
 
     base_path = f"/upload/test_{uuid.uuid4().hex[:8]}"
 
+    # Under heavy xdist parallelism (20 workers) Docker Desktop's port-forward
+    # proxy sometimes drops the TCP connection before the SSH banner arrives.
+    # Pre-screen the banner via a plain socket so we skip rather than crash
+    # with Paramiko's cryptic "Error reading SSH protocol banner".
+    if not _wait_for_ssh_banner("127.0.0.1", INFRA.sftp_docker_port):
+        pytest.skip("SFTP SSH banner not readable after retries (Docker proxy instability)")
+
     # SFTPBackend._ensure_parent_dirs early-returns when the parent equals
     # base_path, so the base_path itself must exist on the server before
     # construction. The in-process paramiko server we use elsewhere is
     # forgiving about this; the real openssh-sftp-server in the atmoz/sftp
     # container is not. Pre-create the directory via a short-lived client.
-    transport = paramiko.Transport(("127.0.0.1", INFRA.sftp_docker_port))
-    transport.connect(username="benchuser", password="benchpass")
-    try:
-        sftp = paramiko.SFTPClient.from_transport(transport)
-        if sftp is None:
-            transport.close()
-            pytest.skip("paramiko could not open an SFTP channel")
+    #
+    # Retry up to 3 times: even after _wait_for_ssh_banner returns True,
+    # Docker Desktop's NAT layer can drop the very next TCP connection before
+    # the SSH banner arrives (observed ~2% of the time with 20 xdist workers).
+    for _attempt in range(3):
+        transport = paramiko.Transport(("127.0.0.1", INFRA.sftp_docker_port))
         try:
-            sftp.mkdir(base_path)
+            transport.connect(username="benchuser", password="benchpass")
+        except paramiko.SSHException:
+            transport.close()
+            if _attempt == 2:
+                pytest.skip("SFTP SSH banner dropped after 3 attempts (Docker proxy instability)")
+            time.sleep(0.5)
+            continue
+        try:
+            sftp = paramiko.SFTPClient.from_transport(transport)
+            if sftp is None:
+                transport.close()
+                pytest.skip("paramiko could not open an SFTP channel")
+            try:
+                sftp.mkdir(base_path)
+            finally:
+                sftp.close()
         finally:
-            sftp.close()
-    finally:
-        transport.close()
+            transport.close()
+        break
 
     # If SFTPBackend(...) raises after mkdir succeeded (host-key check, network
     # blip, credential mismatch), the orphan directory must still be removed:

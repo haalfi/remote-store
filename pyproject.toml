@@ -143,17 +143,20 @@ lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"
-test = "pytest -n auto -p no:benchmark"
+test = "pytest -n auto --dist loadgroup -p no:benchmark"
 # `-p no:benchmark` suppresses PytestBenchmarkWarning that xdist triggers
 # (filterwarnings=error turns it into INTERNALERROR); bench-* scripts load it explicitly.
+# `--dist loadgroup` is required for xdist_group marks to take effect: without it the
+# default `load` scheduler ignores group marks and sftp_docker tests scatter across all
+# workers, overwhelming OpenSSH's MaxStartups limit.
 # `test-cov-s1` is Stage-1 only (--stage=1, no Docker probe); wired into `hatch run all`
 # so the pre-commit gate never needs Docker services. Stage-2 backends (Azure, MinIO,
 # SFTP-docker) are excluded and the 95% floor is not applied — coverage gating is a
 # CI concern. See CLAUDE.md § Coverage gate.
-test-cov = "pytest -n auto -p no:benchmark --cov=remote_store --cov-report=term-missing --cov-report=xml"
-test-cov-s1 = "pytest -n auto -p no:benchmark --stage=1 --cov=remote_store --cov-report=term-missing --cov-report=xml"
-test-cov-strict = "pytest -n auto -p no:benchmark --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
-test-cov-branch = "pytest -n auto -p no:benchmark --cov=remote_store --cov-branch --cov-report=term-missing --cov-report=xml"
+test-cov = "pytest -n auto --dist loadgroup -p no:benchmark --cov=remote_store --cov-report=term-missing --cov-report=xml"
+test-cov-s1 = "pytest -n auto --dist loadgroup -p no:benchmark --stage=1 --cov=remote_store --cov-report=term-missing --cov-report=xml"
+test-cov-strict = "pytest -n auto --dist loadgroup -p no:benchmark --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
+test-cov-branch = "pytest -n auto --dist loadgroup -p no:benchmark --cov=remote_store --cov-branch --cov-report=term-missing --cov-report=xml"
 # Auto-discovers examples in getting_started/, configuration/, errors/,
 # advanced/, extensions/, plus snippets.  Skips backends/ (needs credentials)
 # and integrations/ (needs optional deps like PyArrow/Dagster).
