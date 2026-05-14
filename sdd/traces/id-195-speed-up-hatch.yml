@@ -69,6 +69,29 @@ phases:
         read_type: gate
         extract: "update three-bullet split: test-cov / test-cov-s1 / test-cov-strict with rationale"
         outcome: ok
+  - id: sftp-stabilise
+    name: Stabilise sftp_docker under 20 workers
+    steps:
+      - file: benchmarks/infra/docker-compose.yml
+        section: "sftp service"
+        read_type: gate
+        extract: "add /etc/sftp.d/99-maxstartups.sh volume mount; atmoz/sftp executes .sh files in sftp.d at startup"
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params()"
+        read_type: gate
+        extract: "narrow xdist_group to container=='sftp' only; HTTP containers handle concurrency fine"
+        outcome: ok
+      - file: tests/backends/fixtures/sftp_docker.py
+        section: "_factory()"
+        read_type: gate
+        extract: "add _wait_for_ssh_banner() plain-socket pre-check (10 retries, 0.5s); add 3-attempt retry on transport.connect(); 149 passed, 0 errors at -n20 (was 177 errors)"
+        outcome: ok
+    discovery_followups: []
+    surprising_ripples:
+      - "MaxStartups 100 (single number) = start=min(10,N), rate=100%, full=N — more restrictive than default; three-part format 100:30:200 required"
+      - "xdist_group only works with --dist loadgroup; default load scheduler ignores marks silently"
+      - "even with MaxStartups 100:30:200 and xdist_group routing to gw0, ~2% of Paramiko Transport.connect() calls fail immediately after _wait_for_ssh_banner returns True — Docker Desktop NAT layer drops connections after banner pre-check consumes a slot; retry loop required"
   - id: verify
     name: Verify
     steps:
