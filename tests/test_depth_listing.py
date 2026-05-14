@@ -274,16 +274,6 @@ class TestMemoryBackendNativeDepth:
         files = sorted(f.name for f in backend.list_files("d", recursive=False, max_depth=5))
         assert files == ["a.txt"]
 
-    @pytest.mark.spec("DEPTH-003")
-    def test_memory_backend_max_depth_no_typeerror(self) -> None:
-        """Smoke test: calling list_files with max_depth doesn't raise TypeError."""
-        backend = MemoryBackend()
-        backend.write("x/a.txt", b"a")
-        backend.write("x/sub/b.txt", b"b")
-        # Should not raise TypeError
-        files = list(backend.list_files("x", recursive=True, max_depth=1))
-        assert len(files) == 2
-
 
 @pytest.mark.os_sensitive
 class TestLocalBackendNativeDepth:

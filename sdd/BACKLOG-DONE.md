@@ -20,24 +20,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   which already parametrizes `list_files(max_depth=…)` over the full fixture
   registry, and it mis-modelled DEPTH-001 / DEPTH-002 as backend-conformance
   when spec 037 makes them Store-level ("No Backend ABC change"). Shipped
-  disposition — **(a)** lift the genuinely backend-specific snippets:
-  `TestSFTPBackendNativeDepth` (its `listdir_attr` call-count assertions
-  verify SFTP's recursive-traversal *pruning*, not the result-correctness
-  invariant) → `tests/backends/sftp/test_depth_listing.py`;
-  `test_s3_base_accepts_max_depth` → `tests/backends/s3/test_depth_listing.py`
-  (`_s3_base` imports without `s3fs`, so it stays an unguarded Stage-1
-  signature check). **(b)** Consolidate rather than duplicate: the Azure
-  signature snippet is subsumed by the pre-existing behavioural
-  `tests/backends/azure/test_config.py::test_list_files_max_depth` (BUG-155),
-  so `@pytest.mark.spec("DEPTH-003")` was stacked onto that test instead of
-  creating a near-duplicate `azure/test_depth_listing.py`; the same marker
-  was stacked onto the existing depth tests in `conformance/test_listing.py`
+  disposition — **(a)** lift the three backend-specific snippets, each to a
+  per-backend `test_depth_listing.py`: `TestSFTPBackendNativeDepth` (its
+  `listdir_attr` call-count assertions verify SFTP's recursive-traversal
+  *pruning*, not the result-correctness invariant) → `tests/backends/sftp/`,
+  `test_s3_base_accepts_max_depth` → `tests/backends/s3/`, and
+  `test_azure_accepts_max_depth` → `tests/backends/azure/` (`_s3_base` and
+  `_azure` both import without their cloud SDKs, so these stay unguarded
+  Stage-1 `inspect.signature` checks — symmetric Stage-1 coverage for both
+  families). **(b)** Consolidate the cross-protocol DEPTH-003 *result*
+  invariant onto pre-existing tests rather than a new conformance file:
+  `@pytest.mark.spec("DEPTH-003")` was stacked onto the existing depth tests
+  in `conformance/test_listing.py` and onto the pre-existing behavioural
+  `tests/backends/azure/test_config.py::test_list_files_max_depth` (BUG-155)
   (multi-marker is an established pattern). Store-level DEPTH-001 /
   DEPTH-002 and the in-process-backend DEPTH-003 tests stay at root in
   `tests/test_depth_listing.py`, a TEST-010-compliant home once the
-  concrete-cloud imports leave (`test_memory_backend_max_depth_no_typeerror`
-  folded into `TestMemoryBackendNativeDepth`; unused `stat` / `MagicMock`
-  imports removed). `"test_depth_listing.py"` removed from
+  concrete-cloud imports leave (unused `stat` / `MagicMock` imports
+  removed). `"test_depth_listing.py"` removed from
   `_BACKEND_AT_ROOT_GRANDFATHERED` in `scripts/check_test_placement.py`; the
   allow-list now holds the three migration-pending entries (`test_coverage_gaps`,
   `test_pbt_write_result`, `test_seekable`) plus the permanently-justified

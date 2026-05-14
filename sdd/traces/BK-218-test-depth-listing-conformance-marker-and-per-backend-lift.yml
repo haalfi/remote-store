@@ -54,7 +54,7 @@ phases:
       - file: tests/backends/azure/test_config.py
         section: "TestAzureIntegration.test_list_files_max_depth"
         read_type: gate
-        extract: "pre-existing behavioural Azure depth test (BUG-155) subsumes the lifted Azure signature snippet — a list_files(max_depth=…) call cannot run if the kwarg is absent. Consolidated per the slice's 'don't duplicate' rule: stacked @pytest.mark.spec('DEPTH-003') onto it instead of creating a near-duplicate azure/test_depth_listing.py."
+        extract: "the pre-existing behavioural Azure depth test (BUG-155) owns the DEPTH-003 invariant for Azure — stacked @pytest.mark.spec('DEPTH-003') onto it rather than duplicating the behavioural coverage (the Stage-1 signature check is lifted separately — see the fix phase)"
       - file: tests/backends/conformance/test_listing.py
         section: "TestListFilesCompleteness.test_list_files_recursive_max_depth / test_list_files_unlimited_depth"
         read_type: gate
@@ -74,7 +74,7 @@ phases:
       - file: sdd/BACKLOG.md
         section: "BK-218 (Lint / CI Completeness)"
         read_type: gate
-        extract: "added [~] BK-218 entry; moved to BACKLOG-DONE.md in the same commit"
+        extract: "BK-218 reserved as a transient [~] entry per the slice process, then moved to BACKLOG-DONE.md within the same commit — the [~] entry nets out, so sdd/BACKLOG.md shows no change in the diff"
   - id: verify
     name: Verify
     steps:
@@ -102,6 +102,29 @@ phases:
         section: "audience (derived CHANGELOG rule)"
         read_type: verify
         extract: "audience is infra.test + contributor.process — no user.* entry — so CHANGELOG is skipped per the schema's audience-derived rule; backlogid.json bumped via gen-backlogid after the BACKLOG-DONE move"
+  - id: fix
+    name: Fix (PR #624 review)
+    steps:
+      - file: tests/backends/azure/test_depth_listing.py
+        section: "test_azure_accepts_max_depth"
+        read_type: gate
+        extract: "review flagged a Stage-1 coverage gap: folding the Azure signature check into the @_needs_azurite behavioural test left no Stage-1 test for AzureBackend.list_files's max_depth kwarg — asymmetric with S3. Restored the static inspect.signature check in a dedicated per-backend file (no guard; _azure imports without the Azure SDK), mirroring tests/backends/s3/test_depth_listing.py"
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureIntegration.test_list_files_max_depth (docstring)"
+        read_type: gate
+        extract: "review flagged the docstring's '(DEPTH-003 native)' as contradicting spec 037, which classifies Azure as 'no native optimization (flat scan + client filter)'. Corrected to '(DEPTH-003; Azure filters client-side, no native pruning)'"
+      - file: tests/test_depth_listing.py
+        section: "TestMemoryBackendNativeDepth.test_memory_backend_max_depth_no_typeerror"
+        read_type: gate
+        extract: "review flagged the folded-in smoke test as redundant — test_max_depth_one in the same class asserts the exact result set over the same operation. Dropped it; DEPTH-003 stays covered by the rest of the class and conformance"
+      - file: sdd/traces/BK-218-test-depth-listing-conformance-marker-and-per-backend-lift.yml
+        section: "implement-phase sdd/BACKLOG.md step + azure/test_config.py step"
+        read_type: gate
+        extract: "review flagged the BACKLOG.md step's extract as describing an action absent from the diff (the transient [~] entry nets out); corrected that extract and the azure/test_config.py extract to match the shipped fix-phase split"
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "tests/test_depth_listing.py findings"
+        read_type: gate
+        extract: "updated the test_depth_listing.py section so the Azure disposition reads as a per-backend (a) lift (azure/test_depth_listing.py, Stage-1 signature) plus a (b) marker on the pre-existing behavioural test — symmetric with S3"
 discovery_followups: []
 co_shipped_items: []
-review_rounds: 0
+review_rounds: 1

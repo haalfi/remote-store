@@ -950,7 +950,7 @@ class TestAzureIntegration:
         ],
     )
     def test_list_files_max_depth(self, azure_backend: Backend, max_depth: int | None, expected: set[str]) -> None:
-        """BUG-155: list_files respects max_depth parameter (DEPTH-003 native)."""
+        """BUG-155: list_files respects max_depth (DEPTH-003; Azure filters client-side, no native pruning)."""
         azure_backend.write("md/a.txt", b"a")
         azure_backend.write("md/sub/b.txt", b"b")
         azure_backend.write("md/sub/deep/c.txt", b"c")
