@@ -1,0 +1,101 @@
+id: BK-181
+title: "HTTP cassette/replay layer: mechanism PoC"
+trigger: "spec 048 TEST-007 fixed the cassette/replay contract but explicitly deferred the recording mechanism (pytest-recording/vcrpy vs a custom azure.core transport adapter) to the implementing item; the L-effort build needed the mechanism settled, so the user asked for a PoC first"
+source_items:
+  - BK-181
+audience:
+  - infra.test
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-007, TEST-008, TEST-009"
+        read_type: gate
+        extract: "the cassette/replay contract the PoC must satisfy; mechanism explicitly deferred to the BK item"
+      - file: sdd/BACKLOG.md
+        section: "BK-181 (item)"
+        read_type: gate
+        extract: "scope, the open mechanism question, and the BUG-195..203 family the layer is meant to demote"
+      - file: sdd/adrs/0028-testing-architecture-kind-stage-replay.md
+        section: "HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends"
+        read_type: reference
+        extract: "rationale for replay as a real-SDK Stage 1 kind and the HTTP-only scope"
+      - file: CLAUDE.md
+        section: "Trace authoring (mandatory)"
+        read_type: gate
+        extract: "trace obligation per backlog item"
+        outcome: unclear
+  - id: design
+    name: Explore the BK-179/BK-180 fixture infra and plan the spike
+    steps:
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture"
+        read_type: reference
+        extract: "the record shape a future azure_replay fixture must produce; kind already admits \"replay\""
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "fixture.azure_live, fixture.azure_live_async"
+        read_type: reference
+        extract: "the SSoT TOML pattern; kind=replay / stage=1 are already valid enum values"
+      - file: tests/backends/fixtures/azure_live.py
+        section: "_factory"
+        read_type: reference
+        extract: "the recording-side factory model, and the per-call conformance-<uuid> filesystem name the replay fixture must NOT inherit"
+      - file: tests/backends/fixtures/_live_env.py
+        section: "require_azure_live_connection_string"
+        read_type: reference
+        extract: "the fail-loud-on-missing-creds convention the PoC mirrors for record mode"
+      - file: tests/conftest.py
+        section: "pytest_addoption, filterwarnings"
+        read_type: gate
+        extract: "--stage option, filterwarnings=error, and addopts -m 'not live' — constraints the spike must run cleanly under"
+      - file: tests/backends/conformance/conftest.py
+        section: "backend / async_backend indirect fixtures"
+        read_type: reference
+        extract: "how registry fixtures wire into conformance, for the BK-181-proper recommendations"
+      - file: src/remote_store/backends/_azure.py
+        section: "__init__ (client_options), _datalake_service"
+        read_type: reference
+        extract: "the transport= injection point: the replay layer needs zero production-code change"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "__init__ (client_options)"
+        read_type: reference
+        extract: "same injection point on the async backend, which later enabled the AsyncioRequestsTransport shim"
+      - file: tests/backends/azure/test_live_hns.py
+        section: "live_hns_backend"
+        read_type: reference
+        extract: "the HNS directory-blob creation pattern (create_directory()) reused for the BUG-197 case"
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options]"
+        read_type: reference
+        extract: "testpaths/addopts/filterwarnings, and where pytest --stage=3 --record would wire"
+  - id: spike
+    name: Build the spike, record, replay
+    steps:
+      - file: .venv/Lib/site-packages/pytest_recording/plugin.py
+        section: "record_mode, vcr_config, vcr_cassette_dir, block_network"
+        read_type: reference
+        extract: "the plugin's fixture surface, needed to write conftest.py and decide where the missing-cassette skip belongs"
+      - file: .venv/Lib/site-packages/pytest_recording/_vcr.py
+        section: "use_cassette, get_path_transformer"
+        read_type: reference
+        extract: "the cassette path/extension convention, replicated by the pytest_collection_modifyitems skip hook"
+  - id: docs
+    name: Write the finding doc
+    steps:
+      - file: sdd/research/research-id-147b-tla-poc.md
+        section: "header (Date / Status / Scope / Related)"
+        read_type: reference
+        extract: "the research-doc header convention to match"
+      - file: sdd/research/tla-poc/
+        section: "(directory)"
+        read_type: reference
+        extract: "the repo precedent for a throwaway PoC: a folder plus a research-*.md finding doc, frozen after the finding lands"
+  - id: verify
+    name: Verify and ship
+    steps:
+      - file: .github/PULL_REQUEST_TEMPLATE.md
+        section: "(full)"
+        read_type: gate
+        extract: "the authoritative PR body shape for the /pr skill"

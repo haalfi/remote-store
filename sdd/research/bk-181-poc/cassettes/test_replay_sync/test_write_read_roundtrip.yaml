@@ -1,0 +1,233 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '0'
+      User-Agent:
+      - azsdk-python-storage-dfs/12.23.0 Python/3.13.11 (Windows-11-10.0.26200-SP0)
+      x-ms-version:
+      - '2026-02-06'
+    method: PUT
+    uri: https://bk181poc.blob.core.windows.net/bk181poc?restype=container
+  response:
+    body:
+      string: "\uFEFF<?xml version=\"1.0\" encoding=\"utf-8\"?><Error><Code>ContainerAlreadyExists</Code><Message>The
+        specified container already exists.\nRequestId:af3065e6-c01e-0047-676a-e3774b000000\nTime:2026-05-14T06:22:45.6932682Z</Message></Error>"
+    headers:
+      Content-Length:
+      - '230'
+      Content-Type:
+      - application/xml
+      x-ms-error-code:
+      - ContainerAlreadyExists
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 409
+      message: The specified container already exists.
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-storage-blob/12.28.0 Python/3.13.11 (Windows-11-10.0.26200-SP0)
+      x-ms-version:
+      - '2026-02-06'
+    method: GET
+    uri: https://bk181poc.blob.core.windows.net/?comp=properties&restype=account
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      x-ms-account-kind:
+      - StorageV2
+      x-ms-is-hns-enabled:
+      - 'true'
+      x-ms-sku-name:
+      - Standard_LRS
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-storage-blob/12.28.0 Python/3.13.11 (Windows-11-10.0.26200-SP0)
+      x-ms-version:
+      - '2026-02-06'
+    method: HEAD
+    uri: https://bk181poc.blob.core.windows.net/bk181poc/poc-happy.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '41'
+      Content-MD5:
+      - yIafQtFkVZCIPnPHalE59g==
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DEB17FD45C0D6C"'
+      Last-Modified:
+      - Thu, 14 May 2026 06:12:51 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 14 May 2026 06:12:51 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: hello from the bk-181 cassette/replay PoC
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '41'
+      Content-Type:
+      - application/octet-stream
+      User-Agent:
+      - azsdk-python-storage-blob/12.28.0 Python/3.13.11 (Windows-11-10.0.26200-SP0)
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-version:
+      - '2026-02-06'
+    method: PUT
+    uri: https://bk181poc.blob.core.windows.net/bk181poc/poc-happy.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '0'
+      Content-MD5:
+      - yIafQtFkVZCIPnPHalE59g==
+      ETag:
+      - '"0x8DEB18136DC3D18"'
+      Last-Modified:
+      - Thu, 14 May 2026 06:22:46 GMT
+      x-ms-content-crc64:
+      - UMylzNuL0tY=
+      x-ms-request-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-storage-blob/12.28.0 Python/3.13.11 (Windows-11-10.0.26200-SP0)
+      x-ms-range:
+      - bytes=0-33554431
+      x-ms-version:
+      - '2026-02-06'
+    method: GET
+    uri: https://bk181poc.blob.core.windows.net/bk181poc/poc-happy.txt
+  response:
+    body:
+      string: hello from the bk-181 cassette/replay PoC
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '41'
+      Content-Range:
+      - bytes 0-40/41
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DEB18136DC3D18"'
+      Last-Modified:
+      - Thu, 14 May 2026 06:22:46 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-content-md5:
+      - yIafQtFkVZCIPnPHalE59g==
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Thu, 14 May 2026 06:12:51 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-02-06'
+    status:
+      code: 206
+      message: Partial Content
+version: 1
