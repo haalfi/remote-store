@@ -9,18 +9,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **ID-195 — Speed up `hatch run all` — pytest-xdist, pre-flight**
-  Added `pytest-xdist` to dev deps; `test`, `test-cov`, `test-cov-strict`, and
-  `test-cov-branch` scripts now use `-n auto -p no:benchmark` (xdist parallelism;
-  benchmark plugin suppressed to avoid `PytestBenchmarkWarning` INTERNALERROR with
+  Added `pytest-xdist` to dev deps; all test scripts now use `-n auto --dist loadgroup
+  -p no:benchmark` (`--dist loadgroup` required for `xdist_group` marks; benchmark
+  plugin suppressed to avoid `PytestBenchmarkWarning` INTERNALERROR with
   `filterwarnings=error`). `[tool.coverage.run] parallel = true` added for correct
   subprocess coverage merging. New `preflight` script runs the four artifact-drift
   gen-checks and is first in `hatch run all`; gen-checks removed from `lint` (still
-  in CI lint job via explicit steps). CI `test` and `test-primary` jobs updated with
-  `-n auto -p no:benchmark`. Measured 85 s → 43 s (2×) on 20-CPU dev machine;
-  4-CPU GitHub runners expected to gain proportionally. Direction (d) (short-circuit
-  on lint/typecheck failure) is structural in hatch's sequential list — no code change
-  needed. Direction (b) (slow marker) deferred: `--durations=20` audit showed no
-  dominant outlier; time is spread across thousands of short tests.
+  in CI lint job via explicit steps). New `test-cov-s1` script uses `--stage=1` (no
+  Docker probe) and replaces `test-cov-strict` in `hatch run all` so the pre-commit
+  gate never needs Docker services. CI `test` and `test-primary` jobs updated with
+  `--dist loadgroup`. Measured 85 s → 43 s (2×) on 20-CPU dev machine. Stabilised
+  `sftp_docker` fixture under 20 workers: raised OpenSSH `MaxStartups` to `100:30:200`
+  in the Docker container, added `xdist_group` routing (all sftp_docker tests to one
+  worker), a plain-socket SSH banner pre-check with 10 retries, and a 3-attempt retry
+  loop on `Transport.connect()` for the ~2% of connections Docker Desktop NAT drops
+  after the pre-check. Result: 149 passed, 0 errors at `-n 20` (was 177 errors).
+  Direction (b) (slow marker) deferred: `--durations=20` audit showed no dominant
+  outlier; time is spread across thousands of short tests.
 
 - [x] **BK-219 — Centralise Python version config in CI; split primary-Python jobs**
   `ci.yml` carried ~12 hardcoded `"3.13"` literals and a fragile per-version
