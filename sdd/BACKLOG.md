@@ -255,19 +255,23 @@ BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
   `tests/backends/azure/aio/test_live_hns.py` only where sync / async
   behaviour differs. Spec: TEST-002, TEST-003.
 
-- [ ] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
+- [~] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
   spec: TEST-007, TEST-008, TEST-009 · effort: L · audience: infra.test
   Add `<backend>_replay` Stage 1 fixtures for HTTP-transport backends
   (Azure first, S3 follows) per spec [TEST-007](specs/048-testing-architecture.md).
-  Choose the recording mechanism (`pytest-recording`/vcrpy or a custom Azure
-  pipeline-policy adapter; benchmark against async-pipeline coverage and
-  scrubbing complexity). Implement scrubbing for credentials, SAS tokens,
-  account keys, and per-run request IDs. Wire `--record` mode for
-  `pytest --stage=3 --record` and document the refresh procedure. Cassettes
-  live under `tests/backends/cassettes/<backend>/`. Missing cassette ⇒ replay-fixture
-  skip (TEST-007). Sequencing: depends on BK-179 (registry) and
-  BK-180 (live fixtures the recording mode runs against). Spec: TEST-007,
-  TEST-008, TEST-009.
+  **Mechanism resolved** by the PoC in
+  [research-bk-181-cassette-replay-poc.md](research/research-bk-181-cassette-replay-poc.md):
+  `pytest-recording`/vcrpy, with an `AsyncioRequestsTransport` shim for the
+  async backend (vcrpy's aiohttp stub cannot stream response bodies). The
+  finding doc carries the 8 build recommendations. Remaining work: real-tree
+  fixture wiring (`tests/backends/fixtures/azure_replay*.py`, `fixtures.toml`
+  `kind = "replay"`), the `pytest-recording` dev dependency, body-level
+  request-ID scrubbing, `pytest --stage=3 --record` plumbing, the S3 second
+  mechanism (separate validation — `aiobotocore`, not `azure.core`), and the
+  `TESTING.md`/spec-048 migration notes. Cassettes live under
+  `tests/backends/cassettes/<backend>/`. Missing cassette ⇒ replay-fixture
+  skip (TEST-007). Depends on BK-179 (registry) and BK-180 (live fixtures).
+  Spec: TEST-007, TEST-008, TEST-009.
 
 ---
 
