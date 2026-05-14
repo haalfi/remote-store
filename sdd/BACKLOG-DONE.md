@@ -19,13 +19,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `${{ needs.setup.outputs.primary }}` — no more hardcoded `"3.13"`; (3) `test`
   matrix is `fromJSON(needs.setup.outputs.test-matrix)` with plain
   `pytest --ignore=tests/scripts` (no `--cov`); (4) `typecheck` matrix is
-  `fromJSON(needs.setup.outputs.typecheck-matrix)`; (5) new `test-coverage`
+  `fromJSON(needs.setup.outputs.typecheck-matrix)`; (5) new `test-primary`
   job runs on primary Python only with `--cov-fail-under=95
   --ignore=tests/scripts` — coverage enforcement is now unconditional and
   version-independent; (6) new composite action
   `.github/actions/start-backends/action.yml` (boolean inputs `minio`,
   `azurite`, `sftp`) replaces duplicated service-startup boilerplate across
-  `test`, `test-coverage`, `e2e`, and `pyarrow24-check`; `CODE_PAT` extended
+  `test`, `test-primary`, `e2e`, and `pyarrow24-check`; `CODE_PAT` extended
   with `^\.github/actions/`; `gate` updated. Bumping primary Python is now
   one line in `setup`. CI-only — no CHANGELOG entry.
   Audience: `infra.ci`.
