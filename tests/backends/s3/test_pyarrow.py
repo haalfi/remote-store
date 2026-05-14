@@ -444,18 +444,19 @@ def test_s3_pyarrow_health(side_effect: Exception | None, expected: type[Excepti
     from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
     pa_mock = MagicMock(spec=PyArrowS3FileSystem)
-    if side_effect:
+    if side_effect is not None:
         pa_mock.get_file_info.side_effect = side_effect
     else:
         pa_mock.get_file_info.return_value = MagicMock(spec=PyArrowFileInfo)
     backend = S3PyArrowBackend(bucket="test-bucket")
     backend._pa_fs_instance = pa_mock
-    if expected:
+    if expected is not None:
         with pytest.raises(expected):
             backend.check_health()
     else:
         backend.check_health()
-        pa_mock.get_file_info.assert_called_once_with("test-bucket")
+        assert pa_mock.get_file_info.call_count == 1
+        assert pa_mock.get_file_info.call_args.args == ("test-bucket",)
 
 
 # endregion

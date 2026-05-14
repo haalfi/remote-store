@@ -40,16 +40,15 @@ class TestCheckHealthConformance:
     def test_check_health_returns_none_or_raises_remote_store_error(
         self, backend: Backend, request: pytest.FixtureRequest
     ) -> None:
-        # BUG-208: S3Backend.check_health() does not await the aiobotocore
-        # head_bucket coroutine, leaking it for GC and silently returning
-        # None. The leaked RuntimeWarning is escalated to an error by the
-        # repo's pytest filterwarnings policy. Remove this xfail once the
-        # S3 backend uses s3fs's sync wrapper for head_bucket.
-        fixture_name = request.node.callspec.id if hasattr(request.node, "callspec") else ""
-        if fixture_name == "s3_moto":
+        # BUG-208: the S3 backend's check_health() does not await the
+        # aiobotocore head_bucket coroutine — it leaks for GC and check_health
+        # silently returns None. The leaked RuntimeWarning is escalated to an
+        # error by the repo's pytest filterwarnings policy. xfail-strict so
+        # this auto-flags for removal once BUG-208 lands and the call is awaited.
+        if backend.name == "s3":
             request.applymarker(
                 pytest.mark.xfail(
-                    reason="BUG-208: S3Backend.check_health does not await aiobotocore head_bucket",
+                    reason="BUG-208: the S3 backend's check_health() does not await the head_bucket coroutine",
                     raises=pytest.PytestUnraisableExceptionWarning,
                     strict=True,
                 )

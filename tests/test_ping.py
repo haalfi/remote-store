@@ -50,6 +50,15 @@ class TestStorePing:
         result = Store(MemoryBackend()).child("subdir").ping()
         assert result is None
 
+    @pytest.mark.spec("PING-008")
+    def test_memory_backend_always_healthy_end_to_end(self) -> None:
+        # End-to-end Store.ping() -> real MemoryBackend.check_health() (the
+        # default ABC no-op). test_ping_delegates_to_check_health mocks
+        # check_health away, and the conformance suite calls check_health()
+        # directly; this pins the composition PING-008 actually specifies.
+        result = Store(MemoryBackend()).ping()
+        assert result is None
+
 
 class TestPingObserve:
     @pytest.mark.spec("PING-010")
