@@ -91,6 +91,16 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ruff-format.sh"
+          },
+          {
+            "type": "command",
+            "if": "Write(*BACKLOG-DONE*)",
+            "command": "python \"$CLAUDE_PROJECT_DIR\"/scripts/gen_backlogid.py"
+          },
+          {
+            "type": "command",
+            "if": "Edit(*BACKLOG-DONE*)",
+            "command": "python \"$CLAUDE_PROJECT_DIR\"/scripts/gen_backlogid.py"
           }
         ]
       }
