@@ -156,3 +156,23 @@ live_opt_in_env = "RS_TEST_LIVE_S3"
 live_creds_env  = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"]
 # Inherits flat_namespace=true, self_op_supported=true from [backend.s3].
 # Per-call bucket creation (rs-conformance-<uuid>) makes RS_TEST_LIVE_S3_BUCKET redundant.
+
+# ---------------------------------------------------------------------------
+# Replay fixtures: HTTP cassette playback (TEST-007). Stage 1, zero-network.
+# ---------------------------------------------------------------------------
+
+[fixture.azure_replay]
+backend   = "azure"
+stage     = 1
+kind      = "replay"
+container = "none"
+is_async  = false
+# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].
+
+[fixture.azure_replay_async]
+backend   = "azure"
+stage     = 1
+kind      = "replay"
+container = "none"
+is_async  = true
+# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].

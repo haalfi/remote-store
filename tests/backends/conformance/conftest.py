@@ -21,16 +21,42 @@ Tests can still opt in to capability filtering at the class level::
 
 The hook detects an explicit ``parametrize`` and skips its own walk in
 that case, so explicit markers and the auto-walk cohabit cleanly.
+
+HTTP cassette / replay (TEST-007)
+----------------------------------
+This conftest also hosts the pytest-recording wiring that bridges
+``azure_live`` (record source) and ``azure_replay`` (replay consumer):
+
+* ``pytest_configure`` — plugin guard: fails fast when pytest-recording is
+  not installed so the ``record_mode`` fixture is never missing.
+* ``vcr_cassette_dir`` — directs all azure cassettes to the spec-mandated
+  path ``tests/backends/cassettes/azure/``.
+* ``default_cassette_name`` — normalises ``[azure_live]`` / ``[azure_replay]``
+  to ``[azure]`` (and the async variants to ``[azure_async]``) so that the
+  cassette recorded from the live fixture is the same file read by the
+  replay fixture (plan challenge 1).
+* ``vcr_config`` — the scrubbing layer; drops credentials, rewrites the real
+  account name and per-call filesystem UUID to fixed placeholders.
+* ``pytest_collection_modifyitems`` — missing-cassette → skip hook (TEST-007:
+  if the cassette is absent, skip rather than raise).
 """
 
 from __future__ import annotations
 
+import importlib.util
 import logging
-from typing import TYPE_CHECKING
+import os
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from tests.backends.fixtures import BackendFixture, fixture_params
+from tests.backends.fixtures._cassettes import (
+    CASSETTE_DIR_AZURE,
+    build_vcr_config,
+    live_connection_string,
+    parse_account_name,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
@@ -39,6 +65,192 @@ if TYPE_CHECKING:
 
 
 _LOG = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Cassette name normalisation (TEST-007 / plan challenge 1)
+# ---------------------------------------------------------------------------
+
+# Maps each parametrize-id suffix that carries cassette traffic to a
+# backend-canonical suffix shared by both the live (recording) and replay
+# (playback) parametrizations.  The normalisation ensures that
+# ``test_foo[azure_live]`` and ``test_foo[azure_replay]`` share one cassette
+# file (``test_foo[azure].yaml``) — and similarly for the async variants.
+_CASSETTE_ID_ALIASES: dict[str, str] = {
+    "azure_live": "azure",
+    "azure_live_async": "azure_async",
+    "azure_replay": "azure",
+    "azure_replay_async": "azure_async",
+}
+
+# Forbidden characters replaced by pytest-recording's get_default_cassette_name.
+_FORBIDDEN_CASSETTE_CHARS = r"""<>?%*:|"'/\\"""
+
+
+def _normalise_cassette_name(node_name: str, cls: type | None) -> str:
+    """Return a cassette name with backend-fixture suffixes normalised.
+
+    Applies the same class-prefix and forbidden-char replacement logic as
+    ``pytest_recording.plugin.get_default_cassette_name`` so the skip hook
+    and the ``default_cassette_name`` fixture compute the same path.
+
+    Handles ids where the backend fixture appears at any position within the
+    parametrize bracket group — first (``[azure_replay-write-no-overwrite]``),
+    last (``[write-azure_replay]``), or sole (``[azure_replay]``).  Each
+    fixture name is matched as a whole component bounded by ``[``, ``]``, or
+    ``-`` so no partial-name collisions can occur.
+    """
+    name = node_name
+    for fixture_name, canonical in _CASSETTE_ID_ALIASES.items():
+        name = name.replace(f"[{fixture_name}]", f"[{canonical}]")
+        name = name.replace(f"[{fixture_name}-", f"[{canonical}-")
+        name = name.replace(f"-{fixture_name}]", f"-{canonical}]")
+        name = name.replace(f"-{fixture_name}-", f"-{canonical}-")
+    cassette_name = f"{cls.__name__}.{name}" if cls is not None else name
+    for ch in _FORBIDDEN_CASSETTE_CHARS:
+        cassette_name = cassette_name.replace(ch, "-")
+    return cassette_name
+
+
+def _cassette_path_for_item(item: pytest.Item) -> None | Any:
+    """Return the expected cassette ``Path`` for a vcr-marked conformance test.
+
+    Returns ``None`` when the item's parametrize id is not an azure fixture
+    (and therefore has no cassette path to check).
+    """
+    from pathlib import Path  # noqa: PLC0415 -- local to avoid top-level Path import noise
+
+    name = item.name
+    # Check if any alias fixture name appears as a whole component in the id.
+    if not any(
+        f"[{k}]" in name or f"[{k}-" in name or f"-{k}]" in name or f"-{k}-" in name for k in _CASSETTE_ID_ALIASES
+    ):
+        return None
+    cls = getattr(item, "cls", None)
+    cassette_name = _normalise_cassette_name(name, cls)
+    return Path(CASSETTE_DIR_AZURE) / f"{cassette_name}.yaml"
+
+
+# ---------------------------------------------------------------------------
+# Plugin guard (TEST-007)
+# ---------------------------------------------------------------------------
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Fail fast if pytest-recording is not installed.
+
+    The ``record_mode`` fixture (session-scoped, provided by pytest-recording)
+    is a dependency of both ``vcr_config`` and the ``vcr`` autouse fixture.
+    A missing plugin would surface as an opaque ``fixture 'record_mode' not
+    found`` deep in a session that otherwise looks healthy.  This guard
+    converts that into a clear up-front message.
+    """
+    if importlib.util.find_spec("pytest_recording") is None:
+        pytest.exit(
+            "pytest-recording is required for HTTP cassette replay (TEST-007); "
+            "run: uv pip install --python .venv pytest-recording",
+            returncode=1,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Cassette directory and name overrides (TEST-007 / plan challenges 1 & 2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def vcr_cassette_dir(request: pytest.FixtureRequest) -> str:  # noqa: ARG001
+    """Override: all conformance azure cassettes live in tests/backends/cassettes/azure/.
+
+    Spec TEST-007 mandates ``tests/backends/cassettes/<backend>/`` for all
+    HTTP replay cassettes.  The default pytest-recording path
+    (``{test_file_dir}/cassettes/{test_module}/``) would scatter cassettes
+    across the conformance subtree; centralising them makes the corpus
+    reviewable as a single PR diff (TEST-009).
+
+    Module-scoped to match the scope of pytest-recording's built-in
+    ``vcr_cassette_dir`` fixture.  Non-azure tests in this module are
+    unaffected: the ``vcr`` autouse fixture only activates for tests that
+    carry ``pytest.mark.vcr``.
+    """
+    return str(CASSETTE_DIR_AZURE)
+
+
+@pytest.fixture
+def default_cassette_name(request: pytest.FixtureRequest) -> str:
+    """Override: normalise backend-fixture suffixes so live and replay share a cassette.
+
+    ``test_foo[azure_live]`` and ``test_foo[azure_replay]`` must read and write
+    the same cassette file.  pytest-recording's default uses the raw node name,
+    which would produce two different files.  This fixture applies the
+    ``_CASSETTE_ID_ALIASES`` map to collapse them to a shared canonical suffix
+    (``[azure]`` / ``[azure_async]``).
+    """
+    return _normalise_cassette_name(request.node.name, request.cls)
+
+
+# ---------------------------------------------------------------------------
+# Scrubbing layer — vcr_config fixture (TEST-007)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def _real_azure_account(record_mode: str) -> str | None:
+    """Real storage-account name (record mode) or ``None`` (replay mode).
+
+    Session-scoped because ``record_mode`` is session-scoped and the env var
+    does not change within a session.  Only calls ``live_connection_string()``
+    when recording is active (any mode other than ``"none"``), so normal
+    ``hatch run test`` runs never touch ``.env`` credentials.
+    """
+    if record_mode == "none":
+        return None
+    return parse_account_name(live_connection_string())
+
+
+@pytest.fixture
+def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
+    """Scrubbing layer for vcrpy: credentials, account name, filesystem UUID.
+
+    Delegates to ``_cassettes.build_vcr_config`` which is the single source
+    of truth for what gets stripped out of every recorded cassette.
+    """
+    return build_vcr_config(_real_azure_account)
+
+
+# ---------------------------------------------------------------------------
+# Missing-cassette skip hook (TEST-007)
+# ---------------------------------------------------------------------------
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Skip vcr-marked conformance tests whose cassette is absent (TEST-007).
+
+    vcrpy's native behaviour in ``record_mode=none`` is to *raise* on an
+    unmatched request.  The spec requires a *skip* instead.  This hook checks
+    at collection time and adds ``pytest.mark.skip`` for any vcr-marked test
+    whose cassette file does not exist yet.
+
+    The hook is a no-op in recording mode (``--record`` / ``--record-mode``
+    other than ``"none"``) since the cassette is about to be written.
+    """
+    record_mode = config.getoption("--record-mode", default=None) or "none"
+    if record_mode != "none":
+        return
+    for item in items:
+        if item.get_closest_marker("vcr") is None:
+            continue
+        cassette = _cassette_path_for_item(item)
+        if cassette is None or cassette.exists():
+            continue
+        rel = os.path.relpath(cassette, config.rootpath)
+        item.add_marker(
+            pytest.mark.skip(reason=f"replay cassette missing ({rel}); record with pytest --stage=3 --record")
+        )
+
+
+# ---------------------------------------------------------------------------
+# Conformance parametrize hooks
+# ---------------------------------------------------------------------------
 
 
 def _is_already_parametrized(metafunc: pytest.Metafunc, argname: str) -> bool:

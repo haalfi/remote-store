@@ -550,6 +550,21 @@ pattern (ID-193) can lock in the test shape.
   during BK-201 round-2 review (user question: "where is the deleted
   test's logic covered now?").
 
+- [ ] **BUG-209 — `test_strict_rejects_mismatched_inline_key` fails intermittently: `BackendUnavailable` not raised**
+  spec: SFTP-007 · effort: S · audience: infra.test
+  `TestSFTPInlineHostKeysVerification.test_strict_rejects_mismatched_inline_key` fails
+  intermittently (confirmed on master — not introduced by BK-181). The test constructs an
+  `SFTPBackend` with a freshly-generated wrong RSA key and `HostKeyPolicy.STRICT`, then
+  calls `backend.exists()`, expecting `BackendUnavailable` matching `"host key"`. It
+  sometimes does not raise at all.
+  **Analyse before fixing:** (a) confirm `BadHostKeyException` appears in `_map_exception`
+  in `_sftp.py`; (b) check whether paramiko raises `BadHostKeyException` from `connect()`
+  or from a later host-key verification call, and whether any retry / fallback in
+  `SFTPBackend` silently swallows it; (c) check if `SFTPBackend` connects lazily —
+  if so, confirm the first real I/O triggers the key check; (d) check whether paramiko
+  5.x changed when / how `BadHostKeyException` is raised for `HostKeys`-backed STRICT
+  policy (vs. `RejectPolicy`). Reproduce locally before proposing a fix.
+
 - [ ] **ID-181 — Per-backend `ssh-rsa` opt-in via `paramiko.Transport` subclass**
   spec: SFTP-007 · effort: M · audience: user.api
   `SFTPUtils.enable_ssh_rsa_compat()` mutates paramiko's class attributes
