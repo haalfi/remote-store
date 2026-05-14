@@ -8,6 +8,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-195 — Speed up `hatch run all` — pytest-xdist, pre-flight**
+  Added `pytest-xdist` to dev deps; `test`, `test-cov`, `test-cov-strict`, and
+  `test-cov-branch` scripts now use `-n auto -p no:benchmark` (xdist parallelism;
+  benchmark plugin suppressed to avoid `PytestBenchmarkWarning` INTERNALERROR with
+  `filterwarnings=error`). `[tool.coverage.run] parallel = true` added for correct
+  subprocess coverage merging. New `preflight` script runs the four artifact-drift
+  gen-checks and is first in `hatch run all`; gen-checks removed from `lint` (still
+  in CI lint job via explicit steps). CI `test` and `test-primary` jobs updated with
+  `-n auto -p no:benchmark`. Measured 85 s → 43 s (2×) on 20-CPU dev machine;
+  4-CPU GitHub runners expected to gain proportionally. Direction (d) (short-circuit
+  on lint/typecheck failure) is structural in hatch's sequential list — no code change
+  needed. Direction (b) (slow marker) deferred: `--durations=20` audit showed no
+  dominant outlier; time is spread across thousands of short tests.
+
 - [x] **BK-219 — Centralise Python version config in CI; split primary-Python jobs**
   `ci.yml` carried ~12 hardcoded `"3.13"` literals and a fragile per-version
   coverage ternary (`matrix.python-version == '3.13' && '--cov...' || ''`).

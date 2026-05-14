@@ -1,0 +1,69 @@
+id: ID-195
+title: "Speed up hatch run all — pytest-xdist, pre-flight"
+trigger: "hatch run all wall time exceeded 5 minutes during v0.24.1 release; test-cov alone took 105 s over 4789 collected items; graph_viz drift forced two full runs, eating ~10 minutes before Phase 4 could start"
+source_items:
+  - ID-195
+audience:
+  - contributor.tooling
+  - infra.ci
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-195"
+        read_type: gate
+        extract: "four directions: xdist, durations audit, preflight, short-circuit"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: gate
+        extract: "current test script flags, lint composition, all sequence"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary jobs"
+        read_type: gate
+        extract: "CI runs pytest directly; needs -n auto update too"
+        outcome: ok
+  - id: measure
+    name: Measure baseline
+    steps:
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options]"
+        read_type: reference
+        extract: "filterwarnings=error + addopts scope; benchmark plugin conflict risk"
+        outcome: ok
+      - file: tests/conftest.py
+        section: "session fixtures (moto_server, sftp_server, azurite_server)"
+        read_type: reference
+        extract: "session fixtures are per-worker with xdist; each uses _free_port so no conflicts"
+        outcome: ok
+      - file: tests/backends/conformance/conftest.py
+        section: "pytest_generate_tests / pytest_configure"
+        read_type: reference
+        extract: "conformance parametrize is collection-time; cassette plugin guard runs in primary process — both xdist-safe"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "dev extras / test scripts / [tool.coverage.run]"
+        read_type: gate
+        extract: "add pytest-xdist; -n auto -p no:benchmark on test/cov/strict/branch; parallel=true for subprocess coverage; preflight script; preflight first in all; gen-checks removed from lint"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary runs"
+        read_type: gate
+        extract: "add -n auto -p no:benchmark to both pytest invocations"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "no backend/spec/error/capability changes; no CHANGELOG entry needed (contributor.tooling + infra.ci only)"
+        outcome: ok
