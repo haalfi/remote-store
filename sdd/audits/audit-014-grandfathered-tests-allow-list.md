@@ -27,10 +27,11 @@ inside tests that were intended to exercise cross-protocol contracts.
 
 The checker also has stale-grandfather detection (`stale = grandfathered
 - grandfather_actually_violating`): if a grandfathered file no longer
-fires Rule B, the entry is reported as dead weight to remove. **Today, all
-seven entries actively fire Rule B** — removing any one of them produces
-real violations. This rules out the "easy keep + document" disposition
-sketched in the chat-only audit summary that preceded this document.
+fires Rule B, the entry is reported as dead weight to remove. **As of this
+audit (2026-05-13), all seven entries actively fired Rule B** — removing any
+one of them produced real violations. This rules out the "easy keep +
+document" disposition sketched in the chat-only audit summary that preceded
+this document.
 
 ## Allow-list as of 2026-05-13
 
@@ -224,7 +225,9 @@ A preceding chat-only audit (an Explore-agent classification of the same files) 
 Spin one new BK-prefix item per disposition slice when scheduling. Consult
 `sdd/backlogid.json` for the next safe BK ID at the time of scheduling.
 The (c) `test_examples.py` slice was shipped together with this audit (see
-BACKLOG-DONE entry for slice 7/7); the remaining six slices stay migration-pending:
+BACKLOG-DONE entry for slice 7/7); the other six slices were migration-pending
+at audit time, one BK-prefixed follow-up each (live status lives in
+`BACKLOG.md` / `BACKLOG-DONE.md`, not here):
 
 - Split `tests/test_config.py` into per-backend `tests/backends/<x>/test_config.py` (disposition (a)).
 - Split `tests/test_ping.py` per backend (a).
@@ -233,4 +236,4 @@ BACKLOG-DONE entry for slice 7/7); the remaining six slices stay migration-pendi
 - Reshape `tests/test_pbt_write_result.py` PBT into conformance + per-backend metadata round-trip (b + a).
 - Reshape `tests/test_coverage_gaps.py` secret-masking into conformance + per-backend init split (b + a).
 
-BK-191 stays open in `BACKLOG.md` as the umbrella until the six remaining slices close.
+BK-191 stays open in `BACKLOG.md` as the umbrella until every slice closes.

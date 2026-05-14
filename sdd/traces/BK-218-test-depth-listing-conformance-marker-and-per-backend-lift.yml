@@ -133,6 +133,10 @@ phases:
         section: "surprising_ripples + verify-phase count"
         read_type: gate
         extract: "round-2 review: the surprising_ripples note implied azure/test_depth_listing.py was not created, and the verify step's count predated the fix phase. Corrected both; refreshed the per-backend-dirs count to 554 passed / 71 skipped. PR description body also updated to the symmetric disposition"
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "Background + Recommended follow-up backlog items"
+        read_type: gate
+        extract: "round-3 review flagged stale aggregate counts in BK-218's blast radius. Decision: freeze the snapshot prose rather than maintain live counts — anchored the 'all seven entries fire Rule B' Background line and the 'six slices migration-pending' follow-up line to audit time (live status lives in BACKLOG / BACKLOG-DONE), dropped the count from the BK-191-umbrella line, and dropped the stale 'seven' from tests/scripts/test_check_test_placement.py's comment"
 discovery_followups: []
 co_shipped_items: []
-review_rounds: 2
+review_rounds: 3
