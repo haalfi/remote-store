@@ -99,9 +99,9 @@ _BANNED_BACKEND_NAMES: frozenset[str] = _discover_banned_backend_names(ROOT / "s
 
 # Grandfathered top-level test files that import concrete cloud / network
 # backends today. These exercise cross-cutting features whose contracts are
-# protocol-spanning (config loaders, depth listing, ping/health, seekable
-# reads, PBT WriteResult, examples, coverage padding); each also imports
-# ``MemoryBackend`` or ``LocalBackend`` as the cross-cutting baseline.
+# protocol-spanning (seekable reads, PBT WriteResult, examples, coverage
+# padding); each also imports ``MemoryBackend`` or ``LocalBackend`` as the
+# cross-cutting baseline.
 #
 # Per-file disposition (BK-191 audit, sdd/audits/audit-014):
 #
@@ -111,7 +111,7 @@ _BANNED_BACKEND_NAMES: frozenset[str] = _discover_banned_backend_names(ROOT / "s
 #     here. The single banned-backend site (``ReadOnlyHttpBackend`` for the
 #     HTTP read-only example) is structural, not migration-pending.
 #
-#   - The remaining four files are migration-pending follow-ups of BK-191
+#   - The remaining three files are migration-pending follow-ups of BK-191
 #     (a per-backend split, or b conformance reshape); see the audit doc for
 #     the per-file plan. Each retires its allow-list entry when its slice
 #     lands.
@@ -121,7 +121,6 @@ _BANNED_BACKEND_NAMES: frozenset[str] = _discover_banned_backend_names(ROOT / "s
 _BACKEND_AT_ROOT_GRANDFATHERED: frozenset[str] = frozenset(
     {
         "test_coverage_gaps.py",
-        "test_depth_listing.py",
         "test_examples.py",
         "test_pbt_write_result.py",
         "test_seekable.py",

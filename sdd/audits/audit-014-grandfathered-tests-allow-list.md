@@ -27,10 +27,11 @@ inside tests that were intended to exercise cross-protocol contracts.
 
 The checker also has stale-grandfather detection (`stale = grandfathered
 - grandfather_actually_violating`): if a grandfathered file no longer
-fires Rule B, the entry is reported as dead weight to remove. **Today, all
-seven entries actively fire Rule B** — removing any one of them produces
-real violations. This rules out the "easy keep + document" disposition
-sketched in the chat-only audit summary that preceded this document.
+fires Rule B, the entry is reported as dead weight to remove. **As of this
+audit (2026-05-13), all seven entries actively fired Rule B** — removing any
+one of them produced real violations. This rules out the "easy keep +
+document" disposition sketched in the chat-only audit summary that preceded
+this document.
 
 ## Allow-list as of 2026-05-13
 
@@ -88,19 +89,27 @@ Recommend: lift the secret-masking parametrize block into `tests/backends/confor
 
 **Risk:** medium. The `__import__` lambdas signal an intentional checker bypass; whoever wrote them likely tried the obvious split and stopped. Worth checking the git blame for context before refactoring.
 
-### `tests/test_depth_listing.py` — disposition: **(b) conformance reshape + (a) lift three backend-specific snippets**
+### `tests/test_depth_listing.py` — disposition: **(a) lift three backend-specific snippets + (b) consolidate into existing conformance — reconsidered, see below**
 
-| Line | Backend | Notes |
+| Line | Backend | Construct |
 |---|---|---|
-| 294 | `_sftp` | SFTP-specific depth listing case |
-| 459 | `_s3_base` | S3 family flat-namespace case |
-| 469 | `_azure` | Azure HNS / flat-namespace dual-mode case |
+| 294 | `_sftp` | `SFTPBackend` import in the `sftp_stub` fixture of `TestSFTPBackendNativeDepth` |
+| 459 | `_s3_base` | `_S3Base` import in `test_s3_base_accepts_max_depth` (an `inspect.signature` check) |
+| 469 | `_azure` | `AzureBackend` import in `test_azure_accepts_max_depth` (an `inspect.signature` check) |
 
-The bulk of the file exercises DEPTH-001..004 via Memory and Local fixtures only. Three nested imports inject backend-specific depth assertions for flat-namespace clouds (S3) and hierarchical-namespace clouds (Azure HNS) where the depth semantics differ from a true filesystem.
+Only the three function-local imports above fire Rule B; the top-level imports (`_memory`, `_local`) are allowed and the rest of the file is clean. DEPTH-001 / DEPTH-002 are Store-level features (spec 037: "Client-side filtering at the Store level" / "No Backend ABC change"); DEPTH-003 is the backend-native `max_depth` optimisation, whose result is identical whether a backend prunes natively or the Store filters client-side.
 
-Recommend: move the file body to `tests/backends/conformance/test_depth_listing.py` parametrized over the full fixture registry. Lift the three backend-specific blocks to `tests/backends/sftp/test_depth_listing.py`, `tests/backends/s3/test_depth_listing.py`, `tests/backends/azure/test_depth_listing.py` (or to the existing HNS-aware Azure test file if one exists).
+**Shipped (BK-218):**
 
-**Refactor cost:** moderate. The conformance form uses an existing pattern; the per-backend pieces are small (single test each).
+- **(a)** The three backend-specific snippets each move to a per-backend `test_depth_listing.py`. `TestSFTPBackendNativeDepth` → `tests/backends/sftp/test_depth_listing.py` — its `listdir_attr` call-count assertions verify that SFTP's recursive traversal *prunes* at the depth limit, observable only by counting SDK round-trips. `test_s3_base_accepts_max_depth` → `tests/backends/s3/test_depth_listing.py` and `test_azure_accepts_max_depth` → `tests/backends/azure/test_depth_listing.py` — `_s3_base` and `_azure` both import without their cloud SDKs, so these stay unguarded Stage-1 `inspect.signature` checks for each family's ABC.
+- **(b)** The cross-protocol DEPTH-003 *result* invariant is consolidated onto pre-existing tests rather than duplicated into a new conformance file: `tests/backends/conformance/test_listing.py::TestListFilesCompleteness` already parametrizes `list_files(max_depth=…)` over the full fixture registry, and `tests/backends/azure/test_config.py::test_list_files_max_depth` (BUG-155) already exercises it behaviourally for Azure (Azurite, Stage 2). `@pytest.mark.spec("DEPTH-003")` was stacked onto both.
+- DEPTH-001 / DEPTH-002 and the in-process-backend DEPTH-003 tests stay at root in `tests/test_depth_listing.py`, a TEST-010-compliant home once the concrete-cloud imports leave.
+
+`"test_depth_listing.py"` retired from `_BACKEND_AT_ROOT_GRANDFATHERED`.
+
+**Reconsidered against CLAUDE.md § Audits rule 3.** The audit's original (b) prescription — "move the file body to a new `tests/backends/conformance/test_depth_listing.py`" — would have duplicated `conformance/test_listing.py`'s existing registry-parametrised depth coverage, and it mis-modelled DEPTH-001/002 as backend-conformance when spec 037 makes them Store-level. The diagnosed pain (three concrete-cloud imports firing Rule B) is authoritative and is fully addressed by the (a) lift; the (b) reshape was reframed as consolidation onto pre-existing tests. Shipped under BK-218.
+
+**Refactor cost:** low (pure test relocation + marker stacking).
 
 **Risk:** low.
 
@@ -199,7 +208,7 @@ Recommend: split as described. The `_AzureRangeReader` cluster is the larger lif
 |---|---|---|---|
 | `test_config.py` | (a) per-backend split | moderate | yes |
 | `test_coverage_gaps.py` | (b) + (a) | moderate-to-high | yes |
-| `test_depth_listing.py` | (b) + lift 3 snippets | moderate | yes |
+| `test_depth_listing.py` | (a) lift 3 + (b) consolidate — reconsidered, see § per-file findings | low | yes |
 | `test_examples.py` | (c) keep at root | trivial (comment) | no (justified) |
 | `test_pbt_write_result.py` | (b) + (a) | moderate | yes |
 | `test_ping.py` | (b) + (a) — reconsidered, see § per-file findings | moderate | yes |
@@ -216,7 +225,9 @@ A preceding chat-only audit (an Explore-agent classification of the same files) 
 Spin one new BK-prefix item per disposition slice when scheduling. Consult
 `sdd/backlogid.json` for the next safe BK ID at the time of scheduling.
 The (c) `test_examples.py` slice was shipped together with this audit (see
-BACKLOG-DONE entry for slice 7/7); the remaining six slices stay migration-pending:
+BACKLOG-DONE entry for slice 7/7); the other six slices were migration-pending
+at audit time, one BK-prefixed follow-up each (live status lives in
+`BACKLOG.md` / `BACKLOG-DONE.md`, not here):
 
 - Split `tests/test_config.py` into per-backend `tests/backends/<x>/test_config.py` (disposition (a)).
 - Split `tests/test_ping.py` per backend (a).
@@ -225,4 +236,4 @@ BACKLOG-DONE entry for slice 7/7); the remaining six slices stay migration-pendi
 - Reshape `tests/test_pbt_write_result.py` PBT into conformance + per-backend metadata round-trip (b + a).
 - Reshape `tests/test_coverage_gaps.py` secret-masking into conformance + per-backend init split (b + a).
 
-BK-191 stays open in `BACKLOG.md` as the umbrella until the six remaining slices close.
+BK-191 stays open in `BACKLOG.md` as the umbrella until every slice closes.

@@ -210,8 +210,8 @@ class TestMain:
         good.write_text(_PLAIN_ASSIGN, encoding="utf-8")
         # ``grandfathered=frozenset()`` opts out of stale-entry detection;
         # we're testing rule S in isolation here, not rule B's grandfather
-        # tracking. Synthetic trees lack the seven legacy files entirely,
-        # so the real grandfather list would otherwise fire as "stale".
+        # tracking. Synthetic trees lack the grandfathered legacy files
+        # entirely, so the real grandfather list would otherwise fire as "stale".
         assert main([str(tmp_path)], grandfathered=frozenset()) == 0
 
     def test_flags_misplaced_file_in_subdir(self, tmp_path):

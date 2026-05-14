@@ -188,6 +188,7 @@ class TestListFilesCompleteness:
         assert {f.name for f in files} == {"a.txt"}
 
     @pytest.mark.spec("BE-014")
+    @pytest.mark.spec("DEPTH-003")
     @pytest.mark.parametrize(
         ("max_depth", "expected_names"),
         [
@@ -198,14 +199,21 @@ class TestListFilesCompleteness:
         ],
     )
     def test_list_files_recursive_max_depth(self, backend: Backend, max_depth: int, expected_names: set[str]) -> None:
-        """Depth filtering is inclusive (Dafny DepthFilterBoundaryInclusive)."""
+        """Depth filtering is inclusive (Dafny DepthFilterBoundaryInclusive).
+
+        This is the cross-protocol DEPTH-003 invariant: the depth cutoff
+        yields identical results whether a backend prunes natively or the
+        Store filters client-side. Auto-parametrised over the full fixture
+        registry by tests/backends/conformance/conftest.py.
+        """
         _seed(backend, self.DEPTH_TREE)
         files = list(backend.list_files("pc", recursive=True, max_depth=max_depth))
         assert {f.name for f in files} == expected_names
 
     @pytest.mark.spec("BE-014")
+    @pytest.mark.spec("DEPTH-003")
     def test_list_files_unlimited_depth(self, backend: Backend) -> None:
-        """max_depth=None -> all files returned."""
+        """max_depth=None -> all files returned (DEPTH-003: defers to recursive)."""
         _seed(backend, self.DEPTH_TREE)
         files = list(backend.list_files("pc", recursive=True))
         assert {f.name for f in files} == {"a.txt", "b.txt", "c.txt", "d.txt", "e.txt"}
