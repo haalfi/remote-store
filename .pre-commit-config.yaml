@@ -27,3 +27,9 @@ repos:
         entry: ':\w+:`(?!`)'
         types: [python]
         files: ^(src|tests|scripts|examples)/
+      - id: backlogid-check
+        name: backlog ID index in sync
+        language: python
+        entry: python scripts/gen_backlogid.py --check
+        pass_filenames: false
+        always_run: true
