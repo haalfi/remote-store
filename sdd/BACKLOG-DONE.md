@@ -8,6 +8,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-218 — Restrict CI coverage collection to Python 3.13 only**
+  The `test` matrix job ran `--cov=remote_store` on every Python version
+  (3.10–3.14), enforcing 90% on non-primary versions. Coverage is now
+  collected only on 3.13; other versions run plain `pytest` with no coverage
+  flags. Eliminates spurious threshold failures caused by wheel gaps or
+  test skips on pre-release Pythons.
+  spec: —  effort: S  audience: `infra.ci`
+
 - [x] **BK-217 — Split `tests/test_ping.py` (conformance + per-backend) (BK-191 slice 2/6)**
   Second migration-pending slice from BK-191's audit. Reframes the audit's
   proposed (a) per-backend disposition into a hybrid (b)+(a) split after
