@@ -6,7 +6,7 @@ source_items:
 audience:
   - infra.test
   - contributor.tooling
-review_rounds: 4
+review_rounds: 5
 expected_ripples:
   - sdd/BACKLOG.md
 phases:
@@ -141,7 +141,7 @@ phases:
       - file: scripts/record_cassettes.py
         section: "(new file)"
         read_type: verify
-        extract: "_resolve_azure_account (Azurite-rejection guard, delegates to parse_account_name); _BACKENDS table (cassette_dir, k-filters, min_cassettes=200); 5-step record+verify flow; hatch record-azure entry in pyproject.toml"
+        extract: "_resolve_azure_account (Azurite-rejection guard, delegates to parse_account_name + imports _AZURITE_FRAGMENTS from _cassettes; explicit empty-AccountName= guard); _BACKENDS table (cassette_dir, k-filters, min_cassettes=200); 5-step record+verify flow; hatch record-azure entry in pyproject.toml"
       - file: tests/backends/conformance/conftest.py
         section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES, _AZURE_REAL_FIXTURE_IDS, pytest_collection_modifyitems"
         read_type: verify
@@ -153,7 +153,7 @@ phases:
       - file: tests/scripts/test_record_cassettes.py
         section: "(new file)"
         read_type: verify
-        extract: "structural guards for record_cassettes.py: cassette_dir matches CASSETTE_DIR_AZURE; _CONFORMANCE is a real directory; k-filter fixture IDs are registered; sync_k async-exclusion relies on 'async' substring in async_k name"
+        extract: "structural guards for record_cassettes.py: cassette_dir matches CASSETTE_DIR_AZURE; _CONFORMANCE is a real directory; k-filter fixture IDs are registered; sync_k async-exclusion pins both sides of the invariant ('async' in async_k AND 'not async' in sync_k)"
 discovery_followups: []
 surprising_ripples:
   - "x-ms-copy-source echoed in response body with live account name — required both request and response header scrubbing; PoC had neither"

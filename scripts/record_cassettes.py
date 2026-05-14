@@ -39,9 +39,6 @@ if str(_ROOT) not in sys.path:
 # Per-backend account-name resolvers
 # ---------------------------------------------------------------------------
 
-# Fragments that identify an Azurite (emulator) connection string.
-_AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "AccountName=devstoreaccount1")
-
 
 def _resolve_azure_account() -> str:
     """Return the real storage account name from AZURE_STORAGE_CONNECTION_STRING.
@@ -50,7 +47,7 @@ def _resolve_azure_account() -> str:
     Exits with a clear message if the env var is missing, malformed, or points
     at the Azurite emulator (which would produce a false-clean scrub result).
     """
-    from tests.backends.fixtures._cassettes import parse_account_name  # noqa: PLC0415
+    from tests.backends.fixtures._cassettes import _AZURITE_FRAGMENTS, parse_account_name  # noqa: PLC0415
 
     try:
         from dotenv import load_dotenv  # noqa: PLC0415
@@ -71,9 +68,15 @@ def _resolve_azure_account() -> str:
             "  See docs-src/guides/backends/azure-hns-setup.md for setup instructions."
         )
     try:
-        return parse_account_name(conn)
+        account = parse_account_name(conn)
     except ValueError as exc:
         _die(str(exc))
+    if not account:
+        _die(
+            "AZURE_STORAGE_CONNECTION_STRING has an empty AccountName= value.\n"
+            "  See docs-src/guides/backends/azure-hns-setup.md for setup instructions."
+        )
+    return account
 
 
 # ---------------------------------------------------------------------------

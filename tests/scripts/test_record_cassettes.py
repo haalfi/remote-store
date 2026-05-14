@@ -56,15 +56,20 @@ class TestAzureBackendConfig:
     def test_sync_k_async_exclusion_relies_on_async_substring(self, rc):
         """sync_k uses 'not async' to exclude the async fixture.
 
-        That exclusion only works while the async fixture name contains the
-        substring 'async'.  If it is ever renamed (e.g. to 'azure_live_aio'),
-        sync recording would silently pick up async traffic.
+        Two sides of the same invariant are pinned:
+        (a) async_k must contain 'async' (fixture rename would break exclusion).
+        (b) sync_k must contain 'not async' (clause edit would silently re-include async).
         """
-        async_name = rc._BACKENDS["azure"]["async_k"]
+        cfg = rc._BACKENDS["azure"]
+        async_name = cfg["async_k"]
+        sync_expr = cfg["sync_k"]
         assert "async" in async_name, (
-            f"sync_k = {rc._BACKENDS['azure']['sync_k']!r} excludes async fixtures "
+            f"sync_k = {sync_expr!r} excludes async fixtures "
             f"via 'not async', but async_k = {async_name!r} does not contain 'async'; "
             "the exclusion would silently stop working if the fixture is renamed"
+        )
+        assert "not async" in sync_expr, (
+            f"sync_k = {sync_expr!r} no longer contains 'not async'; async fixtures would be included in sync recording"
         )
 
     def test_k_filter_fixture_ids_are_registered(self, rc):
