@@ -248,7 +248,7 @@ class AzureBackend(Backend):
 
     def check_health(self) -> None:
         with self._errors():
-            if self._hns:  # pragma: no cover -- HNS only
+            if self._hns:
                 self._fs.get_file_system_properties()
             else:
                 self._cc.get_container_properties()
