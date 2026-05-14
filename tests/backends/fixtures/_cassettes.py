@@ -206,9 +206,10 @@ def build_vcr_config(real_account: str | None) -> dict[str, Any]:
                 raw = pattern.sub(replacement, raw)
             body["string"] = raw
         elif isinstance(raw, str):
+            raw_b = raw.encode()
             for pattern, replacement in _BODY_SCRUB:
-                raw = pattern.sub(replacement.decode(), raw)
-            body["string"] = raw
+                raw_b = pattern.sub(replacement, raw_b)
+            body["string"] = raw_b.decode()
         return response
 
     return {

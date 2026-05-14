@@ -99,19 +99,8 @@ def _normalise_cassette_name(node_name: str, cls: type | None) -> str:
     fixture name is matched as a whole component bounded by ``[``, ``]``, or
     ``-`` so no partial-name collisions can occur.
     """
-    import re  # noqa: PLC0415 -- local import; this function is called infrequently
-
     name = node_name
     for fixture_name, canonical in _CASSETTE_ID_ALIASES.items():
-        # Match fixture_name as a whole parametrize component (bounded by [, ], or -).
-        name = re.sub(
-            rf"(?:(?<=\[)|(?<=-))(${re.escape(fixture_name)})(?=\]|-)",
-            canonical,
-            name,
-        )
-        # re.sub with lookbehind does not consume the delimiter, so the
-        # replacement is just the fixture name itself.  Simpler string
-        # replacement also covers all three positions:
         name = name.replace(f"[{fixture_name}]", f"[{canonical}]")
         name = name.replace(f"[{fixture_name}-", f"[{canonical}-")
         name = name.replace(f"-{fixture_name}]", f"-{canonical}]")

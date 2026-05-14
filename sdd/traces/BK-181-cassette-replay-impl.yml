@@ -9,7 +9,6 @@ audience:
 review_rounds: 0
 expected_ripples:
   - sdd/BACKLOG.md
-  - sdd/backlogid.json
 phases:
   - id: orient
     name: Orient — read plan and all referenced artefacts
