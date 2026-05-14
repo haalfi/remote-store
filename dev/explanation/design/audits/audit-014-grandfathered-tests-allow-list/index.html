@@ -6176,10 +6176,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#teststest_pingpy-disposition-a-per-backend-split" class="md-nav__link">
+  <a href="#teststest_pingpy-disposition-b-conformance-a-per-backend-split" class="md-nav__link">
     <span class="md-ellipsis">
       
-        tests/test_ping.py — disposition: (a) per-backend split
+        tests/test_ping.py — disposition: (b) conformance + (a) per-backend split
       
     </span>
   </a>
@@ -9238,10 +9238,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#teststest_pingpy-disposition-a-per-backend-split" class="md-nav__link">
+  <a href="#teststest_pingpy-disposition-b-conformance-a-per-backend-split" class="md-nav__link">
     <span class="md-ellipsis">
       
-        tests/test_ping.py — disposition: (a) per-backend split
+        tests/test_ping.py — disposition: (b) conformance + (a) per-backend split
       
     </span>
   </a>
@@ -9539,7 +9539,7 @@ sketched in the chat-only audit summary that preceded this document.</p>
 <p>Recommend: lift size-regime PBT into <code>tests/backends/conformance/test_write_result_pbt.py</code> parametrized over the fixture registry (natural fixture-availability skipping replaces the conditional import pattern). Move S3/Azure metadata round-trip into <code>tests/backends/s3/test_write_result_pbt.py</code> and <code>tests/backends/azure/test_write_result_pbt.py</code>.</p>
 <p><strong>Refactor cost:</strong> moderate. Hypothesis strategies and the BUG-168 boundary table are reusable; the parametrize wrapper is the main new code.</p>
 <p><strong>Risk:</strong> low-to-medium. The PBT runs slow; re-tuning Hypothesis <code>max_examples</code> per parametrize slot may be necessary.</p>
-<h3 id="teststest_pingpy-disposition-a-per-backend-split"><code>tests/test_ping.py</code> — disposition: <strong>(a) per-backend split</strong><a class="headerlink" href="#teststest_pingpy-disposition-a-per-backend-split" title="Permanent link">&para;</a></h3>
+<h3 id="teststest_pingpy-disposition-b-conformance-a-per-backend-split"><code>tests/test_ping.py</code> — disposition: <strong>(b) conformance + (a) per-backend split</strong><a class="headerlink" href="#teststest_pingpy-disposition-b-conformance-a-per-backend-split" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -9571,11 +9571,23 @@ sketched in the chat-only audit summary that preceded this document.</p>
 </tr>
 </tbody>
 </table>
-<p>Each helper constructs a single backend with a <code>MagicMock</code> SDK client and asserts the health-check method calls the expected SDK operation. These are <strong>per-backend</strong> assertions about the protocol-specific health endpoint — exactly the kind of behaviour TEST-003 says belongs in <code>tests/backends/&lt;x&gt;/</code>.</p>
-<p>The cross-cutting part — <code>Store.ping()</code> delegating to <code>backend.check_health()</code> and propagating exceptions — uses MemoryBackend/LocalBackend and can stay at root (or fold into existing <code>tests/test_store.py</code> if such a file exists).</p>
-<p>Recommend: move S3 / SFTP / Azure / S3PyArrow ping helpers and their tests to <code>tests/backends/&lt;x&gt;/test_ping.py</code>. Keep <code>Store.ping()</code> delegation tests at root.</p>
-<p><strong>Refactor cost:</strong> moderate. Each helper + its 2–3 tests transplants cleanly.</p>
-<p><strong>Risk:</strong> low. The mocks are localised to each helper; no shared SDK fixture cross-talk.</p>
+<p><code>Backend.check_health()</code> is an ABC method (PING-002), not a capability. Every backend either inherits the default no-op or overrides it; the healthy-path invariant (<code>backend.check_health() is None</code> when reachable and authorized) is the <strong>same single line</strong> for every backend. That's conformance-shaped by definition.</p>
+<p>What is genuinely backend-specific is narrower than the audit's first reading:</p>
+<ul>
+<li><strong>Probe identity:</strong> <code>head_bucket(Bucket=...)</code> (S3, PING-004), <code>stat(base_path)</code> (SFTP, PING-006), <code>get_container_properties()</code> (Azure, PING-007), <code>get_file_info(bucket)</code> (S3-PyArrow, PING-005). These pin the implementation's choice of probe and require SDK mocks to assert.</li>
+<li><strong>Error mapping (PING-009):</strong> SDK-specific exception types map to the standard taxonomy. Botocore's exception model, paramiko's <code>OSError(ENOENT)</code>, and azure-core's <code>ResourceNotFoundError</code> are unrelated. Per-backend.</li>
+<li><strong>LocalBackend filesystem failure injection:</strong> <code>rmdir(root)</code> → NotFound; <code>patch("os.access")</code> → PermissionDenied. Filesystem-specific.</li>
+</ul>
+<p>Recommend (hybrid disposition):</p>
+<ul>
+<li><strong>(b)</strong> Add <code>tests/backends/conformance/test_check_health.py</code> with one parametrize over the registry: <code>check_health()</code> returns None or raises a <code>RemoteStoreError</code> subclass. (A naive "returns None" form overreaches — fixture preconditions vary, and the HTTP backend's check_health legitimately fails on a directory URL per the PING-004 spec note even when individual files are reachable. The PING-002 + PING-009 combined invariant — "outcome is None or a properly-mapped error class; native SDK exceptions never leak" — is the actual ABC contract.)</li>
+<li><strong>(a)</strong> Move SDK-mocked probe-identity + error-mapping tests to <code>tests/backends/&lt;x&gt;/test_ping.py</code> for S3 / SFTP / Azure and to <code>tests/backends/local/test_ping.py</code> for LocalBackend's missing-root / unreadable-root branches. The S3-PyArrow test appends to the existing <code>tests/backends/s3/test_pyarrow.py</code> (no <code>tests/backends/s3_pyarrow/</code> directory; mirrors BK-216).</li>
+</ul>
+<p>Root <code>tests/test_ping.py</code> keeps only <code>Store.ping()</code> delegation / propagation / child-store (PING-001) and the observe <code>on_ping</code> / <code>on_error</code> integration (PING-010). <code>test_default_check_health_is_noop</code> (PING-002 via memory), <code>test_memory_backend_always_healthy</code> (PING-008), and <code>test_healthy_local</code> (PING-003 happy) are dropped as duplicates of what the conformance parametrize now covers via the memory and local fixtures.</p>
+<p><strong>Refactor cost:</strong> moderate. Conformance test is one class with one test; per-backend files are ~30 lines each; helpers transplant cleanly.</p>
+<p><strong>Risk:</strong> low. Conformance reuses the existing <code>backend</code> indirect fixture and auto-walk pattern (<code>tests/backends/conformance/conftest.py</code>). Mocks remain localised to each per-backend helper.</p>
+<p><strong>Reconsidered against CLAUDE.md § Audits rule 3.</strong> The audit's original (a) prescription would have created four near-identical per-backend "healthy returns None" assertions — the kind of cross-protocol duplication the conformance registry exists to eliminate. The pain point (TEST-003 violation at root) is fully addressed by the hybrid split. Shipped under BK-217.</p>
+<p><strong>Discovery during BK-217.</strong> The conformance test surfaced a previously-untested code path: <code>S3Backend.check_health()</code> calls <code>self._fs.s3.head_bucket(...)</code> where <code>self._fs.s3</code> is an <code>aiobotocore.client.S3</code> whose <code>head_bucket</code> returns a coroutine — the current code never awaits it. <code>check_health()</code> silently returns None regardless of bucket state. Every pre-BK-217 test mocked <code>head_bucket</code> on a <code>MagicMock</code> and missed this. Filed as BUG-208 under a new <code>## S3 Correctness</code> section in <code>sdd/BACKLOG.md</code>; the conformance test xfails <code>s3_moto</code> until BUG-208 lands.</p>
 <h3 id="teststest_seekablepy-disposition-b-conformance-reshape-capability-a-per-backend-split-azure-range-reader"><code>tests/test_seekable.py</code> — disposition: <strong>(b) conformance reshape (capability) + (a) per-backend split (Azure range reader)</strong><a class="headerlink" href="#teststest_seekablepy-disposition-b-conformance-reshape-capability-a-per-backend-split-azure-range-reader" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -9664,7 +9676,7 @@ sketched in the chat-only audit summary that preceded this document.</p>
 </tr>
 <tr>
 <td><code>test_ping.py</code></td>
-<td>(a) per-backend split</td>
+<td>(b) + (a) — reconsidered, see § per-file findings</td>
 <td>moderate</td>
 <td>yes</td>
 </tr>
