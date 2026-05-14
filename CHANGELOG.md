@@ -7,7 +7,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-181: HTTP cassette/replay layer — `azure_replay` / `azure_replay_async` Stage-1 fixtures; conformance tests skip by design when cassettes are absent (TEST-007/008/009)
 - BK-202: `SFTPUtils` helpers documented as true `@staticmethod` (correct `meth` rendering, signatures restored on docs.remotestore.dev)
 - BK-200: `SFTPUtils.scan_host_algorithms()` raw-socket SSH KEXINIT probe for diagnosing `IncompatiblePeer` failures
 - BK-199: `SFTPUtils.scan_host_keys()` preflight host-key discovery

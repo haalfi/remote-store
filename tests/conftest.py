@@ -394,6 +394,23 @@ def pytest_configure(config: object) -> None:
         config.addinivalue_line("markers", "pbt: property-based test using Hypothesis")
 
 
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Add ``pytest.mark.vcr`` to azure_live items when ``--record`` is active.
+
+    The static ``marks`` tuple on the ``azure_live`` / ``azure_live_async``
+    ``BackendFixture`` carries only ``pytest.mark.live``. Adding ``vcr``
+    statically would engage vcrpy in ``record_mode='none'`` for plain
+    ``-m live --stage=3`` sessions (without ``--record``), blocking real HTTP
+    with vcrpy's request interceptor. This hook attaches the mark dynamically
+    so the cassette layer only activates during explicit recording sessions.
+    """
+    if not config.getoption("--record", default=False):
+        return
+    for item in items:
+        if "azure_live" in item.name:
+            item.add_marker(pytest.mark.vcr)
+
+
 # region: shared fixtures
 
 

@@ -28,7 +28,10 @@ Gating, isolation, and cost
 
 Identical to ``azure_live`` (sync): two-layer gate (``--stage=3`` plus
 ``RS_TEST_LIVE_HNS=1``), per-call fresh HNS filesystem, ``pytest.mark.live``
-default-deselect.
+default-deselect. ``pytest.mark.vcr`` is added dynamically by the root
+``conftest.pytest_collection_modifyitems`` hook when ``--record`` is
+active — not as a static mark — for the same reason described in
+``azure_live``.
 """
 
 from __future__ import annotations
@@ -125,8 +128,7 @@ register(
         capabilities=_capabilities(),
         cleanup=_cleanup,
         aclose=_aclose,
-        # pytest.mark.vcr enables cassette recording when --record is active.
-        marks=(pytest.mark.live, pytest.mark.vcr),
+        marks=(pytest.mark.live,),
         **_meta.to_kwargs(),
     )
 )

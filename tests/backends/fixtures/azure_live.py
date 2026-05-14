@@ -25,6 +25,17 @@ The ``pytest.mark.live`` mark rides along with the parametrize entry so
 the default ``addopts = -m 'not live'`` deselects every test
 parametrised over this fixture unless the user opts in with ``-m live``.
 
+Cassette recording (optional, third layer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pass ``--record`` (maps to ``--record-mode=rewrite``) together with
+``--stage=3`` to capture cassettes. ``pytest.mark.vcr`` is **not**
+included in the static ``marks`` tuple; it is added dynamically by the
+root ``conftest.pytest_collection_modifyitems`` hook only when
+``--record`` is active. Adding it statically would engage vcrpy in
+``record_mode="none"`` during plain ``-m live --stage=3`` sessions,
+blocking real HTTP traffic with vcrpy's request interceptor.
+
 Cost discipline
 ---------------
 
@@ -120,8 +131,7 @@ register(
         factory=_factory,
         capabilities=_capabilities(),
         cleanup=_cleanup,
-        # pytest.mark.vcr enables cassette recording when --record is active.
-        marks=(pytest.mark.live, pytest.mark.vcr),
+        marks=(pytest.mark.live,),
         **_meta.to_kwargs(),
     )
 )
