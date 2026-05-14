@@ -10,7 +10,7 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
-  - tests/backends/azure/test_config.py  # audit planned a new azure/test_depth_listing.py; the Azure depth coverage already lived here
+  - tests/backends/azure/test_config.py  # the audit's per-file plan did not anticipate Azure already had behavioural depth coverage here — it gained the DEPTH-003 marker alongside the new azure/test_depth_listing.py
 phases:
   - id: orient
     name: Orient
@@ -97,7 +97,7 @@ phases:
       - file: tests/backends/sftp/test_depth_listing.py
         section: "(collection)"
         read_type: verify
-        extract: "per-backend dirs green: hatch run pytest tests/backends/{sftp,s3,azure}/ → 275 passed / 40 skipped at Stage 1 (azure depth test skips behind @_needs_azurite)"
+        extract: "per-backend dirs green: hatch run pytest tests/backends/{sftp,s3,azure}/ → 554 passed / 71 skipped at Stage 1; azure/test_depth_listing.py::test_azure_accepts_max_depth runs unguarded (no Azure SDK import needed), the behavioural azure/test_config.py::test_list_files_max_depth skips behind @_needs_azurite"
       - file: sdd/traces/_schema.yml
         section: "audience (derived CHANGELOG rule)"
         read_type: verify
@@ -125,6 +125,14 @@ phases:
         section: "tests/test_depth_listing.py findings"
         read_type: gate
         extract: "updated the test_depth_listing.py section so the Azure disposition reads as a per-backend (a) lift (azure/test_depth_listing.py, Stage-1 signature) plus a (b) marker on the pre-existing behavioural test — symmetric with S3"
+      - file: tests/test_depth_listing.py
+        section: "module docstring"
+        read_type: gate
+        extract: "round-2 review caught stale 'folded into test_config.py' wording: the fix-phase file creation had not propagated everywhere. Corrected the module docstring to point at azure/test_depth_listing.py; trimmed the now-stale feature parenthetical in scripts/check_test_placement.py (config loaders / depth listing / ping-health no longer have grandfathered files)"
+      - file: sdd/traces/BK-218-test-depth-listing-conformance-marker-and-per-backend-lift.yml
+        section: "surprising_ripples + verify-phase count"
+        read_type: gate
+        extract: "round-2 review: the surprising_ripples note implied azure/test_depth_listing.py was not created, and the verify step's count predated the fix phase. Corrected both; refreshed the per-backend-dirs count to 554 passed / 71 skipped. PR description body also updated to the symmetric disposition"
 discovery_followups: []
 co_shipped_items: []
-review_rounds: 1
+review_rounds: 2

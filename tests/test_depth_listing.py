@@ -3,12 +3,13 @@
 Covers spec 037-depth-limited-listing.md (DEPTH-001, DEPTH-002, DEPTH-003)
 at the Store level and for the in-process backends. The backend-specific
 DEPTH-003 snippets that imported concrete cloud / network backends moved
-out under BK-218 (BK-191 slice 3/6): `TestSFTPBackendNativeDepth` ->
-`tests/backends/sftp/test_depth_listing.py`, the S3 base signature check
--> `tests/backends/s3/test_depth_listing.py`, and the Azure signature
-check folded into `tests/backends/azure/test_config.py::test_list_files_max_depth`.
+out under BK-218 (BK-191 slice 3/6), each to a per-backend file:
+`TestSFTPBackendNativeDepth` -> `tests/backends/sftp/test_depth_listing.py`,
+the S3 base signature check -> `tests/backends/s3/test_depth_listing.py`,
+and the Azure signature check -> `tests/backends/azure/test_depth_listing.py`.
 The cross-protocol DEPTH-003 result invariant is owned by
-`tests/backends/conformance/test_listing.py::TestListFilesCompleteness`.
+`tests/backends/conformance/test_listing.py::TestListFilesCompleteness`
+(and, for Azure behaviourally, `tests/backends/azure/test_config.py::test_list_files_max_depth`).
 """
 
 from __future__ import annotations
