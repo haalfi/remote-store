@@ -4887,6 +4887,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cassette-refresh-http-transport-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cassette Refresh (HTTP-transport backends)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#provenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9242,6 +9253,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cassette-refresh-http-transport-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cassette Refresh (HTTP-transport backends)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#provenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9556,6 +9578,20 @@ haven't thought of. See rules 9–11.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="cassette-refresh-http-transport-backends">Cassette Refresh (HTTP-transport backends)<a class="headerlink" href="#cassette-refresh-http-transport-backends" title="Permanent link">&para;</a></h3>
+<p>Cassettes under <code>tests/backends/cassettes/&lt;backend&gt;/</code> are committed
+snapshots of real HTTP traffic. Refresh them when the backend SDK,
+the scrubbing layer, or the real service responses change.</p>
+<p><strong>Prerequisite (Azure):</strong> see <a href="../../../guides/backends/azure-hns-setup/">Azure HNS account setup</a>
+for credential and <code>.env</code> configuration.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>record-azure
+</code></pre></div>
+<p><code>scripts/record_cassettes.py --backend azure</code> deletes existing cassettes, re-records
+sync and async fixtures against a live ADLS Gen2 account, verifies no credentials
+survived scrubbing, and runs a Stage 1 replay smoke test. Pass <code>--verify-only</code> to
+skip recording and re-run only the verification steps.</p>
+<p>Per <a href="../specs/048-testing-architecture/#test-009-cassette-refresh-is-explicit">TEST-009</a>:
+CI does not auto-record; a refresh is a normal PR diff.</p>
 <h3 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h3>
 <p>Derived from <a href="../research/research-testing-best-practices/"><code>sdd/research/research-testing-best-practices.md</code></a>.</p>
 
