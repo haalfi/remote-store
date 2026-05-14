@@ -11,7 +11,7 @@ env:
   UV_LINK_MODE: copy
 
 jobs:
-  changes:
+  setup:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
@@ -20,6 +20,9 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       formal: ${{ steps.filter.outputs.formal }}
       tla: ${{ steps.filter.outputs.tla }}
+      primary: ${{ steps.versions.outputs.primary }}
+      test-matrix: ${{ steps.versions.outputs.test-matrix }}
+      typecheck-matrix: ${{ steps.versions.outputs.typecheck-matrix }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -34,7 +37,7 @@ jobs:
           else
             FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
           fi
-          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/ci\.yml$'
+          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/ci\.yml$|^\.github/actions/'
           DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^scripts/(docs/|check_docs_framework\.py$)|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
@@ -49,16 +52,26 @@ jobs:
           TLA_PAT='^sdd/formal/tla/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$TLA_PAT"; then echo "tla=true" >> "$GITHUB_OUTPUT"
           else echo "tla=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Resolve Python versions
+        id: versions
+        env:
+          ALL_PYTHONS: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+          PRIMARY_PYTHON: "3.13"
+          MIN_PYTHON: "3.10"
+        run: |
+          echo "primary=$PRIMARY_PYTHON" >> "$GITHUB_OUTPUT"
+          echo "test-matrix=$(jq -cn --argjson a "$ALL_PYTHONS" --arg p "$PRIMARY_PYTHON" '$a - [$p]')" >> "$GITHUB_OUTPUT"
+          echo "typecheck-matrix=$(jq -cn --arg m "$MIN_PYTHON" --arg p "$PRIMARY_PYTHON" '[$m, $p]')" >> "$GITHUB_OUTPUT"
 
   lint:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
@@ -78,12 +91,12 @@ jobs:
       - run: python scripts/gen_backlogid.py --check
 
   typecheck:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.13"]
+        python-version: ${{ fromJSON(needs.setup.outputs.typecheck-matrix) }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -96,75 +109,50 @@ jobs:
       - run: mypy src/ examples/
 
   test:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ${{ fromJSON(needs.setup.outputs.test-matrix) }}
     steps:
       - uses: actions/checkout@v6
-      - name: Start MinIO
-        run: |
-          docker run -d --name minio -p 9000:9000 \
-            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84 server /data
-          for i in $(seq 1 30); do
-            wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
-          done
-          wget -qO /dev/null http://127.0.0.1:9000/minio/health/live || { echo "::error::MinIO failed to start"; exit 1; }
-      - name: Start Azurite
-        run: |
-          docker run -d --name azurite -p 10000:10000 \
-            mcr.microsoft.com/azure-storage/azurite:3.35.0 \
-            azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
-          for i in $(seq 1 30); do
-            nc -z 127.0.0.1 10000 && break || sleep 1
-          done
-          nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
-      - name: Start SFTP (Stage 2)
-        run: |
-          docker run -d --name sftp-test -p 2222:22 \
-            atmoz/sftp:alpine \
-            benchuser:benchpass:::upload
-          for i in $(seq 1 30); do
-            nc -z 127.0.0.1 2222 && break || sleep 1
-          done
-          nc -z 127.0.0.1 2222 || { echo "::error::SFTP failed to start"; exit 1; }
+      - uses: ./.github/actions/start-backends
+        with:
+          minio: 'true'
+          azurite: 'true'
+          sftp: 'true'
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v8.1.0
       - run: uv pip install -e ".[dev]"
-      # Full 95% threshold on 3.13 (primary). Other versions enforce a lower
-      # floor (90%) because some dev deps may lack wheels on pre-release
-      # Python, causing test skips that reduce coverage.
       # tests/scripts/ holds contributor-tooling tests (script checkers, gen
       # scripts) that exercise scripts/, not remote_store. They gain nothing
-      # from multi-version coverage and run once on Python 3.13 via the
-      # tooling-test job below. BK-207.
-      - name: Run tests with coverage
-        run: >-
-          pytest --cov=remote_store --cov-report=term-missing
-          --ignore=tests/scripts
-          ${{ matrix.python-version == '3.13' && '--cov-fail-under=95' || '--cov-fail-under=90' }}
+      # from multi-version coverage and run once on the primary Python via
+      # test-primary below. BK-207.
+      - run: pytest --ignore=tests/scripts
 
-  # BK-207: contributor-tooling tests (tests/scripts/) run once on the primary
-  # Python. They verify scripts/ behaviour and gain nothing from the 3.10..3.14
-  # matrix that the test job uses for the published package.
-  tooling-test:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+  # Primary-Python job: coverage gate + contributor-tooling tests. Both run
+  # once on the primary Python; sharing setup avoids a redundant runner.
+  # BK-219 (coverage split), BK-207 (tooling-test rationale).
+  test-primary:
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: ./.github/actions/start-backends
+        with:
+          minio: 'true'
+          azurite: 'true'
+          sftp: 'true'
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
-        with:
-          enable-cache: false
       - run: uv pip install -e ".[dev]"
+      - run: pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95 --ignore=tests/scripts
       - run: pytest tests/scripts/ -q
 
   # BK-172: verify that S3-PyArrow tests run (not skip) against MinIO when
@@ -172,25 +160,19 @@ jobs:
   # The main `test` matrix resolves pyarrow to whatever pip picks; this job
   # pins pyarrow 24 explicitly to confirm the MinIO routing works end-to-end.
   pyarrow24-check:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     env:
       RS_REQUIRE_MINIO: "1"
     steps:
       - uses: actions/checkout@v6
-      - name: Start MinIO
-        run: |
-          docker run -d --name minio -p 9000:9000 \
-            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84 server /data
-          for i in $(seq 1 30); do
-            wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
-          done
-          wget -qO /dev/null http://127.0.0.1:9000/minio/health/live || { echo "::error::MinIO failed to start"; exit 1; }
+      - uses: ./.github/actions/start-backends
+        with:
+          minio: 'true'
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
@@ -205,8 +187,8 @@ jobs:
         run: pytest tests/ext/test_arrow.py tests/ext/test_parquet.py tests/backends/sqlquery/test_config.py tests/backends/sqlblob/test_config.py -q
 
   test-cross-platform:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -215,21 +197,21 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
       - run: uv pip install -e ".[dev]"
       - name: Run OS-sensitive tests
         run: pytest -m "os_sensitive" --ignore=tests/e2e
 
   notebooks:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
@@ -237,14 +219,14 @@ jobs:
       - run: python tests/scripts/run_notebooks.py
 
   examples:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
@@ -260,54 +242,32 @@ jobs:
           if [ $rc -ne 0 ] && [ $rc -ne 124 ]; then exit $rc; fi
 
   e2e:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Start MinIO
-        run: |
-          docker run -d --name minio-e2e -p 9000:9000 \
-            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84 server /data
-          for i in $(seq 1 30); do
-            wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
-          done
-          wget -qO /dev/null http://127.0.0.1:9000/minio/health/live || { echo "::error::MinIO failed to start"; exit 1; }
-      - name: Start Azurite
-        run: |
-          docker run -d --name azurite-e2e -p 10000:10000 \
-            mcr.microsoft.com/azure-storage/azurite:3.35.0 \
-            azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
-          for i in $(seq 1 30); do
-            nc -z 127.0.0.1 10000 && break || sleep 1
-          done
-          nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
-      - name: Start SFTP
-        run: |
-          docker run -d --name sftp-e2e -p 2222:22 \
-            atmoz/sftp:alpine \
-            benchuser:benchpass:::upload
-          for i in $(seq 1 30); do
-            nc -z 127.0.0.1 2222 && break || sleep 1
-          done
-          nc -z 127.0.0.1 2222 || { echo "::error::SFTP failed to start"; exit 1; }
+      - uses: ./.github/actions/start-backends
+        with:
+          minio: 'true'
+          azurite: 'true'
+          sftp: 'true'
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
       - run: uv pip install -e ".[dev]"
       - run: pytest tests/e2e/ -v -o addopts=
 
   docs:
-    needs: [changes]
-    if: needs.changes.outputs.docs == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
@@ -316,14 +276,14 @@ jobs:
       - run: mkdocs build --strict
 
   package:
-    needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
@@ -334,8 +294,8 @@ jobs:
       - run: python -c "import remote_store; print(remote_store.__version__)"
 
   verify-formal:
-    needs: [changes]
-    if: needs.changes.outputs.formal == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.formal == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -355,8 +315,8 @@ jobs:
   # lives in sdd/BACKLOG.md (ID-150, due 2026-10-19). The historical
   # PoC modules under sdd/research/tla-poc/ are frozen and not run here.
   verify-tla:
-    needs: [changes]
-    if: needs.changes.outputs.tla == 'true'
+    needs: [setup]
+    if: needs.setup.outputs.tla == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -386,25 +346,25 @@ jobs:
           done
 
   gate:
-    needs: [changes, lint, typecheck, test, pyarrow24-check, test-cross-platform, tooling-test, notebooks, examples, e2e, docs, package, verify-formal]
+    needs: [setup, lint, typecheck, test, test-primary, pyarrow24-check, test-cross-platform, notebooks, examples, e2e, docs, package, verify-formal]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
         run: |
-          # changes job must succeed — if it fails, path filters never ran
+          # setup job must succeed — if it fails, path filters never ran
           # and all downstream jobs are auto-skipped, which would silently pass
-          if [[ "${{ needs.changes.result }}" != "success" ]]; then
-            echo "::error::changes job did not succeed: ${{ needs.changes.result }}"
+          if [[ "${{ needs.setup.result }}" != "success" ]]; then
+            echo "::error::setup job did not succeed: ${{ needs.setup.result }}"
             exit 1
           fi
           results=( \
             "${{ needs.lint.result }}" \
             "${{ needs.typecheck.result }}" \
             "${{ needs.test.result }}" \
+            "${{ needs.test-primary.result }}" \
             "${{ needs.pyarrow24-check.result }}" \
             "${{ needs.test-cross-platform.result }}" \
-            "${{ needs.tooling-test.result }}" \
             "${{ needs.notebooks.result }}" \
             "${{ needs.examples.result }}" \
             "${{ needs.e2e.result }}" \
