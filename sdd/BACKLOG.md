@@ -646,7 +646,7 @@ pattern (ID-193) can lock in the test shape.
   lint/typecheck failure before launching the test matrix. Defer until the
   next release cycle confirms wall-time is the binding constraint.
 
-- [~] **BK-219 — Centralise Python version config in CI; split coverage into dedicated job**
+- [~] **BK-219 — Centralise Python version config in CI; split primary-Python jobs**
   spec: — · effort: S · audience: infra.ci
   `ci.yml` hard-codes `"3.13"` (the primary dev/CI Python) in ~12 places and
   carries a fragile ternary `${{ matrix.python-version == '3.13' && '--cov...'
@@ -659,8 +659,10 @@ pattern (ID-193) can lock in the test shape.
   primary) as job outputs; (2) all scalar jobs consume
   `needs.setup.outputs.primary`; (3) `test` matrix becomes
   `fromJSON(needs.setup.outputs.test-matrix)` with plain `pytest
-  --ignore=tests/scripts` (no `--cov`); (4) new `test-coverage` job runs on
-  primary with `--cov-fail-under=95`; (5) new composite action
+  --ignore=tests/scripts` (no `--cov`); (4) new `test-primary` job on the
+  primary Python runs `--cov-fail-under=95 --ignore=tests/scripts` then
+  `pytest tests/scripts/ -q`, folding the former `tooling-test` job in to
+  share one runner; (5) new composite action
   `.github/actions/start-backends/action.yml` (boolean inputs
   `minio`/`azurite`/`sftp`) replaces duplicated service-startup boilerplate.
   Add `^\.github/actions/` to `CODE_PAT`. Update `gate` job.
