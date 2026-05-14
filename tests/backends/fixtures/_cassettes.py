@@ -206,10 +206,13 @@ def build_vcr_config(real_account: str | None) -> dict[str, Any]:
                 request.headers[key] = _USER_AGENT_NORMALIZED
             elif lower in ("x-ms-rename-source", "x-ms-copy-source"):
                 # These headers carry live account name and container; scrub both.
+                # Also normalise write_atomic temp-file UUIDs so re-records don't
+                # churn the header value unnecessarily.
                 val = request.headers[key]
                 if real_account:
                     val = val.replace(real_account, FAKE_ACCOUNT)
-                request.headers[key] = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, val)
+                val = _FILESYSTEM_PATTERN.sub(FAKE_FILESYSTEM, val)
+                request.headers[key] = _TMP_UUID_PATTERN.sub(r"\1", val)
         return request
 
     def before_record_response(response: dict[str, Any]) -> dict[str, Any]:

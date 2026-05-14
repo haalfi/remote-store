@@ -25,6 +25,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 _CONFORMANCE = "tests/backends/conformance/"
 
@@ -67,7 +68,7 @@ _BACKENDS: dict[str, dict] = {
         "cassette_dir": Path("tests/backends/cassettes/azure"),
         "sync_k": "azure_live and not async",
         "async_k": "azure_live_async",
-        "replay_k": "azure_replay or azure_replay_async",
+        "replay_k": "azure_replay",
         "account_fn": _resolve_azure_account,
     },
 }
@@ -77,7 +78,7 @@ _BACKENDS: dict[str, dict] = {
 # ---------------------------------------------------------------------------
 
 
-def _die(msg: str) -> None:
+def _die(msg: str) -> NoReturn:
     print(f"\nERROR: {msg}", file=sys.stderr)
     sys.exit(1)
 
@@ -161,8 +162,9 @@ def main() -> None:
 
     _section("Step 4 — verify scrub (no real credentials in cassettes)")
     account: str = cfg["account_fn"]()
+    account_bytes = account.encode()
     files = list(cassette_dir.glob("*.yaml"))
-    bad = [f.name for f in files if account in f.read_text()]
+    bad = [f.name for f in files if account_bytes in f.read_bytes()]
     if bad:
         print("  LEAK detected in:")
         for name in bad:

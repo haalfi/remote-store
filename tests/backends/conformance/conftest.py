@@ -222,7 +222,8 @@ def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 # Test function names known to expose real-ADLS-Gen2 conformance gaps
-# (BUG-197/200/202/203: emulator accepts calls that real ADLS rejects or mishandles).
+# (BUG-197/200/202/203: real ADLS Gen2 accepts or mishandles calls that Azurite
+# correctly rejects per spec).
 # Applied as xfail(strict=False) for real-Azure fixture IDs so that:
 #   - CI does not treat them as unexpected failures (they match live behaviour)
 #   - Once the bugs are fixed, they flip to xpass without blocking CI
@@ -276,14 +277,17 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     at collection time and adds ``pytest.mark.skip`` for any vcr-marked test
     whose cassette file does not exist yet.
 
-    The hook is a no-op in recording mode (``--record`` / ``--record-mode``
-    other than ``"none"``) since the cassette is about to be written.
+    The xfail marks are applied in **all** modes, including ``--record``.
+    During recording, xfail still lets the HTTP call complete (so the cassette
+    is written) and then gracefully handles the subsequent assertion failure
+    — without this, ``record_cassettes.py`` aborts at step 2 when the known-
+    failing tests return non-zero.  Only the missing-cassette skip is gated on
+    replay mode.
     """
     record_mode = config.getoption("--record-mode", default=None) or "none"
-    if record_mode != "none":
-        return
+
+    # HNS known-failures: applied unconditionally (record + replay).
     for item in items:
-        # HNS known-failures: mark xfail for real-Azure backends.
         fn_name = getattr(item, "originalname", item.name.split("[")[0])
         if fn_name in _AZURE_HNS_KNOWN_FAILURE_FN_NAMES and _has_real_azure_fixture(item.nodeid):
             item.add_marker(
@@ -292,7 +296,12 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
                     reason="Known real-ADLS-Gen2 conformance gap (see BUG-197/200/202/203 in BACKLOG.md)",
                 )
             )
-        # Missing-cassette skip.
+
+    # Missing-cassette skip: only relevant during replay (cassette is being
+    # written during recording, so its absence is expected).
+    if record_mode != "none":
+        return
+    for item in items:
         if item.get_closest_marker("vcr") is None:
             continue
         cassette = _cassette_path_for_item(item)
