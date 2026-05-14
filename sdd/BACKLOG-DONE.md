@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-219 — Centralise Python version config in CI; split primary-Python jobs**
+  `ci.yml` carried ~12 hardcoded `"3.13"` literals and a fragile per-version
+  coverage ternary (`matrix.python-version == '3.13' && '--cov...' || ''`).
+  Shipped: (1) renamed `changes` job to `setup`; added a "Resolve Python
+  versions" step whose `env:` block is the sole version source (`ALL_PYTHONS`,
+  `PRIMARY_PYTHON`, `MIN_PYTHON`) and emits `primary`, `test-matrix` (all
+  versions minus primary), and `typecheck-matrix` (min + primary) as job
+  outputs via `jq`; (2) all 9 scalar jobs consume
+  `${{ needs.setup.outputs.primary }}` — no more hardcoded `"3.13"`; (3) `test`
+  matrix is `fromJSON(needs.setup.outputs.test-matrix)` with plain
+  `pytest --ignore=tests/scripts` (no `--cov`); (4) `typecheck` matrix is
+  `fromJSON(needs.setup.outputs.typecheck-matrix)`; (5) new `test-coverage`
+  job runs on primary Python only with `--cov-fail-under=95
+  --ignore=tests/scripts` — coverage enforcement is now unconditional and
+  version-independent; (6) new composite action
+  `.github/actions/start-backends/action.yml` (boolean inputs `minio`,
+  `azurite`, `sftp`) replaces duplicated service-startup boilerplate across
+  `test`, `test-coverage`, `e2e`, and `pyarrow24-check`; `CODE_PAT` extended
+  with `^\.github/actions/`; `gate` updated. Bumping primary Python is now
+  one line in `setup`. CI-only — no CHANGELOG entry.
+  Audience: `infra.ci`.
+  Trace: [`sdd/traces/BK-219-ci-python-version-config.yml`](traces/BK-219-ci-python-version-config.yml).
+
 - [x] **BK-218 — Reshape `tests/test_depth_listing.py` (conformance marker + per-backend lift) (BK-191 slice 3/6)**
   Third migration-pending slice from BK-191's audit. `tests/test_depth_listing.py`
   fired Rule B via three function-local concrete-cloud imports — `_sftp`
