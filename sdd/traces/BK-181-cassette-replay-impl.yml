@@ -1,0 +1,118 @@
+id: BK-181
+title: "HTTP cassette/replay layer: implementation (PR 1a — infra, no cassettes)"
+trigger: "PoC (PR #626) settled the mechanism (pytest-recording/vcrpy + AsyncioRequestsTransport shim); the remaining L-effort work is wiring azure_replay into the parametrised conformance suite, which the PoC deliberately skipped"
+source_items:
+  - BK-181
+audience:
+  - infra.test
+  - contributor.tooling
+review_rounds: 0
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient — read plan and all referenced artefacts
+    steps:
+      - file: F:\Coding\Code\sandbox\BK-181-cassette-replay-impl-plan.md
+        section: "(full)"
+        read_type: gate
+        extract: "executable plan: PR sequencing, central design challenges (cassette-name bridging, UUID rewrite, vcr activation scope), open decisions"
+      - file: sdd/research/research-bk-181-cassette-replay-poc.md
+        section: "(full)"
+        read_type: gate
+        extract: "mechanism verdict, 6 success-criteria results, 8 carry-forward recommendations; async transport shim rationale"
+      - file: sdd/research/bk-181-poc/conftest.py
+        section: "vcr_config, azure_conn_str, pytest_collection_modifyitems, pytest_configure"
+        read_type: reference
+        extract: "PoC scrubbing layer, missing-cassette skip, plugin guard — direct porting source for _cassettes.py and conformance conftest additions"
+      - file: tests/backends/fixtures/azure_live.py
+        section: "_factory, register"
+        read_type: reference
+        extract: "conformance-<uuid8> filesystem name pattern the UUID-rewrite regex must match; BackendFixture registration pattern"
+      - file: tests/backends/fixtures/azure_live_async.py
+        section: "_factory, _aclose, register"
+        read_type: reference
+        extract: "conformance-async-<uuid8> variant; aclose pattern for azure_replay_async"
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture, fixture_params, marks field"
+        read_type: reference
+        extract: "marks tuple splat onto pytest.param; record_mode kwarg in vcr mark passes through merge_kwargs"
+      - file: tests/backends/fixtures/_loader.py
+        section: "load_fixture, VALID_KINDS"
+        read_type: reference
+        extract: "kind='replay' already valid; to_kwargs() excludes runtime callables"
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "azure_live, azure_live_async"
+        read_type: reference
+        extract: "TOML pattern for stage-3 real-live fixtures to mirror for stage-1 replay entries"
+      - file: tests/backends/conformance/conftest.py
+        section: "pytest_generate_tests, backend, async_backend"
+        read_type: gate
+        extract: "existing conformance parametrize structure; fixture_params walk that will auto-include azure_replay once registered"
+      - file: tests/conftest.py
+        section: "pytest_addoption, pytest_configure"
+        read_type: reference
+        extract: "existing --stage wiring to model --record option after; pytest_configure pattern for config.option mutation"
+      - file: .venv/Lib/site-packages/pytest_recording/plugin.py
+        section: "vcr_cassette_dir (scope=module), default_cassette_name, vcr (autouse)"
+        read_type: gate
+        extract: "vcr_cassette_dir is module-scoped; override must match scope; vcr autouse activates only when vcr_markers is non-empty; merge_kwargs applies marker kwargs AFTER vcr_config dict, so mark record_mode='none' overrides CLI rewrite"
+      - file: .venv/Lib/site-packages/pytest_recording/_vcr.py
+        section: "use_cassette, get_path_transformer"
+        read_type: reference
+        extract: "cassette path = {vcr_cassette_dir}/{default_cassette_name}.yaml; marker record_mode overrides session record_mode in use_cassette (not in block_network)"
+  - id: design
+    name: Resolve three design challenges from the plan
+    steps:
+      - file: sdd/research/bk-181-poc/conftest.py
+        section: "CONTAINER, FAKE_ACCOUNT, before_record_request"
+        read_type: reference
+        extract: "challenge 2 (UUID rewrite): PoC used fixed CONTAINER; real-tree solution uses _FILESYSTEM_PATTERN regex to match conformance(?:-async)?-[0-9a-f]{8} and sub to FAKE_FILESYSTEM"
+      - file: .venv/Lib/site-packages/pytest_recording/utils.py
+        section: "merge_kwargs"
+        read_type: reference
+        extract: "marker kwargs overwrite config dict unconditionally — so pytest.mark.vcr(record_mode='none') on replay fixture always forces replay even under --record session"
+  - id: implement
+    name: Implement PR 1a — infra, no cassettes
+    steps:
+      - file: pyproject.toml
+        section: "dev optional-dependencies"
+        read_type: verify
+        extract: "add pytest-recording>=0.13 to dev extra"
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "[fixture.azure_replay], [fixture.azure_replay_async]"
+        read_type: verify
+        extract: "stage=1, kind=replay, container=none, is_async false/true; inherits flat_namespace=false from [backend.azure]"
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "(new file)"
+        read_type: verify
+        extract: "FAKE_ACCOUNT/FAKE_FILESYSTEM/FAKE_CONN_STR constants; build_vcr_config factory; live_connection_string fail-loud; parse_account_name helper"
+      - file: tests/backends/fixtures/azure_replay.py
+        section: "(new file)"
+        read_type: verify
+        extract: "stage-1 replay fixture; marks=(pytest.mark.vcr(record_mode='none'),); factory uses FAKE_CONN_STR + FAKE_FILESYSTEM"
+      - file: tests/backends/fixtures/azure_replay_async.py
+        section: "(new file)"
+        read_type: verify
+        extract: "async replay fixture; AsyncioRequestsTransport injected via client_options; aclose callable"
+      - file: tests/backends/fixtures/azure_live.py
+        section: "register (marks)"
+        read_type: verify
+        extract: "add pytest.mark.vcr to marks tuple so --record captures live traffic"
+      - file: tests/backends/fixtures/azure_live_async.py
+        section: "register (marks)"
+        read_type: verify
+        extract: "same for async live fixture"
+      - file: tests/conftest.py
+        section: "pytest_addoption, pytest_configure"
+        read_type: verify
+        extract: "--record option added; pytest_configure maps it to config.option.record_mode='rewrite'"
+      - file: tests/backends/conformance/conftest.py
+        section: "pytest_configure, vcr_cassette_dir, default_cassette_name, vcr_config, pytest_collection_modifyitems"
+        read_type: verify
+        extract: "plugin guard; cassette-dir override (module-scoped); name normalisation; scrubbing fixture; missing-cassette skip hook"
+      - file: tests/backends/cassettes/azure/.gitkeep
+        section: "(new file)"
+        read_type: verify
+        extract: "empty directory marker; cassettes committed here in PR 1b"

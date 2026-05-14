@@ -104,6 +104,7 @@ dev = [
   "pytest-cov",
   "pytest-httpserver>=1.0.0",
   "pytest-asyncio>=0.23",
+  "pytest-recording>=0.13",
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
   # Type checking & linting

@@ -277,9 +277,9 @@ settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "dev"))
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Register the ``--stage=N`` CLI option (spec 048 / TEST-006).
+    """Register the ``--stage=N`` and ``--record`` CLI options (spec 048).
 
-    ``N`` selects which fixture tier participates in the session.
+    ``--stage=N`` selects which fixture tier participates in the session.
     Each stage includes all lower stages, so ``--stage=2`` runs Stage 1
     plus Stage 2. Default is auto-detected: Stage 2 when a Docker daemon
     is reachable, Stage 1 otherwise. Stage 3 (live cloud) is never
@@ -291,6 +291,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     where Docker is installed but the daemon is paused or slow: the
     ``docker info`` probe takes up to 5 s before falling back to Stage 1
     on every invocation; the env var short-circuits the probe.
+
+    ``--record`` maps to ``--record-mode=rewrite`` for pytest-recording /
+    vcrpy: it deletes any existing cassette for each vcr-marked test and
+    records fresh traffic. Use with ``--stage=3`` to refresh cassettes
+    from live backends. On Windows, also pass
+    ``--allowed-hosts=127.0.0.1,::1,localhost`` when ``--block-network``
+    is active to avoid blocking the ProactorEventLoop self-pipe.
     """
     parser.addoption(
         "--stage",
@@ -301,6 +308,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Test stage: 1 (repo-only), 2 (Docker), 3 (live cloud). "
         "Default: auto-detect (2 if Docker reachable, else 1). "
         "Override via RS_TEST_STAGE env var to skip the docker info probe.",
+    )
+    parser.addoption(
+        "--record",
+        action="store_true",
+        default=False,
+        help="Record cassettes from live backends (maps to --record-mode=rewrite). "
+        "Use with --stage=3 and the relevant RS_TEST_LIVE_* env vars.",
     )
 
 
@@ -339,6 +353,17 @@ def pytest_configure(config: object) -> None:
         )
     if isinstance(config, pytest.Config):
         _maybe_load_dotenv_for_live(config)
+        if config.getoption("--record", default=False):
+            import importlib.util  # noqa: PLC0415
+
+            if importlib.util.find_spec("pytest_recording") is None:
+                pytest.exit(
+                    "--record requires pytest-recording; run: uv pip install --python .venv pytest-recording",
+                    returncode=1,
+                )
+            # Map --record to --record-mode=rewrite for pytest-recording.
+            # The record_mode session fixture reads config.option.record_mode.
+            config.option.record_mode = "rewrite"
         stage = config.getoption("--stage")
         if stage is None:
             env_override = os.environ.get("RS_TEST_STAGE")

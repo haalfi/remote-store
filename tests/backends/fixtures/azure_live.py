@@ -120,7 +120,8 @@ register(
         factory=_factory,
         capabilities=_capabilities(),
         cleanup=_cleanup,
-        marks=(pytest.mark.live,),
+        # pytest.mark.vcr enables cassette recording when --record is active.
+        marks=(pytest.mark.live, pytest.mark.vcr),
         **_meta.to_kwargs(),
     )
 )

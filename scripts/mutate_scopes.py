@@ -316,11 +316,11 @@ def _build() -> dict[str, Scope]:
             )
 
     # Async-extended — per backend that wires a native or adapted async
-    # implementation today (memory, local). Mirrors the conformance-split
+    # implementation today (memory, local, azure). Mirrors the conformance-split
     # ``if not f: continue`` guard so a future backend with only stage-3
     # fixtures does not silently produce a scope with empty filter and
     # ``_needs(f)`` expanding to ``full_needs``.
-    for backend_name in ("local", "memory"):
+    for backend_name in ("azure", "local", "memory"):
         f = _filter_term(backend_name)
         if not f:
             continue
