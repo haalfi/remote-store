@@ -168,40 +168,17 @@ Cassettes under `tests/backends/cassettes/<backend>/` are committed
 snapshots of real HTTP traffic. Refresh them when the backend SDK,
 the scrubbing layer, or the real service responses change.
 
-**Prerequisite:** a real service account (Azure: set
-`RS_TEST_LIVE_HNS=1` and `AZURE_STORAGE_CONNECTION_STRING` in `.env`
-pointing at a real HNS-enabled ADLS Gen2 account, not Azurite).
+**Prerequisite (Azure):** see [Azure HNS account setup](../docs-src/guides/backends/azure-hns-setup.md)
+for credential and `.env` configuration.
 
 ```bash
-# Delete existing cassettes for the backend.
-python -c "import pathlib; [f.unlink() for f in \
-    pathlib.Path('tests/backends/cassettes/azure').glob('*.yaml')]"
-
-# Re-record sync fixtures.
-hatch run pytest --stage=3 --record -m live -k "azure_live and not async" \
-    tests/backends/conformance/ --tb=no -q
-
-# Re-record async fixtures.
-hatch run pytest --stage=3 --record -m live -k "azure_live_async" \
-    tests/backends/conformance/ --tb=no -q
-
-# Verify no real credentials or account names survived scrubbing.
-python -c "
-import pathlib, sys
-from tests.backends.fixtures._cassettes import live_connection_string, parse_account_name
-account = parse_account_name(live_connection_string())
-files = list(pathlib.Path('tests/backends/cassettes/azure').glob('*.yaml'))
-bad = [f.name for f in files if account in f.read_text()]
-if bad:
-    print('LEAK detected in:', *bad, sep='\n  ')
-    sys.exit(1)
-print('clean')
-"
-
-# Confirm replay passes at Stage 1 (28 HNS-bug failures are expected).
-hatch run pytest tests/backends/conformance/ \
-    -k 'azure_replay or azure_replay_async' --stage=1 --tb=no -q
+hatch run record-azure
 ```
+
+`scripts/record_cassettes.py --backend azure` deletes existing cassettes, re-records
+sync and async fixtures against a live ADLS Gen2 account, verifies no credentials
+survived scrubbing, and runs a Stage 1 replay smoke test. Pass `--verify-only` to
+skip recording and re-run only the verification steps.
 
 Per [TEST-009](specs/048-testing-architecture.md#test-009-cassette-refresh-is-explicit):
 CI does not auto-record; a refresh is a normal PR diff.

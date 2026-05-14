@@ -150,6 +150,7 @@ test-cov-branch = "pytest --cov=remote_store --cov-branch --cov-report=term-miss
 # Auto-discovers examples in getting_started/, configuration/, errors/,
 # advanced/, extensions/, plus snippets.  Skips backends/ (needs credentials)
 # and integrations/ (needs optional deps like PyArrow/Dagster).
+record-azure = "python scripts/record_cassettes.py --backend azure"
 examples = "python tests/scripts/run_examples.py"
 notebooks = "python tests/scripts/run_notebooks.py"
 # End-to-end tests against Docker backends (docker compose -f benchmarks/infra/docker-compose.yml up -d)
