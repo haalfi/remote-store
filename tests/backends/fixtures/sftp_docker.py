@@ -125,6 +125,18 @@ def _factory() -> Backend:
         _remove_base_path(base_path)
         raise
     _BASE_PATHS[id(backend)] = base_path
+
+    # Second banner pre-check: SFTPBackend._sftp is lazy — it connects on
+    # the first test-body operation, not during construction above. If the
+    # server is momentarily unresponsive right then, tenacity retries 3×
+    # with ≥2 s waits, exhausting the budget and raising BackendUnavailable
+    # mid-test. Confirm the banner is still readable here (5 retries,
+    # 0.3 s delay) so the lazy connect sees a live server. Convert any
+    # remaining instability into a clean skip rather than a confusing failure.
+    if not _wait_for_ssh_banner("127.0.0.1", INFRA.sftp_docker_port, retries=5, delay=0.3):
+        _cleanup(backend)
+        pytest.skip("SFTP SSH banner not readable before test body (Docker proxy instability)")
+
     return backend
 
 
