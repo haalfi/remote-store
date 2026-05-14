@@ -646,7 +646,6 @@ pattern (ID-193) can lock in the test shape.
   lint/typecheck failure before launching the test matrix. Defer until the
   next release cycle confirms wall-time is the binding constraint.
 
-
 ---
 
 ## Docs & Discoverability
