@@ -88,19 +88,27 @@ Recommend: lift the secret-masking parametrize block into `tests/backends/confor
 
 **Risk:** medium. The `__import__` lambdas signal an intentional checker bypass; whoever wrote them likely tried the obvious split and stopped. Worth checking the git blame for context before refactoring.
 
-### `tests/test_depth_listing.py` — disposition: **(b) conformance reshape + (a) lift three backend-specific snippets**
+### `tests/test_depth_listing.py` — disposition: **(a) lift three backend-specific snippets + (b) consolidate into existing conformance — reconsidered, see below**
 
-| Line | Backend | Notes |
+| Line | Backend | Construct |
 |---|---|---|
-| 294 | `_sftp` | SFTP-specific depth listing case |
-| 459 | `_s3_base` | S3 family flat-namespace case |
-| 469 | `_azure` | Azure HNS / flat-namespace dual-mode case |
+| 294 | `_sftp` | `SFTPBackend` import in the `sftp_stub` fixture of `TestSFTPBackendNativeDepth` |
+| 459 | `_s3_base` | `_S3Base` import in `test_s3_base_accepts_max_depth` (an `inspect.signature` check) |
+| 469 | `_azure` | `AzureBackend` import in `test_azure_accepts_max_depth` (an `inspect.signature` check) |
 
-The bulk of the file exercises DEPTH-001..004 via Memory and Local fixtures only. Three nested imports inject backend-specific depth assertions for flat-namespace clouds (S3) and hierarchical-namespace clouds (Azure HNS) where the depth semantics differ from a true filesystem.
+Only the three function-local imports above fire Rule B; the top-level imports (`_memory`, `_local`) are allowed and the rest of the file is clean. DEPTH-001 / DEPTH-002 are Store-level features (spec 037: "Client-side filtering at the Store level" / "No Backend ABC change"); DEPTH-003 is the backend-native `max_depth` optimisation, whose result is identical whether a backend prunes natively or the Store filters client-side.
 
-Recommend: move the file body to `tests/backends/conformance/test_depth_listing.py` parametrized over the full fixture registry. Lift the three backend-specific blocks to `tests/backends/sftp/test_depth_listing.py`, `tests/backends/s3/test_depth_listing.py`, `tests/backends/azure/test_depth_listing.py` (or to the existing HNS-aware Azure test file if one exists).
+**Shipped (BK-218):**
 
-**Refactor cost:** moderate. The conformance form uses an existing pattern; the per-backend pieces are small (single test each).
+- **(a)** `TestSFTPBackendNativeDepth` → `tests/backends/sftp/test_depth_listing.py`. Its `listdir_attr` call-count assertions verify that SFTP's recursive traversal *prunes* at the depth limit — a backend-specific implementation detail observable only by counting SDK round-trips. `test_s3_base_accepts_max_depth` → `tests/backends/s3/test_depth_listing.py` (`_s3_base` imports without `s3fs`, so it stays an unguarded Stage-1 signature check for the shared S3-family ABC).
+- **(b)** The Azure signature snippet was *not* moved to a new file: `tests/backends/azure/test_config.py::test_list_files_max_depth` (BUG-155) is a pre-existing behavioural Azure depth test that subsumes it. Consolidated by stacking `@pytest.mark.spec("DEPTH-003")` onto that test. Likewise, `tests/backends/conformance/test_listing.py::TestListFilesCompleteness` already parametrizes `list_files(max_depth=…)` over the full fixture registry — the cross-protocol DEPTH-003 reshape was effectively already done, so the marker was stacked there rather than creating a duplicate `conformance/test_depth_listing.py`.
+- DEPTH-001 / DEPTH-002 and the in-process-backend DEPTH-003 tests stay at root in `tests/test_depth_listing.py`, a TEST-010-compliant home once the concrete-cloud imports leave.
+
+`"test_depth_listing.py"` retired from `_BACKEND_AT_ROOT_GRANDFATHERED`.
+
+**Reconsidered against CLAUDE.md § Audits rule 3.** The audit's original (b) prescription — "move the file body to a new `tests/backends/conformance/test_depth_listing.py`" — would have duplicated `conformance/test_listing.py`'s existing registry-parametrised depth coverage, and it mis-modelled DEPTH-001/002 as backend-conformance when spec 037 makes them Store-level. The diagnosed pain (three concrete-cloud imports firing Rule B) is authoritative and is fully addressed by the (a) lift; the (b) reshape was reframed as consolidation onto pre-existing tests. Shipped under BK-218.
+
+**Refactor cost:** low (pure test relocation + marker stacking).
 
 **Risk:** low.
 
@@ -199,7 +207,7 @@ Recommend: split as described. The `_AzureRangeReader` cluster is the larger lif
 |---|---|---|---|
 | `test_config.py` | (a) per-backend split | moderate | yes |
 | `test_coverage_gaps.py` | (b) + (a) | moderate-to-high | yes |
-| `test_depth_listing.py` | (b) + lift 3 snippets | moderate | yes |
+| `test_depth_listing.py` | (a) lift 3 + (b) consolidate — reconsidered, see § per-file findings | low | yes |
 | `test_examples.py` | (c) keep at root | trivial (comment) | no (justified) |
 | `test_pbt_write_result.py` | (b) + (a) | moderate | yes |
 | `test_ping.py` | (b) + (a) — reconsidered, see § per-file findings | moderate | yes |
