@@ -59,6 +59,16 @@ phases:
         read_type: gate
         extract: "add -n auto -p no:benchmark to both pytest invocations"
         outcome: ok
+      - file: pyproject.toml
+        section: "test-cov-s1 / all script"
+        read_type: gate
+        extract: "add test-cov-s1 (--stage=1, no floor); wire into all; drop test-cov-strict from all — 95% gate is CI/release-only; 20-worker xdist overwhelmed OpenSSH MaxStartups on sftp_docker"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Coverage gate"
+        read_type: gate
+        extract: "update three-bullet split: test-cov / test-cov-s1 / test-cov-strict with rationale"
+        outcome: ok
   - id: verify
     name: Verify
     steps:

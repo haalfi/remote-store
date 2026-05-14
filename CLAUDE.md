@@ -66,10 +66,11 @@ Claude-specific shell constraints:
 
 The 95% coverage threshold is **structurally unreachable locally without Azurite running**. The Azure backends (`backends/_azure.py`, `aio/backends/_azure.py`) account for ~900 covered lines that vanish when Stage-2 fixtures skip; CI starts Azurite as a service, local runs depend on the developer.
 
-- `hatch run test-cov` reports coverage with no floor. Use this for everyday local feedback.
-- `hatch run test-cov-strict` adds `--cov-fail-under=95`. Lives in `hatch run all` and the publish workflow.
+- `hatch run test-cov` — coverage report, no floor. Everyday local feedback.
+- `hatch run test-cov-s1` — Stage 1 only (`--stage=1`, no Docker probe), no floor. Used by `hatch run all` so the pre-commit gate works without Docker services.
+- `hatch run test-cov-strict` — adds `--cov-fail-under=95`. Lives in the publish workflow and CI. Requires Azurite; do not add to `hatch run all`.
 
-If `test-cov-strict` (or `hatch run all`) fails locally on the coverage gate, **do not loop on "master is passing it, let me re-run"**. Either start Azurite (`docker run -d --name azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:3.35.0 azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck`) and re-run, or treat the strict gate as a CI/release-only check.
+If `test-cov-strict` fails locally on the coverage gate, **do not loop on "master is passing it, let me re-run"**. Either start Azurite (`docker run -d --name azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:3.35.0 azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck`) and re-run, or treat the strict gate as a CI/release-only check.
 
 ## Branching
 

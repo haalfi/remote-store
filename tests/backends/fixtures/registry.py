@@ -165,11 +165,20 @@ def fixture_params(*caps: Capability, is_async: bool = False) -> list[Any]:
     """Wrap ``fixtures`` results as ``pytest.param`` entries.
 
     Each entry carries the fixture's ``name`` as the parametrize id and
-    its ``marks`` (e.g. ``os_sensitive`` on local). Pass directly to
-    ``@pytest.mark.parametrize("backend", fixture_params(Cap.X),
-    indirect=True)``.
+    its ``marks`` (e.g. ``os_sensitive`` on local). Container-backed
+    fixtures (sftp, azurite, minio) also receive an ``xdist_group`` mark
+    so all their parametrized tests land on one xdist worker, preventing
+    simultaneous connections from multiple workers overwhelming the container.
+    Pass directly to ``@pytest.mark.parametrize("backend",
+    fixture_params(Cap.X), indirect=True)``.
     """
-    return [pytest.param(f, id=f.name, marks=list(f.marks)) for f in fixtures(*caps, is_async=is_async)]
+    params = []
+    for f in fixtures(*caps, is_async=is_async):
+        marks = list(f.marks)
+        if f.container != "none":
+            marks.append(pytest.mark.xdist_group(name=f.name))
+        params.append(pytest.param(f, id=f.name, marks=marks))
+    return params
 
 
 __all__ = [
