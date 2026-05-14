@@ -140,7 +140,7 @@ Recommend: lift size-regime PBT into `tests/backends/conformance/test_write_resu
 
 **Risk:** low-to-medium. The PBT runs slow; re-tuning Hypothesis `max_examples` per parametrize slot may be necessary.
 
-### `tests/test_ping.py` — disposition: **(a) per-backend split**
+### `tests/test_ping.py` — disposition: **(b) conformance + (a) per-backend split**
 
 | Line | Backend | Helper / test |
 |---|---|---|
@@ -149,15 +149,28 @@ Recommend: lift size-regime PBT into `tests/backends/conformance/test_write_resu
 | 79 | `_azure` | `_azure_backend()` builds an AzureBackend with mocked `get_container_properties` |
 | 206 | `_s3_pyarrow` | S3PyArrow ping path |
 
-Each helper constructs a single backend with a `MagicMock` SDK client and asserts the health-check method calls the expected SDK operation. These are **per-backend** assertions about the protocol-specific health endpoint — exactly the kind of behaviour TEST-003 says belongs in `tests/backends/<x>/`.
+`Backend.check_health()` is an ABC method (PING-002), not a capability. Every backend either inherits the default no-op or overrides it; the healthy-path invariant (`backend.check_health() is None` when reachable and authorized) is the **same single line** for every backend. That's conformance-shaped by definition.
 
-The cross-cutting part — `Store.ping()` delegating to `backend.check_health()` and propagating exceptions — uses MemoryBackend/LocalBackend and can stay at root (or fold into existing `tests/test_store.py` if such a file exists).
+What is genuinely backend-specific is narrower than the audit's first reading:
 
-Recommend: move S3 / SFTP / Azure / S3PyArrow ping helpers and their tests to `tests/backends/<x>/test_ping.py`. Keep `Store.ping()` delegation tests at root.
+- **Probe identity:** `head_bucket(Bucket=...)` (S3, PING-004), `stat(base_path)` (SFTP, PING-006), `get_container_properties()` (Azure, PING-007), `get_file_info(bucket)` (S3-PyArrow, PING-005). These pin the implementation's choice of probe and require SDK mocks to assert.
+- **Error mapping (PING-009):** SDK-specific exception types map to the standard taxonomy. Botocore's exception model, paramiko's `OSError(ENOENT)`, and azure-core's `ResourceNotFoundError` are unrelated. Per-backend.
+- **LocalBackend filesystem failure injection:** `rmdir(root)` → NotFound; `patch("os.access")` → PermissionDenied. Filesystem-specific.
 
-**Refactor cost:** moderate. Each helper + its 2–3 tests transplants cleanly.
+Recommend (hybrid disposition):
 
-**Risk:** low. The mocks are localised to each helper; no shared SDK fixture cross-talk.
+- **(b)** Add `tests/backends/conformance/test_check_health.py` with one parametrize over the registry: `check_health()` returns None or raises a `RemoteStoreError` subclass. (A naive "returns None" form overreaches — fixture preconditions vary, and the HTTP backend's check_health legitimately fails on a directory URL per the PING-004 spec note even when individual files are reachable. The PING-002 + PING-009 combined invariant — "outcome is None or a properly-mapped error class; native SDK exceptions never leak" — is the actual ABC contract.)
+- **(a)** Move SDK-mocked probe-identity + error-mapping tests to `tests/backends/<x>/test_ping.py` for S3 / SFTP / Azure and to `tests/backends/local/test_ping.py` for LocalBackend's missing-root / unreadable-root branches. The S3-PyArrow test appends to the existing `tests/backends/s3/test_pyarrow.py` (no `tests/backends/s3_pyarrow/` directory; mirrors BK-216).
+
+Root `tests/test_ping.py` keeps only `Store.ping()` delegation / propagation / child-store (PING-001) and the observe `on_ping` / `on_error` integration (PING-010). `test_default_check_health_is_noop` (PING-002 via memory), `test_memory_backend_always_healthy` (PING-008), and `test_healthy_local` (PING-003 happy) are dropped as duplicates of what the conformance parametrize now covers via the memory and local fixtures.
+
+**Refactor cost:** moderate. Conformance test is one class with one test; per-backend files are ~30 lines each; helpers transplant cleanly.
+
+**Risk:** low. Conformance reuses the existing `backend` indirect fixture and auto-walk pattern (`tests/backends/conformance/conftest.py`). Mocks remain localised to each per-backend helper.
+
+**Reconsidered against CLAUDE.md § Audits rule 3.** The audit's original (a) prescription would have created four near-identical per-backend "healthy returns None" assertions — the kind of cross-protocol duplication the conformance registry exists to eliminate. The pain point (TEST-003 violation at root) is fully addressed by the hybrid split. Shipped under BK-217.
+
+**Discovery during BK-217.** The conformance test surfaced a previously-untested code path: `S3Backend.check_health()` calls `self._fs.s3.head_bucket(...)` where `self._fs.s3` is an `aiobotocore.client.S3` whose `head_bucket` returns a coroutine — the current code never awaits it. `check_health()` silently returns None regardless of bucket state. Every pre-BK-217 test mocked `head_bucket` on a `MagicMock` and missed this. Filed as BUG-208 under a new `## S3 Correctness` section in `sdd/BACKLOG.md`; the conformance test xfails `s3_moto` until BUG-208 lands.
 
 ### `tests/test_seekable.py` — disposition: **(b) conformance reshape (capability) + (a) per-backend split (Azure range reader)**
 
@@ -189,7 +202,7 @@ Recommend: split as described. The `_AzureRangeReader` cluster is the larger lif
 | `test_depth_listing.py` | (b) + lift 3 snippets | moderate | yes |
 | `test_examples.py` | (c) keep at root | trivial (comment) | no (justified) |
 | `test_pbt_write_result.py` | (b) + (a) | moderate | yes |
-| `test_ping.py` | (a) per-backend split | moderate | yes |
+| `test_ping.py` | (b) + (a) — reconsidered, see § per-file findings | moderate | yes |
 | `test_seekable.py` | (b) + (a) Azure cluster | moderate | yes |
 
 **Zero files qualify for the "easy remove from allow-list" path.** Six need real refactoring (a/b); one needs only a justification comment (c). The per-file work is independently scopeable but is not single-turn-sized — each `(a)` / `(b)` slice is its own small PR.

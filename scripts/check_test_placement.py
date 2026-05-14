@@ -111,7 +111,7 @@ _BANNED_BACKEND_NAMES: frozenset[str] = _discover_banned_backend_names(ROOT / "s
 #     here. The single banned-backend site (``ReadOnlyHttpBackend`` for the
 #     HTTP read-only example) is structural, not migration-pending.
 #
-#   - The remaining five files are migration-pending follow-ups of BK-191
+#   - The remaining four files are migration-pending follow-ups of BK-191
 #     (a per-backend split, or b conformance reshape); see the audit doc for
 #     the per-file plan. Each retires its allow-list entry when its slice
 #     lands.
@@ -124,7 +124,6 @@ _BACKEND_AT_ROOT_GRANDFATHERED: frozenset[str] = frozenset(
         "test_depth_listing.py",
         "test_examples.py",
         "test_pbt_write_result.py",
-        "test_ping.py",
         "test_seekable.py",
     }
 )

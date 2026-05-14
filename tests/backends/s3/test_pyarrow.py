@@ -21,6 +21,7 @@ boto3 = pytest.importorskip("boto3", reason="boto3 not installed")
 
 
 from remote_store._capabilities import Capability, CapabilitySet  # noqa: E402
+from remote_store._errors import NotFound  # noqa: E402
 from tests._helpers import MINIO_KEY as _MINIO_KEY  # noqa: E402
 from tests._helpers import MINIO_SECRET as _MINIO_SECRET  # noqa: E402
 from tests._helpers import pyarrow_ge_24  # noqa: E402
@@ -416,6 +417,46 @@ def test_s3_pyarrow_retry_strategy() -> None:
         _ = backend._pa_fs
         assert mock_s3fs.call_args[1]["retry_strategy"].max_attempts == 9
     backend.close()
+
+
+# endregion
+
+
+# region: check_health() probe identity + error mapping (PING-005)
+# Migrated from tests/test_ping.py (BK-217 / BK-191 slice 2/6). The healthy-path
+# return-None assertion is covered by tests/backends/conformance/test_check_health.py;
+# this test pins the probe identity (pyarrow ``get_file_info(bucket)``) and the
+# FileNotFoundError -> NotFound mapping (PING-009).
+@pytest.mark.spec("PING-005")
+@pytest.mark.parametrize(
+    ("side_effect", "expected"),
+    [
+        pytest.param(None, None, id="healthy"),
+        pytest.param(FileNotFoundError("not found"), NotFound, id="not-found"),
+    ],
+)
+def test_s3_pyarrow_health(side_effect: Exception | None, expected: type[Exception] | None) -> None:
+    from unittest.mock import MagicMock
+
+    from pyarrow.fs import FileInfo as PyArrowFileInfo
+    from pyarrow.fs import S3FileSystem as PyArrowS3FileSystem
+
+    from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+    pa_mock = MagicMock(spec=PyArrowS3FileSystem)
+    if side_effect is not None:
+        pa_mock.get_file_info.side_effect = side_effect
+    else:
+        pa_mock.get_file_info.return_value = MagicMock(spec=PyArrowFileInfo)
+    backend = S3PyArrowBackend(bucket="test-bucket")
+    backend._pa_fs_instance = pa_mock
+    if expected is not None:
+        with pytest.raises(expected):
+            backend.check_health()
+    else:
+        backend.check_health()
+        assert pa_mock.get_file_info.call_count == 1
+        assert pa_mock.get_file_info.call_args.args == ("test-bucket",)
 
 
 # endregion
