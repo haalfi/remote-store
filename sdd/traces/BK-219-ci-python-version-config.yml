@@ -1,0 +1,60 @@
+id: BK-219
+title: "Centralise Python version config in CI; split coverage into dedicated job"
+trigger: "ci.yml hard-coded '3.13' in ~12 places and used a fragile per-version coverage ternary inside the test matrix; bumping the primary Python required hunting a dozen literals"
+source_items:
+  - BK-219
+audience:
+  - infra.ci
+expected_ripples:
+  - .github/workflows/ci.yml
+  - .github/actions/start-backends/action.yml
+  - sdd/BACKLOG.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bash Command Rules, Branching"
+        read_type: gate
+        extract: "no &&/||/; in Bash tool calls; no commit to master; multiple -m flags for commits"
+      - file: .github/workflows/ci.yml
+        section: "(full)"
+        read_type: gate
+        extract: "current job structure, 12 '3.13' literals, coverage ternary in test job, duplicated service-startup blocks"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: reference
+        extract: "BK max-done = 217; next free BK ID = 218"
+      - file: sdd/BACKLOG.md
+        section: "Lint / CI Completeness"
+        read_type: reference
+        extract: "placement for new BK-218 item"
+  - id: design
+    name: Design (locked in prior session)
+    steps:
+      - file: CLAUDE.md
+        section: "Dev commands"
+        read_type: reference
+        extract: "hatch run scripts; no shell redirects in Bash tool calls"
+  - id: implement
+    name: Implement
+    steps:
+      - file: .github/actions/start-backends/action.yml
+        section: "(full)"
+        read_type: reference
+        extract: "new composite action — boolean inputs minio/azurite/sftp; each step gated with if: inputs.X == 'true'"
+      - file: .github/workflows/ci.yml
+        section: "(full)"
+        read_type: reference
+        extract: "full rewrite: changes→setup, version-resolve step, test-matrix/typecheck-matrix outputs, test job plain pytest, new test-coverage job, all scalar jobs use needs.setup.outputs.primary, gate updated"
+      - file: sdd/BACKLOG.md
+        section: "Lint / CI Completeness"
+        read_type: reference
+        extract: "BK-218 item added as [~] in-progress"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "CI-only change; no CHANGELOG, no public API, no spec changes required"
