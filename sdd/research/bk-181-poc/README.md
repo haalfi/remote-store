@@ -20,7 +20,7 @@ real tree paths (`tests/backends/fixtures/azure_replay.py`,
 |---|---|
 | `conftest.py` | vcrpy wiring: scrubbing layer, record/replay connection-string switch, backend fixtures, missing-cassette → skip |
 | `test_replay_sync.py` | `AzureBackend`: happy-path round-trip + the BUG-197 unhappy case |
-| `test_replay_async.py` | `AsyncAzureBackend` over `AioHttpTransport` — the make-or-break risk axis |
+| `test_replay_async.py` | `AsyncAzureBackend` via the `AsyncioRequestsTransport` shim — vcrpy's `AioHttpTransport` stub can't stream a body, so the shim is the make-or-break finding (see the finding doc) |
 | `cassettes/` | Recorded, scrubbed YAML cassettes (committed) |
 
 This folder is outside `testpaths` in `pyproject.toml`, so a normal

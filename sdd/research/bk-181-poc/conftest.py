@@ -25,6 +25,7 @@ See ``README.md`` for how to record and replay.
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -258,6 +259,29 @@ def hns_directory(azure_conn_str: str) -> Callable[[str], str]:
         return _ensure_hns_directory(azure_conn_str, CONTAINER, path)
 
     return _make
+
+
+# ---------------------------------------------------------------------------
+# Plugin guard
+# ---------------------------------------------------------------------------
+def pytest_configure(config: pytest.Config) -> None:
+    """Fail fast with a clear message when ``pytest-recording`` is absent.
+
+    The ``record_mode`` / ``vcr`` / ``vcr_cassette_dir`` fixtures this
+    conftest builds on are injected by ``pytest-recording``, which is
+    installed ad-hoc (see ``README.md`` -- it is deliberately not in
+    ``pyproject.toml`` for this throwaway spike). Without the plugin pytest
+    would otherwise fail much later with an opaque ``fixture 'record_mode'
+    not found`` that looks like a conftest bug. BK-181 proper -- which will
+    depend on the plugin via the ``dev`` extra -- should keep an equivalent
+    guard so a stale env surfaces the same way.
+    """
+    if importlib.util.find_spec("pytest_recording") is None:
+        pytest.exit(
+            "pytest-recording is required for the BK-181 PoC but is not installed; "
+            "run: uv pip install --python .venv pytest-recording",
+            returncode=1,
+        )
 
 
 # ---------------------------------------------------------------------------

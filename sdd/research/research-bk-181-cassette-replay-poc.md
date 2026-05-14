@@ -77,7 +77,7 @@ Spike folder: [`sdd/research/bk-181-poc/`](bk-181-poc/) — outside
 
 Each test runs the *real* Azure SDK code path. The only thing that
 changes between record and replay is the transport: recording hits a real
-ADLS Gen2 account (`remotestorehns`), replay serves the committed cassette
+ADLS Gen2 account (`<real-account>`), replay serves the committed cassette
 from a fake connection string with no network.
 
 ---
@@ -145,7 +145,7 @@ BUG-197 reproduces on the async backend too*, against the real account.
 Verified: grepping all 4 committed cassettes for the real account name,
 `authorization`, `x-ms-date`, `x-ms-client-request-id`,
 `x-ms-request-id`, `AccountKey`, `sig=` returns **nothing**. The
-`before_record_request` host rewrite turns `remotestorehns` into
+`before_record_request` host rewrite turns `<real-account>` into
 `bk181poc` everywhere — URLs, headers, and response bodies.
 
 **Gap for BK-181 proper:** per-run identifiers embedded in *error-response
@@ -220,8 +220,12 @@ other three pass.
 5. **Scrubbing:** port the PoC's `vcr_config` and *add* a body-level regex
    scrub for `RequestId:` / `Time:` fragments and `User-Agent`
    normalisation.
-6. **Missing-cassette skip:** port the `pytest_collection_modifyitems`
-   hook; the cassette-path logic mirrors `pytest_recording.plugin`.
+6. **Missing-cassette skip + plugin guard:** port the
+   `pytest_collection_modifyitems` hook (the cassette-path logic mirrors
+   `pytest_recording.plugin`) and the `pytest_configure` plugin-availability
+   guard — the registry fixtures depend on `pytest-recording`'s
+   `record_mode` fixture, so a missing plugin should fail fast with a clear
+   message, not an opaque `fixture not found`.
 7. **S3 ("follows"):** a separate validation — `s3fs` rides
    `aiobotocore`/`botocore`, not `azure.core`. vcrpy supports botocore,
    but the streaming-body behaviour must be re-checked the same way this
