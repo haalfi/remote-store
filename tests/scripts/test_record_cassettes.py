@@ -53,6 +53,20 @@ class TestAzureBackendConfig:
         path = ROOT / rc._CONFORMANCE
         assert path.is_dir(), f"record_cassettes._CONFORMANCE = {rc._CONFORMANCE!r} is not a directory ({path})"
 
+    def test_sync_k_async_exclusion_relies_on_async_substring(self, rc):
+        """sync_k uses 'not async' to exclude the async fixture.
+
+        That exclusion only works while the async fixture name contains the
+        substring 'async'.  If it is ever renamed (e.g. to 'azure_live_aio'),
+        sync recording would silently pick up async traffic.
+        """
+        async_name = rc._BACKENDS["azure"]["async_k"]
+        assert "async" in async_name, (
+            f"sync_k = {rc._BACKENDS['azure']['sync_k']!r} excludes async fixtures "
+            f"via 'not async', but async_k = {async_name!r} does not contain 'async'; "
+            "the exclusion would silently stop working if the fixture is renamed"
+        )
+
     def test_k_filter_fixture_ids_are_registered(self, rc):
         """Fixture IDs referenced by k-filters must be in the fixture registry.
 

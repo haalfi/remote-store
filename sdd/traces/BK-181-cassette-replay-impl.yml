@@ -6,7 +6,7 @@ source_items:
 audience:
   - infra.test
   - contributor.tooling
-review_rounds: 2
+review_rounds: 4
 expected_ripples:
   - sdd/BACKLOG.md
 phases:
@@ -137,7 +137,23 @@ phases:
       - file: sdd/TESTING.md
         section: "Cassette Refresh guide"
         read_type: verify
-        extract: "refresh procedure added: delete → re-record sync → re-record async → scrub-check → Stage-1 replay verify"
+        extract: "refresh procedure added: delete → re-record sync → re-record async → scrub-check → Stage-1 replay verify; cross-links to azure-hns-setup.md instead of inlining env var names"
+      - file: scripts/record_cassettes.py
+        section: "(new file)"
+        read_type: verify
+        extract: "_resolve_azure_account (Azurite-rejection guard, delegates to parse_account_name); _BACKENDS table (cassette_dir, k-filters, min_cassettes=200); 5-step record+verify flow; hatch record-azure entry in pyproject.toml"
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES, _AZURE_REAL_FIXTURE_IDS, pytest_collection_modifyitems"
+        read_type: verify
+        extract: "15-name frozenset of real-ADLS-Gen2 HNS conformance gaps; xfail(strict=False) loop hoisted above record_mode guard so --record sessions don't abort on known-failing tests; _has_real_azure_fixture helper"
+      - file: tests/backends/conformance/test_xfail_guard.py
+        section: "(new file)"
+        read_type: verify
+        extract: "AST-walk guard: every name in _AZURE_HNS_KNOWN_FAILURE_FN_NAMES must match a live test_ function in the conformance directory; fails loud on stale frozenset entries"
+      - file: tests/scripts/test_record_cassettes.py
+        section: "(new file)"
+        read_type: verify
+        extract: "structural guards for record_cassettes.py: cassette_dir matches CASSETTE_DIR_AZURE; _CONFORMANCE is a real directory; k-filter fixture IDs are registered; sync_k async-exclusion relies on 'async' substring in async_k name"
 discovery_followups: []
 surprising_ripples:
   - "x-ms-copy-source echoed in response body with live account name — required both request and response header scrubbing; PoC had neither"

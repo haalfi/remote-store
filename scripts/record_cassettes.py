@@ -29,34 +29,51 @@ from typing import NoReturn
 
 _CONFORMANCE = "tests/backends/conformance/"
 
+# Add the repo root to sys.path so test helpers are importable without install.
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 
 # ---------------------------------------------------------------------------
 # Per-backend account-name resolvers
 # ---------------------------------------------------------------------------
+
+# Fragments that identify an Azurite (emulator) connection string.
+_AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "AccountName=devstoreaccount1")
 
 
 def _resolve_azure_account() -> str:
     """Return the real storage account name from AZURE_STORAGE_CONNECTION_STRING.
 
     Loads ``.env`` via python-dotenv (no-op if not installed or file absent).
-    Exits with a clear message if the env var is missing or malformed.
+    Exits with a clear message if the env var is missing, malformed, or points
+    at the Azurite emulator (which would produce a false-clean scrub result).
     """
+    from tests.backends.fixtures._cassettes import parse_account_name  # noqa: PLC0415
+
     try:
         from dotenv import load_dotenv  # noqa: PLC0415
 
         load_dotenv(override=False)
     except ImportError:
         pass
-    conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
-    for part in conn.split(";"):
-        if part.strip().lower().startswith("accountname="):
-            account = part.split("=", 1)[1].strip()
-            if account:
-                return account
-    _die(
-        "AZURE_STORAGE_CONNECTION_STRING is missing or has no AccountName.\n"
-        "  See docs-src/guides/backends/azure-hns-setup.md for setup instructions."
-    )
+    conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "").strip()
+    if not conn:
+        _die(
+            "AZURE_STORAGE_CONNECTION_STRING is missing.\n"
+            "  See docs-src/guides/backends/azure-hns-setup.md for setup instructions."
+        )
+    if any(frag in conn for frag in _AZURITE_FRAGMENTS):
+        _die(
+            "AZURE_STORAGE_CONNECTION_STRING points at Azurite; "
+            "scrub verification requires a real ADLS Gen2 account name.\n"
+            "  See docs-src/guides/backends/azure-hns-setup.md for setup instructions."
+        )
+    try:
+        return parse_account_name(conn)
+    except ValueError as exc:
+        _die(str(exc))
 
 
 # ---------------------------------------------------------------------------
@@ -70,6 +87,9 @@ _BACKENDS: dict[str, dict] = {
         "async_k": "azure_live_async",
         "replay_k": "azure_replay",
         "account_fn": _resolve_azure_account,
+        # Lower-bound guard: recording fewer cassettes than this means pytest
+        # silently selected zero tests (k-filter mismatch, stage gate, etc.).
+        "min_cassettes": 200,
     },
 }
 
@@ -159,6 +179,16 @@ def main() -> None:
             "--tb=short",
             "-q",
         )
+
+    if not opts.verify_only:
+        min_expected = cfg.get("min_cassettes", 0)
+        recorded = len(list(cassette_dir.glob("*.yaml")))
+        if recorded < min_expected:
+            _die(
+                f"only {recorded} cassette(s) recorded (expected >= {min_expected}); "
+                "pytest likely selected zero tests — check the k-filter and --stage value"
+            )
+        print(f"  Cassette count OK: {recorded} >= {min_expected}")
 
     _section("Step 4 — verify scrub (no real credentials in cassettes)")
     account: str = cfg["account_fn"]()
