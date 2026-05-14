@@ -112,8 +112,10 @@ def _real_account(record_mode: str) -> str | None:
 def vcr_config(_real_account: str | None) -> dict[str, Any]:
     """Scrub credentials and the real account name out of every cassette.
 
-    ``before_record_request`` runs only while recording, so the rewrite
-    closures can assume ``_real_account`` is set on that path.
+    ``before_record_request`` runs in *both* modes -- vcrpy also applies it
+    to the live request during replay so it can be matched against the
+    cassette. ``_real_account`` is ``None`` on the replay path, so the
+    ``if real:`` guards below are required, not optional.
     """
     real = _real_account
 
