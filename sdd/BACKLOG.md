@@ -262,7 +262,7 @@ BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
   **Done in PR 1a (#629):** `azure_replay` / `azure_replay_async` fixture wiring,
   `pytest-recording` dev dependency, `--record` flag, conformance conftest vcr
   hooks, scrubbing layer (`_cassettes.py`), cassette directory.
-  **Done in PR 1b (pending):** 253 Azure cassettes recorded from real ADLS Gen2;
+  **In PR 1b (this PR):** 253 Azure cassettes recorded from real ADLS Gen2;
   scrubbing additions (binary-safe body scrub, `_TMP_UUID_PATTERN` for
   `write_atomic` temp-file UUIDs, `x-ms-copy-source` request + response header
   scrub); `AsyncioRequestsTransport` gated on `_RS_CASSETTE_RECORDING` sentinel;

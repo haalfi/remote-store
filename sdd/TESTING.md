@@ -188,9 +188,14 @@ hatch run pytest --stage=3 --record -m live -k "azure_live_async" \
 # Verify no real credentials or account names survived scrubbing.
 python -c "
 import pathlib, sys
+from tests.backends.fixtures._cassettes import live_connection_string, parse_account_name
+account = parse_account_name(live_connection_string())
 files = list(pathlib.Path('tests/backends/cassettes/azure').glob('*.yaml'))
-bad = [f.name for f in files if 'REAL_ACCOUNT_NAME' in f.read_text()]
-sys.exit(bool(bad)) or print('clean')
+bad = [f.name for f in files if account in f.read_text()]
+if bad:
+    print('LEAK detected in:', *bad, sep='\n  ')
+    sys.exit(1)
+print('clean')
 "
 
 # Confirm replay passes at Stage 1 (28 HNS-bug failures are expected).

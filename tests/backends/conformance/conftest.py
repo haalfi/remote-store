@@ -221,8 +221,8 @@ def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
 # Missing-cassette skip hook (TEST-007) + HNS known-failures xfail
 # ---------------------------------------------------------------------------
 
-# Test function names known to fail on real ADLS Gen2 due to HNS bugs
-# (BUG-197 family: Azure does not enforce spec-required path/type validation).
+# Test function names known to expose real-ADLS-Gen2 conformance gaps
+# (BUG-197/200/202/203: emulator accepts calls that real ADLS rejects or mishandles).
 # Applied as xfail(strict=False) for real-Azure fixture IDs so that:
 #   - CI does not treat them as unexpected failures (they match live behaviour)
 #   - Once the bugs are fixed, they flip to xpass without blocking CI
@@ -289,7 +289,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(
                 pytest.mark.xfail(
                     strict=False,
-                    reason="HNS bug (BUG-197 family): real ADLS Gen2 does not enforce spec-required path/type validation",  # noqa: E501
+                    reason="Known real-ADLS-Gen2 conformance gap (see BUG-197/200/202/203 in BACKLOG.md)",
                 )
             )
         # Missing-cassette skip.
