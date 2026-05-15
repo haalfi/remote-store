@@ -1,7 +1,8 @@
 """Tests for Store.read_seekable() -- seekable reads on any backend.
 
-Tier 1: Capability.SEEKABLE_READ declaration (SEEK-001)
 Store API: Store.read_seekable() (SEEK-002 through SEEK-012)
+SEEK-001 capability declaration is in tests/backends/conformance/test_identity.py.
+SEEK-006 Azure _AzureRangeReader internals are in tests/backends/azure/test_seekable.py.
 
 Covers spec 036-seekable-read.md.
 """
@@ -12,7 +13,6 @@ import io
 
 import pytest
 
-from remote_store._capabilities import Capability
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
 
@@ -47,56 +47,6 @@ class _NonSeekableRaw(io.RawIOBase):
 
     def seekable(self) -> bool:
         return False
-
-
-# ===========================================================================
-# SEEK-001: Capability declaration
-# ===========================================================================
-
-
-class TestCapabilityDeclaration:
-    """SEEK-001: backends that always return seekable streams declare SEEKABLE_READ."""
-
-    @pytest.mark.spec("SEEK-001")
-    @pytest.mark.parametrize(
-        ("backend_mod", "backend_cls", "declares"),
-        [
-            pytest.param("remote_store.backends._local", "LocalBackend", True, id="local"),
-            pytest.param("remote_store.backends._memory", "MemoryBackend", True, id="memory"),
-            pytest.param("remote_store.backends._s3", "S3Backend", True, id="s3"),
-            pytest.param("remote_store.backends._s3_pyarrow", "S3PyArrowBackend", True, id="s3-pyarrow"),
-            pytest.param("remote_store.backends._sftp", "SFTPBackend", True, id="sftp"),
-        ],
-    )
-    def test_declares_seekable_read(self, backend_mod: str, backend_cls: str, declares: bool) -> None:
-        import importlib
-
-        mod = importlib.import_module(backend_mod)
-        cap_set = None
-        for name in ("_ALL_CAPABILITIES", "_SFTP_CAPABILITIES"):
-            cap_set = getattr(mod, name, None)
-            if cap_set is not None:
-                break
-        assert cap_set is not None
-        assert cap_set.supports(Capability.SEEKABLE_READ) is declares
-
-    @pytest.mark.spec("SEEK-001")
-    def test_azure_does_not_declare(self) -> None:
-        from remote_store.backends._azure import _ALL_CAPABILITIES
-
-        assert _ALL_CAPABILITIES.supports(Capability.SEEKABLE_READ) is False
-
-    @pytest.mark.spec("SEEK-001")
-    def test_http_does_not_declare(self) -> None:
-        from remote_store.backends._http import _CAPABILITIES
-
-        assert _CAPABILITIES.supports(Capability.SEEKABLE_READ) is False
-
-    @pytest.mark.spec("SEEK-001")
-    def test_memory_declares(self) -> None:
-        from remote_store.backends._memory import _ALL_CAPABILITIES
-
-        assert _ALL_CAPABILITIES.supports(Capability.SEEKABLE_READ) is True
 
 
 # ===========================================================================
@@ -308,121 +258,6 @@ class TestReadSeekableCleanup:
 
         assert len(opened) == 1
         assert opened[0].closed
-
-
-# ===========================================================================
-# SEEK-006: Azure Range Reader Override
-# ===========================================================================
-
-
-class TestAzureRangeReader:
-    """SEEK-006: _AzureRangeReader seekable reader with mock blob client."""
-
-    @pytest.mark.spec("SEEK-006")
-    def test_lazy_download(self) -> None:
-        """No data downloaded until read() is called."""
-        from remote_store.backends._azure import _AzureRangeReader
-
-        reader = _AzureRangeReader(_FakeBlobClient(b"hello"), 5)
-        assert reader.tell() == 0
-        # No reads yet -- nothing downloaded
-
-    @pytest.mark.spec("SEEK-006")
-    def test_seek_tell_no_io(self) -> None:
-        """seek() and tell() update position without I/O."""
-        from remote_store.backends._azure import _AzureRangeReader
-
-        client = _FakeBlobClient(b"0123456789")
-        reader = _AzureRangeReader(client, 10)
-        assert reader.seek(5) == 5
-        assert reader.tell() == 5
-        assert reader.seek(-2, 1) == 3  # SEEK_CUR
-        assert reader.seek(-1, 2) == 9  # SEEK_END
-        assert client.download_count == 0  # no HTTP calls
-
-    @pytest.mark.spec("SEEK-006")
-    def test_one_request_per_readinto(self) -> None:
-        """Each readinto() issues exactly one HTTP Range request."""
-        from remote_store.backends._azure import _AzureRangeReader
-
-        data = b"abcdefghij"
-        client = _FakeBlobClient(data)
-        reader = _AzureRangeReader(client, len(data))
-        buf = bytearray(5)
-        n = reader.readinto(buf)
-        assert n == 5
-        assert buf == b"abcde"
-        assert client.download_count == 1
-        n = reader.readinto(buf)
-        assert n == 5
-        assert buf == b"fghij"
-        assert client.download_count == 2
-
-    @pytest.mark.spec("SEEK-006")
-    def test_seek_then_read(self) -> None:
-        """Seek to offset, read from there."""
-        from remote_store.backends._azure import _AzureRangeReader
-
-        data = b"0123456789"
-        client = _FakeBlobClient(data)
-        reader = _AzureRangeReader(client, len(data))
-        reader.seek(7)
-        buf = bytearray(10)
-        n = reader.readinto(buf)
-        assert n == 3
-        assert buf[:n] == b"789"
-
-    @pytest.mark.spec("SEEK-006")
-    def test_eof_returns_zero(self) -> None:
-        """readinto() at EOF returns 0."""
-        from remote_store.backends._azure import _AzureRangeReader
-
-        reader = _AzureRangeReader(_FakeBlobClient(b"hi"), 2)
-        reader.seek(0, 2)  # seek to end
-        assert reader.readinto(bytearray(10)) == 0
-
-    @pytest.mark.spec("SEEK-006")
-    def test_error_mapping_wrapping(self) -> None:
-        """Range reader errors are caught by _ErrorMappingStream."""
-        from remote_store._stream import _ErrorMappingStream
-        from remote_store.backends._azure import _AzureRangeReader
-
-        client = _FakeBlobClient(b"data", fail_on_read=True)
-        reader = _AzureRangeReader(client, 4)
-
-        def classify(exc: Exception, path: str) -> Exception:
-            return exc
-
-        wrapped = _ErrorMappingStream(reader, classify, "test.txt")
-        assert wrapped.seekable()
-        # Actually exercise the error path: readinto raises OSError,
-        # _ErrorMappingStream catches it and passes to classify.
-        with pytest.raises(OSError):
-            wrapped.read(4)
-
-
-class _FakeBlobClient:
-    """Mock blob client for _AzureRangeReader unit tests."""
-
-    def __init__(self, data: bytes, *, fail_on_read: bool = False) -> None:
-        self._data = data
-        self.download_count = 0
-        self._fail = fail_on_read
-
-    def download_blob(self, *, offset: int = 0, length: int | None = None, max_concurrency: int = 1) -> _FakeDownloader:
-        self.download_count += 1
-        if self._fail:
-            raise OSError("simulated download failure")
-        end = offset + length if length is not None else len(self._data)
-        return _FakeDownloader(self._data[offset:end])
-
-
-class _FakeDownloader:
-    def __init__(self, data: bytes) -> None:
-        self._data = data
-
-    def readall(self) -> bytes:
-        return self._data
 
 
 # ===========================================================================

@@ -178,6 +178,44 @@ class TestAtomicMoveCapability:
             )
 
 
+def _seekable_canonical_fixtures() -> list[Any]:
+    """One sync fixture per backend family for SEEKABLE_READ declaration check.
+
+    Several families register more than one fixture; the declaration is
+    family-level, so dedup by ``BackendFixture.backend`` keeps one entry each.
+    """
+    seen: set[str] = set()
+    out: list[Any] = []
+    for f in all_fixtures():
+        if f.is_async or f.backend in seen:
+            continue
+        seen.add(f.backend)
+        out.append(pytest.param(f, id=f.backend))
+    return out
+
+
+class TestSeekableCapability:
+    """SEEK-001: backends that always return seekable streams declare SEEKABLE_READ."""
+
+    _DECLARES = {"local", "memory", "s3", "s3_pyarrow", "sftp", "sqlblob", "dafny"}
+    _DOES_NOT_DECLARE = {"azure", "http"}
+
+    @pytest.mark.spec("SEEK-001")
+    @pytest.mark.parametrize("fixture", _seekable_canonical_fixtures())
+    def test_seekable_read_capability_declaration(self, fixture: BackendFixture) -> None:
+        family = fixture.backend
+        supports = Capability.SEEKABLE_READ in fixture.capabilities
+        if family in self._DECLARES:
+            assert supports, f"{family} should declare SEEKABLE_READ"
+        elif family in self._DOES_NOT_DECLARE:
+            assert not supports, f"{family} should not declare SEEKABLE_READ"
+        else:
+            pytest.fail(
+                f"Backend family {family!r} is not listed in _DECLARES or _DOES_NOT_DECLARE. "
+                "Update TestSeekableCapability to classify this family."
+            )
+
+
 @pytest.mark.parametrize("backend", fixture_params(), indirect=True)
 class TestBackendResolveUniversalContract:
     """RES-025: Universal contract for Backend.resolve()."""

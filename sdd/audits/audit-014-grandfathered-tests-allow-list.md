@@ -202,6 +202,8 @@ Recommend: split as described. The `_AzureRangeReader` cluster is the larger lif
 
 **Risk:** low.
 
+**Shipped under BK-220.** Disposition confirmed as described above. **(b)** All of `TestCapabilityDeclaration` (SEEK-001 — both the string-form parametrize table and the `_azure` / `_http` function-local imports) moved to `tests/backends/conformance/test_identity.py::TestSeekableCapability`; uses `BackendFixture.capabilities` from the fixture registry, no concrete backend class imports. **(a)** `TestAzureRangeReader` plus helpers `_FakeBlobClient` / `_FakeDownloader` moved verbatim to a new `tests/backends/azure/test_seekable.py`. Root file retains Store-API tests SEEK-002 through SEEK-012 (excluding SEEK-006); `test_seekable.py` removed from `_BACKEND_AT_ROOT_GRANDFATHERED`. Two migration-pending entries remain plus the permanently-justified `test_examples.py`.
+
 ## Summary
 
 | File | Disposition | Refactor effort | Removable from allow-list after split? |
@@ -212,7 +214,7 @@ Recommend: split as described. The `_AzureRangeReader` cluster is the larger lif
 | `test_examples.py` | (c) keep at root | trivial (comment) | no (justified) |
 | `test_pbt_write_result.py` | (b) + (a) | moderate | yes |
 | `test_ping.py` | (b) + (a) — reconsidered, see § per-file findings | moderate | yes |
-| `test_seekable.py` | (b) + (a) Azure cluster | moderate | yes |
+| `test_seekable.py` | (b) + (a) Azure cluster — shipped BK-220, see § per-file findings | moderate | yes (done) |
 
 **Zero files qualify for the "easy remove from allow-list" path.** Six need real refactoring (a/b); one needs only a justification comment (c). The per-file work is independently scopeable but is not single-turn-sized — each `(a)` / `(b)` slice is its own small PR.
 

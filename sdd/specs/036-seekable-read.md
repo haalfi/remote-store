@@ -14,8 +14,8 @@ superseding the three-tier extension design in ADR-0016.
 
 **Invariant:** `Capability.SEEKABLE_READ` is an enum member. Backends whose
 `read()` always returns a seekable stream declare it in their `CapabilitySet`.
-**Postconditions:** Local, Memory, S3, S3-PyArrow, and SFTP declare
-`SEEKABLE_READ`. Azure and HTTP do not.
+**Postconditions:** Local, Memory, S3, S3-PyArrow, SFTP, SQLBlob, and Dafny
+declare `SEEKABLE_READ`. Azure and HTTP do not.
 
 ## SEEK-002: `Store.read_seekable()` Contract
 
@@ -40,8 +40,8 @@ overriding. Backends MAY override for optimization.
 
 **Invariant:** When `self.read(path)` returns a seekable stream,
 `read_seekable()` returns the same stream instance with no copying.
-**Postconditions:** Local, Memory, S3, S3-PyArrow, and SFTP return the
-`read()` stream directly. Zero overhead.
+**Postconditions:** Local, Memory, S3, S3-PyArrow, SFTP, SQLBlob, and Dafny
+return the `read()` stream directly. Zero overhead.
 
 ## SEEK-005: Spool Fallback for Non-Seekable Backends
 

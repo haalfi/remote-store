@@ -342,8 +342,8 @@ class TestBackendImportsAtRoot:
 
     def test_grandfathered_files_skipped(self, tmp_path):
         # A grandfathered name on a path that imports a banned backend must
-        # still report no violations — the BK-190 audit owns the migration.
-        f = tmp_path / "test_seekable.py"
+        # still report no violations — the BK-191 audit owns the migration.
+        f = tmp_path / "test_coverage_gaps.py"
         f.write_text(_AZURE_AT_ROOT, encoding="utf-8")
         assert _check_backend_imports_at_root(f) == []
 

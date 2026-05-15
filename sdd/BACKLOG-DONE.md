@@ -110,6 +110,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Audience: `infra.ci`.
   Trace: [`sdd/traces/BK-219-ci-python-version-config.yml`](traces/BK-219-ci-python-version-config.yml).
 
+- [x] **BK-220 — Reshape `tests/test_seekable.py` (conformance reshape + Azure per-backend lift) (BK-191 slice 4/6)**
+  Fourth migration-pending slice from BK-191's audit. `tests/test_seekable.py`
+  fired Rule B via function-local imports of `_azure` (in
+  `test_azure_does_not_declare` and the six `TestAzureRangeReader` methods) and
+  `_http` (in `test_http_does_not_declare`); the string-form `pytest.param`
+  parametrize table at lines 64–68 was AST-invisible to Rule B but logically
+  part of the same SEEK-001 capability-declaration cluster. Disposition:
+  **(b)** all of `TestCapabilityDeclaration` (SEEK-001) moved to
+  `tests/backends/conformance/test_identity.py` as `TestSeekableCapability`;
+  uses `BackendFixture.capabilities` from the fixture registry with
+  `_DECLARES = {local, memory, s3, s3_pyarrow, sftp, sqlblob, dafny}` and
+  `_DOES_NOT_DECLARE = {azure, http}` — no concrete backend class imports,
+  covers all registered families including `dafny` and `sqlblob` which the
+  original string-form table omitted. **(a)** `TestAzureRangeReader` plus
+  `_FakeBlobClient` / `_FakeDownloader` helpers moved verbatim to a new
+  `tests/backends/azure/test_seekable.py`. Root `tests/test_seekable.py`
+  retains Store-API tests SEEK-002 through SEEK-012 (excluding SEEK-006) using
+  only the allowed `MemoryBackend`; `"test_seekable.py"` removed from
+  `_BACKEND_AT_ROOT_GRANDFATHERED` in `scripts/check_test_placement.py`. Two
+  migration-pending entries remain (`test_coverage_gaps`, `test_pbt_write_result`)
+  plus the permanently-justified `test_examples.py`. Audit-014 prescription
+  confirmed accurate — `outcome: ok` on the audit read.
+  Audience: `infra.test`, `contributor.process`. Spec: TEST-003, SEEK-001, SEEK-006.
+  Trace: [`sdd/traces/BK-220-test-seekable-conformance-reshape-and-azure-per-backend.yml`](traces/BK-220-test-seekable-conformance-reshape-and-azure-per-backend.yml).
+
 - [x] **BK-218 — Reshape `tests/test_depth_listing.py` (conformance marker + per-backend lift) (BK-191 slice 3/6)**
   Third migration-pending slice from BK-191's audit. `tests/test_depth_listing.py`
   fired Rule B via three function-local concrete-cloud imports — `_sftp`
