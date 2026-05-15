@@ -6132,10 +6132,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#teststest_coverage_gapspy-disposition-b-conformance-reshape-secret-masking-a-per-backend-split-init-coverage" class="md-nav__link">
+  <a href="#teststest_coverage_gapspy-disposition-a-per-backend-split-all-masking-tests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        tests/test_coverage_gaps.py — disposition: (b) conformance reshape (secret-masking) + (a) per-backend split (init coverage)
+        tests/test_coverage_gaps.py — disposition: (a) per-backend split (all masking tests)
       
     </span>
   </a>
@@ -9250,10 +9250,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#teststest_coverage_gapspy-disposition-b-conformance-reshape-secret-masking-a-per-backend-split-init-coverage" class="md-nav__link">
+  <a href="#teststest_coverage_gapspy-disposition-a-per-backend-split-all-masking-tests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        tests/test_coverage_gaps.py — disposition: (b) conformance reshape (secret-masking) + (a) per-backend split (init coverage)
+        tests/test_coverage_gaps.py — disposition: (a) per-backend split (all masking tests)
       
     </span>
   </a>
@@ -9458,7 +9458,7 @@ this document.</p>
 <p>Every nested-import site is a <strong>per-backend</strong> assertion. The tests are not cross-cutting — each touches exactly one backend. They are bundled into <code>test_config.py</code> only because they all test "the config layer," but the config layer is itself per-backend. TEST-003 directly applies: move each backend's tests into <code>tests/backends/&lt;x&gt;/test_config.py</code>.</p>
 <p><strong>Refactor cost:</strong> moderate. ~13 tests split across <code>sftp/</code>, <code>s3/</code>, <code>azure/</code>, plus the S3-PyArrow tests (which append to <code>tests/backends/s3/test_pyarrow.py</code> — no <code>tests/backends/s3_pyarrow/</code> directory exists). Existing per-backend test files already exist (e.g., <code>tests/backends/sftp/test_config.py</code>), so the new tests land alongside neighbours.</p>
 <p><strong>Risk:</strong> low. No shared fixtures across the per-backend tests; each is self-contained.</p>
-<h3 id="teststest_coverage_gapspy-disposition-b-conformance-reshape-secret-masking-a-per-backend-split-init-coverage"><code>tests/test_coverage_gaps.py</code> — disposition: <strong>(b) conformance reshape (secret-masking) + (a) per-backend split (init coverage)</strong><a class="headerlink" href="#teststest_coverage_gapspy-disposition-b-conformance-reshape-secret-masking-a-per-backend-split-init-coverage" title="Permanent link">&para;</a></h3>
+<h3 id="teststest_coverage_gapspy-disposition-a-per-backend-split-all-masking-tests"><code>tests/test_coverage_gaps.py</code> — disposition: <strong>(a) per-backend split (all masking tests)</strong><a class="headerlink" href="#teststest_coverage_gapspy-disposition-a-per-backend-split-all-masking-tests" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -9503,6 +9503,7 @@ this document.</p>
 <p>Recommend: lift the secret-masking parametrize block into <code>tests/backends/conformance/test_secret_masking.py</code> (parametrize over registry fixtures); move the per-backend init tests into their respective <code>tests/backends/&lt;x&gt;/test_coverage_gaps.py</code>; replace the <code>__import__</code> string trick with proper conformance fixtures.</p>
 <p><strong>Refactor cost:</strong> moderate-to-high. The secret-masking machinery uses <code>Secret()</code> wrappers and per-backend <code>__repr__</code> substrings — conformance form needs a <code>secret_masking_spec</code> registry attribute or backend-side helper.</p>
 <p><strong>Risk:</strong> medium. The <code>__import__</code> lambdas signal an intentional checker bypass; whoever wrote them likely tried the obvious split and stopped. Worth checking the git blame for context before refactoring.</p>
+<p><strong>Reconsidered against CLAUDE.md § Audits rule 3 — shipped BK-222.</strong> The audit's proposed (b) conformance reshape cannot be implemented without naming concrete backend classes inside <code>tests/backends/conformance/</code> (violates the per-slice naming rule) or adding <code>secret_masking_spec</code> registry infrastructure (disproportionate). The three masking test groups (<code>test_backend_masks_set_secrets</code>, <code>test_backend_shows_none_for_unset_secrets</code>, <code>test_backend_accepts_secret</code>) test per-backend repr formats (<code>key='***'</code>) and internal attribute names (<code>_key</code>, <code>_secret</code>, <code>_password</code>, <code>_account_key</code>, etc.) — genuinely backend-specific implementation details, not generic conformance invariants. The universal "no credential leakage" invariant is already covered by <code>TestBackendIdentity::test_repr_masks_secrets</code> in <code>tests/backends/conformance/test_identity.py</code>. Disposition: <strong>(a) per-backend split for all masking tests.</strong> Each backend's masking and SEC-004 Secret-wrapper tests moved to the existing per-backend <code>test_config.py</code> (S3, S3PA → <code>tests/backends/s3/</code>; SFTP → <code>tests/backends/sftp/</code>; Azure → <code>tests/backends/azure/</code>). Root <code>tests/test_coverage_gaps.py</code> retains all tests using only allowed backends (<code>LocalBackend</code>, <code>MemoryBackend</code>). <code>"test_coverage_gaps.py"</code> removed from <code>_BACKEND_AT_ROOT_GRANDFATHERED</code>. BK-191 closed — all six slices complete.</p>
 <h3 id="teststest_depth_listingpy-disposition-a-lift-three-backend-specific-snippets-b-consolidate-into-existing-conformance-reconsidered-see-below"><code>tests/test_depth_listing.py</code> — disposition: <strong>(a) lift three backend-specific snippets + (b) consolidate into existing conformance — reconsidered, see below</strong><a class="headerlink" href="#teststest_depth_listingpy-disposition-a-lift-three-backend-specific-snippets-b-consolidate-into-existing-conformance-reconsidered-see-below" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -9718,9 +9719,9 @@ this document.</p>
 </tr>
 <tr>
 <td><code>test_coverage_gaps.py</code></td>
-<td>(b) + (a)</td>
-<td>moderate-to-high</td>
-<td>yes</td>
+<td>(a) per-backend split — reconsidered, see § per-file findings — shipped BK-222</td>
+<td>moderate</td>
+<td>yes (done)</td>
 </tr>
 <tr>
 <td><code>test_depth_listing.py</code></td>
