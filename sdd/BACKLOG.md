@@ -214,7 +214,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   `get_file_info` HNS branch and raise `InvalidPath`; update both live tests to assert
   `InvalidPath`. Spec: BE-016, ASYNC-016, BE-021.
 
-
 - [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
   spec: TEST-002, TEST-003 · effort: M · audience: infra.test
   Originally targeted the now-removed top-level

@@ -16,8 +16,9 @@ audience:
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
 
-review_rounds: 0
+review_rounds: 1
 
 phases:
   - id: orient
@@ -59,5 +60,5 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Backlog item touched"
         read_type: verify
-        extract: "Trace required (this file). Audience infra.test only => no CHANGELOG entry. backlogid.json unchanged (BK-223 < running max BK-224)"
+        extract: "Trace required (this file). Audience infra.test only => no CHANGELOG entry. backlogid.json bumped BK max 222 -> 223 (expected ripple)"
         outcome: ok
