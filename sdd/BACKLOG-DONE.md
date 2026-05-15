@@ -8,6 +8,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-223 — Tighten `match=` regex in `test_source_is_directory_raises_error` (sync + async)**
+  spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · audience: infra.test
+  Symmetric fix to BK-177's `test_destination_is_directory_raises_error` tightening.
+  Changed `match=f"mcds/{op}"` to `match=f"mcds/{op}(?!_dst)"` in both:
+  - `tests/backends/conformance/test_errors.py::TestMoveCopyErrorFidelity::test_source_is_directory_raises_error`
+  - `tests/backends/conformance/test_async_extended.py::TestMoveCopyErrorFidelity::test_source_is_directory_raises_error`
+  The negative lookahead prevents the dst path `mcds/{op}_dst.txt` from satisfying
+  the match, so a regression that flipped the error to be about dst would now be caught.
+  No spec change; no CHANGELOG entry (infra.test only).
+
 - [x] **BK-177 — Parametrize self-op tests + tighten `match=` regexes**
   spec: BE-018, BE-019 · audience: infra.test
   Two TESTING.md alignments on the sync side, mirroring PR #580 (async).

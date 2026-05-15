@@ -1,0 +1,64 @@
+id: BK-223
+title: "Tighten match= regex in test_source_is_directory_raises_error (sync + async)"
+trigger: |
+  PR #640 (BK-177) review identified that test_source_is_directory_raises_error in
+  both test_errors.py and test_async_extended.py used match=f"mcds/{op}", which
+  matches both the src path mcds/{op} and the dst path mcds/{op}_dst.txt due to
+  shared prefix. A regression that flipped the error to be about dst would not be
+  caught. BK-177 fixed the symmetric dst-side test; BK-223 tracks the src-side fix.
+source_items:
+  - BK-223
+  - BK-177
+
+audience:
+  - infra.test
+
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+
+review_rounds: 1
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/traces/bk-177-self-op-parametrize-and-match-tighten.yml
+        section: "discovery_followups"
+        read_type: gate
+        extract: "BK-177 trace confirms BK-223 is the symmetric src-side match= fix, born in PR #640 review"
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestMoveCopyErrorFidelity::test_source_is_directory_raises_error (lines 218-224)"
+        read_type: gate
+        extract: "Current match=f\"mcds/{op}\" — shared prefix with dst path mcds/{op}_dst.txt; fix target confirmed"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestMoveCopyErrorFidelity::test_source_is_directory_raises_error (lines 444-452)"
+        read_type: gate
+        extract: "Async mirror uses the same weak match= — both sides need the same fix"
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestMoveCopyErrorFidelity::test_source_is_directory_raises_error"
+        read_type: reference
+        extract: "Changed match=f\"mcds/{op}\" to match=f\"mcds/{op}(?!_dst)\" — Option A (trailing slash) rejected because error messages omit the trailing slash from the path"
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestMoveCopyErrorFidelity::test_source_is_directory_raises_error"
+        read_type: reference
+        extract: "Same negative-lookahead fix applied symmetrically on the async side"
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace required (this file). Audience infra.test only => no CHANGELOG entry. backlogid.json bumped BK max 222 -> 223 (expected ripple)"
+        outcome: ok
