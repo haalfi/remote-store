@@ -9697,6 +9697,7 @@ this document.</p>
 <p>Recommend: split as described. The <code>_AzureRangeReader</code> cluster is the larger lift.</p>
 <p><strong>Refactor cost:</strong> moderate. The Azure cluster is six tests; the conformance reshape is one parametrize.</p>
 <p><strong>Risk:</strong> low.</p>
+<p><strong>Shipped under BK-220.</strong> Disposition confirmed as described above. <strong>(b)</strong> All of <code>TestCapabilityDeclaration</code> (SEEK-001 — both the string-form parametrize table and the <code>_azure</code> / <code>_http</code> function-local imports) moved to <code>tests/backends/conformance/test_identity.py::TestSeekableCapability</code>; uses <code>BackendFixture.capabilities</code> from the fixture registry, no concrete backend class imports. <strong>(a)</strong> <code>TestAzureRangeReader</code> plus helpers <code>_FakeBlobClient</code> / <code>_FakeDownloader</code> moved verbatim to a new <code>tests/backends/azure/test_seekable.py</code>. Root file retains Store-API tests SEEK-002 through SEEK-012 (excluding SEEK-006); <code>test_seekable.py</code> removed from <code>_BACKEND_AT_ROOT_GRANDFATHERED</code>. Two migration-pending entries remain plus the permanently-justified <code>test_examples.py</code>.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -9746,9 +9747,9 @@ this document.</p>
 </tr>
 <tr>
 <td><code>test_seekable.py</code></td>
-<td>(b) + (a) Azure cluster</td>
+<td>(b) + (a) Azure cluster — shipped BK-220, see § per-file findings</td>
 <td>moderate</td>
-<td>yes</td>
+<td>yes (done)</td>
 </tr>
 </tbody>
 </table>

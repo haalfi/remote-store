@@ -9369,8 +9369,8 @@ superseding the three-tier extension design in ADR-0016.</p>
 <h2 id="seek-001-capability-declaration">SEEK-001: Capability Declaration<a class="headerlink" href="#seek-001-capability-declaration" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Capability.SEEKABLE_READ</code> is an enum member. Backends whose
 <code>read()</code> always returns a seekable stream declare it in their <code>CapabilitySet</code>.
-<strong>Postconditions:</strong> Local, Memory, S3, S3-PyArrow, and SFTP declare
-<code>SEEKABLE_READ</code>. Azure and HTTP do not.</p>
+<strong>Postconditions:</strong> Local, Memory, S3, S3-PyArrow, SFTP, SQLBlob, and Dafny
+declare <code>SEEKABLE_READ</code>. Azure and HTTP do not.</p>
 <h2 id="seek-002-storeread_seekable-contract">SEEK-002: <code>Store.read_seekable()</code> Contract<a class="headerlink" href="#seek-002-storeread_seekable-contract" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Store.read_seekable(path)</code> always returns a seekable
 <code>BinaryIO</code> stream positioned at byte 0.
@@ -9389,8 +9389,8 @@ overriding. Backends MAY override for optimization.</p>
 <h2 id="seek-004-passthrough-for-seekable-backends">SEEK-004: Passthrough for Seekable Backends<a class="headerlink" href="#seek-004-passthrough-for-seekable-backends" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> When <code>self.read(path)</code> returns a seekable stream,
 <code>read_seekable()</code> returns the same stream instance with no copying.
-<strong>Postconditions:</strong> Local, Memory, S3, S3-PyArrow, and SFTP return the
-<code>read()</code> stream directly. Zero overhead.</p>
+<strong>Postconditions:</strong> Local, Memory, S3, S3-PyArrow, SFTP, SQLBlob, and Dafny
+return the <code>read()</code> stream directly. Zero overhead.</p>
 <h2 id="seek-005-spool-fallback-for-non-seekable-backends">SEEK-005: Spool Fallback for Non-Seekable Backends<a class="headerlink" href="#seek-005-spool-fallback-for-non-seekable-backends" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> When <code>self.read(path)</code> returns a non-seekable stream,
 the default <code>read_seekable()</code> spools it into a <code>SpooledTemporaryFile</code>.
