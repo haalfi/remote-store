@@ -281,6 +281,10 @@ rather than failing.
 pipeline coverage) is deferred to the implementing BK item. This
 spec fixes the contract, not the mechanism.
 
+**Scope:** [TEST-008](#test-008-replay-scope-is-http-transport-only)
+narrows this invariant — see its "Noted exception — S3" paragraph for
+the one HTTP backend that does not ship a `<backend>_replay` fixture.
+
 ---
 
 ## TEST-008: Replay Scope is HTTP-Transport Only

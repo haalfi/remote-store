@@ -32,9 +32,11 @@ S3 without network or Docker today. The original BK-181 motivation
 ("turn Azure HNS bugs into always-on regression guards") never applied
 to S3 — Azure needed cassettes because Azurite cannot emulate the
 hierarchical namespace, while moto emulates S3 with enough fidelity for
-the conformance contract. Spec [TEST-007](../specs/048-testing-architecture.md)
-is amended (TEST-008) to note this exception with a forward reference
-to this finding and the follow-up BK item.
+the conformance contract. Spec [TEST-008](../specs/048-testing-architecture.md#test-008-replay-scope-is-http-transport-only)
+gains a "Noted exception — S3" paragraph that narrows
+[TEST-007](../specs/048-testing-architecture.md#test-007-http-cassette-and-replay-layer)'s
+otherwise-universal "HTTP backends support replay" invariant; the
+paragraph points at this finding for the diagnosis.
 
 ## What was tested
 
@@ -107,8 +109,9 @@ chunked reader the vcrpy stub cannot drive. Sync entry points
 3. **Wait for a vcrpy upstream fix.** *Verdict: not under our
    control.* vcrpy's `aiohttp_stubs.py` is a long-standing rough edge
    ([kevin1024/vcrpy](https://github.com/kevin1024/vcrpy)). No fix is
-   scheduled. BK-181's revisit item tracks this so future maintainers
-   know what to retry against new vcrpy releases.
+   scheduled. This finding and the preserved spike folder are the
+   retest entry points if a future contributor wants to re-evaluate
+   against a new vcrpy release.
 4. **Write a custom `aiobotocore` recorder.** *Verdict: out of scope.*
    A bespoke recorder would be a sizeable internal tool, and the
    value is low: `s3_moto` already covers the Stage-1 conformance
@@ -146,9 +149,11 @@ Close BK-181 at PR 2 with the S3 slice deferred:
 1. Move BK-181 from BACKLOG.md to BACKLOG-DONE.md (status flips
    `[~]` → `[x]`) with the Azure-shipped, S3-deferred outcome
    documented in the close-out entry.
-2. Amend [spec 048 TEST-008](../specs/048-testing-architecture.md) so
-   the "HTTP-transport backends support replay" invariant lists S3 as
-   a noted exception, pointing here for the diagnosis.
+2. Amend [spec 048 TEST-008](../specs/048-testing-architecture.md#test-008-replay-scope-is-http-transport-only)
+   with a "Noted exception — S3" paragraph that narrows
+   [TEST-007](../specs/048-testing-architecture.md#test-007-http-cassette-and-replay-layer)'s
+   "HTTP backends support replay" invariant, pointing here for the
+   diagnosis.
 
 No follow-up backlog item is filed: `s3_moto` already covers Stage 1,
 no S3-specific contract today demands cassette-level fidelity, and the

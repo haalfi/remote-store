@@ -21,19 +21,31 @@ to fix `aiohttp_stubs.py`.
 
 ## Tests
 
-* `test_spike_s3_write_read_small` — 5-byte round trip. Catches a
+* `test_spike_s3_write_read_small` — 24-byte round trip. Catches a
   catastrophic body-drop bug for non-streaming paths.
 * `test_spike_s3_read_streaming` — 1 MiB write + `read()`-stream-chunk
   iteration. The streaming-body path most analogous to what Azure
   `AioHttpTransport.__anext__` deadlocks on.
 
-## Decision
+## Decision (pre-spike plan)
 
 * **Pass** (both tests record + replay cleanly, bytes match): proceed
   to full PR 2 wiring as planned.
 * **Fail** (record drops body, replay deadlocks, or bytes mismatch):
-  land an infeasibility doc, open a new BK item, close BK-181 with
-  the caveat that S3 replay is blocked on a vcrpy upstream fix.
+  land an infeasibility doc and close BK-181 with the caveat that S3
+  replay is blocked on a vcrpy upstream fix.
+
+## Outcome
+
+**Fail branch landed.** The spike confirmed vcrpy cannot drive the
+`aiobotocore` request/response wrappers `s3fs` rides on; no cassette
+is ever serialised. Full diagnosis in
+[`research-bk-181-s3-cassette-infeasibility.md`](../research-bk-181-s3-cassette-infeasibility.md).
+BK-181 closed at the Azure scope (PRs #629/#630) with **no follow-up
+backlog item filed** — `s3_moto` already covers Stage-1 in-process S3
+coverage, so the user-facing gap is small. If a future need surfaces,
+this folder and the infeasibility doc are the entry points to
+re-evaluate the decision.
 
 ## Run
 

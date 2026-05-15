@@ -9,7 +9,11 @@ Decision gate (see README.md):
   s3fs; proceed to PR 2 production wiring.
 * Either test drops the body on record, deadlocks on replay, or returns
   mismatched bytes → vcrpy's aiohttp stub bites s3fs; PR 2 shrinks to an
-  infeasibility doc + new BK item.
+  infeasibility doc and closes BK-181 with no follow-up backlog item
+  (because s3_moto already covers Stage 1).
+
+Outcome: the fail branch landed. See
+``sdd/research/research-bk-181-s3-cassette-infeasibility.md``.
 """
 
 from __future__ import annotations

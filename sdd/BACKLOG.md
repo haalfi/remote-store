@@ -55,7 +55,7 @@ and the highest ID already in this file, then take the next integer. Run
 
 Confirmed defects on real ADLS Gen2 accounts plus testing infrastructure for live coverage.
 Bug fixes follow the `hdi_isfolder` probe pattern established by BUG-190/BUG-192.
-BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
+BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/replay layer from BK-181 (landed).
 
 - [ ] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)**
   spec: BE-013, BE-014, BE-021, ASYNC-013 · effort: M · audience: library.maintainer
@@ -247,8 +247,9 @@ BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
   `tests/backends/azure/aio/test_live_hns.py`. BK-180 added live `azure_live`
   / `azure_live_async` conformance fixtures, so most happy-path coverage
   in the moved files is now duplicated against a real ADLS Gen2 account.
-  Once BK-181 lands HTTP cassette/replay, delete the duplicated cases and
-  keep only HNS-unique tests at the new paths: DFS AsyncIterator protocol
+  Now that BK-181 has landed the Azure cassette/replay layer (PRs #629/#630),
+  delete the duplicated cases and keep only HNS-unique tests at the new
+  paths: DFS AsyncIterator protocol
   (BUG-194 regression guard), etag normalisation cross-check
   (`get_file_properties` vs `get_file_info`), directory-blob `hdi_isfolder`
   probes, and any remaining deviation guards. Async equivalents stay under
