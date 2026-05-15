@@ -448,7 +448,7 @@ class TestMoveCopyErrorFidelity:
         _require(async_backend, cap, Capability.WRITE)
         _skip_flat_namespace(async_backend)
         await async_backend.write(f"mcds/{op}/file.txt", b"x")
-        with pytest.raises(InvalidPath, match=f"mcds/{op}"):
+        with pytest.raises(InvalidPath, match=f"mcds/{op}(?!_dst)"):
             await _do_op(async_backend, op, f"mcds/{op}", f"mcds/{op}_dst.txt")
 
     @pytest.mark.spec("ASYNC-018")

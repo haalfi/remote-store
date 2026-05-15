@@ -215,19 +215,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   `InvalidPath`. Spec: BE-016, ASYNC-016, BE-021.
 
 
-- [ ] **BK-223 — Tighten `match=` regex in `test_source_is_directory_raises_error` (sync + async)**
-  spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · effort: S · audience: infra.test
-  Symmetric weakness to BK-177's `test_destination_is_directory_raises_error`
-  fix. The current `match=f"mcds/{op}"` on both sides matches both the src
-  path `mcds/{op}` and the dst path `mcds/{op}_dst.txt` (shared prefix), so a
-  regression that flipped the error to be about dst would not be caught.
-  Pin to `match=f"mcds/{op}/"` (or `match=f"mcds/{op}(?!_dst)"`) at:
-  - `tests/backends/conformance/test_errors.py:223`
-     (`TestMoveCopyErrorFidelity::test_source_is_directory_raises_error`)
-  - `tests/backends/conformance/test_async_extended.py:451`
-     (`TestMoveCopyErrors::test_source_is_directory_raises_error`)
-  Discovered during PR #640 review of BK-177.
-
 - [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
   spec: TEST-002, TEST-003 · effort: M · audience: infra.test
   Originally targeted the now-removed top-level
