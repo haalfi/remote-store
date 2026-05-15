@@ -1,0 +1,116 @@
+id: BK-222
+title: "Migrate tests/test_coverage_gaps.py — per-backend split (BK-191 slice 6/6)"
+trigger: "BK-191 audit (sdd/audits/audit-014) flagged tests/test_coverage_gaps.py as a TEST-003 violation at root and proposed disposition (b) conformance reshape (secret-masking) + (a) per-backend split (init coverage). Re-reading the actual Rule B violations confirmed two clusters: function-local imports of _s3/_s3_pyarrow/_sftp/_azure in factory helpers (lines 377–429) used by the masking tests, plus __import__ lambda forms (491–512) specifically crafted to evade the AST checker. All violations serve three test groups (test_backend_masks_set_secrets, test_backend_shows_none_for_unset_secrets, test_backend_accepts_secret) that check backend-specific repr formats (key='***') and internal attribute names (_key, _secret, _password, _account_key, etc.). The (b) conformance prescription was reframed: conformance files must not name concrete backend classes, and the masking tests encode per-backend implementation details rather than generic invariants. The universal 'no credential leakage' invariant is already covered by TestBackendIdentity::test_repr_masks_secrets in test_identity.py. Disposition reframed to (a) per-backend split for all masking tests."
+source_items:
+  - BK-222
+  - BK-191
+audience:
+  - infra.test
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/audits/audit-014-grandfathered-tests-allow-list.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "tests/test_coverage_gaps.py — disposition: (b) conformance reshape (secret-masking) + (a) per-backend split (init coverage)"
+        read_type: gate
+        outcome: misleading
+        extract: "audit proposes (b) conformance reshape for secret-masking + (a) per-backend for init tests; prescription reframed — conformance files cannot name concrete backend classes; the 'per-backend init tests' mentioned are actually the factory helpers for the masking tests, not standalone tests; all violations serve the three masking test groups"
+      - file: tests/test_coverage_gaps.py
+        section: "(full)"
+        read_type: gate
+        extract: "Rule B violations: _s3_with_secrets/_s3_no_secrets (lines 377/384), _s3pa_with_secrets/_s3pa_no_secrets (390/396), _sftp_with_secrets/_sftp_no_secrets (402/408), _azure_with_secrets/_azure_no_secrets (414/427) — all function-local, all are factory helpers for the three masking test groups; __import__ lambda forms (491–512) for _SECRET_CASES (SEC-004 marker); TestBackendRepr (test_local_repr, test_memory_repr*) uses only LocalBackend + MemoryBackend — stays; all other tests use only allowed backends"
+      - file: tests/backends/conformance/test_identity.py
+        section: "TestBackendIdentity::test_repr_masks_secrets"
+        read_type: gate
+        extract: "already covers the universal 'no credential leakage' invariant via fixture registry; checks that fixture-specific secrets (testing, testpass, Eby8vdM02xNOcqFlqUwJPLlmEtl) do not appear in repr — this is the generic conformance form; the masking tests in test_coverage_gaps.py go deeper (check specific masked format key='***' and Secret wrapper storage)"
+      - file: scripts/check_test_placement.py
+        section: "Rule B + _BACKEND_AT_ROOT_GRANDFATHERED + _ALLOWED_BACKEND_MODULES"
+        read_type: gate
+        extract: "_ALLOWED_BACKEND_MODULES = {_memory, _local, _fileinfo}; Rule B walks full AST so function-local imports fire; __import__ string forms do NOT fire Rule B (they are function-call nodes, not ImportFrom nodes); after removal of factory helpers and masking tests, only LocalBackend + MemoryBackend imports remain — no Rule B violations"
+      - file: sdd/traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml
+        section: "(full — template)"
+        read_type: reference
+        extract: "template for trace structure and disposition-reframe pattern"
+      - file: tests/backends/s3/test_config.py
+        section: "import guards + existing local-import pattern"
+        read_type: reference
+        extract: "module-level pytest.importorskip(moto, s3fs, boto3); S3Backend imported inside test functions via local import — same pattern for masking tests"
+      - file: tests/backends/azure/test_config.py
+        section: "_BACKENDS list + autouse _close_tracked_backends fixture"
+        read_type: reference
+        extract: "_BACKENDS list + autouse fixture for closing AzureBackend instances — masking tests must append to _BACKENDS to avoid ResourceWarning"
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/s3/test_config.py
+        section: "TestS3CredentialMasking (new region at end)"
+        read_type: gate
+        extract: "added TestS3CredentialMasking with test_masks_set_secrets, test_shows_none_for_unset_secrets, test_accepts_secret_wrapper (@pytest.mark.spec('SEC-004')); function-local imports inside each test method; module-level importorskip guards already present"
+      - file: tests/backends/s3/test_pyarrow.py
+        section: "TestS3PyArrowCredentialMasking (new region at end)"
+        read_type: gate
+        extract: "added TestS3PyArrowCredentialMasking with same three tests; function-local imports of S3PyArrowBackend; module-level importorskip(s3fs, pyarrow) already present"
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPCredentialMasking (new region at end)"
+        read_type: gate
+        extract: "added TestSFTPCredentialMasking; SFTPBackend already imported at module level; Secret imported locally inside test_accepts_secret_wrapper"
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureCredentialMasking (new region at end)"
+        read_type: gate
+        extract: "added TestAzureCredentialMasking; AzureBackend already imported at module level; tests append to _BACKENDS for auto-close; Secret imported locally"
+      - file: tests/test_coverage_gaps.py
+        section: "import + masking sections removal"
+        read_type: gate
+        extract: "removed Secret from _config import line; removed factory functions (lines 377–429), _MASKING_SET_CASES, test_backend_masks_set_secrets, _MASKING_UNSET_CASES, test_backend_shows_none_for_unset_secrets, _SECRET_CASES, test_backend_accepts_secret; TestBackendRepr class (test_local_repr, test_memory_repr*) retained — uses only allowed backends"
+      - file: scripts/check_test_placement.py
+        section: "_BACKEND_AT_ROOT_GRANDFATHERED + comment block"
+        read_type: gate
+        extract: "removed 'test_coverage_gaps.py' from frozenset; removed 'The remaining one file is a migration-pending follow-up' sentence from comment block; allow-list now contains only test_examples.py"
+      - file: tests/scripts/test_check_test_placement.py
+        section: "TestBackendImportsAtRoot.test_grandfathered_files_skipped"
+        read_type: gate
+        extract: "updated test to use test_examples.py (the only remaining grandfathered entry) instead of test_coverage_gaps.py; updated comment to explain the permanently-justified nature"
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "tests/test_coverage_gaps.py findings + summary table"
+        read_type: gate
+        extract: "updated section heading to '(a) per-backend split (all masking tests)'; appended BK-222 reframe note (CLAUDE.md § Audits rule 3); updated summary-table row to '(a) per-backend split — reconsidered, see § per-file findings — shipped BK-222 | moderate | yes (done)'"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_test_placement.py
+        section: "stale-grandfather detection"
+        read_type: verify
+        extract: "hatch run lint reports zero Rule B violations and zero stale grandfather entries; test_examples.py still actively fires Rule B (ReadOnlyHttpBackend), so it is not stale"
+      - file: tests/test_coverage_gaps.py
+        section: "(collection)"
+        read_type: verify
+        extract: "root file collects 90 tests; all pass; no banned-backend import remains; TestBackendRepr (local/memory repr) retained"
+      - file: tests/backends/s3/test_config.py
+        section: "TestS3CredentialMasking"
+        read_type: verify
+        extract: "3 new tests pass: test_masks_set_secrets, test_shows_none_for_unset_secrets, test_accepts_secret_wrapper"
+      - file: tests/backends/s3/test_pyarrow.py
+        section: "TestS3PyArrowCredentialMasking"
+        read_type: verify
+        extract: "3 new tests pass"
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPCredentialMasking"
+        read_type: verify
+        extract: "3 new tests pass"
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureCredentialMasking"
+        read_type: verify
+        extract: "3 new tests pass"
+      - file: tests/scripts/test_check_test_placement.py
+        section: "TestBackendImportsAtRoot.test_grandfathered_files_skipped"
+        read_type: verify
+        extract: "passes with test_examples.py as the grandfathered example"
+discovery_followups: []
+co_shipped_items:
+  - BK-191
+surprising_ripples: []
+review_rounds: 1

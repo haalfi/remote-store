@@ -1540,3 +1540,54 @@ def test_azure_build_retry_mapping(rp_kwargs: dict[str, Any], expected_backoff: 
 @pytest.mark.spec("RET-012")
 def test_azure_build_retry_none() -> None:
     assert AzureBackend(container="c", connection_string=_RETRY_CONN_STR)._build_azure_retry() is None
+
+
+# region: Credential masking (AF-008, SEC-004) — migrated from tests/test_coverage_gaps.py (BK-222 / BK-191 slice 6/6)
+
+
+class TestAzureCredentialMasking:
+    """AF-008: AzureBackend repr masks sensitive fields and accepts Secret wrappers."""
+
+    def test_masks_set_secrets(self) -> None:
+        backend = AzureBackend(
+            container="c",
+            account_name="acct",
+            account_key="mykey",
+            sas_token="mysas",
+            connection_string="conn=str",
+            credential="cred_obj",
+        )
+        _BACKENDS.append(backend)
+        r = repr(backend)
+        for raw in ("mykey", "mysas", "conn=str", "cred_obj"):
+            assert raw not in r
+        for masked in ("account_key='***'", "sas_token='***'", "connection_string='***'", "credential='***'"):
+            assert masked in r
+        for visible in ("container='c'", "account_name='acct'"):
+            assert visible in r
+
+    def test_shows_none_for_unset_secrets(self) -> None:
+        backend = AzureBackend(container="c", account_url="https://x.blob.core.windows.net")
+        _BACKENDS.append(backend)
+        r = repr(backend)
+        for expected in ("account_key=None", "sas_token=None", "connection_string=None", "credential=None"):
+            assert expected in r
+
+    @pytest.mark.spec("SEC-004")
+    def test_accepts_secret_wrapper(self) -> None:
+        from remote_store._config import Secret
+
+        backend = AzureBackend(
+            container="c",
+            account_name="acct",
+            account_key=Secret("mykey"),
+            sas_token=Secret("tok"),
+            connection_string=Secret("conn=str"),
+        )
+        _BACKENDS.append(backend)
+        assert backend._account_key == "mykey"  # internal: no public observable (repr shows '***' for raw strings too)
+        assert backend._sas_token == "tok"  # internal: no public observable
+        assert backend._connection_string == "conn=str"  # internal: no public observable
+
+
+# endregion

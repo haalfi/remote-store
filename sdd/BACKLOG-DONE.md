@@ -53,6 +53,42 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Audience: `infra.test`.
   Trace: [`sdd/traces/BUG-210-azure-replay-fixture-leak.yml`](traces/BUG-210-azure-replay-fixture-leak.yml).
 
+- [x] **BK-222 — Migrate `tests/test_coverage_gaps.py` (per-backend split) (BK-191 slice 6/6)**
+  Sixth and final migration-pending slice from BK-191's audit.
+  `tests/test_coverage_gaps.py` fired Rule B via function-local imports of `_s3`
+  (lines 378, 384), `_s3_pyarrow` (390, 396), `_sftp` (402, 408), `_azure`
+  (414, 427), plus `__import__` lambda forms (491–512) that were specifically
+  crafted to evade the AST checker. Reframes audit-014's proposed "(b) conformance
+  reshape (secret-masking)": the masking tests check backend-specific repr formats
+  (`key='***'`) and internal attribute names (`_key`, `_secret`, `_password`,
+  `_account_key`, etc.), making them per-backend implementation details rather than
+  generic conformance invariants. The universal "no credential leakage" invariant
+  is already covered by `TestBackendIdentity::test_repr_masks_secrets` in
+  `tests/backends/conformance/test_identity.py`. The conformance approach would
+  require naming concrete backend classes inside conformance files (violates the
+  naming rule) or adding `secret_masking_spec` registry infrastructure (disproportionate).
+  Disposition: **(a) per-backend split for all masking tests.**
+  `TestS3CredentialMasking` (AF-008, SEC-004) added to `tests/backends/s3/test_config.py`;
+  `TestS3PyArrowCredentialMasking` added to `tests/backends/s3/test_pyarrow.py`;
+  `TestSFTPCredentialMasking` added to `tests/backends/sftp/test_config.py`;
+  `TestAzureCredentialMasking` added to `tests/backends/azure/test_config.py`.
+  Root `tests/test_coverage_gaps.py` retains all tests using only allowed backends
+  (`LocalBackend`, `MemoryBackend`). `"test_coverage_gaps.py"` removed from
+  `_BACKEND_AT_ROOT_GRANDFATHERED` in `scripts/check_test_placement.py`; the
+  allow-list now contains only the permanently-justified `test_examples.py`.
+  `test_grandfathered_files_skipped` in `tests/scripts/test_check_test_placement.py`
+  updated to use `test_examples.py`. Audit-014 per-file section and summary
+  table updated with rule-3 reframe note.
+  Audience: `infra.test`, `contributor.process`. Spec: TEST-003, AF-008, SEC-004.
+  Trace: [`sdd/traces/BK-222-test-coverage-gaps-per-backend-split.yml`](traces/BK-222-test-coverage-gaps-per-backend-split.yml).
+
+- [x] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list (all six slices complete)**
+  All six migration-pending slices from the 2026-05-13 audit landed across BK-216
+  through BK-222. The `_BACKEND_AT_ROOT_GRANDFATHERED` set now contains only the
+  permanently-justified `test_examples.py` (disposition (c), ID-044 example/test
+  1:1 invariant). Closed by BK-222 (slice 6/6).
+  Audience: `infra.test`. Spec: TEST-003, TEST-010.
+
 - [x] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
   Shipped the Azure slice across two PRs and closed with S3 deferred as a
   documented exception. **PR 1a (#629):** `azure_replay` /

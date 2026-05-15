@@ -569,29 +569,6 @@ pattern (ID-193) can lock in the test shape.
 
 ## Lint / CI Completeness
 
-- [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
-  spec: TEST-003, TEST-010 · effort: L · audience: infra.test
-  BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
-  `tests/` root) but grandfathers a set of legacy cross-cutting files
-  that each import multiple cloud backends to verify cross-protocol
-  features (config loaders, depth-limited listing, example demos, PBT
-  oracles, ping / health checks, seekable reads, coverage padding). The
-  authoritative roster lives in
-  `scripts/check_test_placement.py::_BACKEND_AT_ROOT_GRANDFATHERED`. For
-  each entry, decide: (a) move backend-specific assertions to
-  `tests/backends/<backend>/`, (b) reshape into conformance parametrize
-  (`tests/backends/conformance/`), or (c) keep at root and document why.
-  Coverage-padding tests are the most obvious candidates for split.
-  Each entry removed from the allow-list closes part of this item.
-  Spec: TEST-003, TEST-010.
-
-  **Audit (2026-05-13):** per-file dispositions documented in
-  [`sdd/audits/audit-014-grandfathered-tests-allow-list.md`](audits/audit-014-grandfathered-tests-allow-list.md).
-  Findings: zero files qualify for an "easy remove from allow-list"
-  path — six need real refactoring (a/b), the seventh (`test_examples.py`)
-  shipped under BK-215 as a justification-comment update. Six per-slice
-  follow-up items remain to be filed; consult `sdd/backlogid.json` for the
-  next safe BK ID when scheduling.
 
 - [ ] **ID-179 — Trace schema validator: wire `audience` field check into `hatch run lint`**
   spec: — · effort: S · audience: library.maintainer
