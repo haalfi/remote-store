@@ -1,0 +1,77 @@
+id: ID-192
+title: "aio.md rework: promote AsyncStore, fix empty member blocks"
+trigger: "docs-src/reference/api/aio.md gave AsyncBackend the full method-section treatment while AsyncStore had only an Interop subsection, and four classes (SyncBackendAdapter, AsyncBackendSyncAdapter, AsyncMemoryBackend, AsyncAzureBackend) used `members: false` with no follow-up blocks, rendering as bare class-docstring stubs"
+source_items:
+  - ID-192
+audience:
+  - user.api_docs
+  - user.site
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-192 (item)"
+        read_type: gate
+        extract: "Scope: structural rework, mirror store.md leadership, resolve empty member blocks, surface layer-4 docstrings"
+        outcome: ok
+      - file: docs-src/reference/api/aio.md
+        section: "(full)"
+        read_type: gate
+        extract: "Current layout: AsyncStore has only Interop subsection; AsyncBackend has full Method sections; four classes carry bare `members: false`"
+        outcome: ok
+      - file: docs-src/reference/api/store.md
+        section: "(full)"
+        read_type: gate
+        extract: "Reference layout to mirror: class header at top, then per-category method sections with explicit `:::` directives and admonitions"
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DOCUMENTATION.md
+        section: "API page building blocks"
+        read_type: gate
+        extract: "Rich-class template: class header + method sections + see also; admonition vocabulary (info/note/warning) and title patterns"
+        outcome: ok
+      - file: src/remote_store/aio/_async_store.py
+        section: "(full)"
+        read_type: reference
+        extract: "Authoritative AsyncStore public-method inventory: read/read_bytes/read_text, write/write_text/write_atomic, delete/delete_folder, list_files/list_folders/iter_children/glob, move/copy, exists/is_file/is_folder/get_file_info/get_folder_info/head, ping/aclose/child, resolve, unwrap/native_path/to_key/supports. No read_seekable, no open_atomic."
+        outcome: ok
+      - file: src/remote_store/aio/__init__.py
+        section: "(full)"
+        read_type: reference
+        extract: "Public exports: AsyncBackend, AsyncMemoryBackend, AsyncStore, AsyncWritableContent, SyncBackendAdapter; AsyncAzureBackend conditional on azure extra"
+        outcome: ok
+      - file: src/remote_store/aio/_sync_adapter.py
+        section: "(full)"
+        read_type: reference
+        extract: "SyncBackendAdapter has substantive Raises: docstrings on its layer-4 methods (BK-173); removing `members: false` surfaces those docstrings"
+        outcome: ok
+      - file: docs-src/reference/api/backends/memory.md
+        section: "(full)"
+        read_type: reference
+        extract: "Precedent for concrete-backend rendering: `show_bases: false` without `members: false` (lets the full member surface render under a short intro paragraph)"
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: docs-src/reference/api/index.md
+        section: "Async (table)"
+        read_type: verify
+        extract: "All anchors still resolve: #asyncstore, #asyncbackend, #syncbackendadapter, #asyncbackendsyncadapter, #asyncmemorybackend, #asyncwritablecontent (each is still a `## <ClassName>` heading)"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / API reference page"
+        read_type: verify
+        extract: "Restructured page follows DOCUMENTATION.md API building blocks; required see-also footer present"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace shipped with PR; CHANGELOG entry added (audience starts with user.); BACKLOG item moved to BACKLOG-DONE"
+        outcome: ok

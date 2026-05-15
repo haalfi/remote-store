@@ -8,6 +8,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-192 — aio.md rework: promote AsyncStore, fix empty member blocks**
+  `docs-src/reference/api/aio.md` previously gave `AsyncBackend` the full
+  per-category method-section treatment while `AsyncStore` carried only an
+  `Interop (Backend-Specific)` subsection — the opposite of the
+  Store-centric layout in `store.md`. Four classes
+  (`SyncBackendAdapter`, `AsyncBackendSyncAdapter`, `AsyncMemoryBackend`,
+  `AsyncAzureBackend`) used `members: false` with no follow-up directives,
+  rendering as bare class-docstring stubs that suppressed the layer-4
+  `Raises:` docstrings BK-173 had just added.
+  Restructure: `## AsyncStore` now mirrors `store.md` with explicit
+  `### Reading / Writing / Deleting / Listing and Iteration / File Operations /
+  Metadata / Introspection / Lifecycle / Interop` subsections, each method
+  carrying its own `:::` directive at `heading_level: 4` plus the matching
+  `!!! note "Requires ..."` / `!!! info "Quality flag ..."` admonitions from
+  the sync canonical. The `## AsyncBackend` section is unchanged. The four
+  `members: false` directives are replaced with short framing-prose +
+  `show_bases: false`, matching the precedent set by `backends/memory.md` and
+  `backends/azure.md`. All `#asyncstore` / `#asyncbackend` / `#syncbackendadapter`
+  / `#asyncbackendsyncadapter` / `#asyncmemorybackend` / `#asyncwritablecontent`
+  anchors (cited from `reference/api/index.md`) are preserved.
+  Unblocks ID-172 (`check_api_docs.py` async PAGES wiring) and ID-194
+  (`gen_graph.py` async gate extension); the page surface is now stable
+  enough for the verifier to lock onto.
+  Audience: `user.api_docs`, `user.site`.
+  Trace: [`sdd/traces/id-192-aio-md-rework.yml`](traces/id-192-aio-md-rework.yml).
+
 - [x] **BK-223 — Tighten `match=` regex in `test_source_is_directory_raises_error` (sync + async)**
   spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · audience: infra.test
   Symmetric fix to BK-177's `test_destination_is_directory_raises_error` tightening.

@@ -423,21 +423,12 @@ line number).
 
 ## Async API Verification
 
-Async API surface, conformance, and tooling. ID-192 is the gating dependency: `aio.md`
-must be stable before the verifier (ID-194) can be authoritative and the conformance
-pattern (ID-193) can lock in the test shape.
+Async API surface, conformance, and tooling. ID-192 (aio.md rework) has landed
+(see BACKLOG-DONE.md); the verifier (ID-194) can now be made authoritative and
+the conformance pattern (ID-193) can lock in the test shape against the
+stabilised page.
 
-**Sequence:** ID-192 → ID-194 (in parallel with ID-193) → ID-172 → ID-173
-
-- [ ] **ID-192 — aio.md rework: promote AsyncStore, fix empty member blocks**
-  spec: — · effort: M · audience: user.api, library.maintainer
-  `docs-src/reference/api/aio.md` leads with `AsyncBackend` instead of `AsyncStore`,
-  contradicting the Store-centric docs layout (cf. `store.md`). Four classes use
-  `members: false` without follow-up documentation blocks, rendering as empty headings:
-  `SyncBackendAdapter`, `AsyncBackendSyncAdapter`, `AsyncMemoryBackend`, `AsyncAzureBackend`.
-  Restructure to mirror `store.md` leadership, resolve empty headings via explicit method
-  blocks or section moves, and surface the layer-4 docstrings newly rendered by the
-  aio-adapter-raises-docstrings PR. Prerequisite for ID-172 and ID-194.
+**Sequence:** ID-194 (in parallel with ID-193) → ID-172 → ID-173
 
 - [ ] **ID-193 — Async conformance extended: pattern research and implementation**
   spec: ASYNC-018, ASYNC-019 · effort: L · audience: infra.test, library.maintainer
@@ -447,7 +438,7 @@ pattern (ID-193) can lock in the test shape.
   `run_until_complete`), and oracle integration with async backends. Three phases:
   (1) document constraints and open questions; (2) write pattern doc or PoC;
   (3) implement against settled async API surface. Do not port sync tests line-for-line.
-  Blocked on ID-192 (aio.md rework).
+  ID-192 (aio.md rework) prerequisite has landed.
 
 - [ ] **ID-194 — gen_graph.py async gate extension (prereq for ID-172)**
   spec: — · effort: M · audience: platform.tooling, library.maintainer
@@ -457,12 +448,13 @@ pattern (ID-193) can lock in the test shape.
   Add `_GATING` to `src/remote_store/aio/_async_store.py` (mirroring the sync
   `_GATING` constant in `_store.py`), then extend `gen_graph.py` to emit async gates
   via Griffe traversal of `pkg.members["aio"].members["_async_store"].members["AsyncStore"]`.
-  Blocked by ID-192. Unblocks ID-172 (PAGES wiring).
+  ID-192 prerequisite has landed. Unblocks ID-172 (PAGES wiring).
 
 - [ ] **ID-172 — `check_api_docs.py` — `AsyncStore`/`AsyncBackend` ↔ `docs-src/reference/api/aio.md`**
   spec: — · effort: M · audience: platform.tooling
   Spun off from ID-171 (Backend sub-task done, see BACKLOG-DONE.md).
-  Blocked on ID-192 (aio.md rework) and ID-194 (gen_graph async gate extension).
+  ID-192 (aio.md rework) prerequisite has landed; still blocked on ID-194
+  (gen_graph async gate extension).
   Once both land: add `AsyncStore` and `AsyncBackend` to `PAGES` in
   `check_api_docs.py` pointing at `docs-src/reference/api/aio.md`.
   `check_api_docs.py` is already wired into the `hatch run lint` script and the
@@ -614,7 +606,7 @@ pattern (ID-193) can lock in the test shape.
   - ID-174 (docs reorg): final source URLs must be stable before the link list is written.
   - ID-172 + ID-173 (aio verifiers): `aio.md` and `index.md` must accurately
     reflect the async API before they are linked as authoritative reference.
-  - ID-192 (aio.md rework): `aio.md` structural rework must land before ID-172 can close.
+  - ID-192 (aio.md rework): landed — `aio.md` structural rework is in place; required for ID-172 to close (see BACKLOG-DONE.md).
   - ID-193 (async conformance): async extended conformance pattern must be
     designed and implemented before the aio API surface is considered settled.
 
