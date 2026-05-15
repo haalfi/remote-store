@@ -67,9 +67,16 @@ Claude-specific shell constraints:
 The 95% coverage threshold is **structurally unreachable locally without Azurite running**. The Azure backends (`backends/_azure.py`, `aio/backends/_azure.py`) account for ~900 covered lines that vanish when Stage-2 fixtures skip; CI starts Azurite as a service, local runs depend on the developer.
 
 - `hatch run test-cov` reports coverage with no floor. Use this for everyday local feedback.
-- `hatch run test-cov-strict` adds `--cov-fail-under=95`. Lives in `hatch run all` and the publish workflow.
+- `hatch run test-cov-s1` is Stage-1 only (`--stage=1`, no Docker probe), no floor. Wired into `hatch run all` so the pre-commit gate works without Docker services.
+- `hatch run test-cov-strict` adds `--cov-fail-under=95`. Lives in CI and the publish workflow. Requires Azurite; do **not** add it to `hatch run all`.
 
-If `test-cov-strict` (or `hatch run all`) fails locally on the coverage gate, **do not loop on "master is passing it, let me re-run"**. Either start Azurite (`docker run -d --name azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:3.35.0 azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck`) and re-run, or treat the strict gate as a CI/release-only check.
+If `test-cov-strict` fails locally on the coverage gate, **do not loop on "master is passing it, let me re-run"**. Either start Azurite (`docker run -d --name azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:3.35.0 azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck`) and re-run, or treat the strict gate as a CI/release-only check.
+
+## Parallel tests (`-n auto`) and the SFTP-Docker carve-out (ID-195)
+
+All `test*` scripts in `pyproject.toml` run `pytest -n auto -p no:benchmark`. xdist gives ~2× wall-time on a multi-core machine. Each test script then runs a **second** serial pytest invocation (`-k sftp_docker tests/backends/conformance/`) because the atmoz/sftp OpenSSH daemon is unreliable under concurrent connections from multiple workers.
+
+The mechanism: `tests/backends/fixtures/registry.fixture_params` filters out the `sftp_docker` fixture whenever `PYTEST_XDIST_WORKER` is in the environment. The CI workflow uses the same two-pass shape. No `--dist loadgroup`, no MaxStartups tuning, no banner pre-checks — the carve-out is the entire stabilisation story.
 
 ## Branching
 

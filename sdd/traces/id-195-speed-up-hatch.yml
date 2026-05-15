@@ -1,0 +1,125 @@
+id: ID-195
+title: "Speed up hatch run all — pytest-xdist, preflight, SFTP-Docker carve-out"
+trigger: |
+  `hatch run all` wall time routinely exceeded 5 minutes during releases (105 s
+  for `test-cov` alone over ~4789 collected items); during v0.24.1 it ran twice
+  (graph_viz.html drift caught on the first run), eating ~10 minutes before
+  Phase 4 could start. A first stabilisation attempt (PR 631) wrapped xdist with
+  an SFTP-Docker stack — `--dist loadgroup` + `xdist_group` marks, OpenSSH
+  `MaxStartups` tuning in both docker-compose and the CI action, two banner
+  pre-checks, and a Transport.connect retry loop — and still saw five FAILED
+  on `test (3.12)` / `test-primary`. The complexity ratio was the wrong shape:
+  the speedup mechanism was ~10 lines, the SFTP stabilisation was ~150 lines
+  fighting a problem the carve-out simply avoids.
+source_items:
+  - ID-195
+audience:
+  - contributor.tooling
+  - infra.ci
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-195"
+        read_type: gate
+        extract: "four directions: xdist, durations audit, preflight, short-circuit"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: gate
+        extract: "current test script flags, lint composition, all sequence"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary jobs"
+        read_type: gate
+        extract: "CI runs pytest directly; needs the same two-pass shape"
+        outcome: ok
+  - id: prior-art
+    name: Review prior attempt (PR 631)
+    steps:
+      - file: tests/backends/fixtures/sftp_docker.py
+        section: "_wait_for_ssh_banner, _factory retry loop"
+        read_type: reference
+        extract: |
+          PR 631 layered: 10-retry banner pre-check, 3-attempt Transport.connect
+          loop, second 5-retry banner check before returning. Despite this, CI
+          still failed five tests. Diagnosis: papering over instability with
+          local retries duplicates what SFTPBackend._connect's tenacity layer
+          already does (3 attempts, exponential 2-10 s backoff,
+          SSHException|OSError|EOFError); adding more retries does not change
+          the fundamental concurrency conflict.
+        outcome: misleading
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params (PR 631 version)"
+        read_type: reference
+        extract: |
+          PR 631 added `xdist_group(name=f.name)` on container fixtures and
+          required `--dist loadgroup` everywhere. With loadgroup, all
+          sftp_docker tests pin to one worker and run sequentially anyway —
+          which makes the MaxStartups tuning redundant. The xdist_group route
+          is a more complex way to express "serialise these tests" than a
+          dedicated serial pytest invocation.
+        outcome: misleading
+  - id: implement
+    name: Implement simpler design
+    steps:
+      - file: pyproject.toml
+        section: "dev extras, test scripts, preflight, coverage"
+        read_type: gate
+        extract: |
+          Added `pytest-xdist>=3.5`; all `test*` scripts are now two-step
+          lists (`-n auto -p no:benchmark` pass 1; serial `-k sftp_docker
+          tests/backends/conformance/` pass 2 with `--cov-append` for the
+          `test-cov*` variants). `[tool.coverage.run] parallel = true` for
+          xdist coverage partial merging across both passes. New `preflight`
+          script (gen-*-check ahead of lint in `hatch run all`); gen-checks
+          removed from `lint` (still in CI lint job inline). `test-cov-s1`
+          (`--stage=1`) replaces `test-cov-strict` in `hatch run all` so the
+          pre-commit gate never needs Docker.
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: fixture_params
+        read_type: gate
+        extract: |
+          Single-line filter: when `PYTEST_XDIST_WORKER` is in the env, drop
+          fixtures with `container == "sftp"` from the parametrize list. No
+          marks, no loadgroup scheduler dependency, no banner pre-checks.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary"
+        read_type: gate
+        extract: |
+          Two pytest invocations per job. test-primary asserts the 95% floor
+          on pass 2 after pass 1's `.coverage` has been combined. The
+          tests/scripts pass remains coverage-free as before.
+        outcome: ok
+      - file: CLAUDE.md
+        section: Coverage gate / Parallel tests
+        read_type: gate
+        extract: |
+          Updated bullet split to test-cov / test-cov-s1 / test-cov-strict.
+          Added "Parallel tests" section pointing at the registry filter as
+          the entire SFTP stabilisation story.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: Ripple-check table
+        read_type: verify
+        extract: |
+          No backend / spec / error / capability changes; no CHANGELOG entry
+          (audience is contributor.tooling + infra.ci only).
+        outcome: ok
+discovery_followups: []
+surprising_ripples:
+  - |
+    PR 631's MaxStartups tuning was structurally unnecessary on Linux CI:
+    GitHub Actions runners have 4 vCPUs, so `-n auto = 4`, well under
+    OpenSSH's default `MaxStartups 10:30:100`. The MaxStartups path was
+    fighting a 20-worker Docker Desktop NAT problem that does not exist
+    on the CI host.

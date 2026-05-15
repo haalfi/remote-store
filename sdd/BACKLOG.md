@@ -619,19 +619,6 @@ pattern (ID-193) can lock in the test shape.
   gap left open by BK-193. No priority while trace authoring is still
   ad-hoc; promote to BK-prefix when trace volume justifies enforcement.
 
-- [ ] **ID-195 — Speed up `hatch run all` — pytest-xdist, slow markers, pre-flight**
-  spec: — · effort: M · audience: library.maintainer
-  `hatch run all` wall time routinely exceeds 5 minutes during releases (105s
-  for `test-cov` alone over 4789 collected items); during v0.24.1 it ran twice
-  (graph_viz.html drift caught on the first run), eating ~10 minutes before
-  Phase 4 could start. Four directions: (a) `pytest -n auto` (pytest-xdist) for
-  independent test parallelism; (b) `--durations=20` audit to flag slow tests
-  behind a marker; (c) move gen-*-check scripts (gen-graph, gen-features,
-  gen-graph-viz, check-api-docs) to a fast pre-flight stage before pytest so
-  artifact drift surfaces in seconds; (d) short-circuit `hatch run all` on
-  lint/typecheck failure before launching the test matrix. Defer until the
-  next release cycle confirms wall-time is the binding constraint.
-
 ---
 
 ## Docs & Discoverability
