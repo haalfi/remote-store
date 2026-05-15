@@ -6741,6 +6741,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BK-181 PR 2 — S3 cassette/replay infeasibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
         
   
@@ -9634,6 +9662,9 @@ rather than failing.</p>
 <p><strong>Implementation choice</strong> (cassette tech, scrubbing rules, async
 pipeline coverage) is deferred to the implementing BK item. This
 spec fixes the contract, not the mechanism.</p>
+<p><strong>Scope:</strong> <a href="#test-008-replay-scope-is-http-transport-only">TEST-008</a>
+narrows this invariant — see its "Noted exception — S3" paragraph for
+the one HTTP backend that does not ship a <code>&lt;backend&gt;_replay</code> fixture.</p>
 <hr />
 <h2 id="test-008-replay-scope-is-http-transport-only">TEST-008: Replay Scope is HTTP-Transport Only<a class="headerlink" href="#test-008-replay-scope-is-http-transport-only" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> The cassette and replay mechanism (TEST-007) applies
@@ -9649,10 +9680,21 @@ apply to:</p>
   in-process and is already a Stage 1 fixture by construction.</li>
 <li><strong>Local filesystem.</strong> Already Stage 1. No demotion needed.</li>
 </ul>
+<p><strong>Noted exception — S3.</strong> S3 is HTTP-transport but does not currently
+ship a <code>s3_replay</code> fixture. The implementing recording library
+(vcrpy 8.1.1) cannot drive the <code>aiobotocore</code> request/response
+wrappers that <code>s3fs</code> rides on, and <code>s3fs</code> exposes no equivalent of
+the <code>azure.core</code> transport injection that solves the analogous
+async-aiohttp problem for Azure. The <code>s3_moto</code> Stage-1 fixture
+provides in-process S3 coverage for the conformance surface, so the
+gap that motivates cassettes for Azure (Azurite cannot emulate the
+Hierarchical Namespace) does not apply. Diagnosis in
+<a href="../../research/research-bk-181-s3-cassette-infeasibility/"><code>sdd/research/research-bk-181-s3-cassette-infeasibility.md</code></a>.</p>
 <p><strong>Postcondition:</strong> <code>tests/backends/cassettes/</code> contains
 subdirectories only for HTTP-transport backends. Backends excluded
 by this invariant rely on Stage 2 Docker fixtures as their cheapest
-source of truth, with no Stage 3 to Stage 1 demotion path.</p>
+source of truth, with no Stage 3 to Stage 1 demotion path. The noted
+S3 exception relies on <code>s3_moto</code> (Stage 1) plus <code>s3_live</code> (Stage 3).</p>
 <p><strong>Rationale:</strong> <a href="../../adrs/0028-testing-architecture-kind-stage-replay/">ADR-0028</a>
 § HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends.</p>
 <hr />

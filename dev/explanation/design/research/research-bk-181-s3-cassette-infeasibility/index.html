@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/tutorial/examples/http-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-bk-181-s3-cassette-infeasibility/">
       
       
-        <link rel="prev" href="../sql-blob-backend/">
+        <link rel="prev" href="../research-bk-181-cassette-replay-poc/">
       
       
-        <link rel="next" href="../batch-operations/">
+        <link rel="next" href="../research-bk-198-paramiko-ssh-rsa-empirical/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/logo.png">
+      <link rel="icon" href="../../../../assets/logo.png">
       <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
     
     
       
-        <title>HTTP backend - remote-store</title>
+        <title>BK-181 PR 2 — S3 cassette/replay infeasibility - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../css/custom.css">
+      <link rel="stylesheet" href="../../../../css/custom.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#http-backend" class="md-skip">
+        <a href="#research-bk-181-pr-2-s3-cassettereplay-infeasibility" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../assets/logo.png" alt="logo">
+  <img src="../../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              HTTP backend
+              BK-181 PR 2 — S3 cassette/replay infeasibility
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href="../../../.." class="md-tabs__link">
         
   
   
@@ -245,11 +245,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="../../" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../../../tutorial/" class="md-tabs__link">
         
   
   
@@ -268,7 +266,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../guides/" class="md-tabs__link">
+      <a href="../../../../guides/" class="md-tabs__link">
         
   
   
@@ -287,7 +285,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../reference/" class="md-tabs__link">
+      <a href="../../../../reference/" class="md-tabs__link">
         
   
   
@@ -304,9 +302,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../../../explanation/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="../../../" class="md-tabs__link">
         
   
   
@@ -347,9 +347,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../assets/logo.png" alt="logo">
+  <img src="../../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -376,7 +376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -400,30 +400,25 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../../../tutorial/" class="md-nav__link ">
               
   
   
@@ -441,13 +436,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -465,7 +460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/" class="md-nav__link">
+      <a href="../../../../tutorial/getting-started/" class="md-nav__link">
         
   
   
@@ -490,8 +485,6 @@
                 
   
   
-    
-  
   
   
     
@@ -502,15 +495,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../../../tutorial/examples/" class="md-nav__link ">
               
   
   
@@ -534,7 +527,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -602,7 +595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/quickstart/" class="md-nav__link">
         
   
   
@@ -630,7 +623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../file-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/file-operations/" class="md-nav__link">
         
   
   
@@ -658,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../streaming-io/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -686,7 +679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../atomic-writes/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -772,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/configuration/" class="md-nav__link">
         
   
   
@@ -800,7 +793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../config-loaders/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -886,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../error-handling/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/error-handling/" class="md-nav__link">
         
   
   
@@ -914,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../capabilities-and-errors/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -1000,7 +993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../path-model/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/path-model/" class="md-nav__link">
         
   
   
@@ -1028,7 +1021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../memory-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -1056,7 +1049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store-child/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/store-child/" class="md-nav__link">
         
   
   
@@ -1084,7 +1077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../async-store/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/async-store/" class="md-nav__link">
         
   
   
@@ -1112,7 +1105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../retry-policy/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1140,7 +1133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../health-check/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/health-check/" class="md-nav__link">
         
   
   
@@ -1173,8 +1166,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1185,11 +1176,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2_5" >
         
           
           <label class="md-nav__link" for="__nav_2_2_5" id="__nav_2_2_5_label" tabindex="0">
@@ -1210,7 +1201,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_2_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1228,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../s3-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -1256,7 +1247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -1284,7 +1275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../s3-listing-strategies/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-listing-strategies/" class="md-nav__link">
         
   
   
@@ -1312,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sftp-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -1340,7 +1331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../azure-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1368,7 +1359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sql-blob-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -1393,37 +1384,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    HTTP backend
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../tutorial/examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1439,37 +1403,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1540,7 +1473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../batch-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1568,7 +1501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../transfer-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1596,7 +1529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1624,7 +1557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../caching/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/caching/" class="md-nav__link">
         
   
   
@@ -1652,7 +1585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observe-hooks/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1680,7 +1613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../otel-tracing/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1766,7 +1699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1794,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../parquet-dataset/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/parquet-dataset/" class="md-nav__link">
         
   
   
@@ -1822,7 +1755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dagster-io-manager/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1850,7 +1783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dagster-v2-resource/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-v2-resource/" class="md-nav__link">
         
   
   
@@ -1936,7 +1869,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../medallion-dagster/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -2002,7 +1935,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../guides/" class="md-nav__link ">
+            <a href="../../../../guides/" class="md-nav__link ">
               
   
   
@@ -2059,7 +1992,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../guides/backends/" class="md-nav__link ">
+            <a href="../../../../guides/backends/" class="md-nav__link ">
               
   
   
@@ -2101,7 +2034,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/local/" class="md-nav__link">
+      <a href="../../../../guides/backends/local/" class="md-nav__link">
         
   
   
@@ -2129,7 +2062,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/memory/" class="md-nav__link">
+      <a href="../../../../guides/backends/memory/" class="md-nav__link">
         
   
   
@@ -2157,7 +2090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/http/" class="md-nav__link">
+      <a href="../../../../guides/backends/http/" class="md-nav__link">
         
   
   
@@ -2185,7 +2118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/s3/" class="md-nav__link">
+      <a href="../../../../guides/backends/s3/" class="md-nav__link">
         
   
   
@@ -2213,7 +2146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../../guides/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2241,7 +2174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/sftp/" class="md-nav__link">
+      <a href="../../../../guides/backends/sftp/" class="md-nav__link">
         
   
   
@@ -2269,7 +2202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/azure/" class="md-nav__link">
+      <a href="../../../../guides/backends/azure/" class="md-nav__link">
         
   
   
@@ -2297,7 +2230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/azure-hns-setup/" class="md-nav__link">
+      <a href="../../../../guides/backends/azure-hns-setup/" class="md-nav__link">
         
   
   
@@ -2325,7 +2258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../../guides/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -2353,7 +2286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backends/sql-query/" class="md-nav__link">
+      <a href="../../../../guides/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -2439,7 +2372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/extensions/" class="md-nav__link">
+      <a href="../../../../guides/extensions/" class="md-nav__link">
         
   
   
@@ -2467,7 +2400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/batch-operations/" class="md-nav__link">
+      <a href="../../../../guides/batch-operations/" class="md-nav__link">
         
   
   
@@ -2495,7 +2428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/cache/" class="md-nav__link">
+      <a href="../../../../guides/cache/" class="md-nav__link">
         
   
   
@@ -2523,7 +2456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../../guides/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -2551,7 +2484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/observe/" class="md-nav__link">
+      <a href="../../../../guides/observe/" class="md-nav__link">
         
   
   
@@ -2579,7 +2512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/transfer-operations/" class="md-nav__link">
+      <a href="../../../../guides/transfer-operations/" class="md-nav__link">
         
   
   
@@ -2607,7 +2540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../../guides/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -2635,7 +2568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/parquet-datasets/" class="md-nav__link">
+      <a href="../../../../guides/parquet-datasets/" class="md-nav__link">
         
   
   
@@ -2663,7 +2596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/dagster/" class="md-nav__link">
+      <a href="../../../../guides/dagster/" class="md-nav__link">
         
   
   
@@ -2691,7 +2624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/retry/" class="md-nav__link">
+      <a href="../../../../guides/retry/" class="md-nav__link">
         
   
   
@@ -2727,7 +2660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/async/" class="md-nav__link">
+      <a href="../../../../guides/async/" class="md-nav__link">
         
   
   
@@ -2755,7 +2688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/async-sync-bridges/" class="md-nav__link">
+      <a href="../../../../guides/async-sync-bridges/" class="md-nav__link">
         
   
   
@@ -2783,7 +2716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/write-integrity/" class="md-nav__link">
+      <a href="../../../../guides/write-integrity/" class="md-nav__link">
         
   
   
@@ -2811,7 +2744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/health-check/" class="md-nav__link">
+      <a href="../../../../guides/health-check/" class="md-nav__link">
         
   
   
@@ -2839,7 +2772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/data-lake-patterns/" class="md-nav__link">
+      <a href="../../../../guides/data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2867,7 +2800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/troubleshooting/" class="md-nav__link">
+      <a href="../../../../guides/troubleshooting/" class="md-nav__link">
         
   
   
@@ -2895,7 +2828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/choosing-a-backend/" class="md-nav__link">
+      <a href="../../../../guides/choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2923,7 +2856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/custom-backend-guide/" class="md-nav__link">
+      <a href="../../../../guides/custom-backend-guide/" class="md-nav__link">
         
   
   
@@ -2973,7 +2906,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../reference/" class="md-nav__link ">
+            <a href="../../../../reference/" class="md-nav__link ">
               
   
   
@@ -3015,7 +2948,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/FEATURES/" class="md-nav__link">
+      <a href="../../../../reference/FEATURES/" class="md-nav__link">
         
   
   
@@ -3043,7 +2976,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/capabilities-matrix/" class="md-nav__link">
+      <a href="../../../../reference/capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -3086,7 +3019,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../reference/api/" class="md-nav__link ">
+            <a href="../../../../reference/api/" class="md-nav__link ">
               
   
   
@@ -3128,7 +3061,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/store/" class="md-nav__link">
+      <a href="../../../../reference/api/store/" class="md-nav__link">
         
   
   
@@ -3156,7 +3089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/proxy/" class="md-nav__link">
+      <a href="../../../../reference/api/proxy/" class="md-nav__link">
         
   
   
@@ -3184,7 +3117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/registry/" class="md-nav__link">
+      <a href="../../../../reference/api/registry/" class="md-nav__link">
         
   
   
@@ -3212,7 +3145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/config/" class="md-nav__link">
+      <a href="../../../../reference/api/config/" class="md-nav__link">
         
   
   
@@ -3240,7 +3173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/models/" class="md-nav__link">
+      <a href="../../../../reference/api/models/" class="md-nav__link">
         
   
   
@@ -3268,7 +3201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/capabilities/" class="md-nav__link">
+      <a href="../../../../reference/api/capabilities/" class="md-nav__link">
         
   
   
@@ -3296,7 +3229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/errors/" class="md-nav__link">
+      <a href="../../../../reference/api/errors/" class="md-nav__link">
         
   
   
@@ -3324,7 +3257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backend/" class="md-nav__link">
+      <a href="../../../../reference/api/backend/" class="md-nav__link">
         
   
   
@@ -3352,7 +3285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/aio/" class="md-nav__link">
+      <a href="../../../../reference/api/aio/" class="md-nav__link">
         
   
   
@@ -3380,7 +3313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/info/" class="md-nav__link">
+      <a href="../../../../reference/api/info/" class="md-nav__link">
         
   
   
@@ -3408,7 +3341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/sftp-utils/" class="md-nav__link">
+      <a href="../../../../reference/api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -3451,7 +3384,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../reference/api/backends/" class="md-nav__link ">
+            <a href="../../../../reference/api/backends/" class="md-nav__link ">
               
   
   
@@ -3493,7 +3426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backends/local/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/local/" class="md-nav__link">
         
   
   
@@ -3521,7 +3454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backends/memory/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/memory/" class="md-nav__link">
         
   
   
@@ -3549,7 +3482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backends/http/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/http/" class="md-nav__link">
         
   
   
@@ -3577,7 +3510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backends/s3/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/s3/" class="md-nav__link">
         
   
   
@@ -3605,7 +3538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -3633,7 +3566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backends/sftp/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -3661,7 +3594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backends/azure/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/azure/" class="md-nav__link">
         
   
   
@@ -3689,7 +3622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -3717,7 +3650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/backends/sql-query/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -3768,7 +3701,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../reference/api/extensions/" class="md-nav__link ">
+            <a href="../../../../reference/api/extensions/" class="md-nav__link ">
               
   
   
@@ -3810,7 +3743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/batch/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -3838,7 +3771,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/cache/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -3866,7 +3799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/glob/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -3894,7 +3827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/integrity/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -3922,7 +3855,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/observe/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -3950,7 +3883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/partition/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -3978,7 +3911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/streams/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -4006,7 +3939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/transfer/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -4034,7 +3967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/write/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/write/" class="md-nav__link">
         
   
   
@@ -4062,7 +3995,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/aio-write/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/aio-write/" class="md-nav__link">
         
   
   
@@ -4090,7 +4023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/arrow/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -4118,7 +4051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/dagster/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -4146,7 +4079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/otel/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -4174,7 +4107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/parquet/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/parquet/" class="md-nav__link">
         
   
   
@@ -4202,7 +4135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/pydantic/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -4230,7 +4163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api/extensions/yaml/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -4274,7 +4207,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/migration/" class="md-nav__link">
+      <a href="../../../../reference/migration/" class="md-nav__link">
         
   
   
@@ -4302,7 +4235,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/changelog/" class="md-nav__link">
+      <a href="../../../../reference/changelog/" class="md-nav__link">
         
   
   
@@ -4334,25 +4267,30 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../explanation/" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   
@@ -4370,13 +4308,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4394,7 +4332,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   
@@ -4422,7 +4360,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/graph-ir/" class="md-nav__link">
+      <a href="../../../graph-ir/" class="md-nav__link">
         
   
   
@@ -4450,7 +4388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/performance/" class="md-nav__link">
+      <a href="../../../performance/" class="md-nav__link">
         
   
   
@@ -4478,7 +4416,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/concurrency/" class="md-nav__link">
+      <a href="../../../concurrency/" class="md-nav__link">
         
   
   
@@ -4506,7 +4444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/security-model/" class="md-nav__link">
+      <a href="../../../security-model/" class="md-nav__link">
         
   
   
@@ -4534,7 +4472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/contributing/" class="md-nav__link">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   
@@ -4562,7 +4500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/development-story/" class="md-nav__link">
+      <a href="../../../development-story/" class="md-nav__link">
         
   
   
@@ -4587,6 +4525,8 @@
                 
   
   
+    
+  
   
   
     
@@ -4597,15 +4537,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../explanation/design/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -4629,7 +4569,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4647,7 +4587,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/authoring/" class="md-nav__link">
+      <a href="../../authoring/" class="md-nav__link">
         
   
   
@@ -4675,7 +4615,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/content-rules/" class="md-nav__link">
+      <a href="../../content-rules/" class="md-nav__link">
         
   
   
@@ -4703,7 +4643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/design/" class="md-nav__link">
+      <a href="../../design/" class="md-nav__link">
         
   
   
@@ -4731,7 +4671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/documentation/" class="md-nav__link">
+      <a href="../../documentation/" class="md-nav__link">
         
   
   
@@ -4759,7 +4699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/process/" class="md-nav__link">
+      <a href="../../process/" class="md-nav__link">
         
   
   
@@ -4787,7 +4727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/testing/" class="md-nav__link">
+      <a href="../../testing/" class="md-nav__link">
         
   
   
@@ -4830,7 +4770,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../explanation/design/adrs/" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -4872,7 +4812,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -4900,7 +4840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -4928,7 +4868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -4956,7 +4896,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -4984,7 +4924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5012,7 +4952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5040,7 +4980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5068,7 +5008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5096,7 +5036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5124,7 +5064,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5152,7 +5092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5180,7 +5120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5208,7 +5148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5236,7 +5176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5264,7 +5204,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5292,7 +5232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5320,7 +5260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5348,7 +5288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -5376,7 +5316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -5404,7 +5344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -5432,7 +5372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0021-graph-sdk-choice/" class="md-nav__link">
+      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
         
   
   
@@ -5460,7 +5400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0022-graph-auth-model/" class="md-nav__link">
+      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
         
   
   
@@ -5488,7 +5428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0023-async-monitor-polling/" class="md-nav__link">
+      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
         
   
   
@@ -5516,7 +5456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0024-resource-locked-error/" class="md-nav__link">
+      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
         
   
   
@@ -5544,7 +5484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
+      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
         
   
   
@@ -5572,7 +5512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
         
   
   
@@ -5600,7 +5540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+      <a href="../../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
         
   
   
@@ -5628,7 +5568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
+      <a href="../../adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
         
   
   
@@ -5679,7 +5619,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../explanation/design/audits/" class="md-nav__link ">
+            <a href="../../audits/" class="md-nav__link ">
               
   
   
@@ -5721,7 +5661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-001-adversarial-review/" class="md-nav__link">
+      <a href="../../audits/audit-001-adversarial-review/" class="md-nav__link">
         
   
   
@@ -5749,7 +5689,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-002-design-compliance/" class="md-nav__link">
+      <a href="../../audits/audit-002-design-compliance/" class="md-nav__link">
         
   
   
@@ -5777,7 +5717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-003-documentation/" class="md-nav__link">
+      <a href="../../audits/audit-003-documentation/" class="md-nav__link">
         
   
   
@@ -5805,7 +5745,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-004-docs-structural-consistency/" class="md-nav__link">
+      <a href="../../audits/audit-004-docs-structural-consistency/" class="md-nav__link">
         
   
   
@@ -5833,7 +5773,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-005-laziness-memory/" class="md-nav__link">
+      <a href="../../audits/audit-005-laziness-memory/" class="md-nav__link">
         
   
   
@@ -5861,7 +5801,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-006-docs-list-completeness/" class="md-nav__link">
+      <a href="../../audits/audit-006-docs-list-completeness/" class="md-nav__link">
         
   
   
@@ -5889,7 +5829,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-007-test-behavior-assertions/" class="md-nav__link">
+      <a href="../../audits/audit-007-test-behavior-assertions/" class="md-nav__link">
         
   
   
@@ -5917,7 +5857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-008-package-bugs/" class="md-nav__link">
+      <a href="../../audits/audit-008-package-bugs/" class="md-nav__link">
         
   
   
@@ -5945,7 +5885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
+      <a href="../../audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
         
   
   
@@ -5973,7 +5913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-010-ext-private-imports/" class="md-nav__link">
+      <a href="../../audits/audit-010-ext-private-imports/" class="md-nav__link">
         
   
   
@@ -6001,7 +5941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-011-docs-v023-gaps/" class="md-nav__link">
+      <a href="../../audits/audit-011-docs-v023-gaps/" class="md-nav__link">
         
   
   
@@ -6029,7 +5969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-012-docs-structure/" class="md-nav__link">
+      <a href="../../audits/audit-012-docs-structure/" class="md-nav__link">
         
   
   
@@ -6057,7 +5997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-013-docstring-style/" class="md-nav__link">
+      <a href="../../audits/audit-013-docstring-style/" class="md-nav__link">
         
   
   
@@ -6085,7 +6025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
+      <a href="../../audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
         
   
   
@@ -6136,7 +6076,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../explanation/design/rfcs/" class="md-nav__link ">
+            <a href="../../rfcs/" class="md-nav__link ">
               
   
   
@@ -6178,7 +6118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -6206,7 +6146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -6234,7 +6174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -6262,7 +6202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -6290,7 +6230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -6318,7 +6258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -6346,7 +6286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -6374,7 +6314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
         
   
   
@@ -6402,7 +6342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6430,7 +6370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0010-graph-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0010-graph-backend/" class="md-nav__link">
         
   
   
@@ -6458,7 +6398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0011-write-result/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0011-write-result/" class="md-nav__link">
         
   
   
@@ -6486,7 +6426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
         
   
   
@@ -6514,7 +6454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
         
   
   
@@ -6547,6 +6487,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6557,15 +6499,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_10" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_10" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../explanation/design/research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6589,7 +6531,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_10_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_10_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8_10">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6607,7 +6549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-agent-workflow-substrate/" class="md-nav__link">
+      <a href="../research-agent-workflow-substrate/" class="md-nav__link">
         
   
   
@@ -6635,7 +6577,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -6663,7 +6605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6691,7 +6633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6719,7 +6661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -6747,7 +6689,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -6775,7 +6717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-bk-181-cassette-replay-poc/" class="md-nav__link">
+      <a href="../research-bk-181-cassette-replay-poc/" class="md-nav__link">
         
   
   
@@ -6800,10 +6742,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BK-181 PR 2 — S3 cassette/replay infeasibility
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -6819,6 +6788,103 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#verdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verdict
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-was-tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was tested
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#failure-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failure mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workarounds-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workarounds considered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-moto-is-sufficient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why moto is sufficient
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spike-folder-fate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spike folder fate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -6831,7 +6897,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+      <a href="../research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
         
   
   
@@ -6859,7 +6925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-bug-prevention-beyond-testing/" class="md-nav__link">
+      <a href="../research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
   
@@ -6887,7 +6953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -6915,7 +6981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -6943,7 +7009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-doc-content-longevity/" class="md-nav__link">
+      <a href="../research-doc-content-longevity/" class="md-nav__link">
         
   
   
@@ -6971,7 +7037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -6999,7 +7065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -7027,7 +7093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -7055,7 +7121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-feature-discoverability/" class="md-nav__link">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -7083,7 +7149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -7111,7 +7177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -7139,7 +7205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-id-147-obs003-decomposition/" class="md-nav__link">
+      <a href="../research-id-147-obs003-decomposition/" class="md-nav__link">
         
   
   
@@ -7167,7 +7233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-id-147-tla-augmentation/" class="md-nav__link">
+      <a href="../research-id-147-tla-augmentation/" class="md-nav__link">
         
   
   
@@ -7195,7 +7261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-id-147b-tla-poc/" class="md-nav__link">
+      <a href="../research-id-147b-tla-poc/" class="md-nav__link">
         
   
   
@@ -7223,7 +7289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -7251,7 +7317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -7279,7 +7345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-openrouter-integration/" class="md-nav__link">
+      <a href="../research-openrouter-integration/" class="md-nav__link">
         
   
   
@@ -7307,7 +7373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -7335,7 +7401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -7363,7 +7429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -7391,7 +7457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -7419,7 +7485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-sftpgo-comparison/" class="md-nav__link">
+      <a href="../research-sftpgo-comparison/" class="md-nav__link">
         
   
   
@@ -7447,7 +7513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -7475,7 +7541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -7503,7 +7569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -7531,7 +7597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -7559,7 +7625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -7587,7 +7653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -7638,7 +7704,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../explanation/design/specs/" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -7680,7 +7746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -7708,7 +7774,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -7736,7 +7802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -7764,7 +7830,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -7792,7 +7858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -7820,7 +7886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -7848,7 +7914,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -7876,7 +7942,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -7904,7 +7970,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -7932,7 +7998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -7960,7 +8026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -7988,7 +8054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -8016,7 +8082,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -8044,7 +8110,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -8072,7 +8138,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -8100,7 +8166,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -8128,7 +8194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -8156,7 +8222,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -8184,7 +8250,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -8212,7 +8278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -8240,7 +8306,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -8268,7 +8334,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8296,7 +8362,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -8324,7 +8390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -8352,7 +8418,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -8380,7 +8446,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -8408,7 +8474,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -8436,7 +8502,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -8464,7 +8530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -8492,7 +8558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -8520,7 +8586,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -8548,7 +8614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -8576,7 +8642,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -8604,7 +8670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -8632,7 +8698,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -8660,7 +8726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -8688,7 +8754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -8716,7 +8782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -8744,7 +8810,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -8772,7 +8838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -8800,7 +8866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -8828,7 +8894,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -8856,7 +8922,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -8884,7 +8950,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/044-graph-backend/" class="md-nav__link">
+      <a href="../../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -8912,7 +8978,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/045-write-result/" class="md-nav__link">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -8940,7 +9006,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/046-ext-write/" class="md-nav__link">
+      <a href="../../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -8968,7 +9034,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/047-docs-framework-tooling/" class="md-nav__link">
+      <a href="../../specs/047-docs-framework-tooling/" class="md-nav__link">
         
   
   
@@ -8996,7 +9062,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../explanation/design/specs/048-testing-architecture/" class="md-nav__link">
+      <a href="../../specs/048-testing-architecture/" class="md-nav__link">
         
   
   
@@ -9067,10 +9133,76 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+  <a href="#verdict" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See also
+        Verdict
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-was-tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was tested
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#failure-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failure mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workarounds-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workarounds considered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-moto-is-sufficient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why moto is sufficient
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spike-folder-fate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spike folder fate
       
     </span>
   </a>
@@ -9094,97 +9226,175 @@
 
 
 
-<h1 id="http-backend">HTTP backend<a class="headerlink" href="#http-backend" title="Permanent link">&para;</a></h1>
-<p>Read-only access to files over HTTP/HTTPS — no credentials needed for public endpoints.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;HTTP backend — Read-only access to files over HTTP/HTTPS — no credentials needed for public endpoints.</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">Demonstrates:</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="sd">- Creating a ReadOnlyHttpBackend with base_url</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">- Reading files and metadata from an HTTP endpoint</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">- Capability-gated error handling for unsupported operations</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">- Transport selection (urllib, requests, httpx)</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">---</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="sd">see_also:</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">  - label: HTTP Backend</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">    url: ../../guides/backends/http.md</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="sd">    note: backend guide</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span><span class="p">,</span> <span class="n">CapabilityNotSupported</span><span class="p">,</span> <span class="n">Store</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReadOnlyHttpBackend</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="k">def</span><span class="w"> </span><span class="nf">demo</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">Store</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;HTTP backend demonstration. Returns results dict.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="n">results</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="c1"># --- Capabilities ---</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== HTTP Backend Capabilities ===</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;supports_read&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">READ</span><span class="p">)</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;supports_write&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">Capability</span><span class="o">.</span><span class="n">WRITE</span><span class="p">)</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;READ supported: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;supports_read&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WRITE supported: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;supports_write&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    <span class="c1"># --- Read files ---</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== Reading Files ===</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>    <span class="n">content</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;read_content&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">content</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Content of hello.txt: </span><span class="si">{</span><span class="n">content</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>    <span class="n">text</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;read_text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Text: </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>    <span class="c1"># --- Metadata ---</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== File Metadata ===</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>    <span class="n">info</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_file_info</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">size</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>    <span class="n">results</span><span class="p">[</span><span class="s2">&quot;content_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">content_type</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Size: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> bytes&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Content-Type: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">content_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Modified: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">modified_at</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ETag: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">etag</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>
-<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>    <span class="c1"># --- Unsupported operations raise CapabilityNotSupported ---</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== Write Attempt (read-only) ===</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>        <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;test.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>    <span class="k">except</span> <span class="n">CapabilityNotSupported</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>        <span class="n">results</span><span class="p">[</span><span class="s2">&quot;write_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected error: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>
-<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>    <span class="k">return</span> <span class="n">results</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>
-<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>
-<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>    <span class="c1"># --- Transport selection ---</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>    <span class="c1"># The backend auto-detects the best HTTP library (httpx &gt; requests &gt; urllib).</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>    <span class="c1"># Override with http_client= to force a specific transport:</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>    <span class="c1">#   ReadOnlyHttpBackend(base_url=..., http_client=&quot;urllib&quot;)</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>    <span class="c1">#   ReadOnlyHttpBackend(base_url=..., http_client=&quot;requests&quot;)</span>
-<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a>    <span class="c1">#   ReadOnlyHttpBackend(base_url=..., http_client=&quot;httpx&quot;)</span>
-<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a>
-<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a>    <span class="n">backend</span> <span class="o">=</span> <span class="n">ReadOnlyHttpBackend</span><span class="p">(</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>        <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://data.example.com/datasets/&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a>        <span class="n">timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a>    <span class="p">)</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a>        <span class="n">demo</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a>    <span class="k">finally</span><span class="p">:</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a>        <span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<h1 id="research-bk-181-pr-2-s3-cassettereplay-infeasibility">Research: BK-181 PR 2 — S3 cassette/replay infeasibility<a class="headerlink" href="#research-bk-181-pr-2-s3-cassettereplay-infeasibility" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-05-15
+<strong>Status:</strong> Spike complete. Verdict: <strong>NO-GO for the planned PR 2 scope.</strong>
+S3 replay cannot be implemented today via vcrpy/pytest-recording without
+upstream changes. Recommended close-out: BK-181 ships at the Azure slice
+(PR 1a/1b, already merged); revisit S3 when vcrpy supports the
+<code>aiobotocore</code> transport stack.
+<strong>Scope:</strong> Validate whether the <a href="../research-bk-181-cassette-replay-poc/">BK-181 Azure verdict</a>
+extends to <code>S3Backend</code>'s code path. The Azure PoC settled the mechanism
+question for <code>azure.core</code> and warned that S3 needed separate validation
+because <code>s3fs</code> rides <code>aiobotocore</code> and <code>aiohttp</code> rather than <code>azure.core</code>.
+This spike answers that question.
+<strong>Related:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-181</a>, <a href="../research-bk-181-cassette-replay-poc/">BK-181 Azure PoC</a>,
+<a href="../../specs/048-testing-architecture/">spec 048</a> (TEST-007/008/009),
+the spike folder <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-181-s3-spike"><code>bk-181-s3-spike/</code></a>.</p>
+<h2 id="verdict">Verdict<a class="headerlink" href="#verdict" title="Permanent link">&para;</a></h2>
+<p>S3 cannot be brought under the cassette/replay layer in PR 2. The
+underlying issue is well outside this repo: vcrpy 8.1.1's <code>aiohttp_stubs.py</code>
+cannot transparently intercept the <code>aiobotocore</code> request/response cycle
+that <code>s3fs</code> relies on. The failure is not a quirk of streaming-only
+paths (the Azure caveat) but applies to every <code>s3fs</code> write and read,
+because every such call is dispatched through <code>aiobotocore</code> even from
+sync entry points (<code>_fs.pipe_file</code>, <code>_fs.cat_file</code>, <code>_fs.call_s3</code>).</p>
+<p>The user-facing impact is small. <code>s3_moto</code> already provides a
+high-fidelity Stage-1 in-process S3 fixture
+(<code>tests/backends/fixtures/s3_moto.py</code>), so the conformance suite covers
+S3 without network or Docker today. The original BK-181 motivation
+("turn Azure HNS bugs into always-on regression guards") never applied
+to S3 — Azure needed cassettes because Azurite cannot emulate the
+hierarchical namespace, while moto emulates S3 with enough fidelity for
+the conformance contract. Spec <a href="../../specs/048-testing-architecture/#test-008-replay-scope-is-http-transport-only">TEST-008</a>
+gains a "Noted exception — S3" paragraph that narrows
+<a href="../../specs/048-testing-architecture/#test-007-http-cassette-and-replay-layer">TEST-007</a>'s
+otherwise-universal "HTTP backends support replay" invariant; the
+paragraph points at this finding for the diagnosis.</p>
+<h2 id="what-was-tested">What was tested<a class="headerlink" href="#what-was-tested" title="Permanent link">&para;</a></h2>
+<p>Spike folder: <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-181-s3-spike"><code>sdd/research/bk-181-s3-spike/</code></a>, outside
+<code>testpaths</code>, run by pointing pytest at it explicitly. Two probes were
+exercised against a real AWS account (the same <code>s3_live</code> env that
+<code>tests/backends/fixtures/s3_live.py</code> validates).</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conftest.py</code></td>
+<td>Minimal vcrpy wiring: scrub headers, query params, AWS auth signature</td>
+</tr>
+<tr>
+<td><code>test_spike.py</code></td>
+<td><code>S3Backend.write</code> / <code>read_bytes</code> round-trip + 1 MiB streaming read</td>
+</tr>
+<tr>
+<td><code>isolation_check.py</code></td>
+<td>The same two operations driven through <code>vcr.use_cassette</code> directly, bypassing pytest-recording entirely</td>
+</tr>
+</tbody>
+</table>
+<p>The IAM policy on the <code>s3_live</code> account restricts <code>s3:CreateBucket</code> /
+<code>s3:PutObject</code> to <code>arn:aws:s3:::rs-conformance-*</code>, so the spike uses
+<code>rs-conformance-bk181spike</code> as a stable bucket name (no per-run UUID
+rewriting needed at this stage).</p>
+<h2 id="failure-mode">Failure mode<a class="headerlink" href="#failure-mode" title="Permanent link">&para;</a></h2>
+<p>Both the pytest-driven spike and the standalone <code>isolation_check.py</code>
+fail in the same way during recording, with a <code>--record-mode=all</code>
+(equivalently <code>rewrite</code>) session pointed at a real AWS endpoint:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>File &quot;site-packages/s3fs/core.py&quot;, line 211, in _error_wrapper
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    await tb.tb_frame.f_locals[&quot;response&quot;]
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>          ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>KeyError: &quot;local variable &#39;&#39;response&#39;&#39; is not defined&quot;
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>&lt;sys&gt;:0: RuntimeWarning: coroutine &#39;AioAwsChunkedWrapper.read&#39; was never awaited
 </code></pre></div>
-<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../../../guides/backends/http/">HTTP Backend</a> — backend guide</li>
-<li><a href="https://github.com/haalfi/remote-store/blob/master/examples/backends/http_backend.py">Source: <code>examples/backends/http_backend.py</code></a></li>
-</ul>
+<p>What this is saying:</p>
+<ol>
+<li>vcrpy hooks the underlying aiohttp connection used by <code>aiobotocore</code>.</li>
+<li>The hooked code path attempts to consume the request body
+   (<code>AioAwsChunkedWrapper.read</code>) but vcrpy's stub does not properly
+   drive the async-iteration protocol the wrapper expects.</li>
+<li>The coroutine is left un-awaited and the request fails partway.</li>
+<li><code>s3fs.core._error_wrapper</code> (<code>s3fs/core.py:211</code>) tries to introspect
+   the failed call's traceback for a <code>response</code> local. Because the
+   failure occurred before any HTTP response could be constructed,
+   <code>response</code> is never bound — <code>s3fs</code> then raises <code>KeyError</code>.</li>
+<li>No cassette is written (<code>isolation.yaml</code> is never created).</li>
+</ol>
+<p>This is the same family as the Azure PoC's "aiohttp streaming-body bug"
+(<a href="../research-bk-181-cassette-replay-poc/">research-bk-181-cassette-replay-poc.md § Success criteria — results</a>),
+but worse: for Azure the bug applies only to <em>response</em> bodies and
+only on the async path; for <code>s3fs</code> it applies to every <code>aiobotocore</code>
+call because the request bodies themselves are wrapped in an async
+chunked reader the vcrpy stub cannot drive. Sync entry points
+(<code>_fs.pipe_file</code> etc.) trip the same path because <code>s3fs</code> invokes
+<code>aiobotocore</code> through a private event loop regardless of caller mode.</p>
+<h2 id="workarounds-considered">Workarounds considered<a class="headerlink" href="#workarounds-considered" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Inject a non-aiohttp transport into <code>s3fs</code></strong> (the Azure trick).
+   <em>Verdict: not available.</em> <code>azure.core</code> exposes a pluggable
+   <code>transport=</code> parameter so we can swap <code>AioHttpTransport</code> for
+   <code>AsyncioRequestsTransport</code>. <code>aiobotocore</code> has no such hook —
+   <code>aiohttp</code> is hardwired in <code>aiobotocore.endpoint.AioEndpoint</code> and
+   <code>s3fs</code> exposes no toggle to replace it.</li>
+<li><strong>Drop <code>s3fs</code> from the replay path; use plain <code>boto3</code> (sync)</strong>.
+   <em>Verdict: defeats the purpose.</em> Cassette tests exist to exercise the
+   real production-code SDK pipeline. <code>S3Backend</code> <em>is</em> <code>s3fs</code>; if a
+   replay fixture uses raw <code>boto3</code> it stops testing the code that
+   ships to users. The cassettes would catch nothing the existing
+   <code>s3_moto</code> fixture does not already catch.</li>
+<li><strong>Wait for a vcrpy upstream fix.</strong> <em>Verdict: not under our
+   control.</em> vcrpy's <code>aiohttp_stubs.py</code> is a long-standing rough edge
+   (<a href="https://github.com/kevin1024/vcrpy">kevin1024/vcrpy</a>). No fix is
+   scheduled. This finding and the preserved spike folder are the
+   retest entry points if a future contributor wants to re-evaluate
+   against a new vcrpy release.</li>
+<li><strong>Write a custom <code>aiobotocore</code> recorder.</strong> <em>Verdict: out of scope.</em>
+   A bespoke recorder would be a sizeable internal tool, and the
+   value is low: <code>s3_moto</code> already covers the Stage-1 conformance
+   surface for S3. The original Azure justification (no Stage-1
+   emulator covers HNS) does not apply.</li>
+</ol>
+<h2 id="why-moto-is-sufficient">Why moto is sufficient<a class="headerlink" href="#why-moto-is-sufficient" title="Permanent link">&para;</a></h2>
+<p>For Azure, <code>s3_moto</code>'s analogue does not exist: Azurite does not
+emulate the Hierarchical Namespace, so contracts like
+<code>hdi_isfolder</code> directory probes and the BUG-195..203 family can only
+be observed against real ADLS Gen2. The replay layer turns those
+contracts into always-on tests by recording them once.</p>
+<p>For S3, every conformance contract the suite cares about — the
+existing parametrised tests — already runs against <code>s3_moto</code> at
+Stage 1 today
+(<code>tests/backends/fixtures/s3_moto.py</code>,
+<code>tests/backends/fixtures/fixtures.toml</code>). <code>s3_moto</code> exercises the
+same <code>S3Backend → s3fs → aiobotocore → aiohttp → moto server</code> chain
+end-to-end with no network, no Docker, and no live cloud account.
+The few S3-specific defects that <em>would</em> be S3 analogues of the HNS
+BUG-* family (multipart-upload edge cases, presigned-URL handling,
+versioning quirks) are not on BK-181's roadmap and have no committed
+backlog item demanding cassette coverage.</p>
+<p>The remaining gap — a real-AWS contract that moto's emulation does
+not match — is covered by <code>s3_live</code> at Stage 3 (manual or scheduled
+CI cadence). The <code>live</code> mark keeps it out of default runs.</p>
+<h2 id="recommendation">Recommendation<a class="headerlink" href="#recommendation" title="Permanent link">&para;</a></h2>
+<p>Close BK-181 at PR 2 with the S3 slice deferred:</p>
+<ol>
+<li>Move BK-181 from BACKLOG.md to BACKLOG-DONE.md (status flips
+   <code>[~]</code> → <code>[x]</code>) with the Azure-shipped, S3-deferred outcome
+   documented in the close-out entry.</li>
+<li>Amend <a href="../../specs/048-testing-architecture/#test-008-replay-scope-is-http-transport-only">spec 048 TEST-008</a>
+   with a "Noted exception — S3" paragraph that narrows
+   <a href="../../specs/048-testing-architecture/#test-007-http-cassette-and-replay-layer">TEST-007</a>'s
+   "HTTP backends support replay" invariant, pointing here for the
+   diagnosis.</li>
+</ol>
+<p>No follow-up backlog item is filed: <code>s3_moto</code> already covers Stage 1,
+no S3-specific contract today demands cassette-level fidelity, and the
+fix path runs through upstream vcrpy rather than this repo. If a
+future need surfaces, this doc and the spike folder are the entry
+points to re-evaluate the decision.</p>
+<p>The trace <code>sdd/traces/BK-181-cassette-replay-impl.yml</code> is extended with
+an <code>s3-spike-finding</code> phase pointing here.</p>
+<h2 id="spike-folder-fate">Spike folder fate<a class="headerlink" href="#spike-folder-fate" title="Permanent link">&para;</a></h2>
+<p>Per the repo's PoC convention, the spike folder is frozen once the
+finding is recorded. <code>bk-181-s3-spike/</code> stays as evidence:
+<code>isolation_check.py</code> is the smallest reproducer if a future contributor
+wants to retest against a new vcrpy or s3fs release. <code>test_spike.py</code>
+and <code>conftest.py</code> document the pytest-recording wiring path that did
+not work and serve as a starting point for any future revisit.</p>
 
 
 
@@ -9220,7 +9430,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../sql-blob-backend/" class="md-footer__link md-footer__link--prev" aria-label="Previous: SQL Blob Backend">
+          <a href="../research-bk-181-cassette-replay-poc/" class="md-footer__link md-footer__link--prev" aria-label="Previous: HTTP cassette/replay layer — mechanism PoC (BK-181)">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -9230,20 +9440,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                SQL Blob Backend
+                HTTP cassette/replay layer — mechanism PoC (BK-181)
               </div>
             </div>
           </a>
         
         
           
-          <a href="../batch-operations/" class="md-footer__link md-footer__link--next" aria-label="Next: Batch operations">
+          <a href="../research-bk-198-paramiko-ssh-rsa-empirical/" class="md-footer__link md-footer__link--next" aria-label="Next: paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Batch operations
+                paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -9280,10 +9490,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
