@@ -1,0 +1,104 @@
+id: BK-221
+title: "Migrate tests/test_pbt_write_result.py — per-backend split (BK-191 slice 5/6)"
+trigger: "BK-191 audit (sdd/audits/audit-014) flagged tests/test_pbt_write_result.py as a TEST-003 violation at root and proposed disposition (b) conformance reshape (size regimes) + (a) per-backend split (SDK metadata round-trip). Re-reading the actual Rule B violations confirmed only two sites fire: the s3_backend fixture (line 267, _s3) and the azure_backend fixture (line 299, _azure). PBT 1 (size regime) uses only _memory and _local — both allowed at root — so the (b) conformance prescription was reframed: the deliberately narrow backend selection is documented in the module docstring (TESTING.md Rules 5 and 6) and the BUG-168 boundary is LocalBackend-specific. Disposition reframed to (a) per-backend split only."
+source_items:
+  - BK-221
+  - BK-191
+audience:
+  - infra.test
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "tests/test_pbt_write_result.py — disposition: (b) conformance reshape (size regimes) + (a) per-backend split (SDK metadata round-trip)"
+        read_type: gate
+        outcome: misleading
+        extract: "audit proposes (b) conformance reshape for size-regime PBT + (a) per-backend for metadata round-trip; prescription reframed — see trigger"
+      - file: tests/test_pbt_write_result.py
+        section: "(full)"
+        read_type: gate
+        extract: "Rule B violations: s3_backend fixture (line 267, _s3), azure_backend fixture (line 299, _azure); PBT 1 (TestWriteResultSizeSmall, TestWriteResultSizeBug168Regime) uses only MemoryBackend + LocalBackend — both allowed; module docstring explicitly states backend selection is deliberately narrow per TESTING.md Rules 5 and 6; BUG-168 boundary is LocalBackend-specific (real BufferedWriter path)"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001a, WR-003, WR-012, WR-013"
+        read_type: gate
+        extract: "WR-001a / WR-003: WriteResult.size == len(payload) — universal invariant; WR-012: WriteResult.metadata echoes caller mapping verbatim; WR-013: get_file_info().metadata round-trips through SDK"
+      - file: scripts/check_test_placement.py
+        section: "Rule B + _BACKEND_AT_ROOT_GRANDFATHERED"
+        read_type: gate
+        extract: "_ALLOWED_BACKEND_MODULES = {_memory, _local, _fileinfo}; Rule B fires only on s3_backend (line 267) and azure_backend (line 299) fixtures; PBT 1 imports are all allowed"
+      - file: sdd/traces/BK-220-test-seekable-conformance-reshape-and-azure-per-backend.yml
+        section: "(full — template)"
+        read_type: reference
+        extract: "template for trace structure and disposition-reframe pattern"
+      - file: tests/backends/s3/test_moto.py
+        section: "moto_server fixture usage pattern"
+        read_type: reference
+        extract: "pattern for pytest.importorskip guards and moto_server fixture usage in tests/backends/s3/"
+      - file: tests/backends/azure/test_ping.py
+        section: "pytest.importorskip + function-local AzureBackend import pattern"
+        read_type: reference
+        extract: "pattern for per-backend Azure tests: pytest.importorskip at module level, AzureBackend imported inside function/fixture"
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/s3/test_write_result_pbt.py
+        section: "(full file — new)"
+        read_type: gate
+        extract: "new per-backend file; s3_backend fixture + _metadata strategies + TestMetadataRoundTripS3 moved from root; pytest.importorskip guards at module level; class-level skipif dropped (fixture already guards via moto_server is None check)"
+      - file: tests/backends/azure/test_write_result_pbt.py
+        section: "(full file — new)"
+        read_type: gate
+        extract: "new per-backend file; azure_backend fixture + _metadata strategies + TestMetadataRoundTripAzure moved from root; pytest.importorskip('azure.storage.blob') at module level; class-level skipif dropped (fixture already guards via azurite_server is None check); @pytest.mark.requires_docker retained on class"
+      - file: tests/test_pbt_write_result.py
+        section: "(full rewrite)"
+        read_type: gate
+        extract: "removed s3_backend + azure_backend fixtures; removed _meta_key/_meta_value/_metadata strategies; removed _require_user_metadata; removed Capability + uuid + _s3_available/_azure_available/_azurite_reachable imports; removed TestMetadataRoundTripS3 + TestMetadataRoundTripAzure; updated module docstring to reference per-backend homes for WR-012/WR-013; _do_write simplified (metadata param removed — unused after PBT 2 removal)"
+      - file: scripts/check_test_placement.py
+        section: "_BACKEND_AT_ROOT_GRANDFATHERED + comment block"
+        read_type: gate
+        extract: "removed 'test_pbt_write_result.py'; updated 'remaining two files' → 'remaining one file'; one migration-pending entry (test_coverage_gaps) plus permanently-justified test_examples.py remain"
+      - file: sdd/audits/audit-014-grandfathered-tests-allow-list.md
+        section: "tests/test_pbt_write_result.py findings + summary table"
+        read_type: gate
+        extract: "updated per-file section heading to '(a) per-backend split (SDK metadata round-trip only)'; appended BK-221 reframe note (CLAUDE.md § Audits rule 3); updated summary-table row to '(a) per-backend split (metadata round-trip) — reconsidered, see § per-file findings — shipped BK-221'"
+      - file: sdd/BACKLOG.md
+        section: "Lint / CI Completeness"
+        read_type: gate
+        extract: "BK-221 reserved as [~] entry, then moved to BACKLOG-DONE.md within the same commit"
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_test_placement.py
+        section: "stale-grandfather detection"
+        read_type: verify
+        extract: "hatch run lint reports zero Rule B violations and zero stale grandfather entries after removing test_pbt_write_result.py from the allow-list"
+      - file: tests/backends/fixtures/test_registry.py
+        section: "TestLayoutBoundary.test_conformance_does_not_reference_concrete_backends"
+        read_type: verify
+        extract: "passes — no concrete backend class name in conformance subtree (per-backend files are not in conformance/)"
+      - file: tests/test_pbt_write_result.py
+        section: "(collection)"
+        read_type: verify
+        extract: "root file still collects: TestWriteResultSizeSmall (test_memory, test_local) and TestWriteResultSizeBug168Regime (test_local_buffer_boundary); no banned-backend import remains"
+      - file: tests/backends/s3/test_write_result_pbt.py
+        section: "(collection)"
+        read_type: verify
+        extract: "per-backend S3 file collects: TestMetadataRoundTripS3.test_round_trip with WR-012/WR-013 markers"
+      - file: tests/backends/azure/test_write_result_pbt.py
+        section: "(collection)"
+        read_type: verify
+        extract: "per-backend Azure file collects: TestMetadataRoundTripAzure.test_round_trip with WR-012/WR-013 markers"
+      - file: tests/scripts/test_check_test_placement.py
+        section: "TestBackendImportsAtRoot.test_grandfathered_files_skipped"
+        read_type: verify
+        extract: "test still uses test_coverage_gaps.py as the example grandfathered filename — no update needed; test_coverage_gaps.py remains in the allow-list"
+discovery_followups: []
+co_shipped_items: []
+surprising_ripples:
+  - sdd/BACKLOG.md  # stray blank line introduced by the BK-221 section edit (review nit); removed in fix commit
+review_rounds: 1

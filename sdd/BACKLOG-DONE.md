@@ -110,6 +110,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Audience: `infra.ci`.
   Trace: [`sdd/traces/BK-219-ci-python-version-config.yml`](traces/BK-219-ci-python-version-config.yml).
 
+- [x] **BK-221 — Migrate `tests/test_pbt_write_result.py` (per-backend split) (BK-191 slice 5/6)**
+  Fifth migration-pending slice from BK-191's audit. `tests/test_pbt_write_result.py`
+  fired Rule B via two function-local concrete-cloud imports — `_s3` (inside the
+  `s3_backend` fixture, line 267) and `_azure` (inside the `azure_backend` fixture,
+  line 299); everything else in the file uses the allowed `MemoryBackend` and
+  `LocalBackend`. Reframes audit-014's proposed "(b) conformance reshape (size
+  regimes)": the PBT 1 tests are deliberately narrow (module docstring cites
+  TESTING.md Rules 5 and 6); the BUG-168 boundary is `LocalBackend`-specific
+  (real `BufferedWriter` path); running arbitrary-payload Hypothesis examples
+  against the full conformance fixture registry (including SFTP and Azure network
+  backends) would be slow and contrary to the documented rationale. Disposition:
+  **(a) per-backend split only.** `TestMetadataRoundTripS3` (WR-012/WR-013)
+  moved to `tests/backends/s3/test_write_result_pbt.py`; `TestMetadataRoundTripAzure`
+  moved to `tests/backends/azure/test_write_result_pbt.py`. Root
+  `tests/test_pbt_write_result.py` retains `TestWriteResultSizeSmall` and
+  `TestWriteResultSizeBug168Regime` (WR-001a/WR-003) using only the allowed
+  `MemoryBackend` and `LocalBackend`. `"test_pbt_write_result.py"` removed from
+  `_BACKEND_AT_ROOT_GRANDFATHERED` in `scripts/check_test_placement.py`. One
+  migration-pending entry remains (`test_coverage_gaps`) plus the
+  permanently-justified `test_examples.py`. Audit-014 per-file section and summary
+  table updated with rule-3 reframe note.
+  Audience: `infra.test`, `contributor.process`. Spec: TEST-003, WR-012, WR-013.
+  Trace: [`sdd/traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml`](traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml).
+
 - [x] **BK-220 — Reshape `tests/test_seekable.py` (conformance reshape + Azure per-backend lift) (BK-191 slice 4/6)**
   Fourth migration-pending slice from BK-191's audit. `tests/test_seekable.py`
   fired Rule B via function-local imports of `_azure` (in
