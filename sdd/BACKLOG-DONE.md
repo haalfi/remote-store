@@ -8,6 +8,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-210 — `azure_replay` fixture omits `cleanup=`; ~133 `Unclosed AzureBackend` warnings per Stage-2 run**
+  `tests/backends/fixtures/azure_replay.py` registered its `BackendFixture`
+  without a `cleanup=` argument, so the conformance `backend` fixture had
+  nothing to call at teardown. Every replay-fixture backend's `close()` was
+  skipped, the lazy `_blob_service_instance` / `_cc_instance` clients stayed
+  attached, and each instance's `__del__` later fired
+  `ResourceWarning("Unclosed AzureBackend...")` at GC time. With
+  `filterwarnings = error` in `pyproject.toml`, those warnings became
+  exceptions in `__del__`, routed through `sys.unraisablehook` to
+  pytest's hook, and were re-emitted as `PytestUnraisableExceptionWarning`
+  attributed to whichever test was running when GC fired. On Linux CI
+  (`-n auto = 4` workers) the GC timing rarely collided with a
+  `pytest.warns(ResourceWarning, ...)` context; on a 20-worker Windows
+  developer host the collision was intermittent (~1 in 5 sessions),
+  surfacing as e.g. `TestSFTPLifecycle::test_del_closes_partial_clients`
+  failing with an "Unclosed AzureBackend" message — a test that has no
+  Azure code path. The sibling `azure_replay_async.py` already registered
+  `aclose=_aclose`; only the sync slice was missed. Fix: one-line
+  `cleanup=_cleanup` addition wrapping `backend.close()`. Verified on
+  Windows: ResourceWarning count dropped from 133 → 0 per Stage-2 run;
+  five consecutive `-n auto` runs of the full Stage-2 suite passed cleanly
+  (previously 1/5 failed). Closes out the `todo-xdist-windows-flakes-followup`
+  observation; the TODO's other listed symptoms (werkzeug `MemoryError`,
+  `live-s3` failures) did not reproduce after the BK-181 / ID-195 work
+  landed.
+  Audience: `infra.test`.
+  Trace: [`sdd/traces/BUG-210-azure-replay-fixture-leak.yml`](traces/BUG-210-azure-replay-fixture-leak.yml).
+
 - [x] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
   Shipped the Azure slice across two PRs and closed with S3 deferred as a
   documented exception. **PR 1a (#629):** `azure_replay` /
