@@ -41,6 +41,7 @@ import pytest
 
 # Guard: skip entire module if dependencies are missing
 pytest.importorskip("s3fs", reason="s3fs not installed")
+pytest.importorskip("boto3", reason="boto3 not installed")
 
 from remote_store._errors import BackendUnavailable, NotFound, PermissionDenied  # noqa: E402
 
