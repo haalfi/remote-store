@@ -18,7 +18,7 @@ audience:
   - infra.ci
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -170,6 +170,21 @@ phases:
           the docstring under-stated the design decision (hard-coded `"sftp"`
           literal does not generalise) — the test locks it explicitly.
         outcome: ok
+      - file: tests/backends/fixtures/_state.py
+        section: "module docstring lines 17-19"
+        read_type: reference
+        extract: |
+          Round 3 (second-pass PR review): the sibling state-module docstring
+          claimed "pytest-xdist is not currently used. If it ever is, both
+          pieces of state need to be lifted into a config plugin." The "if it
+          ever" conditional triggered with this PR — but the predicted
+          remediation (config-plugin lifting) was not the path taken; per-worker
+          re-import semantics make the module-level state safe as-is, and the
+          one fixture that cannot run under concurrent worker connections is
+          carved out by `registry.fixture_params`. Updated the docstring to
+          describe the new reality and point at registry.fixture_params for
+          the carve-out story.
+        outcome: ok
 discovery_followups: []
 surprising_ripples:
   - |
@@ -196,3 +211,10 @@ surprising_ripples:
     pytest invocation. Not a regression of this PR — but the
     `[tool.coverage.run] parallel = true` change made the divergence with
     CI's new two-pass shape worth documenting in-line on the workflow.
+  - |
+    tests/backends/fixtures/_state.py:17-19 carried a docstring claim that
+    pytest-xdist was not in use, with a stated remediation (lift state into
+    a config plugin) that did not match the path taken. The ripple-check
+    did not flag sibling-module docstrings of a changed file for staleness
+    review; caught only in the second-pass PR review after the test class
+    monkeypatched `_state._CURRENT_STAGE` directly.
