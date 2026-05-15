@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import os
 import re
 from pathlib import Path
 
@@ -560,6 +559,17 @@ class TestFixtureCleanupContract:
     legitimately inherit the no-op default ``close`` / ``aclose`` and need
     no teardown, so the guard is conditional on actually overriding the
     method — false-positiving them would force boilerplate.
+
+    Scope: only fixtures whose ``factory()`` is guaranteed not to open a
+    real network transport (``transport in {"fs", "memory", "sql"}``, or
+    ``kind == "replay"`` which uses a fake connection string + lazy
+    clients). Real-network fixtures (s3_moto, sftp_docker, azurite, live
+    cloud) are covered by the conformance suite itself: a missing
+    ``cleanup=`` there surfaces as the same ``ResourceWarning`` leak that
+    originally surfaced BUG-210. Iterating them here would re-open real
+    sockets / event loops that the meta-test cannot reliably tear down
+    fast enough to avoid biting a downstream test on the same xdist
+    worker (CI flake observed on PR #637 first push).
     """
 
     @staticmethod
@@ -580,23 +590,27 @@ class TestFixtureCleanupContract:
             return type(inner).close is not Backend.close
         return type(instance).aclose is not AsyncBackend.aclose
 
-    def test_overriding_close_requires_cleanup(self) -> None:
+    _SAFE_TRANSPORTS: frozenset[str] = frozenset({"fs", "memory", "sql"})
 
-        is_xdist_worker = "PYTEST_XDIST_WORKER" in os.environ
+    def _is_safe_to_instantiate(self, f: BackendFixture) -> bool:
+        """Whether ``f.factory()`` is guaranteed not to open a real network transport.
+
+        ``replay`` fixtures use fake connection strings and lazy clients
+        that never reach a real server; the remaining safe set is the
+        non-network transports (fs / memory / sql).
+        """
+        return f.kind == "replay" or f.transport in self._SAFE_TRANSPORTS
+
+    def test_overriding_close_requires_cleanup(self) -> None:
         offenders: list[str] = []
         for f in all_fixtures():
-            # Mirror the ``fixture_params`` carve-out: atmoz/sftp's daemon is
-            # unreliable under concurrent worker connections, so ``factory()``
-            # here would hit the same banner-read failure. The CI serial pass
-            # exercises this path with ``PYTEST_XDIST_WORKER`` unset.
-            if is_xdist_worker and f.container == "sftp":
+            if not self._is_safe_to_instantiate(f):
                 continue
             try:
                 instance = f.factory()
             except pytest.skip.Exception:
-                # Fixture needs infrastructure not available in this session
-                # (Docker container down, live credentials absent, optional
-                # SDK not installed). Skip silently — the invariant is
+                # Optional SDK not installed (e.g. azure-storage-file-datalake
+                # absent on a minimal env). Skip silently — the invariant is
                 # checked wherever the fixture actually constructs.
                 continue
             try:
