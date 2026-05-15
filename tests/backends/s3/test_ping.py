@@ -17,6 +17,17 @@ This file pins what is S3-specific:
   where BUG-208 lived (an un-awaited ``head_bucket`` coroutine that made
   ``check_health()`` a silent no-op).
 
+Mock spec for ``call_s3`` (Python 3.12+ ``__wrapped__`` drift): on
+Python 3.12+ ``unittest.mock._mock_add_spec`` calls ``inspect.unwrap()``
+on each attribute of the spec object before checking
+``iscoroutinefunction``. s3fs's ``call_s3 = sync_wrapper(_call_s3)``
+carries ``__wrapped__`` pointing at the async ``_call_s3``, so
+``MagicMock(spec=S3FileSystem).call_s3`` is auto-promoted to
+``AsyncMock`` even though the real ``call_s3`` is sync. The local
+``_sync_call_s3_spec`` function is used as the child
+``MagicMock(spec=...)`` so the mock stays sync on every Python version
+(Python 3.11 was unaffected; 3.13 surfaced the drift).
+
 Migrated from tests/test_ping.py (BK-217 / BK-191 slice 2/6).
 """
 
@@ -35,16 +46,7 @@ from remote_store._errors import BackendUnavailable, NotFound, PermissionDenied 
 
 
 def _sync_call_s3_spec(method: str, *args: Any, **kwargs: Any) -> Any:
-    """Sync spec for s3fs's ``call_s3`` wrapper.
-
-    On Python 3.12+, ``unittest.mock`` follows ``__wrapped__`` when scanning a
-    spec for async methods. s3fs's ``call_s3`` is ``sync_wrapper(_call_s3)``
-    -- its ``__wrapped__`` points at the async ``_call_s3``, so
-    ``MagicMock(spec=S3FileSystem).call_s3`` is promoted to ``AsyncMock``
-    even though the real ``call_s3`` is sync. Speccing the child mock
-    against this local sync function pins it to ``MagicMock`` on every
-    Python version (Python 3.11 was unaffected; 3.13 surfaced the drift).
-    """
+    """Sync signature spec for s3fs's ``call_s3`` -- see module docstring."""
 
 
 def _s3_backend(bucket: str, side_effect: Any = None) -> Any:
