@@ -298,10 +298,22 @@ apply to:
   in-process and is already a Stage 1 fixture by construction.
 - **Local filesystem.** Already Stage 1. No demotion needed.
 
+**Noted exception — S3.** S3 is HTTP-transport but does not currently
+ship a `s3_replay` fixture. The implementing recording library
+(vcrpy 8.1.1) cannot drive the `aiobotocore` request/response
+wrappers that `s3fs` rides on, and `s3fs` exposes no equivalent of
+the `azure.core` transport injection that solves the analogous
+async-aiohttp problem for Azure. The `s3_moto` Stage-1 fixture
+provides in-process S3 coverage for the conformance surface, so the
+gap that motivates cassettes for Azure (Azurite cannot emulate the
+Hierarchical Namespace) does not apply. Diagnosis in
+[`sdd/research/research-bk-181-s3-cassette-infeasibility.md`](../research/research-bk-181-s3-cassette-infeasibility.md).
+
 **Postcondition:** `tests/backends/cassettes/` contains
 subdirectories only for HTTP-transport backends. Backends excluded
 by this invariant rely on Stage 2 Docker fixtures as their cheapest
-source of truth, with no Stage 3 to Stage 1 demotion path.
+source of truth, with no Stage 3 to Stage 1 demotion path. The noted
+S3 exception relies on `s3_moto` (Stage 1) plus `s3_live` (Stage 3).
 
 **Rationale:** [ADR-0028](../adrs/0028-testing-architecture-kind-stage-replay.md)
 § HTTP cassette and replay as a Stage 1 fixture, scoped to HTTP backends.

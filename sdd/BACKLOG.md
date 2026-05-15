@@ -255,23 +255,6 @@ BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
   `tests/backends/azure/aio/test_live_hns.py` only where sync / async
   behaviour differs. Spec: TEST-002, TEST-003.
 
-- [~] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
-  spec: TEST-007, TEST-008, TEST-009 · effort: L · audience: infra.test
-  Add `<backend>_replay` Stage 1 fixtures for HTTP-transport backends
-  (Azure first, S3 follows) per spec [TEST-007](specs/048-testing-architecture.md).
-  **Done in PR 1a (#629):** `azure_replay` / `azure_replay_async` fixture wiring,
-  `pytest-recording` dev dependency, `--record` flag, conformance conftest vcr
-  hooks, scrubbing layer (`_cassettes.py`), cassette directory.
-  **In PR 1b (this PR):** 253 Azure cassettes recorded from real ADLS Gen2;
-  scrubbing additions (binary-safe body scrub, `_TMP_UUID_PATTERN` for
-  `write_atomic` temp-file UUIDs, `x-ms-copy-source` request + response header
-  scrub); `AsyncioRequestsTransport` gated on `_RS_CASSETTE_RECORDING` sentinel;
-  `TESTING.md` cassette-refresh guide; 209 replay tests pass (28 HNS-bug
-  failures faithfully reproduced).
-  **Pending — PR 2:** S3 slice (`s3_replay` fixture + cassettes). Requires
-  separate validation: `s3fs` rides `aiobotocore`/`botocore`, not `azure.core`.
-  Spec: TEST-007, TEST-008, TEST-009.
-
 ---
 
 ## Formal Verification

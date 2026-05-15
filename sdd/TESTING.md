@@ -183,6 +183,12 @@ skip recording and re-run only the verification steps.
 Per [TEST-009](specs/048-testing-architecture.md#test-009-cassette-refresh-is-explicit):
 CI does not auto-record; a refresh is a normal PR diff.
 
+**S3 has no cassette layer.** Per [TEST-008](specs/048-testing-architecture.md#test-008-replay-scope-is-http-transport-only),
+S3 is a noted exception: vcrpy cannot drive the `aiobotocore` wrappers
+`s3fs` rides on. The `s3_moto` Stage-1 fixture covers the S3 conformance
+surface in-process. Diagnosis in
+[`sdd/research/research-bk-181-s3-cassette-infeasibility.md`](research/research-bk-181-s3-cassette-infeasibility.md).
+
 ### Provenance
 
 Derived from [`sdd/research/research-testing-best-practices.md`](research/research-testing-best-practices.md).
