@@ -315,54 +315,31 @@ class TestMoveCopyOverwrite:
 class TestMoveCopySelfOperation:
     """Self-move/self-copy: data must not be lost (Dafny: src==dst is a no-op)."""
 
+    @pytest.mark.spec("BE-018")
     @pytest.mark.spec("BE-019")
-    def test_self_copy_preserves_data(self, backend: Backend) -> None:
-        """copy(src, src, overwrite=True) must not lose data."""
-        _require(backend, Capability.COPY)
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    def test_self_op_preserves_data(self, backend: Backend, op: str, cap: Capability, overwrite: bool) -> None:
+        """{move,copy}(src, src, overwrite={True,False}) is a no-op: source content preserved."""
+        _require(backend, cap, Capability.WRITE)
         if not _fixture_record(backend).self_op_supported:
-            pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
-        backend.write("selfcp.txt", b"data")
-        backend.copy("selfcp.txt", "selfcp.txt", overwrite=True)
-        assert backend.read_bytes("selfcp.txt") == b"data"
+            pytest.skip(f"Backend {backend.name!r} does not handle self-{op} yet")
+        path = f"self_{op}_ow{overwrite}.txt"
+        backend.write(path, b"data")
+        _do_op(backend, op, path, path, overwrite=overwrite)
+        assert backend.read_bytes(path) == b"data"
 
     @pytest.mark.spec("BE-018")
-    def test_self_move_preserves_data(self, backend: Backend) -> None:
-        """move(src, src, overwrite=True) must not lose data."""
-        _require(backend, Capability.MOVE)
-        if not _fixture_record(backend).self_op_supported:
-            pytest.skip(f"Backend {backend.name!r} does not handle self-move yet")
-        backend.write("selfmv.txt", b"data")
-        backend.move("selfmv.txt", "selfmv.txt", overwrite=True)
-        assert backend.read_bytes("selfmv.txt") == b"data"
-
     @pytest.mark.spec("BE-019")
-    def test_self_copy_no_overwrite_preserves_data(self, backend: Backend) -> None:
-        """copy(src, src, overwrite=False) is a no-op; must not raise AlreadyExists."""
-        _require(backend, Capability.COPY)
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    def test_self_op_missing_raises_not_found(self, backend: Backend, op: str, cap: Capability) -> None:
+        """{move,copy}(src, src) where src does not exist raises NotFound."""
+        _require(backend, cap)
         if not _fixture_record(backend).self_op_supported:
-            pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
-        backend.write("selfcp2.txt", b"data")
-        backend.copy("selfcp2.txt", "selfcp2.txt", overwrite=False)
-        assert backend.read_bytes("selfcp2.txt") == b"data"
-
-    @pytest.mark.spec("BE-019")
-    def test_self_copy_missing_raises_not_found(self, backend: Backend) -> None:
-        """copy(src, src) where src does not exist must raise NotFound."""
-        _require(backend, Capability.COPY)
-        if not _fixture_record(backend).self_op_supported:
-            pytest.skip(f"Backend {backend.name!r} does not handle self-copy yet")
-        with pytest.raises(NotFound, match="sc_missing"):
-            backend.copy("sc_missing.txt", "sc_missing.txt")
-
-    @pytest.mark.spec("BE-018")
-    def test_self_move_no_overwrite_preserves_data(self, backend: Backend) -> None:
-        """move(src, src, overwrite=False) is a no-op; must not raise AlreadyExists."""
-        _require(backend, Capability.MOVE)
-        if not _fixture_record(backend).self_op_supported:
-            pytest.skip(f"Backend {backend.name!r} does not handle self-move yet")
-        backend.write("selfmv2.txt", b"data")
-        backend.move("selfmv2.txt", "selfmv2.txt", overwrite=False)
-        assert backend.read_bytes("selfmv2.txt") == b"data"
+            pytest.skip(f"Backend {backend.name!r} does not handle self-{op} yet")
+        path = f"sm_{op}_missing.txt"
+        with pytest.raises(NotFound, match=f"sm_{op}_missing"):
+            _do_op(backend, op, path, path)
 
 
 @pytest.mark.extended_conformance

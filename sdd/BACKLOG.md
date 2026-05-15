@@ -214,29 +214,19 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   `get_file_info` HNS branch and raise `InvalidPath`; update both live tests to assert
   `InvalidPath`. Spec: BE-016, ASYNC-016, BE-021.
 
-- [ ] **BK-177 — Parametrize self-op tests + tighten `match=` regexes in `tests/backends/conformance/test_atomic.py`**
-  spec: BE-018, BE-019 · effort: M · audience: infra.test
-  Two TESTING.md alignments to apply on the sync side of
-  `TestMoveCopySelfOperation`, mirroring fixes that landed in the async
-  mirror (`tests/backends/conformance/test_async_extended.py`) via PR #580.
-  Originally referenced the now-removed
-  `tests/backends/test_conformance_extended.py`; BK-179's split moved the
-  self-op tests into
-  `tests/backends/conformance/test_atomic.py::TestMoveCopySelfOperation`.
-  1. **Parametrize `TestMoveCopySelfOperation`.** The sync class has five
-     near-duplicate methods that differ only in `op ∈ {move, copy}` and
-     `overwrite ∈ {True, False}` — a TESTING.md Rule 7 violation. The async
-     side was parametrized over `(op, cap)` × `overwrite`, collapsing five
-     tests into two and adding the previously-missing self-move-missing-NotFound
-     case. Apply the same shape on the sync side.
-  2. **Tighten `match=` in `test_destination_is_directory_raises_error`.** The
-     current `match=f"mcdd/{op}"` matches both src and dst fragments because
-     they share the prefix; pin to `match=f"mcdd/{op}_dstdir"` so a regression
-     that flipped the error from dst to src would not silently pass. The
-     async mirror was tightened in PR #580.
-  No spec change; marker tags (`BE-018`, `BE-019`, the BE counterpart of
-  `ASYNC-047`) stay on the parametrized methods. Verify behavior unchanged
-  via `hatch run pytest tests/backends/conformance/test_atomic.py -k SelfOperation`.
+
+- [ ] **BK-223 — Tighten `match=` regex in `test_source_is_directory_raises_error` (sync + async)**
+  spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · effort: S · audience: infra.test
+  Symmetric weakness to BK-177's `test_destination_is_directory_raises_error`
+  fix. The current `match=f"mcds/{op}"` on both sides matches both the src
+  path `mcds/{op}` and the dst path `mcds/{op}_dst.txt` (shared prefix), so a
+  regression that flipped the error to be about dst would not be caught.
+  Pin to `match=f"mcds/{op}/"` (or `match=f"mcds/{op}(?!_dst)"`) at:
+  - `tests/backends/conformance/test_errors.py:223`
+     (`TestMoveCopyErrorFidelity::test_source_is_directory_raises_error`)
+  - `tests/backends/conformance/test_async_extended.py:451`
+     (`TestMoveCopyErrors::test_source_is_directory_raises_error`)
+  Discovered during PR #640 review of BK-177.
 
 - [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
   spec: TEST-002, TEST-003 · effort: M · audience: infra.test
