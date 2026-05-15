@@ -114,14 +114,22 @@ phases:
         extract: |
           Review flagged the absence of a structural guard: the next sibling
           fixture that forgets `cleanup=` would reintroduce the leak with
-          no repo-level safety net. Added `test_overriding_close_requires_cleanup`
-          that walks `all_fixtures()` and fails if any fixture whose backend
-          overrides the default no-op `close`/`aclose` lacks the matching
-          teardown channel. Looks through `SyncBackendAdapter` so in-memory
-          async fixtures (where the wrapped sync close is the inherited
-          no-op) stay exempt without per-fixture allow-listing. Verified
-          by reverting the BUG-210 fix and confirming the new test fails
-          with `azure_replay` named in the offender list.
+          no repo-level safety net. Added `test_sync_overriding_close_requires_cleanup`
+          that walks `all_fixtures()` and fails if any sync fixture whose
+          backend overrides the default no-op `close` lacks `cleanup=`.
+          Scope is deliberately narrow: sync fixtures only
+          (`asyncio.run(f.aclose(...))` on Linux leaves the
+          `UnixSelectorEventLoop`'s self-pipe sockets unclosed long enough
+          to fire `PytestUnraisableExceptionWarning` on a later test, per
+          CI failures on this PR's second push) and only fixtures whose
+          `factory()` is guaranteed not to open a real network transport
+          (`transport in {"fs", "memory", "sql"}` or `kind == "replay"`).
+          The excluded sets — async fixtures and real-network fixtures —
+          are still covered indirectly: a missing teardown surfaces through
+          the conformance suite as the same `ResourceWarning` leak that
+          originally surfaced BUG-210. Verified by reverting the BUG-210
+          fix and confirming the new test fails with `azure_replay` named
+          in the offender list.
         outcome: ok
       - file: sdd/traces/_schema.yml
         section: "surprising_ripples (lines 162–177)"
@@ -131,8 +139,9 @@ phases:
           narration of an investigation surprise, not a file path. Schema
           intent is "file paths the work needed to touch but neither the
           trace's cited reads nor the ripple-check table anticipated".
-          Cleared the field; the analytical observation lives in the
-          `BACKLOG-DONE.md` entry where prose belongs.
+          Cleared the field; the predicted-host-pressure-vs-actual-missing-
+          kwarg observation moved into the `BACKLOG-DONE.md` entry's
+          "Investigation note" paragraph where prose belongs.
         outcome: ok
 discovery_followups: []
 surprising_ripples: []

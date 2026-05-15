@@ -32,13 +32,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   passed cleanly (previously 1/5 failed).
   **Structural guard**: new
   `tests/backends/fixtures/test_registry.py::TestFixtureCleanupContract`
-  asserts that any registered fixture whose backend class overrides
-  `Backend.close` (sync) or `AsyncBackend.aclose` (async) declares the
-  matching teardown channel. Looks through `SyncBackendAdapter` so the
-  in-memory async fixtures (where the wrapped sync `close` is the inherited
-  no-op) stay exempt without per-fixture allow-listing. Stage-2 run with
-  the fix reverted reproduces the assertion failure pointing at
-  `azure_replay`.
+  asserts that any sync fixture whose backend class overrides
+  `Backend.close` declares `cleanup=`. Scope is deliberately narrow:
+  sync only (`asyncio.run(f.aclose(...))` for an async fixture would
+  leak the Linux `UnixSelectorEventLoop`'s self-pipe sockets and
+  attribute the warning to a downstream test), and only fixtures
+  whose `factory()` does not open a real network transport
+  (`transport in {"fs", "memory", "sql"}` or `kind == "replay"`).
+  Real-network and async fixtures are still covered indirectly: a
+  missing `cleanup=` / `aclose=` there surfaces through the conformance
+  suite as the same `ResourceWarning` leak that originally surfaced
+  BUG-210. Stage-2 run with the fix reverted reproduces the assertion
+  failure pointing at `azure_replay`.
+  **Investigation note**: the residual `-n auto` Windows flake had been
+  predicted to have host-resource roots (werkzeug `MemoryError`, Windows
+  ephemeral-port exhaustion, Docker Desktop NAT); the actual cause was
+  a single missing `cleanup=` kwarg made visible only because
+  `filterwarnings=error` + 20 workers compresses the GC-timing window
+  enough to hit a foreign `pytest.warns` block.
   Audience: `infra.test`.
   Trace: [`sdd/traces/BUG-210-azure-replay-fixture-leak.yml`](traces/BUG-210-azure-replay-fixture-leak.yml).
 
