@@ -37,6 +37,13 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
     - If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see CLAUDE.md § Coverage gate). If it fails, stop and report which files are below threshold. Do **not** create the PR until coverage passes.
     - If none match (docs/config-only): skip coverage.
 
+2d. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
+    (per CLAUDE.md § Backlog, commit subjects start with the item ID). For each
+    unique ID, verify a matching `sdd/traces/<id>-*.yml` exists. If any are
+    missing, stop and ask the user — CLAUDE.md § Trace authoring (mandatory)
+    requires the trace to ship in the same PR as the work. Schema:
+    `sdd/traces/_schema.yml`. No ID-prefixed commits? Skip the gate.
+
 3. **Gather context:** `git log origin/<BASE>..HEAD --oneline` and `git diff origin/<BASE>...HEAD`
    to understand all changes (not just the latest commit). Use `origin/<BASE>`,
    not local `<BASE>`, so context does not depend on a stale local ref.

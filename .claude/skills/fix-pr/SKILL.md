@@ -96,7 +96,11 @@ Only resolve threads you fixed. No gh? Tell user to resolve manually.
 
 ## Step 5: Validate
 
-Run `hatch run lint` and `hatch run test`. Fix failures, re-run until clean.
+Run `hatch run lint`. Fix failures, re-run until clean.
+
+**Coverage gate:** Check `git diff origin/master...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
+- If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see CLAUDE.md § Coverage gate). If it fails, stop and report which files are below threshold.
+- If none match (docs/config-only): run `hatch run test`.
 
 5a. **Testing gate:** Do the changed tests follow the rules in `sdd/TESTING.md`?
     Report violations before commit.
@@ -104,17 +108,20 @@ Run `hatch run lint` and `hatch run test`. Fix failures, re-run until clean.
 5b. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
     Report violations before commit.
 
-5c. **Trace update (when PR has a backlog ID):** Parse the backlog ID from
-    the PR title or branch name. If found, update `sdd/traces/<id>-<slug>.yml`
-    (schema: `sdd/traces/_schema.yml`) with the review-driven fields:
+5c. **Trace update:** Find the trace already on this branch via
+    `git diff origin/master...HEAD --name-only` — any `sdd/traces/*.yml`
+    that appears is the target. The /pr trace gate guarantees it exists
+    before the PR is opened. Update it with the review-driven fields:
 
     - `discovery_followups` — new backlog items the review surfaced.
     - `surprising_ripples` — paths the ripple-check table did not anticipate
       that the review caught.
     - `co_shipped_items` — unrelated items the review confirmed this PR also closes.
 
-    No backlog ID? Skip and note it in the Step 6 report. This is agent
-    hygiene, not a contribution rule.
+    No trace in the diff? The PR touches no backlog item; skip and note it
+    in the Step 6 report. If the review surfaces a distinct new backlog
+    item that warrants its own work, that follows the /pr flow in a
+    separate PR — do not create a new trace here.
 
 ## Step 6: Commit and push
 
