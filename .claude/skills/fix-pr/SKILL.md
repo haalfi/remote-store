@@ -5,7 +5,17 @@ disable-model-invocation: true
 argument-hint: "[PR number]"
 ---
 
-PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
+PR: `$ARGUMENTS`. Repo: `haalfi/remote-store`.
+
+**No PR number provided?** Run `git branch --show-current`, then call `list_pull_requests` with `owner: "haalfi"`, `repo: "remote-store"`, `state: "OPEN"`, `head: "haalfi:<branch>"`. If exactly one PR matches, confirm with the user. If zero or multiple match, or the user declines, fall through to listing all open PRs and ask which to fix.
+
+## Step 0: Verify PR is open
+
+If `$ARGUMENTS` is empty, the no-args fallback above must have resolved a
+PR number first; use that resolved value below. Do not call the API with
+an empty `pullNumber`.
+
+Call `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: <resolved PR number>`. If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not fix stale or typo'd PR numbers.
 
 ## Step 1: Prepare branch and fetch comments
 
@@ -21,6 +31,10 @@ destructive to anyone tracking the branch.
 
 For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads),
 use the configured GitHub MCP server. Fall back to `gh api graphql` for thread resolve/unresolve.
+
+**Fetch comments after any rebase, not before.** Line numbers and the
+`isOutdated` flag are computed against the PR's current HEAD; comments
+fetched before a force-push triage against stale metadata.
 
 Fetch **all four** comment sources (`owner: "haalfi"`, `repo: "remote-store"`):
 
@@ -61,7 +75,7 @@ Build work list from **all four sources** (see table above):
 - **Source 1** (inline threads): skip resolved, outdated, and bot comments.
 - **Sources 2–4** (reviews, PR comments, issue comments): no resolution state — always scan. Extract actionable items (bugs, spec gaps, test gaps, dead code, etc.).
 
-For each actionable item note: file, line, category (Bug/Spec/Test/Consistency/Ripple/Security), what to change.
+For each actionable item note: file, line, category (Bug/Spec/Test/Consistency/Ripple/Perf/Security), what to change.
 
 **Be critical.** Verify each claim against the code — comments can be wrong or already fixed. Skip bad suggestions with a reason, don't blindly apply them.
 
@@ -86,13 +100,32 @@ Only resolve threads you fixed. No gh? Tell user to resolve manually.
 
 ## Step 5: Validate
 
-Run `hatch run lint` and `hatch run test`. Fix failures, re-run until clean.
+Run `hatch run lint`. Fix failures, re-run until clean.
+
+**Coverage gate:** Check `git diff origin/master...HEAD --name-only` for files under `src/`, `tests/`, or `examples/`.
+- If any match: run `hatch run test-cov-strict` (enforces 95%; needs Azurite running locally — see CLAUDE.md § Coverage gate). If it fails, stop and report which files are below threshold.
+- If none match (docs/config-only): run `hatch run test`.
 
 5a. **Testing gate:** Do the changed tests follow the rules in `sdd/TESTING.md`?
     Report violations before commit.
 
 5b. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
     Report violations before commit.
+
+5c. **Trace update:** Find the trace already on this branch via
+    `git diff origin/master...HEAD --name-only` — any `sdd/traces/*.yml`
+    that appears is the target. The /pr trace gate guarantees it exists
+    before the PR is opened. Update it with the review-driven fields:
+
+    - `discovery_followups` — new backlog items the review surfaced.
+    - `surprising_ripples` — paths the ripple-check table did not anticipate
+      that the review caught.
+    - `co_shipped_items` — unrelated items the review confirmed this PR also closes.
+
+    No trace in the diff? The PR touches no backlog item; skip and note it
+    in the Step 6 report. If the review surfaces a distinct new backlog
+    item that warrants its own work, that follows the /pr flow in a
+    separate PR — do not create a new trace here.
 
 ## Step 6: Commit and push
 

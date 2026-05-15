@@ -4,7 +4,7 @@ description: Post inline review comments on a GitHub PR. Find real issues only.
 disable-model-invocation: true
 context: fork
 argument-hint: "[PR number] [optional context]"
-allowed-tools: Read, Grep, Glob, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
+allowed-tools: Read, Grep, Glob, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
 # Intentional: no Edit, Write, or Bash — review is read-only auditing only
 ---
 
@@ -16,7 +16,17 @@ Your only valuable output is review insights. The only artifact you create is co
 
 PR number and optional reviewer context are in `$ARGUMENTS`. Parse: first token is the PR number, remainder (if any) is **user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
 
+**No PR number provided?** Call `list_pull_requests` (`owner: "haalfi"`, `repo: "remote-store"`, `state: "OPEN"`) and ask the user which PR to review. Do not auto-pick.
+
 Repo: `haalfi/remote-store`.
+
+## Step 0: Verify PR is open
+
+If `$ARGUMENTS` is empty, the no-args fallback above must have resolved a
+PR number first; use that resolved value below. Do not call the API with
+an empty `pullNumber`.
+
+Call `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: <resolved PR number>`. If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not review stale or typo'd PR numbers.
 
 ## Step 1: Gather context
 
@@ -26,7 +36,9 @@ Use `pull_request_read` with `owner: "haalfi"`, `repo: "remote-store"`, `pullNum
 
 ## Step 2: Analyze
 
-Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Consistency, (5) Ripple gaps, (6) Security.
+Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Consistency, (5) Ripple gaps, (6) Performance, (7) Security.
+
+**Performance** for this library: flag streaming/buffering regressions, redundant round-trips, sync-in-async, missing range reads. Qualitative only — numeric claims belong in benchmarks, not review comments.
 
 **Skip:** style (ruff handles it), docstrings on unchanged code, "consider X" without reason, praise.
 
@@ -49,6 +61,7 @@ Before posting: **deduplicate and consolidate** all findings by category:
 - Test: [list items]
 - Consistency: [list items]
 - Ripple: [list items]
+- Perf: [list items]
 - Security: [list items]
 
 Apply confidence filter: only post findings you are ≥80% confident about. Skip weak suggestions.
@@ -68,7 +81,7 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 **Comment rules:**
 - `line` must be a `+` line in the diff. If finding is on an unchanged line, attach to nearest `+` line and reference actual location in body.
 - Deleted lines: `side: "LEFT"` with base-branch line number
-- Tag with category: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Security:`
+- Tag with category: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Perf:` / `Security:`
 - Uncertain: `Possible:` prefix
 - **Found something that needs fixing? Describe the problem in a comment. Do not fix it, do not offer to fix it.**
 
@@ -80,8 +93,11 @@ Output a summary of what was reviewed (not a suggestion for fixes):
 
 ```
 ## PR #N Review — X comments posted
-Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Security: N | User-flagged: N
+Subject: <one-line description of what the PR does, in your own words>
+Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Perf: N | Security: N | User-flagged: N
 ```
+
+The `Subject:` line is a sanity check — if it doesn't match the PR's actual intent, you reviewed the wrong thing.
 
 If user-supplied context was provided but rejected, add:
 ```
