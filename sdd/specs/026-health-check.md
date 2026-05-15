@@ -71,8 +71,8 @@ with self._s3fs_errors():
 ```
 `self._fs.s3` is the raw `aiobotocore` client — its methods return
 coroutines, so calling `self._fs.s3.head_bucket(...)` directly never
-issues the request. `call_s3` is the synchronous wrapper that awaits the
-call on the s3fs event loop (the same path `head_object` already uses).
+issues the request. `call_s3` is the synchronous wrapper that awaits
+the call on the s3fs event loop.
 
 ### PING-005: S3PyArrowBackend
 

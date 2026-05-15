@@ -105,9 +105,7 @@ class S3Backend(_S3Base):
 
     def check_health(self) -> None:
         with self._s3fs_errors():
-            # call_s3 is s3fs's synchronous wrapper; self._fs.s3 is the raw
-            # aiobotocore client whose head_bucket returns an un-awaited
-            # coroutine (BUG-208).
+            # Not self._fs.s3.head_bucket(...): raw aiobotocore returns a coroutine. See PING-004.
             self._fs.call_s3("head_bucket", Bucket=self._bucket)
 
     def native_path(self, path: str) -> str:
