@@ -1,14 +1,17 @@
 id: BK-181
-title: "HTTP cassette/replay layer: implementation (PR 1a — infra, no cassettes)"
+title: "HTTP cassette/replay layer: Azure shipped (PR 1a/1b), S3 deferred (close-out)"
 trigger: "PoC (PR #626) settled the mechanism (pytest-recording/vcrpy + AsyncioRequestsTransport shim); the remaining L-effort work is wiring azure_replay into the parametrised conformance suite, which the PoC deliberately skipped"
 source_items:
   - BK-181
 audience:
   - infra.test
   - contributor.tooling
+  - contributor.process
 review_rounds: 5
 expected_ripples:
   - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/specs/048-testing-architecture.md
 phases:
   - id: orient
     name: Orient — read plan and all referenced artefacts
@@ -154,10 +157,70 @@ phases:
         section: "(new file)"
         read_type: verify
         extract: "structural guards for record_cassettes.py: cassette_dir matches CASSETTE_DIR_AZURE; _CONFORMANCE is a real directory; k-filter fixture IDs are registered; sync_k async-exclusion pins both sides of the invariant ('async' in async_k AND 'not async' in sync_k)"
-discovery_followups: []
+  - id: s3_spike_finding
+    name: PR 2 — S3 cassette/replay spike, infeasibility finding, BK-181 close-out
+    steps:
+      - file: sdd/research/research-bk-181-cassette-replay-poc.md
+        section: "Success criteria — results"
+        read_type: gate
+        extract: "Azure PoC caveat: vcrpy aiohttp stub broken for streaming bodies; Azure works around via AsyncioRequestsTransport injection. S3 must check whether the equivalent path exists."
+      - file: src/remote_store/backends/_s3.py
+        section: "S3Backend.__init__, _s3 property"
+        read_type: gate
+        extract: "S3Backend wraps s3fs; no equivalent of azure.core client_options['transport'] — s3fs has no pluggable transport hook"
+      - file: src/remote_store/backends/_s3_base.py
+        section: "aiobotocore lifecycle comments around line 153, 187"
+        read_type: reference
+        extract: "even sync S3Backend dispatches through aiobotocore (AioConfig, raw aiobotocore client returns coroutines)"
+      - file: .venv/Lib/site-packages/vcr/stubs/
+        section: "directory listing"
+        read_type: gate
+        extract: "vcrpy ships aiohttp_stubs.py, boto3_stubs.py, urllib3_stubs.py, requests_stubs.py — NO aiobotocore_stubs.py; s3fs traffic intercepted at the aiohttp layer (the known broken one)"
+      - file: tests/backends/fixtures/s3_live.py
+        section: "_factory, IAM permissions docstring"
+        read_type: reference
+        extract: "live S3 fixture mints rs-conformance-<uuid12> buckets; IAM policy restricts CreateBucket/PutObject to arn:aws:s3:::rs-conformance-*"
+      - file: tests/backends/fixtures/s3_moto.py
+        section: "_factory"
+        read_type: gate
+        extract: "moto in-process Stage-1 fixture already exists; covers S3 conformance surface without network or Docker; user-facing gap for S3 cassettes is small"
+      - file: sdd/research/bk-181-s3-spike/conftest.py
+        section: "(new file)"
+        read_type: verify
+        extract: "spike vcr_config: scrub Authorization/x-amz-* headers, X-Amz-Signature query params; fail-loud RS_TEST_LIVE_S3 + AWS_* opt-in; FAKE_KEY/FAKE_SECRET avoid boto3 IMDS probe on replay"
+      - file: sdd/research/bk-181-s3-spike/test_spike.py
+        section: "(new file)"
+        read_type: verify
+        extract: "two probes — small write/read_bytes round-trip + 1 MiB streaming read — to surface body-drop or deadlock"
+      - file: sdd/research/bk-181-s3-spike/isolation_check.py
+        section: "(new file)"
+        read_type: verify
+        extract: "standalone vcr.use_cassette script bypassing pytest-recording; identical failure confirms the issue is in vcrpy/aiobotocore, not the plugin"
+      - file: .venv/Lib/site-packages/s3fs/core.py
+        section: "_error_wrapper around line 211"
+        read_type: verify
+        extract: "failure surface — `await tb.tb_frame.f_locals['response']` raises KeyError when vcrpy aborts the aiobotocore call before response is bound; paired with RuntimeWarning: coroutine AioAwsChunkedWrapper.read was never awaited"
+      - file: sdd/research/research-bk-181-s3-cassette-infeasibility.md
+        section: "(new file)"
+        read_type: verify
+        extract: "infeasibility doc: verdict, what was tested, failure mode, workarounds considered, why moto fills the niche, close-out recommendation"
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-008"
+        read_type: verify
+        extract: "Noted exception added: S3 is HTTP-transport but vcrpy cannot drive aiobotocore wrappers; s3_moto covers Stage 1; diagnosis link"
+      - file: sdd/BACKLOG.md
+        section: "BK-181"
+        read_type: verify
+        extract: "BK-181 removed from Azure HNS Correctness section; no follow-up filed — close-out is complete on its own because s3_moto covers Stage 1"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: verify
+        extract: "BK-181 entry as [x] documenting Azure-shipped + S3-deferred outcome; trace link"
 surprising_ripples:
   - "x-ms-copy-source echoed in response body with live account name — required both request and response header scrubbing; PoC had neither"
   - "write_atomic generates .~tmp.{name}.{uuid8} temp filenames that differ between record and replay runs — required _TMP_UUID_PATTERN URI normalisation"
   - "vcrpy aiohttp transport drops streaming bodies on record AND deadlocks on replay — required AsyncioRequestsTransport injection gated on _RS_CASSETTE_RECORDING sentinel so live tests are unaffected"
   - "binary response bodies (\\xff payloads) crashed str.replace() in before_record_response — required bytes-level scrubbing via _FILESYSTEM_PATTERN_BYTES"
+  - "s3fs/aiobotocore failure mode different from Azure aiohttp: vcrpy aborts during request body (AioAwsChunkedWrapper) rather than response streaming, so no cassette ever gets written and s3fs's _error_wrapper raises KeyError on the missing 'response' frame local instead of the original cause"
+  - "s3_live IAM policy restricts buckets to rs-conformance-* — spike must use a matching name (rs-conformance-bk181spike) or hit AccessDenied at CreateBucket, which initially masqueraded as the vcrpy issue"
 co_shipped_items: []

@@ -8,6 +8,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
+  Shipped the Azure slice across two PRs and closed with S3 deferred as a
+  documented exception. **PR 1a (#629):** `azure_replay` /
+  `azure_replay_async` fixture wiring, `pytest-recording` dev dependency,
+  `--record` flag, conformance conftest vcr hooks, scrubbing layer
+  (`_cassettes.py`), cassette directory. **PR 1b (#630):** 253 Azure
+  cassettes recorded from real ADLS Gen2; scrubbing additions
+  (binary-safe body scrub, `_TMP_UUID_PATTERN` for `write_atomic`
+  temp-file UUIDs, `x-ms-copy-source` request + response header scrub);
+  `AsyncioRequestsTransport` gated on `_RS_CASSETTE_RECORDING` sentinel;
+  `TESTING.md` cassette-refresh guide; 209 replay tests pass (28 HNS-bug
+  failures faithfully reproduced). **S3 slice deferred:** the spike
+  surfaced an upstream incompatibility between vcrpy's `aiohttp_stubs.py`
+  and the `aiobotocore` request/response wrappers `s3fs` rides on, with
+  no transport-injection workaround equivalent to Azure's
+  `AsyncioRequestsTransport` shim. `s3_moto` already covers the Stage-1
+  conformance surface for S3, so the user-facing impact is limited. Spec
+  [TEST-008](specs/048-testing-architecture.md) amended to list S3 as a
+  noted exception. Diagnosis in
+  [`research-bk-181-s3-cassette-infeasibility.md`](research/research-bk-181-s3-cassette-infeasibility.md);
+  spike preserved as evidence under
+  [`sdd/research/bk-181-s3-spike/`](research/bk-181-s3-spike/).
+  Audience: `infra.test`, `contributor.tooling`, `contributor.process`.
+  Trace: [`sdd/traces/BK-181-cassette-replay-impl.yml`](traces/BK-181-cassette-replay-impl.yml).
+
 - [x] **BUG-208 — `S3Backend.check_health()` silently no-ops (unawaited aiobotocore coroutine)**
   `check_health()` called `self._fs.s3.head_bucket(Bucket=...)` on the raw
   `aiobotocore` client, whose `head_bucket` returns a coroutine. The code

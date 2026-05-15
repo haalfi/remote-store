@@ -55,7 +55,7 @@ and the highest ID already in this file, then take the next integer. Run
 
 Confirmed defects on real ADLS Gen2 accounts plus testing infrastructure for live coverage.
 Bug fixes follow the `hdi_isfolder` probe pattern established by BUG-190/BUG-192.
-BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
+BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/replay layer from BK-181 (landed).
 
 - [ ] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)**
   spec: BE-013, BE-014, BE-021, ASYNC-013 · effort: M · audience: library.maintainer
@@ -247,30 +247,14 @@ BK-181 and BK-182 depend on live fixtures from BK-180 (landed).
   `tests/backends/azure/aio/test_live_hns.py`. BK-180 added live `azure_live`
   / `azure_live_async` conformance fixtures, so most happy-path coverage
   in the moved files is now duplicated against a real ADLS Gen2 account.
-  Once BK-181 lands HTTP cassette/replay, delete the duplicated cases and
-  keep only HNS-unique tests at the new paths: DFS AsyncIterator protocol
+  Now that BK-181 has landed the Azure cassette/replay layer (PRs #629/#630),
+  delete the duplicated cases and keep only HNS-unique tests at the new
+  paths: DFS AsyncIterator protocol
   (BUG-194 regression guard), etag normalisation cross-check
   (`get_file_properties` vs `get_file_info`), directory-blob `hdi_isfolder`
   probes, and any remaining deviation guards. Async equivalents stay under
   `tests/backends/azure/aio/test_live_hns.py` only where sync / async
   behaviour differs. Spec: TEST-002, TEST-003.
-
-- [~] **BK-181 — Implement Spec 048 Phase 3: HTTP cassette/replay layer**
-  spec: TEST-007, TEST-008, TEST-009 · effort: L · audience: infra.test
-  Add `<backend>_replay` Stage 1 fixtures for HTTP-transport backends
-  (Azure first, S3 follows) per spec [TEST-007](specs/048-testing-architecture.md).
-  **Done in PR 1a (#629):** `azure_replay` / `azure_replay_async` fixture wiring,
-  `pytest-recording` dev dependency, `--record` flag, conformance conftest vcr
-  hooks, scrubbing layer (`_cassettes.py`), cassette directory.
-  **In PR 1b (this PR):** 253 Azure cassettes recorded from real ADLS Gen2;
-  scrubbing additions (binary-safe body scrub, `_TMP_UUID_PATTERN` for
-  `write_atomic` temp-file UUIDs, `x-ms-copy-source` request + response header
-  scrub); `AsyncioRequestsTransport` gated on `_RS_CASSETTE_RECORDING` sentinel;
-  `TESTING.md` cassette-refresh guide; 209 replay tests pass (28 HNS-bug
-  failures faithfully reproduced).
-  **Pending — PR 2:** S3 slice (`s3_replay` fixture + cassettes). Requires
-  separate validation: `s3fs` rides `aiobotocore`/`botocore`, not `azure.core`.
-  Spec: TEST-007, TEST-008, TEST-009.
 
 ---
 
