@@ -175,8 +175,7 @@ pip install --user hatch
 hatch run all    # or run individual steps:
 hatch run lint
 hatch run typecheck
-hatch run test-cov         # report coverage, no threshold (everyday local runner)
-hatch run test-cov-strict  # adds --cov-fail-under=95; needs Azurite for the Azure backends
+hatch run test-cov         # coverage variants — see pyproject.toml comments for which to use when
 hatch run examples
 ```
 
@@ -317,7 +316,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 - [ ] Master is clean: `git status` shows no uncommitted changes
 - [ ] CI is green on master (lint, typecheck, test 3.10-3.14, examples, docs, package)
-- [ ] `hatch run all` passes **locally** (lint + format-check + typecheck + test-cov-strict + examples). See CLAUDE.md § Coverage gate if the 95% threshold fails without Azurite running
+- [ ] `hatch run all` passes **locally** (constituent scripts in `pyproject.toml`; the pre-commit gate variant deliberately does not enforce the 95% floor — CI does)
 - [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`)
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
 - [ ] Decide bump level (patch / minor / major) per the table above
@@ -349,7 +348,8 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 ### Phase 3: Validate
 
-- [ ] `hatch run all` passes (lint + format-check + typecheck + test-cov-strict + examples)
+- [ ] `hatch run all` passes (constituent scripts in `pyproject.toml`)
+- [ ] `hatch run test-cov-strict` passes locally with Azurite running (enforces the 95% floor that `hatch run all` deliberately skips)
 - [ ] `mkdocs build --strict` passes
 - [ ] `python -m build && twine check dist/*` — package builds cleanly
 - [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches

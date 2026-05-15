@@ -19,6 +19,7 @@ from tests.backends.fixtures import (
     BackendFixture,
     _load_all,
     all_fixtures,
+    fixture_params,
     fixtures,
 )
 
@@ -497,3 +498,43 @@ class TestLayoutBoundary:
                     rel = py.relative_to(_TESTS_ROOT.parent).as_posix()
                     violations.append(f"{rel}: references {name!r}")
         assert not violations, "TEST-010 boundary violations:\n  " + "\n  ".join(violations)
+
+
+class TestFixtureParamsXdistWorkerFilter:
+    """``fixture_params`` drops ``container == "sftp"`` entries under xdist.
+
+    Pins the carve-out contract: when ``PYTEST_XDIST_WORKER`` is set
+    (i.e. inside an xdist worker subprocess), ``sftp_docker`` is filtered
+    out of the parametrize set so the atmoz/sftp daemon never sees
+    concurrent connections from multiple workers. The CI workflow's
+    second serial pytest pass picks up the carved-out variants.
+
+    A future change that flips the predicate sense or generalises the
+    container test would otherwise only surface as silent re-introduction
+    of the concurrent-SFTP failure mode the carve-out exists to prevent.
+    """
+
+    @staticmethod
+    def _with_stage_2(monkeypatch: pytest.MonkeyPatch) -> None:
+        """Force Stage 2 for the test so sftp_docker is in scope regardless
+        of whether the host Docker daemon is reachable. The stage is a
+        module-level global, so monkeypatch.setattr restores it on teardown.
+        """
+        from tests.backends.fixtures import _state
+
+        monkeypatch.setattr(_state, "_CURRENT_STAGE", 2)
+
+    def test_no_sftp_under_xdist_worker(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._with_stage_2(monkeypatch)
+        monkeypatch.setenv("PYTEST_XDIST_WORKER", "gw0")
+        params = fixture_params()
+        assert all(p.values[0].container != "sftp" for p in params), (
+            "fixture_params() under PYTEST_XDIST_WORKER must exclude sftp_docker"
+        )
+
+    def test_sftp_present_without_xdist_worker(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._with_stage_2(monkeypatch)
+        monkeypatch.delenv("PYTEST_XDIST_WORKER", raising=False)
+        params = fixture_params()
+        sftp_ids = [p.id for p in params if p.values[0].container == "sftp"]
+        assert sftp_ids, "fixture_params() outside xdist must include the sftp_docker fixture"

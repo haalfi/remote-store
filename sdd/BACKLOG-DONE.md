@@ -36,8 +36,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `filterwarnings=error` does not promote `PytestBenchmarkWarning` to
   INTERNALERROR; bench-* scripts re-enable it explicitly).
   `[tool.coverage.run] parallel = true` lets pytest-cov combine xdist worker
-  partials into one `.coverage` data file. Wall time on a 20-core dev machine:
-  ~85 s → ~43 s (≈2×).
+  partials into one `.coverage` data file. `hatch run all` wall time on a
+  20-core dev machine, both runs stopping at the same pre-existing Windows
+  flake in the test step: ~229 s → ~26 s. The bulk of the gain comes from
+  `test-cov-s1` (Stage-1, xdist) replacing serial `test-cov-strict`; the
+  preflight reorder contributes the rest.
   New `preflight` script ahead of `lint` in `hatch run all` runs the four
   artifact-drift `gen-*-check` calls (`gen_graph`, `gen_features`,
   `gen_graph_viz`, `check_api_docs`); drift surfaces in seconds rather than
