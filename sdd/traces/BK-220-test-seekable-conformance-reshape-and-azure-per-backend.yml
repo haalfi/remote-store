@@ -11,6 +11,7 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - tests/scripts/test_check_test_placement.py  # test_grandfathered_files_skipped used test_seekable.py as the example grandfathered filename — removing it from the allow-list caused a unit-test failure; updated to use test_coverage_gaps.py instead
+  - sdd/specs/036-seekable-read.md  # SEEK-001 and SEEK-004 postcondition lists named only local/memory/s3/s3_pyarrow/sftp; the conformance reshape surfaced that sqlblob and dafny also declare SEEKABLE_READ — spec extended to match in the fix phase (PR review finding)
 phases:
   - id: orient
     name: Orient
@@ -103,4 +104,4 @@ phases:
         extract: "updated example filename from test_seekable.py to test_coverage_gaps.py; 53 placement unit tests pass"
 discovery_followups: []
 co_shipped_items: []
-review_rounds: 0
+review_rounds: 1
