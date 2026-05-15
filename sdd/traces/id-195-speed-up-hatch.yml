@@ -18,7 +18,7 @@ audience:
   - infra.ci
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -115,6 +115,61 @@ phases:
           No backend / spec / error / capability changes; no CHANGELOG entry
           (audience is contributor.tooling + infra.ci only).
         outcome: ok
+  - id: iterate
+    name: Iterate on review feedback
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1-4"
+        read_type: gate
+        extract: |
+          Round 1 self-audit (user-flagged): the initial CLAUDE.md additions
+          enumerated three `test-cov*` variants and described the registry
+          filter mechanism, duplicating facts authoritative in pyproject.toml
+          and registry.py. Cleanup commit 73acf63a4 shrank both sections to
+          pointer style; pyproject.toml comment block now owns variant
+          semantics outright (was circular "See CLAUDE.md"); registry.py
+          docstring dropped `(ID-195)` ticket reference (Rule 1).
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Verify everything passes row"
+        read_type: reference
+        extract: |
+          Round 2 (PR #633 review): the lookup table enumerated
+          `test-cov-strict` as part of `hatch run all`. Updated to drop the
+          per-script chain and point at pyproject.toml.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Lines 178, 320, 352 — test-cov enumerations"
+        read_type: reference
+        extract: |
+          Round 2: three places enumerated test-cov-strict for the gate; one
+          (Phase 0 release pre-flight) carried a hint about the 95% threshold
+          that the new shape deliberately bypasses. Updated to point at
+          pyproject.toml; Phase 3 release validation gained an explicit
+          `hatch run test-cov-strict` checklist line so the 95% floor still
+          gets verified at release time.
+        outcome: ok
+      - file: .github/workflows/publish.yml
+        section: "coverage job, line 66"
+        read_type: reference
+        extract: |
+          Round 2: badge job still single-pass while CI is now two-pass.
+          Aligning to two-pass is theatre because the job only starts
+          Azurite (no atmoz/sftp). Added a comment block making the
+          divergence intentional rather than residual.
+        outcome: ok
+      - file: tests/backends/fixtures/test_registry.py
+        section: TestFixtureParamsXdistWorkerFilter
+        read_type: gate
+        extract: |
+          Round 2: added regression guard pinning the carve-out contract —
+          with `PYTEST_XDIST_WORKER` set, no `container == "sftp"` entries;
+          without it, sftp_docker is present. Forces Stage 2 via
+          `_state._CURRENT_STAGE` monkeypatch so the test runs regardless
+          of host Docker reachability. The "single-line filter" framing in
+          the docstring under-stated the design decision (hard-coded `"sftp"`
+          literal does not generalise) — the test locks it explicitly.
+        outcome: ok
 discovery_followups: []
 surprising_ripples:
   - |
@@ -123,3 +178,21 @@ surprising_ripples:
     OpenSSH's default `MaxStartups 10:30:100`. The MaxStartups path was
     fighting a 20-worker Docker Desktop NAT problem that does not exist
     on the CI host.
+  - |
+    Initial CLAUDE.md additions failed a self-audit against CONTENT-RULES:
+    enumerated the `test-cov*` chain (Rule 2), restated mechanism that lives
+    authoritatively in pyproject.toml / registry.py (Rule 4), carried
+    "~2× wall-time" pseudo-precise figures (Rule 3), and baked `(ID-195)`
+    into a section heading (Rule 1). The ripple-check table did not flag
+    CLAUDE.md edits for CONTENT-RULES gating; the user flagged it in review.
+  - |
+    sdd/CLAUDE-REFERENCE.md:217 and CONTRIBUTING.md:178/320/352 enumerated
+    `test-cov-strict` as part of `hatch run all`. The ripple-check did not
+    surface them as ripples of the `hatch run all` script change — the
+    cross-doc enumeration was the symptom of the same CONTENT-RULES Rule 4
+    violation, just in different files.
+  - |
+    .github/workflows/publish.yml's badge job still ran the old single-pass
+    pytest invocation. Not a regression of this PR — but the
+    `[tool.coverage.run] parallel = true` change made the divergence with
+    CI's new two-pass shape worth documenting in-line on the workflow.
