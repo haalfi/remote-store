@@ -11,7 +11,11 @@ PR: `$ARGUMENTS`. Repo: `haalfi/remote-store`.
 
 ## Step 0: Verify PR is open
 
-Call `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`. If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not fix stale or typo'd PR numbers.
+If `$ARGUMENTS` is empty, the no-args fallback above must have resolved a
+PR number first; use that resolved value below. Do not call the API with
+an empty `pullNumber`.
+
+Call `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: <resolved PR number>`. If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not fix stale or typo'd PR numbers.
 
 ## Step 1: Prepare branch and fetch comments
 
