@@ -25,14 +25,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   surfacing as e.g. `TestSFTPLifecycle::test_del_closes_partial_clients`
   failing with an "Unclosed AzureBackend" message — a test that has no
   Azure code path. The sibling `azure_replay_async.py` already registered
-  `aclose=_aclose`; only the sync slice was missed. Fix: one-line
-  `cleanup=_cleanup` addition wrapping `backend.close()`. Verified on
-  Windows: ResourceWarning count dropped from 133 → 0 per Stage-2 run;
-  five consecutive `-n auto` runs of the full Stage-2 suite passed cleanly
-  (previously 1/5 failed). Closes out the `todo-xdist-windows-flakes-followup`
-  observation; the TODO's other listed symptoms (werkzeug `MemoryError`,
-  `live-s3` failures) did not reproduce after the BK-181 / ID-195 work
-  landed.
+  `aclose=_aclose`; only the sync slice was missed.
+  Fix: one-line `cleanup=_cleanup` addition wrapping `backend.close()`.
+  Verified on Windows: ResourceWarning count dropped from 133 → 0 per
+  Stage-2 run; five consecutive `-n auto` runs of the full Stage-2 suite
+  passed cleanly (previously 1/5 failed).
+  **Structural guard**: new
+  `tests/backends/fixtures/test_registry.py::TestFixtureCleanupContract`
+  asserts that any registered fixture whose backend class overrides
+  `Backend.close` (sync) or `AsyncBackend.aclose` (async) declares the
+  matching teardown channel. Looks through `SyncBackendAdapter` so the
+  in-memory async fixtures (where the wrapped sync `close` is the inherited
+  no-op) stay exempt without per-fixture allow-listing. Stage-2 run with
+  the fix reverted reproduces the assertion failure pointing at
+  `azure_replay`.
   Audience: `infra.test`.
   Trace: [`sdd/traces/BUG-210-azure-replay-fixture-leak.yml`](traces/BUG-210-azure-replay-fixture-leak.yml).
 

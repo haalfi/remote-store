@@ -9,12 +9,17 @@ infrastructure beyond the registered fixtures themselves.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import os
 import re
 from pathlib import Path
 
 import pytest
 
+from remote_store._backend import Backend
 from remote_store._capabilities import Capability
+from remote_store.aio import AsyncBackend
 from tests.backends.fixtures import (
     BackendFixture,
     _load_all,
@@ -538,3 +543,88 @@ class TestFixtureParamsXdistWorkerFilter:
         params = fixture_params()
         sftp_ids = [p.id for p in params if p.values[0].container == "sftp"]
         assert sftp_ids, "fixture_params() outside xdist must include the sftp_docker fixture"
+
+
+@pytest.mark.spec("TEST-004")
+class TestFixtureCleanupContract:
+    """Backends that override ``Backend.close`` / ``AsyncBackend.aclose`` must
+    register a teardown channel on their fixture.
+
+    BUG-210 surfaced the failure mode: ``azure_replay`` registered without
+    ``cleanup=``, so the conformance ``backend`` fixture skipped
+    ``backend.close()`` for every replay-fixture instance. The unclosed
+    clients fired ``ResourceWarning`` at GC, which ``filterwarnings=error``
+    promoted to unraisable exceptions that bit unrelated
+    ``pytest.warns(ResourceWarning, ...)`` tests under 20-worker Windows
+    xdist. In-memory backends (``memory`` / ``memory_async`` / ``dafny``)
+    legitimately inherit the no-op default ``close`` / ``aclose`` and need
+    no teardown, so the guard is conditional on actually overriding the
+    method — false-positiving them would force boilerplate.
+    """
+
+    @staticmethod
+    def _async_needs_teardown(instance: AsyncBackend) -> bool:
+        """Return True when this async-backend instance holds releasable resources.
+
+        Looks through ``SyncBackendAdapter``: its ``aclose`` only delegates
+        to the wrapped sync backend's ``close``, so if the inner backend
+        inherits the default no-op ``close`` (Memory, Local), the adapter
+        holds nothing and no fixture-level ``aclose=`` is required.
+        """
+        # internal: SyncBackendAdapter has no public accessor for its
+        # wrapped backend; the registry-contract test needs to look
+        # through the wrapper to avoid false-positiving in-memory async
+        # fixtures whose wrapped close is the inherited no-op.
+        inner = getattr(instance, "_sync", None)
+        if inner is not None and isinstance(inner, Backend):
+            return type(inner).close is not Backend.close
+        return type(instance).aclose is not AsyncBackend.aclose
+
+    def test_overriding_close_requires_cleanup(self) -> None:
+
+        is_xdist_worker = "PYTEST_XDIST_WORKER" in os.environ
+        offenders: list[str] = []
+        for f in all_fixtures():
+            # Mirror the ``fixture_params`` carve-out: atmoz/sftp's daemon is
+            # unreliable under concurrent worker connections, so ``factory()``
+            # here would hit the same banner-read failure. The CI serial pass
+            # exercises this path with ``PYTEST_XDIST_WORKER`` unset.
+            if is_xdist_worker and f.container == "sftp":
+                continue
+            try:
+                instance = f.factory()
+            except pytest.skip.Exception:
+                # Fixture needs infrastructure not available in this session
+                # (Docker container down, live credentials absent, optional
+                # SDK not installed). Skip silently — the invariant is
+                # checked wherever the fixture actually constructs.
+                continue
+            try:
+                if f.is_async:
+                    needs_teardown = self._async_needs_teardown(instance)
+                    teardown = f.aclose
+                    method_name = "aclose"
+                    teardown_kw = "aclose"
+                else:
+                    needs_teardown = type(instance).close is not Backend.close
+                    teardown = f.cleanup
+                    method_name = "close"
+                    teardown_kw = "cleanup"
+                if needs_teardown and teardown is None:
+                    offenders.append(
+                        f"{f.name!r}: {type(instance).__name__} overrides "
+                        f"{method_name}() but the fixture has no {teardown_kw}= registered"
+                    )
+            finally:
+                # Best-effort teardown of the test's own instance. When the
+                # invariant is satisfied this releases the resource cleanly;
+                # when it is violated (the test is already failing) the
+                # instance leaks here — same shape as the bug we are
+                # flagging, but contained to the failing run.
+                if not f.is_async and f.cleanup is not None:
+                    with contextlib.suppress(Exception):
+                        f.cleanup(instance)
+                elif f.is_async and f.aclose is not None:
+                    with contextlib.suppress(Exception):
+                        asyncio.run(f.aclose(instance))
+        assert not offenders, "BackendFixture missing teardown channel:\n  " + "\n  ".join(offenders)
