@@ -34,12 +34,26 @@ pytest.importorskip("s3fs", reason="s3fs not installed")
 from remote_store._errors import BackendUnavailable, NotFound, PermissionDenied  # noqa: E402
 
 
+def _sync_call_s3_spec(method: str, *args: Any, **kwargs: Any) -> Any:
+    """Sync spec for s3fs's ``call_s3`` wrapper.
+
+    On Python 3.12+, ``unittest.mock`` follows ``__wrapped__`` when scanning a
+    spec for async methods. s3fs's ``call_s3`` is ``sync_wrapper(_call_s3)``
+    -- its ``__wrapped__`` points at the async ``_call_s3``, so
+    ``MagicMock(spec=S3FileSystem).call_s3`` is promoted to ``AsyncMock``
+    even though the real ``call_s3`` is sync. Speccing the child mock
+    against this local sync function pins it to ``MagicMock`` on every
+    Python version (Python 3.11 was unaffected; 3.13 surfaced the drift).
+    """
+
+
 def _s3_backend(bucket: str, side_effect: Any = None) -> Any:
     from s3fs import S3FileSystem
 
     from remote_store.backends._s3 import S3Backend
 
     s3_mock = MagicMock(spec=S3FileSystem)
+    s3_mock.call_s3 = MagicMock(spec=_sync_call_s3_spec)
     if side_effect is None:
         s3_mock.call_s3.return_value = {}
     else:
