@@ -15,7 +15,6 @@ the decision gate.
 
 from __future__ import annotations
 
-import contextlib
 import importlib.util
 import os
 from typing import TYPE_CHECKING, Any
@@ -141,11 +140,16 @@ def vcr_config(_real_bucket: str | None) -> dict[str, Any]:  # noqa: ARG001 -- s
 # Backend fixtures
 # ---------------------------------------------------------------------------
 def _ensure_bucket(creds: dict[str, str]) -> None:
-    """Create the spike bucket if absent. Runs in both modes.
+    """Create the spike bucket if absent. Record-mode only.
 
-    Recording: a real round trip captured in the cassette. Replay: vcrpy
-    serves the captured response (200 or 409). Either way, the same code
-    path runs unchanged.
+    Called from the ``record_mode != "none"`` branch of ``s3_backend``;
+    replay mode uses fake credentials and never reaches this helper.
+
+    Idempotent: an existing bucket (``BucketAlreadyOwnedByYou`` /
+    ``BucketAlreadyExists``) is treated as success; any other AWS error
+    (``AccessDenied``, ``InvalidBucketName``, auth failures) re-raises so
+    a real permissions problem surfaces fail-loud rather than masquerading
+    as a clean record session.
     """
     import boto3  # noqa: PLC0415
     from botocore.exceptions import ClientError  # noqa: PLC0415
@@ -160,8 +164,12 @@ def _ensure_bucket(creds: dict[str, str]) -> None:
         kwargs: dict[str, Any] = {"Bucket": BUCKET}
         if creds["AWS_DEFAULT_REGION"] != "us-east-1":
             kwargs["CreateBucketConfiguration"] = {"LocationConstraint": creds["AWS_DEFAULT_REGION"]}
-        with contextlib.suppress(ClientError):
+        try:
             client.create_bucket(**kwargs)
+        except ClientError as exc:
+            code = exc.response.get("Error", {}).get("Code", "")
+            if code not in ("BucketAlreadyOwnedByYou", "BucketAlreadyExists"):
+                raise
     finally:
         client.close()
 

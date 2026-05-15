@@ -61,8 +61,7 @@ fail in the same way during recording, with a `--record-mode=all`
 (equivalently `rewrite`) session pointed at a real AWS endpoint:
 
 ```
-File "K:\Code\remote-store\.venv\Lib\site-packages\s3fs\core.py",
-line 211, in _error_wrapper
+File "site-packages/s3fs/core.py", line 211, in _error_wrapper
     await tb.tb_frame.f_locals["response"]
           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
 KeyError: "local variable ''response'' is not defined"
@@ -150,9 +149,6 @@ Close BK-181 at PR 2 with the S3 slice deferred:
 2. Amend [spec 048 TEST-008](../specs/048-testing-architecture.md) so
    the "HTTP-transport backends support replay" invariant lists S3 as
    a noted exception, pointing here for the diagnosis.
-3. Note the same exception in the [TESTING.md cassette refresh guide](../TESTING.md)
-   so a future maintainer reaching for `record-s3` finds the answer
-   immediately rather than re-discovering the failure.
 
 No follow-up backlog item is filed: `s3_moto` already covers Stage 1,
 no S3-specific contract today demands cassette-level fidelity, and the

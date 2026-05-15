@@ -30,7 +30,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   [`research-bk-181-s3-cassette-infeasibility.md`](research/research-bk-181-s3-cassette-infeasibility.md);
   spike preserved as evidence under
   [`sdd/research/bk-181-s3-spike/`](research/bk-181-s3-spike/).
-  Audience: `infra.test`, `contributor.process`.
+  Audience: `infra.test`, `contributor.tooling`, `contributor.process`.
   Trace: [`sdd/traces/BK-181-cassette-replay-impl.yml`](traces/BK-181-cassette-replay-impl.yml).
 
 - [x] **BUG-208 — `S3Backend.check_health()` silently no-ops (unawaited aiobotocore coroutine)**

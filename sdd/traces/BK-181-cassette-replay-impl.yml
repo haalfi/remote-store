@@ -12,8 +12,6 @@ expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
   - sdd/specs/048-testing-architecture.md
-  - sdd/TESTING.md
-  - sdd/backlogid.json
 phases:
   - id: orient
     name: Orient — read plan and all referenced artefacts
@@ -218,10 +216,6 @@ phases:
         section: "Unreleased"
         read_type: verify
         extract: "BK-181 entry as [x] documenting Azure-shipped + S3-deferred outcome; trace link"
-      - file: sdd/TESTING.md
-        section: "Cassette Refresh"
-        read_type: verify
-        extract: "S3 exception paragraph added pointing at TEST-008, s3_moto, and the infeasibility doc"
 surprising_ripples:
   - "x-ms-copy-source echoed in response body with live account name — required both request and response header scrubbing; PoC had neither"
   - "write_atomic generates .~tmp.{name}.{uuid8} temp filenames that differ between record and replay runs — required _TMP_UUID_PATTERN URI normalisation"

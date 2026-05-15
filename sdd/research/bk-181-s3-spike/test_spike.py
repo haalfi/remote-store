@@ -60,4 +60,3 @@ def test_spike_s3_read_streaming(s3_backend: Backend) -> None:
             chunks.append(chunk)
     got = b"".join(chunks)
     assert got == LARGE_PAYLOAD
-    assert len(got) == len(LARGE_PAYLOAD)
