@@ -68,7 +68,7 @@ Every nested-import site is a **per-backend** assertion. The tests are not cross
 
 **Risk:** low. No shared fixtures across the per-backend tests; each is self-contained.
 
-### `tests/test_coverage_gaps.py` — disposition: **(b) conformance reshape (secret-masking) + (a) per-backend split (init coverage)**
+### `tests/test_coverage_gaps.py` — disposition: **(a) per-backend split (all masking tests)**
 
 | Line | Backend | Construct |
 |---|---|---|
@@ -88,6 +88,8 @@ Recommend: lift the secret-masking parametrize block into `tests/backends/confor
 **Refactor cost:** moderate-to-high. The secret-masking machinery uses `Secret()` wrappers and per-backend `__repr__` substrings — conformance form needs a `secret_masking_spec` registry attribute or backend-side helper.
 
 **Risk:** medium. The `__import__` lambdas signal an intentional checker bypass; whoever wrote them likely tried the obvious split and stopped. Worth checking the git blame for context before refactoring.
+
+**Reconsidered against CLAUDE.md § Audits rule 3 — shipped BK-222.** The audit's proposed (b) conformance reshape cannot be implemented without naming concrete backend classes inside `tests/backends/conformance/` (violates the per-slice naming rule) or adding `secret_masking_spec` registry infrastructure (disproportionate). The three masking test groups (`test_backend_masks_set_secrets`, `test_backend_shows_none_for_unset_secrets`, `test_backend_accepts_secret`) test per-backend repr formats (`key='***'`) and internal attribute names (`_key`, `_secret`, `_password`, `_account_key`, etc.) — genuinely backend-specific implementation details, not generic conformance invariants. The universal "no credential leakage" invariant is already covered by `TestBackendIdentity::test_repr_masks_secrets` in `tests/backends/conformance/test_identity.py`. Disposition: **(a) per-backend split for all masking tests.** Each backend's masking and SEC-004 Secret-wrapper tests moved to the existing per-backend `test_config.py` (S3, S3PA → `tests/backends/s3/`; SFTP → `tests/backends/sftp/`; Azure → `tests/backends/azure/`). Root `tests/test_coverage_gaps.py` retains all tests using only allowed backends (`LocalBackend`, `MemoryBackend`). `"test_coverage_gaps.py"` removed from `_BACKEND_AT_ROOT_GRANDFATHERED`. BK-191 closed — all six slices complete.
 
 ### `tests/test_depth_listing.py` — disposition: **(a) lift three backend-specific snippets + (b) consolidate into existing conformance — reconsidered, see below**
 
@@ -211,7 +213,7 @@ Recommend: split as described. The `_AzureRangeReader` cluster is the larger lif
 | File | Disposition | Refactor effort | Removable from allow-list after split? |
 |---|---|---|---|
 | `test_config.py` | (a) per-backend split | moderate | yes |
-| `test_coverage_gaps.py` | (b) + (a) | moderate-to-high | yes |
+| `test_coverage_gaps.py` | (a) per-backend split — reconsidered, see § per-file findings — shipped BK-222 | moderate | yes (done) |
 | `test_depth_listing.py` | (a) lift 3 + (b) consolidate — reconsidered, see § per-file findings | low | yes |
 | `test_examples.py` | (c) keep at root | trivial (comment) | no (justified) |
 | `test_pbt_write_result.py` | (a) per-backend split (metadata round-trip) — reconsidered, see § per-file findings — shipped BK-221 | moderate | yes (done) |

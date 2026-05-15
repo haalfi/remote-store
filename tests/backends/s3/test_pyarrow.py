@@ -460,3 +460,40 @@ def test_s3_pyarrow_health(side_effect: Exception | None, expected: type[Excepti
 
 
 # endregion
+
+
+# region: Credential masking (AF-008, SEC-004) — migrated from tests/test_coverage_gaps.py (BK-222 / BK-191 slice 6/6)
+
+
+class TestS3PyArrowCredentialMasking:
+    """AF-008: S3PyArrowBackend repr masks sensitive fields and accepts Secret wrappers."""
+
+    def test_masks_set_secrets(self) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="b", key="AKID", secret="SK")
+        r = repr(backend)
+        for raw in ("AKID", "SK"):
+            assert raw not in r
+        for masked in ("key='***'", "secret='***'"):
+            assert masked in r
+
+    def test_shows_none_for_unset_secrets(self) -> None:
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="b")
+        r = repr(backend)
+        for expected in ("key=None", "secret=None"):
+            assert expected in r
+
+    @pytest.mark.spec("SEC-004")
+    def test_accepts_secret_wrapper(self) -> None:
+        from remote_store._config import Secret
+        from remote_store.backends._s3_pyarrow import S3PyArrowBackend
+
+        backend = S3PyArrowBackend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
+        assert backend._key == "AKID"
+        assert backend._secret == "SK"
+
+
+# endregion

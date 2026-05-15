@@ -336,3 +336,42 @@ def test_s3_retry_botocore_config() -> None:
     assert config_kwargs["retries"]["max_attempts"] == 7
     assert config_kwargs["retries"]["mode"] == "standard"
     backend.close()
+
+
+# region: Credential masking (AF-008, SEC-004) — migrated from tests/test_coverage_gaps.py (BK-222 / BK-191 slice 6/6)
+
+
+class TestS3CredentialMasking:
+    """AF-008: S3Backend repr masks sensitive fields and accepts Secret wrappers."""
+
+    def test_masks_set_secrets(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="b", key="AKID", secret="SK", endpoint_url="http://x")
+        r = repr(backend)
+        for raw in ("AKID", "SK"):
+            assert raw not in r
+        for masked in ("key='***'", "secret='***'"):
+            assert masked in r
+        for visible in ("bucket='b'", "endpoint_url='http://x'"):
+            assert visible in r
+
+    def test_shows_none_for_unset_secrets(self) -> None:
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="b")
+        r = repr(backend)
+        for expected in ("key=None", "secret=None"):
+            assert expected in r
+
+    @pytest.mark.spec("SEC-004")
+    def test_accepts_secret_wrapper(self) -> None:
+        from remote_store._config import Secret
+        from remote_store.backends._s3 import S3Backend
+
+        backend = S3Backend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
+        assert backend._key == "AKID"
+        assert backend._secret == "SK"
+
+
+# endregion

@@ -1900,3 +1900,35 @@ def test_sftp_retry(retry_arg: RetryPolicy | None, expect_none: bool) -> None:
 
 
 # endregion
+
+
+# region: Credential masking (AF-008, SEC-004) — migrated from tests/test_coverage_gaps.py (BK-222 / BK-191 slice 6/6)
+
+
+class TestSFTPCredentialMasking:
+    """AF-008: SFTPBackend repr masks sensitive fields and accepts Secret wrappers."""
+
+    def test_masks_set_secrets(self) -> None:
+        backend = SFTPBackend(host="h", password="secret123", pkey="keydata")
+        r = repr(backend)
+        for raw in ("secret123", "keydata"):
+            assert raw not in r
+        for masked in ("password='***'", "pkey='***'"):
+            assert masked in r
+        assert "host='h'" in r
+
+    def test_shows_none_for_unset_secrets(self) -> None:
+        backend = SFTPBackend(host="h")
+        r = repr(backend)
+        for expected in ("password=None", "pkey=None"):
+            assert expected in r
+
+    @pytest.mark.spec("SEC-004")
+    def test_accepts_secret_wrapper(self) -> None:
+        from remote_store._config import Secret
+
+        backend = SFTPBackend(host="h", password=Secret("pass123"))
+        assert backend._password == "pass123"
+
+
+# endregion
