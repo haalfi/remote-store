@@ -131,7 +131,14 @@ jobs:
       # scripts) that exercise scripts/, not remote_store. They gain nothing
       # from multi-version coverage and run once on the primary Python via
       # test-primary below. BK-207.
-      - run: pytest --ignore=tests/scripts
+      #
+      # ID-195 two-pass split: pass 1 runs all backends in parallel with xdist;
+      # the sftp_docker fixture is filtered out under PYTEST_XDIST_WORKER
+      # (see registry.fixture_params). Pass 2 runs the sftp_docker conformance
+      # variants serially, since atmoz/sftp's OpenSSH daemon is unreliable
+      # under concurrent connections from multiple workers.
+      - run: pytest -n auto -p no:benchmark --ignore=tests/scripts
+      - run: pytest -p no:benchmark --ignore=tests/scripts -k sftp_docker tests/backends/conformance/
 
   # Primary-Python job: coverage gate + contributor-tooling tests. Both run
   # once on the primary Python; sharing setup avoids a redundant runner.
@@ -152,7 +159,13 @@ jobs:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
       - run: uv pip install -e ".[dev]"
-      - run: pytest --cov=remote_store --cov-report=term-missing --cov-fail-under=95 --ignore=tests/scripts
+      # ID-195 two-pass split with --cov-append for pass 2. The 95% floor
+      # is asserted on pass 2 after pass 1's `.coverage` data has been
+      # combined in. tests/scripts/ deliberately runs without --cov: it
+      # exercises scripts/, not remote_store, so it would only inflate
+      # the denominator without contributing meaningful coverage.
+      - run: pytest -n auto -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts
+      - run: pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-fail-under=95 -k sftp_docker tests/backends/conformance/
       - run: pytest tests/scripts/ -q
 
   # BK-172: verify that S3-PyArrow tests run (not skip) against MinIO when

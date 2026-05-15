@@ -19,6 +19,7 @@ collection.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -168,8 +169,21 @@ def fixture_params(*caps: Capability, is_async: bool = False) -> list[Any]:
     its ``marks`` (e.g. ``os_sensitive`` on local). Pass directly to
     ``@pytest.mark.parametrize("backend", fixture_params(Cap.X),
     indirect=True)``.
+
+    SFTP-Docker exclusion under xdist: the atmoz/sftp OpenSSH daemon is
+    unreliable under concurrent connections from multiple xdist workers
+    (banner drops, transient EOF). Rather than papering over this with
+    MaxStartups tuning, banner pre-checks, and retry loops, we drop the
+    ``sftp_docker`` fixture from parametrize entirely when running under
+    an xdist worker. The CI workflow runs a second serial pytest
+    invocation (``-k sftp_docker``) that picks them up.
     """
-    return [pytest.param(f, id=f.name, marks=list(f.marks)) for f in fixtures(*caps, is_async=is_async)]
+    is_xdist_worker = "PYTEST_XDIST_WORKER" in os.environ
+    return [
+        pytest.param(f, id=f.name, marks=list(f.marks))
+        for f in fixtures(*caps, is_async=is_async)
+        if not (is_xdist_worker and f.container == "sftp")
+    ]
 
 
 __all__ = [

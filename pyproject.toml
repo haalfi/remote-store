@@ -105,6 +105,7 @@ dev = [
   "pytest-httpserver>=1.0.0",
   "pytest-asyncio>=0.23",
   "pytest-recording>=0.13",
+  "pytest-xdist>=3.5",
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
   # Type checking & linting
@@ -137,16 +138,47 @@ dependencies = [
 ]
 
 [tool.hatch.envs.default.scripts]
-lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check"]
+# Fast artifact-drift checks (gen_graph, gen_features, gen_graph_viz, check_api_docs).
+# Surfacing them ahead of `lint` in `hatch run all` catches drift in seconds rather
+# than after the full lint/typecheck/test gauntlet. CI runs the same checks inline
+# in the `lint` job (one step each) so the wall-time win is dev-loop only.
+preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check"]
+lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"
-test = "pytest"
-# `test-cov` is the everyday local runner; `test-cov-strict` adds the 95% floor
-# and is wired into `hatch run all`. See CLAUDE.md § Coverage gate.
-test-cov = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml"
-test-cov-strict = "pytest --cov=remote_store --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
-test-cov-branch = "pytest --cov=remote_store --cov-branch --cov-report=term-missing --cov-report=xml"
+# Tests are split into two passes:
+#   Pass 1: `-n auto` parallel for every backend EXCEPT sftp_docker. The
+#           sftp_docker fixture is filtered out by registry.fixture_params
+#           when PYTEST_XDIST_WORKER is set (atmoz/sftp's OpenSSH daemon
+#           is unreliable under concurrent xdist worker connections).
+#   Pass 2: serial single-process for sftp_docker conformance variants only.
+# `-p no:benchmark` suppresses PytestBenchmarkWarning under xdist
+# (filterwarnings=error would otherwise turn it into INTERNALERROR);
+# bench-* scripts load the plugin explicitly.
+test = [
+  "pytest -n auto -p no:benchmark",
+  "pytest -p no:benchmark -k sftp_docker tests/backends/conformance/",
+]
+# Coverage variants. `test-cov` reports coverage with no floor — everyday
+# local feedback. `test-cov-s1` is Stage-1 only (no Docker probe), no floor;
+# wired into `hatch run all` so the pre-commit gate never requires Docker.
+# `test-cov-strict` adds `--cov-fail-under=95` and lives in CI / the publish
+# workflow; needs Azurite running locally (Stage-2 Azure-backend fixtures
+# contribute the coverage that makes the 95% floor reachable).
+test-cov = [
+  "pytest -n auto -p no:benchmark --cov=remote_store --cov-report=",
+  "pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml -k sftp_docker tests/backends/conformance/",
+]
+test-cov-s1 = "pytest -n auto -p no:benchmark --stage=1 --cov=remote_store --cov-report=term-missing --cov-report=xml"
+test-cov-strict = [
+  "pytest -n auto -p no:benchmark --cov=remote_store --cov-report=",
+  "pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml --cov-fail-under=95 -k sftp_docker tests/backends/conformance/",
+]
+test-cov-branch = [
+  "pytest -n auto -p no:benchmark --cov=remote_store --cov-branch --cov-report=",
+  "pytest -p no:benchmark --cov=remote_store --cov-append --cov-branch --cov-report=term-missing --cov-report=xml -k sftp_docker tests/backends/conformance/",
+]
 # Records HTTP cassettes from a live service; requires backend credentials.
 record-azure = "python scripts/record_cassettes.py --backend azure"
 # Auto-discovers examples in getting_started/, configuration/, errors/,
@@ -196,7 +228,7 @@ docs-build = "mkdocs build --strict"
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
-all = ["lint", "format-check", "typecheck", "test-cov-strict", "examples", "notebooks", "check-links", "docs-check", "docs-build"]
+all = ["preflight", "lint", "format-check", "typecheck", "test-cov-s1", "examples", "notebooks", "check-links", "docs-check", "docs-build"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]
@@ -295,6 +327,12 @@ markers = [
 [tool.pytest-gremlins]
 cache = true
 exclude = ["**/__init__.py", "**/__pycache__/*"]
+
+# Required for xdist: each worker writes its own `.coverage.<id>` partial that
+# pytest-cov combines at session end. Also needed across the two-pass `test-cov*`
+# split (--cov-append in pass 2 layers onto pass 1's combined data file).
+[tool.coverage.run]
+parallel = true
 
 [tool.ruff]
 line-length = 120

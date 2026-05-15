@@ -14,9 +14,13 @@ consults at parametrize time:
   ``tests.backends.conftest``. Per-backend factory modules read
   ``INFRA`` at call time.
 
-Both are module-level singletons. Pytest is single-process per worker;
-``pytest-xdist`` is not currently used. If it ever is, both pieces of
-state need to be lifted into a config plugin.
+Both are module-level singletons. Safe under pytest-xdist because each
+worker subprocess re-imports this module from scratch, re-runs
+``pytest_configure`` to set ``_CURRENT_STAGE``, and re-runs the autouse
+``_populate_infra`` session fixture to populate ``INFRA`` — state stays
+per-worker. See ``registry.fixture_params`` for the one fixture that
+cannot safely run under concurrent worker connections (``sftp_docker``
+is carved out and runs in a second serial pytest pass).
 """
 
 from __future__ import annotations

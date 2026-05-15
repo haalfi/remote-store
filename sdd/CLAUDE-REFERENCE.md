@@ -214,7 +214,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | Understand the full SDD workflow         | `sdd/000-process.md`                                 |
 | Add or update a backend guide            | `docs-src/guides/backends/` + docs nav               |
 | Run a quick smoke test                   | `examples/` — pick one and run it                    |
-| Verify everything passes                 | `hatch run all` (lint + format-check + typecheck + test-cov-strict + examples) |
+| Verify everything passes                 | `hatch run all` (see `pyproject.toml` for the constituent scripts)             |
 
 ---
 

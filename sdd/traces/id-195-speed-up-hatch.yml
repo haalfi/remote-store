@@ -1,0 +1,220 @@
+id: ID-195
+title: "Speed up hatch run all — pytest-xdist, preflight, SFTP-Docker carve-out"
+trigger: |
+  `hatch run all` wall time routinely exceeded 5 minutes during releases (105 s
+  for `test-cov` alone over ~4789 collected items); during v0.24.1 it ran twice
+  (graph_viz.html drift caught on the first run), eating ~10 minutes before
+  Phase 4 could start. A first stabilisation attempt (PR 631) wrapped xdist with
+  an SFTP-Docker stack — `--dist loadgroup` + `xdist_group` marks, OpenSSH
+  `MaxStartups` tuning in both docker-compose and the CI action, two banner
+  pre-checks, and a Transport.connect retry loop — and still saw five FAILED
+  on `test (3.12)` / `test-primary`. The complexity ratio was the wrong shape:
+  the speedup mechanism was ~10 lines, the SFTP stabilisation was ~150 lines
+  fighting a problem the carve-out simply avoids.
+source_items:
+  - ID-195
+audience:
+  - contributor.tooling
+  - infra.ci
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 3
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-195"
+        read_type: gate
+        extract: "four directions: xdist, durations audit, preflight, short-circuit"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: gate
+        extract: "current test script flags, lint composition, all sequence"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary jobs"
+        read_type: gate
+        extract: "CI runs pytest directly; needs the same two-pass shape"
+        outcome: ok
+  - id: prior-art
+    name: Review prior attempt (PR 631)
+    steps:
+      - file: tests/backends/fixtures/sftp_docker.py
+        section: "_wait_for_ssh_banner, _factory retry loop"
+        read_type: reference
+        extract: |
+          PR 631 layered: 10-retry banner pre-check, 3-attempt Transport.connect
+          loop, second 5-retry banner check before returning. Despite this, CI
+          still failed five tests. Diagnosis: papering over instability with
+          local retries duplicates what SFTPBackend._connect's tenacity layer
+          already does (3 attempts, exponential 2-10 s backoff,
+          SSHException|OSError|EOFError); adding more retries does not change
+          the fundamental concurrency conflict.
+        outcome: misleading
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params (PR 631 version)"
+        read_type: reference
+        extract: |
+          PR 631 added `xdist_group(name=f.name)` on container fixtures and
+          required `--dist loadgroup` everywhere. With loadgroup, all
+          sftp_docker tests pin to one worker and run sequentially anyway —
+          which makes the MaxStartups tuning redundant. The xdist_group route
+          is a more complex way to express "serialise these tests" than a
+          dedicated serial pytest invocation.
+        outcome: misleading
+  - id: implement
+    name: Implement simpler design
+    steps:
+      - file: pyproject.toml
+        section: "dev extras, test scripts, preflight, coverage"
+        read_type: gate
+        extract: |
+          Added `pytest-xdist>=3.5`; all `test*` scripts are now two-step
+          lists (`-n auto -p no:benchmark` pass 1; serial `-k sftp_docker
+          tests/backends/conformance/` pass 2 with `--cov-append` for the
+          `test-cov*` variants). `[tool.coverage.run] parallel = true` for
+          xdist coverage partial merging across both passes. New `preflight`
+          script (gen-*-check ahead of lint in `hatch run all`); gen-checks
+          removed from `lint` (still in CI lint job inline). `test-cov-s1`
+          (`--stage=1`) replaces `test-cov-strict` in `hatch run all` so the
+          pre-commit gate never needs Docker.
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: fixture_params
+        read_type: gate
+        extract: |
+          Single-line filter: when `PYTEST_XDIST_WORKER` is in the env, drop
+          fixtures with `container == "sftp"` from the parametrize list. No
+          marks, no loadgroup scheduler dependency, no banner pre-checks.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary"
+        read_type: gate
+        extract: |
+          Two pytest invocations per job. test-primary asserts the 95% floor
+          on pass 2 after pass 1's `.coverage` has been combined. The
+          tests/scripts pass remains coverage-free as before.
+        outcome: ok
+      - file: CLAUDE.md
+        section: Coverage gate / Parallel tests
+        read_type: gate
+        extract: |
+          Updated bullet split to test-cov / test-cov-s1 / test-cov-strict.
+          Added "Parallel tests" section pointing at the registry filter as
+          the entire SFTP stabilisation story.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: Ripple-check table
+        read_type: verify
+        extract: |
+          No backend / spec / error / capability changes; no CHANGELOG entry
+          (audience is contributor.tooling + infra.ci only).
+        outcome: ok
+  - id: iterate
+    name: Iterate on review feedback
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1-4"
+        read_type: gate
+        extract: |
+          Round 1 self-audit (user-flagged): the initial CLAUDE.md additions
+          enumerated three `test-cov*` variants and described the registry
+          filter mechanism, duplicating facts authoritative in pyproject.toml
+          and registry.py. Cleanup commit 73acf63a4 shrank both sections to
+          pointer style; pyproject.toml comment block now owns variant
+          semantics outright (was circular "See CLAUDE.md"); registry.py
+          docstring dropped `(ID-195)` ticket reference (Rule 1).
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Verify everything passes row"
+        read_type: reference
+        extract: |
+          Round 2 (PR #633 review): the lookup table enumerated
+          `test-cov-strict` as part of `hatch run all`. Updated to drop the
+          per-script chain and point at pyproject.toml.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Lines 178, 320, 352 — test-cov enumerations"
+        read_type: reference
+        extract: |
+          Round 2: three places enumerated test-cov-strict for the gate; one
+          (Phase 0 release pre-flight) carried a hint about the 95% threshold
+          that the new shape deliberately bypasses. Updated to point at
+          pyproject.toml; Phase 3 release validation gained an explicit
+          `hatch run test-cov-strict` checklist line so the 95% floor still
+          gets verified at release time.
+        outcome: ok
+      - file: .github/workflows/publish.yml
+        section: "coverage job, line 66"
+        read_type: reference
+        extract: |
+          Round 2: badge job still single-pass while CI is now two-pass.
+          Aligning to two-pass is theatre because the job only starts
+          Azurite (no atmoz/sftp). Added a comment block making the
+          divergence intentional rather than residual.
+        outcome: ok
+      - file: tests/backends/fixtures/test_registry.py
+        section: TestFixtureParamsXdistWorkerFilter
+        read_type: gate
+        extract: |
+          Round 2: added regression guard pinning the carve-out contract —
+          with `PYTEST_XDIST_WORKER` set, no `container == "sftp"` entries;
+          without it, sftp_docker is present. Forces Stage 2 via
+          `_state._CURRENT_STAGE` monkeypatch so the test runs regardless
+          of host Docker reachability. The "single-line filter" framing in
+          the docstring under-stated the design decision (hard-coded `"sftp"`
+          literal does not generalise) — the test locks it explicitly.
+        outcome: ok
+      - file: tests/backends/fixtures/_state.py
+        section: "module docstring lines 17-19"
+        read_type: reference
+        extract: |
+          Round 3 (second-pass PR review): the sibling state-module docstring
+          claimed "pytest-xdist is not currently used. If it ever is, both
+          pieces of state need to be lifted into a config plugin." The "if it
+          ever" conditional triggered with this PR — but the predicted
+          remediation (config-plugin lifting) was not the path taken; per-worker
+          re-import semantics make the module-level state safe as-is, and the
+          one fixture that cannot run under concurrent worker connections is
+          carved out by `registry.fixture_params`. Updated the docstring to
+          describe the new reality and point at registry.fixture_params for
+          the carve-out story.
+        outcome: ok
+discovery_followups: []
+surprising_ripples:
+  - |
+    PR 631's MaxStartups tuning was structurally unnecessary on Linux CI:
+    GitHub Actions runners have 4 vCPUs, so `-n auto = 4`, well under
+    OpenSSH's default `MaxStartups 10:30:100`. The MaxStartups path was
+    fighting a 20-worker Docker Desktop NAT problem that does not exist
+    on the CI host.
+  - |
+    Initial CLAUDE.md additions failed a self-audit against CONTENT-RULES:
+    enumerated the `test-cov*` chain (Rule 2), restated mechanism that lives
+    authoritatively in pyproject.toml / registry.py (Rule 4), carried
+    "~2× wall-time" pseudo-precise figures (Rule 3), and baked `(ID-195)`
+    into a section heading (Rule 1). The ripple-check table did not flag
+    CLAUDE.md edits for CONTENT-RULES gating; the user flagged it in review.
+  - |
+    sdd/CLAUDE-REFERENCE.md:217 and CONTRIBUTING.md:178/320/352 enumerated
+    `test-cov-strict` as part of `hatch run all`. The ripple-check did not
+    surface them as ripples of the `hatch run all` script change — the
+    cross-doc enumeration was the symptom of the same CONTENT-RULES Rule 4
+    violation, just in different files.
+  - |
+    .github/workflows/publish.yml's badge job still ran the old single-pass
+    pytest invocation. Not a regression of this PR — but the
+    `[tool.coverage.run] parallel = true` change made the divergence with
+    CI's new two-pass shape worth documenting in-line on the workflow.
+  - |
+    tests/backends/fixtures/_state.py:17-19 carried a docstring claim that
+    pytest-xdist was not in use, with a stated remediation (lift state into
+    a config plugin) that did not match the path taken. The ripple-check
+    did not flag sibling-module docstrings of a changed file for staleness
+    review; caught only in the second-pass PR review after the test class
+    monkeypatched `_state._CURRENT_STAGE` directly.

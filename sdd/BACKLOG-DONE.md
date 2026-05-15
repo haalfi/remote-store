@@ -30,6 +30,38 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `call_s3`. Audience: `user.api`.
   Trace: [`sdd/traces/BUG-208-s3-check-health-unawaited-coroutine.yml`](traces/BUG-208-s3-check-health-unawaited-coroutine.yml).
 
+- [x] **ID-195 — Speed up `hatch run all` — pytest-xdist, preflight, SFTP-Docker carve-out**
+  Add `pytest-xdist>=3.5` to dev extras; every `test*` script in `pyproject.toml`
+  runs `pytest -n auto -p no:benchmark` (xdist on, benchmark plugin off so
+  `filterwarnings=error` does not promote `PytestBenchmarkWarning` to
+  INTERNALERROR; bench-* scripts re-enable it explicitly).
+  `[tool.coverage.run] parallel = true` lets pytest-cov combine xdist worker
+  partials into one `.coverage` data file. `hatch run all` wall time on a
+  20-core dev machine, both runs stopping at the same pre-existing Windows
+  flake in the test step: ~229 s → ~26 s. The bulk of the gain comes from
+  `test-cov-s1` (Stage-1, xdist) replacing serial `test-cov-strict`; the
+  preflight reorder contributes the rest.
+  New `preflight` script ahead of `lint` in `hatch run all` runs the four
+  artifact-drift `gen-*-check` calls (`gen_graph`, `gen_features`,
+  `gen_graph_viz`, `check_api_docs`); drift surfaces in seconds rather than
+  after the full lint/typecheck/test gauntlet. CI lint job runs the same
+  checks inline so the win is dev-loop only.
+  New `test-cov-s1` (`--stage=1`, no Docker probe, no floor) replaces
+  `test-cov-strict` in `hatch run all` so the pre-commit gate never requires
+  Docker services. `test-cov-strict` stays for CI and the publish workflow.
+  CI `test` and `test-primary` jobs updated to the two-pass pattern.
+  **SFTP-Docker carve-out**: `tests/backends/fixtures/registry.fixture_params`
+  drops the `sftp_docker` fixture from parametrize whenever
+  `PYTEST_XDIST_WORKER` is set. A second serial pytest invocation
+  (`pytest -p no:benchmark -k sftp_docker tests/backends/conformance/`)
+  picks them up. This replaces the prior approach (xdist_group + MaxStartups
+  tuning + banner pre-checks + Transport.connect retry loops) — atmoz/sftp's
+  OpenSSH daemon is unreliable under concurrent connections from multiple
+  workers, and a serial pass is simpler than papering over instability with
+  retries.
+  Audience: `contributor.tooling`, `infra.ci`.
+  Trace: [`sdd/traces/id-195-speed-up-hatch.yml`](traces/id-195-speed-up-hatch.yml).
+
 - [x] **BK-219 — Centralise Python version config in CI; split primary-Python jobs**
   `ci.yml` carried ~12 hardcoded `"3.13"` literals and a fragile per-version
   coverage ternary (`matrix.python-version == '3.13' && '--cov...' || ''`).
