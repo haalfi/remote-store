@@ -5,7 +5,13 @@ disable-model-invocation: true
 argument-hint: "[PR number]"
 ---
 
-PR: `$ARGUMENTS` (ask if missing). Repo: `haalfi/remote-store`.
+PR: `$ARGUMENTS`. Repo: `haalfi/remote-store`.
+
+**No PR number provided?** Run `git branch --show-current`, then call `list_pull_requests` with `owner: "haalfi"`, `repo: "remote-store"`, `state: "OPEN"`, `head: "haalfi:<branch>"`. If exactly one PR matches, confirm with the user. If zero or multiple match, or the user declines, fall through to listing all open PRs and ask which to fix.
+
+## Step 0: Verify PR is open
+
+Call `pull_request_read` with `method: "get"`, `owner: "haalfi"`, `repo: "remote-store"`, `pullNumber: $ARGUMENTS`. If `state` is `CLOSED` or the PR is merged, stop and ask the user — do not fix stale or typo'd PR numbers.
 
 ## Step 1: Prepare branch and fetch comments
 
@@ -21,6 +27,10 @@ destructive to anyone tracking the branch.
 
 For all GitHub API calls in this skill (reading PR data, posting comments, resolving threads),
 use the configured GitHub MCP server. Fall back to `gh api graphql` for thread resolve/unresolve.
+
+**Fetch comments after any rebase, not before.** Line numbers and the
+`isOutdated` flag are computed against the PR's current HEAD; comments
+fetched before a force-push triage against stale metadata.
 
 Fetch **all four** comment sources (`owner: "haalfi"`, `repo: "remote-store"`):
 
@@ -61,7 +71,7 @@ Build work list from **all four sources** (see table above):
 - **Source 1** (inline threads): skip resolved, outdated, and bot comments.
 - **Sources 2–4** (reviews, PR comments, issue comments): no resolution state — always scan. Extract actionable items (bugs, spec gaps, test gaps, dead code, etc.).
 
-For each actionable item note: file, line, category (Bug/Spec/Test/Consistency/Ripple/Security), what to change.
+For each actionable item note: file, line, category (Bug/Spec/Test/Consistency/Ripple/Perf/Security), what to change.
 
 **Be critical.** Verify each claim against the code — comments can be wrong or already fixed. Skip bad suggestions with a reason, don't blindly apply them.
 
@@ -93,6 +103,18 @@ Run `hatch run lint` and `hatch run test`. Fix failures, re-run until clean.
 
 5b. **Docs gate:** Does changed documentation follow the rules in `sdd/CONTENT-RULES.md`?
     Report violations before commit.
+
+5c. **Trace update (when PR has a backlog ID):** Parse the backlog ID from
+    the PR title or branch name. If found, update `sdd/traces/<id>-<slug>.yml`
+    (schema: `sdd/traces/_schema.yml`) with the review-driven fields:
+
+    - `discovery_followups` — new backlog items the review surfaced.
+    - `surprising_ripples` — paths the ripple-check table did not anticipate
+      that the review caught.
+    - `co_shipped_items` — unrelated items the review confirmed this PR also closes.
+
+    No backlog ID? Skip and note it in the Step 6 report. This is agent
+    hygiene, not a contribution rule.
 
 ## Step 6: Commit and push
 
