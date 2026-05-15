@@ -8,6 +8,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-208 — `S3Backend.check_health()` silently no-ops (unawaited aiobotocore coroutine)**
+  `check_health()` called `self._fs.s3.head_bucket(Bucket=...)` on the raw
+  `aiobotocore` client, whose `head_bucket` returns a coroutine. The code
+  never awaited it: the HEAD never reached the server, `check_health()`
+  silently returned `None` regardless of bucket state, and the orphaned
+  coroutine surfaced at GC as `RuntimeWarning: coroutine ... was never
+  awaited` (escalated to an error by `filterwarnings = ["error"]`). Fixed
+  by routing the probe through s3fs's synchronous `call_s3` wrapper —
+  `self._fs.call_s3("head_bucket", Bucket=self._bucket)` — the same path
+  `head_object` already uses; a missing bucket or invalid credentials now
+  map through `_s3fs_errors` to `NotFound` / `PermissionDenied` /
+  `BackendUnavailable` per PING-004 / PING-009. The mocked `test_ping.py`
+  cases never exercised the `aiobotocore` path (they patched the s3fs
+  client), so a real moto-backed regression class
+  (`TestS3CheckHealthMoto`) was added and the `s3_moto` xfail removed from
+  the conformance test. Spec PING-004 updated — its code block had
+  codified the buggy raw-client call. Audit of every other
+  `self._fs.s3.<method>` use in the S3 backend: none — `check_health` was
+  the only direct raw-client call; all other operations already use
+  `call_s3`. Audience: `user.api`.
+  Trace: [`sdd/traces/BUG-208-s3-check-health-unawaited-coroutine.yml`](traces/BUG-208-s3-check-health-unawaited-coroutine.yml).
+
 - [x] **BK-219 — Centralise Python version config in CI; split primary-Python jobs**
   `ci.yml` carried ~12 hardcoded `"3.13"` literals and a fragile per-version
   coverage ternary (`matrix.python-version == '3.13' && '--cov...' || ''`).

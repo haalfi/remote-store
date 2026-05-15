@@ -64,11 +64,15 @@ if not os.access(self._root, os.R_OK):
 
 ### PING-004: S3Backend
 
-**Strategy:** `head_bucket` via botocore, inside `_errors()`.
+**Strategy:** `head_bucket` via s3fs's synchronous `call_s3` wrapper, inside `_s3fs_errors()`.
 ```python
-with self._errors():
-    self._fs.s3.head_bucket(Bucket=self._bucket)
+with self._s3fs_errors():
+    self._fs.call_s3("head_bucket", Bucket=self._bucket)
 ```
+`self._fs.s3` is the raw `aiobotocore` client — its methods return
+coroutines, so calling `self._fs.s3.head_bucket(...)` directly never
+issues the request. `call_s3` is the synchronous wrapper that awaits
+the call on the s3fs event loop.
 
 ### PING-005: S3PyArrowBackend
 

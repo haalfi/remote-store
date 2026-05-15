@@ -37,31 +37,7 @@ if TYPE_CHECKING:
 
 class TestCheckHealthConformance:
     @pytest.mark.spec("PING-002")
-    def test_check_health_returns_none_or_raises_remote_store_error(
-        self, backend: Backend, request: pytest.FixtureRequest
-    ) -> None:
-        # BUG-208: the S3 backend's check_health() does not await the
-        # aiobotocore head_bucket coroutine — it leaks for GC and check_health
-        # silently returns None. The leaked RuntimeWarning is escalated to an
-        # error by the repo's pytest filterwarnings policy. xfail-strict so
-        # this auto-flags for removal once BUG-208 lands and the call is awaited.
-        #
-        # Fragility note: the xfail depends on the leaked coroutine being
-        # collected — and its RuntimeWarning surfacing — within this test's
-        # call window. Under CPython refcounting that is deterministic (the
-        # coroutine has no live references once check_health() returns), and
-        # it has been verified on 3.11 and 3.14, isolated and in the full
-        # suite. If a future runtime defers collection, strict=True would turn
-        # this into an XPASS failure — which is the correct signal to fix
-        # BUG-208 rather than to loosen the marker.
-        if backend.name == "s3":
-            request.applymarker(
-                pytest.mark.xfail(
-                    reason="BUG-208: the S3 backend's check_health() does not await the head_bucket coroutine",
-                    raises=pytest.PytestUnraisableExceptionWarning,
-                    strict=True,
-                )
-            )
+    def test_check_health_returns_none_or_raises_remote_store_error(self, backend: Backend) -> None:
         try:
             result = backend.check_health()
         except RemoteStoreError:

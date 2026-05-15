@@ -105,7 +105,8 @@ class S3Backend(_S3Base):
 
     def check_health(self) -> None:
         with self._s3fs_errors():
-            self._fs.s3.head_bucket(Bucket=self._bucket)
+            # Not self._fs.s3.head_bucket(...): raw aiobotocore returns a coroutine. See PING-004.
+            self._fs.call_s3("head_bucket", Bucket=self._bucket)
 
     def native_path(self, path: str) -> str:
         if path:
