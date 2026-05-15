@@ -8,6 +8,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-177 — Parametrize self-op tests + tighten `match=` regexes**
+  spec: BE-018, BE-019 · audience: infra.test
+  Two TESTING.md alignments on the sync side, mirroring PR #580 (async).
+  1. `tests/backends/conformance/test_atomic.py::TestMoveCopySelfOperation`:
+     collapsed five near-duplicate methods into two parametrized methods
+     (`test_self_op_preserves_data` over `(op, cap)` × `overwrite` and
+     `test_self_op_missing_raises_not_found` over `(op, cap)`), adding the
+     previously-missing self-move-missing-NotFound case.
+  2. `tests/backends/conformance/test_errors.py::TestMoveCopyErrorFidelity::test_destination_is_directory_raises_error`:
+     tightened `match=f"mcdd/{op}"` to `match=f"mcdd/{op}_dstdir"` (the test
+     was relocated here by BK-179's split, not in `test_atomic.py` as the
+     original item stated). No spec change; no CHANGELOG entry (infra.test only).
+
 - [x] **BUG-210 — `azure_replay` fixture omits `cleanup=`; ~133 `Unclosed AzureBackend` warnings per Stage-2 run**
   `tests/backends/fixtures/azure_replay.py` registered its `BackendFixture`
   without a `cleanup=` argument, so the conformance `backend` fixture had

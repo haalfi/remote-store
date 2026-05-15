@@ -232,7 +232,7 @@ class TestMoveCopyErrorFidelity:
         _skip_flat_namespace(backend)
         backend.write(f"mcdd/{op}_src.txt", b"src")
         backend.write(f"mcdd/{op}_dstdir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match=f"mcdd/{op}"):
+        with pytest.raises(InvalidPath, match=f"mcdd/{op}_dstdir"):
             _do_op(backend, op, f"mcdd/{op}_src.txt", f"mcdd/{op}_dstdir")
 
     @pytest.mark.spec("BE-018")

@@ -1,0 +1,95 @@
+id: BK-177
+title: "Parametrize self-op tests + tighten match= regexes"
+trigger: |
+  TestMoveCopySelfOperation in tests/backends/conformance/test_atomic.py had
+  five near-duplicate sync methods differing only in op ∈ {move, copy} and
+  overwrite ∈ {True, False} — a TESTING.md Rule 7 violation. The async mirror
+  was already parametrized and given a missing-NotFound case in PR #580.
+  Separately, test_destination_is_directory_raises_error in test_errors.py used
+  match=f"mcdd/{op}" which matched both src and dst path fragments, so a
+  regression that flipped the error source would not be detected.
+source_items:
+  - BK-177
+
+audience:
+  - infra.test
+
+surprising_ripples:
+  # The backlog item placed both fixes in test_atomic.py. After BK-179's
+  # split, the match= test (test_destination_is_directory_raises_error) moved
+  # to test_errors.py::TestMoveCopyErrorFidelity. The backlog description was
+  # stale; updated in the same commit.
+  - tests/backends/conformance/test_errors.py
+
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+
+review_rounds: 0
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-177 (item)"
+        read_type: gate
+        extract: "Two sync TESTING.md alignments: parametrize TestMoveCopySelfOperation and tighten match= in test_destination_is_directory_raises_error."
+        outcome: misleading
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestMoveCopySelfOperation (lines 506-539)"
+        read_type: gate
+        extract: "Target shape: two parametrized methods (test_self_op_preserves_data over (op,cap)×overwrite; test_self_op_missing_raises_not_found over (op,cap)) with self_op_supported skip guard."
+        outcome: ok
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestMoveCopySelfOperation (lines 315-365)"
+        read_type: gate
+        extract: "Current state: five un-parametrized methods; no self-move-missing-NotFound case."
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestMoveCopyErrorFidelity::test_destination_is_directory_raises_error (lines 229-236)"
+        read_type: gate
+        extract: "match=f\"mcdd/{op}\" — too broad; test lives here (not test_atomic.py as the backlog stated)."
+        outcome: ok
+
+  - id: spec
+    name: Spec check
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018, BE-019"
+        read_type: reference
+        extract: "Self-op rule is folded into BE-018/BE-019 (src==dst is a no-op); no separate BE-047 ID exists — sync markers stay BE-018, BE-019 only."
+        outcome: ok
+      - file: tests/backends/fixtures/backends.toml
+        section: "(full)"
+        read_type: reference
+        extract: "self_op_supported=false for azure and http; true for memory, local, sftp, s3, sqlblob, dafny — no fixture change needed."
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestMoveCopySelfOperation"
+        read_type: reference
+        extract: "Replaced five methods with two parametrized methods mirroring the async shape; added self-move-missing-NotFound case."
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestMoveCopyErrorFidelity::test_destination_is_directory_raises_error"
+        read_type: reference
+        extract: "Changed match= from f\"mcdd/{op}\" to f\"mcdd/{op}_dstdir\" to pin the error to the dst fragment."
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-177 (item)"
+        read_type: reference
+        extract: "Updated item text to reflect that the match= fix targets test_errors.py, not test_atomic.py; marked [~] then removed on completion."
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace required (this file). Audience infra.test only => no CHANGELOG entry. backlogid.json unchanged (BK-177 < running max)."
+        outcome: ok
