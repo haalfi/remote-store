@@ -10,7 +10,6 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - sdd/audits/audit-014-grandfathered-tests-allow-list.md
-surprising_ripples: []
 phases:
   - id: orient
     name: Orient
@@ -114,4 +113,4 @@ discovery_followups: []
 co_shipped_items:
   - BK-191
 surprising_ripples: []
-review_rounds: 0
+review_rounds: 1
