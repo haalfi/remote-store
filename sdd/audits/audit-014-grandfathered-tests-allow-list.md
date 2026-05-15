@@ -134,7 +134,7 @@ Recommend **(c)**. The justification is structural (example-test 1:1) not just h
 
 **Risk:** none.
 
-### `tests/test_pbt_write_result.py` — disposition: **(b) conformance reshape (size regimes) + (a) per-backend split (SDK metadata round-trip)**
+### `tests/test_pbt_write_result.py` — disposition: **(a) per-backend split (SDK metadata round-trip only)**
 
 | Line | Backend | Notes |
 |---|---|---|
@@ -148,6 +148,8 @@ Recommend: lift size-regime PBT into `tests/backends/conformance/test_write_resu
 **Refactor cost:** moderate. Hypothesis strategies and the BUG-168 boundary table are reusable; the parametrize wrapper is the main new code.
 
 **Risk:** low-to-medium. The PBT runs slow; re-tuning Hypothesis `max_examples` per parametrize slot may be necessary.
+
+**Reconsidered against CLAUDE.md § Audits rule 3 — shipped BK-221.** The audit's (b) prescription ("lift size-regime PBT into a conformance parametrize over the fixture registry") was reframed: PBT 1 uses `MemoryBackend` and `LocalBackend` only — both are allowed at `tests/` root, and the BUG-168 boundary is `LocalBackend`-specific (the only v1 backend with a real `BufferedWriter` path). Running arbitrary-payload Hypothesis examples against all conformance fixtures (including SFTP and Azure network backends) would be slow and contrary to the "deliberately narrow" backend selection documented in the module docstring (TESTING.md Rules 5 and 6). The diagnosed pain (Rule B violations at lines 267/299) is fully addressed by the (a) lift alone. PBT 1 size-regime tests stay at root. PBT 2 metadata round-trip tests moved to `tests/backends/s3/test_write_result_pbt.py` and `tests/backends/azure/test_write_result_pbt.py`. `"test_pbt_write_result.py"` removed from `_BACKEND_AT_ROOT_GRANDFATHERED`. One migration-pending entry remains (`test_coverage_gaps`) plus the permanently-justified `test_examples.py`.
 
 ### `tests/test_ping.py` — disposition: **(b) conformance + (a) per-backend split**
 
@@ -212,7 +214,7 @@ Recommend: split as described. The `_AzureRangeReader` cluster is the larger lif
 | `test_coverage_gaps.py` | (b) + (a) | moderate-to-high | yes |
 | `test_depth_listing.py` | (a) lift 3 + (b) consolidate — reconsidered, see § per-file findings | low | yes |
 | `test_examples.py` | (c) keep at root | trivial (comment) | no (justified) |
-| `test_pbt_write_result.py` | (b) + (a) | moderate | yes |
+| `test_pbt_write_result.py` | (a) per-backend split (metadata round-trip) — reconsidered, see § per-file findings — shipped BK-221 | moderate | yes (done) |
 | `test_ping.py` | (b) + (a) — reconsidered, see § per-file findings | moderate | yes |
 | `test_seekable.py` | (b) + (a) Azure cluster — shipped BK-220, see § per-file findings | moderate | yes (done) |
 

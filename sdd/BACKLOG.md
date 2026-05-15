@@ -569,6 +569,7 @@ pattern (ID-193) can lock in the test shape.
 
 ## Lint / CI Completeness
 
+
 - [ ] **BK-191 — Audit `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list**
   spec: TEST-003, TEST-010 · effort: L · audience: infra.test
   BK-190 enforces TEST-003 (no concrete cloud / network backend imports at
