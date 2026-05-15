@@ -1585,9 +1585,9 @@ class TestAzureCredentialMasking:
             connection_string=Secret("conn=str"),
         )
         _BACKENDS.append(backend)
-        assert backend._account_key == "mykey"
-        assert backend._sas_token == "tok"
-        assert backend._connection_string == "conn=str"
+        assert backend._account_key == "mykey"  # internal: no public observable (repr shows '***' for raw strings too)
+        assert backend._sas_token == "tok"  # internal: no public observable
+        assert backend._connection_string == "conn=str"  # internal: no public observable
 
 
 # endregion

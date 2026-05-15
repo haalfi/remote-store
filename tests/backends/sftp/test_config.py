@@ -1928,7 +1928,7 @@ class TestSFTPCredentialMasking:
         from remote_store._config import Secret
 
         backend = SFTPBackend(host="h", password=Secret("pass123"))
-        assert backend._password == "pass123"
+        assert backend._password == "pass123"  # internal: no public observable (repr shows '***' for raw strings too)
 
 
 # endregion

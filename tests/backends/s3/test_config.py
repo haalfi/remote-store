@@ -370,8 +370,8 @@ class TestS3CredentialMasking:
         from remote_store.backends._s3 import S3Backend
 
         backend = S3Backend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
-        assert backend._key == "AKID"
-        assert backend._secret == "SK"
+        assert backend._key == "AKID"  # internal: no public observable (repr shows '***' for raw strings too)
+        assert backend._secret == "SK"  # internal: no public observable
 
 
 # endregion

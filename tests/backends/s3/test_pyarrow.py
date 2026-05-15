@@ -492,8 +492,8 @@ class TestS3PyArrowCredentialMasking:
         from remote_store.backends._s3_pyarrow import S3PyArrowBackend
 
         backend = S3PyArrowBackend(bucket="b", key=Secret("AKID"), secret=Secret("SK"))
-        assert backend._key == "AKID"
-        assert backend._secret == "SK"
+        assert backend._key == "AKID"  # internal: no public observable (repr shows '***' for raw strings too)
+        assert backend._secret == "SK"  # internal: no public observable
 
 
 # endregion
