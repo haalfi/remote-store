@@ -91,7 +91,32 @@ phases:
         section: "audience derived rule"
         read_type: verify
         extract: "audience user.api -> CHANGELOG entry required; stub added"
+  - id: iterate
+    name: Iterate (CI + review + self-audit)
+    steps:
+      - file: tests/backends/s3/test_ping.py
+        section: "_s3_backend helper / new _sync_call_s3_spec"
+        read_type: gate
+        extract: "CI failed on Python 3.13 only: MagicMock(spec=S3FileSystem).call_s3 was auto-promoted to AsyncMock because unittest.mock._mock_add_spec (3.12+) calls inspect.unwrap() before iscoroutinefunction, and s3fs's call_s3 = sync_wrapper(_call_s3) carries __wrapped__ to the async _call_s3. Pinned the child mock to sync via MagicMock(spec=_sync_call_s3_spec). Python 3.11 was unaffected locally — the drift was version-specific and only caught at CI (commit 5a2375f)"
+        outcome: misleading
+      - file: sdd/specs/026-health-check.md
+        section: "PING-004 (post-review)"
+        read_type: gate
+        extract: "Reviewer flagged pre-existing inaccuracy: spec said 'inside _errors()' but the S3 backend uses _s3fs_errors(). Pre-existed the PR; fixed here because the section was edited (commit eb3cff1)"
+        outcome: misleading
+      - file: CHANGELOG.md
+        section: "[Unreleased] BUG-208 stub"
+        read_type: gate
+        extract: "Reviewer applied the CLAUDE-REFERENCE.md ripple-check 'CHANGELOG entry' rule (one-line stub at top of [Unreleased]; release skill expands at version bump). Reduced from three sentences to a single line (commit eb3cff1)"
+      - file: tests/backends/s3/test_ping.py
+        section: "module docstring + _sync_call_s3_spec docstring"
+        read_type: gate
+        extract: "Reviewer asked to relocate the Python 3.12+ __wrapped__ rationale from the spec-stub function docstring (which a developer may not read) into the module docstring (commit eb3cff1)"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 4 and 5"
+        read_type: gate
+        extract: "Self-audit found rule 4 (one copy per fact) and rule 5 (source-code facts in source) violations: the _s3.py code comment duplicated the spec's WHY, and the PING-004 note's '(the same path head_object already uses)' cross-referenced source state that could rot. Trimmed both (commit 739eddf)"
 discovery_followups: []
 co_shipped_items: []
 surprising_ripples: []
-review_rounds: 0
+review_rounds: 3
