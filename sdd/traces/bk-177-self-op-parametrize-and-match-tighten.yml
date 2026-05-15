@@ -14,6 +14,13 @@ source_items:
 audience:
   - infra.test
 
+# BK-223 born in PR #640 review: the reviewer noticed the symmetric
+# match= weakness in test_source_is_directory_raises_error (sync line 223,
+# async line 451) — the same shared-prefix problem this PR fixes for the
+# dst side. Filed in BACKLOG.md; ships as its own PR per skill rules.
+discovery_followups:
+  - BK-223
+
 surprising_ripples:
   # The backlog item placed both fixes in test_atomic.py. After BK-179's
   # split, the match= test (test_destination_is_directory_raises_error) moved
@@ -25,7 +32,7 @@ expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
 
-review_rounds: 0
+review_rounds: 1
 
 phases:
   - id: orient
