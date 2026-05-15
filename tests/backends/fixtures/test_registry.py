@@ -559,15 +559,15 @@ class TestFixtureCleanupContract:
 
     Scope is deliberately narrow:
 
-    * Sync fixtures only. ``asyncio.run(f.aclose(instance))`` for an
-      async fixture leaves the ``UnixSelectorEventLoop``'s self-pipe
-      sockets unclosed long enough to fire ``PytestUnraisableExceptionWarning``
-      on a later test (observed on PR #637 second push, Linux CI). The
-      session-level ``_close_leaked_event_loops`` fixture in
-      ``tests/conftest.py`` only sweeps at session teardown. The
-      mirror-side bug for async (``azure_replay_async`` forgetting
-      ``aclose=``) would surface through the conformance suite the same
-      way BUG-210 originally did.
+    * Sync fixtures only. ``asyncio.run(f.aclose(instance))`` on Linux
+      leaves the ``UnixSelectorEventLoop``'s self-pipe sockets unclosed
+      long enough to fire ``PytestUnraisableExceptionWarning`` on a
+      later test on the same xdist worker. The session-level
+      ``_close_leaked_event_loops`` fixture in ``tests/conftest.py``
+      only sweeps at session teardown. The mirror-side bug for async
+      (``azure_replay_async`` forgetting ``aclose=``) would surface
+      through the conformance suite the same way BUG-210 originally
+      did.
 
     * Only fixtures whose ``factory()`` does not open a real network
       transport (``transport in {"fs", "memory", "sql"}``, or
