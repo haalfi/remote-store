@@ -9,11 +9,13 @@ infrastructure beyond the registered fixtures themselves.
 
 from __future__ import annotations
 
+import contextlib
 import re
 from pathlib import Path
 
 import pytest
 
+from remote_store._backend import Backend
 from remote_store._capabilities import Capability
 from tests.backends.fixtures import (
     BackendFixture,
@@ -538,3 +540,73 @@ class TestFixtureParamsXdistWorkerFilter:
         params = fixture_params()
         sftp_ids = [p.id for p in params if p.values[0].container == "sftp"]
         assert sftp_ids, "fixture_params() outside xdist must include the sftp_docker fixture"
+
+
+@pytest.mark.spec("TEST-004")
+class TestFixtureCleanupContract:
+    """Sync backends that override ``Backend.close`` must register ``cleanup=``.
+
+    BUG-210 surfaced the failure mode: ``azure_replay`` registered without
+    ``cleanup=``, so the conformance ``backend`` fixture skipped
+    ``backend.close()`` for every replay-fixture instance. The unclosed
+    clients fired ``ResourceWarning`` at GC, which ``filterwarnings=error``
+    promoted to unraisable exceptions that bit unrelated
+    ``pytest.warns(ResourceWarning, ...)`` tests under 20-worker Windows
+    xdist. In-memory backends (``memory`` / ``local`` / ``dafny``)
+    legitimately inherit the no-op default ``close`` and need no teardown,
+    so the guard is conditional on actually overriding the method —
+    false-positiving them would force boilerplate.
+
+    Scope is deliberately narrow:
+
+    * Sync fixtures only. ``asyncio.run(f.aclose(instance))`` on Linux
+      leaves the ``UnixSelectorEventLoop``'s self-pipe sockets unclosed
+      long enough to fire ``PytestUnraisableExceptionWarning`` on a
+      later test on the same xdist worker. The session-level
+      ``_close_leaked_event_loops`` fixture in ``tests/conftest.py``
+      only sweeps at session teardown. The mirror-side bug for async
+      (``azure_replay_async`` forgetting ``aclose=``) would surface
+      through the conformance suite the same way BUG-210 originally
+      did.
+
+    * Only fixtures whose ``factory()`` does not open a real network
+      transport (``transport in {"fs", "memory", "sql"}``, or
+      ``kind == "replay"`` which uses a fake connection string and lazy
+      clients). Real-network fixtures (s3_moto, sftp_docker, azurite,
+      live cloud) are covered by the conformance suite itself.
+    """
+
+    _SAFE_TRANSPORTS: frozenset[str] = frozenset({"fs", "memory", "sql"})
+
+    def _is_safe_to_instantiate(self, f: BackendFixture) -> bool:
+        """Whether ``f.factory()`` is guaranteed not to open a real network transport.
+
+        ``replay`` fixtures use fake connection strings and lazy clients
+        that never reach a real server; the remaining safe set is the
+        non-network transports (fs / memory / sql).
+        """
+        return f.kind == "replay" or f.transport in self._SAFE_TRANSPORTS
+
+    def test_sync_overriding_close_requires_cleanup(self) -> None:
+        offenders: list[str] = []
+        for f in all_fixtures():
+            if f.is_async or not self._is_safe_to_instantiate(f):
+                continue
+            try:
+                instance = f.factory()
+            except pytest.skip.Exception:
+                # Optional SDK not installed (e.g. azure-storage-file-datalake
+                # absent on a minimal env). Skip silently — the invariant is
+                # checked wherever the fixture actually constructs.
+                continue
+            try:
+                if type(instance).close is not Backend.close and f.cleanup is None:
+                    offenders.append(
+                        f"{f.name!r}: {type(instance).__name__} overrides "
+                        f"close() but the fixture has no cleanup= registered"
+                    )
+            finally:
+                if f.cleanup is not None:
+                    with contextlib.suppress(Exception):
+                        f.cleanup(instance)
+        assert not offenders, "BackendFixture missing teardown channel:\n  " + "\n  ".join(offenders)

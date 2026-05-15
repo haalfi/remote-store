@@ -49,6 +49,10 @@ def _factory() -> Backend:
     return AzureBackend(container=FAKE_FILESYSTEM, connection_string=FAKE_CONN_STR)
 
 
+def _cleanup(backend: Backend) -> None:
+    backend.close()
+
+
 def _capabilities() -> frozenset:
     try:
         from remote_store.backends._azure import AzureBackend  # noqa: PLC0415
@@ -61,6 +65,7 @@ register(
     BackendFixture(
         factory=_factory,
         capabilities=_capabilities(),
+        cleanup=_cleanup,
         # record_mode="none" forces replay even when --record is active;
         # prevents overwriting cassettes with fake-connection-string traffic.
         marks=(pytest.mark.vcr(record_mode="none"),),

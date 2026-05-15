@@ -1,0 +1,148 @@
+id: BUG-210
+title: "`azure_replay` fixture omits `cleanup=`; ~133 `Unclosed AzureBackend` warnings per Stage-2 run"
+trigger: |
+  Master at HEAD intermittently failed `test_del_closes_partial_clients[False-True]`
+  on Windows under `pytest -n auto -p no:benchmark` (Stage 2) at a ~1-in-5 rate.
+  The failure presented as `ResourceWarning: Unclosed AzureBackend` attributed
+  to an SFTP test whose body never touched Azure. Symptom first observed during
+  PR #633 (ID-195) local verification.
+source_items:
+  - BUG-210
+audience:
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 1
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPLifecycle.test_del_closes_partial_clients"
+        read_type: gate
+        extract: |
+          `pytest.warns(ResourceWarning, match="Unclosed SFTPBackend")` inside
+          a 20-worker Windows xdist session. Failure rate ~1/5; the message
+          on the failing run was `Unclosed AzureBackend` — never SFTP.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] filterwarnings"
+        read_type: gate
+        extract: |
+          `filterwarnings = ["error"]` upgrades any uncaught warning to a
+          hard exception. A `ResourceWarning` from another test's stray
+          `__del__` becomes an unraisable, then a
+          `PytestUnraisableExceptionWarning`, attributed to whichever test
+          was running when GC fired.
+        outcome: ok
+  - id: classify
+    name: Confirm leak class with `-W default::ResourceWarning`
+    steps:
+      - file: tests/backends/conformance/test_io.py
+        section: "(full)"
+        read_type: reference
+        extract: |
+          Re-ran with `-W default::ResourceWarning`; serial pass on test_io
+          alone emitted 40 `Unclosed AzureBackend` warnings. Full Stage-2
+          parallel session emitted 133 across the conformance subtree.
+          Every leak instance traced (creation-stack instrumentation on
+          `AzureBackend.__init__`) back to one factory call.
+        outcome: ok
+  - id: diagnose
+    name: Identify the missing cleanup
+    steps:
+      - file: tests/backends/fixtures/azure_replay.py
+        section: "register(BackendFixture(...))"
+        read_type: gate
+        extract: |
+          The `BackendFixture` registration listed `factory`, `capabilities`,
+          and `marks` — but no `cleanup`. Conformance `backend` fixture's
+          finally clause is `if fixture.cleanup is not None: fixture.cleanup(...)`;
+          with `cleanup=None` the per-test `backend.close()` was never called.
+        outcome: ok
+      - file: tests/backends/fixtures/azure_replay_async.py
+        section: "register(BackendFixture(..., aclose=_aclose, ...))"
+        read_type: reference
+        extract: |
+          The async sibling registers `aclose=_aclose` that calls
+          `await backend.aclose()` — proves the pattern was intentional
+          on the async slice and merely missed on the sync slice.
+        outcome: ok
+      - file: tests/backends/fixtures/azurite.py
+        section: "_cleanup"
+        read_type: reference
+        extract: |
+          Azurite registration registers `cleanup=_cleanup` which calls
+          `backend.close()`; same shape as the fix.
+        outcome: ok
+  - id: fix
+    name: Add `cleanup=_cleanup` (one line)
+    steps:
+      - file: tests/backends/fixtures/azure_replay.py
+        section: "_cleanup + register"
+        read_type: gate
+        extract: |
+          Added `_cleanup(backend)` that calls `backend.close()`, registered
+          via `cleanup=_cleanup`. Mirrors `azurite.py`'s pattern.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/fixtures/azure_replay.py
+        section: "_cleanup + register"
+        read_type: verify
+        extract: |
+          With instrumentation re-enabled: leak count 133 → 0 for the full
+          Stage-2 suite. Five consecutive `RS_TEST_STAGE=2 pytest -n auto`
+          runs on Windows (20 workers) all green. Original `-x` failure
+          mode does not reproduce.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: Ripple-check table
+        read_type: verify
+        extract: |
+          No backend / spec / error / capability changes; audience is
+          `infra.test` only, so no CHANGELOG entry. `sdd/backlogid.json`
+          ripple noted in `expected_ripples`.
+        outcome: ok
+  - id: iterate
+    name: Iterate on review feedback
+    steps:
+      - file: tests/backends/fixtures/test_registry.py
+        section: TestFixtureCleanupContract
+        read_type: gate
+        extract: |
+          Review flagged the absence of a structural guard: the next sibling
+          fixture that forgets `cleanup=` would reintroduce the leak with
+          no repo-level safety net. Added `test_sync_overriding_close_requires_cleanup`
+          that walks `all_fixtures()` and fails if any sync fixture whose
+          backend overrides the default no-op `close` lacks `cleanup=`.
+          Scope is deliberately narrow: sync fixtures only
+          (`asyncio.run(f.aclose(...))` on Linux leaves the
+          `UnixSelectorEventLoop`'s self-pipe sockets unclosed long enough
+          to fire `PytestUnraisableExceptionWarning` on a later test, per
+          CI failures on this PR's second push) and only fixtures whose
+          `factory()` is guaranteed not to open a real network transport
+          (`transport in {"fs", "memory", "sql"}` or `kind == "replay"`).
+          The excluded sets — async fixtures and real-network fixtures —
+          are still covered indirectly: a missing teardown surfaces through
+          the conformance suite as the same `ResourceWarning` leak that
+          originally surfaced BUG-210. Verified by reverting the BUG-210
+          fix and confirming the new test fails with `azure_replay` named
+          in the offender list.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "surprising_ripples (lines 162–177)"
+        read_type: reference
+        extract: |
+          Review flagged the original `surprising_ripples` entry as prose
+          narration of an investigation surprise, not a file path. Schema
+          intent is "file paths the work needed to touch but neither the
+          trace's cited reads nor the ripple-check table anticipated".
+          Cleared the field; the predicted-host-pressure-vs-actual-missing-
+          kwarg observation moved into the `BACKLOG-DONE.md` entry's
+          "Investigation note" paragraph where prose belongs.
+        outcome: ok
+discovery_followups: []
+surprising_ripples: []
+co_shipped_items: []
