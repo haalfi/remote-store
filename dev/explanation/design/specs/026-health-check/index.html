@@ -9502,10 +9502,14 @@ lightweight connectivity check.
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">raise</span> <span class="n">PermissionDenied</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 </code></pre></div></p>
 <h3 id="ping-004-s3backend">PING-004: S3Backend<a class="headerlink" href="#ping-004-s3backend" title="Permanent link">&para;</a></h3>
-<p><strong>Strategy:</strong> <code>head_bucket</code> via botocore, inside <code>_errors()</code>.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_errors</span><span class="p">():</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_fs</span><span class="o">.</span><span class="n">s3</span><span class="o">.</span><span class="n">head_bucket</span><span class="p">(</span><span class="n">Bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_bucket</span><span class="p">)</span>
-</code></pre></div></p>
+<p><strong>Strategy:</strong> <code>head_bucket</code> via s3fs's synchronous <code>call_s3</code> wrapper, inside <code>_s3fs_errors()</code>.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s3fs_errors</span><span class="p">():</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_fs</span><span class="o">.</span><span class="n">call_s3</span><span class="p">(</span><span class="s2">&quot;head_bucket&quot;</span><span class="p">,</span> <span class="n">Bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_bucket</span><span class="p">)</span>
+</code></pre></div>
+<code>self._fs.s3</code> is the raw <code>aiobotocore</code> client — its methods return
+coroutines, so calling <code>self._fs.s3.head_bucket(...)</code> directly never
+issues the request. <code>call_s3</code> is the synchronous wrapper that awaits
+the call on the s3fs event loop.</p>
 <h3 id="ping-005-s3pyarrowbackend">PING-005: S3PyArrowBackend<a class="headerlink" href="#ping-005-s3pyarrowbackend" title="Permanent link">&para;</a></h3>
 <p><strong>Strategy:</strong> <code>get_file_info</code> on the bucket path, inside <code>_pyarrow_errors()</code>.
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pyarrow_errors</span><span class="p">():</span>
