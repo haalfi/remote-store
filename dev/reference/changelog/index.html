@@ -12077,6 +12077,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>ID-192: <code>aio.md</code> restructured to lead with <code>AsyncStore</code> — full per-category method sections mirroring <code>store.md</code>, and the four <code>members: false</code> stubs (<code>SyncBackendAdapter</code>, <code>AsyncBackendSyncAdapter</code>, <code>AsyncMemoryBackend</code>, <code>AsyncAzureBackend</code>) now render their full member surface, surfacing the layer-4 <code>Raises:</code> docstrings introduced by BK-173</li>
 <li>BUG-208: fix <code>S3Backend.check_health()</code> unawaited <code>aiobotocore</code> coroutine that made the probe a silent no-op</li>
 <li>BK-202: <code>SFTPUtils</code> helpers documented as true <code>@staticmethod</code> (correct <code>meth</code> rendering, signatures restored on docs.remotestore.dev)</li>
 <li>BK-200: <code>SFTPUtils.scan_host_algorithms()</code> raw-socket SSH KEXINIT probe for diagnosing <code>IncompatiblePeer</code> failures</li>
