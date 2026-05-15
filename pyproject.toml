@@ -160,10 +160,12 @@ test = [
   "pytest -n auto -p no:benchmark",
   "pytest -p no:benchmark -k sftp_docker tests/backends/conformance/",
 ]
-# `test-cov` is the everyday local runner. `test-cov-s1` is Stage-1 only
-# (no Docker probe) and is wired into `hatch run all` so the pre-commit gate
-# never requires Docker services. `test-cov-strict` adds the 95% floor and
-# lives in CI / the publish workflow. See CLAUDE.md § Coverage gate.
+# Coverage variants. `test-cov` reports coverage with no floor — everyday
+# local feedback. `test-cov-s1` is Stage-1 only (no Docker probe), no floor;
+# wired into `hatch run all` so the pre-commit gate never requires Docker.
+# `test-cov-strict` adds `--cov-fail-under=95` and lives in CI / the publish
+# workflow; needs Azurite running locally (Stage-2 Azure-backend fixtures
+# contribute the coverage that makes the 95% floor reachable).
 test-cov = [
   "pytest -n auto -p no:benchmark --cov=remote_store --cov-report=",
   "pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml -k sftp_docker tests/backends/conformance/",

@@ -62,21 +62,15 @@ Claude-specific shell constraints:
 - **No heredoc in git commits.** `git commit -m "$(cat <<'EOF'...)"` breaks the `Bash(git:*)` auto-approve pattern. Use multiple `-m` flags instead.
 - **No `/tmp/`.** Use `./tmp/` instead (gitignored). `/tmp/` is a system directory and triggers a separate permission prompt.
 
-## Coverage gate (`test-cov` vs `test-cov-strict`)
+## Coverage gate
 
-The 95% coverage threshold is **structurally unreachable locally without Azurite running**. The Azure backends (`backends/_azure.py`, `aio/backends/_azure.py`) account for ~900 covered lines that vanish when Stage-2 fixtures skip; CI starts Azurite as a service, local runs depend on the developer.
+`hatch run all` uses a Stage-1, no-Docker test variant; the 95% strict gate lives in CI and the publish workflow. See pyproject.toml's `test-cov*` script comments for which variant to use when.
 
-- `hatch run test-cov` reports coverage with no floor. Use this for everyday local feedback.
-- `hatch run test-cov-s1` is Stage-1 only (`--stage=1`, no Docker probe), no floor. Wired into `hatch run all` so the pre-commit gate works without Docker services.
-- `hatch run test-cov-strict` adds `--cov-fail-under=95`. Lives in CI and the publish workflow. Requires Azurite; do **not** add it to `hatch run all`.
+If `test-cov-strict` fails locally on coverage, **do not loop on "master is passing it, let me re-run"** — start Azurite or treat the strict gate as CI-only.
 
-If `test-cov-strict` fails locally on the coverage gate, **do not loop on "master is passing it, let me re-run"**. Either start Azurite (`docker run -d --name azurite -p 10000:10000 mcr.microsoft.com/azure-storage/azurite:3.35.0 azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck`) and re-run, or treat the strict gate as a CI/release-only check.
+## Parallel tests
 
-## Parallel tests (`-n auto`) and the SFTP-Docker carve-out (ID-195)
-
-All `test*` scripts in `pyproject.toml` run `pytest -n auto -p no:benchmark`. xdist gives ~2× wall-time on a multi-core machine. Each test script then runs a **second** serial pytest invocation (`-k sftp_docker tests/backends/conformance/`) because the atmoz/sftp OpenSSH daemon is unreliable under concurrent connections from multiple workers.
-
-The mechanism: `tests/backends/fixtures/registry.fixture_params` filters out the `sftp_docker` fixture whenever `PYTEST_XDIST_WORKER` is in the environment. The CI workflow uses the same two-pass shape. No `--dist loadgroup`, no MaxStartups tuning, no banner pre-checks — the carve-out is the entire stabilisation story.
+`test*` scripts run a parallel pass via `pytest -n auto` plus a serial pass for sftp_docker conformance — see `tests/backends/fixtures/registry.fixture_params` for the carve-out. Don't reintroduce `--dist loadgroup`, MaxStartups tuning, or banner retries: the simpler carve-out is the entire stabilisation story.
 
 ## Branching
 

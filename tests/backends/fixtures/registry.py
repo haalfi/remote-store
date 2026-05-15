@@ -170,13 +170,13 @@ def fixture_params(*caps: Capability, is_async: bool = False) -> list[Any]:
     ``@pytest.mark.parametrize("backend", fixture_params(Cap.X),
     indirect=True)``.
 
-    SFTP-Docker exclusion under xdist (ID-195): the atmoz/sftp OpenSSH
-    daemon is unreliable under concurrent connections from multiple
-    xdist workers (banner drops, transient EOF). Rather than papering
-    over this with MaxStartups tuning, banner pre-checks, and retry
-    loops, we drop the ``sftp_docker`` fixture from parametrize entirely
-    when running under an xdist worker. The CI workflow runs a second
-    serial pytest invocation (``-k sftp_docker``) that picks them up.
+    SFTP-Docker exclusion under xdist: the atmoz/sftp OpenSSH daemon is
+    unreliable under concurrent connections from multiple xdist workers
+    (banner drops, transient EOF). Rather than papering over this with
+    MaxStartups tuning, banner pre-checks, and retry loops, we drop the
+    ``sftp_docker`` fixture from parametrize entirely when running under
+    an xdist worker. The CI workflow runs a second serial pytest
+    invocation (``-k sftp_docker``) that picks them up.
     """
     is_xdist_worker = "PYTEST_XDIST_WORKER" in os.environ
     return [
