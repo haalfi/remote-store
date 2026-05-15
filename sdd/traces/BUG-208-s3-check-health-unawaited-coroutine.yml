@@ -116,7 +116,11 @@ phases:
         section: "Rules 4 and 5"
         read_type: gate
         extract: "Self-audit found rule 4 (one copy per fact) and rule 5 (source-code facts in source) violations: the _s3.py code comment duplicated the spec's WHY, and the PING-004 note's '(the same path head_object already uses)' cross-referenced source state that could rot. Trimmed both (commit 739eddf)"
+      - file: tests/backends/s3/test_ping.py
+        section: "module-level importorskip block"
+        read_type: gate
+        extract: "Second-round review (LGTM, non-blocking minor): TestS3CheckHealthMoto imported boto3 inside the test body with no module-level pytest.importorskip('boto3'). moto pulls in boto3 transitively so the _s3_available()-gated moto_server fixture covers it in practice, but tests/backends/s3/test_moto.py keeps the defensive importorskip for parity. Added pytest.importorskip('boto3') next to the existing s3fs guard (commit 8f12bf7)"
 discovery_followups: []
 co_shipped_items: []
 surprising_ripples: []
-review_rounds: 3
+review_rounds: 4
