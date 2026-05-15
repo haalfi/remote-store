@@ -9,7 +9,6 @@ infrastructure beyond the registered fixtures themselves.
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import re
 from pathlib import Path
@@ -18,7 +17,6 @@ import pytest
 
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability
-from remote_store.aio import AsyncBackend
 from tests.backends.fixtures import (
     BackendFixture,
     _load_all,
@@ -546,8 +544,7 @@ class TestFixtureParamsXdistWorkerFilter:
 
 @pytest.mark.spec("TEST-004")
 class TestFixtureCleanupContract:
-    """Backends that override ``Backend.close`` / ``AsyncBackend.aclose`` must
-    register a teardown channel on their fixture.
+    """Sync backends that override ``Backend.close`` must register ``cleanup=``.
 
     BUG-210 surfaced the failure mode: ``azure_replay`` registered without
     ``cleanup=``, so the conformance ``backend`` fixture skipped
@@ -555,40 +552,29 @@ class TestFixtureCleanupContract:
     clients fired ``ResourceWarning`` at GC, which ``filterwarnings=error``
     promoted to unraisable exceptions that bit unrelated
     ``pytest.warns(ResourceWarning, ...)`` tests under 20-worker Windows
-    xdist. In-memory backends (``memory`` / ``memory_async`` / ``dafny``)
-    legitimately inherit the no-op default ``close`` / ``aclose`` and need
-    no teardown, so the guard is conditional on actually overriding the
-    method — false-positiving them would force boilerplate.
+    xdist. In-memory backends (``memory`` / ``local`` / ``dafny``)
+    legitimately inherit the no-op default ``close`` and need no teardown,
+    so the guard is conditional on actually overriding the method —
+    false-positiving them would force boilerplate.
 
-    Scope: only fixtures whose ``factory()`` is guaranteed not to open a
-    real network transport (``transport in {"fs", "memory", "sql"}``, or
-    ``kind == "replay"`` which uses a fake connection string + lazy
-    clients). Real-network fixtures (s3_moto, sftp_docker, azurite, live
-    cloud) are covered by the conformance suite itself: a missing
-    ``cleanup=`` there surfaces as the same ``ResourceWarning`` leak that
-    originally surfaced BUG-210. Iterating them here would re-open real
-    sockets / event loops that the meta-test cannot reliably tear down
-    fast enough to avoid biting a downstream test on the same xdist
-    worker (CI flake observed on PR #637 first push).
+    Scope is deliberately narrow:
+
+    * Sync fixtures only. ``asyncio.run(f.aclose(instance))`` for an
+      async fixture leaves the ``UnixSelectorEventLoop``'s self-pipe
+      sockets unclosed long enough to fire ``PytestUnraisableExceptionWarning``
+      on a later test (observed on PR #637 second push, Linux CI). The
+      session-level ``_close_leaked_event_loops`` fixture in
+      ``tests/conftest.py`` only sweeps at session teardown. The
+      mirror-side bug for async (``azure_replay_async`` forgetting
+      ``aclose=``) would surface through the conformance suite the same
+      way BUG-210 originally did.
+
+    * Only fixtures whose ``factory()`` does not open a real network
+      transport (``transport in {"fs", "memory", "sql"}``, or
+      ``kind == "replay"`` which uses a fake connection string and lazy
+      clients). Real-network fixtures (s3_moto, sftp_docker, azurite,
+      live cloud) are covered by the conformance suite itself.
     """
-
-    @staticmethod
-    def _async_needs_teardown(instance: AsyncBackend) -> bool:
-        """Return True when this async-backend instance holds releasable resources.
-
-        Looks through ``SyncBackendAdapter``: its ``aclose`` only delegates
-        to the wrapped sync backend's ``close``, so if the inner backend
-        inherits the default no-op ``close`` (Memory, Local), the adapter
-        holds nothing and no fixture-level ``aclose=`` is required.
-        """
-        # internal: SyncBackendAdapter has no public accessor for its
-        # wrapped backend; the registry-contract test needs to look
-        # through the wrapper to avoid false-positiving in-memory async
-        # fixtures whose wrapped close is the inherited no-op.
-        inner = getattr(instance, "_sync", None)
-        if inner is not None and isinstance(inner, Backend):
-            return type(inner).close is not Backend.close
-        return type(instance).aclose is not AsyncBackend.aclose
 
     _SAFE_TRANSPORTS: frozenset[str] = frozenset({"fs", "memory", "sql"})
 
@@ -601,10 +587,10 @@ class TestFixtureCleanupContract:
         """
         return f.kind == "replay" or f.transport in self._SAFE_TRANSPORTS
 
-    def test_overriding_close_requires_cleanup(self) -> None:
+    def test_sync_overriding_close_requires_cleanup(self) -> None:
         offenders: list[str] = []
         for f in all_fixtures():
-            if not self._is_safe_to_instantiate(f):
+            if f.is_async or not self._is_safe_to_instantiate(f):
                 continue
             try:
                 instance = f.factory()
@@ -614,31 +600,13 @@ class TestFixtureCleanupContract:
                 # checked wherever the fixture actually constructs.
                 continue
             try:
-                if f.is_async:
-                    needs_teardown = self._async_needs_teardown(instance)
-                    teardown = f.aclose
-                    method_name = "aclose"
-                    teardown_kw = "aclose"
-                else:
-                    needs_teardown = type(instance).close is not Backend.close
-                    teardown = f.cleanup
-                    method_name = "close"
-                    teardown_kw = "cleanup"
-                if needs_teardown and teardown is None:
+                if type(instance).close is not Backend.close and f.cleanup is None:
                     offenders.append(
                         f"{f.name!r}: {type(instance).__name__} overrides "
-                        f"{method_name}() but the fixture has no {teardown_kw}= registered"
+                        f"close() but the fixture has no cleanup= registered"
                     )
             finally:
-                # Best-effort teardown of the test's own instance. When the
-                # invariant is satisfied this releases the resource cleanly;
-                # when it is violated (the test is already failing) the
-                # instance leaks here — same shape as the bug we are
-                # flagging, but contained to the failing run.
-                if not f.is_async and f.cleanup is not None:
+                if f.cleanup is not None:
                     with contextlib.suppress(Exception):
                         f.cleanup(instance)
-                elif f.is_async and f.aclose is not None:
-                    with contextlib.suppress(Exception):
-                        asyncio.run(f.aclose(instance))
         assert not offenders, "BackendFixture missing teardown channel:\n  " + "\n  ".join(offenders)
