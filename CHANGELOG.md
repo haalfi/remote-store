@@ -29,6 +29,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Fixed
 
+- BUG-211: `SFTPBackend.exists()` / `is_file()` / `is_folder()` no longer swallow non-`ENOENT` `OSError`s as "not found"; connect-time `PermissionError` (and any other unexpected `OSError`) now surfaces through `_errors()` as `PermissionDenied` / `BackendUnavailable` instead of returning a misleading `False`
 - BUG-209: `SFTPBackend` inline `known_host_keys` now load correctly on Windows — the helper used `tempfile.NamedTemporaryFile(delete=True)`, whose Windows `O_TEMPORARY` lock prevented paramiko from re-opening the file, causing `STRICT` verification to be silently bypassed
 - BUG-194: async `AsyncAzureBackend.write_atomic` broken for all payloads on real ADLS Gen2
 - BUG-193: completed the async HNS live test gap deferred by BUG-182 and added `WriteResult` assertions on the sync HNS live tests

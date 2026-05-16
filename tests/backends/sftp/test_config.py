@@ -1672,6 +1672,55 @@ class TestSFTPInlineHostKeysVerification:
 # endregion
 
 
+# region: Existence-probe error fidelity (BUG-211)
+
+
+class TestSFTPExistsErrorFidelity:
+    """BUG-211: ``exists()`` / ``is_file()`` / ``is_folder()`` must not swallow
+    non-ENOENT OSErrors as "not found".
+
+    The pre-BUG-211 catch-all turned connect-time errors (including the
+    ``PermissionError`` BUG-209 documented) into a silent ``False`` return,
+    indistinguishable from a real missing path. Each probe now narrows the
+    catch to ``errno.ENOENT`` and lets every other OSError surface through
+    ``_errors()``.
+    """
+
+    @pytest.mark.parametrize("method", ["exists", "is_file", "is_folder"])
+    def test_connect_time_oserror_propagates(self, method: str) -> None:
+        """A non-ENOENT OSError on connect surfaces as ``PermissionDenied``.
+
+        Pre-BUG-211 each probe caught every ``OSError`` and returned ``False``,
+        masking connect failures as "path does not exist". The narrowed catch
+        lets ``_errors()`` map ``EACCES`` to ``PermissionDenied`` so the caller
+        sees a real diagnostic.
+        """
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=22,
+            username="testuser",
+            password="testpass",
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            retry=RetryPolicy(max_attempts=1, backoff_base=0, backoff_max=0),
+        )
+
+        def _boom() -> object:
+            raise PermissionError(errno.EACCES, "synthetic connect-time error")
+
+        try:
+            with (
+                patch.object(SFTPBackend, "_create_ssh_client", side_effect=_boom),
+                pytest.raises(PermissionDenied, match=r"Permission denied: anything\.txt"),
+            ):
+                getattr(backend, method)("anything.txt")
+        finally:
+            backend.close()
+
+
+# endregion
+
+
 # region: TOFU persistence (SFTP-028)
 
 

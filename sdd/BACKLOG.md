@@ -508,22 +508,6 @@ stabilised page.
   question: "where is the deleted test's logic covered now?"); STRICT
   file-fallback ripple surfaced during BUG-209 PR self-review.
 
-- [ ] **BUG-211 — `SFTPBackend` existence probes swallow connect-time OSErrors as "not found"**
-  spec: SFTP-007 · effort: S · audience: user.api
-  `exists()`, `is_file()`, and `is_folder()` in `_sftp.py` wrap their stat
-  call in `try: ... except OSError: return False`. The `self._sftp`
-  property triggers `_connect()` → `_create_ssh_client()` on first use,
-  and any `OSError` raised there (e.g. `PermissionError` from the
-  pre-BUG-209 tempfile path, future filesystem quirks) is caught by this
-  catch-all and silently reported as "file does not exist". That swallow
-  is what turned BUG-209 from a deterministic Windows failure into the
-  apparent flakiness of `test_strict_rejects_mismatched_inline_key`. Fix:
-  narrow each catch to `errno.ENOENT` (the only condition that should
-  return `False`); let everything else fall through to `self._errors()`
-  so connect-time failures surface as `BackendUnavailable` and stat
-  permission errors surface as `PermissionDenied`. Surfaced during BUG-209
-  PR self-review.
-
 - [ ] **ID-181 — Per-backend `ssh-rsa` opt-in via `paramiko.Transport` subclass**
   spec: SFTP-007 · effort: M · audience: user.api
   `SFTPUtils.enable_ssh_rsa_compat()` mutates paramiko's class attributes

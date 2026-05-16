@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-211 — `SFTPBackend` existence probes swallow connect-time OSErrors as "not found"**
+  spec: SFTP-007 · audience: user.api
+  `exists()`, `is_file()`, and `is_folder()` wrapped their stat call in a
+  catch-all `try: ... except OSError: return False`. The `self._sftp`
+  property triggers `_connect()` → `_create_ssh_client()` on first use,
+  so any `OSError` from that path was silently reported as "file does
+  not exist". That swallow is what turned the BUG-209 Windows
+  `PermissionError` into the apparent flakiness of
+  `test_strict_rejects_mismatched_inline_key`.
+  Fix: narrow each catch to `errno.ENOENT`; let every other `OSError`
+  fall through to `_errors()` → `_map_exception` so `EACCES` surfaces as
+  `PermissionDenied` and unknown codes surface as the generic
+  `RemoteStoreError` carrying the original message. Co-shipped with
+  BUG-209 because the swallow is what hid the BUG-209 failure mode.
+  Regression: `TestSFTPExistsErrorFidelity::test_connect_time_oserror_propagates`
+  parametrised over the three probes. Trace shares
+  [`sdd/traces/bug-209-sftp-host-key-tempfile-lock.yml`](traces/bug-209-sftp-host-key-tempfile-lock.yml)
+  (co_shipped_items).
+
 - [x] **BUG-209 — SFTP STRICT verification silently bypassed on Windows by inline-key tempfile lock**
   spec: SFTP-007 · audience: user.api
   `_load_host_keys_from_string` wrote inline `known_host_keys` to

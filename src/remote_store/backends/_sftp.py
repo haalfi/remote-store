@@ -668,24 +668,30 @@ class SFTPBackend(Backend):
             try:
                 self._sftp.stat(self._sftp_path(path))
                 return True
-            except OSError:
-                return False
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    return False
+                raise
 
     def is_file(self, path: str) -> bool:
         with self._errors(path):
             try:
                 attrs = self._sftp.stat(self._sftp_path(path))
                 return attrs.st_mode is not None and bool(stat.S_ISREG(attrs.st_mode))
-            except OSError:
-                return False
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    return False
+                raise
 
     def is_folder(self, path: str) -> bool:
         with self._errors(path):
             try:
                 attrs = self._sftp.stat(self._sftp_path(path))
                 return attrs.st_mode is not None and bool(stat.S_ISDIR(attrs.st_mode))
-            except OSError:
-                return False
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    return False
+                raise
 
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
