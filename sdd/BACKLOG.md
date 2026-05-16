@@ -486,21 +486,21 @@ stabilised page.
   `SFTP_KNOWN_HOST_KEYS` env > on-disk `host_keys_path` fallback). BK-201's
   `TestSFTPInlineHostKeysVerification` exercises the "direct" tier end to
   end (load + STRICT verify), but the config-dict and env-var branches
-  still carry `# pragma: no cover` at `_sftp.py:1285-1288` — no test ever
-  reaches them. The precedence claim (direct > config > env) is also
-  untested: today nothing would catch a regression that silently flipped
-  the order. Two shapes: (a) targeted unit tests on `_resolve_host_keys`
-  parametrised over (direct, config, env) combinations, asserting the
-  selected source via behavior (STRICT verifies against the expected key
-  using `sftp_server`'s entry, swapped through each tier) or via the
-  `_load_host_keys_from_string` boundary; (b) extend
-  `TestSFTPInlineHostKeysVerification` with a third pair of tests that
-  populate the config dict and env var with the live server's key, drop
-  the `direct` parameter, and assert STRICT connect succeeds — then
-  remove the two `pragma: no cover` markers. The same gap covers the
-  third pragma in `_create_ssh_client` on the
+  still carry `# pragma: no cover` at `_sftp.py:1300` (config) and
+  `_sftp.py:1302` (env) — no test ever reaches them. The precedence claim
+  (direct > config > env) is also untested: today nothing would catch a
+  regression that silently flipped the order. Two shapes: (a) targeted
+  unit tests on `_resolve_host_keys` parametrised over (direct, config,
+  env) combinations, asserting the selected source via behavior (STRICT
+  verifies against the expected key using `sftp_server`'s entry, swapped
+  through each tier) or via the `_load_host_keys_from_string` boundary;
+  (b) extend `TestSFTPInlineHostKeysVerification` with a third pair of
+  tests that populate the config dict and env var with the live server's
+  key, drop the `direct` parameter, and assert STRICT connect succeeds
+  — then remove the two `pragma: no cover` markers. The same gap covers
+  the third pragma in `_create_ssh_client` on the
   `elif self._host_key_policy == HostKeyPolicy.STRICT:` file-fallback
-  branch (`_sftp.py:1255`, shifted to ~1264 by BUG-209): STRICT without
+  branch (`_sftp.py:1270`): STRICT without
   inline keys / TOFU is not exercised, so the file-loading path the bug
   fix is protecting has no positive coverage either. Lifting all three
   pragmas together keeps the host-key resolution chain testable from one

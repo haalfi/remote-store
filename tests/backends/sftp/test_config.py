@@ -1653,7 +1653,9 @@ class TestSFTPInlineHostKeysVerification:
         Marked ``os_sensitive`` because the regression is Windows-specific
         and the rest of the SFTP suite is excluded from macOS/Windows CI
         by ID-087 — without the mark this guard would never run on the OS
-        it protects.
+        it protects. On Linux/macOS both ``delete=True`` and ``delete=False``
+        succeed, so the Windows-CI run is the real regression guard;
+        non-Windows runs are a smoke test that the success path still works.
         """
         key = paramiko.RSAKey.generate(2048)
         entry = f"[127.0.0.1]:22 ssh-rsa {key.get_base64()}\n"
