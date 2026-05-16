@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-209 — SFTP STRICT verification silently bypassed on Windows by inline-key tempfile lock**
+  spec: SFTP-007 · audience: user.api
+  `_load_host_keys_from_string` wrote inline `known_host_keys` to
+  `tempfile.NamedTemporaryFile(delete=True)`. On Windows that opens the
+  file with `O_TEMPORARY`, which prevents paramiko's `load_host_keys`
+  from re-opening the path — it raises `PermissionError`. The
+  `OSError`-subclass error bubbled out of `_create_ssh_client` →
+  `_connect()` → the `self._sftp` property, then got caught by the
+  `except OSError: return False` in `exists()`. Net effect on Windows:
+  inline known-host keys were never loaded, STRICT verification was
+  silently skipped, and `test_strict_rejects_mismatched_inline_key`
+  failed with "DID NOT RAISE". Cross-platform CI rotation made the
+  failure look intermittent.
+  Fix: switch the helper to `delete=False` with manual `os.unlink` in
+  `finally`. Helper now exercises end-to-end on every OS, so the
+  `# pragma: no cover` is dropped. Added a fixture-free regression
+  `test_load_host_keys_from_string_reopenable` so future Windows-only
+  failures fail in a unit test rather than only via the in-process
+  SFTP server fixture.
+  Trace: [`sdd/traces/bug-209-sftp-host-key-tempfile-lock.yml`](traces/bug-209-sftp-host-key-tempfile-lock.yml).
+
 - [x] **ID-192 — aio.md rework: promote AsyncStore, fix empty member blocks**
   `docs-src/reference/api/aio.md` previously gave `AsyncBackend` the full
   per-category method-section treatment while `AsyncStore` carried only an

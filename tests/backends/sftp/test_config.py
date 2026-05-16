@@ -38,6 +38,7 @@ from remote_store.backends._sftp import (  # noqa: E402
     HostKeyPolicy,
     SFTPBackend,
     SFTPUtils,
+    _load_host_keys_from_string,
     _sanitize_pem,
 )
 
@@ -1638,6 +1639,28 @@ class TestSFTPInlineHostKeysVerification:
                 backend.exists("nonexistent.txt")
         finally:
             backend.close()
+
+    def test_load_host_keys_from_string_reopenable(self) -> None:
+        """BUG-209: helper must hand paramiko a re-openable file on every OS.
+
+        Regression guard: prior to BUG-209 the helper used
+        ``NamedTemporaryFile(delete=True)``, whose Windows ``O_TEMPORARY``
+        lock raised ``PermissionError`` from ``load_host_keys``. The error
+        was then swallowed by ``exists()``'s ``except OSError``, silently
+        bypassing STRICT verification.
+        """
+        key = paramiko.RSAKey.generate(2048)
+        entry = f"[127.0.0.1]:22 ssh-rsa {key.get_base64()}\n"
+        ssh = paramiko.SSHClient()
+        try:
+            _load_host_keys_from_string(ssh, entry)
+            loaded = ssh.get_host_keys()
+            assert list(loaded.keys()) == ["[127.0.0.1]:22"]
+            entry_keys = loaded["[127.0.0.1]:22"]
+            assert "ssh-rsa" in entry_keys
+            assert entry_keys["ssh-rsa"].get_base64() == key.get_base64()
+        finally:
+            ssh.close()
 
 
 # endregion
