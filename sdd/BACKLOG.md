@@ -115,28 +115,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   add the missing parameter, regression-cover with the conformance
   test once green. Spec: BE-010, WR-001a.
 
-- [ ] **BUG-200 — `AsyncAzureBackend.move`/`copy` directory checks raise wrong error / `InvalidInput` on real HNS**
-  spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024 · effort: M · audience: library.maintainer
-  Conformance contract: `move`/`copy` with a directory source or
-  directory destination raises `InvalidPath`. `AsyncAzureBackend`
-  instead raises `RemoteStoreError(InvalidInput)` (when source is a
-  directory) or `AlreadyExists` (when destination is a directory).
-  Surfaced by
-  `tests/backends/conformance/test_async_extended.py::TestMoveCopyErrorFidelity::test_source_is_directory_raises_error[azure_live_async-move]`,
-  `[azure_live_async-copy]`,
-  `test_destination_is_directory_raises_error[azure_live_async-move]`,
-  and `[azure_live_async-copy]`. Errors at
-  `src/remote_store/aio/backends/_azure.py:899/937/1068`. Same defect
-  family as BUG-195/BUG-197/BUG-190: missing `hdi_isfolder` probe before
-  the SDK call. **Sync variant now exercised:** BK-186 PR 1 lifted the
-  identity-based gate — `_skip_flat_namespace` now reads the per-fixture
-  `flat_namespace` flag (false for `azure_live` HNS), so the sync siblings
-  in `test_errors.py::TestMoveCopyErrorFidelity` no longer silent-skip on
-  Stage 3. Re-verify the sync side on the next Stage 3 run; the same fix
-  shape likely applies. Fix: add the directory probe to the async
-  `move`/`copy` paths.
-  Spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024.
-
 - [ ] **BUG-203 — `AzureBackend.is_file()` returns `True` for HNS folder paths**
   spec: BE-005, BE-021 · effort: S · audience: library.maintainer
   Sync `AzureBackend.is_file('a.txt')` returns `True` when `a.txt` exists as
@@ -150,56 +128,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   `write`/`write_atomic`/`open_atomic` to the `is_file` HNS branch in
   `src/remote_store/backends/_azure.py`. Async sibling apparently
   unaffected (no `[azure_live_async]` failure for this test).
-
-- [ ] **BUG-201 — `AsyncAzureBackend.move`/`copy` self-op (src == dst) raises `AlreadyExists` instead of being a no-op**
-  spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · effort: S · audience: library.maintainer
-  Conformance contract for `move(p, p)` and `copy(p, p)` is to be a
-  no-op (data preserved, no error). `AsyncAzureBackend` raises
-  `AlreadyExists` instead. Surfaced by
-  `tests/backends/conformance/test_async_extended.py::TestMoveCopySelfOperation::test_self_op_preserves_data[azure_live_async-overwrite-move]`,
-  `[azure_live_async-no-overwrite-move]`, and `[azure_live_async-no-overwrite-copy]`.
-  Errors fire at `src/remote_store/aio/backends/_azure.py:899` (copy
-  destination check) and `:1068` (rename SDK call). Sync variant green
-  in this sweep — the gap is async-only. Fix: detect src == dst at the
-  top of `move`/`copy` and short-circuit. The conformance test is
-  currently behind `_NO_SELF_OP_BACKENDS` in `test_async_extended.py`
-  with key `"async-azure"`; the fix must also remove that key so the
-  regression test runs against `azure_live_async`. Spec: BE-018, BE-019,
-  ASYNC-018, ASYNC-019.
-
-- [ ] **BUG-198 — Folder-API on a file path raises wrong error type on `AsyncAzureBackend` (HNS)**
-  spec: BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017 · effort: M · audience: library.maintainer
-  Symmetric to BUG-197/BUG-195: `delete_folder` and `get_folder_info`
-  on a *file* path should raise `InvalidPath`, but `AsyncAzureBackend`
-  raises `DirectoryNotEmpty` (delete_folder) and `NotFound`
-  (get_folder_info) instead. Surfaced by
-  `tests/backends/conformance/test_async_extended.py::TestDeleteFolderErrorFidelity::test_delete_folder_on_file_raises_error[azure_live_async]`,
-  `test_delete_folder_on_file_missing_ok_still_raises[azure_live_async]`,
-  and `tests/backends/conformance/test_async_extended.py::TestGetFolderInfoErrorFidelity::test_get_folder_info_on_file_raises_error[azure_live_async]`.
-  Errors at `src/remote_store/aio/backends/_azure.py:640` (delete_folder)
-  and `:829` (get_folder_info). **Sync variant now exercised:** BK-186
-  PR 1 lifted the identity-based gate — `_skip_flat_namespace` now reads
-  the per-fixture `flat_namespace` flag (false for `azure_live` HNS), so
-  the sync siblings in `test_errors.py::TestDeleteFolderErrorFidelity`
-  and `TestGetFolderInfoErrorFidelity` no longer silent-skip on Stage 3.
-  Re-verify the sync side on the next Stage 3 run; the same defect likely
-  surfaces.
-  Same fix shape as BUG-195/BUG-197: detect the type mismatch before
-  the SDK call and raise `InvalidPath`.
-  Spec: BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017.
-
-- [ ] **BUG-196 — Async `write_atomic` HNS path lacks BUG-173 try/except fallback around `get_file_properties()`**
-  spec: WR-001a, WR-004, AZ-034 · effort: S · audience: library.maintainer
-  `src/remote_store/aio/backends/_azure.py:578` calls `await final_fc.get_file_properties()`
-  *after* the rename has committed but does not wrap it in try/except. The sync sibling at
-  `src/remote_store/backends/_azure.py:484-503` (BUG-173) deliberately catches an `Exception`,
-  logs a warning, and returns `WriteResult(etag=None, last_modified=None)` — the rename
-  already succeeded, so a transient post-rename read failure must not surface as a write
-  failure. WR-001a lists both fields as `Optional`. Surfaced by the new
-  `tests/backends/azure/aio/test_live_hns.py::TestAsyncLiveHnsWriteResult` assertion
-  `result.etag is not None` (only path the async backend supports today). Fix: mirror the
-  sync try/except + log + `_build_azure_write_result(path, size, None, metadata)` shape, then
-  weaken the live-test assertion to allow the fallback path. Spec: WR-001a, WR-004, AZ-034.
 
 - [ ] **BUG-195 — `get_file_info` on an HNS directory raises `NotFound` instead of `InvalidPath` (sync + async)**
   spec: BE-016, ASYNC-016, BE-021 · effort: S · audience: library.maintainer
