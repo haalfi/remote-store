@@ -4898,6 +4898,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cassette-first-bug-investigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cassette-First Bug Investigation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#provenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9292,6 +9303,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cassette-first-bug-investigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cassette-First Bug Investigation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#provenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9611,8 +9633,10 @@ haven't thought of. See rules 9–11.</p>
 snapshots of real HTTP traffic. Refresh them when the backend SDK,
 the scrubbing layer, or the real service responses change.</p>
 <p><strong>Prerequisite (Azure):</strong> see <a href="../../../guides/backends/azure-hns-setup/">Azure HNS account setup</a>
-for credential and <code>.env</code> configuration.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>record-azure
+for credential and <code>.env</code> configuration. The recording needs the live
+opt-in flag set in the invoking shell — keeping it out of <code>.env</code> is
+deliberate so a default <code>hatch run test</code> never touches a real account.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>hatch<span class="w"> </span>run<span class="w"> </span>record-azure
 </code></pre></div>
 <p><code>scripts/record_cassettes.py --backend azure</code> deletes existing cassettes, re-records
 sync and async fixtures against a live ADLS Gen2 account, verifies no credentials
@@ -9620,6 +9644,79 @@ survived scrubbing, and runs a Stage 1 replay smoke test. Pass <code>--verify-on
 skip recording and re-run only the verification steps.</p>
 <p>Per <a href="../specs/048-testing-architecture/#test-009-cassette-refresh-is-explicit">TEST-009</a>:
 CI does not auto-record; a refresh is a normal PR diff.</p>
+<h3 id="cassette-first-bug-investigation">Cassette-First Bug Investigation<a class="headerlink" href="#cassette-first-bug-investigation" title="Permanent link">&para;</a></h3>
+<p>When investigating a bug in an HTTP-transport backend whose live
+behaviour is recorded as a cassette, default to <strong>replay-first</strong>: work
+on the committed cassette until root cause is clear, escalate to a
+fresh recording only if the cassette cannot carry the diagnosis. Final
+sign-off always runs against the live service.</p>
+<p>The architecture under this workflow is
+<a href="../adrs/0028-testing-architecture-kind-stage-replay/">ADR-0028</a>; this
+section is the procedural recipe.</p>
+<p><strong>Step 1 — Reproduce on the cassette.</strong> Run the failing conformance
+test against the <code>&lt;backend&gt;_replay</code> (and <code>&lt;backend&gt;_replay_async</code>)
+fixture. No credentials, no network, no Docker. For Azure HNS bugs the
+cassette already exists for every conformance test that was active
+when <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">BK-181</a> landed.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_replay]&quot;</span><span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
+</code></pre></div>
+<p>If the test is already marked <code>xfail(strict=False)</code> against real-Azure
+fixture ids (the BK-180 follow-up parked confirmed defects this way
+to keep CI green), pytest reports <code>XFAIL</code> and you cannot see the
+assertion. Force the underlying failure with <code>--runxfail</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_replay]&quot;</span><span class="w"> </span>--runxfail<span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
+</code></pre></div>
+<p>The xfail roster lives at the top of
+<a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/conftest.py"><code>tests/backends/conformance/conftest.py</code></a>;
+look for the <code>pytest_collection_modifyitems</code> hook and the constants it
+applies. Removing a test function name from the roster un-xfails it for
+all real-Azure fixture ids in one place.</p>
+<p><strong>Step 2 — Classify cassette sufficiency.</strong> Read the backend code
+that the failing test exercises and ask: does the fix require any
+HTTP call the cassette does not already contain?</p>
+<table>
+<thead>
+<tr>
+<th>Fix shape</th>
+<th>Cassette sufficiency</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>In-process filter / mapping over data the SDK already returns</td>
+<td>Sufficient</td>
+<td>Proceed to step 3</td>
+</tr>
+<tr>
+<td>Adds, removes, or reorders SDK calls</td>
+<td>Insufficient</td>
+<td>Refresh cassette via <code>hatch run record-azure</code> (needs Stage 3 live access), then resume on the new cassette</td>
+</tr>
+</tbody>
+</table>
+<p>The decision is mechanical: list the SDK calls the fix introduces, grep
+the cassette <code>interactions:</code> list for matching <code>method</code> + <code>uri</code>
+patterns, and proceed only when every needed call is already recorded.
+For example, a fix that adds a per-entry HEAD on directory blobs is
+sufficient if <code>rg "method: HEAD" tests/backends/cassettes/azure/&lt;test&gt;.yaml</code>
+already shows the matching <code>uri:</code> lines.</p>
+<p><strong>Step 3 — Fix.</strong> Implement the change in the backend module(s).</p>
+<p><strong>Step 4 — Verify on replay.</strong> Remove the test function name from the
+xfail roster (same file referenced in Step 1) and re-run the same
+nodeid without <code>--runxfail</code>. Green = the fix is consistent with the
+recorded wire behaviour.</p>
+<p><strong>Step 5 — Final verification on live.</strong> Run the test against the
+<code>&lt;backend&gt;_live</code> / <code>&lt;backend&gt;_live_async</code> fixture before merge:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>hatch<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="s2">&quot;&lt;nodeid&gt;[azure_live]&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--stage<span class="o">=</span><span class="m">3</span><span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>-v<span class="w"> </span>--tb<span class="o">=</span>short
+</code></pre></div>
+<p>Live is the source of truth; the cassette is only a faithful recording
+of a single trajectory. Account-config variance, eventual consistency,
+and timing-dependent SDK paths can hide behind a green replay.</p>
+<p>Per <a href="../specs/048-testing-architecture/#test-006-stage-selection">TEST-006</a>:
+live tests run only at <code>--stage=3</code> with the matching per-backend opt-in
+env var (<code>RS_TEST_LIVE_HNS=1</code> for Azure); CI never runs them.</p>
 <h3 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h3>
 <p>Derived from <a href="../research/research-testing-best-practices/"><code>sdd/research/research-testing-best-practices.md</code></a>.</p>
 
