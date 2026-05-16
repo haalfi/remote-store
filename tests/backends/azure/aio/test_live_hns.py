@@ -452,29 +452,21 @@ class TestAsyncLiveHnsMove:
 
 
 class TestAsyncLiveHnsGetFileInfoOnDirectory:
-    """Async ``get_file_info`` on an HNS directory blob must raise ``NotFound``.
+    """Async ``get_file_info`` on an HNS directory blob must raise ``InvalidPath``.
 
     Async companion to ``TestAzureLiveHnsGetFileInfoOnDirectory``. Only a real
     account confirms the ``hdi_isfolder`` marker is set by the DataLake service.
 
-    Note: ASYNC-016 specifies ``InvalidPath`` for directory paths, but the current
-    implementation raises ``NotFound``. This test documents the actual live behaviour;
-    the deviation is tracked as **BUG-195** in ``sdd/BACKLOG.md`` and must be flipped to
-    ``InvalidPath`` when that fix lands.
-
-    Spec: ASYNC-016 (get_file_info).
+    Spec: ASYNC-016 (get_file_info), BE-021 (directory-path guard).
     """
 
-    # BUG-195: marks the spec target, not the current behaviour. ASYNC-016 specifies
-    # InvalidPath but the runtime raises NotFound; this test documents the deviation
-    # and must be flipped to pytest.raises(InvalidPath) when BUG-195 is fixed.
-    @pytest.mark.spec("ASYNC-016")
-    async def test_get_file_info_on_hns_directory_raises_not_found(
+    @pytest.mark.spec("ASYNC-016", "BE-021")
+    async def test_get_file_info_on_hns_directory_raises_invalid_path(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
     ) -> None:
         backend, dirpath = async_live_hns_backend
-        with pytest.raises(NotFound, match="(?i)not found"):
+        with pytest.raises(InvalidPath, match="exists as a directory"):
             await backend.get_file_info(dirpath)
 
 

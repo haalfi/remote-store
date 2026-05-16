@@ -738,7 +738,11 @@ class AzureBackend(Backend):
             props = bc.get_blob_properties()
             meta = getattr(props, "metadata", None) or {}
             if meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
-                raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+                raise InvalidPath(
+                    f"Cannot get file info — '{path}' exists as a directory",
+                    path=path,
+                    backend=self.name,
+                )
             return self._props_to_fileinfo(props, path)
 
     def get_folder_info(self, path: str) -> FolderInfo:

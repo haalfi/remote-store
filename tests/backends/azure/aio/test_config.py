@@ -1245,6 +1245,28 @@ class TestAsyncAzureHNSPaths:
         with pytest.raises(NotFound, match=r"^Not found: missing\b"):
             await backend.get_folder_info("missing")
 
+    @pytest.mark.spec("ASYNC-016", "BE-021")
+    async def test_get_file_info_raises_invalid_path_on_hns_directory(self) -> None:
+        """BUG-195: get_file_info must raise InvalidPath when hdi_isfolder=true (ASYNC-016)."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        props = MagicMock(spec=BlobProperties)
+        props.metadata = {"hdi_isfolder": "true"}
+        bc.get_blob_properties = AsyncMock(return_value=props)
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            await backend.get_file_info("mydir")
+
+    @pytest.mark.spec("ASYNC-016")
+    async def test_get_file_info_raises_not_found_on_missing_path(self) -> None:
+        """ASYNC-016: !PathExists → NotFound (non-HNS path still works)."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("not found"))
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(NotFound):
+            await backend.get_file_info("missing.txt")
+
     @pytest.mark.spec("ASYNC-018")
     async def test_move_uses_rename_on_hns(self) -> None:
         backend = self._make_hns_backend()

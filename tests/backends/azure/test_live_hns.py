@@ -492,32 +492,24 @@ class TestAzureLiveHnsMove:
 
 
 class TestAzureLiveHnsGetFileInfoOnDirectory:
-    """``get_file_info`` on an HNS directory blob must raise ``NotFound``.
+    """``get_file_info`` on an HNS directory blob must raise ``InvalidPath``.
 
     ADLS Gen2 marks directory blobs with ``hdi_isfolder=true`` metadata. The
-    production code detects this marker and raises ``NotFound`` so callers cannot
+    production code detects this marker and raises ``InvalidPath`` so callers cannot
     treat a directory as a file. Mock-only suites fabricate ``hdi_isfolder`` on a
     ``BlobProperties`` stub; only a real account confirms the marker is present on
     a directory created via ``DataLakeServiceClient``.
 
-    Note: BE-016 specifies ``InvalidPath`` for directory paths, but the current
-    implementation raises ``NotFound``. This test documents the actual live
-    behaviour; the deviation is tracked as **BUG-195** in ``sdd/BACKLOG.md`` and
-    must be flipped to ``InvalidPath`` when that fix lands.
-
-    Spec: BE-016 (get_file_info).
+    Spec: BE-016 (get_file_info), BE-021 (directory-path guard).
     """
 
-    # BUG-195: marks the spec target, not the current behaviour. BE-016 specifies
-    # InvalidPath but the runtime raises NotFound; this test documents the deviation
-    # and must be flipped to pytest.raises(InvalidPath) when BUG-195 is fixed.
-    @pytest.mark.spec("BE-016")
-    def test_get_file_info_on_hns_directory_raises_not_found(
+    @pytest.mark.spec("BE-016", "BE-021")
+    def test_get_file_info_on_hns_directory_raises_invalid_path(
         self,
         live_hns_backend: tuple[AzureBackend, str],
     ) -> None:
         backend, dirpath = live_hns_backend
-        with pytest.raises(NotFound, match="(?i)not found"):
+        with pytest.raises(InvalidPath, match="exists as a directory"):
             backend.get_file_info(dirpath)
 
 

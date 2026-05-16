@@ -236,7 +236,6 @@ _AZURE_HNS_KNOWN_FAILURE_FN_NAMES: frozenset[str] = frozenset(
         "test_delete_on_directory_missing_ok_still_raises",
         "test_delete_folder_on_file_raises_error",
         "test_delete_folder_on_file_missing_ok_still_raises",
-        "test_get_file_info_on_directory_raises_error",
         "test_get_folder_info_on_file_raises_error",
         "test_source_is_directory_raises_error",
         "test_destination_is_directory_raises_error",
