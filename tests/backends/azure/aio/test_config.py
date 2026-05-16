@@ -1263,6 +1263,32 @@ class TestAsyncAzureHNSPaths:
         assert fc.rename_file.call_count == 1
         assert fc.rename_file.call_args[0][0] == "test/dst.txt"
 
+    @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    async def test_source_is_directory_raises_invalid_path(self, op: str) -> None:
+        """BUG-200: move/copy with an HNS directory src must raise InvalidPath."""
+        backend = self._make_hns_backend()
+        src_bc = AsyncMock(spec=BlobClient)
+        src_bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props(metadata={"hdi_isfolder": "true"}))
+        backend._cc_instance.get_blob_client.return_value = src_bc
+
+        with pytest.raises(InvalidPath, match="src_dir"):
+            await getattr(backend, op)("src_dir", "dst.txt")
+
+    @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    async def test_destination_is_directory_raises_invalid_path(self, op: str) -> None:
+        """BUG-200: move/copy with an HNS directory dst must raise InvalidPath."""
+        backend = self._make_hns_backend()
+        src_bc = AsyncMock(spec=BlobClient)
+        src_bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
+        dst_bc = AsyncMock(spec=BlobClient)
+        dst_bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props(metadata={"hdi_isfolder": "true"}))
+        backend._cc_instance.get_blob_client.side_effect = [src_bc, dst_bc]
+
+        with pytest.raises(InvalidPath, match="dst_dir"):
+            await getattr(backend, op)("src.txt", "dst_dir")
+
     @pytest.mark.spec("ASYNC-020")
     async def test_write_atomic_hns_uses_temp_and_rename(self) -> None:
         backend = self._make_hns_backend()

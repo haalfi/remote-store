@@ -694,6 +694,7 @@ class TestAzureHNSPaths:
         backend = self._make_hns_backend()
         # src blob exists
         src_bc = MagicMock(spec=BlobClient)
+        src_bc.get_blob_properties.return_value = MagicMock(spec=BlobProperties, metadata={})
         dst_bc = MagicMock(spec=BlobClient)
         from azure.core.exceptions import ResourceNotFoundError
 
@@ -705,6 +706,33 @@ class TestAzureHNSPaths:
         result = backend.move("src.txt", "dst.txt")
         fc.rename_file.assert_called_once_with("test/dst.txt")
         assert result is None
+
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    def test_source_is_directory_raises_invalid_path(self, op: str) -> None:
+        """BUG-200: move/copy with an HNS directory src must raise InvalidPath."""
+        backend = self._make_hns_backend()
+        src_bc = MagicMock(spec=BlobClient)
+        src_bc.get_blob_properties.return_value = _make_hns_blob_props()
+        backend._cc_instance.get_blob_client.return_value = src_bc
+
+        with pytest.raises(InvalidPath, match="src_dir"):
+            getattr(backend, op)("src_dir", "dst.txt")
+
+    @pytest.mark.spec("BE-019")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    def test_destination_is_directory_raises_invalid_path(self, op: str) -> None:
+        """BUG-200: move/copy with an HNS directory dst must raise InvalidPath."""
+
+        backend = self._make_hns_backend()
+        src_bc = MagicMock(spec=BlobClient)
+        src_bc.get_blob_properties.return_value = MagicMock(spec=BlobProperties, metadata={})
+        dst_bc = MagicMock(spec=BlobClient)
+        dst_bc.get_blob_properties.return_value = _make_hns_blob_props()
+        backend._cc_instance.get_blob_client.side_effect = [src_bc, dst_bc]
+
+        with pytest.raises(InvalidPath, match="dst_dir"):
+            getattr(backend, op)("src.txt", "dst_dir")
 
     def test_write_atomic_uses_temp_and_rename_on_hns(self) -> None:
         from azure.core.exceptions import ResourceNotFoundError

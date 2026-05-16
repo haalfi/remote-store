@@ -1,0 +1,80 @@
+id: BUG-200
+title: "AsyncAzureBackend.move/copy directory checks raise wrong error on real HNS"
+trigger: "On real ADLS Gen2 (HNS), move/copy with a directory source raised InvalidInput (RemoteStoreError) instead of InvalidPath; with a directory destination raised AlreadyExists instead of InvalidPath. Sync siblings affected by the same missing hdi_isfolder probe after BK-186 lifted the _skip_flat_namespace gate."
+source_items:
+  - BUG-200
+audience:
+  - user.api
+  - infra.test
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG -> CHANGELOG -> failing TEST -> FIX -> COMMIT together"
+      - file: sdd/BACKLOG.md
+        section: "BUG-200"
+        read_type: gate
+        extract: "spec BE-018/BE-019/ASYNC-018/ASYNC-019; missing hdi_isfolder probe before SDK rename/copy; sync side also affected after BK-186 lifted _skip_flat_namespace"
+
+  - id: classify
+    name: Classify fix shape
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018, BE-019"
+        read_type: gate
+        extract: "move/copy with directory src or dst must raise InvalidPath; evaluation order: src-check before dst-check"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-018, ASYNC-019"
+        read_type: gate
+        extract: "Async contract mirrors BE-018/BE-019"
+      - file: src/remote_store/backends/_azure.py
+        section: "move / copy (lines 793-860)"
+        read_type: gate
+        extract: "Both methods: get_blob_properties() already called for existence check; extend to read metadata and probe hdi_isfolder before proceeding; same pattern as write() HNS directory guard"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "move / copy (lines 897-990)"
+        read_type: gate
+        extract: "Async variant identical structure; probe needed in both src-check and dst-check branches (overwrite=True path also needs dst probe)"
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES"
+        read_type: gate
+        extract: "test_source_is_directory_raises_error and test_destination_is_directory_raises_error both in xfail roster; must be removed on fix"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "move / copy src and dst metadata probes"
+        read_type: gate
+        extract: "Capture return value of get_blob_properties(); read metadata attribute; if hdi_isfolder truthy raise InvalidPath; applied to src (both methods) and dst (both overwrite=True and overwrite=False branches)"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "move / copy src and dst metadata probes"
+        read_type: gate
+        extract: "Async-identical change: await src_bc.get_blob_properties() result captured; same hdi_isfolder probe pattern"
+
+  - id: mock_tests
+    name: Mock tests
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_source_is_directory_raises_invalid_path, test_destination_is_directory_raises_invalid_path"
+        read_type: gate
+        extract: "Added 2 parametrised tests (op in [move, copy]) using _make_hns_blob_props() helper (spec=BlobProperties, metadata={hdi_isfolder: true}); covers src-dir and dst-dir variants for sync"
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths.test_source_is_directory_raises_invalid_path, test_destination_is_directory_raises_invalid_path"
+        read_type: gate
+        extract: "Async mirror: 2 parametrised tests using _mock_blob_props(metadata={hdi_isfolder: true})"
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES"
+        read_type: gate
+        extract: "Removed test_source_is_directory_raises_error and test_destination_is_directory_raises_error from xfail roster (2 entries)"
+
+  - id: verify_replay
+    name: Verify on cassette
+    steps:
+      - file: tests/backends/cassettes/azure/
+        section: "TestMoveCopyErrorFidelity.test_source_is_directory_raises_error and test_destination_is_directory_raises_error cassettes"
+        read_type: verify
+        extract: "All 4 cassettes (move-azure, copy-azure, azure_async-move, azure_async-copy) present for both src- and dst-dir tests; cassettes recorded on live HNS and carry x-ms-meta-hdi_isfolder: true in HEAD response; cassette sufficient for replay (no new SDK calls needed)"

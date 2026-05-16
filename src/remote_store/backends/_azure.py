@@ -793,15 +793,29 @@ class AzureBackend(Backend):
 
         with self._errors(src):
             src_bc = self._blob_client(src)
-            src_bc.get_blob_properties()  # raises NotFound if missing
+            src_props = src_bc.get_blob_properties()  # raises NotFound if missing
+            src_meta = getattr(src_props, "metadata", None) or {}
+            if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
             if not overwrite:
                 try:
-                    dst_bc.get_blob_properties()
+                    dst_props = dst_bc.get_blob_properties()
+                    dst_meta = getattr(dst_props, "metadata", None) or {}
+                    if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                        raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
-                except AlreadyExists:
+                except (AlreadyExists, InvalidPath):
                     raise
+                except ResourceNotFoundError:
+                    pass
+            else:
+                try:
+                    dst_props = dst_bc.get_blob_properties()
+                    dst_meta = getattr(dst_props, "metadata", None) or {}
+                    if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                        raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                 except ResourceNotFoundError:
                     pass
 
@@ -819,15 +833,29 @@ class AzureBackend(Backend):
 
         with self._errors(src):
             src_bc = self._blob_client(src)
-            src_bc.get_blob_properties()  # raises NotFound if missing
+            src_props = src_bc.get_blob_properties()  # raises NotFound if missing
+            src_meta = getattr(src_props, "metadata", None) or {}
+            if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
             if not overwrite:
                 try:
-                    dst_bc.get_blob_properties()
+                    dst_props = dst_bc.get_blob_properties()
+                    dst_meta = getattr(dst_props, "metadata", None) or {}
+                    if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                        raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
-                except AlreadyExists:
+                except (AlreadyExists, InvalidPath):
                     raise
+                except ResourceNotFoundError:
+                    pass
+            else:
+                try:
+                    dst_props = dst_bc.get_blob_properties()
+                    dst_meta = getattr(dst_props, "metadata", None) or {}
+                    if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                        raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                 except ResourceNotFoundError:
                     pass
 
