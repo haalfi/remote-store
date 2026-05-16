@@ -479,42 +479,34 @@ stabilised page.
 
 ## SFTP
 
-- [ ] **BK-204 — SFTP-007 host-key resolution chain: config / env tiers uncovered**
+- [ ] **BK-204 — SFTP-007 host-key resolution chain: config / env / STRICT-file tiers uncovered**
   spec: SFTP-007 · effort: M · audience: infra.test
   `_resolve_host_keys` in `src/remote_store/backends/_sftp.py` documents a
   four-tier precedence (direct param > `config["known_host_keys"]` >
   `SFTP_KNOWN_HOST_KEYS` env > on-disk `host_keys_path` fallback). BK-201's
   `TestSFTPInlineHostKeysVerification` exercises the "direct" tier end to
   end (load + STRICT verify), but the config-dict and env-var branches
-  still carry `# pragma: no cover` at `_sftp.py:1285-1288` — no test ever
-  reaches them. The precedence claim (direct > config > env) is also
-  untested: today nothing would catch a regression that silently flipped
-  the order. Two shapes: (a) targeted unit tests on `_resolve_host_keys`
-  parametrised over (direct, config, env) combinations, asserting the
-  selected source via behavior (STRICT verifies against the expected key
-  using `sftp_server`'s entry, swapped through each tier) or via the
-  `_load_host_keys_from_string` boundary; (b) extend
-  `TestSFTPInlineHostKeysVerification` with a third pair of tests that
-  populate the config dict and env var with the live server's key, drop
-  the `direct` parameter, and assert STRICT connect succeeds — then
-  remove the two `pragma: no cover` markers. Spec: SFTP-007. Surfaced
-  during BK-201 round-2 review (user question: "where is the deleted
-  test's logic covered now?").
-
-- [ ] **BUG-209 — `test_strict_rejects_mismatched_inline_key` fails intermittently: `BackendUnavailable` not raised**
-  spec: SFTP-007 · effort: S · audience: infra.test
-  `TestSFTPInlineHostKeysVerification.test_strict_rejects_mismatched_inline_key` fails
-  intermittently (confirmed on master — not introduced by BK-181). The test constructs an
-  `SFTPBackend` with a freshly-generated wrong RSA key and `HostKeyPolicy.STRICT`, then
-  calls `backend.exists()`, expecting `BackendUnavailable` matching `"host key"`. It
-  sometimes does not raise at all.
-  **Analyse before fixing:** (a) confirm `BadHostKeyException` appears in `_map_exception`
-  in `_sftp.py`; (b) check whether paramiko raises `BadHostKeyException` from `connect()`
-  or from a later host-key verification call, and whether any retry / fallback in
-  `SFTPBackend` silently swallows it; (c) check if `SFTPBackend` connects lazily —
-  if so, confirm the first real I/O triggers the key check; (d) check whether paramiko
-  5.x changed when / how `BadHostKeyException` is raised for `HostKeys`-backed STRICT
-  policy (vs. `RejectPolicy`). Reproduce locally before proposing a fix.
+  still carry `# pragma: no cover` at `_sftp.py:1300` (config) and
+  `_sftp.py:1302` (env) — no test ever reaches them. The precedence claim
+  (direct > config > env) is also untested: today nothing would catch a
+  regression that silently flipped the order. Two shapes: (a) targeted
+  unit tests on `_resolve_host_keys` parametrised over (direct, config,
+  env) combinations, asserting the selected source via behavior (STRICT
+  verifies against the expected key using `sftp_server`'s entry, swapped
+  through each tier) or via the `_load_host_keys_from_string` boundary;
+  (b) extend `TestSFTPInlineHostKeysVerification` with a third pair of
+  tests that populate the config dict and env var with the live server's
+  key, drop the `direct` parameter, and assert STRICT connect succeeds
+  — then remove the two `pragma: no cover` markers. The same gap covers
+  the third pragma in `_create_ssh_client` on the
+  `elif self._host_key_policy == HostKeyPolicy.STRICT:` file-fallback
+  branch (`_sftp.py:1270`): STRICT without
+  inline keys / TOFU is not exercised, so the file-loading path the bug
+  fix is protecting has no positive coverage either. Lifting all three
+  pragmas together keeps the host-key resolution chain testable from one
+  PR. Spec: SFTP-007. Surfaced during BK-201 round-2 review (user
+  question: "where is the deleted test's logic covered now?"); STRICT
+  file-fallback ripple surfaced during BUG-209 PR self-review.
 
 - [ ] **ID-181 — Per-backend `ssh-rsa` opt-in via `paramiko.Transport` subclass**
   spec: SFTP-007 · effort: M · audience: user.api

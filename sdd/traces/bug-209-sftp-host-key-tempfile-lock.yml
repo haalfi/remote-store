@@ -1,0 +1,83 @@
+id: BUG-209
+title: "SFTP STRICT verification silently bypassed on Windows by NamedTemporaryFile delete=True lock"
+trigger: "test_strict_rejects_mismatched_inline_key fails on Windows with 'DID NOT RAISE BackendUnavailable'; reported as intermittent because non-Windows CI passes"
+source_items:
+  - BUG-209
+audience:
+  - user.api
+discovery_followups:
+  - BUG-211  # narrow exists()/is_file()/is_folder() OSError catches — born from the round-1 review thread on _sftp.py:521 proposing the narrowing
+co_shipped_items:
+  - BUG-211  # same PR also ships the fix; listed in both per schema's discovery-cascade pattern
+surprising_ripples:
+  - tests/backends/sftp/test_config.py  # @pytest.mark.os_sensitive on the new regression test — ripple-check table did not flag that ID-087's Windows-only `-m os_sensitive` selector excludes SFTP tests by default
+review_rounds: 4  # 49759453f (round 1), 8225b220a (round 2, BUG-211 born from review per schema guidance), a9f5b30e2 (round 3), 61ee8b8c2 (round 4 fix-up)
+expected_ripples:
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+  - sdd/backlogid.json  # BUG-211 advances the BUG max from 210 to 211
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: "BUG-209 analysis hints: BadHostKeyException, retry swallow, lazy connect, paramiko 5.x"
+
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPInlineHostKeysVerification"
+        read_type: reference
+        extract: "Test calls backend.exists() expecting BackendUnavailable; passes the in-process sftp_server fixture"
+      - file: tests/backends/sftp/_helpers.py
+        section: "start_sftp_server"
+        read_type: reference
+        extract: "In-process server uses RSAKey.generate(2048); algorithm negotiation prefers RSA both sides"
+      - file: src/remote_store/backends/_sftp.py
+        section: "_load_host_keys_from_string, _create_ssh_client, exists"
+        read_type: reference
+        extract: "Helper writes to NamedTemporaryFile(delete=True); _create_ssh_client calls it; exists() wraps in except OSError"
+        outcome: misleading
+      - file: tests/conftest.py
+        section: "sftp_server fixture"
+        read_type: reference
+        extract: "Wraps start_sftp_server; not related to bug"
+
+  - id: classify
+    name: Classify
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_load_host_keys_from_string (helper) and exists() OSError catch"
+        read_type: reference
+        extract: "Windows tempfile O_TEMPORARY locks file; paramiko load_host_keys hits PermissionError; exists() except OSError swallows it; STRICT silently skipped"
+
+  - id: tests
+    name: Failing test (already in suite)
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Add focused regression test_load_host_keys_from_string_reopenable so future Windows-only regressions land without needing the full SFTP server fixture"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_load_host_keys_from_string"
+        read_type: reference
+        extract: "Switch to delete=False with manual os.unlink in finally; drop # pragma: no cover (now exercised on all platforms)"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG entry, CHANGELOG stub, failing test confirmed before fix, pre-commit gate green"

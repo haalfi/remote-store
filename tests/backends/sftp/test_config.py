@@ -38,6 +38,7 @@ from remote_store.backends._sftp import (  # noqa: E402
     HostKeyPolicy,
     SFTPBackend,
     SFTPUtils,
+    _load_host_keys_from_string,
     _sanitize_pem,
 )
 
@@ -1636,6 +1637,87 @@ class TestSFTPInlineHostKeysVerification:
             # other RemoteStoreError (timeout, auth, transient SSH error).
             with pytest.raises(BackendUnavailable, match=r"(?i)host key"):
                 backend.exists("nonexistent.txt")
+        finally:
+            backend.close()
+
+    @pytest.mark.os_sensitive
+    def test_load_host_keys_from_string_reopenable(self) -> None:
+        """BUG-209: helper must hand paramiko a re-openable file on every OS.
+
+        Regression guard: prior to BUG-209 the helper used
+        ``NamedTemporaryFile(delete=True)``, whose Windows ``O_TEMPORARY``
+        lock raised ``PermissionError`` from ``load_host_keys``. The error
+        was then swallowed by ``exists()``'s ``except OSError``, silently
+        bypassing STRICT verification.
+
+        Marked ``os_sensitive`` because the regression is Windows-specific
+        and the rest of the SFTP suite is excluded from macOS/Windows CI
+        by ID-087 — without the mark this guard would never run on the OS
+        it protects. On Linux/macOS both ``delete=True`` and ``delete=False``
+        succeed, so the Windows-CI run is the real regression guard;
+        non-Windows runs are a smoke test that the success path still works.
+        """
+        key = paramiko.RSAKey.generate(2048)
+        entry = f"[127.0.0.1]:22 ssh-rsa {key.get_base64()}\n"
+        ssh = paramiko.SSHClient()
+        try:
+            _load_host_keys_from_string(ssh, entry)
+            loaded = ssh.get_host_keys()
+            assert list(loaded.keys()) == ["[127.0.0.1]:22"]
+            entry_keys = loaded["[127.0.0.1]:22"]
+            assert "ssh-rsa" in entry_keys
+            assert entry_keys["ssh-rsa"].get_base64() == key.get_base64()
+        finally:
+            ssh.close()
+
+
+# endregion
+
+
+# region: Existence-probe error fidelity (BUG-211)
+
+
+class TestSFTPExistsErrorFidelity:
+    """BUG-211: ``exists()`` / ``is_file()`` / ``is_folder()`` must not swallow
+    non-ENOENT OSErrors as "not found".
+
+    The pre-BUG-211 catch-all turned connect-time errors (including the
+    ``PermissionError`` BUG-209 documented) into a silent ``False`` return,
+    indistinguishable from a real missing path. Each probe now narrows the
+    catch to ``errno.ENOENT`` and lets every other OSError surface through
+    ``_errors()``.
+    """
+
+    pytestmark = pytest.mark.spec("SFTP-007")
+
+    @pytest.mark.parametrize("method", ["exists", "is_file", "is_folder"])
+    def test_connect_time_oserror_propagates(self, method: str) -> None:
+        """A non-ENOENT OSError on connect surfaces as ``PermissionDenied``.
+
+        Pre-BUG-211 each probe caught every ``OSError`` and returned ``False``,
+        masking connect failures as "path does not exist". The narrowed catch
+        lets ``_errors()`` map ``EACCES`` to ``PermissionDenied`` so the caller
+        sees a real diagnostic.
+        """
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=22,
+            username="testuser",
+            password="testpass",
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            retry=RetryPolicy(max_attempts=1, backoff_base=0, backoff_max=0),
+        )
+
+        def _boom() -> object:
+            raise PermissionError(errno.EACCES, "synthetic connect-time error")
+
+        try:
+            with (
+                patch.object(SFTPBackend, "_create_ssh_client", side_effect=_boom),
+                pytest.raises(PermissionDenied, match=r"Permission denied: anything\.txt"),
+            ):
+                getattr(backend, method)("anything.txt")
         finally:
             backend.close()
 

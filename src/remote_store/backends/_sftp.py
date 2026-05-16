@@ -509,14 +509,23 @@ class SFTPUtils:
 _HOST_KEYS_ENV = "SFTP_KNOWN_HOST_KEYS"
 
 
-def _load_host_keys_from_string(ssh: Any, keys_content: str) -> None:  # pragma: no cover
-    """Parse a known_hosts-formatted string into an SSHClient's host keys."""
+def _load_host_keys_from_string(ssh: Any, keys_content: str) -> None:
+    """Parse a known_hosts-formatted string into an SSHClient's host keys.
+
+    Uses ``delete=False`` because on Windows ``NamedTemporaryFile`` opens
+    the file with ``O_TEMPORARY``, which prevents paramiko from re-opening
+    the path inside ``load_host_keys`` and raises ``PermissionError``.
+    """
     import tempfile
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".known_hosts", delete=True) as tmp:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".known_hosts", delete=False) as tmp:
         tmp.write(keys_content)
-        tmp.flush()
-        ssh.load_host_keys(tmp.name)
+        tmp_path = tmp.name
+    try:
+        ssh.load_host_keys(tmp_path)
+    finally:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_path)
 
 
 # endregion
@@ -659,24 +668,30 @@ class SFTPBackend(Backend):
             try:
                 self._sftp.stat(self._sftp_path(path))
                 return True
-            except OSError:
-                return False
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    return False
+                raise
 
     def is_file(self, path: str) -> bool:
         with self._errors(path):
             try:
                 attrs = self._sftp.stat(self._sftp_path(path))
                 return attrs.st_mode is not None and bool(stat.S_ISREG(attrs.st_mode))
-            except OSError:
-                return False
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    return False
+                raise
 
     def is_folder(self, path: str) -> bool:
         with self._errors(path):
             try:
                 attrs = self._sftp.stat(self._sftp_path(path))
                 return attrs.st_mode is not None and bool(stat.S_ISDIR(attrs.st_mode))
-            except OSError:
-                return False
+            except OSError as exc:
+                if getattr(exc, "errno", None) == errno.ENOENT:
+                    return False
+                raise
 
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
