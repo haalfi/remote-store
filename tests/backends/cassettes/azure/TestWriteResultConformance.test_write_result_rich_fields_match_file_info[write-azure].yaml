@@ -13,7 +13,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -23,11 +23,11 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB1B5DE8CED62"'
+      - '"0x8DEB350DCC43A58"'
       Last-Modified:
-      - Thu, 14 May 2026 12:39:41 GMT
+      - Sat, 16 May 2026 13:41:41 GMT
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -43,7 +43,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: GET
     uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
   response:
@@ -59,7 +59,7 @@ interactions:
       x-ms-sku-name:
       - Standard_LRS
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -75,7 +75,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/wr/write-rich-fields-match.txt
   response:
@@ -87,7 +87,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -109,7 +109,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/wr/write-rich-fields-match.txt
   response:
@@ -121,15 +121,15 @@ interactions:
       Content-MD5:
       - HahJ1RWDi8qxdwdpxPB2PQ==
       ETag:
-      - '"0x8DEB1B5DEF27E90"'
+      - '"0x8DEB350DD18883C"'
       Last-Modified:
-      - Thu, 14 May 2026 12:39:42 GMT
+      - Sat, 16 May 2026 13:41:42 GMT
       x-ms-content-crc64:
       - U3GQJ8q0kz0=
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -145,7 +145,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/wr/write-rich-fields-match.txt
   response:
@@ -161,9 +161,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEB1B5DEF27E90"'
+      - '"0x8DEB350DD18883C"'
       Last-Modified:
-      - Thu, 14 May 2026 12:39:42 GMT
+      - Sat, 16 May 2026 13:41:42 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -173,7 +173,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Thu, 14 May 2026 12:39:42 GMT
+      - Sat, 16 May 2026 13:41:42 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -189,7 +189,7 @@ interactions:
       x-ms-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -207,7 +207,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: DELETE
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -217,7 +217,7 @@ interactions:
       Content-Length:
       - '0'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 202
       message: Accepted

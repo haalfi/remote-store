@@ -8,6 +8,28 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-199 — `AzureBackend.get_folder_info` recursive `file_count` includes HNS directory blobs as files (sync + async)**
+  spec: BE-017, ASYNC-017 · audience: user.api
+  `FolderInfo.file_count` returned by `get_folder_info(path, recursive=True)`
+  reported one extra "file" per HNS directory marker blob
+  (`hdi_isfolder=true`). Surfaced by three live conformance tests
+  (`test_get_folder_info_excludes_subdirs[azure_live]`,
+  `test_get_folder_info_counts_recursive_children[azure_live]`, and
+  `[azure_live_async]`).
+  Fix: HNS branch of `get_folder_info` now walks `_fs.get_paths(recursive=True)`
+  and filters `getattr(p, "is_directory", False)`, mirroring the pattern
+  `list_files` already uses for HNS. Non-HNS branch unchanged (no marker
+  blobs in flat namespace). Symmetric change in
+  `aio/backends/_azure.py`. Three xfail entries removed from
+  `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES`; all three tests now pass cleanly
+  against refreshed `azure_replay` / `azure_replay_async` cassettes (212
+  passed, 25 xfailed for other HNS bugs, 0 failed). Workflow doc added
+  in the same PR (`sdd/TESTING.md` § "Cassette-First Bug Investigation")
+  codifies the replay-first → classify → fix → live-verify pattern;
+  unrelated Unicode crash in `scripts/record_cassettes.py:115` and
+  missing-prefix in `sdd/TESTING.md` § "Cassette Refresh" co-shipped.
+  Trace: [`sdd/traces/bug-199-azure-folder-info-hns-dir-count.yml`](traces/bug-199-azure-folder-info-hns-dir-count.yml).
+
 - [x] **BK-204 — SFTP-007 host-key resolution chain: config / env / STRICT-file tiers uncovered**
   spec: SFTP-007 · audience: infra.test
   `_resolve_host_keys` documents a four-tier precedence

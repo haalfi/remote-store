@@ -13,7 +13,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -23,11 +23,11 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB1B65B413EC8"'
+      - '"0x8DEB351403A5E28"'
       Last-Modified:
-      - Thu, 14 May 2026 12:43:10 GMT
+      - Sat, 16 May 2026 13:44:28 GMT
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -43,7 +43,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: GET
     uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
   response:
@@ -59,7 +59,7 @@ interactions:
       x-ms-sku-name:
       - Standard_LRS
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -75,7 +75,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/fi/a.txt
   response:
@@ -87,7 +87,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -109,7 +109,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/fi/a.txt
   response:
@@ -121,15 +121,15 @@ interactions:
       Content-MD5:
       - R7zlx09Yn0hn29V+nKn4CA==
       ETag:
-      - '"0x8DEB1B65BA998E0"'
+      - '"0x8DEB351408B74CC"'
       Last-Modified:
-      - Thu, 14 May 2026 12:43:11 GMT
+      - Sat, 16 May 2026 13:44:28 GMT
       x-ms-content-crc64:
       - yRr7k//2ekY=
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -145,7 +145,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/fi/b.txt
   response:
@@ -157,7 +157,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -179,7 +179,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/fi/b.txt
   response:
@@ -191,15 +191,15 @@ interactions:
       Content-MD5:
       - Ia0L2Da5DQj0z2QLTCmOfA==
       ETag:
-      - '"0x8DEB1B65BEABB4C"'
+      - '"0x8DEB35140BCF1E0"'
       Last-Modified:
-      - Thu, 14 May 2026 12:43:11 GMT
+      - Sat, 16 May 2026 13:44:29 GMT
       x-ms-content-crc64:
       - 4qbnBMZvDVY=
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -215,7 +215,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/fi
   response:
@@ -227,9 +227,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB1B65BA5CEA8"'
+      - '"0x8DEB351408849C4"'
       Last-Modified:
-      - Thu, 14 May 2026 12:43:11 GMT
+      - Sat, 16 May 2026 13:44:28 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -239,7 +239,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Thu, 14 May 2026 12:43:11 GMT
+      - Sat, 16 May 2026 13:44:28 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -257,7 +257,7 @@ interactions:
       x-ms-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -265,7 +265,7 @@ interactions:
     body: null
     headers:
       Accept:
-      - application/xml
+      - application/json
       Accept-Encoding:
       - gzip, deflate
       Connection:
@@ -273,30 +273,23 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: GET
-    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?comp=list&prefix=fi%2F&restype=container
+    uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=fi&recursive=true&resource=filesystem
   response:
     body:
-      string: "\uFEFF<?xml version=\"1.0\" encoding=\"utf-8\"?><EnumerationResults
-        ServiceEndpoint=\"https://azreplay.blob.core.windows.net/\" ContainerName=\"conformance-azure-replay\"><Prefix>fi/</Prefix><Blobs><Blob><Name>fi/a.txt</Name><Properties><Creation-Time>Thu,
-        14 May 2026 12:43:11 GMT</Creation-Time><Last-Modified>Thu, 14 May 2026 12:43:11
-        GMT</Last-Modified><Etag>0x8DEB1B65BA998E0</Etag><ResourceType>file</ResourceType><Content-Length>3</Content-Length><Content-Type>application/octet-stream</Content-Type><Content-Encoding
-        /><Content-Language /><Content-CRC64 /><Content-MD5>R7zlx09Yn0hn29V+nKn4CA==</Content-MD5><Cache-Control
-        /><Content-Disposition /><BlobType>BlockBlob</BlobType><AccessTier>Hot</AccessTier><AccessTierInferred>true</AccessTierInferred><LeaseStatus>unlocked</LeaseStatus><LeaseState>available</LeaseState><ServerEncrypted>true</ServerEncrypted></Properties><OrMetadata
-        /></Blob><Blob><Name>fi/b.txt</Name><Properties><Creation-Time>Thu, 14 May
-        2026 12:43:11 GMT</Creation-Time><Last-Modified>Thu, 14 May 2026 12:43:11
-        GMT</Last-Modified><Etag>0x8DEB1B65BEABB4C</Etag><ResourceType>file</ResourceType><Content-Length>2</Content-Length><Content-Type>application/octet-stream</Content-Type><Content-Encoding
-        /><Content-Language /><Content-CRC64 /><Content-MD5>Ia0L2Da5DQj0z2QLTCmOfA==</Content-MD5><Cache-Control
-        /><Content-Disposition /><BlobType>BlockBlob</BlobType><AccessTier>Hot</AccessTier><AccessTierInferred>true</AccessTierInferred><LeaseStatus>unlocked</LeaseStatus><LeaseState>available</LeaseState><ServerEncrypted>true</ServerEncrypted></Properties><OrMetadata
-        /></Blob></Blobs><NextMarker /></EnumerationResults>"
+      string: '{"paths":[{"contentLength":"3","creationTime":"134234126689793228","etag":"0x8DEB351408B74CC","expiryTime":"0","group":"$superuser","lastModified":"Sat,
+        16 May 2026 13:44:28 GMT","name":"fi/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"2","creationTime":"134234126693036512","etag":"0x8DEB35140BCF1E0","expiryTime":"0","group":"$superuser","lastModified":"Sat,
+        16 May 2026 13:44:29 GMT","name":"fi/b.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+
+        '
     headers:
       Content-Type:
-      - application/xml
+      - application/json;charset=utf-8
       Transfer-Encoding:
       - chunked
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -314,7 +307,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: DELETE
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -324,7 +317,7 @@ interactions:
       Content-Length:
       - '0'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 202
       message: Accepted

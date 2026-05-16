@@ -169,10 +169,12 @@ snapshots of real HTTP traffic. Refresh them when the backend SDK,
 the scrubbing layer, or the real service responses change.
 
 **Prerequisite (Azure):** see [Azure HNS account setup](../docs-src/guides/backends/azure-hns-setup.md)
-for credential and `.env` configuration.
+for credential and `.env` configuration. The recording needs the live
+opt-in flag set in the invoking shell — keeping it out of `.env` is
+deliberate so a default `hatch run test` never touches a real account.
 
 ```bash
-hatch run record-azure
+RS_TEST_LIVE_HNS=1 hatch run record-azure
 ```
 
 `scripts/record_cassettes.py --backend azure` deletes existing cassettes, re-records
@@ -182,6 +184,81 @@ skip recording and re-run only the verification steps.
 
 Per [TEST-009](specs/048-testing-architecture.md#test-009-cassette-refresh-is-explicit):
 CI does not auto-record; a refresh is a normal PR diff.
+
+### Cassette-First Bug Investigation
+
+When investigating a bug in an HTTP-transport backend whose live
+behaviour is recorded as a cassette, default to **replay-first**: work
+on the committed cassette until root cause is clear, escalate to a
+fresh recording only if the cassette cannot carry the diagnosis. Final
+sign-off always runs against the live service.
+
+The architecture under this workflow is
+[ADR-0028](adrs/0028-testing-architecture-kind-stage-replay.md); this
+section is the procedural recipe.
+
+**Step 1 — Reproduce on the cassette.** Run the failing conformance
+test against the `<backend>_replay` (and `<backend>_replay_async`)
+fixture. No credentials, no network, no Docker. For Azure HNS bugs the
+cassette already exists for every conformance test that was active
+when [BK-181](BACKLOG-DONE.md) landed.
+
+```bash
+hatch run python -m pytest "<nodeid>[azure_replay]" -v --tb=short
+```
+
+If the test is already marked `xfail(strict=False)` against real-Azure
+fixture ids (the BK-180 follow-up parked confirmed defects this way
+to keep CI green), pytest reports `XFAIL` and you cannot see the
+assertion. Force the underlying failure with `--runxfail`:
+
+```bash
+hatch run python -m pytest "<nodeid>[azure_replay]" --runxfail -v --tb=short
+```
+
+The xfail roster lives in
+[`tests/backends/conformance/conftest.py`](../tests/backends/conformance/conftest.py)
+as `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES`; the parametrize ids it
+applies to are listed alongside it in `_AZURE_REAL_FIXTURE_IDS`.
+
+**Step 2 — Classify cassette sufficiency.** Read the backend code
+that the failing test exercises and ask: does the fix require any
+HTTP call the cassette does not already contain?
+
+| Fix shape | Cassette sufficiency | Action |
+|-----------|---------------------|--------|
+| In-process filter / mapping over data the SDK already returns | Sufficient | Proceed to step 3 |
+| Adds, removes, or reorders SDK calls | Insufficient | Refresh cassette via `hatch run record-azure` (needs Stage 3 live access), then resume on the new cassette |
+
+The decision is mechanical: list the SDK calls the fix introduces, grep
+the cassette `interactions:` list for matching `method` + `uri`
+patterns, and proceed only when every needed call is already recorded.
+For example, a fix that adds a per-entry HEAD on directory blobs is
+sufficient if `rg "method: HEAD" tests/backends/cassettes/azure/<test>.yaml`
+already shows the matching `uri:` lines.
+
+**Step 3 — Fix.** Implement the change in the backend module(s).
+
+**Step 4 — Verify on replay.** Remove the test function name from
+`_AZURE_HNS_KNOWN_FAILURE_FN_NAMES` and re-run the same nodeid without
+`--runxfail`. Green = the fix is consistent with the recorded wire
+behaviour.
+
+**Step 5 — Final verification on live.** Run the test against the
+`<backend>_live` / `<backend>_live_async` fixture before merge:
+
+```bash
+RS_TEST_LIVE_HNS=1 hatch run python -m pytest "<nodeid>[azure_live]" \
+    --stage=3 -m live -v --tb=short
+```
+
+Live is the source of truth; the cassette is only a faithful recording
+of a single trajectory. Account-config variance, eventual consistency,
+and timing-dependent SDK paths can hide behind a green replay.
+
+Per [TEST-006](specs/048-testing-architecture.md#test-006-stage-selection):
+live tests run only at `--stage=3` with the matching per-backend opt-in
+env var (`RS_TEST_LIVE_HNS=1` for Azure); CI never runs them.
 
 ### Provenance
 

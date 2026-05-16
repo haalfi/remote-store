@@ -744,29 +744,40 @@ class AzureBackend(Backend):
     def get_folder_info(self, path: str) -> FolderInfo:
         with self._errors(path):
             azure_path = self._azure_path(path)
-
-            if self._hns:  # pragma: no cover -- HNS only
-                dc = self._fs.get_directory_client(azure_path)
-                dc.get_directory_properties()  # raises if not found
-
-            # Gather stats from files under this prefix
-            prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
             file_count = 0
             total_size = 0
             latest_modified: datetime | None = None
 
-            for blob in self._cc.list_blobs(name_starts_with=prefix):
-                file_count += 1
-                total_size += blob.size or 0
-                modified = blob.last_modified
-                if modified is not None:
-                    if modified.tzinfo is None:  # pragma: no cover
-                        modified = modified.replace(tzinfo=timezone.utc)
-                    if latest_modified is None or modified > latest_modified:
-                        latest_modified = modified
-
-            if file_count == 0 and not self._hns:
-                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+            if self._hns:  # pragma: no cover -- HNS only
+                # DFS get_paths exposes is_directory inline; list_blobs would
+                # silently count hdi_isfolder marker blobs as files (BUG-199).
+                dc = self._fs.get_directory_client(azure_path)
+                dc.get_directory_properties()  # raises if not found
+                for p in self._fs.get_paths(path=azure_path or "/", recursive=True):
+                    if getattr(p, "is_directory", False):
+                        continue
+                    file_count += 1
+                    size = getattr(p, "content_length", None) or getattr(p, "size", 0) or 0
+                    total_size += int(size)
+                    modified = getattr(p, "last_modified", None)
+                    if modified is not None:
+                        if modified.tzinfo is None:
+                            modified = modified.replace(tzinfo=timezone.utc)
+                        if latest_modified is None or modified > latest_modified:
+                            latest_modified = modified
+            else:
+                prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
+                for blob in self._cc.list_blobs(name_starts_with=prefix):
+                    file_count += 1
+                    total_size += blob.size or 0
+                    modified = blob.last_modified
+                    if modified is not None:
+                        if modified.tzinfo is None:  # pragma: no cover
+                            modified = modified.replace(tzinfo=timezone.utc)
+                        if latest_modified is None or modified > latest_modified:
+                            latest_modified = modified
+                if file_count == 0:
+                    raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
             return FolderInfo(
                 path=RemotePath.from_backend_path(path),

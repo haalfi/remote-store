@@ -150,20 +150,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   regression test runs against `azure_live_async`. Spec: BE-018, BE-019,
   ASYNC-018, ASYNC-019.
 
-- [ ] **BUG-199 — `AzureBackend.get_folder_info` recursive `file_count` includes HNS directory blobs as files (sync + async)**
-  spec: BE-017, ASYNC-017 · effort: M · audience: library.maintainer
-  `FolderInfo.file_count` returned by `get_folder_info(path, recursive=True)`
-  reports `3` where conformance expects `2`. The extra "file" is an HNS
-  directory blob (marker `hdi_isfolder=true`) that the recursive walk
-  fails to filter out. Surfaced by three live conformance tests:
-  `tests/backends/conformance/test_async_extended.py::TestGetFolderInfoAggregates::test_get_folder_info_counts_recursive_children[azure_live_async]`,
-  `tests/backends/conformance/test_metadata.py::TestGetFolderInfoAggregates::test_get_folder_info_counts_recursive_children[azure_live]`,
-  and `tests/backends/conformance/test_metadata.py::TestBackendMetadata::test_get_folder_info_excludes_subdirs[azure_live]`.
-  Both sync and async hit it, so the miscount lives in the shared
-  recursive-walk logic (or in the per-iteration filter) used by both
-  backends. Fix: filter `hdi_isfolder=true` entries from the recursive
-  file aggregation in `get_folder_info`. Spec: BE-017, ASYNC-017.
-
 - [ ] **BUG-198 — Folder-API on a file path raises wrong error type on `AsyncAzureBackend` (HNS)**
   spec: BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017 · effort: M · audience: library.maintainer
   Symmetric to BUG-197/BUG-195: `delete_folder` and `get_folder_info`

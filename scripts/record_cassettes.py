@@ -113,7 +113,8 @@ def _run(*args: str) -> None:
 
 
 def _section(title: str) -> None:
-    print(f"\n{'─' * 60}\n  {title}\n{'─' * 60}")
+    bar = "-" * 60
+    print(f"\n{bar}\n  {title}\n{bar}")
 
 
 # ---------------------------------------------------------------------------
