@@ -10,6 +10,7 @@ audience:
   - infra.test
 discovery_followups:
   - BUG-212
+  - BUG-213
 surprising_ripples:
   - scripts/record_cassettes.py
   - sdd/TESTING.md
@@ -176,7 +177,7 @@ phases:
       - file: src/remote_store/backends/_azure.py
         section: "get_folder_info HNS branch / root path"
         read_type: reference
-        extract: "Reviewer flagged root-path call shape (path='') as a verification gap — get_directory_client('') SDK semantics not covered by cassette. Explicitly advisory ('not a regression... no request to change'). Deferred from this PR; thread left open for user decision on follow-up backlog item."
+        extract: "Reviewer flagged root-path call shape (path='') as a verification gap — get_directory_client('') SDK semantics not covered by cassette. Explicitly advisory ('not a regression... no request to change'). Filed as BUG-213 per user direction; thread resolved with cross-reference."
         outcome: ok
 
   - id: verify_replay
