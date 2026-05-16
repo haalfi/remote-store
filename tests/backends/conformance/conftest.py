@@ -229,11 +229,6 @@ def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
 #   - Once the bugs are fixed, they flip to xpass without blocking CI
 _AZURE_HNS_KNOWN_FAILURE_FN_NAMES: frozenset[str] = frozenset(
     {
-        "test_read_on_directory_raises_error",
-        "test_read_bytes_on_directory_raises_error",
-        "test_delete_on_directory_raises_error",
-        "test_delete_on_directory_raises_invalid_path",
-        "test_delete_on_directory_missing_ok_still_raises",
         "test_delete_folder_on_file_raises_error",
         "test_delete_folder_on_file_missing_ok_still_raises",
         "test_get_file_info_on_directory_raises_error",

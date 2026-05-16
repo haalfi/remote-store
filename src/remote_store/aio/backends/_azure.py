@@ -372,10 +372,18 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             NotFound: If the file does not exist.
+            InvalidPath: If ``path`` names a directory (HNS accounts only).
         """
         try:
             bc = self._blob_client(path)
+            # BE-021: await download_blob() makes the initial HTTP request, so
+            # downloader.properties is populated before we begin streaming.
+            # Check hdi_isfolder here to guard against the data-read-on-directory
+            # defect before yielding any bytes.
             downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
+            blob_meta = getattr(getattr(downloader, "properties", None), "metadata", None) or {}
+            if blob_meta.get("hdi_isfolder"):
+                raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
             async for chunk in downloader.chunks():
                 yield chunk
         except RemoteStoreError:
@@ -394,10 +402,19 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             NotFound: If the file does not exist.
+            InvalidPath: If ``path`` names a directory (HNS accounts only).
         """
         async with self._errors(path):
             bc = self._blob_client(path)
-            return bytes(await (await bc.download_blob(max_concurrency=self._max_concurrency)).readall())
+            downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
+            data = bytes(await downloader.readall())
+            # BE-021: file-API operations on an HNS directory path must raise
+            # InvalidPath. The download_blob() call succeeds (directory marker is
+            # a 0-byte blob), so we inspect the response metadata post-download.
+            blob_meta = getattr(getattr(downloader, "properties", None), "metadata", None) or {}
+            if blob_meta.get("hdi_isfolder"):
+                raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
+            return data
 
     async def write(
         self,
@@ -592,9 +609,22 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             NotFound: If the file is missing and ``missing_ok`` is ``False``.
+            InvalidPath: If ``path`` names a directory (HNS accounts only).
         """
         async with self._errors(path):
             bc = self._blob_client(path)
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                from azure.core.exceptions import ResourceNotFoundError
+
+                try:
+                    props = await bc.get_blob_properties()
+                    blob_meta = getattr(props, "metadata", None) or {}
+                    if blob_meta.get("hdi_isfolder"):
+                        raise InvalidPath(f"Cannot delete — '{path}' is a directory", path=path, backend=self.name)
+                except (InvalidPath, ResourceNotFoundError):
+                    raise
+                except Exception:  # noqa: BLE001
+                    pass  # Let the delete_blob() call reveal the real error
             try:
                 await bc.delete_blob()
             except Exception as exc:  # noqa: BLE001
@@ -603,6 +633,14 @@ class AsyncAzureBackend(AsyncBackend):
                     if not missing_ok:
                         raise mapped from None
                     return
+                # BE-021: HNS non-empty directory yields DirectoryIsNotEmpty (409).
+                # The file-API delete() must raise InvalidPath, not AlreadyExists.
+                from azure.core.exceptions import HttpResponseError
+
+                if isinstance(exc, HttpResponseError) and getattr(exc, "error_code", None) == "DirectoryIsNotEmpty":
+                    raise InvalidPath(
+                        f"Cannot delete — '{path}' is a directory", path=path, backend=self.name
+                    ) from None
                 raise mapped from None  # pragma: no cover
 
     async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:

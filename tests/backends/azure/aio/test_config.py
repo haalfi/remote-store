@@ -1502,6 +1502,109 @@ class TestAsyncAzureHNSPaths:
         assert await backend.is_folder("my-dir") is True
         assert dc.get_directory_properties.call_count == 1
 
+    # BUG-197: read, read_bytes, delete must raise InvalidPath for HNS dirs (async)
+
+    @pytest.mark.spec("BE-021", "ASYNC-007")
+    async def test_read_bytes_on_hns_directory_raises_invalid_path(self) -> None:
+        """BUG-197: async read_bytes on an HNS directory path must raise InvalidPath.
+
+        The download_blob() call succeeds (directory marker is a 0-byte blob);
+        the fix inspects downloader.properties.metadata post-download.
+        """
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        downloader = AsyncMock(spec=StorageStreamDownloader)
+        downloader.readall = AsyncMock(return_value=b"")
+        props = MagicMock()
+        props.metadata = {"hdi_isfolder": "true"}
+        downloader.properties = props
+        bc.download_blob = AsyncMock(return_value=downloader)
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="is a directory"):
+            await backend.read_bytes("mydir")
+
+    @pytest.mark.spec("BE-021", "ASYNC-007")
+    async def test_read_bytes_on_hns_file_returns_bytes(self) -> None:
+        """Async read_bytes on a normal HNS file must return its content unchanged."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        downloader = AsyncMock(spec=StorageStreamDownloader)
+        downloader.readall = AsyncMock(return_value=b"hello")
+        props = MagicMock()
+        props.metadata = {}
+        downloader.properties = props
+        bc.download_blob = AsyncMock(return_value=downloader)
+        backend._cc_instance.get_blob_client.return_value = bc
+        assert await backend.read_bytes("file.txt") == b"hello"
+
+    @pytest.mark.spec("BE-021", "ASYNC-007")
+    async def test_read_on_hns_directory_raises_invalid_path(self) -> None:
+        """BUG-197: async read (streaming) on an HNS directory must raise InvalidPath.
+
+        download_blob() is awaited; then downloader.properties.metadata is checked
+        before yielding any chunks.
+        """
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        downloader = AsyncMock(spec=StorageStreamDownloader)
+        props = MagicMock()
+        props.metadata = {"hdi_isfolder": "true"}
+        downloader.properties = props
+        bc.download_blob = AsyncMock(return_value=downloader)
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="is a directory"):
+            async for _ in backend.read("mydir"):
+                pass  # pragma: no cover
+
+    @pytest.mark.spec("BE-021", "ASYNC-007")
+    async def test_read_on_hns_file_yields_chunks(self) -> None:
+        """Async read on a normal HNS file must yield its chunks."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        downloader = AsyncMock(spec=StorageStreamDownloader)
+        props = MagicMock()
+        props.metadata = {}
+        downloader.properties = props
+
+        async def _chunks():  # noqa: ANN202
+            yield b"data"
+
+        downloader.chunks = _chunks
+        bc.download_blob = AsyncMock(return_value=downloader)
+        backend._cc_instance.get_blob_client.return_value = bc
+        chunks = [c async for c in backend.read("file.txt")]
+        assert chunks == [b"data"]
+
+    @pytest.mark.spec("BE-021", "ASYNC-014")
+    async def test_delete_on_hns_directory_raises_invalid_path(self) -> None:
+        """BUG-197: async delete on an HNS directory path must raise InvalidPath.
+
+        The pre-check calls get_blob_properties() before delete_blob();
+        when hdi_isfolder is set, InvalidPath is raised without any delete call.
+        """
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        dir_props = MagicMock()
+        dir_props.metadata = {"hdi_isfolder": "true"}
+        bc.get_blob_properties = AsyncMock(return_value=dir_props)
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="is a directory"):
+            await backend.delete("mydir")
+        bc.delete_blob.assert_not_awaited()
+
+    @pytest.mark.spec("BE-021", "ASYNC-014")
+    async def test_delete_on_hns_file_does_not_raise(self) -> None:
+        """Async delete on a normal HNS file must not raise InvalidPath."""
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        file_props = MagicMock()
+        file_props.metadata = {}
+        bc.get_blob_properties = AsyncMock(return_value=file_props)
+        bc.delete_blob = AsyncMock(return_value=None)
+        backend._cc_instance.get_blob_client.return_value = bc
+        await backend.delete("file.txt")
+        bc.delete_blob.assert_awaited_once()
+
 
 # =============================================================================
 # Max Concurrency (ASYNC-033)

@@ -877,6 +877,132 @@ class TestAzureHNSPaths:
         with pytest.raises(NotFound, match=r"^Not found: missing\b"):
             backend.get_folder_info("missing")
 
+    # BUG-197: read, read_bytes, read_seekable, delete must raise InvalidPath for HNS dirs
+
+    @pytest.mark.spec("BE-021", "BE-006")
+    def test_read_bytes_on_hns_directory_raises_invalid_path(self) -> None:
+        """BUG-197: read_bytes on an HNS directory path must raise InvalidPath.
+
+        The download_blob() call succeeds (directory marker is a 0-byte blob);
+        the fix inspects downloader.properties.metadata post-download.
+        """
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        # Do not spec StorageStreamDownloader: the fix accesses .properties which
+        # may not be in the spec, causing AttributeError instead of InvalidPath.
+        downloader = MagicMock()
+        downloader.readall.return_value = b""
+        downloader.properties.metadata = {"hdi_isfolder": "true"}
+        bc.download_blob.return_value = downloader
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="is a directory"):
+            backend.read_bytes("mydir")
+
+    @pytest.mark.spec("BE-021", "BE-006")
+    def test_read_bytes_on_hns_file_returns_bytes(self) -> None:
+        """read_bytes on a normal HNS file must return its content unchanged."""
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        downloader = MagicMock()
+        downloader.readall.return_value = b"hello"
+        downloader.properties.metadata = {}
+        bc.download_blob.return_value = downloader
+        backend._cc_instance.get_blob_client.return_value = bc
+        assert backend.read_bytes("file.txt") == b"hello"
+
+    @pytest.mark.spec("BE-021", "BE-006")
+    def test_read_on_hns_directory_raises_invalid_path(self) -> None:
+        """BUG-197: read on an HNS directory path must raise InvalidPath.
+
+        The pre-check calls get_blob_properties() (HEAD) before download_blob();
+        when hdi_isfolder is set, InvalidPath is raised before any download.
+        """
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        dir_props = MagicMock()
+        dir_props.metadata = {"hdi_isfolder": "true"}
+        bc.get_blob_properties.return_value = dir_props
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="is a directory"):
+            backend.read("mydir").close()
+
+    @pytest.mark.spec("BE-021", "BE-006")
+    def test_read_on_hns_file_does_not_raise(self) -> None:
+        """read on a normal HNS file must not raise InvalidPath."""
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        file_props = MagicMock()
+        file_props.metadata = {}
+        bc.get_blob_properties.return_value = file_props
+        downloader = MagicMock(spec=StorageStreamDownloader)
+        downloader.chunks.return_value = iter([b"data"])
+        bc.download_blob.return_value = downloader
+        backend._cc_instance.get_blob_client.return_value = bc
+        stream = backend.read("file.txt")
+        assert stream is not None
+        stream.close()
+
+    @pytest.mark.spec("BE-021", "BE-006")
+    def test_read_seekable_on_hns_directory_raises_invalid_path(self) -> None:
+        """BUG-197: read_seekable on an HNS directory path must raise InvalidPath.
+
+        read_seekable always calls get_blob_properties() for the file size;
+        the fix checks hdi_isfolder from the same response.
+        """
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        dir_props = MagicMock()
+        dir_props.metadata = {"hdi_isfolder": "true"}
+        dir_props.size = 0
+        bc.get_blob_properties.return_value = dir_props
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="is a directory"):
+            backend.read_seekable("mydir")
+
+    @pytest.mark.spec("BE-021", "BE-006")
+    def test_read_seekable_on_hns_file_does_not_raise(self) -> None:
+        """read_seekable on a normal HNS file must not raise InvalidPath."""
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        file_props = MagicMock()
+        file_props.metadata = {}
+        file_props.size = 5
+        bc.get_blob_properties.return_value = file_props
+        backend._cc_instance.get_blob_client.return_value = bc
+        stream = backend.read_seekable("file.txt")
+        assert stream is not None
+        stream.close()
+
+    @pytest.mark.spec("BE-021", "BE-014")
+    def test_delete_on_hns_directory_raises_invalid_path(self) -> None:
+        """BUG-197: delete on an HNS directory path must raise InvalidPath.
+
+        The pre-check calls get_blob_properties() (HEAD) before delete_blob();
+        when hdi_isfolder is set, InvalidPath is raised without any delete call.
+        """
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        dir_props = MagicMock()
+        dir_props.metadata = {"hdi_isfolder": "true"}
+        bc.get_blob_properties.return_value = dir_props
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="is a directory"):
+            backend.delete("mydir")
+        bc.delete_blob.assert_not_called()
+
+    @pytest.mark.spec("BE-021", "BE-014")
+    def test_delete_on_hns_file_does_not_raise(self) -> None:
+        """delete on a normal HNS file must not raise InvalidPath."""
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        file_props = MagicMock()
+        file_props.metadata = {}
+        bc.get_blob_properties.return_value = file_props
+        bc.delete_blob.return_value = None
+        backend._cc_instance.get_blob_client.return_value = bc
+        backend.delete("file.txt")
+        bc.delete_blob.assert_called_once()
+
 
 # =============================================================================
 # Max concurrency threading (AZ-033)

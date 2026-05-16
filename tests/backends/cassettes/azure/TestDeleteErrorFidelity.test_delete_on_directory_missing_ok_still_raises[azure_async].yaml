@@ -142,30 +142,97 @@ interactions:
       - gzip, deflate
       Connection:
       - keep-alive
-      Content-Length:
-      - '0'
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
       - '2026-04-06'
-    method: DELETE
+    method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/ddir2
   response:
     body:
-      string: "\uFEFF<?xml version=\"1.0\" encoding=\"utf-8\"?><Error><Code>DirectoryIsNotEmpty</Code><Message>This
-        operation is not permitted on a non-empty directory.\nRequestId:SCRUBBED\nTime:SCRUBBED</Message></Error>"
+      string: ''
     headers:
+      Accept-Ranges:
+      - bytes
       Content-Length:
-      - '245'
-      Content-Type:
-      - application/xml
-      x-ms-error-code:
-      - DirectoryIsNotEmpty
+      - '0'
+      ETag:
+      - '"0x8DEB35157AE36D0"'
+      Last-Modified:
+      - Sat, 16 May 2026 13:45:07 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rwx,group::r-x,other::---
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Sat, 16 May 2026 13:45:07 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-meta-hdi_isfolder:
+      - 'true'
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rwxr-x---
+      x-ms-resource-type:
+      - directory
+      x-ms-server-encrypted:
+      - 'true'
       x-ms-version:
       - '2026-04-06'
     status:
-      code: 409
-      message: This operation is not permitted on a non-empty directory.
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/ddir2/file.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Content-Length:
+      - '1'
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DEB35157B24214"'
+      Last-Modified:
+      - Sat, 16 May 2026 13:45:07 GMT
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Sat, 16 May 2026 13:45:07 GMT
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 200
+      message: OK
 - request:
     body: null
     headers:

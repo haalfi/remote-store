@@ -55,6 +55,7 @@ a best-effort basis so a teardown race does not turn a green test red.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import uuid
@@ -866,54 +867,43 @@ class TestAzureLiveHnsCopy:
 
 
 class TestAzureLiveHnsFileApiOnDirectory:
-    """``read_bytes`` and ``delete`` on HNS directory blobs — actual live behaviour.
+    """``read_bytes`` and ``delete`` on HNS directory blobs must raise ``InvalidPath``.
 
     BE-021 mandates that file-API operations on a directory path raise
     ``InvalidPath``. ``write``/``write_atomic``/``open_atomic`` enforce this via
     the ``hdi_isfolder`` probe (BUG-190/BUG-192); ``read_bytes`` and ``delete``
-    do not. These tests document the actual live behaviour:
-
-    - ``read_bytes(hns_dir)`` silently returns ``b""`` (0 bytes).
-    - ``delete(hns_dir)`` silently deletes the directory marker — a data-loss
-      defect, since the caller invoked the *file*-API ``delete()``.
-
-    Both deviations are tracked as **BUG-197** in ``sdd/BACKLOG.md``. The tests
-    must be flipped back to ``with pytest.raises(InvalidPath):`` when that fix
-    lands — they then become regression guards for the spec contract.
+    are fixed by BUG-197. These tests are the live regression guards for the
+    spec contract.
 
     Spec: BE-021 (directory-path guard), BE-013 (read), BE-014 (delete).
     """
 
     @pytest.mark.spec("BE-021", "BE-013")
-    def test_read_bytes_on_hns_directory_returns_empty_bytes(
+    def test_read_bytes_on_hns_directory_raises_invalid_path(
         self,
         live_hns_backend: tuple[AzureBackend, str],
     ) -> None:
-        """BUG-197: should raise ``InvalidPath`` per BE-021; currently returns ``b""``."""
+        """BUG-197 fix: read_bytes on an HNS directory must raise ``InvalidPath``."""
         backend, dirpath = live_hns_backend
-        result = backend.read_bytes(dirpath)
-        assert result == b""
+        with pytest.raises(InvalidPath, match="is a directory"):
+            backend.read_bytes(dirpath)
 
     @pytest.mark.spec("BE-021", "BE-014")
-    def test_delete_on_hns_directory_silently_removes_directory(
+    def test_delete_on_hns_directory_raises_invalid_path(
         self,
         live_hns_backend: tuple[AzureBackend, str],
         live_hns_env: tuple[str, str],
     ) -> None:
-        """BUG-197: should raise ``InvalidPath`` per BE-021; currently destroys the directory.
+        """BUG-197 fix: delete on an HNS directory must raise ``InvalidPath``.
 
-        Uses an isolated, per-test directory (not the module-shared one) because
-        a successful delete actually mutates the account: a shared directory
-        would be gone for all subsequent tests in the module.
+        Uses an isolated, per-test directory (not the module-shared one) so that
+        when the fix is working the directory is NOT deleted and subsequent tests
+        are unaffected. A failing test (InvalidPath not raised, directory deleted)
+        would still be isolated because the scratch directory is fresh each run.
         """
         backend, dirpath = live_hns_backend
-        # Reuse the env values already validated by _require_live_env() in the
-        # fixture chain; direct os.environ access here would raise KeyError instead
-        # of the descriptive pytest.fail message on misconfiguration.
         conn, fs_name = live_hns_env
         prefix = dirpath.rsplit("/", 1)[0]
-        # Provision a fresh directory just for this destructive test. The backend
-        # API has no create_directory method, so use the underlying DataLake client.
         scratch_dir = f"{prefix}/scratch-dir-{uuid.uuid4().hex[:8]}"
         service = DataLakeServiceClient.from_connection_string(conn)
         try:
@@ -921,8 +911,14 @@ class TestAzureLiveHnsFileApiOnDirectory:
             fs_client.get_directory_client(scratch_dir).create_directory()
 
             assert backend.exists(scratch_dir) is True
-            backend.delete(scratch_dir)
-            # The directory marker is gone — this is the data-loss surface.
-            assert backend.exists(scratch_dir) is False
+            with pytest.raises(InvalidPath, match="is a directory"):
+                backend.delete(scratch_dir)
+            # Directory must still exist — InvalidPath must have fired before
+            # any SDK mutation (BUG-197 data-loss guard).
+            assert backend.exists(scratch_dir) is True
         finally:
+            # Best-effort cleanup: delete the scratch directory via the DataLake
+            # client (bypasses the file-API guard that prevents backend.delete).
+            with contextlib.suppress(Exception):
+                fs_client.get_directory_client(scratch_dir).delete_directory()
             service.close()
