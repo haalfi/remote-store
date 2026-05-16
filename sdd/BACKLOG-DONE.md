@@ -8,6 +8,59 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-201 — `AsyncAzureBackend.move`/`copy` self-op (src == dst) raises `AlreadyExists` instead of being a no-op**
+  spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · audience: library.maintainer
+  Conformance contract for `move(p, p)` and `copy(p, p)` is to be a no-op
+  (data preserved, no error). `AsyncAzureBackend` raised `AlreadyExists`
+  instead. Sync variant was already correct; the gap was async-only.
+  Fix: detect `src == dst` at the top of `move`/`copy` and short-circuit,
+  with a `get_blob_properties()` precheck so a missing source still raises
+  `NotFound`. Test gating was via the per-fixture `self_op_supported` flag
+  in `tests/backends/fixtures/backends.toml`; async fixtures override to
+  `self_op_supported=true` so the conformance test runs against
+  `azure_*_async`. Six stale `[azure_async-*]` cassettes removed (they
+  used a pre-BK-191 parameter ordering and were no longer reachable from
+  the new `[*-azure_async]` parametrisation).
+  Trace: [`sdd/traces/bug-201-async-move-copy-self-op.yml`](traces/bug-201-async-move-copy-self-op.yml).
+
+- [x] **BUG-200 — `AsyncAzureBackend.move`/`copy` directory checks raise wrong error / `InvalidInput` on real HNS**
+  spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024 · audience: library.maintainer
+  Conformance contract: `move`/`copy` with a directory source or directory
+  destination raises `InvalidPath`. `AsyncAzureBackend` instead raised
+  `RemoteStoreError(InvalidInput)` (source-is-directory) or `AlreadyExists`
+  (destination-is-directory). Same defect family as BUG-195/BUG-197/BUG-190:
+  missing `hdi_isfolder` probe before the SDK rename/copy call. Fix: after
+  `get_blob_properties()` returns on src/dst, inspect metadata for
+  `hdi_isfolder`; raise `InvalidPath` if present. Applied symmetrically to
+  both sync and async paths; sync siblings exercised post BK-186 exhibit
+  the same defect and receive the same fix.
+  Trace: [`sdd/traces/bug-200-async-move-copy-directory-check.yml`](traces/bug-200-async-move-copy-directory-check.yml).
+
+- [x] **BUG-198 — Folder-API on a file path raises wrong error type on `AsyncAzureBackend` (HNS)**
+  spec: BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017 · audience: library.maintainer
+  Symmetric to BUG-197/BUG-195: `delete_folder` and `get_folder_info` on a
+  *file* path should raise `InvalidPath`, but `AsyncAzureBackend` raised
+  `DirectoryNotEmpty` (delete_folder) and `NotFound` (get_folder_info).
+  Sync siblings were exercised post BK-186 `_skip_flat_namespace` lift and
+  exhibited the same defect family. Fix: probe `get_directory_properties`
+  metadata for absence of `hdi_isfolder=true` before invoking the folder-API
+  SDK call; raise `InvalidPath` when the target is a file. Applied
+  symmetrically to `delete_folder` and `get_folder_info` on both
+  `AzureBackend` and `AsyncAzureBackend`.
+  Trace: [`sdd/traces/bug-198-async-folder-api-on-file.yml`](traces/bug-198-async-folder-api-on-file.yml).
+
+- [x] **BUG-196 — Async `write_atomic` HNS path lacks BUG-173 try/except fallback around `get_file_properties()`**
+  spec: WR-001a, WR-004, AZ-034 · audience: library.maintainer
+  `AsyncAzureBackend.write_atomic` HNS path called `get_file_properties()`
+  *after* the rename committed but did not wrap it in try/except. The sync
+  sibling (BUG-173) deliberately catches the exception, logs a warning, and
+  returns `WriteResult(etag=None, last_modified=None)` — the rename has
+  already committed, so a transient post-rename read failure must not
+  surface as a write failure (WR-001a lists both fields as `Optional`).
+  Fix: mirror the sync try/except + log + fallback shape on the async path;
+  weaken the `TestAsyncLiveHnsWriteResult` assertion to allow `etag=None`.
+  Trace: [`sdd/traces/bug-196-async-write-atomic-fallback.yml`](traces/bug-196-async-write-atomic-fallback.yml).
+
 - [x] **BUG-212 — `scripts/record_cassettes.py` deletes cassettes before validating env**
   spec: — · audience: contributor.tooling
   Step 1 unlinks every cassette under `tests/backends/cassettes/<backend>/`
