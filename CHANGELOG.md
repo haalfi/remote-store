@@ -8,6 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ## [Unreleased]
 
 - BUG-199: `AzureBackend.get_folder_info` and `AsyncAzureBackend.get_folder_info` no longer count HNS directory marker blobs (`hdi_isfolder=true`) as files; recursive `file_count` is now accurate on real ADLS Gen2 (BE-017, ASYNC-017)
+- BUG-197 **(data-loss fix)**: `AzureBackend` and `AsyncAzureBackend` file-API operations now probe `hdi_isfolder` before invoking the SDK on HNS — `read_bytes`, `read`, and `read_seekable` raise `InvalidPath` instead of silently returning `b""` when the path is a directory blob, and `delete` raises `InvalidPath` instead of silently destroying the directory marker. The `delete` regression was a data-loss defect (file-API `delete()` on what the caller believed was a file but was actually a directory destroyed account state without surfacing an error) (BE-013, BE-014, BE-021, ASYNC-013)
 - ID-192: `aio.md` restructured to lead with `AsyncStore` — full per-category method sections mirroring `store.md`, and the four `members: false` stubs (`SyncBackendAdapter`, `AsyncBackendSyncAdapter`, `AsyncMemoryBackend`, `AsyncAzureBackend`) now render their full member surface, surfacing the layer-4 `Raises:` docstrings introduced by BK-173
 - BUG-208: fix `S3Backend.check_health()` unawaited `aiobotocore` coroutine that made the probe a silent no-op
 - BK-202: `SFTPUtils` helpers documented as true `@staticmethod` (correct `meth` rendering, signatures restored on docs.remotestore.dev)

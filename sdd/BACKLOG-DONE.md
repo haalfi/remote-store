@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)** *(data-loss fix)*
+  spec: BE-013, BE-014, BE-021, ASYNC-013 · audience: library.maintainer
+  BE-021 requires file-API operations on a directory path to raise `InvalidPath`.
+  `write`/`write_atomic`/`open_atomic` enforce this via the `hdi_isfolder` probe
+  (BUG-190/BUG-192); `read_bytes`, `read`, `read_seekable`, and `delete` did not.
+  Live behaviour on a real ADLS Gen2 account: `read_bytes(hns_dir)` silently
+  returned `b""`; `delete(hns_dir)` silently destroyed the directory marker.
+  The `delete` regression was a data-loss defect — calling the file-API
+  `delete()` on what the caller believed was a file but was actually a
+  directory mutated account state without surfacing an error.
+  Fix: extend the existing `hdi_isfolder` probe pattern to `read`, `read_bytes`,
+  `read_seekable`, and `delete` on both `AzureBackend` and `AsyncAzureBackend`.
+  Probe runs before any SDK mutation — detection raises `InvalidPath` without
+  touching the directory marker. Live tests in `TestAzureLiveHnsFileApiOnDirectory`
+  and the async sibling flipped from documenting the bad behaviour to asserting
+  `InvalidPath`. Five cassettes hand-edited to remove the no-longer-issued
+  GET/range calls and add the new HEAD probe; Stage 3 refresh via
+  `RS_TEST_LIVE_HNS=1 hatch run record-azure` should re-record them to confirm
+  wire fidelity.
+  Trace: [`sdd/traces/bug-197-azure-read-delete-hns-directory.yml`](traces/bug-197-azure-read-delete-hns-directory.yml).
+
 - [x] **BUG-212 — `scripts/record_cassettes.py` deletes cassettes before validating env**
   spec: — · audience: contributor.tooling
   Step 1 unlinks every cassette under `tests/backends/cassettes/<backend>/`
