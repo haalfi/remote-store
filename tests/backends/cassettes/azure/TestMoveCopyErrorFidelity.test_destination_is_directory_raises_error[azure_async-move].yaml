@@ -13,7 +13,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -23,11 +23,11 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB1B69711B127"'
+      - '"0x8DEB3517112E001"'
       Last-Modified:
-      - Thu, 14 May 2026 12:44:50 GMT
+      - Sat, 16 May 2026 13:45:50 GMT
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -43,7 +43,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: GET
     uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
   response:
@@ -59,7 +59,7 @@ interactions:
       x-ms-sku-name:
       - Standard_LRS
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -75,21 +75,19 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/move_src.txt
   response:
     body:
       string: ''
     headers:
-      Connection:
-      - close
       Transfer-Encoding:
       - chunked
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -111,7 +109,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/move_src.txt
   response:
@@ -123,15 +121,15 @@ interactions:
       Content-MD5:
       - JdkCwkKDq4z7rFTfoQGtMQ==
       ETag:
-      - '"0x8DEB1B69787B55C"'
+      - '"0x8DEB35171672FD4"'
       Last-Modified:
-      - Thu, 14 May 2026 12:44:51 GMT
+      - Sat, 16 May 2026 13:45:50 GMT
       x-ms-content-crc64:
       - nZ3ur031YcA=
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -147,7 +145,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/move_dstdir/file.txt
   response:
@@ -159,7 +157,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -181,7 +179,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/move_dstdir/file.txt
   response:
@@ -193,15 +191,15 @@ interactions:
       Content-MD5:
       - ndTkYSaMgDT1yFZOFVxnpg==
       ETag:
-      - '"0x8DEB1B697C88F9C"'
+      - '"0x8DEB35171A08D2C"'
       Last-Modified:
-      - Thu, 14 May 2026 12:44:52 GMT
+      - Sat, 16 May 2026 13:45:51 GMT
       x-ms-content-crc64:
       - seRUZAJnvS0=
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -217,7 +215,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/move_src.txt
   response:
@@ -233,9 +231,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEB1B69787B55C"'
+      - '"0x8DEB35171672FD4"'
       Last-Modified:
-      - Thu, 14 May 2026 12:44:51 GMT
+      - Sat, 16 May 2026 13:45:50 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -245,7 +243,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Thu, 14 May 2026 12:44:51 GMT
+      - Sat, 16 May 2026 13:45:50 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -261,7 +259,7 @@ interactions:
       x-ms-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -277,7 +275,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcdd/move_dstdir
   response:
@@ -289,9 +287,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB1B697C5CDBC"'
+      - '"0x8DEB351719D91DC"'
       Last-Modified:
-      - Thu, 14 May 2026 12:44:52 GMT
+      - Sat, 16 May 2026 13:45:51 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -301,7 +299,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Thu, 14 May 2026 12:44:52 GMT
+      - Sat, 16 May 2026 13:45:51 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -319,7 +317,7 @@ interactions:
       x-ms-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -337,7 +335,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: DELETE
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -347,7 +345,7 @@ interactions:
       Content-Length:
       - '0'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 202
       message: Accepted

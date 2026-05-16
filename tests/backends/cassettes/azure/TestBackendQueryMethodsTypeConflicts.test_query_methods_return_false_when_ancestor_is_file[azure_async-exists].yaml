@@ -13,7 +13,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -23,11 +23,11 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB1B6AFCB03AE"'
+      - '"0x8DEB35185C6DEB0"'
       Last-Modified:
-      - Thu, 14 May 2026 12:45:32 GMT
+      - Sat, 16 May 2026 13:46:25 GMT
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -43,7 +43,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: GET
     uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
   response:
@@ -59,7 +59,7 @@ interactions:
       x-ms-sku-name:
       - Standard_LRS
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -75,7 +75,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/a/b
   response:
@@ -87,7 +87,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -109,7 +109,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/a/b
   response:
@@ -121,15 +121,15 @@ interactions:
       Content-MD5:
       - fwtrsLfpUbf9KypKMmKX4Q==
       ETag:
-      - '"0x8DEB1B6B034BC70"'
+      - '"0x8DEB351861B24D4"'
       Last-Modified:
-      - Thu, 14 May 2026 12:45:33 GMT
+      - Sat, 16 May 2026 13:46:25 GMT
       x-ms-content-crc64:
       - cEROtbkawrk=
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -145,7 +145,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/a/b/c
   response:
@@ -157,7 +157,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -173,7 +173,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/a/b/c
   response:
@@ -185,7 +185,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -201,7 +201,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/a/b/c/d
   response:
@@ -213,7 +213,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -229,7 +229,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/a/b/c/d
   response:
@@ -241,7 +241,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -259,7 +259,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: DELETE
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -269,7 +269,7 @@ interactions:
       Content-Length:
       - '0'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 202
       message: Accepted

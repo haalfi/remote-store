@@ -13,7 +13,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -23,11 +23,11 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB1B5D8FAFE4F"'
+      - '"0x8DEB350D802CEF4"'
       Last-Modified:
-      - Thu, 14 May 2026 12:39:32 GMT
+      - Sat, 16 May 2026 13:41:33 GMT
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -43,7 +43,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: GET
     uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
   response:
@@ -59,7 +59,7 @@ interactions:
       x-ms-sku-name:
       - Standard_LRS
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -75,7 +75,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: HEAD
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/wr/streaming-size.bin
   response:
@@ -87,7 +87,7 @@ interactions:
       x-ms-error-code:
       - BlobNotFound
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 404
       message: The specified blob does not exist.
@@ -105,7 +105,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PUT
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay/wr/.~tmp.streaming-size.bin?resource=file
   response:
@@ -115,13 +115,13 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB1B5D9648108"'
+      - '"0x8DEB350D85B5940"'
       Last-Modified:
-      - Thu, 14 May 2026 12:39:32 GMT
+      - Sat, 16 May 2026 13:41:34 GMT
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 201
       message: Created
@@ -141,7 +141,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PATCH
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay/wr/.~tmp.streaming-size.bin?action=append&position=0
   response:
@@ -153,7 +153,7 @@ interactions:
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 202
       message: Accepted
@@ -169,11 +169,11 @@ interactions:
       Content-Length:
       - '0'
       If-Match:
-      - '"0x8DEB1B5D9648108"'
+      - '"0x8DEB350D85B5940"'
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: PATCH
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay/wr/.~tmp.streaming-size.bin?action=flush&close=true
   response:
@@ -188,7 +188,7 @@ interactions:
       x-ms-error-code:
       - MissingRequiredQueryParameter
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 400
       message: A query parameter that's mandatory for this request is not specified.
@@ -206,7 +206,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: DELETE
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay/wr/.~tmp.streaming-size.bin
   response:
@@ -218,7 +218,7 @@ interactions:
       x-ms-delete-type-permanent:
       - 'true'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 200
       message: OK
@@ -236,7 +236,7 @@ interactions:
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     method: DELETE
     uri: https://azreplay.blob.core.windows.net/conformance-azure-replay?restype=container
   response:
@@ -246,7 +246,7 @@ interactions:
       Content-Length:
       - '0'
       x-ms-version:
-      - '2026-02-06'
+      - '2026-04-06'
     status:
       code: 202
       message: Accepted

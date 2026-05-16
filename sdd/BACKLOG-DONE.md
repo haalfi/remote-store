@@ -8,6 +8,51 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-212 — `scripts/record_cassettes.py` deletes cassettes before validating env**
+  spec: — · audience: contributor.tooling
+  Step 1 unlinks every cassette under `tests/backends/cassettes/<backend>/`
+  before pytest validates the live opt-in flag (Step 2/3) and before
+  `account_fn` validates the connection string (Step 4). A missing
+  `RS_TEST_LIVE_HNS=1` or an empty / Azurite `AZURE_STORAGE_CONNECTION_STRING`
+  therefore wipes the tree and only then fails. Recovery relied on the
+  cassettes being checked into git. Surfaced during the BUG-199 recording
+  attempt — first invocation hit the Windows cp1252 Unicode crash (fixed
+  inline), second invocation surfaced this ordering bug and wiped 253
+  cassettes; recovered via `git restore`.
+  Fix: new `_preflight_env(cfg)` helper at the top of `main()` that
+  loads `.env`, asserts the per-backend `live_opt_in_env` flag is `"1"`,
+  and runs `cfg["account_fn"]()` to validate the cred string — all
+  before any destructive step. Backend config gains a `live_opt_in_env`
+  field (`"RS_TEST_LIVE_HNS"` for Azure). Two regression tests in
+  `tests/scripts/test_record_cassettes.py::TestPreflightEnvGuard`:
+  one pins `SystemExit` and cassette-tree intactness when the opt-in
+  is missing; the other pins source order (`_preflight_env` before
+  the Step 1 marker in `main()`) so a future edit cannot silently
+  re-introduce the regression.
+  Trace: [`sdd/traces/bug-212-record-cassettes-preflight.yml`](traces/bug-212-record-cassettes-preflight.yml).
+
+- [x] **BUG-199 — `AzureBackend.get_folder_info` recursive `file_count` includes HNS directory blobs as files (sync + async)**
+  spec: BE-017, ASYNC-017 · audience: user.api
+  `FolderInfo.file_count` returned by `get_folder_info(path, recursive=True)`
+  reported one extra "file" per HNS directory marker blob
+  (`hdi_isfolder=true`). Surfaced by three live conformance tests
+  (`test_get_folder_info_excludes_subdirs[azure_live]`,
+  `test_get_folder_info_counts_recursive_children[azure_live]`, and
+  `[azure_live_async]`).
+  Fix: HNS branch of `get_folder_info` now walks `_fs.get_paths(recursive=True)`
+  and filters `getattr(p, "is_directory", False)`, mirroring the pattern
+  `list_files` already uses for HNS. Non-HNS branch unchanged (no marker
+  blobs in flat namespace). Symmetric change in
+  `aio/backends/_azure.py`. Three xfail entries removed from
+  `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES`; all three tests now pass cleanly
+  against refreshed `azure_replay` / `azure_replay_async` cassettes (212
+  passed, 25 xfailed for other HNS bugs, 0 failed). Workflow doc added
+  in the same PR (`sdd/TESTING.md` § "Cassette-First Bug Investigation")
+  codifies the replay-first → classify → fix → live-verify pattern;
+  unrelated Unicode crash in `scripts/record_cassettes.py:115` and
+  missing-prefix in `sdd/TESTING.md` § "Cassette Refresh" co-shipped.
+  Trace: [`sdd/traces/bug-199-azure-folder-info-hns-dir-count.yml`](traces/bug-199-azure-folder-info-hns-dir-count.yml).
+
 - [x] **BK-204 — SFTP-007 host-key resolution chain: config / env / STRICT-file tiers uncovered**
   spec: SFTP-007 · audience: infra.test
   `_resolve_host_keys` documents a four-tier precedence

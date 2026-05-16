@@ -1,0 +1,216 @@
+id: BUG-199
+title: "AzureBackend.get_folder_info recursive file_count includes HNS directory blobs as files (sync + async)"
+trigger: "On real ADLS Gen2, get_folder_info(path, recursive=True) reports file_count one higher than the actual file count because the recursive walk counts hdi_isfolder=true directory marker blobs as files. total_size is unaffected because directory markers are zero-byte."
+source_items:
+  - BUG-199
+audience:
+  - user.api
+  - contributor.process
+  - contributor.tooling
+  - infra.test
+discovery_followups:
+  - BUG-212
+  - BUG-213
+surprising_ripples:
+  - scripts/record_cassettes.py
+  - sdd/TESTING.md
+  - tests/backends/cassettes/azure/
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together; write failing test, see it fail, then fix"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Canonical bug-fix pipeline"
+      - file: sdd/BACKLOG.md
+        section: "BUG-199"
+        read_type: gate
+        extract: "spec: BE-017, ASYNC-017; surfaced by 3 conformance tests; fix shape: filter hdi_isfolder=true from recursive file aggregation"
+
+  - id: reproduce
+    name: Reproduce on cassette (replay-first)
+    steps:
+      - file: tests/backends/fixtures/azure_replay.py
+        section: "(full)"
+        read_type: gate
+        extract: "Stage 1 kind=replay fixture; record_mode=none forces replay; cassette names normalised so [azure_replay] reads [azure].yaml"
+      - file: tests/backends/cassettes/azure/TestBackendMetadata.test_get_folder_info_excludes_subdirs[azure].yaml
+        section: "x-ms-is-hns-enabled, x-ms-meta-hdi_isfolder"
+        read_type: gate
+        extract: "Confirms cassette is a real HNS recording with directory marker present in the wire response"
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES / pytest_collection_modifyitems"
+        read_type: gate
+        extract: "BUG-199 tests already xfail(strict=False) for azure_replay / azure_replay_async; must use --runxfail to see the actual assertion failure"
+      - file: tests/backends/conformance/test_metadata.py
+        section: "TestBackendMetadata.test_get_folder_info_excludes_subdirs, TestGetFolderInfoAggregates.test_get_folder_info_counts_recursive_children"
+        read_type: gate
+        extract: "Seed {mix/a.txt, mix/sub/b.txt}, expect file_count==2; on HNS replay returns 3 (extra = mix/sub directory blob); total_size==5 holds"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestGetFolderInfoAggregates.test_get_folder_info_counts_recursive_children"
+        read_type: gate
+        extract: "Async sibling exercises azure_replay_async with the same shape; confirms shared defect across sync + async walks"
+
+  - id: classify
+    name: Classify cassette sufficiency
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "get_folder_info (lines 744-776)"
+        read_type: gate
+        extract: "Bug is at line 758-759: list_blobs(name_starts_with=prefix) increments file_count for every entry, including HNS directory markers. No filter."
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "list_files HNS branch (lines 638-648)"
+        read_type: reference
+        extract: "list_files already does this correctly for HNS by using self._fs.get_paths() and filtering on getattr(p, 'is_directory', False) — DataLake DFS API exposes the flag inline. Suggests Fix B: mirror this pattern in get_folder_info."
+        outcome: ok
+      - file: tests/backends/cassettes/azure/TestBackendMetadata.test_get_folder_info_excludes_subdirs[azure].yaml
+        section: "GET ?comp=list&prefix=mix%2F (lines 264-307)"
+        read_type: gate
+        extract: "XML response carries <ResourceType>directory</ResourceType> for mix/sub. But empirical probe (since deleted) showed: default list_blobs does NOT expose resource_type / is_directory on BlobProperties; metadata={} unless include=['metadata'] is passed. The wire response holds the marker; the SDK drops it."
+        outcome: misleading
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES (lines 230-248)"
+        read_type: reference
+        extract: "Confirms BUG-199 tests already xfail(strict=False); fix completion requires removing test_get_folder_info_counts_recursive_children and test_get_folder_info_excludes_subdirs from this set."
+        outcome: ok
+
+  - id: classify_decision
+    name: Cassette sufficiency decision
+    steps:
+      - file: sdd/TESTING.md
+        section: "Cassette-First Bug Investigation / Step 2"
+        read_type: gate
+        extract: "Three viable fix shapes (include=['metadata'], DataLake get_paths, HEAD per entry) all change the wire call. Per the workflow's classification table: cassette insufficient → refresh required. Picked Fix B (get_paths, mirrors list_files at _azure.py:638-648)."
+        outcome: ok
+
+  - id: refresh_cassettes
+    name: Refresh cassettes (Stage 3)
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "_section (line 115-116)"
+        read_type: gate
+        extract: "First attempt crashed at Step 1 on Windows cp1252 console — U+2500 box-draw bars unencodable. Fixed inline to ASCII '-'. Co-shipped per user direction (option 2)."
+        outcome: misleading
+      - file: scripts/record_cassettes.py
+        section: "main / step ordering"
+        read_type: reference
+        extract: "Second-order bug surfaced: script deletes all cassettes at Step 1 before env validation at Step 2. RS_TEST_LIVE_HNS env mismatch wiped 253 cassettes; recovered via git restore. Reported to user as separate finding; not fixed in this PR."
+        outcome: misleading
+      - file: sdd/TESTING.md
+        section: "Cassette Refresh"
+        read_type: gate
+        extract: "Doc gap: example showed 'hatch run record-azure' without RS_TEST_LIVE_HNS=1 prefix. Updated to 'RS_TEST_LIVE_HNS=1 hatch run record-azure' with rationale (deliberately not in .env to keep default test runs offline)."
+        outcome: misleading
+      - file: tests/backends/cassettes/azure/
+        section: "(all 254 cassettes)"
+        read_type: gate
+        extract: "Recorded successfully against real ADLS Gen2: 254 cassettes, scrub clean, Stage 1 replay smoke passed with 3 xpasses (the BUG-199 tests no longer fail)."
+        outcome: ok
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-017"
+        read_type: gate
+        extract: "GetFolderInfo aggregate postcondition; ChildFiles definition (recursive children file set, not including directory nodes)"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-017"
+        read_type: gate
+        extract: "Async sibling contract — mirrors BE-017"
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/DESIGN.md
+        section: "1–4"
+        read_type: reference
+        extract: "Formatting, types, docstrings for backends/_azure.py and aio/backends/_azure.py"
+      - file: src/remote_store/backends/_azure.py
+        section: "get_folder_info recursive walk"
+        read_type: gate
+        extract: "Apply hdi_isfolder filter; preserve total_size semantics"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "get_folder_info recursive walk"
+        read_type: gate
+        extract: "Apply symmetric filter on async path"
+
+  - id: review_round_1
+    name: PR #645 review — test gaps + doc rule violation
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_get_folder_info_*"
+        read_type: gate
+        extract: "Existing test_get_folder_info_checks_directory_on_hns mocked list_blobs (stale wire after fix). Updated to mock get_paths. Added test_get_folder_info_filters_hns_directory_markers (BUG-199 regression — mix of files + dir markers, assert only files counted) and test_get_folder_info_raises_not_found_on_hns_missing_directory (BE-017 NotFound path)."
+        outcome: ok
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths.test_get_folder_info_*"
+        read_type: gate
+        extract: "Async HNS branch had no mock-level test (only cassette coverage). Added 3 mirror tests in TestAsyncAzureHNSPaths."
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Cassette-First Bug Investigation / Step 1"
+        read_type: gate
+        extract: "Initial prose named _AZURE_HNS_KNOWN_FAILURE_FN_NAMES and _AZURE_REAL_FIXTURE_IDS by symbol — CONTENT-RULES Rule 1 violation (private symbols in stable prose rot on rename). Rewrote to describe mechanism (hook + constants) without naming the private symbols."
+        outcome: misleading
+
+  - id: review_round_2
+    name: PR #645 review round 2 — attribute precedence + doc rule (Step 4)
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "get_folder_info HNS branch / size lookup"
+        read_type: gate
+        extract: "Initial fix read content_length first, then size — opposite order from props_to_fileinfo (_azure_common.py:127) which reads size first. Different orderings on the same PathProperties could give FolderInfo.total_size != FileInfo.size for the same path. Swapped to match the helper; same change applied to async sibling."
+        outcome: misleading
+      - file: sdd/TESTING.md
+        section: "Cassette-First Bug Investigation / Step 4"
+        read_type: gate
+        extract: "Round 1 fixed the private-symbol-in-prose violation in Step 1 but missed Step 4 — same constant named again. Rewrote Step 4 to point at 'the xfail roster (same file referenced in Step 1)' to match Step 1's mechanism-not-symbol phrasing."
+        outcome: misleading
+      - file: src/remote_store/backends/_azure.py
+        section: "get_folder_info HNS branch / root path"
+        read_type: reference
+        extract: "Reviewer flagged root-path call shape (path='') as a verification gap — get_directory_client('') SDK semantics not covered by cassette. Explicitly advisory ('not a regression... no request to change'). Filed as BUG-213 per user direction; thread resolved with cross-reference."
+        outcome: ok
+
+  - id: verify_replay
+    name: Verify on cassette
+    steps:
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES"
+        read_type: gate
+        extract: "Removed test_get_folder_info_counts_recursive_children and test_get_folder_info_excludes_subdirs from the xfail set."
+        outcome: ok
+      - file: tests/backends/conformance/test_metadata.py
+        section: "TestBackendMetadata.test_get_folder_info_excludes_subdirs, TestGetFolderInfoAggregates.test_get_folder_info_counts_recursive_children"
+        read_type: verify
+        extract: "Both pass cleanly under azure_replay (no xpass, no xfail). Full azure_replay sweep: 212 passed, 25 xfailed (other HNS bugs), 0 failed."
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestGetFolderInfoAggregates.test_get_folder_info_counts_recursive_children"
+        read_type: verify
+        extract: "Async sibling passes cleanly under azure_replay_async."
+        outcome: ok
+
+  - id: verify_ripple
+    name: Ripple-check + ship
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG item moved to BACKLOG-DONE, CHANGELOG [Unreleased] entry, failing test pre-existed (xfail flipped), spec ID cited"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: "Add one-line BUG-199 entry per feedback_changelog_unreleased_terse"
+      - file: sdd/BACKLOG.md
+        section: "BUG-199"
+        read_type: gate
+        extract: "Move to BACKLOG-DONE.md"

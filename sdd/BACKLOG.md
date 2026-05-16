@@ -57,6 +57,23 @@ Confirmed defects on real ADLS Gen2 accounts plus testing infrastructure for liv
 Bug fixes follow the `hdi_isfolder` probe pattern established by BUG-190/BUG-192.
 BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/replay layer from BK-181 (landed).
 
+- [ ] **BUG-213 — Root-path HNS coverage gap in `AzureBackend.get_folder_info` (sync + async)**
+  spec: BE-017, ASYNC-017 · effort: S · audience: infra.test
+  The BUG-199 fix unconditionally calls `self._fs.get_directory_client(azure_path)`
+  followed by `dc.get_directory_properties()` in the HNS branch. When
+  `path=""` (root) `azure_path` becomes `""`, so this becomes
+  `get_directory_client("")` — DataLake-SDK semantics for the empty-path
+  root are SDK-specific and not exercised by any cassette (seeded paths
+  in the existing tests are `mix`, `gfr`, `my-dir`, etc.). The
+  subsequent `get_paths(path=azure_path or "/", recursive=True)` carries
+  a deliberate `"/"` fallback for the root case, which makes the
+  asymmetry stand out. Same gap in
+  `src/remote_store/aio/backends/_azure.py:853-854`. Pre-existing
+  (root-on-HNS was untested before BUG-199 too), surfaced by PR #645
+  round-2 review. Fix: add a Stage 3 cassette covering `get_folder_info("")`
+  on an HNS account, then mirror as a mock-level test pinning the
+  intended call shape.
+
 - [ ] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)**
   spec: BE-013, BE-014, BE-021, ASYNC-013 · effort: M · audience: library.maintainer
   BE-021 requires file-API operations on a directory path to raise `InvalidPath`.
@@ -149,20 +166,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   with key `"async-azure"`; the fix must also remove that key so the
   regression test runs against `azure_live_async`. Spec: BE-018, BE-019,
   ASYNC-018, ASYNC-019.
-
-- [ ] **BUG-199 — `AzureBackend.get_folder_info` recursive `file_count` includes HNS directory blobs as files (sync + async)**
-  spec: BE-017, ASYNC-017 · effort: M · audience: library.maintainer
-  `FolderInfo.file_count` returned by `get_folder_info(path, recursive=True)`
-  reports `3` where conformance expects `2`. The extra "file" is an HNS
-  directory blob (marker `hdi_isfolder=true`) that the recursive walk
-  fails to filter out. Surfaced by three live conformance tests:
-  `tests/backends/conformance/test_async_extended.py::TestGetFolderInfoAggregates::test_get_folder_info_counts_recursive_children[azure_live_async]`,
-  `tests/backends/conformance/test_metadata.py::TestGetFolderInfoAggregates::test_get_folder_info_counts_recursive_children[azure_live]`,
-  and `tests/backends/conformance/test_metadata.py::TestBackendMetadata::test_get_folder_info_excludes_subdirs[azure_live]`.
-  Both sync and async hit it, so the miscount lives in the shared
-  recursive-walk logic (or in the per-iteration filter) used by both
-  backends. Fix: filter `hdi_isfolder=true` entries from the recursive
-  file aggregation in `get_folder_info`. Spec: BE-017, ASYNC-017.
 
 - [ ] **BUG-198 — Folder-API on a file path raises wrong error type on `AsyncAzureBackend` (HNS)**
   spec: BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017 · effort: M · audience: library.maintainer

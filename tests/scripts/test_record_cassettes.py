@@ -92,3 +92,72 @@ class TestAzureBackendConfig:
             f"k-filters are not in the fixture registry: {sorted(missing)}. "
             "Update scripts/record_cassettes.py or the fixture registration."
         )
+
+
+class TestPreflightEnvGuard:
+    """BUG-212: env validation must precede the destructive Step 1 delete.
+
+    Before the guard landed, ``record_cassettes.py`` would unlink every
+    cassette under ``tests/backends/cassettes/<backend>/`` before pytest
+    failed on the missing opt-in flag. Recovery relied on the cassettes
+    being checked in.
+    """
+
+    def test_preflight_fails_when_opt_in_missing(self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """No RS_TEST_LIVE_HNS → _preflight_env exits non-zero; cassettes intact."""
+        cassette_dir = tmp_path / "cassettes"
+        cassette_dir.mkdir()
+        sentinel = cassette_dir / "sentinel.yaml"
+        sentinel.write_bytes(b"interactions: []\n")
+
+        cfg = dict(rc._BACKENDS["azure"])
+        cfg["cassette_dir"] = cassette_dir
+
+        monkeypatch.delenv("RS_TEST_LIVE_HNS", raising=False)
+
+        with pytest.raises(SystemExit) as exc:
+            rc._preflight_env(cfg, verify_only=False)
+        assert exc.value.code == 1
+        assert sentinel.exists(), "preflight must not touch cassettes on failure"
+
+    def test_preflight_noop_in_verify_only(self, rc, monkeypatch: pytest.MonkeyPatch) -> None:
+        """--verify-only must not require live creds: no delete to protect, Step 4 calls account_fn itself.
+
+        Regression guard for the PR #645 review finding: making preflight
+        unconditional broke the documented "skip recording; run only
+        scrub-verify + replay smoke" workflow.
+        """
+        monkeypatch.delenv("RS_TEST_LIVE_HNS", raising=False)
+        monkeypatch.delenv("AZURE_STORAGE_CONNECTION_STRING", raising=False)
+        cfg = dict(rc._BACKENDS["azure"])
+        # account_fn should NOT be invoked in verify_only mode; replace it
+        # with a sentinel that flips a flag iff called.
+        called = {"count": 0}
+
+        def _sentinel_account_fn() -> str:
+            called["count"] += 1
+            return "should-not-be-reached"
+
+        cfg["account_fn"] = _sentinel_account_fn
+
+        result = rc._preflight_env(cfg, verify_only=True)
+        assert result is None, "_preflight_env returns None on the no-op path"
+        assert called["count"] == 0, "account_fn must not run in verify_only (Step 4 calls it itself)"
+
+    def test_preflight_runs_before_delete_step_in_main(self, rc) -> None:
+        """main() calls _preflight_env BEFORE the Step 1 delete loop.
+
+        Pins the source order: a future edit that moves the delete back
+        above the preflight would re-introduce BUG-212.
+        """
+        import inspect
+
+        src = inspect.getsource(rc.main)
+        preflight_pos = src.find("_preflight_env(")
+        delete_pos = src.find("Step 1")
+        assert preflight_pos >= 0, "main() must call _preflight_env"
+        assert delete_pos >= 0, "main() must contain 'Step 1' section marker"
+        assert preflight_pos < delete_pos, (
+            "_preflight_env must run BEFORE Step 1 delete (BUG-212); "
+            "putting it after re-introduces the wipe-on-misconfig regression"
+        )

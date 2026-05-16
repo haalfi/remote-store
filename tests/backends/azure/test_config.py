@@ -836,10 +836,46 @@ class TestAzureHNSPaths:
         backend = self._make_hns_backend()
         dc = MagicMock(spec=DataLakeDirectoryClient)
         backend._fs_instance.get_directory_client.return_value = dc
-        backend._cc_instance.list_blobs.return_value = []  # empty dir
+        backend._fs_instance.get_paths.return_value = []  # empty dir
         info = backend.get_folder_info("my-dir")
         dc.get_directory_properties.assert_called_once()
+        backend._fs_instance.get_paths.assert_called_once()
         assert info.file_count == 0
+
+    @pytest.mark.spec("BE-017")
+    def test_get_folder_info_filters_hns_directory_markers(self) -> None:
+        """BUG-199: file_count must exclude hdi_isfolder=true entries returned by get_paths."""
+        backend = self._make_hns_backend()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
+        backend._fs_instance.get_directory_client.return_value = dc
+        file_a = MagicMock(spec=PathProperties)
+        file_a.is_directory = False
+        file_a.content_length = 3
+        file_a.last_modified = None
+        dir_marker = MagicMock(spec=PathProperties)
+        dir_marker.is_directory = True
+        dir_marker.content_length = 0
+        dir_marker.last_modified = None
+        file_b = MagicMock(spec=PathProperties)
+        file_b.is_directory = False
+        file_b.content_length = 2
+        file_b.last_modified = None
+        backend._fs_instance.get_paths.return_value = [file_a, dir_marker, file_b]
+        info = backend.get_folder_info("mix")
+        assert info.file_count == 2, "directory marker must not be counted as a file"
+        assert info.total_size == 5
+
+    @pytest.mark.spec("BE-017")
+    def test_get_folder_info_raises_not_found_on_hns_missing_directory(self) -> None:
+        """BE-017: !PathExists → NotFound. get_directory_properties raises ResourceNotFoundError."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
+        dc.get_directory_properties.side_effect = ResourceNotFoundError("not found")
+        backend._fs_instance.get_directory_client.return_value = dc
+        with pytest.raises(NotFound, match=r"^Not found: missing\b"):
+            backend.get_folder_info("missing")
 
 
 # =============================================================================

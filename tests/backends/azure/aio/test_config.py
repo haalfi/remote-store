@@ -1200,6 +1200,51 @@ class TestAsyncAzureHNSPaths:
         backend._fs_instance = AsyncMock(spec=FileSystemClient)
         return backend
 
+    @pytest.mark.spec("ASYNC-017")
+    async def test_get_folder_info_uses_get_paths_on_hns(self) -> None:
+        """BUG-199: HNS branch uses DFS get_paths, not Blob list_blobs."""
+        backend = self._make_hns_backend()
+        dc = AsyncMock(spec=DataLakeDirectoryClient)
+        backend._fs_instance.get_directory_client.return_value = dc
+        backend._fs_instance.get_paths.return_value = _async_iter([])
+        info = await backend.get_folder_info("my-dir")
+        dc.get_directory_properties.assert_called_once()
+        backend._fs_instance.get_paths.assert_called_once()
+        assert info.file_count == 0
+
+    @pytest.mark.spec("ASYNC-017")
+    async def test_get_folder_info_filters_hns_directory_markers(self) -> None:
+        """BUG-199: file_count excludes hdi_isfolder=true entries returned by get_paths."""
+        backend = self._make_hns_backend()
+        dc = AsyncMock(spec=DataLakeDirectoryClient)
+        backend._fs_instance.get_directory_client.return_value = dc
+        file_a = MagicMock(spec=PathProperties)
+        file_a.is_directory = False
+        file_a.content_length = 3
+        file_a.last_modified = None
+        dir_marker = MagicMock(spec=PathProperties)
+        dir_marker.is_directory = True
+        dir_marker.content_length = 0
+        dir_marker.last_modified = None
+        file_b = MagicMock(spec=PathProperties)
+        file_b.is_directory = False
+        file_b.content_length = 2
+        file_b.last_modified = None
+        backend._fs_instance.get_paths.return_value = _async_iter([file_a, dir_marker, file_b])
+        info = await backend.get_folder_info("mix")
+        assert info.file_count == 2, "directory marker must not be counted as a file"
+        assert info.total_size == 5
+
+    @pytest.mark.spec("ASYNC-017")
+    async def test_get_folder_info_raises_not_found_on_hns_missing_directory(self) -> None:
+        """ASYNC-017: !PathExists → NotFound. get_directory_properties raises ResourceNotFoundError."""
+        backend = self._make_hns_backend()
+        dc = AsyncMock(spec=DataLakeDirectoryClient)
+        dc.get_directory_properties.side_effect = ResourceNotFoundError("not found")
+        backend._fs_instance.get_directory_client.return_value = dc
+        with pytest.raises(NotFound, match=r"^Not found: missing\b"):
+            await backend.get_folder_info("missing")
+
     @pytest.mark.spec("ASYNC-018")
     async def test_move_uses_rename_on_hns(self) -> None:
         backend = self._make_hns_backend()
