@@ -120,7 +120,7 @@ def _section(title: str) -> None:
     print(f"\n{bar}\n  {title}\n{bar}")
 
 
-def _preflight_env(cfg: dict) -> None:
+def _preflight_env(cfg: dict, *, verify_only: bool) -> None:
     """Validate env vars BEFORE Step 1 deletes existing cassettes (BUG-212).
 
     Recording deletes the cassette tree at Step 1, then validates env
@@ -129,7 +129,15 @@ def _preflight_env(cfg: dict) -> None:
     otherwise wipe the cassette tree before any error surfaces. Run all
     env validation upfront so a misconfigured invocation leaves the tree
     intact.
+
+    When ``verify_only`` is true the preflight is a no-op: no Step 1
+    delete to protect, and Step 4 calls ``account_fn`` directly with its
+    own error path. Requiring the live opt-in flag here would block the
+    documented "skip recording; run only scrub-verify + replay" workflow.
     """
+    if verify_only:
+        return
+
     try:
         from dotenv import load_dotenv  # noqa: PLC0415 -- optional dep, lazy
     except ImportError:
@@ -173,7 +181,7 @@ def main() -> None:
     cfg = _BACKENDS[opts.backend]
     cassette_dir: Path = cfg["cassette_dir"]
 
-    _preflight_env(cfg)
+    _preflight_env(cfg, verify_only=opts.verify_only)
 
     if not opts.verify_only:
         _section("Step 1 — delete existing cassettes")

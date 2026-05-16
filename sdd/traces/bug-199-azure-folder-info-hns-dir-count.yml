@@ -14,6 +14,7 @@ surprising_ripples:
   - scripts/record_cassettes.py
   - sdd/TESTING.md
   - tests/backends/cassettes/azure/
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -139,6 +140,25 @@ phases:
         section: "get_folder_info recursive walk"
         read_type: gate
         extract: "Apply symmetric filter on async path"
+
+  - id: review_round_1
+    name: PR #645 review — test gaps + doc rule violation
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_get_folder_info_*"
+        read_type: gate
+        extract: "Existing test_get_folder_info_checks_directory_on_hns mocked list_blobs (stale wire after fix). Updated to mock get_paths. Added test_get_folder_info_filters_hns_directory_markers (BUG-199 regression — mix of files + dir markers, assert only files counted) and test_get_folder_info_raises_not_found_on_hns_missing_directory (BE-017 NotFound path)."
+        outcome: ok
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths.test_get_folder_info_*"
+        read_type: gate
+        extract: "Async HNS branch had no mock-level test (only cassette coverage). Added 3 mirror tests in TestAsyncAzureHNSPaths."
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Cassette-First Bug Investigation / Step 1"
+        read_type: gate
+        extract: "Initial prose named _AZURE_HNS_KNOWN_FAILURE_FN_NAMES and _AZURE_REAL_FIXTURE_IDS by symbol — CONTENT-RULES Rule 1 violation (private symbols in stable prose rot on rename). Rewrote to describe mechanism (hook + constants) without naming the private symbols."
+        outcome: misleading
 
   - id: verify_replay
     name: Verify on cassette

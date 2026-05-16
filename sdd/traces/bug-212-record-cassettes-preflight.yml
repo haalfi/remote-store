@@ -6,6 +6,7 @@ source_items:
 audience:
   - contributor.tooling
   - infra.test
+review_rounds: 1
 phases:
   - id: discovery
     name: Discovery (during BUG-199 recording)
@@ -56,4 +57,18 @@ phases:
         section: "(full)"
         read_type: verify
         extract: "6 tests pass (4 prior + 2 new)."
+        outcome: ok
+
+  - id: review_round_1
+    name: PR #645 review — verify_only carve-out
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "_preflight_env signature"
+        read_type: gate
+        extract: "Initial preflight ran unconditionally; --verify-only doesn't delete and doesn't need live creds (Step 4 calls account_fn itself). Added verify_only keyword-only parameter; preflight returns early when True."
+        outcome: ok
+      - file: tests/scripts/test_record_cassettes.py
+        section: "TestPreflightEnvGuard.test_preflight_noop_in_verify_only"
+        read_type: gate
+        extract: "Regression test: monkeypatched env empty, account_fn replaced with a sentinel counter; assert preflight returns None and sentinel never called."
         outcome: ok

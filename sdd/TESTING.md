@@ -216,10 +216,11 @@ assertion. Force the underlying failure with `--runxfail`:
 hatch run python -m pytest "<nodeid>[azure_replay]" --runxfail -v --tb=short
 ```
 
-The xfail roster lives in
-[`tests/backends/conformance/conftest.py`](../tests/backends/conformance/conftest.py)
-as `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES`; the parametrize ids it
-applies to are listed alongside it in `_AZURE_REAL_FIXTURE_IDS`.
+The xfail roster lives at the top of
+[`tests/backends/conformance/conftest.py`](../tests/backends/conformance/conftest.py);
+look for the `pytest_collection_modifyitems` hook and the constants it
+applies. Removing a test function name from the roster un-xfails it for
+all real-Azure fixture ids in one place.
 
 **Step 2 — Classify cassette sufficiency.** Read the backend code
 that the failing test exercises and ask: does the fix require any
