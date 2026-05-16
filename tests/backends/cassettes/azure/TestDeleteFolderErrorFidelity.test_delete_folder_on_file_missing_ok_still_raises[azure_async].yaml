@@ -197,7 +197,7 @@ interactions:
     body: null
     headers:
       Accept:
-      - application/json
+      - application/xml
       Accept-Encoding:
       - gzip, deflate
       Connection:
@@ -206,19 +206,48 @@ interactions:
       - azsdk-python-replay
       x-ms-version:
       - '2026-04-06'
-    method: GET
-    uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=dffile_mok.txt&maxResults=1&recursive=false&resource=filesystem
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/dffile_mok.txt
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134234127104372140","etag":"0x8DEB35159416DAC","expiryTime":"0","group":"$superuser","lastModified":"Sat,
-        16 May 2026 13:45:10 GMT","name":"dffile_mok.txt","owner":"$superuser","permissions":"rw-r-----"}]}
-
-        '
+      string: ''
     headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '1'
+      Content-MD5:
+      - ndTkYSaMgDT1yFZOFVxnpg==
       Content-Type:
-      - application/json;charset=utf-8
-      Transfer-Encoding:
-      - chunked
+      - application/octet-stream
+      ETag:
+      - '"0x8DEB35159416DAC"'
+      Last-Modified:
+      - Sat, 16 May 2026 13:45:10 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Sat, 16 May 2026 13:45:10 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
       x-ms-version:
       - '2026-04-06'
     status:

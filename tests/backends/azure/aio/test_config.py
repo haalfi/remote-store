@@ -33,7 +33,7 @@ from azure.storage.blob import (  # noqa: E402
     StorageStreamDownloader,
 )
 from azure.storage.blob.aio import BlobClient, BlobServiceClient, ContainerClient  # noqa: E402
-from azure.storage.filedatalake import PathProperties  # noqa: E402
+from azure.storage.filedatalake import DirectoryProperties, PathProperties  # noqa: E402
 from azure.storage.filedatalake.aio import (  # noqa: E402
     DataLakeDirectoryClient,
     DataLakeFileClient,
@@ -1250,6 +1250,9 @@ class TestAsyncAzureHNSPaths:
         """BUG-199: HNS branch uses DFS get_paths, not Blob list_blobs."""
         backend = self._make_hns_backend()
         dc = AsyncMock(spec=DataLakeDirectoryClient)
+        dc.get_directory_properties.return_value = MagicMock(
+            spec=DirectoryProperties, metadata={"hdi_isfolder": "true"}
+        )
         backend._fs_instance.get_directory_client.return_value = dc
         backend._fs_instance.get_paths.return_value = _async_iter([])
         info = await backend.get_folder_info("my-dir")
@@ -1262,6 +1265,9 @@ class TestAsyncAzureHNSPaths:
         """BUG-199: file_count excludes hdi_isfolder=true entries returned by get_paths."""
         backend = self._make_hns_backend()
         dc = AsyncMock(spec=DataLakeDirectoryClient)
+        dc.get_directory_properties.return_value = MagicMock(
+            spec=DirectoryProperties, metadata={"hdi_isfolder": "true"}
+        )
         backend._fs_instance.get_directory_client.return_value = dc
         file_a = MagicMock(spec=PathProperties)
         file_a.is_directory = False
@@ -1613,6 +1619,9 @@ class TestAsyncAzureHNSPaths:
     async def test_delete_folder_hns_recursive(self) -> None:
         backend = self._make_hns_backend()
         dc = AsyncMock(spec=DataLakeDirectoryClient)
+        dc.get_directory_properties.return_value = MagicMock(
+            spec=DirectoryProperties, metadata={"hdi_isfolder": "true"}
+        )
         backend._fs_instance.get_directory_client.return_value = dc
 
         await backend.delete_folder("my-dir", recursive=True)
@@ -1622,6 +1631,9 @@ class TestAsyncAzureHNSPaths:
     async def test_delete_folder_hns_non_recursive_empty(self) -> None:
         backend = self._make_hns_backend()
         dc = AsyncMock(spec=DataLakeDirectoryClient)
+        dc.get_directory_properties.return_value = MagicMock(
+            spec=DirectoryProperties, metadata={"hdi_isfolder": "true"}
+        )
         backend._fs_instance.get_directory_client.return_value = dc
         backend._fs_instance.get_paths.return_value = _async_iter([])
 
@@ -1632,6 +1644,9 @@ class TestAsyncAzureHNSPaths:
     async def test_delete_folder_hns_non_recursive_non_empty_raises(self) -> None:
         backend = self._make_hns_backend()
         dc = AsyncMock(spec=DataLakeDirectoryClient)
+        dc.get_directory_properties.return_value = MagicMock(
+            spec=DirectoryProperties, metadata={"hdi_isfolder": "true"}
+        )
         backend._fs_instance.get_directory_client.return_value = dc
 
         child = MagicMock(spec=PathProperties)
@@ -1639,6 +1654,32 @@ class TestAsyncAzureHNSPaths:
 
         with pytest.raises(DirectoryNotEmpty, match="not empty|Folder not empty"):
             await backend.delete_folder("my-dir", recursive=False)
+
+    @pytest.mark.spec("ASYNC-013")
+    async def test_delete_folder_hns_raises_invalid_path_on_file(self) -> None:
+        """BUG-198: delete_folder on a file path must raise InvalidPath, not DirectoryNotEmpty."""
+        backend = self._make_hns_backend()
+        dc = AsyncMock(spec=DataLakeDirectoryClient)
+        # Simulate ADLS Gen2 behaviour: get_directory_properties succeeds for
+        # file paths but returns no hdi_isfolder metadata (resource_type=file).
+        dc.get_directory_properties.return_value = MagicMock(spec=DirectoryProperties, metadata={})
+        backend._fs_instance.get_directory_client.return_value = dc
+        with pytest.raises(InvalidPath, match="file-path.txt"):
+            await backend.delete_folder("file-path.txt")
+        dc.delete_directory.assert_not_called()
+
+    @pytest.mark.spec("ASYNC-017")
+    async def test_get_folder_info_hns_raises_invalid_path_on_file(self) -> None:
+        """BUG-198: get_folder_info on a file path must raise InvalidPath."""
+        backend = self._make_hns_backend()
+        dc = AsyncMock(spec=DataLakeDirectoryClient)
+        # Simulate ADLS Gen2 behaviour: get_directory_properties succeeds for
+        # file paths but returns no hdi_isfolder metadata (resource_type=file).
+        dc.get_directory_properties.return_value = MagicMock(spec=DirectoryProperties, metadata={})
+        backend._fs_instance.get_directory_client.return_value = dc
+        with pytest.raises(InvalidPath, match="file-path.txt"):
+            await backend.get_folder_info("file-path.txt")
+        backend._fs_instance.get_paths.assert_not_called()
 
     @pytest.mark.spec("ASYNC-005")
     async def test_is_folder_hns_uses_directory_client(self) -> None:

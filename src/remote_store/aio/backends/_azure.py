@@ -627,6 +627,7 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             NotFound: If the folder is missing and ``missing_ok`` is ``False``.
+            InvalidPath: If ``path`` names a file (use ``delete`` instead).
             DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
         """
         async with self._errors(path):
@@ -635,7 +636,7 @@ class AsyncAzureBackend(AsyncBackend):
             if await self._ensure_hns():  # pragma: no cover -- HNS only
                 dc = self._fs.get_directory_client(ap)
                 try:
-                    await dc.get_directory_properties()
+                    props = await dc.get_directory_properties()
                 except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
@@ -643,6 +644,13 @@ class AsyncAzureBackend(AsyncBackend):
                             raise mapped from None
                         return
                     raise mapped from None
+
+                # BUG-198: on real ADLS Gen2, get_directory_properties() succeeds
+                # for file paths too (resource_type=file, no hdi_isfolder in metadata).
+                # Detect the type mismatch early and raise InvalidPath.
+                props_meta = getattr(props, "metadata", None) or {}
+                if not props_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
 
                 if not recursive:
                     children = []
@@ -852,6 +860,7 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             NotFound: If the folder does not exist.
+            InvalidPath: If ``path`` names a file (use ``get_file_info`` instead).
         """
         async with self._errors(path):
             ap = _azure_path_fn(path)
@@ -863,7 +872,12 @@ class AsyncAzureBackend(AsyncBackend):
                 # DFS get_paths exposes is_directory inline; list_blobs would
                 # silently count hdi_isfolder marker blobs as files (BUG-199).
                 dc = self._fs.get_directory_client(ap)
-                await dc.get_directory_properties()  # raises if not found
+                dir_props = await dc.get_directory_properties()  # raises if not found
+                # BUG-198: on real ADLS Gen2, get_directory_properties() succeeds
+                # for file paths too.  Detect the type mismatch and raise InvalidPath.
+                dir_meta = getattr(dir_props, "metadata", None) or {}
+                if not dir_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
                 async for p in self._fs.get_paths(path=ap or "/", recursive=True):
                     if getattr(p, "is_directory", False):
                         continue

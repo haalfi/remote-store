@@ -1,0 +1,139 @@
+id: BUG-198
+title: "AsyncAzureBackend (and AzureBackend) delete_folder / get_folder_info on a file path raises wrong error type (HNS)"
+trigger: "On real ADLS Gen2, delete_folder(file_path) raised DirectoryNotEmpty instead of InvalidPath, and get_folder_info(file_path) returned FolderInfo(file_count=1) instead of InvalidPath. Root cause: get_directory_properties() succeeds for file paths on real ADLS Gen2 (resource_type=file), and the code did not check whether the path was actually a directory before proceeding."
+source_items:
+  - BUG-198
+audience:
+  - user.api
+  - contributor.process
+  - infra.test
+review_rounds: 0
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together; write failing test, see it fail, then fix"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Canonical bug-fix pipeline"
+      - file: sdd/traces/bug-199-azure-folder-info-hns-dir-count.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Shape reference for trace authoring; BUG-199 fix pattern used get_directory_properties() return value to detect file vs. directory"
+
+  - id: reproduce
+    name: Reproduce on cassette (replay-first)
+    steps:
+      - file: tests/backends/cassettes/azure/TestDeleteFolderErrorFidelity.test_delete_folder_on_file_raises_error[azure_async].yaml
+        section: "interactions"
+        read_type: gate
+        extract: "Cassette shows: HEAD on blob endpoint (get_directory_properties) returns x-ms-resource-type: file (no hdi_isfolder metadata). Then GET DFS get_paths returns file as a non-directory path entry. Current code sees children=[file] and raises DirectoryNotEmpty."
+        outcome: ok
+      - file: tests/backends/cassettes/azure/TestGetFolderInfoErrorFidelity.test_get_folder_info_on_file_raises_error[azure_async].yaml
+        section: "interactions"
+        read_type: gate
+        extract: "Cassette shows: HEAD returns x-ms-resource-type: file, then GET DFS get_paths returns the file itself (no is_directory key in JSON). Current code counts the file, returns FolderInfo(file_count=1) instead of raising InvalidPath."
+        outcome: ok
+      - file: tests/backends/cassettes/azure/TestBackendDelete.test_delete_folder_empty[azure].yaml
+        section: "HEAD dir response"
+        read_type: gate
+        extract: "For a real directory: HEAD returns x-ms-meta-hdi_isfolder: true and x-ms-resource-type: directory. This is the discriminator: file paths lack hdi_isfolder in metadata."
+        outcome: ok
+      - file: tests/backends/cassettes/azure/TestDeleteFolderErrorFidelity.test_delete_folder_on_file_missing_ok_still_raises[azure_async].yaml
+        section: "interactions"
+        read_type: gate
+        extract: "Cassette was recorded with OLD behaviour (get_paths returned file as child; code raised DirectoryNotEmpty). After fix, delete_folder raises InvalidPath before get_paths, then test calls exists() which needs a 3rd HEAD. Cassette needed manual update: replace GET DFS interaction with a 3rd HEAD 200 response."
+        outcome: misleading
+
+  - id: classify
+    name: Classify cassette sufficiency
+    steps:
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "delete_folder HNS branch (lines ~620-641)"
+        read_type: gate
+        extract: "get_directory_properties() already present in code path; fix captures its return value and checks props.metadata.get('hdi_isfolder'). No new SDK calls introduced — cassettes are sufficient for test_delete_folder_on_file_raises_error and test_get_folder_info_on_file_raises_error."
+        outcome: ok
+      - file: tests/backends/cassettes/azure/TestDeleteFolderErrorFidelity.test_delete_folder_on_file_missing_ok_still_raises[azure_async].yaml
+        section: "(full)"
+        read_type: gate
+        extract: "INSUFFICIENT for corrected code path: cassette was recorded with broken behaviour (missing 3rd HEAD for exists() assertion). Manual cassette update required: remove GET DFS entry, add 3rd HEAD 200 response. This is not a new live recording — it reuses the existing 200 response data."
+        outcome: misleading
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-013, BE-017"
+        read_type: gate
+        extract: "BE-013: delete_folder raises InvalidPath if path names a file. BE-017: get_folder_info raises InvalidPath if path names a file."
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-013, ASYNC-017"
+        read_type: gate
+        extract: "ASYNC-013 and ASYNC-017 mirror BE-013/BE-017 for the async backend contract."
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "delete_folder HNS branch"
+        read_type: gate
+        extract: "Capture return value of get_directory_properties(); check props_meta.get('hdi_isfolder'); if falsy (file path), raise InvalidPath before get_paths or delete_directory."
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "get_folder_info HNS branch"
+        read_type: gate
+        extract: "Capture return value of get_directory_properties() as dir_props; check dir_meta.get('hdi_isfolder'); if falsy (file path), raise InvalidPath before get_paths."
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "delete_folder HNS branch"
+        read_type: gate
+        extract: "Sync sibling: same fix pattern applied — capture return value, check hdi_isfolder, raise InvalidPath for file paths."
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "get_folder_info HNS branch"
+        read_type: gate
+        extract: "Sync sibling: same fix applied."
+        outcome: ok
+
+  - id: unit_tests
+    name: Mock-level unit tests
+    steps:
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths"
+        read_type: gate
+        extract: "Added test_delete_folder_hns_raises_invalid_path_on_file and test_get_folder_info_hns_raises_invalid_path_on_file. Both set dc.get_directory_properties.return_value = MagicMock(metadata={}) to simulate file-path behaviour."
+        outcome: ok
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths"
+        read_type: gate
+        extract: "Added sync mirror tests: test_delete_folder_hns_raises_invalid_path_on_file and test_get_folder_info_hns_raises_invalid_path_on_file."
+        outcome: ok
+
+  - id: xfail_removal
+    name: Remove xfail roster entries
+    steps:
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES"
+        read_type: gate
+        extract: "Removed three entries: test_delete_folder_on_file_raises_error, test_delete_folder_on_file_missing_ok_still_raises, test_get_folder_info_on_file_raises_error."
+        outcome: ok
+
+  - id: verify_replay
+    name: Verify on cassette
+    steps:
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestDeleteFolderErrorFidelity, TestGetFolderInfoErrorFidelity"
+        read_type: verify
+        extract: "All 3 async conformance tests pass: test_delete_folder_on_file_raises_error[azure_replay_async], test_delete_folder_on_file_missing_ok_still_raises[azure_replay_async], test_get_folder_info_on_file_raises_error[azure_replay_async]."
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestDeleteFolderErrorFidelity, TestGetFolderInfoErrorFidelity"
+        read_type: verify
+        extract: "2 sync conformance tests pass: test_delete_folder_on_file_raises_error[azure_replay], test_get_folder_info_on_file_raises_error[azure_replay]. Note: test_delete_folder_on_file_missing_ok_still_raises does not exist in test_errors.py (async-only test)."
+        outcome: ok

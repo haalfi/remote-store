@@ -595,7 +595,7 @@ class AzureBackend(Backend):
             if self._hns:  # pragma: no cover -- HNS only
                 dc = self._fs.get_directory_client(azure_path)
                 try:
-                    dc.get_directory_properties()
+                    props = dc.get_directory_properties()
                 except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
@@ -603,6 +603,13 @@ class AzureBackend(Backend):
                             raise mapped from None
                         return
                     raise mapped from None
+
+                # BUG-198: on real ADLS Gen2, get_directory_properties() succeeds
+                # for file paths too (resource_type=file, no hdi_isfolder in metadata).
+                # Detect the type mismatch early and raise InvalidPath.
+                props_meta = getattr(props, "metadata", None) or {}
+                if not props_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
 
                 if not recursive:
                     children = list(self._fs.get_paths(path=azure_path, recursive=False, max_results=1))
@@ -752,7 +759,12 @@ class AzureBackend(Backend):
                 # DFS get_paths exposes is_directory inline; list_blobs would
                 # silently count hdi_isfolder marker blobs as files (BUG-199).
                 dc = self._fs.get_directory_client(azure_path)
-                dc.get_directory_properties()  # raises if not found
+                dir_props = dc.get_directory_properties()  # raises if not found
+                # BUG-198: on real ADLS Gen2, get_directory_properties() succeeds
+                # for file paths too.  Detect the type mismatch and raise InvalidPath.
+                dir_meta = getattr(dir_props, "metadata", None) or {}
+                if not dir_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
                 for p in self._fs.get_paths(path=azure_path or "/", recursive=True):
                     if getattr(p, "is_directory", False):
                         continue
