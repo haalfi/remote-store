@@ -912,6 +912,13 @@ class AsyncAzureBackend(AsyncBackend):
             InvalidPath: If ``src`` or ``dst`` names a directory (HNS only).
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
+        # BE-018 / ASYNC-018: self-move is a no-op (src == dst → Ok).
+        if src == dst:
+            async with self._errors(src):
+                src_bc = self._blob_client(src)
+                await src_bc.get_blob_properties()  # raises NotFound if missing
+            return
+
         from azure.core.exceptions import ResourceNotFoundError
 
         async with self._errors(src):
@@ -965,6 +972,13 @@ class AsyncAzureBackend(AsyncBackend):
             InvalidPath: If ``src`` or ``dst`` names a directory (HNS only).
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
+        # BE-019 / ASYNC-019: self-copy is a no-op (src == dst → Ok).
+        if src == dst:
+            async with self._errors(src):
+                src_bc = self._blob_client(src)
+                await src_bc.get_blob_properties()  # raises NotFound if missing
+            return
+
         from azure.core.exceptions import ResourceNotFoundError
 
         async with self._errors(src):

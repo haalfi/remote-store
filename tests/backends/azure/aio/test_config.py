@@ -837,6 +837,51 @@ class TestAsyncAzureMoveAndCopy:
         await backend.copy("src.txt", "dst.txt", overwrite=True)
         assert dst_bc.start_copy_from_url.call_count == 1
 
+    @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    async def test_move_self_op_is_noop(self, overwrite: bool) -> None:
+        """BE-018 / ASYNC-018: move(p, p) is a no-op — no copy or delete fired."""
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
+
+        await backend.move("file.txt", "file.txt", overwrite=overwrite)
+
+        # Only one blob client lookup (for the existence probe); no copy or delete.
+        assert cc.get_blob_client.call_count == 1
+        bc.start_copy_from_url.assert_not_called()
+        bc.delete_blob.assert_not_called()
+
+    @pytest.mark.spec("ASYNC-018")
+    async def test_move_self_op_missing_raises_not_found(self) -> None:
+        """move(p, p) where p does not exist raises NotFound (not AlreadyExists)."""
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+
+        with pytest.raises(NotFound, match="not found|Not found"):
+            await backend.move("missing.txt", "missing.txt")
+
+    @pytest.mark.spec("ASYNC-019")
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    async def test_copy_self_op_is_noop(self, overwrite: bool) -> None:
+        """BE-019 / ASYNC-019: copy(p, p) is a no-op — no copy fired."""
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(return_value=_mock_blob_props())
+
+        await backend.copy("file.txt", "file.txt", overwrite=overwrite)
+
+        # Only one blob client lookup (for the existence probe); no copy.
+        assert cc.get_blob_client.call_count == 1
+        bc.start_copy_from_url.assert_not_called()
+
+    @pytest.mark.spec("ASYNC-019")
+    async def test_copy_self_op_missing_raises_not_found(self) -> None:
+        """copy(p, p) where p does not exist raises NotFound (not AlreadyExists)."""
+        backend, cc, bc = _setup_non_hns_backend()
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+
+        with pytest.raises(NotFound, match="not found|Not found"):
+            await backend.copy("missing.txt", "missing.txt")
+
 
 # =============================================================================
 # Metadata (ASYNC-016, ASYNC-017)

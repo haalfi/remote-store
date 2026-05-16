@@ -144,7 +144,8 @@ container = "none"
 is_async  = true
 live_opt_in_env = "RS_TEST_LIVE_HNS"
 live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
-# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].
+# BUG-201: AsyncAzureBackend short-circuits src==dst; async fixtures are green.
+self_op_supported = true
 
 [fixture.s3_live]
 backend   = "s3"
@@ -175,4 +176,5 @@ stage     = 1
 kind      = "replay"
 container = "none"
 is_async  = true
-# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].
+# BUG-201: AsyncAzureBackend short-circuits src==dst; async fixtures are green.
+self_op_supported = true

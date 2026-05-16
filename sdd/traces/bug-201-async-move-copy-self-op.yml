@@ -1,0 +1,96 @@
+id: BUG-201
+title: "AsyncAzureBackend.move/copy self-op (src == dst) raises AlreadyExists instead of being a no-op"
+trigger: "AsyncAzureBackend.move(p, p) and copy(p, p) raised AlreadyExists; BE-018/BE-019 and ASYNC-018/ASYNC-019 require src==dst to be a no-op"
+source_items:
+  - BUG-201
+audience:
+  - user.api
+  - infra.test
+discovery_followups: []
+surprising_ripples:
+  - tests/backends/fixtures/fixtures.toml
+  - tests/backends/fixtures/backends.toml
+  - tests/backends/cassettes/azure/
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together; write failing test, run it, fail, then fix"
+      - file: sdd/BACKLOG.md
+        section: "BUG-201"
+        read_type: gate
+        extract: "AsyncAzureBackend move/copy src==dst raises AlreadyExists; fix: detect src==dst at top of move/copy, short-circuit; gate was _NO_SELF_OP_BACKENDS (stale reference — actual gate is self_op_supported=false in fixtures registry)"
+
+  - id: find_gate
+    name: Find the gate
+    steps:
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestMoveCopySelfOperation"
+        read_type: gate
+        extract: "Gate is _fixture_record(async_backend).self_op_supported — not _NO_SELF_OP_BACKENDS (that set no longer exists). Backlog entry was stale; actual gating via backends.toml self_op_supported=false inherited by all azure fixtures."
+        outcome: misleading
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.azure] / self_op_supported"
+        read_type: gate
+        extract: "self_op_supported=false on azure backend family; all azure fixtures inherit this default; fix must flip async fixtures to true"
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "azure_live_async, azure_replay_async"
+        read_type: gate
+        extract: "Per-fixture overrides merge on top of backend default; add self_op_supported=true on async azure fixtures only (sync side not fixed in this PR)"
+
+  - id: cassette_classify
+    name: Classify cassette sufficiency
+    steps:
+      - file: tests/backends/fixtures/azure_replay.py
+        section: "(full)"
+        read_type: gate
+        extract: "record_mode=none forces replay; conftest skips tests whose cassette FILE does not exist"
+      - file: tests/backends/cassettes/azure/TestMoveCopySelfOperation.test_self_op_preserves_data[azure_async-overwrite-move].yaml
+        section: "(full)"
+        read_type: gate
+        extract: "Cassette only has container create/delete — stale from when test was skipped (self_op_supported=false). No blob write/get interactions recorded. Cassettes are INSUFFICIENT and must be deleted so conftest skip-on-missing fires."
+        outcome: misleading
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018, BE-019"
+        read_type: gate
+        extract: "BE-018: AlreadyExists only when src != dst; src==dst → Ok (no-op). BE-019: same shape — self-copy is a no-op, not AlreadyExists."
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "move (line ~890), copy (line ~928)"
+        read_type: gate
+        extract: "Added src==dst early-return at top of both move and copy: probe existence via get_blob_properties (raises NotFound if missing), then return immediately. Placed before the ResourceNotFoundError import so the import only fires for the src!=dst path."
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.azure] self_op_supported"
+        read_type: gate
+        extract: "Left as false (sync side not fixed); added comment pointing to BUG-201 fix and note that async fixtures override."
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "azure_live_async, azure_replay_async"
+        read_type: gate
+        extract: "Added self_op_supported=true override on async azure fixtures only. Stale cassettes for azure_async self-op tests deleted (container-only content from skipped-test era)."
+
+  - id: unit_tests
+    name: Mock-level unit tests
+    steps:
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureMoveAndCopy"
+        read_type: gate
+        extract: "Added 6 tests: test_move_self_op_is_noop (overwrite/no-overwrite), test_move_self_op_missing_raises_not_found, test_copy_self_op_is_noop (overwrite/no-overwrite), test_copy_self_op_missing_raises_not_found. Assert no start_copy_from_url / delete_blob called, only one blob client lookup."
+
+  - id: verify
+    name: Verify on replay
+    steps:
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestMoveCopySelfOperation"
+        read_type: verify
+        extract: "azure_replay_async variants SKIPPED at collection time (cassettes deleted); memory/local async variants 18 PASSED. Mock-level unit tests 6 PASSED. Lint clean."
