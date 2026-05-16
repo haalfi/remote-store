@@ -1821,11 +1821,17 @@ class TestSFTPInlineHostKeysVerification:
         """STRICT with a non-existent ``host_keys_path`` refuses the connection.
 
         When STRICT policy has no inline keys and the ``host_keys_path`` file
-        does not exist, paramiko loads no known hosts.  The server's key is
-        therefore unknown, causing ``paramiko.SSHException`` /
-        ``BadHostKeyException``, which ``_map_exception`` translates to
-        ``BackendUnavailable``.  This covers the negative path of the
-        ``if os.path.isfile(keys_path):`` guard at ``_sftp.py:1271``.
+        does not exist, paramiko loads no known hosts and falls through to its
+        default ``RejectPolicy``, which raises
+        ``paramiko.SSHException("Server '...' not found in known_hosts")``;
+        ``_map_exception`` translates that to ``BackendUnavailable``.  This
+        covers the negative path of the ``if os.path.isfile(keys_path):``
+        guard at ``_sftp.py:1271``.
+
+        The ``match=`` is tight (``not found in known``) and excludes the
+        ``BadHostKeyException`` arm: if a key were accidentally loaded
+        (e.g., cross-worker env pollution), the assertion would fail and
+        surface the mismatch rather than passing through the broader arm.
         """
         port, _host_key_entry = sftp_server
         tmpdir = tempfile.mkdtemp(prefix="sftp_missing_")
@@ -1842,7 +1848,7 @@ class TestSFTPInlineHostKeysVerification:
                 retry=RetryPolicy(max_attempts=1, backoff_base=0, backoff_max=0),
             )
             try:
-                with pytest.raises(BackendUnavailable, match=r"(?i)host key|not found in known"):
+                with pytest.raises(BackendUnavailable, match=r"(?i)not found in known"):
                     backend.exists("nonexistent.txt")
             finally:
                 backend.close()
