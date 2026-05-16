@@ -1753,6 +1753,40 @@ class TestSFTPInlineHostKeysVerification:
         finally:
             backend.close()
 
+    def test_resolve_host_keys_precedence_config_wins_over_env(
+        self, sftp_server: tuple[int, str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Config-dict tier wins over env-var tier when both are present.
+
+        Pairs with ``test_resolve_host_keys_precedence_direct_wins_over_config_and_env``
+        to pin the lower half of the documented chain.  The direct-wins test
+        proves ``direct > {config, env}`` as a set but does not distinguish
+        ``config > env`` from ``env > config`` — if ``_resolve_host_keys`` had
+        its config and env checks swapped (``_sftp.py:1300`` and ``:1302``),
+        that test would still pass because the direct key wins either way.
+        This test omits ``known_host_keys=``, supplies the CORRECT key via
+        ``config={...}`` and a WRONG key via ``SFTP_KNOWN_HOST_KEYS``: if env
+        were consulted first, paramiko would raise ``BadHostKeyException``.  A
+        successful ``exists()`` proves config was consulted before env.
+        """
+        port, host_key_entry = sftp_server
+        wrong_key_env = paramiko.RSAKey.generate(2048)
+        wrong_entry_env = f"[127.0.0.1]:{port} ssh-rsa {wrong_key_env.get_base64()}"
+        monkeypatch.setenv("SFTP_KNOWN_HOST_KEYS", wrong_entry_env)
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=port,
+            username="testuser",
+            password="testpass",
+            config={"known_host_keys": host_key_entry},
+            host_key_policy=HostKeyPolicy.STRICT,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+        )
+        try:
+            assert backend.exists("nonexistent.txt") is False
+        finally:
+            backend.close()
+
     def test_strict_loads_keys_from_host_keys_file(self, sftp_server: tuple[int, str]) -> None:
         """STRICT file-fallback tier (priority 4 of 4) loads keys from disk.
 

@@ -8,11 +8,16 @@ source_items:
 audience:
   - infra.test
 
+review_rounds: 1
+
 # expected_ripples intentionally omitted: BK-204 < the running BK max
 # (backlogid.json already current per gotcha_backlogid_json_max_only).
 # Audience is infra.test only — no CHANGELOG entry required by schema
 # derivation rule; a one-liner is added per bug-fix protocol convention
 # regardless (the pragmas are test-coverage fixes, not user-API changes).
+# review_rounds: 1 — PR review surfaced an internal gap in the precedence
+# test (direct-wins test proved direct > {config, env} as a set but not
+# config > env independently); fix added test_resolve_host_keys_precedence_config_wins_over_env.
 
 phases:
   - id: orient
