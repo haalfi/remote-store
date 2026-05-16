@@ -8,6 +8,8 @@ audience:
   - contributor.process
   - contributor.tooling
   - infra.test
+discovery_followups:
+  - BUG-212
 surprising_ripples:
   - scripts/record_cassettes.py
   - sdd/TESTING.md

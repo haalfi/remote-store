@@ -92,3 +92,48 @@ class TestAzureBackendConfig:
             f"k-filters are not in the fixture registry: {sorted(missing)}. "
             "Update scripts/record_cassettes.py or the fixture registration."
         )
+
+
+class TestPreflightEnvGuard:
+    """BUG-212: env validation must precede the destructive Step 1 delete.
+
+    Before the guard landed, ``record_cassettes.py`` would unlink every
+    cassette under ``tests/backends/cassettes/<backend>/`` before pytest
+    failed on the missing opt-in flag. Recovery relied on the cassettes
+    being checked in.
+    """
+
+    def test_preflight_fails_when_opt_in_missing(self, rc, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """No RS_TEST_LIVE_HNS → _preflight_env exits non-zero; cassettes intact."""
+        cassette_dir = tmp_path / "cassettes"
+        cassette_dir.mkdir()
+        sentinel = cassette_dir / "sentinel.yaml"
+        sentinel.write_bytes(b"interactions: []\n")
+
+        cfg = dict(rc._BACKENDS["azure"])
+        cfg["cassette_dir"] = cassette_dir
+
+        monkeypatch.delenv("RS_TEST_LIVE_HNS", raising=False)
+
+        with pytest.raises(SystemExit) as exc:
+            rc._preflight_env(cfg)
+        assert exc.value.code == 1
+        assert sentinel.exists(), "preflight must not touch cassettes on failure"
+
+    def test_preflight_runs_before_delete_step_in_main(self, rc) -> None:
+        """main() calls _preflight_env BEFORE the Step 1 delete loop.
+
+        Pins the source order: a future edit that moves the delete back
+        above the preflight would re-introduce BUG-212.
+        """
+        import inspect
+
+        src = inspect.getsource(rc.main)
+        preflight_pos = src.find("_preflight_env(")
+        delete_pos = src.find("Step 1")
+        assert preflight_pos >= 0, "main() must call _preflight_env"
+        assert delete_pos >= 0, "main() must contain 'Step 1' section marker"
+        assert preflight_pos < delete_pos, (
+            "_preflight_env must run BEFORE Step 1 delete (BUG-212); "
+            "putting it after re-introduces the wipe-on-misconfig regression"
+        )

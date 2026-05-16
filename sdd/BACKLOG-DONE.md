@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-212 — `scripts/record_cassettes.py` deletes cassettes before validating env**
+  spec: — · audience: contributor.tooling
+  Step 1 unlinks every cassette under `tests/backends/cassettes/<backend>/`
+  before pytest validates the live opt-in flag (Step 2/3) and before
+  `account_fn` validates the connection string (Step 4). A missing
+  `RS_TEST_LIVE_HNS=1` or an empty / Azurite `AZURE_STORAGE_CONNECTION_STRING`
+  therefore wipes the tree and only then fails. Recovery relied on the
+  cassettes being checked into git. Surfaced during the BUG-199 recording
+  attempt — first invocation hit the Windows cp1252 Unicode crash (fixed
+  inline), second invocation surfaced this ordering bug and wiped 253
+  cassettes; recovered via `git restore`.
+  Fix: new `_preflight_env(cfg)` helper at the top of `main()` that
+  loads `.env`, asserts the per-backend `live_opt_in_env` flag is `"1"`,
+  and runs `cfg["account_fn"]()` to validate the cred string — all
+  before any destructive step. Backend config gains a `live_opt_in_env`
+  field (`"RS_TEST_LIVE_HNS"` for Azure). Two regression tests in
+  `tests/scripts/test_record_cassettes.py::TestPreflightEnvGuard`:
+  one pins `SystemExit` and cassette-tree intactness when the opt-in
+  is missing; the other pins source order (`_preflight_env` before
+  the Step 1 marker in `main()`) so a future edit cannot silently
+  re-introduce the regression.
+  Trace: [`sdd/traces/bug-212-record-cassettes-preflight.yml`](traces/bug-212-record-cassettes-preflight.yml).
+
 - [x] **BUG-199 — `AzureBackend.get_folder_info` recursive `file_count` includes HNS directory blobs as files (sync + async)**
   spec: BE-017, ASYNC-017 · audience: user.api
   `FolderInfo.file_count` returned by `get_folder_info(path, recursive=True)`

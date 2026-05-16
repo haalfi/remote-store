@@ -90,6 +90,9 @@ _BACKENDS: dict[str, dict] = {
         "async_k": "azure_live_async",
         "replay_k": "azure_replay",
         "account_fn": _resolve_azure_account,
+        # Live opt-in flag — checked at preflight so the absence does not
+        # wipe cassettes before the pytest fixture would fail (BUG-212).
+        "live_opt_in_env": "RS_TEST_LIVE_HNS",
         # Lower-bound guard: recording fewer cassettes than this means pytest
         # silently selected zero tests (k-filter mismatch, stage gate, etc.).
         "min_cassettes": 200,
@@ -115,6 +118,32 @@ def _run(*args: str) -> None:
 def _section(title: str) -> None:
     bar = "-" * 60
     print(f"\n{bar}\n  {title}\n{bar}")
+
+
+def _preflight_env(cfg: dict) -> None:
+    """Validate env vars BEFORE Step 1 deletes existing cassettes (BUG-212).
+
+    Recording deletes the cassette tree at Step 1, then validates env
+    inside pytest at Step 2/3 and inside ``account_fn`` at Step 4. A
+    missing opt-in flag or a missing / Azurite connection string would
+    otherwise wipe the cassette tree before any error surfaces. Run all
+    env validation upfront so a misconfigured invocation leaves the tree
+    intact.
+    """
+    try:
+        from dotenv import load_dotenv  # noqa: PLC0415 -- optional dep, lazy
+    except ImportError:
+        pass
+    else:
+        load_dotenv(override=False)
+
+    opt_in = cfg["live_opt_in_env"]
+    if os.environ.get(opt_in) != "1":
+        _die(
+            f"{opt_in}=1 is required for recording (targets a real account).\n"
+            f"  See docs-src/guides/backends/azure-hns-setup.md for setup instructions."
+        )
+    cfg["account_fn"]()  # validates cred string; calls _die on failure
 
 
 # ---------------------------------------------------------------------------
@@ -143,6 +172,8 @@ def main() -> None:
 
     cfg = _BACKENDS[opts.backend]
     cassette_dir: Path = cfg["cassette_dir"]
+
+    _preflight_env(cfg)
 
     if not opts.verify_only:
         _section("Step 1 — delete existing cassettes")

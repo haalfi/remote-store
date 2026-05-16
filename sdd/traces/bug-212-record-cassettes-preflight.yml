@@ -1,0 +1,59 @@
+id: BUG-212
+title: "scripts/record_cassettes.py deletes cassettes before validating env"
+trigger: "Step 1 of record_cassettes.py unconditionally unlinks every cassette under tests/backends/cassettes/<backend>/ before pytest validates the live opt-in flag and account_fn validates the connection string. A misconfigured invocation wipes the tree, then fails."
+source_items:
+  - BUG-212
+audience:
+  - contributor.tooling
+  - infra.test
+phases:
+  - id: discovery
+    name: Discovery (during BUG-199 recording)
+    steps:
+      - file: sdd/traces/bug-199-azure-folder-info-hns-dir-count.yml
+        section: "refresh_cassettes phase"
+        read_type: gate
+        extract: "BUG-199 recording attempt surfaced this ordering bug after an unrelated Unicode crash exposed the destructive-step-first design. 253 cassettes wiped on a missing RS_TEST_LIVE_HNS=1; recovered via git restore."
+        outcome: ok
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "_BACKENDS / azure / live_opt_in_env"
+        read_type: gate
+        extract: "Add live_opt_in_env field carrying the opt-in env var name per backend (RS_TEST_LIVE_HNS for Azure)."
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "_preflight_env"
+        read_type: gate
+        extract: "New helper: load .env, assert opt-in env var == '1', call account_fn() to validate cred string. Runs at top of main() before any destructive step."
+        outcome: ok
+      - file: scripts/record_cassettes.py
+        section: "main / call site"
+        read_type: gate
+        extract: "Insert _preflight_env(cfg) call AFTER cfg = _BACKENDS[opts.backend] and BEFORE the 'if not opts.verify_only' delete branch."
+        outcome: ok
+
+  - id: tests
+    name: Regression tests
+    steps:
+      - file: tests/scripts/test_record_cassettes.py
+        section: "TestPreflightEnvGuard.test_preflight_fails_when_opt_in_missing"
+        read_type: gate
+        extract: "Behavioural: unset RS_TEST_LIVE_HNS, call _preflight_env with a tmp_path cassette dir containing a sentinel, assert SystemExit and assert sentinel still exists. Pins fail-loud + no-destruction-on-failure."
+        outcome: ok
+      - file: tests/scripts/test_record_cassettes.py
+        section: "TestPreflightEnvGuard.test_preflight_runs_before_delete_step_in_main"
+        read_type: gate
+        extract: "Structural: inspect.getsource(main), assert '_preflight_env(' appears before 'Step 1' in the source. Future edit that moves delete back above preflight fails this test."
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_record_cassettes.py
+        section: "(full)"
+        read_type: verify
+        extract: "6 tests pass (4 prior + 2 new)."
+        outcome: ok
