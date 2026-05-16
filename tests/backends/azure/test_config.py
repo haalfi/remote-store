@@ -914,6 +914,32 @@ class TestAzureHNSPaths:
         with pytest.raises(NotFound, match=r"^Not found: missing\b"):
             backend.get_folder_info("missing")
 
+    @pytest.mark.spec("BE-017")
+    def test_get_folder_info_root_hns_call_shape(self) -> None:
+        """BUG-213: get_folder_info('') on HNS must call get_directory_client('') and
+        get_paths('/') — the 'or /' fallback in get_paths is the root-path accommodation.
+
+        Pins the intended call shape so any future change to root-path handling
+        in the HNS branch is caught as a regression.
+        """
+        backend = self._make_hns_backend()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
+        backend._fs_instance.get_directory_client.return_value = dc
+        backend._fs_instance.get_paths.return_value = []  # root is empty for this test
+
+        info = backend.get_folder_info("")
+
+        # get_directory_client must be called with the empty azure_path (root).
+        backend._fs_instance.get_directory_client.assert_called_once_with("")
+        dc.get_directory_properties.assert_called_once()
+        # get_paths must use the '/' fallback (azure_path or '/') for the root case.
+        call_kwargs = backend._fs_instance.get_paths.call_args
+        assert call_kwargs is not None
+        path_arg = call_kwargs.kwargs.get("path") or (call_kwargs.args[0] if call_kwargs.args else None)
+        assert path_arg == "/", f"get_paths must be called with '/' at the root (azure_path or '/'); got {path_arg!r}"
+        assert info.file_count == 0
+        assert info.total_size == 0
+
 
 # =============================================================================
 # Max concurrency threading (AZ-033)
