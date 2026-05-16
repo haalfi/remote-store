@@ -12099,6 +12099,8 @@
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
 <ul>
+<li>BUG-211: <code>SFTPBackend.exists()</code> / <code>is_file()</code> / <code>is_folder()</code> no longer swallow non-<code>ENOENT</code> <code>OSError</code>s as "not found"; connect-time <code>PermissionError</code> (and any other unexpected <code>OSError</code>) now surfaces through <code>_errors()</code> as <code>PermissionDenied</code> / <code>BackendUnavailable</code> instead of returning a misleading <code>False</code></li>
+<li>BUG-209: <code>SFTPBackend</code> inline <code>known_host_keys</code> now load correctly on Windows — the helper used <code>tempfile.NamedTemporaryFile(delete=True)</code>, whose Windows <code>O_TEMPORARY</code> lock prevented paramiko from re-opening the file, causing <code>STRICT</code> verification to be silently bypassed</li>
 <li>BUG-194: async <code>AsyncAzureBackend.write_atomic</code> broken for all payloads on real ADLS Gen2</li>
 <li>BUG-193: completed the async HNS live test gap deferred by BUG-182 and added <code>WriteResult</code> assertions on the sync HNS live tests</li>
 <li>BUG-182: live ADLS Gen2 (HNS) integration test confirming <code>AzureBackend.write_atomic</code> user metadata survives the atomic-rename commit (<code>tests/backends/test_azure_live_hns.py::TestAzureLiveHnsMetadataSurvivesRename</code>); closes the verification gap left by BUG-181's mock-only coverage (WR-013, BE-010).</li>
