@@ -794,6 +794,43 @@ class TestAzureHNSPaths:
             "expected warning log on swallowed post-commit read failure"
         )
 
+    @pytest.mark.spec("WR-001a")
+    @pytest.mark.spec("BE-010")
+    def test_write_atomic_hns_streaming_passes_length_to_upload_data(self) -> None:
+        """BUG-202: streaming write_atomic must pass length= to upload_data.
+
+        DataLake flush_data requires a byte-position argument that the SDK
+        derives from the ``length`` kwarg.  Without it, real HNS returns
+        MissingRequiredQueryParameter.  This test verifies the fix: when
+        content is a BinaryIO the call includes ``length=<actual_byte_count>``.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        payload = b"hello-streaming" * 10  # 150 bytes
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.return_value = bc
+        tmp_fc = MagicMock(spec=DataLakeFileClient)
+        tmp_fc.upload_data.return_value = None
+        tmp_fc.get_file_properties.return_value = MagicMock(
+            spec=["etag", "last_modified"],
+            etag=None,
+            last_modified=None,
+        )
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+
+        result = backend.write_atomic("dir/stream.bin", io.BytesIO(payload))
+
+        call_kwargs = tmp_fc.upload_data.call_args
+        assert call_kwargs is not None, "upload_data was not called"
+        # length must be passed as a keyword argument and equal the payload size
+        assert call_kwargs.kwargs.get("length") == len(payload), (
+            f"upload_data missing or wrong length= kwarg: {call_kwargs.kwargs}"
+        )
+        assert isinstance(result, WriteResult)
+        assert result.size == len(payload)
+
     def test_delete_folder_uses_directory_client_on_hns(self) -> None:
         backend = self._make_hns_backend()
         dc = MagicMock(spec=DataLakeDirectoryClient)

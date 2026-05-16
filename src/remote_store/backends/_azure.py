@@ -463,14 +463,25 @@ class AzureBackend(Backend):
                 size = len(content)
                 upload_target = content
             else:
-                _counter = _ByteCountingIO(content)
-                upload_target = _counter
-                size = 0  # set after upload
+                # BUG-202: DataLake flush_data requires a byte-position
+                # parameter that the SDK derives from the ``length`` argument.
+                # _ByteCountingIO is not seekable so the SDK cannot infer
+                # length, leaving position=None and triggering
+                # MissingRequiredQueryParameter on real HNS.  Buffer the
+                # stream upfront so both size and a seekable target are ready
+                # before the upload call.
+                _raw = content.read()
+                size = len(_raw)
+                upload_target = io.BytesIO(_raw)
 
             tmp_fc = self._fs.get_file_client(tmp_path)
             try:
                 tmp_fc.upload_data(
-                    upload_target, overwrite=True, max_concurrency=self._max_concurrency, metadata=sdk_metadata
+                    upload_target,
+                    length=size,
+                    overwrite=True,
+                    max_concurrency=self._max_concurrency,
+                    metadata=sdk_metadata,
                 )
                 new_name = f"{self._container}/{azure_path}"
                 tmp_fc.rename_file(new_name)
@@ -478,9 +489,6 @@ class AzureBackend(Backend):
                 with contextlib.suppress(Exception):
                     tmp_fc.delete_file()
                 raise
-
-            if not isinstance(content, bytes):
-                size = _counter.count
             # BUG-173: the rename above has already committed the write.  A
             # post-commit read failure (network blip, eventual consistency,
             # permissions) must not surface as a write failure -- retrying

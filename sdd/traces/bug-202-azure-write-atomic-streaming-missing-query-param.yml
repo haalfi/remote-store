@@ -1,0 +1,97 @@
+id: BUG-202
+title: "AzureBackend.write_atomic streaming-input path raises MissingRequiredQueryParameter on real HNS"
+trigger: "Sync write_atomic with BinaryIO content succeeds against Azurite but fails against real HNS with Azure SDK error MissingRequiredQueryParameter. Surfaced by test_size_matches_written_bytes_for_streaming_input[azure_replay]."
+source_items:
+  - BUG-202
+audience:
+  - user.api
+  - infra.test
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together; write failing test, see it fail, then fix"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Canonical bug-fix pipeline"
+      - file: sdd/BACKLOG.md
+        section: "BUG-202"
+        read_type: gate
+        extract: "spec: BE-010, WR-001a; streaming code path at _azure.py:~1027; bytes variant green; likely missing query parameter on DataLake SDK call that real HNS validates and Azurite forgives"
+
+  - id: reproduce
+    name: Reproduce on cassette
+    steps:
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES"
+        read_type: gate
+        extract: "test_size_matches_written_bytes_for_streaming_input is already xfail(strict=False) for real-Azure fixtures; --runxfail needed to see the actual failure"
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestWriteResultConformance.test_size_matches_written_bytes_for_streaming_input"
+        read_type: gate
+        extract: "payload = b'x' * (100 * 1024); calls backend.write_atomic with io.BytesIO(payload); asserts result.size == len(payload)"
+
+  - id: classify_root_cause
+    name: Identify root cause
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "write_atomic HNS streaming path (~line 465)"
+        read_type: gate
+        extract: "_ByteCountingIO wraps content; upload_data called without length=; get_length returns None for _ByteCountingIO (not seekable, no __len__); SDK passes position=None to flush_data causing MissingRequiredQueryParameter"
+      - file: .venv/Lib/site-packages/azure/storage/filedatalake/_data_lake_file_client_helpers.py
+        section: "_upload_options (line 108)"
+        read_type: gate
+        extract: "when length is None, get_length(data) runs but returns None for non-seekable stream; length stays None"
+      - file: .venv/Lib/site-packages/azure/storage/filedatalake/_upload_helper.py
+        section: "upload_datalake_file (line 116)"
+        read_type: gate
+        extract: "client.flush_data(position=length, ...) with length=None omits the mandatory position query parameter; real HNS returns MissingRequiredQueryParameter"
+      - file: .venv/Lib/site-packages/azure/storage/filedatalake/_shared/request_handlers.py
+        section: "get_length"
+        read_type: reference
+        extract: "get_length tries len(), fileno+fstat, seek+tell; _ByteCountingIO has none of these so returns None; io.BytesIO is seekable so get_length succeeds on it"
+
+  - id: classify_cassette
+    name: Classify cassette sufficiency
+    steps:
+      - file: sdd/TESTING.md
+        section: "Cassette-First Bug Investigation"
+        read_type: gate
+        extract: "Fix adds length= kwarg, changing the wire call (flush_data position parameter). Cassette recorded the broken URI (position missing). After fix, URI changes. Cassette is INSUFFICIENT — refresh required in Stage 3 by user."
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-010, WR-001a"
+        read_type: gate
+        extract: "BE-010: write_atomic returns WriteResult via temp+rename; WR-001a: result.size == |content|. Both broken by streaming failure on real HNS."
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "write_atomic HNS streaming path"
+        read_type: gate
+        extract: "Replace _ByteCountingIO with content.read() + io.BytesIO; size known before upload; pass length=size to upload_data for both bytes and streaming paths"
+
+  - id: tests
+    name: Mock-level unit test
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_write_atomic_hns_streaming_passes_length_to_upload_data"
+        read_type: gate
+        extract: "New test: BinaryIO content; assert upload_data called with length=len(payload); verifies BUG-202 regression regression coverage at mock level"
+
+  - id: verify_replay
+    name: Verify on cassette
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestWriteResultConformance.test_size_matches_written_bytes_for_streaming_input[azure_replay]"
+        read_type: verify
+        extract: "Test still xfails on stale cassette (cassette records broken URI without position= parameter). xfail entry NOT removed from roster — removal is Stage 3 post-cassette-refresh action. NOTE: remove test_size_matches_written_bytes_for_streaming_input from _AZURE_HNS_KNOWN_FAILURE_FN_NAMES after cassette refresh."
