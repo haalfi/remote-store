@@ -479,7 +479,7 @@ stabilised page.
 
 ## SFTP
 
-- [ ] **BK-204 — SFTP-007 host-key resolution chain: config / env / STRICT-file tiers uncovered**
+- [~] **BK-204 — SFTP-007 host-key resolution chain: config / env / STRICT-file tiers uncovered**
   spec: SFTP-007 · effort: M · audience: infra.test
   `_resolve_host_keys` in `src/remote_store/backends/_sftp.py` documents a
   four-tier precedence (direct param > `config["known_host_keys"]` >

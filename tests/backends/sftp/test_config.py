@@ -1670,6 +1670,151 @@ class TestSFTPInlineHostKeysVerification:
         finally:
             ssh.close()
 
+    def test_strict_accepts_config_dict_key(self, sftp_server: tuple[int, str]) -> None:
+        """Config-dict tier (priority 2 of 4) of ``_resolve_host_keys`` is wired in.
+
+        When ``known_host_keys=`` is omitted but ``config={"known_host_keys": ...}``
+        is supplied, ``_resolve_host_keys`` must return the config value so that
+        STRICT verification succeeds against the real server key.  This covers
+        the ``config.get("known_host_keys")`` branch at ``_sftp.py:1300``
+        (previously ``pragma: no cover``).
+        """
+        port, host_key_entry = sftp_server
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=port,
+            username="testuser",
+            password="testpass",
+            config={"known_host_keys": host_key_entry},
+            host_key_policy=HostKeyPolicy.STRICT,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+        )
+        try:
+            assert backend.exists("nonexistent.txt") is False
+        finally:
+            backend.close()
+
+    def test_strict_accepts_env_var_key(self, sftp_server: tuple[int, str], monkeypatch: pytest.MonkeyPatch) -> None:
+        """Env-var tier (priority 3 of 4) of ``_resolve_host_keys`` is wired in.
+
+        When neither ``known_host_keys=`` nor ``config=`` are supplied, the
+        backend falls back to ``os.environ["SFTP_KNOWN_HOST_KEYS"]``.  This
+        covers the ``os.environ.get(_HOST_KEYS_ENV)`` branch at ``_sftp.py:1302``
+        (previously ``pragma: no cover``).  ``monkeypatch.setenv`` ensures the
+        override is torn down after the test and is xdist-safe.
+        """
+        port, host_key_entry = sftp_server
+        monkeypatch.setenv("SFTP_KNOWN_HOST_KEYS", host_key_entry)
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=port,
+            username="testuser",
+            password="testpass",
+            host_key_policy=HostKeyPolicy.STRICT,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+        )
+        try:
+            assert backend.exists("nonexistent.txt") is False
+        finally:
+            backend.close()
+
+    def test_resolve_host_keys_precedence_direct_wins_over_config_and_env(
+        self, sftp_server: tuple[int, str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Direct ``known_host_keys=`` wins over config-dict and env-var tiers.
+
+        This test pins the documented resolution-chain ordering
+        ``direct > config > env``.  Two distinct wrong keys are supplied via
+        ``config=`` and the env var so that if either lower-priority tier were
+        consulted instead of the direct argument, paramiko would raise
+        ``BadHostKeyException`` and the backend would surface ``BackendUnavailable``.
+        A successful ``exists()`` call proves that only the direct (correct) key
+        was used — a future regression that silently swapped precedence would
+        cause this test to fail.
+        """
+        port, host_key_entry = sftp_server
+        wrong_key_config = paramiko.RSAKey.generate(2048)
+        wrong_entry_config = f"[127.0.0.1]:{port} ssh-rsa {wrong_key_config.get_base64()}"
+        wrong_key_env = paramiko.RSAKey.generate(2048)
+        wrong_entry_env = f"[127.0.0.1]:{port} ssh-rsa {wrong_key_env.get_base64()}"
+        monkeypatch.setenv("SFTP_KNOWN_HOST_KEYS", wrong_entry_env)
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=port,
+            username="testuser",
+            password="testpass",
+            known_host_keys=host_key_entry,
+            config={"known_host_keys": wrong_entry_config},
+            host_key_policy=HostKeyPolicy.STRICT,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+        )
+        try:
+            assert backend.exists("nonexistent.txt") is False
+        finally:
+            backend.close()
+
+    def test_strict_loads_keys_from_host_keys_file(self, sftp_server: tuple[int, str]) -> None:
+        """STRICT file-fallback tier (priority 4 of 4) loads keys from disk.
+
+        When no inline keys, no config-dict, and no env var are present,
+        ``_create_ssh_client`` falls through to the ``elif STRICT:`` branch at
+        ``_sftp.py:1270`` and calls ``ssh.load_host_keys(keys_path)`` from the
+        on-disk file.  This covers that branch (previously ``pragma: no cover``).
+        """
+        port, host_key_entry = sftp_server
+        tmpdir = tempfile.mkdtemp(prefix="sftp_known_hosts_")
+        keys_path = os.path.join(tmpdir, "known_hosts")
+        try:
+            with open(keys_path, "w") as f:
+                f.write(host_key_entry + "\n")
+            backend = SFTPBackend(
+                host="127.0.0.1",
+                port=port,
+                username="testuser",
+                password="testpass",
+                host_key_policy=HostKeyPolicy.STRICT,
+                host_keys_path=keys_path,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+            )
+            try:
+                assert backend.exists("nonexistent.txt") is False
+            finally:
+                backend.close()
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_strict_with_missing_keys_file_rejects_connect(self, sftp_server: tuple[int, str]) -> None:
+        """STRICT with a non-existent ``host_keys_path`` refuses the connection.
+
+        When STRICT policy has no inline keys and the ``host_keys_path`` file
+        does not exist, paramiko loads no known hosts.  The server's key is
+        therefore unknown, causing ``paramiko.SSHException`` /
+        ``BadHostKeyException``, which ``_map_exception`` translates to
+        ``BackendUnavailable``.  This covers the negative path of the
+        ``if os.path.isfile(keys_path):`` guard at ``_sftp.py:1271``.
+        """
+        port, _host_key_entry = sftp_server
+        tmpdir = tempfile.mkdtemp(prefix="sftp_missing_")
+        missing_path = os.path.join(tmpdir, "does_not_exist")
+        try:
+            backend = SFTPBackend(
+                host="127.0.0.1",
+                port=port,
+                username="testuser",
+                password="testpass",
+                host_key_policy=HostKeyPolicy.STRICT,
+                host_keys_path=missing_path,
+                connect_kwargs={"allow_agent": False, "look_for_keys": False},
+                retry=RetryPolicy(max_attempts=1, backoff_base=0, backoff_max=0),
+            )
+            try:
+                with pytest.raises(BackendUnavailable, match=r"(?i)host key|not found in known"):
+                    backend.exists("nonexistent.txt")
+            finally:
+                backend.close()
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
 
 # endregion
 

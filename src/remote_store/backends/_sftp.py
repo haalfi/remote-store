@@ -1267,7 +1267,7 @@ class SFTPBackend(Backend):
             self._ensure_known_hosts_file(keys_path)
             ssh.load_host_keys(keys_path)
             self._tofu_keys_path = keys_path
-        elif self._host_key_policy == HostKeyPolicy.STRICT:  # pragma: no cover
+        elif self._host_key_policy == HostKeyPolicy.STRICT:
             keys_path = self._host_keys_path or os.path.expanduser("~/.ssh/known_hosts")
             if os.path.isfile(keys_path):
                 ssh.load_host_keys(keys_path)
@@ -1297,9 +1297,9 @@ class SFTPBackend(Backend):
         """Resolve known host keys: code > config > env > file fallback."""
         if direct:
             return direct
-        if config and (val := config.get("known_host_keys")):  # pragma: no cover
+        if config and (val := config.get("known_host_keys")):
             return str(val)
-        if val_env := os.environ.get(_HOST_KEYS_ENV):  # pragma: no cover
+        if val_env := os.environ.get(_HOST_KEYS_ENV):
             return val_env
         return None
 

@@ -10,6 +10,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - ID-192: `aio.md` restructured to lead with `AsyncStore` — full per-category method sections mirroring `store.md`, and the four `members: false` stubs (`SyncBackendAdapter`, `AsyncBackendSyncAdapter`, `AsyncMemoryBackend`, `AsyncAzureBackend`) now render their full member surface, surfacing the layer-4 `Raises:` docstrings introduced by BK-173
 - BUG-208: fix `S3Backend.check_health()` unawaited `aiobotocore` coroutine that made the probe a silent no-op
 - BK-202: `SFTPUtils` helpers documented as true `@staticmethod` (correct `meth` rendering, signatures restored on docs.remotestore.dev)
+- BK-204: SFTP host-key resolution chain — coverage for the config-dict, env-var, and STRICT file-fallback tiers (three `# pragma: no cover` removed from `_sftp.py`)
 - BK-200: `SFTPUtils.scan_host_algorithms()` raw-socket SSH KEXINIT probe for diagnosing `IncompatiblePeer` failures
 - BK-199: `SFTPUtils.scan_host_keys()` preflight host-key discovery
 - BK-198: `SFTPUtils.enable_ssh_rsa_compat()` for paramiko 5+ legacy-server (`ssh-rsa` / SHA-1) compatibility
