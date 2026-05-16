@@ -239,7 +239,6 @@ _AZURE_HNS_KNOWN_FAILURE_FN_NAMES: frozenset[str] = frozenset(
         "test_get_folder_info_on_file_raises_error",
         "test_source_is_directory_raises_error",
         "test_destination_is_directory_raises_error",
-        "test_is_file",
         "test_size_matches_written_bytes_for_streaming_input",
     }
 )

@@ -334,8 +334,12 @@ class AzureBackend(Backend):
                 return True
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    self._fs.get_directory_client(azure_path).get_directory_properties()
-                    return True
+                    props = self._fs.get_directory_client(azure_path).get_directory_properties()
+                    # On HNS, get_directory_properties() succeeds for both files and
+                    # directories.  A real HNS directory has hdi_isfolder=true in its
+                    # metadata; a regular file does not (BUG-203).
+                    meta = getattr(props, "metadata", None) or {}
+                    return bool(meta.get("hdi_isfolder"))
                 except Exception:  # noqa: BLE001
                     return False
             else:
