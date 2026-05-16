@@ -14,7 +14,7 @@ surprising_ripples:
   - scripts/record_cassettes.py
   - sdd/TESTING.md
   - tests/backends/cassettes/azure/
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -159,6 +159,25 @@ phases:
         read_type: gate
         extract: "Initial prose named _AZURE_HNS_KNOWN_FAILURE_FN_NAMES and _AZURE_REAL_FIXTURE_IDS by symbol — CONTENT-RULES Rule 1 violation (private symbols in stable prose rot on rename). Rewrote to describe mechanism (hook + constants) without naming the private symbols."
         outcome: misleading
+
+  - id: review_round_2
+    name: PR #645 review round 2 — attribute precedence + doc rule (Step 4)
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "get_folder_info HNS branch / size lookup"
+        read_type: gate
+        extract: "Initial fix read content_length first, then size — opposite order from props_to_fileinfo (_azure_common.py:127) which reads size first. Different orderings on the same PathProperties could give FolderInfo.total_size != FileInfo.size for the same path. Swapped to match the helper; same change applied to async sibling."
+        outcome: misleading
+      - file: sdd/TESTING.md
+        section: "Cassette-First Bug Investigation / Step 4"
+        read_type: gate
+        extract: "Round 1 fixed the private-symbol-in-prose violation in Step 1 but missed Step 4 — same constant named again. Rewrote Step 4 to point at 'the xfail roster (same file referenced in Step 1)' to match Step 1's mechanism-not-symbol phrasing."
+        outcome: misleading
+      - file: src/remote_store/backends/_azure.py
+        section: "get_folder_info HNS branch / root path"
+        read_type: reference
+        extract: "Reviewer flagged root-path call shape (path='') as a verification gap — get_directory_client('') SDK semantics not covered by cassette. Explicitly advisory ('not a regression... no request to change'). Deferred from this PR; thread left open for user decision on follow-up backlog item."
+        outcome: ok
 
   - id: verify_replay
     name: Verify on cassette

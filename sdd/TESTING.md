@@ -240,10 +240,10 @@ already shows the matching `uri:` lines.
 
 **Step 3 — Fix.** Implement the change in the backend module(s).
 
-**Step 4 — Verify on replay.** Remove the test function name from
-`_AZURE_HNS_KNOWN_FAILURE_FN_NAMES` and re-run the same nodeid without
-`--runxfail`. Green = the fix is consistent with the recorded wire
-behaviour.
+**Step 4 — Verify on replay.** Remove the test function name from the
+xfail roster (same file referenced in Step 1) and re-run the same
+nodeid without `--runxfail`. Green = the fix is consistent with the
+recorded wire behaviour.
 
 **Step 5 — Final verification on live.** Run the test against the
 `<backend>_live` / `<backend>_live_async` fixture before merge:

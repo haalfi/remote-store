@@ -856,7 +856,9 @@ class AsyncAzureBackend(AsyncBackend):
                     if getattr(p, "is_directory", False):
                         continue
                     file_count += 1
-                    size = getattr(p, "content_length", None) or getattr(p, "size", 0) or 0
+                    # Mirror props_to_fileinfo (_azure_common.py:127) attribute order so
+                    # FolderInfo.total_size and FileInfo.size agree for the same path.
+                    size = getattr(p, "size", None) or getattr(p, "content_length", 0) or 0
                     total_size += int(size)
                     modified = getattr(p, "last_modified", None)
                     if modified is not None:
