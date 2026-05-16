@@ -5,11 +5,13 @@ source_items:
   - BUG-209
 audience:
   - user.api
+discovery_followups:
+  - BUG-211  # narrow exists()/is_file()/is_folder() OSError catches — born from the round-1 review thread on _sftp.py:521 proposing the narrowing
 co_shipped_items:
-  - BUG-211
+  - BUG-211  # same PR also ships the fix; listed in both per schema's discovery-cascade pattern
 surprising_ripples:
   - tests/backends/sftp/test_config.py  # @pytest.mark.os_sensitive on the new regression test — ripple-check table did not flag that ID-087's Windows-only `-m os_sensitive` selector excludes SFTP tests by default
-review_rounds: 1
+review_rounds: 4  # 49759453f (round 1), 8225b220a (BUG-211 born from review per schema guidance), a9f5b30e2 (round 2), this commit (round 3 fix-up)
 expected_ripples:
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html

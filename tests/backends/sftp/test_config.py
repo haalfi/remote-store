@@ -1688,6 +1688,8 @@ class TestSFTPExistsErrorFidelity:
     ``_errors()``.
     """
 
+    pytestmark = pytest.mark.spec("SFTP-007")
+
     @pytest.mark.parametrize("method", ["exists", "is_file", "is_folder"])
     def test_connect_time_oserror_propagates(self, method: str) -> None:
         """A non-ENOENT OSError on connect surfaces as ``PermissionDenied``.
