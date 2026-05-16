@@ -1640,6 +1640,7 @@ class TestSFTPInlineHostKeysVerification:
         finally:
             backend.close()
 
+    @pytest.mark.os_sensitive
     def test_load_host_keys_from_string_reopenable(self) -> None:
         """BUG-209: helper must hand paramiko a re-openable file on every OS.
 
@@ -1648,6 +1649,11 @@ class TestSFTPInlineHostKeysVerification:
         lock raised ``PermissionError`` from ``load_host_keys``. The error
         was then swallowed by ``exists()``'s ``except OSError``, silently
         bypassing STRICT verification.
+
+        Marked ``os_sensitive`` because the regression is Windows-specific
+        and the rest of the SFTP suite is excluded from macOS/Windows CI
+        by ID-087 — without the mark this guard would never run on the OS
+        it protects.
         """
         key = paramiko.RSAKey.generate(2048)
         entry = f"[127.0.0.1]:22 ssh-rsa {key.get_base64()}\n"

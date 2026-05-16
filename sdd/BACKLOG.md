@@ -479,7 +479,7 @@ stabilised page.
 
 ## SFTP
 
-- [ ] **BK-204 — SFTP-007 host-key resolution chain: config / env tiers uncovered**
+- [ ] **BK-204 — SFTP-007 host-key resolution chain: config / env / STRICT-file tiers uncovered**
   spec: SFTP-007 · effort: M · audience: infra.test
   `_resolve_host_keys` in `src/remote_store/backends/_sftp.py` documents a
   four-tier precedence (direct param > `config["known_host_keys"]` >
@@ -497,9 +497,32 @@ stabilised page.
   `TestSFTPInlineHostKeysVerification` with a third pair of tests that
   populate the config dict and env var with the live server's key, drop
   the `direct` parameter, and assert STRICT connect succeeds — then
-  remove the two `pragma: no cover` markers. Spec: SFTP-007. Surfaced
-  during BK-201 round-2 review (user question: "where is the deleted
-  test's logic covered now?").
+  remove the two `pragma: no cover` markers. The same gap covers the
+  third pragma in `_create_ssh_client` on the
+  `elif self._host_key_policy == HostKeyPolicy.STRICT:` file-fallback
+  branch (`_sftp.py:1255`, shifted to ~1264 by BUG-209): STRICT without
+  inline keys / TOFU is not exercised, so the file-loading path the bug
+  fix is protecting has no positive coverage either. Lifting all three
+  pragmas together keeps the host-key resolution chain testable from one
+  PR. Spec: SFTP-007. Surfaced during BK-201 round-2 review (user
+  question: "where is the deleted test's logic covered now?"); STRICT
+  file-fallback ripple surfaced during BUG-209 PR self-review.
+
+- [ ] **BUG-211 — `SFTPBackend` existence probes swallow connect-time OSErrors as "not found"**
+  spec: SFTP-007 · effort: S · audience: user.api
+  `exists()`, `is_file()`, and `is_folder()` in `_sftp.py` wrap their stat
+  call in `try: ... except OSError: return False`. The `self._sftp`
+  property triggers `_connect()` → `_create_ssh_client()` on first use,
+  and any `OSError` raised there (e.g. `PermissionError` from the
+  pre-BUG-209 tempfile path, future filesystem quirks) is caught by this
+  catch-all and silently reported as "file does not exist". That swallow
+  is what turned BUG-209 from a deterministic Windows failure into the
+  apparent flakiness of `test_strict_rejects_mismatched_inline_key`. Fix:
+  narrow each catch to `errno.ENOENT` (the only condition that should
+  return `False`); let everything else fall through to `self._errors()`
+  so connect-time failures surface as `BackendUnavailable` and stat
+  permission errors surface as `PermissionDenied`. Surfaced during BUG-209
+  PR self-review.
 
 - [ ] **ID-181 — Per-backend `ssh-rsa` opt-in via `paramiko.Transport` subclass**
   spec: SFTP-007 · effort: M · audience: user.api

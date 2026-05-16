@@ -5,6 +5,11 @@ source_items:
   - BUG-209
 audience:
   - user.api
+discovery_followups:
+  - BUG-211
+surprising_ripples:
+  - tests/backends/sftp/test_config.py  # @pytest.mark.os_sensitive on the new regression test — ripple-check table did not flag that ID-087's Windows-only `-m os_sensitive` selector excludes SFTP tests by default
+review_rounds: 1
 expected_ripples:
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
