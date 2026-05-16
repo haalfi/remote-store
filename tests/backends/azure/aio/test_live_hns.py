@@ -218,28 +218,26 @@ class TestAsyncLiveHnsWriteResult:
         assert result.source == "native"
         # WR-001a: size must equal the committed byte count.
         assert result.size == len(_PAYLOAD)
-        # WR-001a / AZ-034: etag from post-rename get_file_properties must be
-        # non-empty, quote-stripped, and lowercased.
-        # Note: the async path lacks the BUG-173 try/except fallback the sync path
-        # carries, so a post-rename read failure propagates as a write error rather
-        # than returning etag=None.  This assertion therefore exercises the only path
-        # the async backend supports.  Tracked as BUG-196 in sdd/BACKLOG.md.
-        assert result.etag is not None, (
-            "async HNS write_atomic must populate WriteResult.etag from post-rename get_file_properties"
-        )
-        assert result.etag != ""
-        assert '"' not in result.etag, f"etag must be quote-stripped; got {result.etag!r}"
-        assert result.etag == result.etag.lower(), f"etag must be lowercased; got {result.etag!r}"
-        # WR-001a: last_modified from the post-rename read must be timezone-aware.
-        assert result.last_modified is not None, "async HNS write_atomic must populate WriteResult.last_modified"
-        assert result.last_modified.tzinfo is not None, "last_modified must be timezone-aware"
-        # AZ-034 consistency: WriteResult.etag and FileInfo.etag must agree.
-        fi = await backend.get_file_info(path)
-        assert fi.etag is not None
-        assert fi.etag == result.etag, (
-            f"WriteResult.etag {result.etag!r} != FileInfo.etag {fi.etag!r}: "
-            "normalisation inconsistent between post-rename get_file_properties and get_file_info"
-        )
+        # WR-001a / AZ-034: on the success path, etag from post-rename
+        # get_file_properties must be non-empty, quote-stripped, and lowercased.
+        # On a transient post-rename read failure the BUG-196 fallback returns
+        # etag=None (rename already committed; WR-001a lists etag as Optional).
+        if result.etag is not None:
+            assert result.etag != ""
+            assert '"' not in result.etag, f"etag must be quote-stripped; got {result.etag!r}"
+            assert result.etag == result.etag.lower(), f"etag must be lowercased; got {result.etag!r}"
+            # WR-001a: last_modified from the post-rename read must be timezone-aware.
+            assert result.last_modified is not None, "async HNS write_atomic must populate WriteResult.last_modified"
+            assert result.last_modified.tzinfo is not None, "last_modified must be timezone-aware"
+            # AZ-034 consistency: WriteResult.etag and FileInfo.etag must agree.
+            fi = await backend.get_file_info(path)
+            assert fi.etag is not None
+            assert fi.etag == result.etag, (
+                f"WriteResult.etag {result.etag!r} != FileInfo.etag {fi.etag!r}: "
+                "normalisation inconsistent between post-rename get_file_properties and get_file_info"
+            )
+        # else: fallback path — rename committed, post-rename read failed transiently.
+        # WR-001a allows etag=None; retrying would raise AlreadyExists.
 
 
 # ---------------------------------------------------------------------------

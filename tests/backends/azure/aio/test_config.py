@@ -1387,7 +1387,13 @@ class TestAsyncAzureHNSPaths:
 
         tmp_fc = AsyncMock(spec=DataLakeFileClient)
         final_fc = AsyncMock(spec=DataLakeFileClient)
-        props = {"etag": '"abc123"', "last_modified": datetime(2024, 1, 1, tzinfo=timezone.utc)}
+        # BUG-196: the fix uses getattr(props, "etag"/"last_modified") so the mock
+        # must be an object with those attributes, not a plain dict.
+        props = MagicMock(
+            spec=["etag", "last_modified"],
+            etag='"abc123"',
+            last_modified=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
         final_fc.get_file_properties = AsyncMock(return_value=props)
         tmp_fc.rename_file.return_value = final_fc
         backend._fs_instance.get_file_client.return_value = tmp_fc
@@ -1403,6 +1409,76 @@ class TestAsyncAzureHNSPaths:
         assert result.size == 7
         assert result.version_id is None
         assert result.digest is None
+
+    @pytest.mark.spec("WR-004", "WR-001a")
+    async def test_write_atomic_hns_get_file_properties_success_populates_etag(self) -> None:
+        """BUG-196 success branch: get_file_properties returns props → etag/last_modified populated.
+
+        Verifies the try branch of the BUG-196 try/except mirrors the sync BUG-173
+        pattern: props attributes are extracted via getattr and forwarded to
+        _build_azure_write_result.
+        """
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        props = MagicMock(
+            spec=["etag", "last_modified"],
+            etag='"deadbeef"',
+            last_modified=datetime(2025, 6, 1, tzinfo=timezone.utc),
+        )
+        final_fc.get_file_properties = AsyncMock(return_value=props)
+        tmp_fc.rename_file.return_value = final_fc
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+        tmp_fc.upload_data = AsyncMock(return_value=None)
+
+        result = await backend.write_atomic("hns/file.txt", b"hello")
+
+        assert result.source == "native"
+        assert result.etag == "deadbeef"  # quote-stripped by _build_azure_write_result
+        assert result.last_modified == datetime(2025, 6, 1, tzinfo=timezone.utc)
+        assert result.size == 5
+
+    @pytest.mark.spec("WR-004", "WR-001a")
+    async def test_write_atomic_hns_get_file_properties_failure_returns_etag_none(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """BUG-196 fallback branch: get_file_properties raises → etag=None, write does not fail.
+
+        The rename already committed the write. A transient post-rename read failure
+        must not surface as a write failure (retrying would raise AlreadyExists on
+        overwrite=False or silently double-write). Mirrors the sync BUG-173 pattern.
+        WR-001a lists etag as Optional; etag=None is the documented fallback value.
+        """
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        tmp_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc = AsyncMock(spec=DataLakeFileClient)
+        final_fc.get_file_properties = AsyncMock(side_effect=RuntimeError("network blip"))
+        tmp_fc.rename_file.return_value = final_fc
+        backend._fs_instance.get_file_client.return_value = tmp_fc
+        tmp_fc.upload_data = AsyncMock(return_value=None)
+
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            result = await backend.write_atomic("hns/file.txt", b"hello")
+
+        assert isinstance(result, WriteResult)
+        assert result.source == "native"
+        assert result.etag is None
+        assert result.last_modified is None
+        assert result.size == 5
+        assert any("post-rename get_file_properties failed" in r.message for r in caplog.records), (
+            "expected warning log on swallowed post-commit read failure"
+        )
 
     @pytest.mark.spec("WR-010", "WR-012")
     async def test_write_atomic_hns_metadata_preserved(self) -> None:

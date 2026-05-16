@@ -575,13 +575,25 @@ class AsyncAzureBackend(AsyncBackend):
                         await tmp_fc.delete_file()
                     raise
 
-            # BUG-196: this call is intentionally unguarded today, asymmetric with
-            # the sync sibling, which wraps the same call in try/except (BUG-173)
-            # and returns WriteResult(etag=None) on a transient post-rename read
-            # failure. Mirroring that fallback here is tracked as BUG-196 in
-            # sdd/BACKLOG.md.
-            props = await final_fc.get_file_properties()
-            return _build_azure_write_result(path, size, props, metadata)
+            # BUG-173 / BUG-196: the rename above has already committed the write.
+            # A post-commit read failure (network blip, eventual consistency,
+            # permissions) must not surface as a write failure -- retrying would
+            # raise AlreadyExists (overwrite=False) or silently double-write.
+            # Fall back to a WriteResult without rich fields (mirrors sync sibling).
+            props_dict: dict[str, Any] = {}
+            try:
+                props = await final_fc.get_file_properties()
+                props_dict = {
+                    "etag": getattr(props, "etag", None),
+                    "last_modified": getattr(props, "last_modified", None),
+                }
+            except Exception as exc:  # noqa: BLE001 -- post-commit read fallback
+                log.warning(
+                    "HNS write_atomic committed to %s but post-rename get_file_properties failed: %s",
+                    path,
+                    exc,
+                )
+            return _build_azure_write_result(path, size, props_dict, metadata)
 
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.
