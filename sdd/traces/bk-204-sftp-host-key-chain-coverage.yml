@@ -1,0 +1,75 @@
+id: BK-204
+title: "SFTP-007 host-key resolution chain: config / env / STRICT-file tiers uncovered"
+trigger: "Three # pragma: no cover markers on _sftp.py at lines 1270 (STRICT file-fallback), 1300 (config-dict tier), and 1302 (env-var tier) left the SFTP-007 host-key resolution chain untested; the documented direct > config > env precedence had no regression guard."
+
+source_items:
+  - BK-204
+
+audience:
+  - infra.test
+
+review_rounds: 1
+
+# expected_ripples intentionally omitted: BK-204 < the running BK max
+# (backlogid.json already current per gotcha_backlogid_json_max_only).
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-204 entry"
+        read_type: gate
+        extract: "Three pragmas at _sftp.py:1270/1300/1302; four-tier precedence direct>config>env>on-disk; SFTP-007; audience infra.test; shape (b) preferred: extend TestSFTPInlineHostKeysVerification, lift all three pragmas together"
+      - file: src/remote_store/backends/_sftp.py
+        section: "_resolve_host_keys + _create_ssh_client (lines 1255-1304)"
+        read_type: gate
+        extract: "Confirm pragma positions; verify _resolved_host_keys is populated in each tier; confirm STRICT file-fallback branch structure at line 1270"
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPInlineHostKeysVerification (lines 1589-1671)"
+        read_type: reference
+        extract: "Existing two STRICT-connect tests + BUG-209 regression test; reuse sftp_server fixture and connect_kwargs idioms for new methods"
+      - file: sdd/000-process.md
+        section: "Rules / Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG -> CHANGELOG -> failing test -> fix -> commit together"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPInlineHostKeysVerification (extend)"
+        read_type: reference
+        extract: "Append five methods: config-dict tier STRICT connect, env-var tier STRICT connect, direct-over-config precedence, STRICT file-fallback positive (known_host_keys_path set), STRICT file-fallback missing-file negative"
+      - file: tests/conftest.py
+        section: "sftp_server fixture (lines 195-226)"
+        read_type: reference
+        extract: "Session-scoped, yields (port, host_key_entry); host_key_entry is single-line [127.0.0.1]:port ssh-rsa BASE64 — format needed to populate config dict, env var, and on-disk known_hosts file"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_create_ssh_client line 1270; _resolve_host_keys lines 1300, 1302"
+        read_type: reference
+        extract: "Strip '  # pragma: no cover' trailers from all three lines; bodies unchanged"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] test-cov, lint"
+        read_type: reference
+        extract: "Default test-cov is Stage-1 no-Docker; lint runs ruff+mypy; run test-cov scoped to tests/backends/sftp/ to confirm the three pragma'd lines are now covered"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check Detailed / Bug fix"
+        read_type: verify
+        extract: "BACKLOG item moved to DONE, CHANGELOG stub present, trace shipped, no public API change"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "No entry required: audience is infra.test only per _schema.yml derivation rule (matches BK-223 precedent)"
+      - file: sdd/BACKLOG.md
+        section: "BK-204 marker"
+        read_type: verify
+        extract: "[ ] -> [~] during work, then moved to BACKLOG-DONE on merge"

@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-204 — SFTP-007 host-key resolution chain: config / env / STRICT-file tiers uncovered**
+  spec: SFTP-007 · audience: infra.test
+  `_resolve_host_keys` documents a four-tier precedence
+  (direct > `config["known_host_keys"]` > `SFTP_KNOWN_HOST_KEYS` env >
+  on-disk `host_keys_path`), but the lower three tiers carried
+  `# pragma: no cover` markers (`_sftp.py:1270`, `:1300`, `:1302`)
+  and no test ever reached them — the documented precedence had no
+  regression guard either.
+  Coverage: five tests added to `TestSFTPInlineHostKeysVerification`
+  (`tests/backends/sftp/test_config.py`) — one positive STRICT-connect
+  per tier (config-dict, env-var, file-fallback) plus a precedence test
+  pinning `direct > config > env` (wrong keys in config + env, correct
+  key direct → connect must still succeed) plus a negative file-fallback
+  test (missing `host_keys_path` → `BackendUnavailable`). All three
+  `# pragma: no cover` markers removed. Surfaced during BK-201 round-2
+  review (user question: "where is the deleted test's logic covered
+  now?"); STRICT file-fallback ripple surfaced during BUG-209 PR
+  self-review.
+  Trace: [`sdd/traces/bk-204-sftp-host-key-chain-coverage.yml`](traces/bk-204-sftp-host-key-chain-coverage.yml).
+
 - [x] **BUG-211 — `SFTPBackend` existence probes swallow connect-time OSErrors as "not found"**
   spec: SFTP-007 · audience: user.api
   `exists()`, `is_file()`, and `is_folder()` wrapped their stat call in a
