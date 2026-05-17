@@ -1,0 +1,93 @@
+id: BUG-196
+title: "Async write_atomic HNS path lacks BUG-173 try/except fallback around get_file_properties()"
+trigger: "AsyncAzureBackend.write_atomic HNS path called await final_fc.get_file_properties() without a try/except; a transient post-rename read failure propagated as a write error even though the rename had already committed. Sync sibling (BUG-173) deliberately catches the same exception and returns WriteResult(etag=None). Asymmetry surfaced by new live test TestAsyncLiveHnsWriteResult."
+source_items:
+  - BUG-196
+audience:
+  - library.maintainer
+  - infra.test
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together; write failing test, see it fail, then fix"
+      - file: sdd/BACKLOG.md
+        section: "BUG-196"
+        read_type: gate
+        extract: "spec: WR-001a, WR-004, AZ-034; fix shape: mirror sync BUG-173 try/except at aio/_azure.py:578; weaken live test assertion to allow etag=None fallback path"
+
+  - id: reproduce
+    name: Reproduce (reasoning only — Stage 3 live test)
+    steps:
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "TestAsyncLiveHnsWriteResult.test_write_atomic_hns_write_result_fully_native"
+        read_type: gate
+        extract: "Stage 3 (RS_TEST_LIVE_HNS=1) live test; assertion result.etag is not None at line 227; comment already flags BUG-196 as the unguarded call. Cannot reproduce on replay — no cassette covers this path."
+
+  - id: cassette_sufficiency
+    name: Cassette sufficiency
+    steps:
+      - file: sdd/TESTING.md
+        section: "Cassette-First Bug Investigation"
+        read_type: gate
+        extract: "N/A: test is a Stage 3 per-backend live test, not a conformance test backed by a cassette. No cassette exercises this path; reasoning from BACKLOG + sync sibling is the substitute for replay reproduction."
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001a, WR-004"
+        read_type: gate
+        extract: "WR-001a: etag is Optional — None is a valid WriteResult field value. WR-004: WRITE_RESULT_NATIVE backends must return source='native'; fallback path still satisfies this."
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-034"
+        read_type: gate
+        extract: "ETag normalisation contract; applies to the success path only; fallback (etag=None) is not a normalisation concern."
+
+  - id: read_sync_sibling
+    name: Read sync sibling (BUG-173 pattern)
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "write_atomic HNS branch / BUG-173 comment (lines 484-503)"
+        read_type: gate
+        extract: "Sync pattern: props_dict = {}; try: props = dst_fc.get_file_properties(); props_dict = {etag: getattr(props,'etag',None), last_modified: ...}; except Exception: log.warning(...); return _build_azure_write_result(path, size, props_dict, metadata)."
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "write_atomic HNS branch / BUG-196 comment (lines 578-584)"
+        read_type: gate
+        extract: "Async path has only: props = await final_fc.get_file_properties(); return _build_azure_write_result(path, size, props, metadata). Two issues: (1) no try/except; (2) props is a FileProperties object but _build_azure_write_result expects a dict."
+      - file: src/remote_store/backends/_azure_common.py
+        section: "_build_azure_write_result"
+        read_type: gate
+        extract: "_build_azure_write_result takes resp: dict[str, Any] and calls resp.get('etag'). Passing a FileProperties object directly would yield etag=None (objects have no .get method — but dict.get works). Wait: FileProperties does have a .get() on some SDK versions? Checked: the existing test at line 1390 passed a plain dict. The sync code explicitly builds a props_dict. So both issues must be fixed together."
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "write_atomic HNS branch (lines 578-584)"
+        read_type: gate
+        extract: "Replaced unguarded call with BUG-173-mirroring try/except: props_dict = {}; try: props = await final_fc.get_file_properties(); props_dict = {etag: getattr(props,'etag',None), last_modified: getattr(props,'last_modified',None)}; except Exception as exc: log.warning(...); return _build_azure_write_result(path, size, props_dict, metadata)."
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "TestAsyncLiveHnsWriteResult / result.etag assertion"
+        read_type: gate
+        extract: "Weakened assert result.etag is not None to conditional block: if result.etag is not None: [normalisation assertions]; else: comment noting fallback path. WR-001a allows etag=None."
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths.test_write_atomic_hns_returns_native_fields"
+        read_type: gate
+        extract: "Existing test passed a plain dict as props mock return value. After the fix getattr(dict, 'etag', None) returns None (not the dict value). Updated to MagicMock(spec=['etag','last_modified'], etag='\"abc123\"', ...)."
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths (new tests)"
+        read_type: gate
+        extract: "Added test_write_atomic_hns_get_file_properties_success_populates_etag (try branch: props object returned) and test_write_atomic_hns_get_file_properties_failure_returns_etag_none (except branch: raises RuntimeError → etag=None, warning logged). Mirror of sync BUG-173 test shape from tests/backends/azure/test_config.py:752."
+
+  - id: verify_lint
+    name: Verify lint
+    steps:
+      - file: scripts/check_mock_spec.py
+        section: "(full)"
+        read_type: verify
+        extract: "First lint run flagged two MagicMock() without spec=. Fixed to MagicMock(spec=['etag','last_modified'], ...) matching the sync test pattern. Second lint run: all checks passed."

@@ -224,10 +224,6 @@ def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
 # Test function names known to expose real-ADLS-Gen2 conformance gaps.
 # Real ADLS Gen2 accepts or mishandles calls that Azurite correctly rejects
 # per spec.  Each name below is grouped by the BUG it tracks:
-#   - BUG-198 (folder-API on HNS file path, async): test_delete_folder_on_file_*,
-#     test_get_folder_info_on_file_raises_error
-#   - BUG-200 (move/copy directory checks on HNS, async):
-#     test_source_is_directory_raises_error, test_destination_is_directory_raises_error
 #   - BUG-202 (write_atomic streaming MissingRequiredQueryParameter on HNS):
 #     test_size_matches_written_bytes_for_streaming_input
 #   - BUG-203 (is_file returns True for HNS directory blob): test_is_file
@@ -236,13 +232,6 @@ def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
 #   - Once the bugs are fixed, they flip to xpass without blocking CI
 _AZURE_HNS_KNOWN_FAILURE_FN_NAMES: frozenset[str] = frozenset(
     {
-        # BUG-198
-        "test_delete_folder_on_file_raises_error",
-        "test_delete_folder_on_file_missing_ok_still_raises",
-        "test_get_folder_info_on_file_raises_error",
-        # BUG-200
-        "test_source_is_directory_raises_error",
-        "test_destination_is_directory_raises_error",
         # BUG-202
         "test_size_matches_written_bytes_for_streaming_input",
         # BUG-203
@@ -296,7 +285,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(
                 pytest.mark.xfail(
                     strict=False,
-                    reason="Known real-ADLS-Gen2 conformance gap (see BUG-198/200/202/203 in BACKLOG.md)",
+                    reason="Known real-ADLS-Gen2 conformance gap (see BUG-202/203 in BACKLOG.md)",
                 )
             )
 

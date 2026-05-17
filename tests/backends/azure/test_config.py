@@ -729,6 +729,7 @@ class TestAzureHNSPaths:
         backend = self._make_hns_backend()
         # src blob exists
         src_bc = MagicMock(spec=BlobClient)
+        src_bc.get_blob_properties.return_value = MagicMock(spec=BlobProperties, metadata={})
         dst_bc = MagicMock(spec=BlobClient)
         from azure.core.exceptions import ResourceNotFoundError
 
@@ -740,6 +741,80 @@ class TestAzureHNSPaths:
         result = backend.move("src.txt", "dst.txt")
         fc.rename_file.assert_called_once_with("test/dst.txt")
         assert result is None
+
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    def test_source_is_directory_raises_invalid_path(self, op: str) -> None:
+        """BUG-200: move/copy with an HNS directory src must raise InvalidPath."""
+        backend = self._make_hns_backend()
+        src_bc = MagicMock(spec=BlobClient)
+        src_bc.get_blob_properties.return_value = _make_hns_blob_props()
+        backend._cc_instance.get_blob_client.return_value = src_bc
+
+        with pytest.raises(InvalidPath, match="src_dir"):
+            getattr(backend, op)("src_dir", "dst.txt")
+
+    @pytest.mark.spec("BE-019")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    def test_destination_is_directory_raises_invalid_path(self, op: str) -> None:
+        """BUG-200: move/copy with an HNS directory dst must raise InvalidPath."""
+
+        backend = self._make_hns_backend()
+        src_bc = MagicMock(spec=BlobClient)
+        src_bc.get_blob_properties.return_value = MagicMock(spec=BlobProperties, metadata={})
+        dst_bc = MagicMock(spec=BlobClient)
+        dst_bc.get_blob_properties.return_value = _make_hns_blob_props()
+        backend._cc_instance.get_blob_client.side_effect = [src_bc, dst_bc]
+
+        with pytest.raises(InvalidPath, match="dst_dir"):
+            getattr(backend, op)("src.txt", "dst_dir")
+
+    @pytest.mark.spec("BE-018", "BE-019")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    def test_self_op_is_noop(self, op: str, overwrite: bool) -> None:
+        """BUG-201 (sync): move(p, p) / copy(p, p) is a no-op for files."""
+        backend = _make_backend()
+        backend._hns_enabled = False
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.return_value = MagicMock(spec=BlobProperties, metadata={})
+        backend._cc_instance = MagicMock(spec=["get_blob_client"])
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        getattr(backend, op)("file.txt", "file.txt", overwrite=overwrite)
+
+        # Only one blob client lookup (for the existence probe); no copy or delete.
+        assert backend._cc_instance.get_blob_client.call_count == 1
+        bc.start_copy_from_url.assert_not_called()
+        bc.delete_blob.assert_not_called()
+
+    @pytest.mark.spec("BE-018", "BE-019", "BE-021")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    def test_self_op_on_hns_directory_raises_invalid_path(self, op: str) -> None:
+        """BUG-201 + #1: self-op short-circuit must still raise InvalidPath on HNS directory."""
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.return_value = _make_hns_blob_props()
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        with pytest.raises(InvalidPath, match="some_dir"):
+            getattr(backend, op)("some_dir", "some_dir")
+
+    @pytest.mark.spec("BE-018", "BE-019")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    def test_self_op_missing_raises_not_found(self, op: str) -> None:
+        """move(p, p) / copy(p, p) where p does not exist raises NotFound (not AlreadyExists)."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = _make_backend()
+        backend._hns_enabled = False
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance = MagicMock(spec=["get_blob_client"])
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        with pytest.raises(NotFound, match="not found|Not found"):
+            getattr(backend, op)("missing.txt", "missing.txt")
 
     def test_write_atomic_uses_temp_and_rename_on_hns(self) -> None:
         from azure.core.exceptions import ResourceNotFoundError
@@ -907,6 +982,32 @@ class TestAzureHNSPaths:
         backend._fs_instance.get_paths.return_value = [MagicMock(spec=PathProperties)]  # has children
         with pytest.raises(DirectoryNotEmpty):
             backend.delete_folder("my-dir", recursive=False)
+
+    @pytest.mark.spec("BE-013")
+    def test_delete_folder_hns_raises_invalid_path_on_file(self) -> None:
+        """BUG-198: delete_folder on a file path must raise InvalidPath, not DirectoryNotEmpty."""
+        backend = self._make_hns_backend()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
+        # Simulate ADLS Gen2 behaviour: get_directory_properties succeeds for
+        # file paths but returns no hdi_isfolder metadata (resource_type=file).
+        dc.get_directory_properties.return_value = MagicMock(spec=["metadata"], metadata={})
+        backend._fs_instance.get_directory_client.return_value = dc
+        with pytest.raises(InvalidPath, match="file-path.txt"):
+            backend.delete_folder("file-path.txt")
+        dc.delete_directory.assert_not_called()
+
+    @pytest.mark.spec("BE-017")
+    def test_get_folder_info_hns_raises_invalid_path_on_file(self) -> None:
+        """BUG-198: get_folder_info on a file path must raise InvalidPath."""
+        backend = self._make_hns_backend()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
+        # Simulate ADLS Gen2 behaviour: get_directory_properties succeeds for
+        # file paths but returns no hdi_isfolder metadata (resource_type=file).
+        dc.get_directory_properties.return_value = MagicMock(spec=["metadata"], metadata={})
+        backend._fs_instance.get_directory_client.return_value = dc
+        with pytest.raises(InvalidPath, match="file-path.txt"):
+            backend.get_folder_info("file-path.txt")
+        backend._fs_instance.get_paths.assert_not_called()
 
     def test_list_files_uses_get_paths_on_hns(self) -> None:
         backend = self._make_hns_backend()

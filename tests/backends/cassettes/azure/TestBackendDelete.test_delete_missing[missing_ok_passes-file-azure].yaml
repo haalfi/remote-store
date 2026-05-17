@@ -23,74 +23,14 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3E4A4C9CEE7"'
+      - '"0x8DEB3F2F414F8DA"'
       Last-Modified:
-      - Sun, 17 May 2026 07:19:33 GMT
+      - Sun, 17 May 2026 09:01:59 GMT
       x-ms-version:
       - '2026-04-06'
     status:
       code: 201
       message: Created
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: GET
-    uri: https://azreplay.blob.core.windows.net/?comp=properties&restype=account
-  response:
-    body:
-      string: ''
-    headers:
-      Content-Length:
-      - '0'
-      x-ms-account-kind:
-      - StorageV2
-      x-ms-is-hns-enabled:
-      - 'true'
-      x-ms-sku-name:
-      - Standard_LRS
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 200
-      message: OK
-- request:
-    body: null
-    headers:
-      Accept:
-      - application/xml
-      Accept-Encoding:
-      - gzip, deflate
-      Connection:
-      - keep-alive
-      User-Agent:
-      - azsdk-python-replay
-      x-ms-version:
-      - '2026-04-06'
-    method: HEAD
-    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/missing.txt
-  response:
-    body:
-      string: ''
-    headers:
-      Transfer-Encoding:
-      - chunked
-      x-ms-error-code:
-      - BlobNotFound
-      x-ms-version:
-      - '2026-04-06'
-    status:
-      code: 404
-      message: The specified blob does not exist.
 - request:
     body: null
     headers:

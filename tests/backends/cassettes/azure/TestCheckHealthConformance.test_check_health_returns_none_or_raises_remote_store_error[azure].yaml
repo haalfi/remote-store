@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3E47E86408B"'
+      - '"0x8DEB3F2CD672467"'
       Last-Modified:
-      - Sun, 17 May 2026 07:18:28 GMT
+      - Sun, 17 May 2026 09:00:54 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -85,9 +85,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3E47E86408B"'
+      - '"0x8DEB3F2CD672467"'
       Last-Modified:
-      - Sun, 17 May 2026 07:18:28 GMT
+      - Sun, 17 May 2026 09:00:54 GMT
       x-ms-default-encryption-scope:
       - $account-encryption-key
       x-ms-deny-encryption-scope-override:
