@@ -1515,7 +1515,7 @@ class TestAsyncAzureHNSPaths:
         bc = AsyncMock(spec=BlobClient)
         downloader = AsyncMock(spec=StorageStreamDownloader)
         downloader.readall = AsyncMock(return_value=b"")
-        props = MagicMock()
+        props = MagicMock(spec=["metadata"])
         props.metadata = {"hdi_isfolder": "true"}
         downloader.properties = props
         bc.download_blob = AsyncMock(return_value=downloader)
@@ -1530,7 +1530,7 @@ class TestAsyncAzureHNSPaths:
         bc = AsyncMock(spec=BlobClient)
         downloader = AsyncMock(spec=StorageStreamDownloader)
         downloader.readall = AsyncMock(return_value=b"hello")
-        props = MagicMock()
+        props = MagicMock(spec=["metadata"])
         props.metadata = {}
         downloader.properties = props
         bc.download_blob = AsyncMock(return_value=downloader)
@@ -1547,7 +1547,7 @@ class TestAsyncAzureHNSPaths:
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
         downloader = AsyncMock(spec=StorageStreamDownloader)
-        props = MagicMock()
+        props = MagicMock(spec=["metadata"])
         props.metadata = {"hdi_isfolder": "true"}
         downloader.properties = props
         bc.download_blob = AsyncMock(return_value=downloader)
@@ -1562,7 +1562,7 @@ class TestAsyncAzureHNSPaths:
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
         downloader = AsyncMock(spec=StorageStreamDownloader)
-        props = MagicMock()
+        props = MagicMock(spec=["metadata"])
         props.metadata = {}
         downloader.properties = props
 
@@ -1584,7 +1584,7 @@ class TestAsyncAzureHNSPaths:
         """
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
-        dir_props = MagicMock()
+        dir_props = MagicMock(spec=["metadata"])
         dir_props.metadata = {"hdi_isfolder": "true"}
         bc.get_blob_properties = AsyncMock(return_value=dir_props)
         backend._cc_instance.get_blob_client.return_value = bc
@@ -1597,7 +1597,7 @@ class TestAsyncAzureHNSPaths:
         """Async delete on a normal HNS file must not raise InvalidPath."""
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
-        file_props = MagicMock()
+        file_props = MagicMock(spec=["metadata"])
         file_props.metadata = {}
         bc.get_blob_properties = AsyncMock(return_value=file_props)
         bc.delete_blob = AsyncMock(return_value=None)

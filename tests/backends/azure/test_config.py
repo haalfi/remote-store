@@ -888,9 +888,9 @@ class TestAzureHNSPaths:
         """
         backend = self._make_hns_backend()
         bc = MagicMock(spec=BlobClient)
-        # Do not spec StorageStreamDownloader: the fix accesses .properties which
-        # may not be in the spec, causing AttributeError instead of InvalidPath.
-        downloader = MagicMock()
+        # Explicit spec list: do NOT use StorageStreamDownloader (its spec hides
+        # .properties on some SDK versions, masking the fix's metadata probe).
+        downloader = MagicMock(spec=["readall", "properties"])
         downloader.readall.return_value = b""
         downloader.properties.metadata = {"hdi_isfolder": "true"}
         bc.download_blob.return_value = downloader
@@ -903,7 +903,7 @@ class TestAzureHNSPaths:
         """read_bytes on a normal HNS file must return its content unchanged."""
         backend = self._make_hns_backend()
         bc = MagicMock(spec=BlobClient)
-        downloader = MagicMock()
+        downloader = MagicMock(spec=["readall", "properties"])
         downloader.readall.return_value = b"hello"
         downloader.properties.metadata = {}
         bc.download_blob.return_value = downloader
@@ -919,7 +919,7 @@ class TestAzureHNSPaths:
         """
         backend = self._make_hns_backend()
         bc = MagicMock(spec=BlobClient)
-        dir_props = MagicMock()
+        dir_props = MagicMock(spec=["metadata"])
         dir_props.metadata = {"hdi_isfolder": "true"}
         bc.get_blob_properties.return_value = dir_props
         backend._cc_instance.get_blob_client.return_value = bc
@@ -931,7 +931,7 @@ class TestAzureHNSPaths:
         """read on a normal HNS file must not raise InvalidPath."""
         backend = self._make_hns_backend()
         bc = MagicMock(spec=BlobClient)
-        file_props = MagicMock()
+        file_props = MagicMock(spec=["metadata"])
         file_props.metadata = {}
         bc.get_blob_properties.return_value = file_props
         downloader = MagicMock(spec=StorageStreamDownloader)
@@ -951,7 +951,7 @@ class TestAzureHNSPaths:
         """
         backend = self._make_hns_backend()
         bc = MagicMock(spec=BlobClient)
-        dir_props = MagicMock()
+        dir_props = MagicMock(spec=["metadata", "size"])
         dir_props.metadata = {"hdi_isfolder": "true"}
         dir_props.size = 0
         bc.get_blob_properties.return_value = dir_props
@@ -964,7 +964,7 @@ class TestAzureHNSPaths:
         """read_seekable on a normal HNS file must not raise InvalidPath."""
         backend = self._make_hns_backend()
         bc = MagicMock(spec=BlobClient)
-        file_props = MagicMock()
+        file_props = MagicMock(spec=["metadata", "size"])
         file_props.metadata = {}
         file_props.size = 5
         bc.get_blob_properties.return_value = file_props
@@ -982,7 +982,7 @@ class TestAzureHNSPaths:
         """
         backend = self._make_hns_backend()
         bc = MagicMock(spec=BlobClient)
-        dir_props = MagicMock()
+        dir_props = MagicMock(spec=["metadata"])
         dir_props.metadata = {"hdi_isfolder": "true"}
         bc.get_blob_properties.return_value = dir_props
         backend._cc_instance.get_blob_client.return_value = bc
@@ -995,7 +995,7 @@ class TestAzureHNSPaths:
         """delete on a normal HNS file must not raise InvalidPath."""
         backend = self._make_hns_backend()
         bc = MagicMock(spec=BlobClient)
-        file_props = MagicMock()
+        file_props = MagicMock(spec=["metadata"])
         file_props.metadata = {}
         bc.get_blob_properties.return_value = file_props
         bc.delete_blob.return_value = None
