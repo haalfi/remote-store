@@ -813,10 +813,11 @@ class TestAsyncAzureMoveAndCopy:
         src_bc.delete_blob = AsyncMock()
 
         dst_bc = AsyncMock(spec=BlobClient)
-        # BUG-200 added a dst hdi_isfolder probe even on overwrite=True;
-        # for non-HNS the probe naturally fails with ResourceNotFoundError
-        # (the dst may or may not exist), which the source treats as a pass.
-        dst_bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        # Non-HNS overwrite=True takes the start_copy_from_url + delete path
+        # without any dst probe — BUG-200's hdi_isfolder probe lives in the
+        # HNS branch only. ``get_blob_properties`` is intentionally not set up;
+        # it is never awaited on this code path. ``start_copy_from_url`` is
+        # the only dst-side SDK call.
         dst_bc.start_copy_from_url = AsyncMock()
 
         cc.get_blob_client.side_effect = [src_bc, dst_bc]
@@ -824,6 +825,7 @@ class TestAsyncAzureMoveAndCopy:
         await backend.move("src.txt", "dst.txt", overwrite=True)
         assert dst_bc.start_copy_from_url.call_count == 1
         assert src_bc.delete_blob.call_count == 1
+        dst_bc.get_blob_properties.assert_not_called()
 
     @pytest.mark.spec("ASYNC-019")
     async def test_copy_overwrite(self) -> None:
@@ -834,16 +836,16 @@ class TestAsyncAzureMoveAndCopy:
         src_bc.url = "https://x.blob.core.windows.net/test/src.txt"
 
         dst_bc = AsyncMock(spec=BlobClient)
-        # BUG-200 added a dst hdi_isfolder probe even on overwrite=True;
-        # mock the typical non-existing-dst case so the probe's
-        # ResourceNotFoundError → pass branch fires.
-        dst_bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        # Non-HNS overwrite=True copies via ``start_copy_from_url`` without
+        # any dst probe; BUG-200's hdi_isfolder probe is HNS-only.
+        # ``get_blob_properties`` is intentionally not set up — never awaited.
         dst_bc.start_copy_from_url = AsyncMock()
 
         cc.get_blob_client.side_effect = [src_bc, dst_bc]
 
         await backend.copy("src.txt", "dst.txt", overwrite=True)
         assert dst_bc.start_copy_from_url.call_count == 1
+        dst_bc.get_blob_properties.assert_not_called()
 
     @pytest.mark.spec("ASYNC-018")
     @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
@@ -1345,27 +1347,23 @@ class TestAsyncAzureHNSPaths:
 
     @pytest.mark.spec("ASYNC-017")
     async def test_get_folder_info_root_hns_call_shape(self) -> None:
-        """BUG-213: get_folder_info('') on HNS must call get_directory_client('') and
-        get_paths('/') — the 'or /' fallback in get_paths is the root-path accommodation.
+        """BUG-213: get_folder_info('') on HNS skips the dir-probe (root is
+        always a folder) and calls get_paths('/') — the 'or /' fallback is
+        the root-path accommodation.
 
-        Pins the intended call shape so any future change to root-path handling
-        in the async HNS branch is caught as a regression.
+        Real ADLS Gen2 rejects ``get_directory_client("")`` with "Please
+        specify a file system name and file path", so the impl must
+        short-circuit the probe for ``ap == ""``.  Pins the intended call
+        shape so any future change to root-path handling surfaces as a
+        regression independent of live SDK semantics.
         """
         backend = self._make_hns_backend()
-        dc = AsyncMock(spec=DataLakeDirectoryClient)
-        # BUG-198: get_folder_info now probes hdi_isfolder metadata; the root
-        # directory must carry the marker so the probe accepts it as a folder.
-        dir_props = MagicMock(spec=DirectoryProperties)
-        dir_props.metadata = {"hdi_isfolder": "true"}
-        dc.get_directory_properties = AsyncMock(return_value=dir_props)
-        backend._fs_instance.get_directory_client.return_value = dc
         backend._fs_instance.get_paths.return_value = _async_iter([])
 
         info = await backend.get_folder_info("")
 
-        # get_directory_client must be called with the empty azure_path (root).
-        backend._fs_instance.get_directory_client.assert_called_once_with("")
-        dc.get_directory_properties.assert_called_once()
+        # Root path must SKIP get_directory_client (would 400 on real ADLS).
+        backend._fs_instance.get_directory_client.assert_not_called()
         # get_paths must use the '/' fallback (azure_path or '/') for the root case.
         call_kwargs = backend._fs_instance.get_paths.call_args
         assert call_kwargs is not None

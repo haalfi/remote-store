@@ -7,7 +7,7 @@ audience:
   - user.api
   - contributor.process
   - infra.test
-review_rounds: 1
+review_rounds: 2
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
@@ -17,6 +17,16 @@ surprising_ripples:
   # the public Store wrapper layer was missed by the ripple-check.
   - src/remote_store/_store.py  # Store.delete_folder + Store.get_folder_info Raises: clauses
   - src/remote_store/aio/_async_store.py  # AsyncStore.delete_folder + AsyncStore.get_folder_info Raises: clauses
+  # Round-2 review caught AZ-024 (get_folder_info spec) describing the
+  # pre-BUG-198 SDK call (`get_path_properties()`) and missing the new
+  # InvalidPath-on-file-path-HNS clause from its Raises: list. Also caught
+  # AZ-020/021/022/023 missing the AZ-036 InvalidPath cross-reference and
+  # AZ-021's pre-existing `download_file` → `download_blob` typo.
+  - sdd/specs/012-azure-backend.md  # AZ-020/021/022/023/024 per-method Raises: + AZ-024 invariant rewrite
+discovery_followups:
+  # Round-2 review surfaced a pre-existing Store-layer surface gap unmasked
+  # by BUG-201/203's correct backend behavior. Tracked as BK-227.
+  - BK-227
 phases:
   - id: orient
     name: Orient

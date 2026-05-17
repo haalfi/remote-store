@@ -5,12 +5,25 @@ source_items:
   - BUG-213
   - BUG-199
 audience:
+  - library.maintainer
   - infra.test
 co_shipped_items:
   - BUG-202
-review_rounds: 2
+review_rounds: 3
 discovery_followups:
   - BK-225
+surprising_ripples:
+  # PR #650 Stage 3 live verification (round-3 review by user) surfaced
+  # that the original BUG-213 fix landed as mock-tests-only and the live
+  # test it added actually FAILED against real ADLS Gen2:
+  # `get_directory_client("")` is rejected by the SDK with "Please specify
+  # a file system name and file path". The mock test passed because
+  # MagicMock does not validate path arguments. Code fix added in PR #650:
+  # skip the dir-probe for the filesystem root in both sync and async
+  # branches. Audience widens from infra.test to library.maintainer + CHANGELOG entry added.
+  - src/remote_store/backends/_azure.py  # get_folder_info HNS branch: skip dir-probe for azure_path==""
+  - src/remote_store/aio/backends/_azure.py  # async sibling: skip dir-probe for ap==""
+  - CHANGELOG.md  # BUG-213 entry added (library.maintainer audience promoted from infra.test)
 phases:
   - id: orient
     name: Orient

@@ -1280,30 +1280,23 @@ class TestAzureHNSPaths:
 
     @pytest.mark.spec("BE-017")
     def test_get_folder_info_root_hns_call_shape(self) -> None:
-        """BUG-213: get_folder_info('') on HNS must call get_directory_client('') and
-        get_paths('/') — the 'or /' fallback in get_paths is the root-path accommodation.
+        """BUG-213: get_folder_info('') on HNS skips the dir-probe (root is
+        always a folder) and calls get_paths('/') — the 'or /' fallback is
+        the root-path accommodation.
 
-        Pins the intended call shape so any future change to root-path handling
-        in the HNS branch is caught as a regression.
+        Real ADLS Gen2 rejects ``get_directory_client("")`` with "Please
+        specify a file system name and file path", so the impl must
+        short-circuit the probe for ``azure_path == ""``.  Pins the intended
+        call shape so any future change to root-path handling surfaces as a
+        regression independent of live SDK semantics.
         """
         backend = self._make_hns_backend()
-        dc = MagicMock(spec=DataLakeDirectoryClient)
-        # BUG-198: get_folder_info probes hdi_isfolder metadata; the root
-        # directory must carry the marker explicitly so the probe accepts it
-        # as a folder. Without this, MagicMock auto-magic returns a truthy
-        # value and the test passes by coincidence (was BUG-203's original
-        # defect shape).
-        dir_props = MagicMock(spec=["metadata"])
-        dir_props.metadata = {"hdi_isfolder": "true"}
-        dc.get_directory_properties.return_value = dir_props
-        backend._fs_instance.get_directory_client.return_value = dc
         backend._fs_instance.get_paths.return_value = []  # root is empty for this test
 
         info = backend.get_folder_info("")
 
-        # get_directory_client must be called with the empty azure_path (root).
-        backend._fs_instance.get_directory_client.assert_called_once_with("")
-        dc.get_directory_properties.assert_called_once()
+        # Root path must SKIP get_directory_client (would 400 on real ADLS).
+        backend._fs_instance.get_directory_client.assert_not_called()
         # get_paths must use the '/' fallback (azure_path or '/') for the root case.
         call_kwargs = backend._fs_instance.get_paths.call_args
         assert call_kwargs is not None

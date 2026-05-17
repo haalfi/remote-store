@@ -8,27 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-- [x] **BUG-213 — Root-path HNS coverage gap in `AzureBackend.get_folder_info` (sync + async)**
-  spec: BE-017, ASYNC-017 · audience: infra.test
-  The BUG-199 fix unconditionally calls `self._fs.get_directory_client(azure_path)`
+- [x] **BUG-213 — `AzureBackend.get_folder_info("")` and async sibling fail on real ADLS Gen2 (sync + async)**
+  spec: BE-017, ASYNC-017 · audience: library.maintainer
+  The BUG-199 fix unconditionally called `self._fs.get_directory_client(azure_path)`
   followed by `dc.get_directory_properties()` in the HNS branch. When
-  `path=""` (root), `azure_path` becomes `""`, exercising a
-  DataLake-SDK code path not covered by any existing cassette (seeded
-  paths in the existing tests are `mix`, `gfr`, `my-dir`, etc.). The
-  subsequent `get_paths(path=azure_path or "/", recursive=True)`
-  carries a deliberate `"/"` fallback for the root case, making the
-  asymmetry stand out.
-  Fix: pin the intended call shape with a mock-level test
-  (`TestAzureHNSPaths.test_get_folder_info_root_hns_call_shape` in
-  `tests/backends/azure/test_config.py` and the async sibling under
-  `aio/test_config.py`) — asserts `get_directory_client('')` plus
-  `get_paths(path='/')` so any future drift in root-path handling
-  surfaces as a regression independent of live SDK semantics. Stage 3
-  live coverage added in `TestAzureLiveHnsGetFolderInfoRoot`
-  (sync + async) asserting `get_folder_info('')` returns a valid
-  `FolderInfo` with non-negative aggregates against a real ADLS Gen2
-  account. Cassette refresh required (record via
-  `RS_TEST_LIVE_HNS=1 hatch run record-azure`).
+  `path=""` (root), `azure_path` becomes `""` and real ADLS Gen2 rejects
+  `get_directory_client("")` with `"Please specify a file system name and
+  file path"`. Surfaced by `TestAzureLiveHnsGetFolderInfoRoot` (sync) and
+  the async sibling against a real account — initially landed as
+  mock-tests-only in PR #648, the code defect was confirmed during PR #650
+  Stage 3 live verification.
+  Fix: skip the per-path probe for the filesystem root in both sync
+  (`src/remote_store/backends/_azure.py:851-863`) and async
+  (`src/remote_store/aio/backends/_azure.py:921-934`). The root is always
+  a folder, no `hdi_isfolder` probe is needed, and `get_paths(path="/")`
+  alone is sufficient to enumerate children. Mock-level regression tests
+  in both `TestAzureHNSPaths` and `TestAsyncAzureHNSPaths` now assert
+  `get_directory_client.assert_not_called()` so any future drift fires.
+  Spec: BE-017, ASYNC-017.
   Trace: [`sdd/traces/bug-213-azure-get-folder-info-root-path.yml`](traces/bug-213-azure-get-folder-info-root-path.yml).
 
 - [x] **BUG-202 — `AzureBackend.write_atomic` streaming-input path raises `MissingRequiredQueryParameter` on real HNS**

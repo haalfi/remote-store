@@ -166,18 +166,18 @@ AzureBackend(
 
 **Invariant:** `read(path)` returns a `BinaryIO` stream via `_AzureBinaryIO`, a forward-only streaming adapter wrapping `StorageStreamDownloader.chunks()`. The raw adapter is wrapped in `io.BufferedReader` for efficient buffered reads.
 **Postconditions:** Data is streamed on demand — the full file is not loaded into memory. The stream is forward-only (not seekable). Callers that require seekability should use `read_bytes()` + `BytesIO`.
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the file does not exist. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names an HNS directory.
 
 ### AZ-021: read_bytes()
 
-**Invariant:** `read_bytes(path)` returns the full file content as `bytes`. Implemented as `read(path).read()` or via `download_file().readall()` directly.
-**Raises:** `NotFound` if the file does not exist.
+**Invariant:** `read_bytes(path)` returns the full file content as `bytes`. Implemented via `BlobClient.download_blob().readall()`.
+**Raises:** `NotFound` if the file does not exist. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names an HNS directory.
 
 ### AZ-022: write()
 
 **Invariant:** `write(path, content, overwrite=False)` uploads content via `BlobClient.upload_blob()` (Blob SDK).
 **Preconditions:** `content` is `bytes` or `BinaryIO`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. Existence check uses `ResourceNotFoundError` (not broad exception catch) to avoid swallowing auth/network errors.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. Existence check uses `ResourceNotFoundError` (not broad exception catch) to avoid swallowing auth/network errors. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names an HNS directory.
 **Postconditions (HNS):** Intermediate directories are created automatically by the ADLS Gen2 service.
 **Postconditions (no HNS):** No intermediate directory creation needed (flat blob namespace).
 
@@ -194,14 +194,14 @@ AzureBackend(
 
 **Note:** `content_type` is not included in `FileInfo`.
 
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the file does not exist. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names an HNS directory.
 
 ### AZ-024: get_folder_info()
 
 **Invariant:** `get_folder_info(path)` returns a `FolderInfo`.
-**Invariant (HNS):** Uses `get_path_properties()` on the directory object.
+**Invariant (HNS):** Uses `DataLakeDirectoryClient.get_directory_properties()` on the directory object to confirm the entity exists, then probes `hdi_isfolder` (per [AZ-036](#az-036-hns-directory-marker-probe-contract)) to reject file-path mismatches. Child file count and total size are aggregated via `_fs.get_paths(recursive=True)`, skipping entries with `is_directory=True` (BUG-199).
 **Invariant (no HNS):** Checks for the existence of blobs under the prefix `{path}/`.
-**Raises:** `NotFound` if the folder does not exist.
+**Raises:** `NotFound` if the folder does not exist. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names a file on HNS (`hdi_isfolder` absent).
 
 ---
 

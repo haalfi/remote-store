@@ -863,13 +863,18 @@ class AzureBackend(Backend):
             if self._hns:  # pragma: no cover -- HNS only
                 # DFS get_paths exposes is_directory inline; list_blobs would
                 # silently count hdi_isfolder marker blobs as files (BUG-199).
-                dc = self._fs.get_directory_client(azure_path)
-                dir_props = dc.get_directory_properties()  # raises if not found
-                # BUG-198: on real ADLS Gen2, get_directory_properties() succeeds
-                # for file paths too.  Detect the type mismatch and raise InvalidPath.
-                dir_meta = getattr(dir_props, "metadata", None) or {}
-                if not dir_meta.get("hdi_isfolder"):
-                    raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
+                # BUG-213: skip the per-path probe for the filesystem root —
+                # ``get_directory_client("")`` fails on real ADLS Gen2 with
+                # "Please specify a file system name and file path", and the
+                # root is always a folder (no hdi_isfolder probe needed).
+                if azure_path:
+                    dc = self._fs.get_directory_client(azure_path)
+                    dir_props = dc.get_directory_properties()  # raises if not found
+                    # BUG-198: on real ADLS Gen2, get_directory_properties() succeeds
+                    # for file paths too.  Detect the type mismatch and raise InvalidPath.
+                    dir_meta = getattr(dir_props, "metadata", None) or {}
+                    if not dir_meta.get("hdi_isfolder"):
+                        raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
                 for p in self._fs.get_paths(path=azure_path or "/", recursive=True):
                     if getattr(p, "is_directory", False):
                         continue
