@@ -7,6 +7,9 @@ source_items:
 audience:
   - infra.test
 co_shipped_items: []
+review_rounds: 1
+discovery_followups:
+  - BK-225
 phases:
   - id: orient
     name: Orient

@@ -958,17 +958,17 @@ class TestAzureLiveHnsGetFolderInfoRoot:
         self,
         live_hns_backend: tuple[AzureBackend, str],
     ) -> None:
-        """Root get_folder_info must succeed and return a FolderInfo with non-negative counts.
+        """Root get_folder_info must succeed and return a FolderInfo for path=''.
 
-        The container has at least one file (from the shared fixture's dirblob
-        and other sibling tests), so file_count > 0 is expected in practice.
-        The test accepts >= 0 to stay deterministic even on an otherwise empty
-        container: the assertion of interest is "no SDK exception on root path".
+        Contract under test: ``get_folder_info("")`` against an HNS account
+        completes without an SDK exception (the empty `azure_path` branch in
+        ``_fs.get_directory_client`` and the deliberate `or "/"` fallback in
+        ``_fs.get_paths`` are the SDK-specific code paths this pins).  The
+        live counts vary with sibling-test residue and are not contract.
         """
         from remote_store._models import FolderInfo  # noqa: PLC0415 -- intentional late import
 
         backend, _dirpath = live_hns_backend
         info = backend.get_folder_info("")
         assert isinstance(info, FolderInfo)
-        assert info.file_count >= 0
-        assert info.total_size >= 0
+        assert info.path == ""

@@ -457,38 +457,53 @@ class AzureBackend(Backend):
             tmp_path = f"{parent}/{tmp_name}" if parent else tmp_name
 
             sdk_metadata = metadata or None
-            size: int
-            upload_target: Any
-            if isinstance(content, bytes):
-                size = len(content)
-                upload_target = content
-            else:
-                # BUG-202: DataLake flush_data requires a byte-position
-                # parameter that the SDK derives from the ``length`` argument.
-                # _ByteCountingIO is not seekable so the SDK cannot infer
-                # length, leaving position=None and triggering
-                # MissingRequiredQueryParameter on real HNS.  Buffer the
-                # stream upfront so both size and a seekable target are ready
-                # before the upload call.
-                _raw = content.read()
-                size = len(_raw)
-                upload_target = io.BytesIO(_raw)
-
             tmp_fc = self._fs.get_file_client(tmp_path)
-            try:
-                tmp_fc.upload_data(
-                    upload_target,
-                    length=size,
-                    overwrite=True,
-                    max_concurrency=self._max_concurrency,
-                    metadata=sdk_metadata,
-                )
-                new_name = f"{self._container}/{azure_path}"
-                tmp_fc.rename_file(new_name)
-            except Exception:
-                with contextlib.suppress(Exception):
-                    tmp_fc.delete_file()
-                raise
+            new_name = f"{self._container}/{azure_path}"
+            size: int
+
+            if isinstance(content, bytes):
+                # Bytes: upload_data resolves length via len(); no extra protocol.
+                size = len(content)
+                try:
+                    tmp_fc.upload_data(
+                        content,
+                        length=size,
+                        overwrite=True,
+                        max_concurrency=self._max_concurrency,
+                        metadata=sdk_metadata,
+                    )
+                    tmp_fc.rename_file(new_name)
+                except Exception:
+                    with contextlib.suppress(Exception):
+                        tmp_fc.delete_file()
+                    raise
+            else:
+                # BUG-202: streaming BinaryIO. DataLake flush_data requires
+                # position=<total bytes>; upload_data with an unseekable wrapper
+                # leaves position=None on real HNS (MissingRequiredQueryParameter).
+                # Drive the DFS append protocol directly — create_file, then
+                # append_data per chunk tracking cumulative position, then
+                # flush_data with the final byte count.  One chunk at a time;
+                # memory is bounded to ``_AZURE_BLOCK_SIZE`` (mirrors the async
+                # sibling at ``aio/backends/_azure.py:562-576`` introduced by
+                # BUG-194).
+                try:
+                    tmp_fc.create_file(metadata=sdk_metadata)
+                    position = 0
+                    while True:
+                        chunk = content.read(_AZURE_BLOCK_SIZE)
+                        if not chunk:
+                            break
+                        chunk_len = len(chunk)
+                        tmp_fc.append_data(chunk, offset=position, length=chunk_len)
+                        position += chunk_len
+                    tmp_fc.flush_data(position)
+                    size = position
+                    tmp_fc.rename_file(new_name)
+                except Exception:
+                    with contextlib.suppress(Exception):
+                        tmp_fc.delete_file()
+                    raise
             # BUG-173: the rename above has already committed the write.  A
             # post-commit read failure (network blip, eventual consistency,
             # permissions) must not surface as a write failure -- retrying

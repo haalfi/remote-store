@@ -1266,7 +1266,14 @@ class TestAsyncAzureHNSPaths:
         # get_paths must use the '/' fallback (azure_path or '/') for the root case.
         call_kwargs = backend._fs_instance.get_paths.call_args
         assert call_kwargs is not None
-        path_arg = call_kwargs.kwargs.get("path") or (call_kwargs.args[0] if call_kwargs.args else None)
+        # Explicit if/elif: a falsy-but-present path="" would silently fall through
+        # `kwargs.get("path") or args[0]`, masking the very regression this test pins.
+        if "path" in call_kwargs.kwargs:
+            path_arg = call_kwargs.kwargs["path"]
+        elif call_kwargs.args:
+            path_arg = call_kwargs.args[0]
+        else:
+            path_arg = None
         assert path_arg == "/", f"get_paths must be called with '/' at the root (azure_path or '/'); got {path_arg!r}"
         assert info.file_count == 0
         assert info.total_size == 0

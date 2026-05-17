@@ -6,7 +6,9 @@ source_items:
 audience:
   - user.api
   - infra.test
-review_rounds: 0
+review_rounds: 1
+discovery_followups:
+  - BK-224
 phases:
   - id: orient
     name: Orient

@@ -798,13 +798,15 @@ class TestAzureHNSPaths:
 
     @pytest.mark.spec("WR-001a")
     @pytest.mark.spec("BE-010")
-    def test_write_atomic_hns_streaming_passes_length_to_upload_data(self) -> None:
-        """BUG-202: streaming write_atomic must pass length= to upload_data.
+    def test_write_atomic_hns_streaming_uses_dfs_append_protocol(self) -> None:
+        """BUG-202: streaming write_atomic drives the DFS append protocol directly.
 
-        DataLake flush_data requires a byte-position argument that the SDK
-        derives from the ``length`` kwarg.  Without it, real HNS returns
-        MissingRequiredQueryParameter.  This test verifies the fix: when
-        content is a BinaryIO the call includes ``length=<actual_byte_count>``.
+        ``flush_data`` requires ``position=<total bytes>``; ``upload_data`` with
+        an unseekable wrapper leaves ``position=None`` on real HNS
+        (``MissingRequiredQueryParameter``).  Fix: ``create_file`` →
+        per-chunk ``append_data(offset, length)`` → ``flush_data(position)``;
+        memory is bounded to ``_AZURE_BLOCK_SIZE`` (mirrors the async sibling
+        from BUG-194).
         """
         from azure.core.exceptions import ResourceNotFoundError
 
@@ -814,7 +816,6 @@ class TestAzureHNSPaths:
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         backend._cc_instance.get_blob_client.return_value = bc
         tmp_fc = MagicMock(spec=DataLakeFileClient)
-        tmp_fc.upload_data.return_value = None
         tmp_fc.get_file_properties.return_value = MagicMock(
             spec=["etag", "last_modified"],
             etag=None,
@@ -824,12 +825,34 @@ class TestAzureHNSPaths:
 
         result = backend.write_atomic("dir/stream.bin", io.BytesIO(payload))
 
-        call_kwargs = tmp_fc.upload_data.call_args
-        assert call_kwargs is not None, "upload_data was not called"
-        # length must be passed as a keyword argument and equal the payload size
-        assert call_kwargs.kwargs.get("length") == len(payload), (
-            f"upload_data missing or wrong length= kwarg: {call_kwargs.kwargs}"
-        )
+        # upload_data must NOT be called for streaming input (would re-introduce
+        # the MissingRequiredQueryParameter regression).
+        tmp_fc.upload_data.assert_not_called()
+
+        tmp_fc.create_file.assert_called_once()
+
+        # Reconstruct the body from the append_data calls and verify the full
+        # payload survives the chunked transfer — guards against a future
+        # refactor that drops bytes or reorders the append protocol while the
+        # length= / flush_data positions still look right.
+        appended = b""
+        running_offset = 0
+        for call in tmp_fc.append_data.call_args_list:
+            chunk = call.args[0] if call.args else call.kwargs.get("data")
+            offset = call.kwargs.get("offset")
+            length = call.kwargs.get("length")
+            assert offset == running_offset, f"append_data offset drift: {offset} != {running_offset}"
+            assert length == len(chunk), f"append_data length mismatch: {length} != {len(chunk)}"
+            appended += chunk
+            running_offset += length
+        assert appended == payload, "append_data chunks do not reconstruct the original payload"
+
+        # flush_data must close with position=<total bytes>.
+        flush_call = tmp_fc.flush_data.call_args
+        assert flush_call is not None, "flush_data was not called"
+        flush_position = flush_call.args[0] if flush_call.args else flush_call.kwargs.get("position")
+        assert flush_position == len(payload), f"flush_data position {flush_position} != payload size {len(payload)}"
+
         assert isinstance(result, WriteResult)
         assert result.size == len(payload)
 
@@ -937,7 +960,14 @@ class TestAzureHNSPaths:
         # get_paths must use the '/' fallback (azure_path or '/') for the root case.
         call_kwargs = backend._fs_instance.get_paths.call_args
         assert call_kwargs is not None
-        path_arg = call_kwargs.kwargs.get("path") or (call_kwargs.args[0] if call_kwargs.args else None)
+        # Explicit if/elif: a falsy-but-present path="" would silently fall through
+        # `kwargs.get("path") or args[0]`, masking the very regression this test pins.
+        if "path" in call_kwargs.kwargs:
+            path_arg = call_kwargs.kwargs["path"]
+        elif call_kwargs.args:
+            path_arg = call_kwargs.args[0]
+        else:
+            path_arg = None
         assert path_arg == "/", f"get_paths must be called with '/' at the root (azure_path or '/'); got {path_arg!r}"
         assert info.file_count == 0
         assert info.total_size == 0
