@@ -737,6 +737,15 @@ class AzureBackend(Backend):
                 yield info
 
     def get_file_info(self, path: str) -> FileInfo:
+        """Return file metadata for ``path``.
+
+        Args:
+            path: Backend-relative key.
+
+        Raises:
+            NotFound: If the file does not exist.
+            InvalidPath: If ``path`` names a directory (HNS: ``hdi_isfolder=true``).
+        """
         with self._errors(path):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()

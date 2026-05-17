@@ -55,6 +55,7 @@ a best-effort basis so a teardown race does not turn a green test red.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import uuid
@@ -511,6 +512,53 @@ class TestAzureLiveHnsGetFileInfoOnDirectory:
         backend, dirpath = live_hns_backend
         with pytest.raises(InvalidPath, match="exists as a directory"):
             backend.get_file_info(dirpath)
+
+
+class TestAzureLiveHnsIsFolderIsFile:
+    """``is_folder`` / ``is_file`` semantics on a real HNS directory + file.
+
+    BUG-203 changed ``is_folder`` from "return True whenever
+    ``get_directory_properties()`` succeeds" to "return True only when
+    ``hdi_isfolder`` is set in metadata". The mock-level test fabricates the
+    metadata; this class proves the marker is actually present on a directory
+    created via ``DataLakeServiceClient.create_directory()`` (the way
+    ``live_hns_backend`` provisions ``dirpath``) and absent on a regular file
+    written via ``write_atomic`` — different SDK code paths than the conformance
+    cassette's blob HEAD captures.
+
+    Spec: BE-005 (is_folder / is_file).
+    """
+
+    @pytest.mark.spec("BE-005")
+    def test_is_folder_true_on_hns_directory(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        assert backend.is_folder(dirpath) is True
+
+    @pytest.mark.spec("BE-005")
+    def test_is_file_false_on_hns_directory(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        assert backend.is_file(dirpath) is False
+
+    @pytest.mark.spec("BE-005")
+    def test_is_file_true_and_is_folder_false_on_hns_file(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        target = f"{dirpath}/file-{uuid.uuid4().hex[:8]}.txt"
+        backend.write_atomic(target, _PAYLOAD, overwrite=True)
+        try:
+            assert backend.is_file(target) is True
+            assert backend.is_folder(target) is False
+        finally:
+            with contextlib.suppress(Exception):
+                backend.delete(target, missing_ok=True)
 
 
 # ---------------------------------------------------------------------------

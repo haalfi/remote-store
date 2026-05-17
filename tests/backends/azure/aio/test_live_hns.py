@@ -470,6 +470,53 @@ class TestAsyncLiveHnsGetFileInfoOnDirectory:
             await backend.get_file_info(dirpath)
 
 
+class TestAsyncLiveHnsIsFolderIsFile:
+    """Async ``is_folder`` / ``is_file`` semantics on a real HNS directory + file.
+
+    Async companion to ``TestAzureLiveHnsIsFolderIsFile``. BUG-203 fixed both
+    sync and async ``is_folder`` to inspect ``hdi_isfolder`` metadata instead
+    of trusting that ``get_directory_properties()`` succeeded; this class
+    proves the marker is actually present on a directory created via
+    ``DataLakeServiceClient.create_directory()`` and absent on a regular file
+    written via ``write_atomic``.
+
+    Spec: ASYNC-005 (is_folder / is_file).
+    """
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_folder_true_on_hns_directory(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        assert await backend.is_folder(dirpath) is True
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_file_false_on_hns_directory(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        assert await backend.is_file(dirpath) is False
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_file_true_and_is_folder_false_on_hns_file(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        import contextlib  # noqa: PLC0415 -- intentional lazy import
+
+        backend, dirpath = async_live_hns_backend
+        target = f"{dirpath}/file-{uuid.uuid4().hex[:8]}.txt"
+        await backend.write_atomic(target, _PAYLOAD, overwrite=True)
+        try:
+            assert await backend.is_file(target) is True
+            assert await backend.is_folder(target) is False
+        finally:
+            with contextlib.suppress(Exception):
+                await backend.delete(target, missing_ok=True)
+
+
 # ---------------------------------------------------------------------------
 # ASYNC-010 / SIO-003 — write_atomic with AsyncIterator on a real HNS account
 # ---------------------------------------------------------------------------
