@@ -846,7 +846,7 @@ class TestAzureHNSPaths:
         dc = MagicMock(spec=DataLakeDirectoryClient)
         # Simulate ADLS Gen2 behaviour: get_directory_properties succeeds for
         # file paths but returns no hdi_isfolder metadata (resource_type=file).
-        dc.get_directory_properties.return_value = MagicMock(metadata={})
+        dc.get_directory_properties.return_value = MagicMock(spec=["metadata"], metadata={})
         backend._fs_instance.get_directory_client.return_value = dc
         with pytest.raises(InvalidPath, match="file-path.txt"):
             backend.delete_folder("file-path.txt")
@@ -859,7 +859,7 @@ class TestAzureHNSPaths:
         dc = MagicMock(spec=DataLakeDirectoryClient)
         # Simulate ADLS Gen2 behaviour: get_directory_properties succeeds for
         # file paths but returns no hdi_isfolder metadata (resource_type=file).
-        dc.get_directory_properties.return_value = MagicMock(metadata={})
+        dc.get_directory_properties.return_value = MagicMock(spec=["metadata"], metadata={})
         backend._fs_instance.get_directory_client.return_value = dc
         with pytest.raises(InvalidPath, match="file-path.txt"):
             backend.get_folder_info("file-path.txt")

@@ -813,6 +813,10 @@ class TestAsyncAzureMoveAndCopy:
         src_bc.delete_blob = AsyncMock()
 
         dst_bc = AsyncMock(spec=BlobClient)
+        # BUG-200 added a dst hdi_isfolder probe even on overwrite=True;
+        # for non-HNS the probe naturally fails with ResourceNotFoundError
+        # (the dst may or may not exist), which the source treats as a pass.
+        dst_bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
         dst_bc.start_copy_from_url = AsyncMock()
 
         cc.get_blob_client.side_effect = [src_bc, dst_bc]
@@ -830,6 +834,10 @@ class TestAsyncAzureMoveAndCopy:
         src_bc.url = "https://x.blob.core.windows.net/test/src.txt"
 
         dst_bc = AsyncMock(spec=BlobClient)
+        # BUG-200 added a dst hdi_isfolder probe even on overwrite=True;
+        # mock the typical non-existing-dst case so the probe's
+        # ResourceNotFoundError → pass branch fires.
+        dst_bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
         dst_bc.start_copy_from_url = AsyncMock()
 
         cc.get_blob_client.side_effect = [src_bc, dst_bc]
