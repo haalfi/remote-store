@@ -222,7 +222,7 @@ def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 # Test function names known to expose real-ADLS-Gen2 conformance gaps
-# (BUG-197/200/202/203: real ADLS Gen2 accepts or mishandles calls that Azurite
+# (BUG-197/198/200/202: real ADLS Gen2 accepts or mishandles calls that Azurite
 # correctly rejects per spec).
 # Applied as xfail(strict=False) for real-Azure fixture IDs so that:
 #   - CI does not treat them as unexpected failures (they match live behaviour)
@@ -289,7 +289,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(
                 pytest.mark.xfail(
                     strict=False,
-                    reason="Known real-ADLS-Gen2 conformance gap (see BUG-197/200/202/203 in BACKLOG.md)",
+                    reason="Known real-ADLS-Gen2 conformance gap (see BUG-197/198/200/202 in BACKLOG.md)",
                 )
             )
 

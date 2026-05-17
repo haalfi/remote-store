@@ -352,8 +352,12 @@ class AsyncAzureBackend(AsyncBackend):
                 return True
             if await self._ensure_hns():  # pragma: no cover -- HNS only
                 try:
-                    await self._fs.get_directory_client(ap).get_directory_properties()
-                    return True
+                    props = await self._fs.get_directory_client(ap).get_directory_properties()
+                    # On HNS, get_directory_properties() succeeds for both files and
+                    # directories.  A real HNS directory has hdi_isfolder=true in its
+                    # metadata; a regular file does not (BUG-203).
+                    meta = getattr(props, "metadata", None) or {}
+                    return bool(meta.get("hdi_isfolder"))
                 except Exception:  # noqa: BLE001
                     return False
             else:

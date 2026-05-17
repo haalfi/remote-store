@@ -1,5 +1,5 @@
 id: BUG-203
-title: "AzureBackend.is_folder() returns True for HNS file paths (BUG-203)"
+title: "AzureBackend.is_folder() and AsyncAzureBackend.is_folder() return True for HNS file paths (BUG-203)"
 trigger: "Conformance test test_is_file[azure_live] failed: backend.is_folder('a.txt') returned True for a regular file on a real ADLS Gen2 HNS account. Azurite-backed tests passed because Azurite does not emulate HNS."
 source_items:
   - BUG-203
@@ -7,8 +7,9 @@ audience:
   - user.api
   - infra.test
 discovery_followups: []
-surprising_ripples: []
-review_rounds: 0
+surprising_ripples:
+  - src/remote_store/aio/backends/_azure.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

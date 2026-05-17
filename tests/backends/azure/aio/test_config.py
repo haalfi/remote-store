@@ -33,7 +33,7 @@ from azure.storage.blob import (  # noqa: E402
     StorageStreamDownloader,
 )
 from azure.storage.blob.aio import BlobClient, BlobServiceClient, ContainerClient  # noqa: E402
-from azure.storage.filedatalake import PathProperties  # noqa: E402
+from azure.storage.filedatalake import DirectoryProperties, PathProperties  # noqa: E402
 from azure.storage.filedatalake.aio import (  # noqa: E402
     DataLakeDirectoryClient,
     DataLakeFileClient,
@@ -1257,6 +1257,23 @@ class TestAsyncAzureHNSPaths:
         with pytest.raises(InvalidPath, match="exists as a directory"):
             await backend.get_file_info("mydir")
 
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_folder_returns_false_for_file_path_on_hns(self) -> None:
+        """BUG-203 (async parity): is_folder must return False when the path is a file.
+
+        On HNS, ``get_directory_properties()`` succeeds for file paths too
+        (returns status 200).  Without the ``hdi_isfolder`` probe, async
+        ``is_folder`` wrongly returns True for regular files — same defect
+        shape as the sync sibling closed by BUG-203.
+        """
+        backend = self._make_hns_backend()
+        dc = AsyncMock(spec=DataLakeDirectoryClient)
+        file_props = MagicMock(spec=DirectoryProperties)
+        file_props.metadata = {}  # regular file: no hdi_isfolder
+        dc.get_directory_properties = AsyncMock(return_value=file_props)
+        backend._fs_instance.get_directory_client.return_value = dc
+        assert await backend.is_folder("a.txt") is False
+
     @pytest.mark.spec("ASYNC-016")
     async def test_get_file_info_raises_not_found_on_missing_path(self) -> None:
         """ASYNC-016: !PathExists → NotFound (non-HNS path still works)."""
@@ -1519,6 +1536,12 @@ class TestAsyncAzureHNSPaths:
     async def test_is_folder_hns_uses_directory_client(self) -> None:
         backend = self._make_hns_backend()
         dc = AsyncMock(spec=DataLakeDirectoryClient)
+        # BUG-203: is_folder must read hdi_isfolder from get_directory_properties().
+        # A real HNS directory marker has the metadata set; without an explicit
+        # props return value, AsyncMock auto-attrs swallow the metadata read.
+        dir_props = MagicMock(spec=DirectoryProperties)
+        dir_props.metadata = {"hdi_isfolder": "true"}
+        dc.get_directory_properties = AsyncMock(return_value=dir_props)
         backend._fs_instance.get_directory_client.return_value = dc
 
         assert await backend.is_folder("my-dir") is True

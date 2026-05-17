@@ -8,17 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-- [x] **BUG-203 — `AzureBackend.is_folder()` returns `True` for HNS file paths**
-  spec: BE-005, BE-021 · audience: library.maintainer
-  Sync `AzureBackend.is_folder('a.txt')` returned `True` when `a.txt` existed as
-  an HNS file blob (no `hdi_isfolder=true` marker) because the HNS branch
-  treated a successful `get_directory_properties()` response as proof of
-  directoryness — but DataLake's `get_directory_client(path).get_directory_properties()`
-  returns HTTP 200 for any path entity, file or directory. The discriminator is
-  the `hdi_isfolder` metadata marker. Fix: extend the `hdi_isfolder` probe used
+- [x] **BUG-203 — `AzureBackend.is_folder()` and `AsyncAzureBackend.is_folder()` return `True` for HNS file paths**
+  spec: BE-005, ASYNC-005, BE-021 · audience: library.maintainer
+  Both sync and async `is_folder('a.txt')` returned `True` when `a.txt`
+  existed as an HNS file blob (no `hdi_isfolder=true` marker), because the
+  HNS branch treated a successful `get_directory_properties()` response as
+  proof of directoryness — but DataLake's
+  `get_directory_client(path).get_directory_properties()` returns HTTP 200
+  for any path entity, file or directory. The discriminator is the
+  `hdi_isfolder` metadata marker. Sync was surfaced by the BK-180
+  conformance run; async carried the same defect but `test_async_extended.py`
+  has no `test_is_file` / `test_is_folder` mirror of `TestBackendFileFolder`,
+  so the live async run was green not because the bug was absent but because
+  no conformance test exercised it. Fix: extend the `hdi_isfolder` probe used
   by `write`/`write_atomic`/`open_atomic` to the `is_folder` HNS branch in
-  `src/remote_store/backends/_azure.py`. Async sibling unaffected (no
-  `[azure_live_async]` failure for this test today).
+  `src/remote_store/backends/_azure.py` and `src/remote_store/aio/backends/_azure.py`
+  (sibling fix landed in the same PR). Mock-level async regression test
+  `test_is_folder_returns_false_for_file_path_on_hns` added in
+  `tests/backends/azure/aio/test_config.py`.
   Trace: [`sdd/traces/bug-203-azure-is-file-hns-folder.yml`](traces/bug-203-azure-is-file-hns-folder.yml).
 
 - [x] **BUG-195 — `get_file_info` on an HNS directory raises `NotFound` instead of `InvalidPath` (sync + async)**
