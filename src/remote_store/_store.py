@@ -361,7 +361,8 @@ class Store:
         Raises:
             NotFound: If the file is missing and *missing_ok* is
                 ``False``.
-            InvalidPath: If *path* is empty.
+            InvalidPath: If *path* is empty, or if *path* names a directory
+                (regardless of *missing_ok*).
         """
         _bk = self._backend.name
         log.debug(

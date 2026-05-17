@@ -74,33 +74,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   on an HNS account, then mirror as a mock-level test pinning the
   intended call shape.
 
-- [ ] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)**
-  spec: BE-013, BE-014, BE-021, ASYNC-013 · effort: M · audience: library.maintainer
-  BE-021 requires file-API operations on a directory path to raise `InvalidPath`.
-  `write`/`write_atomic`/`open_atomic` enforce this via the `hdi_isfolder` probe
-  (BUG-190/BUG-192). `read_bytes` and `delete` do not — neither path probes for the
-  directory marker before invoking the SDK. Confirmed live on a real ADLS Gen2 account:
-  - `AzureBackend.read_bytes(hns_dir)` and `AsyncAzureBackend.read_bytes(hns_dir)`:
-    silently return `b""` (0 bytes) instead of raising `InvalidPath`.
-  - `AzureBackend.delete(hns_dir)` and `AsyncAzureBackend.delete(hns_dir)`:
-    silently delete the directory marker, leaving `exists()` returning `False`.
-    **This is a data-loss defect**: calling the file-API `delete()` on what the
-    caller believed was a file but is actually a directory destroys the directory
-    silently. Stronger consequence than BUG-190/BUG-192 (which just chose the wrong
-    error class) — this one mutates account state.
-  Live tests freeze the actual behaviour in `tests/backends/azure/test_live_hns.py::
-  TestAzureLiveHnsFileApiOnDirectory` and the async sibling at
-  `tests/backends/azure/aio/test_live_hns.py`; they must be flipped
-  back to assert `InvalidPath` once the fix lands. The BK-180 conformance run
-  against `azure_live_async` reproduces the async halves at
-  `tests/backends/conformance/test_async_extended.py::TestReadErrorFidelity::test_read_on_directory_raises_error`,
-  `test_read_bytes_on_directory_raises_error`,
-  `TestDeleteErrorFidelity::test_delete_on_directory_raises_invalid_path`, and
-  `test_delete_on_directory_missing_ok_still_raises`. Fix: extend the existing
-  `hdi_isfolder` probe pattern from `write_atomic`/`open_atomic` to `read`,
-  `read_bytes`, `read_seekable`, and `delete` on both sync and async backends.
-  Spec: BE-021, BE-013, BE-014, ASYNC-013.
-
 - [ ] **BUG-202 — `AzureBackend.write_atomic` streaming-input path raises `MissingRequiredQueryParameter` on real HNS**
   spec: BE-010, WR-001a · effort: M · audience: library.maintainer
   Sync `AzureBackend.write_atomic` with a `BinaryIO` (streaming) input

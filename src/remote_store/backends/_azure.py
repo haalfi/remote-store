@@ -350,6 +350,25 @@ class AzureBackend(Backend):
     def read(self, path: str) -> BinaryIO:
         with self._errors(path):
             bc = self._blob_client(path)
+            if self._hns:  # pragma: no cover -- HNS only
+                # Sync read() returns a lazy stream the caller may never iterate,
+                # so the hdi_isfolder probe needs its own HEAD round-trip up
+                # front; we cannot defer the check to the first chunk read.
+                # Async AsyncAzureBackend.read() avoids this by inspecting
+                # download_blob().properties (populated by the eager await) on
+                # the same response. The HEAD-vs-no-HEAD asymmetry is
+                # intentional, not an oversight.
+                from azure.core.exceptions import ResourceNotFoundError
+
+                try:
+                    props = bc.get_blob_properties()
+                    blob_meta = getattr(props, "metadata", None) or {}
+                    if blob_meta.get("hdi_isfolder"):
+                        raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
+                except (InvalidPath, ResourceNotFoundError):
+                    raise
+                except Exception:  # noqa: BLE001
+                    pass  # Let the download attempt reveal the real error
             downloader = bc.download_blob(max_concurrency=self._max_concurrency)
             raw = _AzureBinaryIO(downloader.chunks())
             try:
@@ -364,6 +383,9 @@ class AzureBackend(Backend):
         with self._errors(path):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()
+            blob_meta = getattr(props, "metadata", None) or {}
+            if blob_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
             file_size = props.size
             raw = _AzureRangeReader(bc, file_size, self._max_concurrency)
             # No BufferedReader: PyArrow's PythonFile handles unbuffered
@@ -375,7 +397,17 @@ class AzureBackend(Backend):
     def read_bytes(self, path: str) -> bytes:
         with self._errors(path):
             bc = self._blob_client(path)
-            return bytes(bc.download_blob(max_concurrency=self._max_concurrency).readall())
+            downloader = bc.download_blob(max_concurrency=self._max_concurrency)
+            data = bytes(downloader.readall())
+            if self._hns:  # pragma: no cover -- HNS only
+                # BE-021: file-API operations on an HNS directory path must
+                # raise InvalidPath. download_blob() succeeds (directory marker
+                # is a 0-byte blob), so inspect response metadata post-download.
+                props = getattr(downloader, "properties", None)
+                blob_meta = getattr(props, "metadata", None) or {}
+                if blob_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
+            return data
 
     def write(
         self,
@@ -582,6 +614,19 @@ class AzureBackend(Backend):
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         with self._errors(path):
             bc = self._blob_client(path)
+            if self._hns:  # pragma: no cover -- HNS only
+                try:
+                    props = bc.get_blob_properties()
+                    blob_meta = getattr(props, "metadata", None) or {}
+                    if blob_meta.get("hdi_isfolder"):
+                        raise InvalidPath(f"Cannot delete — '{path}' is a directory", path=path, backend=self.name)
+                except InvalidPath:
+                    raise
+                except Exception:  # noqa: BLE001
+                    # Probe failure (ResourceNotFoundError, network blip, etc.)
+                    # is non-fatal here — let delete_blob() surface the real
+                    # error so the missing_ok=True path stays intact.
+                    pass
             try:
                 bc.delete_blob()
             except Exception as exc:  # noqa: BLE001
@@ -590,6 +635,14 @@ class AzureBackend(Backend):
                     if not missing_ok:
                         raise mapped from None
                     return
+                # BE-021: HNS non-empty directory yields DirectoryIsNotEmpty (409).
+                # The file-API delete() must raise InvalidPath, not AlreadyExists.
+                from azure.core.exceptions import HttpResponseError
+
+                if isinstance(exc, HttpResponseError) and getattr(exc, "error_code", None) == "DirectoryIsNotEmpty":
+                    raise InvalidPath(
+                        f"Cannot delete — '{path}' is a directory", path=path, backend=self.name
+                    ) from None
                 raise mapped from None  # pragma: no cover
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:

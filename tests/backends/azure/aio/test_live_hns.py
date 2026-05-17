@@ -49,6 +49,7 @@ on a best-effort basis.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import uuid
@@ -900,41 +901,40 @@ class TestAsyncLiveHnsCopy:
 
 
 class TestAsyncLiveHnsFileApiOnDirectory:
-    """Async ``read_bytes`` and ``delete`` on HNS directory blobs — actual live behaviour.
+    """Async ``read_bytes`` and ``delete`` on HNS directory blobs must raise ``InvalidPath``.
 
-    Async companion to ``TestAzureLiveHnsFileApiOnDirectory``. Same defect class
-    on both sync and async paths — neither probes ``hdi_isfolder`` before the
-    file-API SDK call. Tracked as **BUG-197** in ``sdd/BACKLOG.md``; tests must
-    be flipped to assert ``InvalidPath`` when that fix lands.
+    Async companion to ``TestAzureLiveHnsFileApiOnDirectory``. BE-021 mandates
+    that file-API operations on a directory path raise ``InvalidPath``.
+    BUG-197 fixed both sync and async paths. These tests are the live
+    regression guards for the spec contract.
 
     Spec: BE-021, ASYNC-013 (read), BE-014 (delete).
     """
 
     @pytest.mark.spec("BE-021", "ASYNC-013")
-    async def test_read_bytes_on_hns_directory_returns_empty_bytes(
+    async def test_read_bytes_on_hns_directory_raises_invalid_path(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
     ) -> None:
-        """BUG-197: should raise ``InvalidPath`` per BE-021; currently returns ``b""``."""
+        """BUG-197 fix: read_bytes on an HNS directory must raise ``InvalidPath``."""
         backend, dirpath = async_live_hns_backend
-        result = await backend.read_bytes(dirpath)
-        assert result == b""
+        with pytest.raises(InvalidPath, match="is a directory"):
+            await backend.read_bytes(dirpath)
 
     @pytest.mark.spec("BE-021", "BE-014")
-    async def test_delete_on_hns_directory_silently_removes_directory(
+    async def test_delete_on_hns_directory_raises_invalid_path(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
         live_hns_env: tuple[str, str],
     ) -> None:
-        """BUG-197: should raise ``InvalidPath`` per BE-021; currently destroys the directory.
+        """BUG-197 fix: delete on an HNS directory must raise ``InvalidPath``.
 
-        Uses an isolated per-test directory (not the module-shared one) — a
-        successful delete actually mutates the account.
+        Uses an isolated per-test directory (not the module-shared one) so that
+        when the fix is working the directory is NOT deleted and subsequent tests
+        are unaffected. A failing test (InvalidPath not raised, directory deleted)
+        would still be isolated because the scratch directory is fresh each run.
         """
         backend, dirpath = async_live_hns_backend
-        # Reuse the env values already validated by _require_live_hns_env() in the
-        # fixture chain; direct os.environ access here would raise KeyError instead
-        # of the descriptive pytest.fail message on misconfiguration.
         conn, fs_name = live_hns_env
         prefix = dirpath.rsplit("/", 1)[0]
         scratch_dir = f"{prefix}/scratch-dir-{uuid.uuid4().hex[:8]}"
@@ -944,7 +944,14 @@ class TestAsyncLiveHnsFileApiOnDirectory:
             fs_client.get_directory_client(scratch_dir).create_directory()
 
             assert await backend.exists(scratch_dir) is True
-            await backend.delete(scratch_dir)
-            assert await backend.exists(scratch_dir) is False
+            with pytest.raises(InvalidPath, match="is a directory"):
+                await backend.delete(scratch_dir)
+            # Directory must still exist — InvalidPath must have fired before
+            # any SDK mutation (BUG-197 data-loss guard).
+            assert await backend.exists(scratch_dir) is True
         finally:
+            # Best-effort cleanup: delete the scratch directory via the DataLake
+            # client (bypasses the file-API guard that prevents backend.delete).
+            with contextlib.suppress(Exception):
+                fs_client.get_directory_client(scratch_dir).delete_directory()
             service.close()
