@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-202: `AzureBackend.write_atomic` streaming-input path now buffers the payload to a `BytesIO` and passes `length=` to the DataLake SDK's `upload_data`, avoiding `MissingRequiredQueryParameter` on real ADLS Gen2 (the unseekable `_ByteCountingIO` wrapper caused the SDK to omit `position`, which real HNS rejects on `flush_data`) (BE-010, WR-001a)
 - BUG-199: `AzureBackend.get_folder_info` and `AsyncAzureBackend.get_folder_info` no longer count HNS directory marker blobs (`hdi_isfolder=true`) as files; recursive `file_count` is now accurate on real ADLS Gen2 (BE-017, ASYNC-017)
 - ID-192: `aio.md` restructured to lead with `AsyncStore` — full per-category method sections mirroring `store.md`, and the four `members: false` stubs (`SyncBackendAdapter`, `AsyncBackendSyncAdapter`, `AsyncMemoryBackend`, `AsyncAzureBackend`) now render their full member surface, surfacing the layer-4 `Raises:` docstrings introduced by BK-173
 - BUG-208: fix `S3Backend.check_health()` unawaited `aiobotocore` coroutine that made the probe a silent no-op

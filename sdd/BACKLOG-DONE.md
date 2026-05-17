@@ -8,6 +8,45 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-213 — Root-path HNS coverage gap in `AzureBackend.get_folder_info` (sync + async)**
+  spec: BE-017, ASYNC-017 · audience: infra.test
+  The BUG-199 fix unconditionally calls `self._fs.get_directory_client(azure_path)`
+  followed by `dc.get_directory_properties()` in the HNS branch. When
+  `path=""` (root), `azure_path` becomes `""`, exercising a
+  DataLake-SDK code path not covered by any existing cassette (seeded
+  paths in the existing tests are `mix`, `gfr`, `my-dir`, etc.). The
+  subsequent `get_paths(path=azure_path or "/", recursive=True)`
+  carries a deliberate `"/"` fallback for the root case, making the
+  asymmetry stand out.
+  Fix: pin the intended call shape with a mock-level test
+  (`TestAzureHNSPaths.test_get_folder_info_root_hns_call_shape` in
+  `tests/backends/azure/test_config.py` and the async sibling under
+  `aio/test_config.py`) — asserts `get_directory_client('')` plus
+  `get_paths(path='/')` so any future drift in root-path handling
+  surfaces as a regression independent of live SDK semantics. Stage 3
+  live coverage added in `TestAzureLiveHnsGetFolderInfoRoot`
+  (sync + async) asserting `get_folder_info('')` returns a valid
+  `FolderInfo` with non-negative aggregates against a real ADLS Gen2
+  account. Cassette refresh required (record via
+  `RS_TEST_LIVE_HNS=1 hatch run record-azure`).
+  Trace: [`sdd/traces/bug-213-azure-get-folder-info-root-path.yml`](traces/bug-213-azure-get-folder-info-root-path.yml).
+
+- [x] **BUG-202 — `AzureBackend.write_atomic` streaming-input path raises `MissingRequiredQueryParameter` on real HNS**
+  spec: BE-010, WR-001a · audience: library.maintainer
+  Sync `AzureBackend.write_atomic` with a `BinaryIO` (streaming) input
+  succeeded against Azurite but failed against a real HNS account with
+  the Azure SDK error `MissingRequiredQueryParameter`. Root cause: the
+  `_ByteCountingIO` wrapper around the caller's stream is not seekable,
+  so the DataLake SDK could not infer the payload length and called
+  `flush_data` with `position=None` — which real HNS rejects (Azurite
+  forgives). Bytes-input path was already green.
+  Fix: buffer the streaming payload into an `io.BytesIO` upfront to
+  obtain the exact byte count, then pass `length=size` explicitly to
+  `upload_data` for both bytes and streaming inputs. Mock-level
+  regression test in `tests/backends/azure/test_config.py` pins the
+  `length=` kwarg on the SDK call. Spec: BE-010, WR-001a.
+  Trace: [`sdd/traces/bug-202-azure-write-atomic-streaming-missing-query-param.yml`](traces/bug-202-azure-write-atomic-streaming-missing-query-param.yml).
+
 - [x] **BUG-212 — `scripts/record_cassettes.py` deletes cassettes before validating env**
   spec: — · audience: contributor.tooling
   Step 1 unlinks every cassette under `tests/backends/cassettes/<backend>/`
