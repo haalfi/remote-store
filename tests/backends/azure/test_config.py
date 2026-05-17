@@ -924,7 +924,7 @@ class TestAzureHNSPaths:
         bc.get_blob_properties.return_value = dir_props
         backend._cc_instance.get_blob_client.return_value = bc
         with pytest.raises(InvalidPath, match="is a directory"):
-            backend.read("mydir").close()
+            backend.read("mydir")
 
     @pytest.mark.spec("BE-021", "BE-006")
     def test_read_on_hns_file_does_not_raise(self) -> None:
