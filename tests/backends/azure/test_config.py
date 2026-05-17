@@ -30,6 +30,7 @@ from azure.storage.filedatalake import (  # noqa: E402
     DataLakeDirectoryClient,
     DataLakeFileClient,
     DataLakeServiceClient,
+    DirectoryProperties,
     FileSystemClient,
     PathProperties,
 )
@@ -686,9 +687,43 @@ class TestAzureHNSPaths:
     def test_is_folder_uses_directory_client_on_hns(self) -> None:
         backend = self._make_hns_backend()
         dc = MagicMock(spec=DataLakeDirectoryClient)
+        dir_props = MagicMock(spec=DirectoryProperties)
+        dir_props.metadata = {"hdi_isfolder": "true"}
+        dc.get_directory_properties.return_value = dir_props
         backend._fs_instance.get_directory_client.return_value = dc
         assert backend.is_folder("my-dir") is True
         dc.get_directory_properties.assert_called_once()
+
+    @pytest.mark.spec("BE-005")
+    def test_is_folder_returns_false_for_file_path_on_hns(self) -> None:
+        """BUG-203: is_folder must return False when the path is a file, not a directory.
+
+        On HNS, get_directory_properties() succeeds for file paths too (returns
+        status 200).  Without the hdi_isfolder probe, is_folder wrongly returns
+        True for regular files.
+        """
+        backend = self._make_hns_backend()
+        dc = MagicMock(spec=DataLakeDirectoryClient)
+        file_props = MagicMock(spec=DirectoryProperties)
+        file_props.metadata = {}  # regular file: no hdi_isfolder
+        dc.get_directory_properties.return_value = file_props
+        backend._fs_instance.get_directory_client.return_value = dc
+        assert backend.is_folder("a.txt") is False
+
+    @pytest.mark.spec("BE-005")
+    def test_is_file_returns_false_for_hns_directory_blob(self) -> None:
+        """BUG-203 (symmetric): is_file must return False for an HNS directory path.
+
+        The blob HEAD response for an HNS directory includes x-ms-meta-hdi_isfolder=true.
+        The hdi_isfolder probe in is_file must filter these out.
+        """
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        dir_blob_props = MagicMock(spec=BlobProperties)
+        dir_blob_props.metadata = {"hdi_isfolder": "true"}
+        bc.get_blob_properties.return_value = dir_blob_props
+        backend._cc_instance.get_blob_client.return_value = bc
+        assert backend.is_file("a-dir") is False
 
     def test_move_uses_rename_on_hns(self) -> None:
         backend = self._make_hns_backend()
@@ -876,6 +911,30 @@ class TestAzureHNSPaths:
         backend._fs_instance.get_directory_client.return_value = dc
         with pytest.raises(NotFound, match=r"^Not found: missing\b"):
             backend.get_folder_info("missing")
+
+    @pytest.mark.spec("BE-016", "BE-021")
+    def test_get_file_info_raises_invalid_path_on_hns_directory(self) -> None:
+        """BUG-195: get_file_info must raise InvalidPath when hdi_isfolder=true (BE-016)."""
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        props = MagicMock(spec=BlobProperties)
+        props.metadata = {"hdi_isfolder": "true"}
+        bc.get_blob_properties.return_value = props
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="exists as a directory"):
+            backend.get_file_info("mydir")
+
+    @pytest.mark.spec("BE-016")
+    def test_get_file_info_raises_not_found_on_missing_path(self) -> None:
+        """BE-016: !PathExists → NotFound (non-HNS path still works)."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("not found")
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(NotFound):
+            backend.get_file_info("missing.txt")
 
 
 # =============================================================================

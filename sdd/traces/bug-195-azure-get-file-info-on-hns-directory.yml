@@ -1,0 +1,124 @@
+id: BUG-195
+title: "get_file_info on HNS directory raises NotFound instead of InvalidPath (sync + async)"
+trigger: "AzureBackend.get_file_info and AsyncAzureBackend.get_file_info raise NotFound when the target blob carries hdi_isfolder=true metadata, but BE-016 / ASYNC-016 specify InvalidPath. BK-180 conformance run against azure_live_async reproduces the async half; replay cassettes also fail when run with --runxfail."
+source_items:
+  - BUG-195
+audience:
+  - user.api
+  - infra.test
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together; write failing test, see it fail, then fix"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Canonical bug-fix pipeline: reproduce first"
+      - file: sdd/BACKLOG.md
+        section: "BUG-195"
+        read_type: gate
+        extract: "spec BE-016/ASYNC-016/BE-021; same defect shape as BUG-190/BUG-192: hdi_isfolder probe missing in get_file_info; cassettes already exist at azure_replay / azure_replay_async"
+
+  - id: reproduce
+    name: Reproduce on cassette
+    steps:
+      - file: tests/backends/cassettes/azure/TestGetFileInfoErrorFidelity.test_get_file_info_on_directory_raises_error[azure].yaml
+        section: "HEAD gfid response / x-ms-meta-hdi_isfolder"
+        read_type: gate
+        extract: "Cassette records x-ms-meta-hdi_isfolder: 'true' on the HEAD response for path gfid; no new SDK calls needed — fix is purely in-process"
+        outcome: ok
+      - file: tests/backends/cassettes/azure/TestGetFileInfoErrorFidelity.test_get_file_info_on_directory_raises_error[azure_async].yaml
+        section: "HEAD gfid response / x-ms-meta-hdi_isfolder"
+        read_type: gate
+        extract: "Async cassette identical shape; same conclusion"
+        outcome: ok
+
+  - id: classify
+    name: Classify cassette sufficiency
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "get_file_info (line 740)"
+        read_type: gate
+        extract: "Bug: meta.get('hdi_isfolder') raises NotFound; no new SDK calls in fix — change NotFound to InvalidPath in-process. Cassette sufficient."
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "get_file_info (line 828)"
+        read_type: gate
+        extract: "Same shape on async path. Cassette sufficient."
+        outcome: ok
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/traces/bug-199-azure-folder-info-hns-dir-count.yml
+        section: "phases / fix"
+        read_type: reference
+        extract: "Reference for fix shape and test structure. BUG-199 used the same hdi_isfolder probe pattern on get_folder_info."
+        outcome: ok
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "get_file_info"
+        read_type: gate
+        extract: "Replace NotFound with InvalidPath when hdi_isfolder=true. Message mirrors write/write_atomic/open_atomic: 'exists as a directory'."
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "get_file_info"
+        read_type: gate
+        extract: "Same fix on async path; update docstring Raises: to add InvalidPath clause."
+        outcome: ok
+
+  - id: tests
+    name: Mock-level unit tests and live test flip
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths"
+        read_type: gate
+        extract: "Added test_get_file_info_raises_invalid_path_on_hns_directory (BUG-195 regression guard) and test_get_file_info_raises_not_found_on_missing_path (NotFound path still works)."
+        outcome: ok
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths"
+        read_type: gate
+        extract: "Mirrored the same two tests on the async HNS class."
+        outcome: ok
+      - file: tests/backends/azure/test_live_hns.py
+        section: "TestAzureLiveHnsGetFileInfoOnDirectory"
+        read_type: gate
+        extract: "Flipped test from pytest.raises(NotFound) to pytest.raises(InvalidPath); updated class docstring and test name."
+        outcome: ok
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "TestAsyncLiveHnsGetFileInfoOnDirectory"
+        read_type: gate
+        extract: "Async companion — same flip."
+        outcome: ok
+
+  - id: verify_replay
+    name: Verify on cassette
+    steps:
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES"
+        read_type: gate
+        extract: "Removed test_get_file_info_on_directory_raises_error from xfail roster."
+        outcome: ok
+      - file: tests/backends/conformance/test_errors.py
+        section: "TestGetFileInfoErrorFidelity.test_get_file_info_on_directory_raises_error[azure_replay]"
+        read_type: verify
+        extract: "Passes cleanly under azure_replay without --runxfail."
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestGetFileInfoErrorFidelity.test_get_file_info_on_directory_raises_error[azure_replay_async]"
+        read_type: verify
+        extract: "Passes cleanly under azure_replay_async without --runxfail."
+        outcome: ok
+      - file: tests/backends/conformance/test_xfail_guard.py
+        section: "test_hns_xfail_names_are_live"
+        read_type: verify
+        extract: "xfail guard remains green after roster removal."
+        outcome: ok

@@ -137,20 +137,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   `move`/`copy` paths.
   Spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024.
 
-- [ ] **BUG-203 — `AzureBackend.is_file()` returns `True` for HNS folder paths**
-  spec: BE-005, BE-021 · effort: S · audience: library.maintainer
-  Sync `AzureBackend.is_file('a.txt')` returns `True` when `a.txt` exists as
-  an HNS directory blob (marker `hdi_isfolder=true`). Conformance contract
-  requires `is_file()` to return `False` whenever the path is a directory,
-  symmetric to `is_folder()` returning `False` on a file. Surfaced by the
-  BK-180 conformance run against real ADLS Gen2:
-  `tests/backends/conformance/test_io.py::TestBackendFileFolder::test_is_file[azure_live]`.
-  Azurite-backed `azurite` fixture passes the same test because Azurite
-  does not emulate HNS. Fix: extend the `hdi_isfolder` probe used by
-  `write`/`write_atomic`/`open_atomic` to the `is_file` HNS branch in
-  `src/remote_store/backends/_azure.py`. Async sibling apparently
-  unaffected (no `[azure_live_async]` failure for this test).
-
 - [ ] **BUG-201 — `AsyncAzureBackend.move`/`copy` self-op (src == dst) raises `AlreadyExists` instead of being a no-op**
   spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · effort: S · audience: library.maintainer
   Conformance contract for `move(p, p)` and `copy(p, p)` is to be a
@@ -200,22 +186,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   `result.etag is not None` (only path the async backend supports today). Fix: mirror the
   sync try/except + log + `_build_azure_write_result(path, size, None, metadata)` shape, then
   weaken the live-test assertion to allow the fallback path. Spec: WR-001a, WR-004, AZ-034.
-
-- [ ] **BUG-195 — `get_file_info` on an HNS directory raises `NotFound` instead of `InvalidPath` (sync + async)**
-  spec: BE-016, ASYNC-016, BE-021 · effort: S · audience: library.maintainer
-  BE-016 specifies "`InvalidPath` if the path names a directory (Dafny:
-  `GetFileInfo: IsDir → InvalidPath`)" and ASYNC-016 inherits the same contract. Both
-  `AzureBackend.get_file_info` and `AsyncAzureBackend.get_file_info` currently raise
-  `NotFound` when the target is an HNS directory blob (marker `hdi_isfolder=true`). New live
-  tests `tests/backends/azure/test_live_hns.py::TestAzureLiveHnsGetFileInfoOnDirectory` and
-  `tests/backends/azure/aio/test_live_hns.py::TestAsyncLiveHnsGetFileInfoOnDirectory` confirm
-  the runtime behaviour and document the deviation. The BK-180 conformance run against
-  `azure_live_async` reproduces the async half at
-  `tests/backends/conformance/test_async_extended.py::TestGetFileInfoErrorFidelity::test_get_file_info_on_directory_raises_error`.
-  Same defect shape as BUG-190 (write on HNS directory) and BUG-192 (open_atomic on HNS
-  directory): the `hdi_isfolder` probe is missing. Fix: detect `hdi_isfolder` in the
-  `get_file_info` HNS branch and raise `InvalidPath`; update both live tests to assert
-  `InvalidPath`. Spec: BE-016, ASYNC-016, BE-021.
 
 - [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
   spec: TEST-002, TEST-003 · effort: M · audience: infra.test

@@ -55,6 +55,7 @@ a best-effort basis so a teardown race does not turn a green test red.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import uuid
@@ -492,33 +493,72 @@ class TestAzureLiveHnsMove:
 
 
 class TestAzureLiveHnsGetFileInfoOnDirectory:
-    """``get_file_info`` on an HNS directory blob must raise ``NotFound``.
+    """``get_file_info`` on an HNS directory blob must raise ``InvalidPath``.
 
     ADLS Gen2 marks directory blobs with ``hdi_isfolder=true`` metadata. The
-    production code detects this marker and raises ``NotFound`` so callers cannot
+    production code detects this marker and raises ``InvalidPath`` so callers cannot
     treat a directory as a file. Mock-only suites fabricate ``hdi_isfolder`` on a
     ``BlobProperties`` stub; only a real account confirms the marker is present on
     a directory created via ``DataLakeServiceClient``.
 
-    Note: BE-016 specifies ``InvalidPath`` for directory paths, but the current
-    implementation raises ``NotFound``. This test documents the actual live
-    behaviour; the deviation is tracked as **BUG-195** in ``sdd/BACKLOG.md`` and
-    must be flipped to ``InvalidPath`` when that fix lands.
-
-    Spec: BE-016 (get_file_info).
+    Spec: BE-016 (get_file_info), BE-021 (directory-path guard).
     """
 
-    # BUG-195: marks the spec target, not the current behaviour. BE-016 specifies
-    # InvalidPath but the runtime raises NotFound; this test documents the deviation
-    # and must be flipped to pytest.raises(InvalidPath) when BUG-195 is fixed.
-    @pytest.mark.spec("BE-016")
-    def test_get_file_info_on_hns_directory_raises_not_found(
+    @pytest.mark.spec("BE-016", "BE-021")
+    def test_get_file_info_on_hns_directory_raises_invalid_path(
         self,
         live_hns_backend: tuple[AzureBackend, str],
     ) -> None:
         backend, dirpath = live_hns_backend
-        with pytest.raises(NotFound, match="(?i)not found"):
+        with pytest.raises(InvalidPath, match="exists as a directory"):
             backend.get_file_info(dirpath)
+
+
+class TestAzureLiveHnsIsFolderIsFile:
+    """``is_folder`` / ``is_file`` semantics on a real HNS directory + file.
+
+    BUG-203 changed ``is_folder`` from "return True whenever
+    ``get_directory_properties()`` succeeds" to "return True only when
+    ``hdi_isfolder`` is set in metadata". The mock-level test fabricates the
+    metadata; this class proves the marker is actually present on a directory
+    created via ``DataLakeServiceClient.create_directory()`` (the way
+    ``live_hns_backend`` provisions ``dirpath``) and absent on a regular file
+    written via ``write_atomic`` — different SDK code paths than the conformance
+    cassette's blob HEAD captures.
+
+    Spec: BE-005 (is_folder / is_file).
+    """
+
+    @pytest.mark.spec("BE-005")
+    def test_is_folder_true_on_hns_directory(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        assert backend.is_folder(dirpath) is True
+
+    @pytest.mark.spec("BE-005")
+    def test_is_file_false_on_hns_directory(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        assert backend.is_file(dirpath) is False
+
+    @pytest.mark.spec("BE-005")
+    def test_is_file_true_and_is_folder_false_on_hns_file(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        backend, dirpath = live_hns_backend
+        target = f"{dirpath}/file-{uuid.uuid4().hex[:8]}.txt"
+        backend.write_atomic(target, _PAYLOAD, overwrite=True)
+        try:
+            assert backend.is_file(target) is True
+            assert backend.is_folder(target) is False
+        finally:
+            with contextlib.suppress(Exception):
+                backend.delete(target, missing_ok=True)
 
 
 # ---------------------------------------------------------------------------

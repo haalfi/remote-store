@@ -8,6 +8,39 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-203 — `AzureBackend.is_folder()` and `AsyncAzureBackend.is_folder()` return `True` for HNS file paths**
+  spec: BE-005, ASYNC-005, BE-021 · audience: library.maintainer
+  Both sync and async `is_folder('a.txt')` returned `True` when `a.txt`
+  existed as an HNS file blob (no `hdi_isfolder=true` marker), because the
+  HNS branch treated a successful `get_directory_properties()` response as
+  proof of directoryness — but DataLake's
+  `get_directory_client(path).get_directory_properties()` returns HTTP 200
+  for any path entity, file or directory. The discriminator is the
+  `hdi_isfolder` metadata marker. Sync was surfaced by the BK-180
+  conformance run; async carried the same defect but `test_async_extended.py`
+  has no `test_is_file` / `test_is_folder` mirror of `TestBackendFileFolder`,
+  so the live async run was green not because the bug was absent but because
+  no conformance test exercised it. Fix: extend the `hdi_isfolder` probe used
+  by `write`/`write_atomic`/`open_atomic` to the `is_folder` HNS branch in
+  `src/remote_store/backends/_azure.py` and `src/remote_store/aio/backends/_azure.py`
+  (sibling fix landed in the same PR). Mock-level async regression test
+  `test_is_folder_returns_false_for_file_path_on_hns` added in
+  `tests/backends/azure/aio/test_config.py`.
+  Trace: [`sdd/traces/bug-203-azure-is-file-hns-folder.yml`](traces/bug-203-azure-is-file-hns-folder.yml).
+
+- [x] **BUG-195 — `get_file_info` on an HNS directory raises `NotFound` instead of `InvalidPath` (sync + async)**
+  spec: BE-016, ASYNC-016, BE-021 · audience: library.maintainer
+  BE-016 specifies "`InvalidPath` if the path names a directory (Dafny:
+  `GetFileInfo: IsDir → InvalidPath`)" and ASYNC-016 inherits the same contract.
+  Both `AzureBackend.get_file_info` and `AsyncAzureBackend.get_file_info` raised
+  `NotFound` when the target was an HNS directory blob (marker `hdi_isfolder=true`).
+  Same defect shape as BUG-190 (write on HNS directory) and BUG-192 (open_atomic
+  on HNS directory): the `hdi_isfolder` probe was missing. Fix: detect
+  `hdi_isfolder` in the `get_file_info` HNS branch and raise `InvalidPath`. Live
+  tests in `TestAzureLiveHnsGetFileInfoOnDirectory` and the async sibling flipped
+  from documenting the deviation to asserting `InvalidPath`.
+  Trace: [`sdd/traces/bug-195-azure-get-file-info-on-hns-directory.yml`](traces/bug-195-azure-get-file-info-on-hns-directory.yml).
+
 - [x] **BUG-212 — `scripts/record_cassettes.py` deletes cassettes before validating env**
   spec: — · audience: contributor.tooling
   Step 1 unlinks every cassette under `tests/backends/cassettes/<backend>/`

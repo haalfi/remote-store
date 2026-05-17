@@ -334,8 +334,12 @@ class AzureBackend(Backend):
                 return True
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    self._fs.get_directory_client(azure_path).get_directory_properties()
-                    return True
+                    props = self._fs.get_directory_client(azure_path).get_directory_properties()
+                    # On HNS, get_directory_properties() succeeds for both files and
+                    # directories.  A real HNS directory has hdi_isfolder=true in its
+                    # metadata; a regular file does not (BUG-203).
+                    meta = getattr(props, "metadata", None) or {}
+                    return bool(meta.get("hdi_isfolder"))
                 except Exception:  # noqa: BLE001
                     return False
             else:
@@ -733,12 +737,25 @@ class AzureBackend(Backend):
                 yield info
 
     def get_file_info(self, path: str) -> FileInfo:
+        """Return file metadata for ``path``.
+
+        Args:
+            path: Backend-relative key.
+
+        Raises:
+            NotFound: If the file does not exist.
+            InvalidPath: If ``path`` names a directory (HNS: ``hdi_isfolder=true``).
+        """
         with self._errors(path):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()
             meta = getattr(props, "metadata", None) or {}
             if meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
-                raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+                raise InvalidPath(
+                    f"Cannot get file info — '{path}' exists as a directory",
+                    path=path,
+                    backend=self.name,
+                )
             return self._props_to_fileinfo(props, path)
 
     def get_folder_info(self, path: str) -> FolderInfo:

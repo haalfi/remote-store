@@ -452,30 +452,69 @@ class TestAsyncLiveHnsMove:
 
 
 class TestAsyncLiveHnsGetFileInfoOnDirectory:
-    """Async ``get_file_info`` on an HNS directory blob must raise ``NotFound``.
+    """Async ``get_file_info`` on an HNS directory blob must raise ``InvalidPath``.
 
     Async companion to ``TestAzureLiveHnsGetFileInfoOnDirectory``. Only a real
     account confirms the ``hdi_isfolder`` marker is set by the DataLake service.
 
-    Note: ASYNC-016 specifies ``InvalidPath`` for directory paths, but the current
-    implementation raises ``NotFound``. This test documents the actual live behaviour;
-    the deviation is tracked as **BUG-195** in ``sdd/BACKLOG.md`` and must be flipped to
-    ``InvalidPath`` when that fix lands.
-
-    Spec: ASYNC-016 (get_file_info).
+    Spec: ASYNC-016 (get_file_info), BE-021 (directory-path guard).
     """
 
-    # BUG-195: marks the spec target, not the current behaviour. ASYNC-016 specifies
-    # InvalidPath but the runtime raises NotFound; this test documents the deviation
-    # and must be flipped to pytest.raises(InvalidPath) when BUG-195 is fixed.
-    @pytest.mark.spec("ASYNC-016")
-    async def test_get_file_info_on_hns_directory_raises_not_found(
+    @pytest.mark.spec("ASYNC-016", "BE-021")
+    async def test_get_file_info_on_hns_directory_raises_invalid_path(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
     ) -> None:
         backend, dirpath = async_live_hns_backend
-        with pytest.raises(NotFound, match="(?i)not found"):
+        with pytest.raises(InvalidPath, match="exists as a directory"):
             await backend.get_file_info(dirpath)
+
+
+class TestAsyncLiveHnsIsFolderIsFile:
+    """Async ``is_folder`` / ``is_file`` semantics on a real HNS directory + file.
+
+    Async companion to ``TestAzureLiveHnsIsFolderIsFile``. BUG-203 fixed both
+    sync and async ``is_folder`` to inspect ``hdi_isfolder`` metadata instead
+    of trusting that ``get_directory_properties()`` succeeded; this class
+    proves the marker is actually present on a directory created via
+    ``DataLakeServiceClient.create_directory()`` and absent on a regular file
+    written via ``write_atomic``.
+
+    Spec: ASYNC-005 (is_folder / is_file).
+    """
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_folder_true_on_hns_directory(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        assert await backend.is_folder(dirpath) is True
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_file_false_on_hns_directory(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        assert await backend.is_file(dirpath) is False
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_file_true_and_is_folder_false_on_hns_file(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        import contextlib  # noqa: PLC0415 -- intentional lazy import
+
+        backend, dirpath = async_live_hns_backend
+        target = f"{dirpath}/file-{uuid.uuid4().hex[:8]}.txt"
+        await backend.write_atomic(target, _PAYLOAD, overwrite=True)
+        try:
+            assert await backend.is_file(target) is True
+            assert await backend.is_folder(target) is False
+        finally:
+            with contextlib.suppress(Exception):
+                await backend.delete(target, missing_ok=True)
 
 
 # ---------------------------------------------------------------------------
