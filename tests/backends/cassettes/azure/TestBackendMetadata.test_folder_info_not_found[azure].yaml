@@ -20,14 +20,12 @@ interactions:
     body:
       string: ''
     headers:
-      Connection:
-      - close
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3EE7E350A46"'
+      - '"0x8DEB3F320A36DE1"'
       Last-Modified:
-      - Sun, 17 May 2026 08:30:03 GMT
+      - Sun, 17 May 2026 09:03:13 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -52,8 +50,6 @@ interactions:
     body:
       string: ''
     headers:
-      Connection:
-      - close
       Content-Length:
       - '0'
       x-ms-account-kind:

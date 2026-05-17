@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3EE7EA3D9D4"'
+      - '"0x8DEB3F3211048E9"'
       Last-Modified:
-      - Sun, 17 May 2026 08:30:04 GMT
+      - Sun, 17 May 2026 09:03:14 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - R7zlx09Yn0hn29V+nKn4CA==
       ETag:
-      - '"0x8DEB3EE7F0939C0"'
+      - '"0x8DEB3F321689F7C"'
       Last-Modified:
-      - Sun, 17 May 2026 08:30:04 GMT
+      - Sun, 17 May 2026 09:03:15 GMT
       x-ms-content-crc64:
       - yRr7k//2ekY=
       x-ms-request-server-encrypted:
@@ -191,9 +191,9 @@ interactions:
       Content-MD5:
       - Ia0L2Da5DQj0z2QLTCmOfA==
       ETag:
-      - '"0x8DEB3EE7F41D864"'
+      - '"0x8DEB3F3219C7D14"'
       Last-Modified:
-      - Sun, 17 May 2026 08:30:05 GMT
+      - Sun, 17 May 2026 09:03:15 GMT
       x-ms-content-crc64:
       - 4qbnBMZvDVY=
       x-ms-request-server-encrypted:
@@ -227,9 +227,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3EE7F012234"'
+      - '"0x8DEB3F321634F84"'
       Last-Modified:
-      - Sun, 17 May 2026 08:30:04 GMT
+      - Sun, 17 May 2026 09:03:15 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -239,7 +239,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 17 May 2026 08:30:04 GMT
+      - Sun, 17 May 2026 09:03:15 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -278,9 +278,9 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=gfa&recursive=true&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"3","creationTime":"134234802048088512","etag":"0x8DEB3EE7F0939C0","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        17 May 2026 08:30:04 GMT","name":"gfa/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"2","creationTime":"134234802051799140","etag":"0x8DEB3EE7F41D864","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        17 May 2026 08:30:05 GMT","name":"gfa/b.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"3","creationTime":"134234821952118652","etag":"0x8DEB3F321689F7C","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        17 May 2026 09:03:15 GMT","name":"gfa/a.txt","owner":"$superuser","permissions":"rw-r-----"},{"contentLength":"2","creationTime":"134234821955517716","etag":"0x8DEB3F3219C7D14","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        17 May 2026 09:03:15 GMT","name":"gfa/b.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:
