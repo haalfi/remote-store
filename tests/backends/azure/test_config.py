@@ -723,7 +723,9 @@ class TestAzureHNSPaths:
         )
         backend._fs_instance.get_file_client.return_value = tmp_fc
         result = backend.write_atomic("dir/file.txt", b"content")
-        tmp_fc.upload_data.assert_called_once_with(b"content", overwrite=True, max_concurrency=4, metadata=None)
+        tmp_fc.upload_data.assert_called_once_with(
+            b"content", length=len(b"content"), overwrite=True, max_concurrency=4, metadata=None
+        )
         tmp_fc.rename_file.assert_called_once()
         assert isinstance(result, WriteResult)
         assert result.size == len(b"content")
