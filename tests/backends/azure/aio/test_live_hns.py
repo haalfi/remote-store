@@ -238,6 +238,9 @@ class TestAsyncLiveHnsWriteResult:
             )
         # else: fallback path — rename committed, post-rename read failed transiently.
         # WR-001a allows etag=None; retrying would raise AlreadyExists.
+        # The fallback contract is verified explicitly by mock tests
+        # test_write_atomic_hns_get_file_properties_* in tests/backends/azure/aio/test_config.py
+        # (live runs hit it only by chance under transient network conditions).
 
 
 # ---------------------------------------------------------------------------

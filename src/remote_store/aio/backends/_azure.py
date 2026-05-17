@@ -948,28 +948,34 @@ class AsyncAzureBackend(AsyncBackend):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
+            is_hns = await self._ensure_hns()
             if not overwrite:
                 try:
                     dst_props = await dst_bc.get_blob_properties()
-                    dst_meta = getattr(dst_props, "metadata", None) or {}
-                    if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
-                        raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
+                    if is_hns:  # pragma: no cover -- HNS only
+                        dst_meta = getattr(dst_props, "metadata", None) or {}
+                        if dst_meta.get("hdi_isfolder"):
+                            raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
                 except (AlreadyExists, InvalidPath):
                     raise
                 except ResourceNotFoundError:
                     pass
-            else:
+            elif is_hns:  # pragma: no cover -- HNS only
+                # Overwrite=True on HNS still needs a dst probe to reject directory
+                # destinations per BE-021. Non-HNS skips this entirely — flat
+                # namespace has no `hdi_isfolder` concept, so the extra HEAD
+                # round-trip would be pure overhead.
                 try:
                     dst_props = await dst_bc.get_blob_properties()
                     dst_meta = getattr(dst_props, "metadata", None) or {}
-                    if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                    if dst_meta.get("hdi_isfolder"):
                         raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                 except ResourceNotFoundError:
                     # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
-            if await self._ensure_hns():  # pragma: no cover -- HNS only
+            if is_hns:  # pragma: no cover -- HNS only
                 src_fc = self._fs.get_file_client(_azure_path_fn(src))
                 new_name = f"{self._container}/{_azure_path_fn(dst)}"
                 await src_fc.rename_file(new_name)
@@ -1014,22 +1020,28 @@ class AsyncAzureBackend(AsyncBackend):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
 
             dst_bc = self._blob_client(dst)
+            is_hns = await self._ensure_hns()
             if not overwrite:
                 try:
                     dst_props = await dst_bc.get_blob_properties()
-                    dst_meta = getattr(dst_props, "metadata", None) or {}
-                    if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
-                        raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
+                    if is_hns:  # pragma: no cover -- HNS only
+                        dst_meta = getattr(dst_props, "metadata", None) or {}
+                        if dst_meta.get("hdi_isfolder"):
+                            raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                     raise AlreadyExists(f"Destination already exists: {dst}", path=dst, backend=self.name)
                 except (AlreadyExists, InvalidPath):
                     raise
                 except ResourceNotFoundError:
                     pass
-            else:
+            elif is_hns:  # pragma: no cover -- HNS only
+                # Overwrite=True on HNS still needs a dst probe to reject directory
+                # destinations per BE-021. Non-HNS skips this entirely — flat
+                # namespace has no `hdi_isfolder` concept, so the extra HEAD
+                # round-trip would be pure overhead.
                 try:
                     dst_props = await dst_bc.get_blob_properties()
                     dst_meta = getattr(dst_props, "metadata", None) or {}
-                    if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                    if dst_meta.get("hdi_isfolder"):
                         raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                 except ResourceNotFoundError:
                     # Destination does not exist yet; this is valid when overwrite=True.

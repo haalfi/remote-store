@@ -107,6 +107,9 @@ container = "azurite"
 is_async  = false
 # OVERRIDE: emulator is flat-namespace (no HNS); BK-185.
 flat_namespace = true
+# BUG-201: sync AzureBackend.move/copy src==dst short-circuit is backend-wide
+# (not HNS-gated); Azurite handles it the same as the real Azure flat namespace.
+self_op_supported = true
 
 [fixture.sftp_docker]
 backend   = "sftp"
