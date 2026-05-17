@@ -40,11 +40,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   so the DataLake SDK could not infer the payload length and called
   `flush_data` with `position=None` — which real HNS rejects (Azurite
   forgives). Bytes-input path was already green.
-  Fix: buffer the streaming payload into an `io.BytesIO` upfront to
-  obtain the exact byte count, then pass `length=size` explicitly to
-  `upload_data` for both bytes and streaming inputs. Mock-level
-  regression test in `tests/backends/azure/test_config.py` pins the
-  `length=` kwarg on the SDK call. Spec: BE-010, WR-001a.
+  Fix: streaming `BinaryIO` input now drives the DataLake DFS append
+  protocol directly — `create_file` → per-chunk
+  `append_data(offset, length)` → `flush_data(position)` — instead of
+  calling `upload_data` with an unseekable wrapper. Memory is bounded to
+  `_AZURE_BLOCK_SIZE` per chunk; mirrors the async sibling at
+  `aio/backends/_azure.py:562-576` introduced by BUG-194. Bytes input
+  still uses `upload_data(content, length=len(content), ...)` (the SDK
+  resolves length via `len()` for bytes; no protocol change needed).
+  Mock-level regression test `test_write_atomic_hns_streaming_uses_dfs_append_protocol`
+  in `tests/backends/azure/test_config.py` reconstructs the body from
+  the `append_data` calls and pins both offset monotonicity and the
+  final `flush_data(position)` byte count. Spec: BE-010, WR-001a.
   Trace: [`sdd/traces/bug-202-azure-write-atomic-streaming-missing-query-param.yml`](traces/bug-202-azure-write-atomic-streaming-missing-query-param.yml).
 
 - [x] **BUG-212 — `scripts/record_cassettes.py` deletes cassettes before validating env**

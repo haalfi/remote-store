@@ -62,6 +62,7 @@ from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound  # noqa: E402
 from remote_store._models import FileInfo  # noqa: E402
+from remote_store._path import RemotePath  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -954,4 +955,7 @@ class TestAsyncLiveHnsGetFolderInfoRoot:
         backend, _dirpath = async_live_hns_backend
         info = await backend.get_folder_info("")
         assert isinstance(info, FolderInfo)
-        assert info.path == ""
+        # FolderInfo.path is a RemotePath; the root normalises to RemotePath.ROOT
+        # (str form "."), and RemotePath.__eq__ returns NotImplemented for str
+        # operands — comparing against "" would always be False.
+        assert info.path == RemotePath.ROOT

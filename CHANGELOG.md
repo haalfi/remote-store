@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-202: `AzureBackend.write_atomic` streaming-input path now buffers the payload to a `BytesIO` and passes `length=` to the DataLake SDK's `upload_data`, avoiding `MissingRequiredQueryParameter` on real ADLS Gen2 (the unseekable `_ByteCountingIO` wrapper caused the SDK to omit `position`, which real HNS rejects on `flush_data`) (BE-010, WR-001a)
+- BUG-202: `AzureBackend.write_atomic` streaming-input path now drives the DataLake DFS append protocol directly — `create_file` → per-chunk `append_data(offset, length)` → `flush_data(position)` — instead of `upload_data` with an unseekable wrapper. Closes the `MissingRequiredQueryParameter` error on real ADLS Gen2 (the unseekable `_ByteCountingIO` previously caused the SDK to omit `position` on `flush_data`, which Azurite forgave but real HNS rejected). Memory is bounded to `_AZURE_BLOCK_SIZE` per chunk, mirroring the async sibling introduced by BUG-194 (BE-010, WR-001a)
 - BUG-199: `AzureBackend.get_folder_info` and `AsyncAzureBackend.get_folder_info` no longer count HNS directory marker blobs (`hdi_isfolder=true`) as files; recursive `file_count` is now accurate on real ADLS Gen2 (BE-017, ASYNC-017)
 - ID-192: `aio.md` restructured to lead with `AsyncStore` — full per-category method sections mirroring `store.md`, and the four `members: false` stubs (`SyncBackendAdapter`, `AsyncBackendSyncAdapter`, `AsyncMemoryBackend`, `AsyncAzureBackend`) now render their full member surface, surfacing the layer-4 `Raises:` docstrings introduced by BK-173
 - BUG-208: fix `S3Backend.check_health()` unawaited `aiobotocore` coroutine that made the probe a silent no-op

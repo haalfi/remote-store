@@ -6,8 +6,9 @@ source_items:
   - BUG-199
 audience:
   - infra.test
-co_shipped_items: []
-review_rounds: 1
+co_shipped_items:
+  - BUG-202
+review_rounds: 2
 discovery_followups:
   - BK-225
 phases:

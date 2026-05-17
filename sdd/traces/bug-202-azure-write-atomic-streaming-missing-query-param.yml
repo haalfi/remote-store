@@ -4,11 +4,13 @@ trigger: "Sync write_atomic with BinaryIO content succeeds against Azurite but f
 source_items:
   - BUG-202
 audience:
-  - user.api
+  - library.maintainer
   - infra.test
-review_rounds: 1
+review_rounds: 2
 discovery_followups:
   - BK-224
+co_shipped_items:
+  - BUG-213
 phases:
   - id: orient
     name: Orient
@@ -80,15 +82,15 @@ phases:
       - file: src/remote_store/backends/_azure.py
         section: "write_atomic HNS streaming path"
         read_type: gate
-        extract: "Replace _ByteCountingIO with content.read() + io.BytesIO; size known before upload; pass length=size to upload_data for both bytes and streaming paths"
+        extract: "Streaming BinaryIO drives the DataLake DFS append protocol directly — create_file → per-chunk append_data(offset, length) → flush_data(position). Bytes path keeps upload_data(content, length=len(content), ...). Memory bounded to _AZURE_BLOCK_SIZE per chunk; mirrors aio/backends/_azure.py:562-576 (BUG-194). The earlier 'buffer to BytesIO + length=' draft was replaced after PR #648 round-1 review surfaced the O(N) memory regression."
 
   - id: tests
     name: Mock-level unit test
     steps:
       - file: tests/backends/azure/test_config.py
-        section: "TestAzureHNSPaths.test_write_atomic_hns_streaming_passes_length_to_upload_data"
+        section: "TestAzureHNSPaths.test_write_atomic_hns_streaming_uses_dfs_append_protocol"
         read_type: gate
-        extract: "New test: BinaryIO content; assert upload_data called with length=len(payload); verifies BUG-202 regression regression coverage at mock level"
+        extract: "BinaryIO content; verifies create_file is called, upload_data is NOT awaited for streaming, append_data chunks reconstruct the full payload with monotonic offsets, and flush_data is called with position=len(payload). Replaces the round-1 length-kwarg pin."
 
   - id: verify_replay
     name: Verify on cassette
