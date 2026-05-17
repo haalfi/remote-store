@@ -1605,6 +1605,26 @@ class TestAsyncAzureHNSPaths:
         await backend.delete("file.txt")
         assert bc.delete_blob.await_count == 1
 
+    @pytest.mark.spec("BE-021", "ASYNC-014")
+    async def test_delete_missing_with_missing_ok_true_does_not_raise_on_hns(self) -> None:
+        """BUG-197 regression: the async hdi_isfolder HEAD probe must not break missing_ok=True.
+
+        Pre-fix the probe re-raised ``ResourceNotFoundError`` before
+        ``delete_blob()`` ever ran, so ``missing_ok=True`` had no opportunity
+        to swallow the error.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        bc.delete_blob = AsyncMock(side_effect=ResourceNotFoundError("nope"))
+        backend._cc_instance.get_blob_client.return_value = bc
+        await backend.delete("missing.txt", missing_ok=True)
+        # delete_blob() must have been awaited (probe must not short-circuit
+        # on missing-file errors).
+        assert bc.delete_blob.await_count == 1
+
 
 # =============================================================================
 # Max Concurrency (ASYNC-033)

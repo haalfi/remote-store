@@ -615,17 +615,18 @@ class AsyncAzureBackend(AsyncBackend):
         async with self._errors(path):
             bc = self._blob_client(path)
             if await self._ensure_hns():  # pragma: no cover -- HNS only
-                from azure.core.exceptions import ResourceNotFoundError
-
                 try:
                     props = await bc.get_blob_properties()
                     blob_meta = getattr(props, "metadata", None) or {}
                     if blob_meta.get("hdi_isfolder"):
                         raise InvalidPath(f"Cannot delete — '{path}' is a directory", path=path, backend=self.name)
-                except (InvalidPath, ResourceNotFoundError):
+                except InvalidPath:
                     raise
                 except Exception:  # noqa: BLE001
-                    pass  # Let the delete_blob() call reveal the real error
+                    # Probe failure (ResourceNotFoundError, network blip, etc.)
+                    # is non-fatal here — let delete_blob() surface the real
+                    # error so the missing_ok=True path stays intact.
+                    pass
             try:
                 await bc.delete_blob()
             except Exception as exc:  # noqa: BLE001

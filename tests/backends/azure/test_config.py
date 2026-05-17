@@ -1003,6 +1003,27 @@ class TestAzureHNSPaths:
         backend.delete("file.txt")
         assert bc.delete_blob.call_count == 1
 
+    @pytest.mark.spec("BE-021", "BE-014")
+    def test_delete_missing_with_missing_ok_true_does_not_raise_on_hns(self) -> None:
+        """BUG-197 regression: the hdi_isfolder HEAD probe must not break missing_ok=True.
+
+        Pre-fix the probe re-raised ``ResourceNotFoundError`` before
+        ``delete_blob()`` ever ran, so ``missing_ok=True`` had no opportunity
+        to swallow the error.  Surfaced by Stage 3 recording against real
+        ADLS Gen2 (``test_delete_missing[missing_ok_passes-file-azure_live]``).
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        bc.delete_blob.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance.get_blob_client.return_value = bc
+        backend.delete("missing.txt", missing_ok=True)
+        # delete_blob() must have been attempted (probe must not short-circuit
+        # on missing-file errors).
+        assert bc.delete_blob.call_count == 1
+
 
 # =============================================================================
 # Max concurrency threading (AZ-033)
