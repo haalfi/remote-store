@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB350D802CEF4"'
+      - '"0x8DEB3EE10FE0E32"'
       Last-Modified:
-      - Sat, 16 May 2026 13:41:33 GMT
+      - Sun, 17 May 2026 08:27:00 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -115,9 +115,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB350D85B5940"'
+      - '"0x8DEB3EE1153F46C"'
       Last-Modified:
-      - Sat, 16 May 2026 13:41:34 GMT
+      - Sun, 17 May 2026 08:27:00 GMT
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
@@ -169,7 +169,7 @@ interactions:
       Content-Length:
       - '0'
       If-Match:
-      - '"0x8DEB350D85B5940"'
+      - '"0x8DEB3EE1153F46C"'
       User-Agent:
       - azsdk-python-replay
       x-ms-version:

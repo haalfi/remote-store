@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB350E275B1BE"'
+      - '"0x8DEB3EE1C41AC5C"'
       Last-Modified:
-      - Sat, 16 May 2026 13:41:51 GMT
+      - Sun, 17 May 2026 08:27:19 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -117,9 +117,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB350E2C8CEE0"'
+      - '"0x8DEB3EE1C98A704"'
       Last-Modified:
-      - Sat, 16 May 2026 13:41:51 GMT
+      - Sun, 17 May 2026 08:27:19 GMT
       x-ms-request-server-encrypted:
       - 'true'
       x-ms-version:
@@ -171,7 +171,7 @@ interactions:
       Content-Length:
       - '0'
       If-Match:
-      - '"0x8DEB350E2C8CEE0"'
+      - '"0x8DEB3EE1C98A704"'
       User-Agent:
       - azsdk-python-replay
       x-ms-version:
@@ -185,9 +185,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB350E30458A4"'
+      - '"0x8DEB3EE1CD322BC"'
       Last-Modified:
-      - Sat, 16 May 2026 13:41:52 GMT
+      - Sun, 17 May 2026 08:27:20 GMT
       x-ms-request-server-encrypted:
       - 'false'
       x-ms-version:
@@ -223,9 +223,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB350E30458A4"'
+      - '"0x8DEB3EE1CD322BC"'
       Last-Modified:
-      - Sat, 16 May 2026 13:41:52 GMT
+      - Sun, 17 May 2026 08:27:20 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -257,9 +257,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEB350E30458A4"'
+      - '"0x8DEB3EE1CD322BC"'
       Last-Modified:
-      - Sat, 16 May 2026 13:41:52 GMT
+      - Sun, 17 May 2026 08:27:20 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -269,7 +269,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sat, 16 May 2026 13:41:51 GMT
+      - Sun, 17 May 2026 08:27:19 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -319,9 +319,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEB350E30458A4"'
+      - '"0x8DEB3EE1CD322BC"'
       Last-Modified:
-      - Sat, 16 May 2026 13:41:52 GMT
+      - Sun, 17 May 2026 08:27:20 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -331,7 +331,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sat, 16 May 2026 13:41:51 GMT
+      - Sun, 17 May 2026 08:27:19 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:

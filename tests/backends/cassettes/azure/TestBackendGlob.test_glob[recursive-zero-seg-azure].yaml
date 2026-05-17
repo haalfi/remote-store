@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3513040BD7C"'
+      - '"0x8DEB3EE6AE597BA"'
       Last-Modified:
-      - Sat, 16 May 2026 13:44:01 GMT
+      - Sun, 17 May 2026 08:29:31 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEB351309DD428"'
+      - '"0x8DEB3EE6B362CDC"'
       Last-Modified:
-      - Sat, 16 May 2026 13:44:02 GMT
+      - Sun, 17 May 2026 08:29:31 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -150,8 +150,8 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=gr&recursive=true&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134234126422561832","etag":"0x8DEB351309DD428","expiryTime":"0","group":"$superuser","lastModified":"Sat,
-        16 May 2026 13:44:02 GMT","name":"gr/a.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134234801715490012","etag":"0x8DEB3EE6B362CDC","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        17 May 2026 08:29:31 GMT","name":"gr/a.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:
