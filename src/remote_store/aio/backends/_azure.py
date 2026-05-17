@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import inspect
 import logging
 import uuid
 from contextlib import asynccontextmanager
@@ -387,6 +388,15 @@ class AsyncAzureBackend(AsyncBackend):
                 # Check hdi_isfolder before yielding any bytes.
                 blob_meta = getattr(getattr(downloader, "properties", None), "metadata", None) or {}
                 if blob_meta.get("hdi_isfolder"):
+                    # Close the response before raising; the chunks() iterator
+                    # never runs so the underlying HTTP body would otherwise
+                    # leak the connection back to the pool unclosed.
+                    with contextlib.suppress(Exception):
+                        close = getattr(downloader, "close", None)
+                        if close is not None:
+                            res = close()
+                            if inspect.isawaitable(res):
+                                await res
                     raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
             async for chunk in downloader.chunks():
                 yield chunk
@@ -583,6 +593,11 @@ class AsyncAzureBackend(AsyncBackend):
                     raise
             else:
                 try:
+                    # No per-chunk _AZURE_BLOCK_SIZE cap here (unlike sync
+                    # write_atomic): the caller already emits the chunk
+                    # boundaries via AsyncIterable[bytes]. Sync wraps a
+                    # synchronous BinaryIO so it owns the .read(N) call;
+                    # async hands that responsibility to the producer.
                     await tmp_fc.create_file(metadata=metadata or None)
                     position = 0
                     async for chunk in content:

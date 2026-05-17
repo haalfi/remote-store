@@ -69,6 +69,20 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   Fix: remove the entry from the frozenset; verify the test passes against
   the refreshed cassette.
 
+- [ ] **BK-226 — Coalesce local `from azure.core.exceptions import ...` imports in `_azure.py` (sync + async)**
+  spec: — · effort: S · audience: library.maintainer
+  Both `src/remote_store/backends/_azure.py` and
+  `src/remote_store/aio/backends/_azure.py` repeat local
+  `from azure.core.exceptions import ResourceNotFoundError` /
+  `HttpResponseError` inside ~8 methods each. The pattern predates the
+  consolidation work (already imported at module level for the same
+  `HttpResponseError` symbol elsewhere) and entrenched further with the
+  BUG-200/BUG-201 paths. Promote the names to module-level imports — they
+  are already in scope on import of `azure.core` (a hard dependency via
+  the Azure SDK) so no extra extra-guard is needed. Flagged by
+  PR #<consolidated-PR> review; deferred to keep the consolidation PR
+  scoped to the bug fixes themselves.
+
 - [ ] **BK-225 — Record Stage 3 cassette for `TestAzureLiveHnsGetFolderInfoRoot` (BUG-213 follow-up)**
   spec: BE-017, ASYNC-017 · effort: S · audience: infra.test
   The BUG-213 fix adds live tests `TestAzureLiveHnsGetFolderInfoRoot` (sync)

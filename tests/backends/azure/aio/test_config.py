@@ -1821,11 +1821,12 @@ class TestAsyncAzureHNSPaths:
         """BUG-197: async read (streaming) on an HNS directory must raise InvalidPath.
 
         download_blob() is awaited; then downloader.properties.metadata is checked
-        before yielding any chunks.
+        before yielding any chunks. The downloader is closed before raising so
+        the underlying HTTP response is not leaked back to the pool.
         """
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)
-        downloader = AsyncMock(spec=StorageStreamDownloader)
+        downloader = AsyncMock(spec=["properties", "chunks", "close"])
         props = MagicMock(spec=["metadata"])
         props.metadata = {"hdi_isfolder": "true"}
         downloader.properties = props
@@ -1834,6 +1835,12 @@ class TestAsyncAzureHNSPaths:
         with pytest.raises(InvalidPath, match="is a directory"):
             async for _ in backend.read("mydir"):
                 pass  # pragma: no cover
+        # downloader.close() must be called before the InvalidPath raise
+        # so the HTTP response is returned to the pool — otherwise the
+        # connection leaks (review-flagged BUG-197 follow-up). The impl
+        # awaits the result only if isawaitable (works for sync and async
+        # SDK signatures), so assert_called_once covers both shapes.
+        downloader.close.assert_called_once()
 
     @pytest.mark.spec("BE-021", "ASYNC-006")
     async def test_read_on_hns_file_yields_chunks(self) -> None:

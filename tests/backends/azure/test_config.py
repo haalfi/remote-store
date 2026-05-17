@@ -908,7 +908,7 @@ class TestAzureHNSPaths:
 
     @pytest.mark.spec("WR-001a")
     @pytest.mark.spec("BE-010")
-    def test_write_atomic_hns_streaming_uses_dfs_append_protocol(self) -> None:
+    def test_write_atomic_hns_streaming_uses_dfs_append_protocol(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """BUG-202: streaming write_atomic drives the DFS append protocol directly.
 
         ``flush_data`` requires ``position=<total bytes>``; ``upload_data`` with
@@ -917,10 +917,18 @@ class TestAzureHNSPaths:
         per-chunk ``append_data(offset, length)`` → ``flush_data(position)``;
         memory is bounded to ``_AZURE_BLOCK_SIZE`` (mirrors the async sibling
         from BUG-194).
+
+        Monkeypatches ``_AZURE_BLOCK_SIZE`` to 50 so the 150-byte payload is
+        split into three chunks — exercises offset advancement across
+        iterations, not just the trivial single-chunk path. (Default 1 MiB
+        would consume the whole payload in one ``content.read()`` call.)
         """
         from azure.core.exceptions import ResourceNotFoundError
 
-        payload = b"hello-streaming" * 10  # 150 bytes
+        from remote_store.backends import _azure as _azure_mod
+
+        monkeypatch.setattr(_azure_mod, "_AZURE_BLOCK_SIZE", 50)
+        payload = b"hello-streaming" * 10  # 150 bytes → 3 chunks of 50 bytes
         backend = self._make_hns_backend()
         bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
@@ -1280,6 +1288,14 @@ class TestAzureHNSPaths:
         """
         backend = self._make_hns_backend()
         dc = MagicMock(spec=DataLakeDirectoryClient)
+        # BUG-198: get_folder_info probes hdi_isfolder metadata; the root
+        # directory must carry the marker explicitly so the probe accepts it
+        # as a folder. Without this, MagicMock auto-magic returns a truthy
+        # value and the test passes by coincidence (was BUG-203's original
+        # defect shape).
+        dir_props = MagicMock(spec=["metadata"])
+        dir_props.metadata = {"hdi_isfolder": "true"}
+        dc.get_directory_properties.return_value = dir_props
         backend._fs_instance.get_directory_client.return_value = dc
         backend._fs_instance.get_paths.return_value = []  # root is empty for this test
 

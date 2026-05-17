@@ -669,6 +669,18 @@ class AzureBackend(Backend):
                 raise mapped from None  # pragma: no cover
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+        """Delete a folder.
+
+        Args:
+            path: Backend-relative key.
+            recursive: If ``True``, delete all contents first.
+            missing_ok: If ``True``, do not raise when absent.
+
+        Raises:
+            NotFound: If the folder is missing and ``missing_ok`` is ``False``.
+            InvalidPath: If ``path`` names a file (use ``delete`` instead).
+            DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
+        """
         with self._errors(path):
             azure_path = self._azure_path(path)
 

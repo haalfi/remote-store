@@ -86,7 +86,7 @@ class Store:
 
         Raises:
             NotFound: If the file does not exist.
-            InvalidPath: If *path* is empty.
+            InvalidPath: If *path* is empty, or if *path* names a directory.
         """
         log.debug("read path=%r", path, extra={"op": "read", "path": path, "backend": self._backend.name})
         self._gate("read")
@@ -103,7 +103,7 @@ class Store:
 
         Raises:
             NotFound: If the file does not exist.
-            InvalidPath: If *path* is empty.
+            InvalidPath: If *path* is empty, or if *path* names a directory.
 
         Equivalent to ``read(path).read()``.
         """
@@ -132,7 +132,7 @@ class Store:
 
         Raises:
             NotFound: If the file does not exist.
-            InvalidPath: If *path* is empty.
+            InvalidPath: If *path* is empty, or if *path* names a directory.
         """
         log.debug(
             "read_seekable path=%r",
@@ -157,7 +157,7 @@ class Store:
 
         Raises:
             NotFound: If the file does not exist.
-            InvalidPath: If *path* is empty.
+            InvalidPath: If *path* is empty, or if *path* names a directory.
             UnicodeDecodeError: If decoding fails with
                 ``errors="strict"``.
 
@@ -687,7 +687,7 @@ class Store:
 
         Raises:
             NotFound: If the file does not exist.
-            InvalidPath: If *path* is empty.
+            InvalidPath: If *path* is empty, or if *path* names a directory.
         """
         _bk = self._backend.name
         log.debug("get_file_info path=%r", path, extra={"op": "get_file_info", "path": path, "backend": _bk})
@@ -776,7 +776,7 @@ class Store:
 
         Raises:
             NotFound: If the file does not exist.
-            InvalidPath: If *path* is empty.
+            InvalidPath: If *path* is empty, or if *path* names a directory.
             CapabilityNotSupported: If the backend lacks ``METADATA``.
         """
         _bk = self._backend.name
