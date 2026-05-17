@@ -376,14 +376,14 @@ class AsyncAzureBackend(AsyncBackend):
         """
         try:
             bc = self._blob_client(path)
-            # BE-021: await download_blob() makes the initial HTTP request, so
-            # downloader.properties is populated before we begin streaming.
-            # Check hdi_isfolder here to guard against the data-read-on-directory
-            # defect before yielding any bytes.
             downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
-            blob_meta = getattr(getattr(downloader, "properties", None), "metadata", None) or {}
-            if blob_meta.get("hdi_isfolder"):
-                raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                # BE-021: await download_blob() makes the initial HTTP request,
+                # so downloader.properties is populated before streaming starts.
+                # Check hdi_isfolder before yielding any bytes.
+                blob_meta = getattr(getattr(downloader, "properties", None), "metadata", None) or {}
+                if blob_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
             async for chunk in downloader.chunks():
                 yield chunk
         except RemoteStoreError:
@@ -408,12 +408,13 @@ class AsyncAzureBackend(AsyncBackend):
             bc = self._blob_client(path)
             downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
             data = bytes(await downloader.readall())
-            # BE-021: file-API operations on an HNS directory path must raise
-            # InvalidPath. The download_blob() call succeeds (directory marker is
-            # a 0-byte blob), so we inspect the response metadata post-download.
-            blob_meta = getattr(getattr(downloader, "properties", None), "metadata", None) or {}
-            if blob_meta.get("hdi_isfolder"):
-                raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
+            if await self._ensure_hns():  # pragma: no cover -- HNS only
+                # BE-021: file-API operations on an HNS directory path must
+                # raise InvalidPath. download_blob() succeeds (directory marker
+                # is a 0-byte blob), so inspect response metadata post-download.
+                blob_meta = getattr(getattr(downloader, "properties", None), "metadata", None) or {}
+                if blob_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
             return data
 
     async def write(

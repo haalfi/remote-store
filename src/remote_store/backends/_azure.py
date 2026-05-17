@@ -388,13 +388,14 @@ class AzureBackend(Backend):
             bc = self._blob_client(path)
             downloader = bc.download_blob(max_concurrency=self._max_concurrency)
             data = bytes(downloader.readall())
-            # BE-021: file-API operations on an HNS directory path must raise
-            # InvalidPath. The download_blob() call succeeds (directory marker is
-            # a 0-byte blob), so we inspect the response metadata post-download.
-            props = downloader.properties
-            blob_meta = getattr(props, "metadata", None) or {}
-            if blob_meta.get("hdi_isfolder"):
-                raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
+            if self._hns:  # pragma: no cover -- HNS only
+                # BE-021: file-API operations on an HNS directory path must
+                # raise InvalidPath. download_blob() succeeds (directory marker
+                # is a 0-byte blob), so inspect response metadata post-download.
+                props = getattr(downloader, "properties", None)
+                blob_meta = getattr(props, "metadata", None) or {}
+                if blob_meta.get("hdi_isfolder"):
+                    raise InvalidPath(f"Cannot read — '{path}' is a directory", path=path, backend=self.name)
             return data
 
     def write(

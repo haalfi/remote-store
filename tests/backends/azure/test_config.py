@@ -1001,7 +1001,7 @@ class TestAzureHNSPaths:
         bc.delete_blob.return_value = None
         backend._cc_instance.get_blob_client.return_value = bc
         backend.delete("file.txt")
-        bc.delete_blob.assert_called_once()
+        assert bc.delete_blob.call_count == 1
 
 
 # =============================================================================

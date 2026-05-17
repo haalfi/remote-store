@@ -1603,7 +1603,7 @@ class TestAsyncAzureHNSPaths:
         bc.delete_blob = AsyncMock(return_value=None)
         backend._cc_instance.get_blob_client.return_value = bc
         await backend.delete("file.txt")
-        bc.delete_blob.assert_awaited_once()
+        assert bc.delete_blob.await_count == 1
 
 
 # =============================================================================
