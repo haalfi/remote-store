@@ -1050,7 +1050,12 @@ class TestAzureLiveHnsWriteAtomicStreaming:
 
         backend, dirpath = live_hns_backend
         target = f"{dirpath}/streaming-{uuid.uuid4().hex[:8]}.bin"
-        payload = b"streaming-payload-" * 64  # 1152 bytes; spans multiple chunks at small block sizes
+        # 1152 bytes: single chunk at the default 1 MiB ``_AZURE_BLOCK_SIZE``.
+        # This live test pins the wire shape against real ADLS Gen2; the
+        # multi-chunk offset arithmetic is covered by the mock test
+        # ``test_write_atomic_hns_streaming_uses_dfs_append_protocol`` in
+        # ``test_config.py`` (which monkeypatches the block size to 50).
+        payload = b"streaming-payload-" * 64
         try:
             result = backend.write_atomic(target, io.BytesIO(payload), overwrite=True)
             assert result.size == len(payload), f"WriteResult.size {result.size} != payload size {len(payload)}"

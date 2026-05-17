@@ -7,9 +7,16 @@ audience:
   - user.api
   - contributor.process
   - infra.test
-review_rounds: 0
+review_rounds: 1
 expected_ripples:
   - sdd/backlogid.json
+surprising_ripples:
+  # Round-1 review on the consolidated PR #650 caught Store/AsyncStore
+  # wrapper-layer docstrings that still documented only the pre-BUG-198
+  # contract. Backend ABC + concrete-backend docstrings were updated, but
+  # the public Store wrapper layer was missed by the ripple-check.
+  - src/remote_store/_store.py  # Store.delete_folder + Store.get_folder_info Raises: clauses
+  - src/remote_store/aio/_async_store.py  # AsyncStore.delete_folder + AsyncStore.get_folder_info Raises: clauses
 phases:
   - id: orient
     name: Orient

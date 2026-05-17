@@ -80,7 +80,7 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   BUG-200/BUG-201 paths. Promote the names to module-level imports — they
   are already in scope on import of `azure.core` (a hard dependency via
   the Azure SDK) so no extra extra-guard is needed. Flagged by
-  PR #<consolidated-PR> review; deferred to keep the consolidation PR
+  PR #650 review; deferred to keep the consolidation PR
   scoped to the bug fixes themselves.
 
 - [ ] **BK-225 — Record Stage 3 cassette for `TestAzureLiveHnsGetFolderInfoRoot` (BUG-213 follow-up)**

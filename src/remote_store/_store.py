@@ -390,7 +390,8 @@ class Store:
             DirectoryNotEmpty: If the folder is non-empty and
                 *recursive* is ``False``.
             InvalidPath: If *path* is empty (cannot delete the store
-                root).
+                root), or if *path* names a file (use ``delete``
+                instead).
         """
         _bk = self._backend.name
         log.debug(
@@ -715,6 +716,8 @@ class Store:
 
         Raises:
             NotFound: If the folder does not exist.
+            InvalidPath: If *path* names a file (use ``get_file_info``
+                instead).
             ValueError: If *max_depth* is negative.
         """
         if max_depth is not None and max_depth < 0:
