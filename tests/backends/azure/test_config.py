@@ -734,6 +734,53 @@ class TestAzureHNSPaths:
         with pytest.raises(InvalidPath, match="dst_dir"):
             getattr(backend, op)("src.txt", "dst_dir")
 
+    @pytest.mark.spec("BE-018", "BE-019")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+    def test_self_op_is_noop(self, op: str, overwrite: bool) -> None:
+        """BUG-201 (sync): move(p, p) / copy(p, p) is a no-op for files."""
+        backend = _make_backend()
+        backend._hns_enabled = False
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.return_value = MagicMock(spec=BlobProperties, metadata={})
+        backend._cc_instance = MagicMock(spec=["get_blob_client"])
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        getattr(backend, op)("file.txt", "file.txt", overwrite=overwrite)
+
+        # Only one blob client lookup (for the existence probe); no copy or delete.
+        assert backend._cc_instance.get_blob_client.call_count == 1
+        bc.start_copy_from_url.assert_not_called()
+        bc.delete_blob.assert_not_called()
+
+    @pytest.mark.spec("BE-018", "BE-019", "BE-021")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    def test_self_op_on_hns_directory_raises_invalid_path(self, op: str) -> None:
+        """BUG-201 + #1: self-op short-circuit must still raise InvalidPath on HNS directory."""
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.return_value = _make_hns_blob_props()
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        with pytest.raises(InvalidPath, match="some_dir"):
+            getattr(backend, op)("some_dir", "some_dir")
+
+    @pytest.mark.spec("BE-018", "BE-019")
+    @pytest.mark.parametrize("op", ["move", "copy"])
+    def test_self_op_missing_raises_not_found(self, op: str) -> None:
+        """move(p, p) / copy(p, p) where p does not exist raises NotFound (not AlreadyExists)."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = _make_backend()
+        backend._hns_enabled = False
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        backend._cc_instance = MagicMock(spec=["get_blob_client"])
+        backend._cc_instance.get_blob_client.return_value = bc
+
+        with pytest.raises(NotFound, match="not found|Not found"):
+            getattr(backend, op)("missing.txt", "missing.txt")
+
     def test_write_atomic_uses_temp_and_rename_on_hns(self) -> None:
         from azure.core.exceptions import ResourceNotFoundError
 

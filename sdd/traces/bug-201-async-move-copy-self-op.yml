@@ -1,17 +1,18 @@
 id: BUG-201
-title: "AsyncAzureBackend.move/copy self-op (src == dst) raises AlreadyExists instead of being a no-op"
-trigger: "AsyncAzureBackend.move(p, p) and copy(p, p) raised AlreadyExists; BE-018/BE-019 and ASYNC-018/ASYNC-019 require src==dst to be a no-op"
+title: "AzureBackend / AsyncAzureBackend move/copy self-op (src == dst) raises AlreadyExists instead of being a no-op (sync + async)"
+trigger: "Both sync AzureBackend.move(p, p)/copy(p, p) and async siblings raised AlreadyExists; BE-018/BE-019 and ASYNC-018/ASYNC-019 require src==dst to be a no-op for files, with InvalidPath for HNS directories"
 source_items:
   - BUG-201
 audience:
-  - user.api
+  - library.maintainer
   - infra.test
 discovery_followups: []
 surprising_ripples:
+  - src/remote_store/backends/_azure.py
   - tests/backends/fixtures/fixtures.toml
   - tests/backends/fixtures/backends.toml
   - tests/backends/cassettes/azure/
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -52,7 +53,7 @@ phases:
       - file: tests/backends/cassettes/azure/TestMoveCopySelfOperation.test_self_op_preserves_data[azure_async-overwrite-move].yaml
         section: "(full)"
         read_type: gate
-        extract: "Cassette only has container create/delete — stale from when test was skipped (self_op_supported=false). No blob write/get interactions recorded. Cassettes are INSUFFICIENT and must be deleted so conftest skip-on-missing fires."
+        extract: "Cassette only had container create/delete — stale from when test was skipped (self_op_supported=false). Original intent: delete cassettes so conftest skip-on-missing fires. Final approach: Stage 3 cassette refresh (commit bfb378c02) re-recorded these as authentic interactions, replacing the delete-and-skip plan."
         outcome: misleading
 
   - id: spec_review
@@ -67,17 +68,21 @@ phases:
     name: Fix
     steps:
       - file: src/remote_store/aio/backends/_azure.py
-        section: "move (line ~890), copy (line ~928)"
+        section: "move (line ~929), copy (line ~995)"
         read_type: gate
-        extract: "Added src==dst early-return at top of both move and copy: probe existence via get_blob_properties (raises NotFound if missing), then return immediately. Placed before the ResourceNotFoundError import so the import only fires for the src!=dst path."
+        extract: "Added src==dst early-return at top of both async move and copy: probe existence via get_blob_properties (raises NotFound if missing), then return immediately. Round-1 review caught that the short-circuit skipped the hdi_isfolder check for HNS directories — now also raises InvalidPath when src is a directory marker."
+      - file: src/remote_store/backends/_azure.py
+        section: "move (line ~803), copy (line ~856)"
+        read_type: gate
+        extract: "Mirror sync fix: src==dst short-circuit with hdi_isfolder probe at top of sync move and copy. Original report scoped this as async-only because self_op_supported=false gating hid the sync failure; PR #649 round-1 confirmed sync had no short-circuit either."
       - file: tests/backends/fixtures/backends.toml
         section: "[backend.azure] self_op_supported"
         read_type: gate
-        extract: "Left as false (sync side not fixed); added comment pointing to BUG-201 fix and note that async fixtures override."
+        extract: "Family default stays false so any future Azure backend variant starts conservative until self-op is explicitly verified. Per-fixture overrides in fixtures.toml flip to true for live/replay sync + async."
       - file: tests/backends/fixtures/fixtures.toml
-        section: "azure_live_async, azure_replay_async"
+        section: "azure_live, azure_live_async, azure_replay, azure_replay_async"
         read_type: gate
-        extract: "Added self_op_supported=true override on async azure fixtures only. Stale cassettes for azure_async self-op tests deleted (container-only content from skipped-test era)."
+        extract: "Added self_op_supported=true override on all four Azure fixtures (sync + async). Cassettes for the affected TestMoveCopySelfOperation tests refreshed in the Stage 3 run (commit bfb378c02)."
 
   - id: unit_tests
     name: Mock-level unit tests
@@ -86,6 +91,10 @@ phases:
         section: "TestAsyncAzureMoveAndCopy"
         read_type: gate
         extract: "Added 6 tests: test_move_self_op_is_noop (overwrite/no-overwrite), test_move_self_op_missing_raises_not_found, test_copy_self_op_is_noop (overwrite/no-overwrite), test_copy_self_op_missing_raises_not_found. Assert no start_copy_from_url / delete_blob called, only one blob client lookup."
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths (sync self-op tests)"
+        read_type: gate
+        extract: "Added 6 sync tests mirroring the async sibling: test_self_op_is_noop (op=move|copy x overwrite|no-overwrite), test_self_op_on_hns_directory_raises_invalid_path (op=move|copy), test_self_op_missing_raises_not_found (op=move|copy)."
 
   - id: verify
     name: Verify on replay
@@ -93,4 +102,4 @@ phases:
       - file: tests/backends/conformance/test_async_extended.py
         section: "TestMoveCopySelfOperation"
         read_type: verify
-        extract: "azure_replay_async variants SKIPPED at collection time (cassettes deleted); memory/local async variants 18 PASSED. Mock-level unit tests 6 PASSED. Lint clean."
+        extract: "azure_replay_async variants pass against refreshed cassettes (Stage 3 commit bfb378c02). Mock-level unit tests pass on both sync and async sides. Lint clean."

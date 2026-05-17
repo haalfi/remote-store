@@ -803,6 +803,18 @@ class AzureBackend(Backend):
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         from azure.core.exceptions import ResourceNotFoundError
 
+        # BE-018: self-move is a no-op (src == dst → Ok), but only for files.
+        # Directory-path inputs must still raise InvalidPath per BE-021 — same
+        # contract as the non-self-op path below.
+        if src == dst:
+            with self._errors(src):
+                src_bc = self._blob_client(src)
+                src_props = src_bc.get_blob_properties()  # raises NotFound if missing
+                src_meta = getattr(src_props, "metadata", None) or {}
+                if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                    raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
+            return
+
         with self._errors(src):
             src_bc = self._blob_client(src)
             src_props = src_bc.get_blob_properties()  # raises NotFound if missing
@@ -843,6 +855,18 @@ class AzureBackend(Backend):
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         from azure.core.exceptions import ResourceNotFoundError
+
+        # BE-019: self-copy is a no-op (src == dst → Ok), but only for files.
+        # Directory-path inputs must still raise InvalidPath per BE-021 — same
+        # contract as the non-self-op path below.
+        if src == dst:
+            with self._errors(src):
+                src_bc = self._blob_client(src)
+                src_props = src_bc.get_blob_properties()  # raises NotFound if missing
+                src_meta = getattr(src_props, "metadata", None) or {}
+                if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                    raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
+            return
 
         with self._errors(src):
             src_bc = self._blob_client(src)

@@ -8,19 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-- [x] **BUG-201 — `AsyncAzureBackend.move`/`copy` self-op (src == dst) raises `AlreadyExists` instead of being a no-op**
-  spec: BE-018, BE-019, ASYNC-018, ASYNC-019 · audience: library.maintainer
+- [x] **BUG-201 — `AzureBackend` / `AsyncAzureBackend` `move`/`copy` self-op (src == dst) raises `AlreadyExists` instead of being a no-op (sync + async)**
+  spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019 · audience: library.maintainer
   Conformance contract for `move(p, p)` and `copy(p, p)` is to be a no-op
-  (data preserved, no error). `AsyncAzureBackend` raised `AlreadyExists`
-  instead. Sync variant was already correct; the gap was async-only.
-  Fix: detect `src == dst` at the top of `move`/`copy` and short-circuit,
-  with a `get_blob_properties()` precheck so a missing source still raises
-  `NotFound`. Test gating was via the per-fixture `self_op_supported` flag
-  in `tests/backends/fixtures/backends.toml`; async fixtures override to
-  `self_op_supported=true` so the conformance test runs against
-  `azure_*_async`. Six stale `[azure_async-*]` cassettes removed (they
-  used a pre-BK-191 parameter ordering and were no longer reachable from
-  the new `[*-azure_async]` parametrisation).
+  (data preserved, no error). Both `AzureBackend` and `AsyncAzureBackend`
+  raised `AlreadyExists` instead. The original report scoped this as
+  async-only because `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES` gating hid the
+  sync failure; PR #649 round-1 review confirmed the sync `move`/`copy`
+  paths had no `src == dst` short-circuit either, so the fix landed on
+  both sides.
+  Fix: detect `src == dst` at the top of `move`/`copy` and short-circuit
+  for files; for HNS directory paths the short-circuit still raises
+  `InvalidPath` (BE-021) — mirrors the non-self-op directory check.
+  `self_op_supported` flag in `tests/backends/fixtures/fixtures.toml`
+  flipped to `true` for all four Azure fixtures (`azure_live`,
+  `azure_live_async`, `azure_replay`, `azure_replay_async`); the family
+  default in `backends.toml` stays `false` for any future Azure variant
+  that has not been verified. Cassettes for the four
+  `TestMoveCopySelfOperation.*[azure_async-*]` and matching `[azure]`
+  tests were refreshed in the Stage 3 run (commit `bfb378c02`); a
+  follow-up Stage 3 run will record the newly-enabled sync `[azure]`
+  variants and the directory-guard cases.
   Trace: [`sdd/traces/bug-201-async-move-copy-self-op.yml`](traces/bug-201-async-move-copy-self-op.yml).
 
 - [x] **BUG-200 — `AsyncAzureBackend.move`/`copy` directory checks raise wrong error / `InvalidInput` on real HNS**

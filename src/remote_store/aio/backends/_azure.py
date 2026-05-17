@@ -926,11 +926,16 @@ class AsyncAzureBackend(AsyncBackend):
             InvalidPath: If ``src`` or ``dst`` names a directory (HNS only).
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
-        # BE-018 / ASYNC-018: self-move is a no-op (src == dst → Ok).
+        # BE-018 / ASYNC-018: self-move is a no-op (src == dst → Ok), but only
+        # for files.  Directory-path inputs must still raise InvalidPath per
+        # BE-021 — same contract as the non-self-op path below (line 942-943).
         if src == dst:
             async with self._errors(src):
                 src_bc = self._blob_client(src)
-                await src_bc.get_blob_properties()  # raises NotFound if missing
+                src_props = await src_bc.get_blob_properties()  # raises NotFound if missing
+                src_meta = getattr(src_props, "metadata", None) or {}
+                if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                    raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
             return
 
         from azure.core.exceptions import ResourceNotFoundError
@@ -987,11 +992,16 @@ class AsyncAzureBackend(AsyncBackend):
             InvalidPath: If ``src`` or ``dst`` names a directory (HNS only).
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
-        # BE-019 / ASYNC-019: self-copy is a no-op (src == dst → Ok).
+        # BE-019 / ASYNC-019: self-copy is a no-op (src == dst → Ok), but only
+        # for files.  Directory-path inputs must still raise InvalidPath per
+        # BE-021 — same contract as the non-self-op path below.
         if src == dst:
             async with self._errors(src):
                 src_bc = self._blob_client(src)
-                await src_bc.get_blob_properties()  # raises NotFound if missing
+                src_props = await src_bc.get_blob_properties()  # raises NotFound if missing
+                src_meta = getattr(src_props, "metadata", None) or {}
+                if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
+                    raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
             return
 
         from azure.core.exceptions import ResourceNotFoundError

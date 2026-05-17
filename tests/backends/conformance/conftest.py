@@ -221,22 +221,33 @@ def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
 # Missing-cassette skip hook (TEST-007) + HNS known-failures xfail
 # ---------------------------------------------------------------------------
 
-# Test function names known to expose real-ADLS-Gen2 conformance gaps
-# (BUG-197/200/202/203: real ADLS Gen2 accepts or mishandles calls that Azurite
-# correctly rejects per spec).
+# Test function names known to expose real-ADLS-Gen2 conformance gaps.
+# Real ADLS Gen2 accepts or mishandles calls that Azurite correctly rejects
+# per spec.  Each name below is grouped by the BUG it tracks:
+#   - BUG-195 (get_file_info on HNS directory raises NotFound not InvalidPath):
+#     test_get_file_info_on_directory_raises_error
+#   - BUG-197 (read/delete file-API on HNS directory): test_read_*_on_directory,
+#     test_delete_on_directory_*
+#   - BUG-202 (write_atomic streaming MissingRequiredQueryParameter on HNS):
+#     test_size_matches_written_bytes_for_streaming_input
+#   - BUG-203 (is_file returns True for HNS directory blob): test_is_file
 # Applied as xfail(strict=False) for real-Azure fixture IDs so that:
 #   - CI does not treat them as unexpected failures (they match live behaviour)
 #   - Once the bugs are fixed, they flip to xpass without blocking CI
 _AZURE_HNS_KNOWN_FAILURE_FN_NAMES: frozenset[str] = frozenset(
     {
+        # BUG-195
+        "test_get_file_info_on_directory_raises_error",
+        # BUG-197
         "test_read_on_directory_raises_error",
         "test_read_bytes_on_directory_raises_error",
         "test_delete_on_directory_raises_error",
         "test_delete_on_directory_raises_invalid_path",
         "test_delete_on_directory_missing_ok_still_raises",
-        "test_get_file_info_on_directory_raises_error",
-        "test_is_file",
+        # BUG-202
         "test_size_matches_written_bytes_for_streaming_input",
+        # BUG-203
+        "test_is_file",
     }
 )
 
@@ -286,7 +297,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(
                 pytest.mark.xfail(
                     strict=False,
-                    reason="Known real-ADLS-Gen2 conformance gap (see BUG-197/200/202/203 in BACKLOG.md)",
+                    reason="Known real-ADLS-Gen2 conformance gap (see BUG-195/197/202/203 in BACKLOG.md)",
                 )
             )
 
