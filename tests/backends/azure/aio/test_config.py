@@ -1537,7 +1537,7 @@ class TestAsyncAzureHNSPaths:
         backend._cc_instance.get_blob_client.return_value = bc
         assert await backend.read_bytes("file.txt") == b"hello"
 
-    @pytest.mark.spec("BE-021", "ASYNC-007")
+    @pytest.mark.spec("BE-021", "ASYNC-006")
     async def test_read_on_hns_directory_raises_invalid_path(self) -> None:
         """BUG-197: async read (streaming) on an HNS directory must raise InvalidPath.
 
@@ -1556,7 +1556,7 @@ class TestAsyncAzureHNSPaths:
             async for _ in backend.read("mydir"):
                 pass  # pragma: no cover
 
-    @pytest.mark.spec("BE-021", "ASYNC-007")
+    @pytest.mark.spec("BE-021", "ASYNC-006")
     async def test_read_on_hns_file_yields_chunks(self) -> None:
         """Async read on a normal HNS file must yield its chunks."""
         backend = self._make_hns_backend()
@@ -1575,7 +1575,7 @@ class TestAsyncAzureHNSPaths:
         chunks = [c async for c in backend.read("file.txt")]
         assert chunks == [b"data"]
 
-    @pytest.mark.spec("BE-021", "ASYNC-014")
+    @pytest.mark.spec("BE-021", "ASYNC-012")
     async def test_delete_on_hns_directory_raises_invalid_path(self) -> None:
         """BUG-197: async delete on an HNS directory path must raise InvalidPath.
 
@@ -1592,7 +1592,7 @@ class TestAsyncAzureHNSPaths:
             await backend.delete("mydir")
         bc.delete_blob.assert_not_awaited()
 
-    @pytest.mark.spec("BE-021", "ASYNC-014")
+    @pytest.mark.spec("BE-021", "ASYNC-012")
     async def test_delete_on_hns_file_does_not_raise(self) -> None:
         """Async delete on a normal HNS file must not raise InvalidPath."""
         backend = self._make_hns_backend()
@@ -1605,7 +1605,7 @@ class TestAsyncAzureHNSPaths:
         await backend.delete("file.txt")
         assert bc.delete_blob.await_count == 1
 
-    @pytest.mark.spec("BE-021", "ASYNC-014")
+    @pytest.mark.spec("BE-021", "ASYNC-012")
     async def test_delete_missing_with_missing_ok_true_does_not_raise_on_hns(self) -> None:
         """BUG-197 regression: the async hdi_isfolder HEAD probe must not break missing_ok=True.
 
@@ -1624,6 +1624,28 @@ class TestAsyncAzureHNSPaths:
         # delete_blob() must have been awaited (probe must not short-circuit
         # on missing-file errors).
         assert bc.delete_blob.await_count == 1
+
+    @pytest.mark.spec("BE-021", "ASYNC-012")
+    async def test_delete_directory_is_not_empty_409_maps_to_invalid_path(self) -> None:
+        """BUG-197 data-loss guard (async): HNS non-empty directory yields 409 DirectoryIsNotEmpty.
+
+        Async sibling of the sync DirectoryIsNotEmpty fallback test.  When
+        the probe fails for any reason and ``delete_blob()`` then surfaces
+        ``DirectoryIsNotEmpty``, the fallback must raise ``InvalidPath`` —
+        not let ``AlreadyExists`` or a generic mapping silently swallow the
+        data-loss signal.
+        """
+        from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        bc = AsyncMock(spec=BlobClient)
+        bc.get_blob_properties = AsyncMock(side_effect=ResourceNotFoundError("probe failed"))
+        exc = HttpResponseError("conflict")
+        exc.error_code = "DirectoryIsNotEmpty"
+        bc.delete_blob = AsyncMock(side_effect=exc)
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="is a directory"):
+            await backend.delete("mydir")
 
 
 # =============================================================================

@@ -347,6 +347,13 @@ class AzureBackend(Backend):
         with self._errors(path):
             bc = self._blob_client(path)
             if self._hns:  # pragma: no cover -- HNS only
+                # Sync read() returns a lazy stream the caller may never iterate,
+                # so the hdi_isfolder probe needs its own HEAD round-trip up
+                # front; we cannot defer the check to the first chunk read.
+                # Async read() avoids this by inspecting download_blob().properties
+                # (populated by the eager await) on the same response — see
+                # aio/backends/_azure.py:377 onward. The HEAD-vs-no-HEAD
+                # asymmetry is intentional, not an oversight.
                 from azure.core.exceptions import ResourceNotFoundError
 
                 try:

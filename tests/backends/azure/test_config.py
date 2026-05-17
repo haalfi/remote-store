@@ -879,7 +879,7 @@ class TestAzureHNSPaths:
 
     # BUG-197: read, read_bytes, read_seekable, delete must raise InvalidPath for HNS dirs
 
-    @pytest.mark.spec("BE-021", "BE-006")
+    @pytest.mark.spec("BE-021", "BE-007")
     def test_read_bytes_on_hns_directory_raises_invalid_path(self) -> None:
         """BUG-197: read_bytes on an HNS directory path must raise InvalidPath.
 
@@ -898,7 +898,7 @@ class TestAzureHNSPaths:
         with pytest.raises(InvalidPath, match="is a directory"):
             backend.read_bytes("mydir")
 
-    @pytest.mark.spec("BE-021", "BE-006")
+    @pytest.mark.spec("BE-021", "BE-007")
     def test_read_bytes_on_hns_file_returns_bytes(self) -> None:
         """read_bytes on a normal HNS file must return its content unchanged."""
         backend = self._make_hns_backend()
@@ -973,7 +973,7 @@ class TestAzureHNSPaths:
         assert stream is not None
         stream.close()
 
-    @pytest.mark.spec("BE-021", "BE-014")
+    @pytest.mark.spec("BE-021", "BE-012")
     def test_delete_on_hns_directory_raises_invalid_path(self) -> None:
         """BUG-197: delete on an HNS directory path must raise InvalidPath.
 
@@ -990,7 +990,7 @@ class TestAzureHNSPaths:
             backend.delete("mydir")
         bc.delete_blob.assert_not_called()
 
-    @pytest.mark.spec("BE-021", "BE-014")
+    @pytest.mark.spec("BE-021", "BE-012")
     def test_delete_on_hns_file_does_not_raise(self) -> None:
         """delete on a normal HNS file must not raise InvalidPath."""
         backend = self._make_hns_backend()
@@ -1003,7 +1003,7 @@ class TestAzureHNSPaths:
         backend.delete("file.txt")
         assert bc.delete_blob.call_count == 1
 
-    @pytest.mark.spec("BE-021", "BE-014")
+    @pytest.mark.spec("BE-021", "BE-012")
     def test_delete_missing_with_missing_ok_true_does_not_raise_on_hns(self) -> None:
         """BUG-197 regression: the hdi_isfolder HEAD probe must not break missing_ok=True.
 
@@ -1023,6 +1023,30 @@ class TestAzureHNSPaths:
         # delete_blob() must have been attempted (probe must not short-circuit
         # on missing-file errors).
         assert bc.delete_blob.call_count == 1
+
+    @pytest.mark.spec("BE-021", "BE-012")
+    def test_delete_directory_is_not_empty_409_maps_to_invalid_path(self) -> None:
+        """BUG-197 data-loss guard: HNS non-empty directory yields 409 DirectoryIsNotEmpty.
+
+        The pre-check usually short-circuits on ``hdi_isfolder``. When the
+        probe fails for any reason (network, permissions, mocked) and
+        ``delete_blob()`` then surfaces ``DirectoryIsNotEmpty``, the fallback
+        in delete() must raise ``InvalidPath`` — not let ``AlreadyExists`` or
+        a generic mapping silently swallow the data-loss signal.
+        """
+        from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
+
+        backend = self._make_hns_backend()
+        bc = MagicMock(spec=BlobClient)
+        # Probe fails (so we exercise the fallback path, not the pre-check).
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("probe failed")
+        # delete_blob raises DirectoryIsNotEmpty — the 409 we care about.
+        exc = HttpResponseError("conflict")
+        exc.error_code = "DirectoryIsNotEmpty"
+        bc.delete_blob.side_effect = exc
+        backend._cc_instance.get_blob_client.return_value = bc
+        with pytest.raises(InvalidPath, match="is a directory"):
+            backend.delete("mydir")
 
 
 # =============================================================================

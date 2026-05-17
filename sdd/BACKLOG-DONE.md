@@ -9,7 +9,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **BUG-197 — `read_bytes` and `delete` silently mishandle HNS directory paths (sync + async)** *(data-loss fix)*
-  spec: BE-013, BE-014, BE-021, ASYNC-013 · audience: library.maintainer
+  spec: BE-006, BE-007, BE-012, ASYNC-006, ASYNC-007, ASYNC-012, BE-021, ASYNC-024 · audience: library.maintainer
   BE-021 requires file-API operations on a directory path to raise `InvalidPath`.
   `write`/`write_atomic`/`open_atomic` enforce this via the `hdi_isfolder` probe
   (BUG-190/BUG-192); `read_bytes`, `read`, `read_seekable`, and `delete` did not.
