@@ -829,6 +829,7 @@ class AzureBackend(Backend):
                     if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
                         raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                 except ResourceNotFoundError:
+                    # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
             if self._hns:  # pragma: no cover -- HNS only
@@ -869,6 +870,7 @@ class AzureBackend(Backend):
                     if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
                         raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                 except ResourceNotFoundError:
+                    # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
             dst_bc.start_copy_from_url(src_bc.url)

@@ -961,6 +961,7 @@ class AsyncAzureBackend(AsyncBackend):
                     if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
                         raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                 except ResourceNotFoundError:
+                    # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
             if await self._ensure_hns():  # pragma: no cover -- HNS only
@@ -1021,6 +1022,7 @@ class AsyncAzureBackend(AsyncBackend):
                     if dst_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
                         raise InvalidPath(f"Destination is a directory: {dst}", path=dst, backend=self.name)
                 except ResourceNotFoundError:
+                    # Destination does not exist yet; this is valid when overwrite=True.
                     pass
 
             await dst_bc.start_copy_from_url(src_bc.url)
