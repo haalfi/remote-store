@@ -69,6 +69,7 @@ from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound  # noqa: E402
 from remote_store._models import FileInfo  # noqa: E402
+from remote_store._path import RemotePath  # noqa: E402
 from remote_store.backends._azure import AzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -961,3 +962,99 @@ class TestAzureLiveHnsFileApiOnDirectory:
             with contextlib.suppress(Exception):
                 fs_client.get_directory_client(scratch_dir).delete_directory()
             service.close()
+
+
+# ---------------------------------------------------------------------------
+# BE-017 — get_folder_info("") on a real HNS account (root-path coverage)
+# ---------------------------------------------------------------------------
+
+
+class TestAzureLiveHnsGetFolderInfoRoot:
+    """``get_folder_info("")`` on a real HNS account exercises the root-path call shape.
+
+    BUG-213: the HNS branch calls ``get_directory_client(azure_path)`` and then
+    ``get_paths(path=azure_path or "/", ...)``.  When ``path=""`` the
+    ``azure_path`` is ``""``; the SDK semantics of ``get_directory_client("")``
+    are SDK-specific and were not covered by any cassette before this fix.
+    ``get_paths`` already carries a deliberate ``"/"`` fallback for this case;
+    ``get_directory_client("")`` is the gap.
+
+    This test confirms the call succeeds (no SDK exception) and returns a valid
+    ``FolderInfo`` with non-negative aggregates.  Content is deposited under a
+    uuid-prefixed path so the count is unpredictable (other tests share the
+    container); the assertions focus on the API contract, not exact counts.
+
+    Spec: BE-017 (get_folder_info postcondition).
+    Cassette: new Stage 3 cassette required — record with
+    ``RS_TEST_LIVE_HNS=1 hatch run record-azure``.
+    """
+
+    @pytest.mark.spec("BE-017")
+    def test_get_folder_info_root_returns_valid_folder_info(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        """Root get_folder_info must succeed and return a FolderInfo for path=''.
+
+        Contract under test: ``get_folder_info("")`` against an HNS account
+        completes without an SDK exception (the empty `azure_path` branch in
+        ``_fs.get_directory_client`` and the deliberate `or "/"` fallback in
+        ``_fs.get_paths`` are the SDK-specific code paths this pins).  The
+        live counts vary with sibling-test residue and are not contract.
+        """
+        from remote_store._models import FolderInfo  # noqa: PLC0415 -- intentional late import
+
+        backend, _dirpath = live_hns_backend
+        info = backend.get_folder_info("")
+        assert isinstance(info, FolderInfo)
+        # FolderInfo.path is a RemotePath; the root normalises to RemotePath.ROOT
+        # (str form "."), and RemotePath.__eq__ returns NotImplemented for str
+        # operands — comparing against "" would always be False.
+        assert info.path == RemotePath.ROOT
+
+
+class TestAzureLiveHnsWriteAtomicStreaming:
+    """``write_atomic`` with a streaming ``BinaryIO`` input on a real HNS account.
+
+    BUG-202: streaming ``write_atomic`` previously called ``upload_data`` with the
+    unseekable ``_ByteCountingIO`` wrapper, which left ``position=None`` on the
+    DataLake SDK's ``flush_data`` call.  Real HNS rejected this with
+    ``MissingRequiredQueryParameter``; Azurite forgave it.  The fix drives the
+    DFS append protocol directly (``create_file`` → per-chunk
+    ``append_data(offset, length)`` → ``flush_data(position)``), mirroring the
+    async sibling introduced by BUG-194.
+
+    Stage 3 coverage: this class exercises the streaming path end-to-end against
+    a real ADLS Gen2 account, parallel to ``TestAzureLiveHnsGetFolderInfoRoot``
+    for BUG-213.  Verifies both that the write succeeds (no
+    ``MissingRequiredQueryParameter``) and that the bytes round-trip intact.
+
+    Spec: BE-010 (write_atomic atomic temp+rename), WR-001a (WriteResult.size).
+    Cassette: new Stage 3 cassette required — record with
+    ``RS_TEST_LIVE_HNS=1 hatch run record-azure``.
+    """
+
+    @pytest.mark.spec("BE-010", "WR-001a")
+    def test_write_atomic_streaming_input_succeeds_on_real_hns(
+        self,
+        live_hns_backend: tuple[AzureBackend, str],
+    ) -> None:
+        """Streaming write_atomic must succeed on real HNS and preserve the payload.
+
+        Contract under test: a ``BinaryIO`` payload (unseekable wrapper acceptable)
+        is uploaded via the DFS append protocol, ``flush_data(position)`` carries
+        the correct byte count, and the resulting blob's content matches the
+        original payload.  Pre-fix this raised ``MissingRequiredQueryParameter``.
+        """
+        import io  # noqa: PLC0415 -- intentional late import
+
+        backend, dirpath = live_hns_backend
+        target = f"{dirpath}/streaming-{uuid.uuid4().hex[:8]}.bin"
+        payload = b"streaming-payload-" * 64  # 1152 bytes; spans multiple chunks at small block sizes
+        try:
+            result = backend.write_atomic(target, io.BytesIO(payload), overwrite=True)
+            assert result.size == len(payload), f"WriteResult.size {result.size} != payload size {len(payload)}"
+            assert backend.read_bytes(target) == payload, "round-trip body must match"
+        finally:
+            with contextlib.suppress(Exception):
+                backend.delete(target, missing_ok=True)

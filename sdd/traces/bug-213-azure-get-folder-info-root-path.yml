@@ -1,0 +1,101 @@
+id: BUG-213
+title: "Root-path HNS coverage gap in AzureBackend.get_folder_info (sync + async)"
+trigger: "PR #645 (BUG-199) round-2 review surfaced that the HNS branch unconditionally calls get_directory_client(azure_path) followed by get_directory_properties(); when path='' the azure_path is '' and DataLake-SDK semantics for the empty-path root are SDK-specific and were not covered by any cassette (seeded test paths are 'mix', 'gfr', 'my-dir', etc.). get_paths(path=azure_path or '/') carries a deliberate root fallback that makes the asymmetry stand out."
+source_items:
+  - BUG-213
+  - BUG-199
+audience:
+  - infra.test
+co_shipped_items:
+  - BUG-202
+review_rounds: 2
+discovery_followups:
+  - BK-225
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT; coverage-only items still need a regression-guarding test"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Canonical bug-fix pipeline; for a coverage gap the failing-test step is 'write a test that pins the intended call shape'"
+      - file: sdd/BACKLOG.md
+        section: "BUG-213"
+        read_type: gate
+        extract: "spec: BE-017, ASYNC-017; audience: infra.test (skips CHANGELOG per schema rule); fix shape: Stage 3 cassette + mock-level call-shape pin"
+      - file: sdd/TESTING.md
+        section: "Cassette-First Bug Investigation"
+        read_type: gate
+        extract: "Coverage-only items do not have a failing replay to start from; mock-level pinning is the primary deliverable and the new Stage 3 cassette is the secondary"
+      - file: sdd/traces/bug-199-azure-folder-info-hns-dir-count.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Shape reference for trace authoring; BUG-213 was born during BUG-199's round-2 review (PR #645 Thread 6)"
+
+  - id: source_review
+    name: Source review (root-path call shape)
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "get_folder_info HNS branch"
+        read_type: gate
+        extract: "Confirmed asymmetry: get_directory_client(azure_path) has no '' → '/' coercion; get_paths(path=azure_path or '/') does. Root-path call shape: get_directory_client('') + get_paths('/')."
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "get_folder_info HNS branch (lines 853-854)"
+        read_type: gate
+        extract: "Symmetric asymmetry on async path; same call shape to pin"
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-017"
+        read_type: gate
+        extract: "GetFolderInfo postcondition — applies to root path the same as any other path"
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-017"
+        read_type: gate
+        extract: "Async sibling contract — mirrors BE-017"
+
+  - id: mock_tests
+    name: Mock-level call-shape pin (primary deliverable)
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_get_folder_info_root_hns_call_shape"
+        read_type: gate
+        extract: "Mocks _fs_instance; asserts get_directory_client('') called once, get_paths called with path='/' (the 'or /' fallback). Regression guard independent of live SDK semantics."
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths.test_get_folder_info_root_hns_call_shape"
+        read_type: gate
+        extract: "Async mirror of the sync mock test; uses AsyncMock + async iterator helper"
+
+  - id: live_tests
+    name: Stage 3 live coverage (secondary deliverable; cassette refresh required)
+    steps:
+      - file: tests/backends/azure/test_live_hns.py
+        section: "TestAzureLiveHnsGetFolderInfoRoot"
+        read_type: gate
+        extract: "Live HNS test asserting get_folder_info('') returns a valid FolderInfo with non-negative counts; new Stage 3 cassette will be recorded via RS_TEST_LIVE_HNS=1 hatch run record-azure"
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "TestAsyncLiveHnsGetFolderInfoRoot"
+        read_type: gate
+        extract: "Async sibling live test mirroring the sync class"
+
+  - id: verify
+    name: Verify on cassette + ripple
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_get_folder_info_root_hns_call_shape"
+        read_type: verify
+        extract: "Mock test passes locally (sync); pins call shape independent of cassette"
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths.test_get_folder_info_root_hns_call_shape"
+        read_type: verify
+        extract: "Mock test passes locally (async)"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "audience: infra.test → no CHANGELOG entry required; BACKLOG → BACKLOG-DONE move handled by main agent during PR assembly"

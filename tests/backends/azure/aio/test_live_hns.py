@@ -63,6 +63,7 @@ from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound  # noqa: E402
 from remote_store._models import FileInfo  # noqa: E402
+from remote_store._path import RemotePath  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -955,3 +956,52 @@ class TestAsyncLiveHnsFileApiOnDirectory:
             with contextlib.suppress(Exception):
                 fs_client.get_directory_client(scratch_dir).delete_directory()
             service.close()
+
+
+# ---------------------------------------------------------------------------
+# ASYNC-017 — get_folder_info("") on a real HNS account (root-path coverage)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsGetFolderInfoRoot:
+    """Async ``get_folder_info("")`` on a real HNS account exercises the root-path call shape.
+
+    Async companion to ``TestAzureLiveHnsGetFolderInfoRoot``. BUG-213: the
+    async HNS branch calls ``get_directory_client(azure_path)`` followed by
+    ``get_directory_properties()``; when ``path=""`` the ``azure_path`` is
+    ``""`` and the DataLake-SDK semantics for the empty-path root were not
+    covered by any cassette before this fix. ``get_paths`` carries a
+    deliberate ``"/"`` fallback for the root case; ``get_directory_client("")``
+    is the asymmetric gap.
+
+    The assertions focus on the API contract (returns a valid ``FolderInfo``
+    with non-negative aggregates), not exact counts — the container is shared
+    across tests so the count is unpredictable.
+
+    Spec: ASYNC-017 (async get_folder_info postcondition).
+    Cassette: new Stage 3 cassette required — record with
+    ``RS_TEST_LIVE_HNS=1 hatch run record-azure``.
+    """
+
+    @pytest.mark.spec("ASYNC-017")
+    async def test_get_folder_info_root_returns_valid_folder_info(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        """Root async get_folder_info must succeed and return a FolderInfo for path=''.
+
+        Contract under test: ``get_folder_info("")`` against an HNS account
+        completes without an SDK exception (the empty `azure_path` branch in
+        ``_fs.get_directory_client`` and the deliberate `or "/"` fallback in
+        ``_fs.get_paths`` are the SDK-specific code paths this pins).  The
+        live counts vary with sibling-test residue and are not contract.
+        """
+        from remote_store._models import FolderInfo  # noqa: PLC0415 -- intentional late import
+
+        backend, _dirpath = async_live_hns_backend
+        info = await backend.get_folder_info("")
+        assert isinstance(info, FolderInfo)
+        # FolderInfo.path is a RemotePath; the root normalises to RemotePath.ROOT
+        # (str form "."), and RemotePath.__eq__ returns NotImplemented for str
+        # operands — comparing against "" would always be False.
+        assert info.path == RemotePath.ROOT

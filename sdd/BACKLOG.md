@@ -57,36 +57,28 @@ Confirmed defects on real ADLS Gen2 accounts plus testing infrastructure for liv
 Bug fixes follow the `hdi_isfolder` probe pattern established by BUG-190/BUG-192.
 BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/replay layer from BK-181 (landed).
 
-- [ ] **BUG-213 — Root-path HNS coverage gap in `AzureBackend.get_folder_info` (sync + async)**
-  spec: BE-017, ASYNC-017 · effort: S · audience: infra.test
-  The BUG-199 fix unconditionally calls `self._fs.get_directory_client(azure_path)`
-  followed by `dc.get_directory_properties()` in the HNS branch. When
-  `path=""` (root) `azure_path` becomes `""`, so this becomes
-  `get_directory_client("")` — DataLake-SDK semantics for the empty-path
-  root are SDK-specific and not exercised by any cassette (seeded paths
-  in the existing tests are `mix`, `gfr`, `my-dir`, etc.). The
-  subsequent `get_paths(path=azure_path or "/", recursive=True)` carries
-  a deliberate `"/"` fallback for the root case, which makes the
-  asymmetry stand out. Same gap in
-  `src/remote_store/aio/backends/_azure.py:853-854`. Pre-existing
-  (root-on-HNS was untested before BUG-199 too), surfaced by PR #645
-  round-2 review. Fix: add a Stage 3 cassette covering `get_folder_info("")`
-  on an HNS account, then mirror as a mock-level test pinning the
-  intended call shape.
+- [ ] **BK-224 — Remove BUG-202 xfail entry from `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES` after Stage 3 cassette refresh**
+  spec: — · effort: S · audience: infra.test
+  The BUG-202 fix leaves `test_size_matches_written_bytes_for_streaming_input`
+  in the `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES` frozenset
+  (`tests/backends/conformance/conftest.py`) because the existing `azure_replay`
+  cassettes do not yet exercise the new DFS append protocol against real
+  HNS wire responses. Once the BUG-202 cassettes are re-recorded
+  (`RS_TEST_LIVE_HNS=1 hatch run record-azure`), the xfail will flip to
+  xpass silently and the entry will remain in the frozenset as dead state.
+  Fix: remove the entry from the frozenset; verify the test passes against
+  the refreshed cassette.
 
-- [ ] **BUG-202 — `AzureBackend.write_atomic` streaming-input path raises `MissingRequiredQueryParameter` on real HNS**
-  spec: BE-010, WR-001a · effort: M · audience: library.maintainer
-  Sync `AzureBackend.write_atomic` with a `BinaryIO` (streaming) input
-  succeeds against Azurite but fails against a real HNS account with the
-  Azure SDK error `MissingRequiredQueryParameter`. Surfaced by
-  `tests/backends/conformance/test_atomic.py::TestWriteResultConformance::test_size_matches_written_bytes_for_streaming_input[azure_live]`.
-  The bytes-input variant of the same test is green, so the defect is on
-  the streaming code path (`src/remote_store/backends/_azure.py:~1027`).
-  Likely a missing query parameter on the DataLake SDK call that real
-  HNS validates and Azurite forgives. Async variant not exercised in
-  this sweep (different test class). Fix: identify the SDK call,
-  add the missing parameter, regression-cover with the conformance
-  test once green. Spec: BE-010, WR-001a.
+- [ ] **BK-225 — Record Stage 3 cassette for `TestAzureLiveHnsGetFolderInfoRoot` (BUG-213 follow-up)**
+  spec: BE-017, ASYNC-017 · effort: S · audience: infra.test
+  The BUG-213 fix adds live tests `TestAzureLiveHnsGetFolderInfoRoot` (sync)
+  and the async sibling that exercise `get_folder_info("")` against a real
+  ADLS Gen2 account. The cassettes for these tests do not exist yet —
+  they must be recorded via `RS_TEST_LIVE_HNS=1 hatch run record-azure`
+  before the `azure_replay` / `azure_replay_async` fixtures can replay them.
+  Until then, the live tests fail under replay because no cassette is
+  present. Fix: record + commit the cassettes; verify the replay path
+  passes.
 
 - [ ] **BUG-200 — `AsyncAzureBackend.move`/`copy` directory checks raise wrong error / `InvalidInput` on real HNS**
   spec: BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024 · effort: M · audience: library.maintainer
