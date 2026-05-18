@@ -137,10 +137,11 @@ def require_azure_live_connection_string() -> str:
     Azurite signature. Azurite does not emulate Hierarchical Namespace,
     so live HNS coverage is impossible against it.
 
-    The legacy live-HNS suite under ``tests/backends/azure/test_live_hns.py``
-    keeps its own inline copy of this validator pending BK-182's deletion
-    of that suite. The conformance fixtures ``azure_live`` /
-    ``azure_live_async`` are the first consumers of this shared helper.
+    Shared by the conformance fixtures ``azure_live`` /
+    ``azure_live_async`` and by the per-backend live HNS suites under
+    ``tests/backends/azure/test_live_hns.py`` and
+    ``tests/backends/azure/aio/test_live_hns.py``. The HNS suites layer
+    an additional ``RS_TEST_LIVE_HNS_CONTAINER`` env-var check on top.
     """
     creds = require_live_credentials(
         load_fixture("azure_live"),

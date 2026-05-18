@@ -51,32 +51,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## Azure HNS Correctness
-
-Confirmed defects on real ADLS Gen2 accounts plus testing infrastructure for live coverage.
-Bug fixes follow the `hdi_isfolder` probe pattern established by BUG-190/BUG-192.
-BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/replay layer from BK-181 (landed).
-
-- [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
-  spec: TEST-002, TEST-003 · effort: M · audience: infra.test
-  Originally targeted the now-removed top-level
-  `tests/backends/test_azure_live_hns.py` /
-  `tests/aio/test_async_azure_live_hns.py` pair; BK-179's reorg moved them
-  to `tests/backends/azure/test_live_hns.py` and
-  `tests/backends/azure/aio/test_live_hns.py`. BK-180 added live `azure_live`
-  / `azure_live_async` conformance fixtures, so most happy-path coverage
-  in the moved files is now duplicated against a real ADLS Gen2 account.
-  Now that BK-181 has landed the Azure cassette/replay layer (PRs #629/#630),
-  delete the duplicated cases and keep only HNS-unique tests at the new
-  paths: DFS AsyncIterator protocol
-  (BUG-194 regression guard), etag normalisation cross-check
-  (`get_file_properties` vs `get_file_info`), directory-blob `hdi_isfolder`
-  probes, and any remaining deviation guards. Async equivalents stay under
-  `tests/backends/azure/aio/test_live_hns.py` only where sync / async
-  behaviour differs. Spec: TEST-002, TEST-003.
-
----
-
 ## Formal Verification
 
 Goal: Dafny spec as authoritative contract, compiled oracle as reference backend,
@@ -272,6 +246,36 @@ the conformance pattern (ID-193) can lock in the test shape against the
 stabilised page.
 
 **Sequence:** ID-194 (in parallel with ID-193) → ID-172 → ID-173
+
+- [ ] **BK-228 — Async conformance gap: `iter_children` has no test in `test_async_extended.py`**
+  spec: ASYNC-024 · effort: S · audience: infra.test
+  `tests/backends/conformance/test_listing.py::TestBackendIterChildren` covers
+  sync `iter_children` against every parametrized backend, but the async
+  equivalent in `tests/backends/conformance/test_async_extended.py` has no
+  matching test — so the async iter_children contract is unverified at the
+  conformance tier across all async backends (memory, Azure, future Graph).
+  Surfaced during BK-182 inventory: the per-backend
+  `tests/backends/azure/aio/test_live_hns.py::TestAsyncLiveHnsIterChildren`
+  was the only live coverage and was deleted as a duplicate, leaving the
+  conformance gap exposed. Add a `TestAsyncIterChildren` class to
+  `test_async_extended.py` that mirrors the sync test's files-and-folders
+  split assertion, parametrized over all async backends. Spec: ASYNC-024.
+
+- [ ] **BK-229 — Async conformance gap: `write_atomic` happy-path round-trip absent from `test_async_extended.py`**
+  spec: ASYNC-010, WR-001a · effort: S · audience: infra.test
+  `test_async_extended.py::TestWriteReadRoundTrip` covers `write` (not
+  `write_atomic`); `TestWriteErrorFidelity` covers `write_atomic` only on
+  the InvalidPath directory-target path. The sync sibling
+  `tests/backends/conformance/test_atomic.py::TestBackendWriteAtomic`
+  covers happy-path `write_atomic` (creates file, overwrite semantics,
+  AlreadyExists guard) against every WRITE-capable backend; the async
+  conformance suite has no equivalent class. Surfaced during BK-182
+  inventory: the per-backend
+  `tests/backends/azure/aio/test_live_hns.py::TestAsyncLiveHnsContentRoundTrip`
+  was the only async happy-path live coverage and was deleted as a
+  duplicate, exposing the conformance gap. Add `TestAsyncWriteAtomic`
+  to `test_async_extended.py` mirroring the sync coverage shape.
+  Spec: ASYNC-010, WR-001a.
 
 - [ ] **ID-193 — Async conformance extended: pattern research and implementation**
   spec: ASYNC-018, ASYNC-019 · effort: L · audience: infra.test, library.maintainer

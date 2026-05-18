@@ -1647,7 +1647,7 @@ class TestAsyncAzureHNSPaths:
         WriteResult.metadata echoes the caller's mapping by construction (WR-012).
         Post-rename metadata preservation on the live file is an ADLS Gen2 rename
         semantics concern; live coverage of that property lives in
-        ``tests/backends/test_azure_live_hns.py::TestAzureLiveHnsMetadataSurvivesRename``.
+        ``tests/backends/azure/test_live_hns.py::TestAzureLiveHnsMetadataSurvivesRename``.
         """
         backend = self._make_hns_backend()
         bc = AsyncMock(spec=BlobClient)

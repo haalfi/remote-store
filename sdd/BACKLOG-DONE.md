@@ -6,6 +6,44 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+- [x] **BK-182 — Shrink live HNS suites under `tests/backends/azure/` to HNS-unique cases**
+  spec: TEST-003 · audience: infra.test
+  After BK-179 (per-backend reorg), BK-180 (live `azure_live` /
+  `azure_live_async` conformance fixtures), and BK-181 (Azure cassette /
+  replay layer) all landed in v0.25.0, the per-backend live HNS suites at
+  `tests/backends/azure/test_live_hns.py` and
+  `tests/backends/azure/aio/test_live_hns.py` were duplicating happy-path
+  coverage now exercised by the conformance suite against the same real
+  ADLS Gen2 account. Trimmed both files to the cases conformance cannot
+  express: directory-blob `hdi_isfolder` probes
+  (`TestAzureLiveHnsDirectoryGuard`, `...GetFileInfoOnDirectory`,
+  `...IsFolderIsFile`, `...FileApiOnDirectory` and async siblings),
+  WriteResult etag normalisation cross-check
+  (`TestAzureLiveHnsWriteResult` + async sibling tolerating BUG-196
+  Optional-etag fallback), user-metadata survives `rename_file`
+  (`TestAzureLiveHnsMetadataSurvivesRename`; sync only — the rename is a
+  service-side property), DFS AsyncIterator protocol (BUG-194 guard,
+  `TestAsyncLiveHnsWriteAtomicAsyncIterator`), `write_atomic` streaming
+  guard against BUG-202 (`TestAzureLiveHnsWriteAtomicStreaming`),
+  `get_folder_info("")` HNS root carve-out (BUG-213, AZ-024), and the
+  `_ensure_hns()` exists fallback on a real HNS directory. Sync went
+  31 → ~12 cases; async went 33 → ~13 cases. Also deduped the inline
+  `_require_live_env` validators in both files onto the shared
+  `tests/backends/fixtures/_live_env.require_azure_live_connection_string`,
+  refreshed stale `tests/backends/test_azure_live_hns.py` /
+  `tests/aio/test_async_azure_live_hns.py` path references in
+  `docs-src/guides/backends/azure-hns-setup.md`,
+  `tests/backends/azure/aio/test_config.py`, and
+  `tests/backends/azure/aio/test_live.py`. Discovery follow-ups: BK-228
+  (async `iter_children` conformance gap), BK-229 (async `write_atomic`
+  happy-path round-trip conformance gap). No CHANGELOG entry (audience
+  `infra.test`).
+  Trace: [`sdd/traces/bk-182-shrink-live-hns.yml`](traces/bk-182-shrink-live-hns.yml).
+
+---
+
 ## v0.25.0
 
 - [x] **BK-226 — Coalesce local `from azure.core.exceptions import ...` imports across the Azure backend (sync + async + `_azure_common`)**
