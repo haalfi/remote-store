@@ -23,10 +23,12 @@ surprising_ripples:
   # AZ-020/021/022/023 missing the AZ-036 InvalidPath cross-reference and
   # AZ-021's pre-existing `download_file` → `download_blob` typo.
   - sdd/specs/012-azure-backend.md  # AZ-020/021/022/023/024 per-method Raises: + AZ-024 invariant rewrite
-discovery_followups:
-  # Round-2 review surfaced a pre-existing Store-layer surface gap unmasked
-  # by BUG-201/203's correct backend behavior. Tracked as BK-227.
-  - BK-227
+discovery_followups: []
+# Note: BK-227 (Store self-op short-circuit masks backend InvalidPath for HNS
+# directories) was originally filed here in round-2 but is genuinely a
+# BUG-201 / BUG-203 surface gap (the Store `is_file` check that the
+# short-circuit relies on is what BUG-203 changed). Moved to the
+# BUG-201 and BUG-203 traces in round-3.
 phases:
   - id: orient
     name: Orient

@@ -6,7 +6,15 @@ source_items:
 audience:
   - library.maintainer
   - infra.test
-discovery_followups: []
+discovery_followups:
+  # PR #650 round-2 review surfaced that the Store/AsyncStore self-op
+  # short-circuit (`if not is_file(src): raise NotFound`) masks the
+  # backend's BUG-201 InvalidPath contract for HNS directories. Primary
+  # unmask: BUG-201's correct InvalidPath raise at the backend layer is
+  # unreachable via Store because the wrapper short-circuits with NotFound
+  # first. Secondary unmask: BUG-203 (is_file → False for HNS dirs)
+  # changed the gate condition. Tracked as BK-227.
+  - BK-227
 surprising_ripples:
   - src/remote_store/backends/_azure.py
   - tests/backends/fixtures/fixtures.toml

@@ -972,19 +972,20 @@ class TestAzureLiveHnsFileApiOnDirectory:
 class TestAzureLiveHnsGetFolderInfoRoot:
     """``get_folder_info("")`` on a real HNS account exercises the root-path call shape.
 
-    BUG-213: the HNS branch calls ``get_directory_client(azure_path)`` and then
-    ``get_paths(path=azure_path or "/", ...)``.  When ``path=""`` the
-    ``azure_path`` is ``""``; the SDK semantics of ``get_directory_client("")``
-    are SDK-specific and were not covered by any cassette before this fix.
-    ``get_paths`` already carries a deliberate ``"/"`` fallback for this case;
-    ``get_directory_client("")`` is the gap.
+    BUG-213 contract (post-fix): the HNS branch skips the per-path
+    ``get_directory_client(azure_path)`` probe when ``azure_path == ""`` —
+    real ADLS Gen2 rejects ``get_directory_client("")`` with "Please specify
+    a file system name and file path", and the root is always a folder so
+    no marker probe is needed.  The branch relies on
+    ``_fs.get_paths(path="/", recursive=True)`` (the deliberate ``or "/"``
+    fallback) to enumerate the root.
 
     This test confirms the call succeeds (no SDK exception) and returns a valid
     ``FolderInfo`` with non-negative aggregates.  Content is deposited under a
     uuid-prefixed path so the count is unpredictable (other tests share the
     container); the assertions focus on the API contract, not exact counts.
 
-    Spec: BE-017 (get_folder_info postcondition).
+    Spec: BE-017 (get_folder_info postcondition); AZ-024 (HNS root-path carve-out).
     Cassette: new Stage 3 cassette required — record with
     ``RS_TEST_LIVE_HNS=1 hatch run record-azure``.
     """
@@ -997,10 +998,11 @@ class TestAzureLiveHnsGetFolderInfoRoot:
         """Root get_folder_info must succeed and return a FolderInfo for path=''.
 
         Contract under test: ``get_folder_info("")`` against an HNS account
-        completes without an SDK exception (the empty `azure_path` branch in
-        ``_fs.get_directory_client`` and the deliberate `or "/"` fallback in
-        ``_fs.get_paths`` are the SDK-specific code paths this pins).  The
-        live counts vary with sibling-test residue and are not contract.
+        completes without an SDK exception.  The root-path code path skips
+        the per-path ``get_directory_client`` probe (real ADLS Gen2 rejects
+        the empty path) and relies on the deliberate ``or "/"`` fallback in
+        ``_fs.get_paths`` to enumerate the root.  The live counts vary with
+        sibling-test residue and are not contract.
         """
         from remote_store._models import FolderInfo  # noqa: PLC0415 -- intentional late import
 

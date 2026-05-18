@@ -9,7 +9,7 @@ audience:
   - infra.test
 co_shipped_items:
   - BUG-202
-review_rounds: 3
+review_rounds: 4
 discovery_followups:
   - BK-225
 surprising_ripples:
@@ -24,6 +24,14 @@ surprising_ripples:
   - src/remote_store/backends/_azure.py  # get_folder_info HNS branch: skip dir-probe for azure_path==""
   - src/remote_store/aio/backends/_azure.py  # async sibling: skip dir-probe for ap==""
   - CHANGELOG.md  # BUG-213 entry added (library.maintainer audience promoted from infra.test)
+  # Round-3 review caught that the round-2 code fix left spec drift +
+  # test-docstring drift behind: AZ-024 + AZ-036 "Probe placement" describe
+  # a probe the code skips at root; live test class/method docstrings
+  # (sync + async) still described "get_directory_client('') is the gap"
+  # which is exactly the bug, not the post-fix contract.
+  - sdd/specs/012-azure-backend.md  # AZ-024 + AZ-036 root-path carve-out
+  - tests/backends/azure/test_live_hns.py  # TestAzureLiveHnsGetFolderInfoRoot class/method docstrings rewritten for post-fix contract
+  - tests/backends/azure/aio/test_live_hns.py  # async sibling docstrings rewritten
 phases:
   - id: orient
     name: Orient
