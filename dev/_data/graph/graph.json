@@ -1637,7 +1637,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 610,
+      "line": 613,
       "summary": "copy"
     },
     {
@@ -1664,7 +1664,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 680,
+      "line": 686,
       "summary": "get_file_info"
     },
     {
@@ -1673,7 +1673,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 699,
+      "line": 705,
       "summary": "get_folder_info"
     },
     {
@@ -1691,7 +1691,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 766,
+      "line": 772,
       "summary": "head"
     },
     {

@@ -14357,7 +14357,8 @@ Each raises <code>CapabilityNotSupported</code> on backends that do not declare 
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> or <em>dst</em> is empty.</p>
+            <p>If <em>src</em> or <em>dst</em> is empty, or if <em>src</em> names a
+directory (BE-018, BE-021).</p>
           </div>
         </li>
     </ul>
@@ -14454,7 +14455,8 @@ Check <code>store.supports(Capability.ATOMIC_MOVE)</code> to query this at runti
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> or <em>dst</em> is empty.</p>
+            <p>If <em>src</em> or <em>dst</em> is empty, or if <em>src</em> names a
+directory (BE-019, BE-021).</p>
           </div>
         </li>
     </ul>
