@@ -13073,7 +13073,7 @@ on call, not lazily on first iteration.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
     </ul>
@@ -13146,7 +13146,7 @@ file. Without it, the backend may buffer content before returning the stream.</p
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
     </ul>
@@ -13242,7 +13242,7 @@ file. Without it, the backend may buffer content before returning the stream.</p
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -13879,7 +13879,8 @@ does not exist.</p>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty (cannot delete the store
-root).</p>
+root), or if <em>path</em> names a file (use <code>delete</code>
+instead).</p>
           </div>
         </li>
     </ul>
@@ -14550,7 +14551,7 @@ Returns <code>source="sidecar"</code>.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -14750,7 +14751,7 @@ Returns <code>source="sidecar"</code>.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
     </ul>
@@ -14841,6 +14842,14 @@ performs a full recursive traversal via the backend.</p>
             –
           <div class="doc-md-description">
             <p>If the folder does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> names a file (use <code>get_file_info</code>
+instead).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -20439,6 +20448,13 @@ uploads and downloads (default <code>1</code> -- sequential).</p>
             <p>If the file does not exist.</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names a directory (HNS accounts only).</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -20498,6 +20514,13 @@ uploads and downloads (default <code>1</code> -- sequential).</p>
             –
           <div class="doc-md-description">
             <p>If the file does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names a directory (HNS accounts only).</p>
           </div>
         </li>
     </ul>
@@ -20841,6 +20864,13 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
             <p>If the file is missing and <code>missing_ok</code> is <code>False</code>.</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names a directory (HNS accounts only).</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -20913,6 +20943,13 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
             –
           <div class="doc-md-description">
             <p>If the folder is missing and <code>missing_ok</code> is <code>False</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names a file (use <code>delete</code> instead).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -21260,6 +21297,13 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names a directory (HNS: <code>hdi_isfolder=true</code>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
@@ -21337,6 +21381,13 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
             <p>If the folder does not exist.</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>path</code> names a file (use <code>get_file_info</code> instead).</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -21404,6 +21455,13 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
             –
           <div class="doc-md-description">
             <p>If <code>src</code> does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>src</code> or <code>dst</code> names a directory (HNS only).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -21480,6 +21538,13 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
             –
           <div class="doc-md-description">
             <p>If <code>src</code> does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>src</code> or <code>dst</code> names a directory (HNS only).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

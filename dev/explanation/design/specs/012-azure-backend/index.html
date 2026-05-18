@@ -8516,6 +8516,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#az-036-hns-directory-marker-probe-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-036: HNS Directory-Marker Probe Contract
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10114,6 +10125,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#az-036-hns-directory-marker-probe-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AZ-036: HNS Directory-Marker Probe Contract
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10226,7 +10248,7 @@
 <p><strong>Invariant:</strong> All operations are scoped to a single Azure Storage container, analogous to S3Backend's bucket scope. Cross-container operations are not supported.</p>
 <h3 id="az-008-directory-semantics-hns-enabled">AZ-008: Directory Semantics (HNS Enabled)<a class="headerlink" href="#az-008-directory-semantics-hns-enabled" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When HNS is enabled, directories are real entities. <code>is_folder(path)</code> checks for the existence of a directory object. Empty directories persist after their contents are deleted.
-<strong>Postconditions:</strong> This matches SFTP behavior (SFTP-011, SFTP-013), not S3 behavior.</p>
+<strong>Postconditions:</strong> This matches SFTP behavior (SFTP-011, SFTP-013), not S3 behavior. Type-mismatch safety on HNS is captured by <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a>: every file-API op probes <code>hdi_isfolder</code> before delegating to the SDK, and folder-API ops probe its absence — without this, the Azure SDK silently accepts directory-vs-file mismatches that would corrupt or destroy account state.</p>
 <h3 id="az-009-virtual-folder-semantics-no-hns">AZ-009: Virtual Folder Semantics (No HNS)<a class="headerlink" href="#az-009-virtual-folder-semantics-no-hns" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When HNS is not enabled, folder semantics match S3: "folders" are logical constructs derived from <code>/</code>-delimited path prefixes. A folder exists only as long as blobs exist under its prefix.
 <strong>Postconditions:</strong> Same as S3-006 through S3-009.</p>
@@ -10242,9 +10264,9 @@
 <strong>Invariant (no HNS):</strong> <code>exists(path)</code> issues a HEAD request for the blob via <code>BlobClient.get_blob_properties()</code>. Returns <code>True</code> if found, <code>False</code> on <code>ResourceNotFoundError</code>. Falls back to prefix check for folders.
 <strong>Postconditions:</strong> Never raises <code>NotFound</code> — returns <code>False</code> instead (per BE-004).</p>
 <h3 id="az-013-is_file-and-is_folder">AZ-013: is_file() and is_folder()<a class="headerlink" href="#az-013-is_file-and-is_folder" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>is_file(path)</code> calls <code>get_path_properties()</code> and checks the <code>is_directory</code> attribute — returns <code>True</code> when <code>is_directory</code> is <code>False</code>. <code>is_folder(path)</code> returns <code>True</code> when <code>is_directory</code> is <code>True</code>. Both return <code>False</code> for non-existent paths.
+<p><strong>Invariant (HNS):</strong> Both predicates use the <code>hdi_isfolder</code> metadata marker — not the SDK's <code>is_directory</code> attribute — because on real ADLS Gen2, <code>get_directory_properties()</code> returns HTTP 200 for any path entity, file or directory. <code>is_file(path)</code> calls <code>BlobClient.get_blob_properties()</code> and returns <code>True</code> when the <code>hdi_isfolder</code> marker is absent. <code>is_folder(path)</code> calls <code>DataLakeDirectoryClient.get_directory_properties()</code> and returns <code>True</code> when the <code>hdi_isfolder=true</code> marker is present. Both return <code>False</code> for non-existent paths or marker-mismatched entities.
 <strong>Invariant (no HNS):</strong> <code>is_file(path)</code> issues a HEAD request for the blob — returns <code>True</code> if the blob exists. <code>is_folder(path)</code> returns <code>True</code> if any blobs exist with prefix <code>{path}/</code> (same as S3-007).
-<strong>Postconditions:</strong> Both return <code>False</code> for non-existent paths — never raise (per BE-005).</p>
+<strong>Postconditions:</strong> Both return <code>False</code> for non-existent paths — never raise (per BE-005). Both honour <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a>.</p>
 <hr />
 <h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
 <h3 id="az-014-atomic-write">AZ-014: Atomic Write<a class="headerlink" href="#az-014-atomic-write" title="Permanent link">&para;</a></h3>
@@ -10274,14 +10296,14 @@
 <h3 id="az-020-read">AZ-020: read()<a class="headerlink" href="#az-020-read" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> stream via <code>_AzureBinaryIO</code>, a forward-only streaming adapter wrapping <code>StorageStreamDownloader.chunks()</code>. The raw adapter is wrapped in <code>io.BufferedReader</code> for efficient buffered reads.
 <strong>Postconditions:</strong> Data is streamed on demand — the full file is not loaded into memory. The stream is forward-only (not seekable). Callers that require seekability should use <code>read_bytes()</code> + <code>BytesIO</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
+<strong>Raises:</strong> <code>NotFound</code> if the file does not exist. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names an HNS directory.</p>
 <h3 id="az-021-read_bytes">AZ-021: read_bytes()<a class="headerlink" href="#az-021-read_bytes" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read_bytes(path)</code> returns the full file content as <code>bytes</code>. Implemented as <code>read(path).read()</code> or via <code>download_file().readall()</code> directly.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
+<p><strong>Invariant:</strong> <code>read_bytes(path)</code> returns the full file content as <code>bytes</code>. Implemented via <code>BlobClient.download_blob().readall()</code>.
+<strong>Raises:</strong> <code>NotFound</code> if the file does not exist. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names an HNS directory.</p>
 <h3 id="az-022-write">AZ-022: write()<a class="headerlink" href="#az-022-write" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write(path, content, overwrite=False)</code> uploads content via <code>BlobClient.upload_blob()</code> (Blob SDK).
 <strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>BinaryIO</code>.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. Existence check uses <code>ResourceNotFoundError</code> (not broad exception catch) to avoid swallowing auth/network errors.
+<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. Existence check uses <code>ResourceNotFoundError</code> (not broad exception catch) to avoid swallowing auth/network errors. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names an HNS directory.
 <strong>Postconditions (HNS):</strong> Intermediate directories are created automatically by the ADLS Gen2 service.
 <strong>Postconditions (no HNS):</strong> No intermediate directory creation needed (flat blob namespace).</p>
 <h3 id="az-023-get_file_info">AZ-023: get_file_info()<a class="headerlink" href="#az-023-get_file_info" title="Permanent link">&para;</a></h3>
@@ -10294,12 +10316,12 @@
 - <code>etag</code>: see AZ-034
 - <code>digest</code>: see AZ-034</p>
 <p><strong>Note:</strong> <code>content_type</code> is not included in <code>FileInfo</code>.</p>
-<p><strong>Raises:</strong> <code>NotFound</code> if the file does not exist.</p>
+<p><strong>Raises:</strong> <code>NotFound</code> if the file does not exist. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names an HNS directory.</p>
 <h3 id="az-024-get_folder_info">AZ-024: get_folder_info()<a class="headerlink" href="#az-024-get_folder_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>get_folder_info(path)</code> returns a <code>FolderInfo</code>.
-<strong>Invariant (HNS):</strong> Uses <code>get_path_properties()</code> on the directory object.
+<strong>Invariant (HNS):</strong> Uses <code>DataLakeDirectoryClient.get_directory_properties()</code> on the directory object to confirm the entity exists, then probes <code>hdi_isfolder</code> (per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a>) to reject file-path mismatches. When <code>path == ""</code> (filesystem root), the per-path probe is skipped — the root is always a folder, and real ADLS Gen2 rejects <code>get_directory_client("")</code> with <code>"Please specify a file system name and file path"</code> (BUG-213). Child file count and total size are aggregated via <code>_fs.get_paths(recursive=True)</code>, skipping entries with <code>is_directory=True</code> (BUG-199).
 <strong>Invariant (no HNS):</strong> Checks for the existence of blobs under the prefix <code>{path}/</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist.</p>
+<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names a file on HNS (<code>hdi_isfolder</code> absent).</p>
 <hr />
 <h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
 <h3 id="az-025-structured-error-classification">AZ-025: Structured Error Classification<a class="headerlink" href="#az-025-structured-error-classification" title="Permanent link">&para;</a></h3>
@@ -10390,6 +10412,12 @@
 <p><strong>Invariant:</strong> When no explicit credential is provided (<code>account_key</code>, <code>sas_token</code>, <code>connection_string</code>, and <code>credential</code> are all <code>None</code>), the backend attempts to use <code>DefaultAzureCredential</code> from <code>azure-identity</code>.
 <strong>Raises:</strong> <code>BackendUnavailable</code> if <code>azure-identity</code> is not installed and no explicit credential is provided.
 <strong>Rationale:</strong> Follows the principle of least surprise for Azure users. <code>DefaultAzureCredential</code> automatically resolves environment variables, managed identity, Azure CLI login, and other credential sources.</p>
+<h3 id="az-036-hns-directory-marker-probe-contract">AZ-036: HNS Directory-Marker Probe Contract<a class="headerlink" href="#az-036-hns-directory-marker-probe-contract" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant (HNS only):</strong> Every file-API operation on HNS — <code>read</code>, <code>read_bytes</code>, <code>read_seekable</code>, <code>delete</code>, <code>write</code>, <code>write_atomic</code>, <code>open_atomic</code>, <code>get_file_info</code>, <code>is_file</code>, <code>move(src, dst)</code>, <code>copy(src, dst)</code> — probes the <code>hdi_isfolder</code> metadata marker on the target before delegating to the SDK. If the marker is present on what the caller treats as a file path, the operation raises <code>InvalidPath</code> (BE-021) without mutating account state. Symmetric for folder-API operations on file paths: <code>delete_folder</code> and <code>get_folder_info</code> inspect the same marker and raise <code>InvalidPath</code> when it is absent on the target. <code>is_folder</code> and <code>is_file</code> are predicates and return <code>False</code> (not raise) when the marker disagrees with the call — see <a href="#az-013-is_file-and-is_folder">AZ-013</a> for the predicate contract.
+<strong>Rationale:</strong> Real ADLS Gen2 accepts SDK calls Azurite correctly rejects: <code>download_blob()</code>, <code>delete_blob()</code>, <code>get_blob_properties()</code>, <code>get_directory_properties()</code> all return HTTP 200 against the wrong entity type. Without the probe, file-API <code>delete()</code> on a directory marker silently destroys the directory; file-API <code>read()</code> silently returns <code>b""</code>; folder-API <code>delete_folder()</code> on a file path silently destroys the file. The probe is the single load-bearing safety invariant that closes the BE-021 type-mismatch contract on HNS.
+<strong>Probe placement:</strong> Sync <code>read()</code> and <code>read_seekable()</code> pre-probe via <code>BlobClient.get_blob_properties()</code> (HEAD) before opening the stream — the stream is lazy and may never be drained, so a post-probe would leak the response. Async <code>read()</code> post-probes via <code>downloader.properties</code> (populated by the awaited <code>download_blob</code>) and explicitly closes the downloader before raising so the unconsumed HTTP body is returned to the pool — no separate HEAD round-trip is incurred. <code>read_bytes()</code> post-probes (the full body has already been read). Sync and async <code>delete()</code> pre-probe so the marker is preserved on the failure path. Folder-API operations probe <code>DataLakeDirectoryClient.get_directory_properties().metadata.hdi_isfolder</code> and treat absence-of-marker as "this is a file, not a folder." Root-path carve-out: <code>get_folder_info("")</code> skips the per-path probe entirely (see <a href="#az-024-get_folder_info">AZ-024</a>) — the root is always a folder and the SDK rejects the empty path.
+<strong>Postconditions:</strong> Adds one HEAD round-trip per affected sync read/delete call on HNS; async paths reuse the eager-awaited SDK response for the probe (no extra RTT).
+<strong>Originated in:</strong> BUG-190, BUG-192 (write/open_atomic), then extended by BUG-195 (get_file_info), BUG-197 (read/delete), BUG-198 (folder-API on file), BUG-200 (move/copy directory checks), BUG-203 (is_file/is_folder).</p>
 
 
 

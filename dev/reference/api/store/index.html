@@ -10265,7 +10265,7 @@ declare this capability. Most backends declare it.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
     </ul>
@@ -10334,7 +10334,7 @@ file. Without it, the backend may buffer content before returning the stream.</p
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
     </ul>
@@ -10407,7 +10407,7 @@ passing the stream to PyArrow or other analytical readers.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
     </ul>
@@ -10505,7 +10505,7 @@ example, Azure issues HTTP Range requests instead of spooling.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11090,7 +11090,8 @@ does not exist.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory
+(regardless of <em>missing_ok</em>).</p>
           </div>
         </li>
     </ul>
@@ -11181,7 +11182,8 @@ does not exist.</p>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> is empty (cannot delete the store
-root).</p>
+root), or if <em>path</em> names a file (use <code>delete</code>
+instead).</p>
           </div>
         </li>
     </ul>
@@ -11838,7 +11840,7 @@ from a write response).</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12027,7 +12029,7 @@ as traversal cannot proceed.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty.</p>
+            <p>If <em>path</em> is empty, or if <em>path</em> names a directory.</p>
           </div>
         </li>
     </ul>
@@ -12114,6 +12116,14 @@ performs a full recursive traversal via the backend.</p>
             –
           <div class="doc-md-description">
             <p>If the folder does not exist.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> names a file (use <code>get_file_info</code>
+instead).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
