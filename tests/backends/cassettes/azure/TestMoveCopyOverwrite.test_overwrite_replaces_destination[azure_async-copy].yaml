@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB35176D4284B"'
+      - '"0x8DEB3F3551CB4C3"'
       Last-Modified:
-      - Sat, 16 May 2026 13:46:00 GMT
+      - Sun, 17 May 2026 09:04:41 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - Iq9kXRhZy1ym2gxITx836g==
       ETag:
-      - '"0x8DEB35177297BEC"'
+      - '"0x8DEB3F3557A3E64"'
       Last-Modified:
-      - Sat, 16 May 2026 13:46:00 GMT
+      - Sun, 17 May 2026 09:04:42 GMT
       x-ms-content-crc64:
       - Sjq/P8zBiZ0=
       x-ms-request-server-encrypted:
@@ -191,9 +191,9 @@ interactions:
       Content-MD5:
       - FJYD5sA1FjYqjaI/Yk25RQ==
       ETag:
-      - '"0x8DEB3517760EACC"'
+      - '"0x8DEB3F355ADD9C8"'
       Last-Modified:
-      - Sat, 16 May 2026 13:46:00 GMT
+      - Sun, 17 May 2026 09:04:42 GMT
       x-ms-content-crc64:
       - c58SJWsaE/Q=
       x-ms-request-server-encrypted:
@@ -231,9 +231,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEB35177297BEC"'
+      - '"0x8DEB3F3557A3E64"'
       Last-Modified:
-      - Sat, 16 May 2026 13:46:00 GMT
+      - Sun, 17 May 2026 09:04:42 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -243,7 +243,67 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sat, 16 May 2026 13:46:00 GMT
+      - Sun, 17 May 2026 09:04:42 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/mcor/copy_d.txt
+  response:
+    body:
+      string: ''
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '3'
+      Content-MD5:
+      - FJYD5sA1FjYqjaI/Yk25RQ==
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DEB3F355ADD9C8"'
+      Last-Modified:
+      - Sun, 17 May 2026 09:04:42 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Sun, 17 May 2026 09:04:42 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -289,11 +349,11 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB35177930250"'
+      - '"0x8DEB3F3561B945C"'
       Last-Modified:
-      - Sat, 16 May 2026 13:46:01 GMT
+      - Sun, 17 May 2026 09:04:43 GMT
       x-ms-copy-id:
-      - 5027c4eb-a811-40ff-bbe4-7b3ad622c5f9
+      - e7e03a60-ce97-429a-acd4-b90e5ae6fbf2
       x-ms-copy-status:
       - success
       x-ms-version:
@@ -331,9 +391,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEB35177930250"'
+      - '"0x8DEB3F3561B945C"'
       Last-Modified:
-      - Sat, 16 May 2026 13:46:01 GMT
+      - Sun, 17 May 2026 09:04:43 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -345,9 +405,9 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-copy-completion-time:
-      - Sat, 16 May 2026 13:46:01 GMT
+      - Sun, 17 May 2026 09:04:43 GMT
       x-ms-copy-id:
-      - 5027c4eb-a811-40ff-bbe4-7b3ad622c5f9
+      - e7e03a60-ce97-429a-acd4-b90e5ae6fbf2
       x-ms-copy-progress:
       - 3/3
       x-ms-copy-source:
@@ -355,7 +415,7 @@ interactions:
       x-ms-copy-status:
       - success
       x-ms-creation-time:
-      - Sat, 16 May 2026 13:46:00 GMT
+      - Sun, 17 May 2026 09:04:42 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:

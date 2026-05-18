@@ -1392,7 +1392,7 @@
       "file": "src/remote_store/aio/backends/_azure.py",
       "id": "cls:remote_store.aio.backends._azure.AsyncAzureBackend",
       "kind": "class",
-      "line": 51,
+      "line": 52,
       "role": "backend",
       "runtime": "async",
       "summary": "Async Azure Storage backend."
@@ -1637,7 +1637,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 608,
+      "line": 610,
       "summary": "copy"
     },
     {
@@ -1655,7 +1655,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 374,
+      "line": 375,
       "summary": "delete_folder"
     },
     {
@@ -1664,7 +1664,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 678,
+      "line": 680,
       "summary": "get_file_info"
     },
     {
@@ -1673,7 +1673,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 697,
+      "line": 699,
       "summary": "get_folder_info"
     },
     {
@@ -1682,7 +1682,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 553,
+      "line": 555,
       "summary": "glob"
     },
     {
@@ -1691,7 +1691,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 762,
+      "line": 766,
       "summary": "head"
     },
     {
@@ -1700,7 +1700,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 531,
+      "line": 533,
       "summary": "iter_children"
     },
     {
@@ -1709,7 +1709,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 411,
+      "line": 413,
       "summary": "list_files"
     },
     {
@@ -1718,7 +1718,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 475,
+      "line": 477,
       "summary": "list_folders"
     },
     {
@@ -1727,7 +1727,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 577,
+      "line": 579,
       "summary": "move"
     },
     {

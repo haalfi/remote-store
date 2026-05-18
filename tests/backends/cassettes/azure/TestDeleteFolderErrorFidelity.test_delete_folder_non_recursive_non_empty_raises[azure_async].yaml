@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3515B09F280"'
+      - '"0x8DEB3F33955995A"'
       Last-Modified:
-      - Sat, 16 May 2026 13:45:13 GMT
+      - Sun, 17 May 2026 09:03:55 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEB3515B62F988"'
+      - '"0x8DEB3F339B56580"'
       Last-Modified:
-      - Sat, 16 May 2026 13:45:14 GMT
+      - Sun, 17 May 2026 09:03:55 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -157,9 +157,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3515B600E3C"'
+      - '"0x8DEB3F339B04FF0"'
       Last-Modified:
-      - Sat, 16 May 2026 13:45:13 GMT
+      - Sun, 17 May 2026 09:03:55 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -169,7 +169,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sat, 16 May 2026 13:45:13 GMT
+      - Sun, 17 May 2026 09:03:55 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
@@ -208,8 +208,8 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=dne&maxResults=1&recursive=false&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134234127140125064","etag":"0x8DEB3515B62F988","expiryTime":"0","group":"$superuser","lastModified":"Sat,
-        16 May 2026 13:45:14 GMT","name":"dne/a.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134234822359803264","etag":"0x8DEB3F339B56580","expiryTime":"0","group":"$superuser","lastModified":"Sun,
+        17 May 2026 09:03:55 GMT","name":"dne/a.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:

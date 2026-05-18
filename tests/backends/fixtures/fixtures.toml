@@ -107,6 +107,9 @@ container = "azurite"
 is_async  = false
 # OVERRIDE: emulator is flat-namespace (no HNS); BK-185.
 flat_namespace = true
+# BUG-201: sync AzureBackend.move/copy src==dst short-circuit is backend-wide
+# (not HNS-gated); Azurite handles it the same as the real Azure flat namespace.
+self_op_supported = true
 
 [fixture.sftp_docker]
 backend   = "sftp"
@@ -134,7 +137,8 @@ container = "none"
 is_async  = false
 live_opt_in_env = "RS_TEST_LIVE_HNS"
 live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
-# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].
+# BUG-201: AzureBackend short-circuits src==dst; live fixtures are green.
+self_op_supported = true
 
 [fixture.azure_live_async]
 backend   = "azure"
@@ -144,7 +148,8 @@ container = "none"
 is_async  = true
 live_opt_in_env = "RS_TEST_LIVE_HNS"
 live_creds_env  = ["AZURE_STORAGE_CONNECTION_STRING"]
-# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].
+# BUG-201: AsyncAzureBackend short-circuits src==dst; async fixtures are green.
+self_op_supported = true
 
 [fixture.s3_live]
 backend   = "s3"
@@ -167,7 +172,8 @@ stage     = 1
 kind      = "replay"
 container = "none"
 is_async  = false
-# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].
+# BUG-201: AzureBackend short-circuits src==dst; replay fixtures are green.
+self_op_supported = true
 
 [fixture.azure_replay_async]
 backend   = "azure"
@@ -175,4 +181,5 @@ stage     = 1
 kind      = "replay"
 container = "none"
 is_async  = true
-# Inherits flat_namespace=false, self_op_supported=false from [backend.azure].
+# BUG-201: AsyncAzureBackend short-circuits src==dst; async fixtures are green.
+self_op_supported = true

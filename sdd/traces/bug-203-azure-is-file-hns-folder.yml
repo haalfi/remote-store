@@ -1,0 +1,125 @@
+id: BUG-203
+title: "AzureBackend.is_folder() and AsyncAzureBackend.is_folder() return True for HNS file paths (BUG-203)"
+trigger: "Conformance test test_is_file[azure_live] failed: backend.is_folder('a.txt') returned True for a regular file on a real ADLS Gen2 HNS account. Azurite-backed tests passed because Azurite does not emulate HNS."
+source_items:
+  - BUG-203
+audience:
+  - user.api
+  - infra.test
+discovery_followups:
+  # PR #650 round-2 review surfaced that Store/AsyncStore self-op
+  # short-circuit (`if not is_file(src): raise NotFound`) now lies for HNS
+  # directories: after BUG-203, `is_file(hns_dir)` correctly returns False,
+  # so `Store.move(hns_dir, hns_dir)` raises NotFound for a path that does
+  # exist (just as a directory). Secondary unmask — primary is BUG-201
+  # (the backend's InvalidPath contract that becomes unreachable via Store).
+  # Tracked as BK-227.
+  - BK-227
+surprising_ripples:
+  - src/remote_store/aio/backends/_azure.py
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together; write failing test, run it, see it fail, then fix"
+      - file: sdd/BACKLOG.md
+        section: "BUG-203"
+        read_type: gate
+        extract: "spec: BE-005, BE-021; fix: extend hdi_isfolder probe to is_file HNS branch; async sibling apparently unaffected"
+      - file: sdd/traces/bug-199-azure-folder-info-hns-dir-count.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Shape reference: hdi_isfolder probe pattern, cassette approach, trace format"
+        outcome: ok
+
+  - id: reproduce
+    name: Reproduce on cassette
+    steps:
+      - file: tests/backends/cassettes/azure/TestBackendFileFolder.test_is_file[azure].yaml
+        section: "interactions: all HEAD requests"
+        read_type: gate
+        extract: "Cassette has 3 blob HEAD requests for a.txt: pre-write 404, is_file 200 (x-ms-resource-type: file), is_folder 200 (same). No hdi_isfolder metadata in responses for regular file."
+        outcome: ok
+      - file: tests/backends/cassettes/azure/TestBackendFileFolder.test_is_folder[azure].yaml
+        section: "interactions: HEAD for 'dir'"
+        read_type: gate
+        extract: "HNS directory response includes x-ms-meta-hdi_isfolder: true AND x-ms-resource-type: directory. Confirms the fix signal: metadata.hdi_isfolder distinguishes directories from files."
+        outcome: ok
+
+  - id: classify
+    name: Classify cassette sufficiency
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "is_folder / HNS branch (line 335-340)"
+        read_type: gate
+        extract: "Bug is in is_folder, not is_file. get_directory_properties() succeeds for both files and directories in HNS (200 for both). No check whether the path is actually a directory. BACKLOG description slightly imprecise: actual failure is is_folder returning True for files, not is_file returning True for folders."
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "is_file (line 317-328)"
+        read_type: gate
+        extract: "is_file uses blob API and already checks metadata.hdi_isfolder. The fix is not in is_file. However, is_file is also impacted symmetrically: it correctly returns False for directory blobs that have hdi_isfolder=true."
+        outcome: ok
+
+  - id: classify_decision
+    name: Cassette sufficiency decision
+    steps:
+      - file: tests/backends/cassettes/azure/TestBackendFileFolder.test_is_file[azure].yaml
+        section: "3rd HEAD response (is_folder call)"
+        read_type: gate
+        extract: "Fix reads props.metadata from the DataLake get_directory_properties() response. Cassette HEAD response for a.txt has no x-ms-meta-hdi_isfolder header, so metadata dict is empty, meta.get('hdi_isfolder') returns None, bool(None)=False. Cassette is sufficient — no new wire call introduced."
+        outcome: ok
+
+  - id: spec_review
+    name: Spec review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-005"
+        read_type: gate
+        extract: "is_folder(path) returns True only if path is a folder. Bug violates this: is_folder returns True for regular file paths on HNS."
+        outcome: ok
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "is_folder / HNS branch"
+        read_type: gate
+        extract: "Fix: capture return value of get_directory_properties(); read metadata; return bool(meta.get('hdi_isfolder')). Mirrors the hdi_isfolder probe used by is_file and write/write_atomic/open_atomic."
+        outcome: ok
+
+  - id: tests
+    name: Mock-level unit tests
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_is_folder_uses_directory_client_on_hns"
+        read_type: gate
+        extract: "Existing test mocked get_directory_properties() return value without setting metadata; after fix the MagicMock default still makes it return truthy (via MagicMock attribute chain). Updated to explicitly mock metadata={'hdi_isfolder': 'true'} to pin the contract."
+        outcome: ok
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_is_folder_returns_false_for_file_path_on_hns"
+        read_type: gate
+        extract: "New BUG-203 regression test: is_folder('a.txt') must return False when get_directory_properties() returns props with empty metadata (no hdi_isfolder)."
+        outcome: ok
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_is_file_returns_false_for_hns_directory_blob"
+        read_type: gate
+        extract: "New symmetric test: is_file returns False when blob properties metadata has hdi_isfolder=true. Pins the existing correct behavior."
+        outcome: ok
+
+  - id: verify_replay
+    name: Verify on cassette
+    steps:
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES"
+        read_type: gate
+        extract: "Removed 'test_is_file' from xfail roster. Test now passes cleanly without --runxfail."
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "TestBackendFileFolder.test_is_file"
+        read_type: verify
+        extract: "test_is_file[azure_replay] PASSED. test_is_folder[azure_replay] still PASSED (no regression)."
+        outcome: ok

@@ -49,6 +49,7 @@ on a best-effort basis.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import uuid
@@ -62,6 +63,7 @@ from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound  # noqa: E402
 from remote_store._models import FileInfo  # noqa: E402
+from remote_store._path import RemotePath  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 
 if TYPE_CHECKING:
@@ -218,28 +220,29 @@ class TestAsyncLiveHnsWriteResult:
         assert result.source == "native"
         # WR-001a: size must equal the committed byte count.
         assert result.size == len(_PAYLOAD)
-        # WR-001a / AZ-034: etag from post-rename get_file_properties must be
-        # non-empty, quote-stripped, and lowercased.
-        # Note: the async path lacks the BUG-173 try/except fallback the sync path
-        # carries, so a post-rename read failure propagates as a write error rather
-        # than returning etag=None.  This assertion therefore exercises the only path
-        # the async backend supports.  Tracked as BUG-196 in sdd/BACKLOG.md.
-        assert result.etag is not None, (
-            "async HNS write_atomic must populate WriteResult.etag from post-rename get_file_properties"
-        )
-        assert result.etag != ""
-        assert '"' not in result.etag, f"etag must be quote-stripped; got {result.etag!r}"
-        assert result.etag == result.etag.lower(), f"etag must be lowercased; got {result.etag!r}"
-        # WR-001a: last_modified from the post-rename read must be timezone-aware.
-        assert result.last_modified is not None, "async HNS write_atomic must populate WriteResult.last_modified"
-        assert result.last_modified.tzinfo is not None, "last_modified must be timezone-aware"
-        # AZ-034 consistency: WriteResult.etag and FileInfo.etag must agree.
-        fi = await backend.get_file_info(path)
-        assert fi.etag is not None
-        assert fi.etag == result.etag, (
-            f"WriteResult.etag {result.etag!r} != FileInfo.etag {fi.etag!r}: "
-            "normalisation inconsistent between post-rename get_file_properties and get_file_info"
-        )
+        # WR-001a / AZ-034: on the success path, etag from post-rename
+        # get_file_properties must be non-empty, quote-stripped, and lowercased.
+        # On a transient post-rename read failure the BUG-196 fallback returns
+        # etag=None (rename already committed; WR-001a lists etag as Optional).
+        if result.etag is not None:
+            assert result.etag != ""
+            assert '"' not in result.etag, f"etag must be quote-stripped; got {result.etag!r}"
+            assert result.etag == result.etag.lower(), f"etag must be lowercased; got {result.etag!r}"
+            # WR-001a: last_modified from the post-rename read must be timezone-aware.
+            assert result.last_modified is not None, "async HNS write_atomic must populate WriteResult.last_modified"
+            assert result.last_modified.tzinfo is not None, "last_modified must be timezone-aware"
+            # AZ-034 consistency: WriteResult.etag and FileInfo.etag must agree.
+            fi = await backend.get_file_info(path)
+            assert fi.etag is not None
+            assert fi.etag == result.etag, (
+                f"WriteResult.etag {result.etag!r} != FileInfo.etag {fi.etag!r}: "
+                "normalisation inconsistent between post-rename get_file_properties and get_file_info"
+            )
+        # else: fallback path — rename committed, post-rename read failed transiently.
+        # WR-001a allows etag=None; retrying would raise AlreadyExists.
+        # The fallback contract is verified explicitly by mock tests
+        # test_write_atomic_hns_get_file_properties_* in tests/backends/azure/aio/test_config.py
+        # (live runs hit it only by chance under transient network conditions).
 
 
 # ---------------------------------------------------------------------------
@@ -452,30 +455,69 @@ class TestAsyncLiveHnsMove:
 
 
 class TestAsyncLiveHnsGetFileInfoOnDirectory:
-    """Async ``get_file_info`` on an HNS directory blob must raise ``NotFound``.
+    """Async ``get_file_info`` on an HNS directory blob must raise ``InvalidPath``.
 
     Async companion to ``TestAzureLiveHnsGetFileInfoOnDirectory``. Only a real
     account confirms the ``hdi_isfolder`` marker is set by the DataLake service.
 
-    Note: ASYNC-016 specifies ``InvalidPath`` for directory paths, but the current
-    implementation raises ``NotFound``. This test documents the actual live behaviour;
-    the deviation is tracked as **BUG-195** in ``sdd/BACKLOG.md`` and must be flipped to
-    ``InvalidPath`` when that fix lands.
-
-    Spec: ASYNC-016 (get_file_info).
+    Spec: ASYNC-016 (get_file_info), BE-021 (directory-path guard).
     """
 
-    # BUG-195: marks the spec target, not the current behaviour. ASYNC-016 specifies
-    # InvalidPath but the runtime raises NotFound; this test documents the deviation
-    # and must be flipped to pytest.raises(InvalidPath) when BUG-195 is fixed.
-    @pytest.mark.spec("ASYNC-016")
-    async def test_get_file_info_on_hns_directory_raises_not_found(
+    @pytest.mark.spec("ASYNC-016", "BE-021")
+    async def test_get_file_info_on_hns_directory_raises_invalid_path(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
     ) -> None:
         backend, dirpath = async_live_hns_backend
-        with pytest.raises(NotFound, match="(?i)not found"):
+        with pytest.raises(InvalidPath, match="exists as a directory"):
             await backend.get_file_info(dirpath)
+
+
+class TestAsyncLiveHnsIsFolderIsFile:
+    """Async ``is_folder`` / ``is_file`` semantics on a real HNS directory + file.
+
+    Async companion to ``TestAzureLiveHnsIsFolderIsFile``. BUG-203 fixed both
+    sync and async ``is_folder`` to inspect ``hdi_isfolder`` metadata instead
+    of trusting that ``get_directory_properties()`` succeeded; this class
+    proves the marker is actually present on a directory created via
+    ``DataLakeServiceClient.create_directory()`` and absent on a regular file
+    written via ``write_atomic``.
+
+    Spec: ASYNC-005 (is_folder / is_file).
+    """
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_folder_true_on_hns_directory(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        assert await backend.is_folder(dirpath) is True
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_file_false_on_hns_directory(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        backend, dirpath = async_live_hns_backend
+        assert await backend.is_file(dirpath) is False
+
+    @pytest.mark.spec("ASYNC-005")
+    async def test_is_file_true_and_is_folder_false_on_hns_file(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        import contextlib  # noqa: PLC0415 -- intentional lazy import
+
+        backend, dirpath = async_live_hns_backend
+        target = f"{dirpath}/file-{uuid.uuid4().hex[:8]}.txt"
+        await backend.write_atomic(target, _PAYLOAD, overwrite=True)
+        try:
+            assert await backend.is_file(target) is True
+            assert await backend.is_folder(target) is False
+        finally:
+            with contextlib.suppress(Exception):
+                await backend.delete(target, missing_ok=True)
 
 
 # ---------------------------------------------------------------------------
@@ -861,41 +903,40 @@ class TestAsyncLiveHnsCopy:
 
 
 class TestAsyncLiveHnsFileApiOnDirectory:
-    """Async ``read_bytes`` and ``delete`` on HNS directory blobs — actual live behaviour.
+    """Async ``read_bytes`` and ``delete`` on HNS directory blobs must raise ``InvalidPath``.
 
-    Async companion to ``TestAzureLiveHnsFileApiOnDirectory``. Same defect class
-    on both sync and async paths — neither probes ``hdi_isfolder`` before the
-    file-API SDK call. Tracked as **BUG-197** in ``sdd/BACKLOG.md``; tests must
-    be flipped to assert ``InvalidPath`` when that fix lands.
+    Async companion to ``TestAzureLiveHnsFileApiOnDirectory``. BE-021 mandates
+    that file-API operations on a directory path raise ``InvalidPath``.
+    BUG-197 fixed both sync and async paths. These tests are the live
+    regression guards for the spec contract.
 
     Spec: BE-021, ASYNC-013 (read), BE-014 (delete).
     """
 
     @pytest.mark.spec("BE-021", "ASYNC-013")
-    async def test_read_bytes_on_hns_directory_returns_empty_bytes(
+    async def test_read_bytes_on_hns_directory_raises_invalid_path(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
     ) -> None:
-        """BUG-197: should raise ``InvalidPath`` per BE-021; currently returns ``b""``."""
+        """BUG-197 fix: read_bytes on an HNS directory must raise ``InvalidPath``."""
         backend, dirpath = async_live_hns_backend
-        result = await backend.read_bytes(dirpath)
-        assert result == b""
+        with pytest.raises(InvalidPath, match="is a directory"):
+            await backend.read_bytes(dirpath)
 
     @pytest.mark.spec("BE-021", "BE-014")
-    async def test_delete_on_hns_directory_silently_removes_directory(
+    async def test_delete_on_hns_directory_raises_invalid_path(
         self,
         async_live_hns_backend: tuple[AsyncAzureBackend, str],
         live_hns_env: tuple[str, str],
     ) -> None:
-        """BUG-197: should raise ``InvalidPath`` per BE-021; currently destroys the directory.
+        """BUG-197 fix: delete on an HNS directory must raise ``InvalidPath``.
 
-        Uses an isolated per-test directory (not the module-shared one) — a
-        successful delete actually mutates the account.
+        Uses an isolated per-test directory (not the module-shared one) so that
+        when the fix is working the directory is NOT deleted and subsequent tests
+        are unaffected. A failing test (InvalidPath not raised, directory deleted)
+        would still be isolated because the scratch directory is fresh each run.
         """
         backend, dirpath = async_live_hns_backend
-        # Reuse the env values already validated by _require_live_hns_env() in the
-        # fixture chain; direct os.environ access here would raise KeyError instead
-        # of the descriptive pytest.fail message on misconfiguration.
         conn, fs_name = live_hns_env
         prefix = dirpath.rsplit("/", 1)[0]
         scratch_dir = f"{prefix}/scratch-dir-{uuid.uuid4().hex[:8]}"
@@ -905,7 +946,65 @@ class TestAsyncLiveHnsFileApiOnDirectory:
             fs_client.get_directory_client(scratch_dir).create_directory()
 
             assert await backend.exists(scratch_dir) is True
-            await backend.delete(scratch_dir)
-            assert await backend.exists(scratch_dir) is False
+            with pytest.raises(InvalidPath, match="is a directory"):
+                await backend.delete(scratch_dir)
+            # Directory must still exist — InvalidPath must have fired before
+            # any SDK mutation (BUG-197 data-loss guard).
+            assert await backend.exists(scratch_dir) is True
         finally:
+            # Best-effort cleanup: delete the scratch directory via the DataLake
+            # client (bypasses the file-API guard that prevents backend.delete).
+            with contextlib.suppress(Exception):
+                fs_client.get_directory_client(scratch_dir).delete_directory()
             service.close()
+
+
+# ---------------------------------------------------------------------------
+# ASYNC-017 — get_folder_info("") on a real HNS account (root-path coverage)
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLiveHnsGetFolderInfoRoot:
+    """Async ``get_folder_info("")`` on a real HNS account exercises the root-path call shape.
+
+    Async companion to ``TestAzureLiveHnsGetFolderInfoRoot``. BUG-213 contract
+    (post-fix): the async HNS branch skips the per-path
+    ``get_directory_client(ap)`` probe when ``ap == ""`` — real ADLS Gen2
+    rejects ``get_directory_client("")`` with "Please specify a file system
+    name and file path", and the root is always a folder so no marker probe
+    is needed. The branch relies on
+    ``_fs.get_paths(path="/", recursive=True)`` (the deliberate ``or "/"``
+    fallback) to enumerate the root.
+
+    The assertions focus on the API contract (returns a valid ``FolderInfo``
+    with non-negative aggregates), not exact counts — the container is shared
+    across tests so the count is unpredictable.
+
+    Spec: ASYNC-017 (async get_folder_info postcondition); AZ-024 (HNS root-path carve-out).
+    Cassette: new Stage 3 cassette required — record with
+    ``RS_TEST_LIVE_HNS=1 hatch run record-azure``.
+    """
+
+    @pytest.mark.spec("ASYNC-017")
+    async def test_get_folder_info_root_returns_valid_folder_info(
+        self,
+        async_live_hns_backend: tuple[AsyncAzureBackend, str],
+    ) -> None:
+        """Root async get_folder_info must succeed and return a FolderInfo for path=''.
+
+        Contract under test: ``get_folder_info("")`` against an HNS account
+        completes without an SDK exception.  The root-path code path skips
+        the per-path ``get_directory_client`` probe (real ADLS Gen2 rejects
+        the empty path) and relies on the deliberate ``or "/"`` fallback in
+        ``_fs.get_paths`` to enumerate the root.  The live counts vary with
+        sibling-test residue and are not contract.
+        """
+        from remote_store._models import FolderInfo  # noqa: PLC0415 -- intentional late import
+
+        backend, _dirpath = async_live_hns_backend
+        info = await backend.get_folder_info("")
+        assert isinstance(info, FolderInfo)
+        # FolderInfo.path is a RemotePath; the root normalises to RemotePath.ROOT
+        # (str form "."), and RemotePath.__eq__ returns NotImplemented for str
+        # operands — comparing against "" would always be False.
+        assert info.path == RemotePath.ROOT

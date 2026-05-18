@@ -1,0 +1,158 @@
+id: BUG-197
+title: "AzureBackend read_bytes and delete silently mishandle HNS directory paths (sync + async)"
+trigger: |
+  On real ADLS Gen2 (HNS enabled), read_bytes(hns_dir) returned b"" (data
+  corruption — caller believes the directory is an empty file) and
+  delete(hns_dir) silently deleted the directory marker (data loss — the
+  caller invoked the file-API delete() but received no error). Both paths
+  skipped the hdi_isfolder probe that write/write_atomic/open_atomic already
+  applied. Spec BE-021 requires InvalidPath for all file-API operations on
+  a directory path; neither operation honoured the contract.
+source_items:
+  - BUG-197
+audience:
+  - user.api
+  - infra.test
+  - contributor.process
+surprising_ripples:
+  - tests/backends/cassettes/azure/TestReadErrorFidelity.test_read_on_directory_raises_error[azure].yaml
+  - tests/backends/cassettes/azure/TestDeleteErrorFidelity.test_delete_on_directory_raises_error[azure].yaml
+  - tests/backends/cassettes/azure/TestDeleteErrorFidelity.test_delete_on_directory_missing_ok_still_raises[azure].yaml
+  - tests/backends/cassettes/azure/TestDeleteErrorFidelity.test_delete_on_directory_raises_invalid_path[azure_async].yaml
+  - tests/backends/cassettes/azure/TestDeleteErrorFidelity.test_delete_on_directory_missing_ok_still_raises[azure_async].yaml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together; write failing test, see it fail, then fix"
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: "Canonical bug-fix pipeline"
+      - file: sdd/BACKLOG.md
+        section: "BUG-197"
+        read_type: gate
+        extract: "spec BE-021; fix shape: extend hdi_isfolder probe to read/read_bytes/read_seekable/delete on sync + async backends"
+
+  - id: classify
+    name: Classify cassette sufficiency
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "read, read_bytes, read_seekable, delete (sync fixes)"
+        read_type: gate
+        extract: |
+          read: adds get_blob_properties() HEAD pre-check when _hns=True; raises before download.
+          read_bytes: post-download check on downloader.properties.metadata — no new HTTP call.
+          read_seekable: adds hdi_isfolder check to existing get_blob_properties() call.
+          delete: adds get_blob_properties() HEAD pre-check when _hns=True; raises before delete_blob().
+          Also catches DirectoryIsNotEmpty 409 post-delete for non-empty directories.
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "read, read_bytes, delete (async fixes)"
+        read_type: gate
+        extract: |
+          async read: post-download check on downloader.properties.metadata after await download_blob().
+          async read_bytes: post-download check, same pattern.
+          async delete: adds await bc.get_blob_properties() pre-check when _ensure_hns() is True.
+      - file: tests/backends/cassettes/azure/TestReadErrorFidelity.test_read_on_directory_raises_error[azure].yaml
+        section: "interaction sequence"
+        read_type: gate
+        extract: |
+          Cassette had: PUT container, GET account props, HEAD file.txt 404, PUT file.txt,
+          GET range rdir 416, GET rdir 200 with hdi_isfolder. No HEAD for rdir.
+          Sync read fix adds get_blob_properties() (HEAD for rdir) before download;
+          cassette was INSUFFICIENT — HEAD not recorded. Updated cassette: insert HEAD rdir
+          returning hdi_isfolder=true; remove GET range 416 and GET full 200 (never reached).
+        outcome: misleading
+      - file: tests/backends/cassettes/azure/TestReadErrorFidelity.test_read_bytes_on_directory_raises_error[azure].yaml
+        section: "interaction sequence"
+        read_type: gate
+        extract: |
+          Cassette had both GET range 416 and GET full 200 with x-ms-meta-hdi_isfolder=true.
+          read_bytes fix is post-download (downloader.properties.metadata); no new HTTP call.
+          Cassette is SUFFICIENT as-is — SDK parses x-ms-meta-hdi_isfolder into metadata dict.
+      - file: tests/backends/cassettes/azure/TestDeleteErrorFidelity.test_delete_on_directory_raises_error[azure].yaml
+        section: "interaction sequence"
+        read_type: gate
+        extract: |
+          Cassette had DELETE ddir 409 DirectoryIsNotEmpty but no HEAD pre-check for ddir.
+          Sync delete fix adds get_blob_properties() HEAD before delete_blob();
+          cassette INSUFFICIENT — updated: insert HEAD ddir with hdi_isfolder; remove DELETE 409.
+        outcome: misleading
+      - file: tests/backends/cassettes/azure/TestDeleteErrorFidelity.test_delete_on_directory_raises_invalid_path[azure_async].yaml
+        section: "interaction sequence"
+        read_type: gate
+        extract: |
+          Same pattern as sync delete. Async delete also adds pre-check HEAD;
+          cassette INSUFFICIENT — updated with HEAD ddir, removed DELETE 409.
+        outcome: misleading
+
+  - id: fix
+    name: Fix (completed by predecessor agent)
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "read / read_seekable / read_bytes / delete"
+        read_type: gate
+        extract: "Predecessor applied hdi_isfolder probes to all four operations on sync backend"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "read / read_bytes / delete"
+        read_type: gate
+        extract: "Predecessor applied hdi_isfolder probes to read, read_bytes, delete on async backend"
+      - file: tests/backends/azure/test_live_hns.py
+        section: "TestAzureLiveHnsFileApiOnDirectory"
+        read_type: gate
+        extract: "Predecessor flipped sync live tests to assert InvalidPath"
+
+  - id: mock_tests
+    name: Add mock-level unit tests
+    steps:
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths.test_get_folder_info_filters_hns_directory_markers"
+        read_type: reference
+        extract: "Canonical mock-test pattern for HNS: _make_hns_backend(), mock BlobClient, set metadata={hdi_isfolder: true}, assert InvalidPath"
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureHNSPaths (BUG-197 additions)"
+        read_type: gate
+        extract: |
+          Added 8 new tests: read_bytes dir raises / file passes; read dir raises / file passes;
+          read_seekable dir raises / file passes; delete dir raises / file passes.
+          delete test also asserts bc.delete_blob not called — no SDK mutation.
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureHNSPaths (BUG-197 additions)"
+        read_type: gate
+        extract: |
+          Added 8 async mirrors: read_bytes, read (streaming), delete, each with
+          dir→InvalidPath and file→normal cases. delete test asserts delete_blob not awaited.
+
+  - id: flip_live_tests
+    name: Flip async live tests
+    steps:
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "TestAsyncLiveHnsFileApiOnDirectory"
+        read_type: gate
+        extract: |
+          Flipped test_read_bytes_on_hns_directory_returns_empty_bytes to assert InvalidPath.
+          Flipped test_delete_on_hns_directory_silently_removes_directory to assert InvalidPath
+          and verify directory still exists post-call. Added best-effort DataLake cleanup in finally.
+
+  - id: verify_replay
+    name: Remove xfail entries and verify replay
+    steps:
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES"
+        read_type: gate
+        extract: |
+          Removed 5 entries: test_read_on_directory_raises_error,
+          test_read_bytes_on_directory_raises_error, test_delete_on_directory_raises_error,
+          test_delete_on_directory_raises_invalid_path, test_delete_on_directory_missing_ok_still_raises.
+          Remaining 8 entries cover unrelated open bugs.
+discovery_followups: []
+co_shipped_items: []
+notes: |
+  Worktree-based development: tests that exercise the fix (mock-level unit tests in
+  test_config.py) cannot pass when run via `hatch run` from the main repo because the
+  venv resolves to the unpatched main-repo install. These tests are validated by CI
+  on the feature branch. The cassette-based conformance tests were updated to match
+  the new HTTP interaction sequence (HEAD pre-check fires, stopping further requests).

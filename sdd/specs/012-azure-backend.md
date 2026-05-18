@@ -90,7 +90,7 @@ AzureBackend(
 ### AZ-008: Directory Semantics (HNS Enabled)
 
 **Invariant:** When HNS is enabled, directories are real entities. `is_folder(path)` checks for the existence of a directory object. Empty directories persist after their contents are deleted.
-**Postconditions:** This matches SFTP behavior (SFTP-011, SFTP-013), not S3 behavior.
+**Postconditions:** This matches SFTP behavior (SFTP-011, SFTP-013), not S3 behavior. Type-mismatch safety on HNS is captured by [AZ-036](#az-036-hns-directory-marker-probe-contract): every file-API op probes `hdi_isfolder` before delegating to the SDK, and folder-API ops probe its absence — without this, the Azure SDK silently accepts directory-vs-file mismatches that would corrupt or destroy account state.
 
 ### AZ-009: Virtual Folder Semantics (No HNS)
 
@@ -118,9 +118,9 @@ AzureBackend(
 
 ### AZ-013: is_file() and is_folder()
 
-**Invariant (HNS):** `is_file(path)` calls `get_path_properties()` and checks the `is_directory` attribute — returns `True` when `is_directory` is `False`. `is_folder(path)` returns `True` when `is_directory` is `True`. Both return `False` for non-existent paths.
+**Invariant (HNS):** Both predicates use the `hdi_isfolder` metadata marker — not the SDK's `is_directory` attribute — because on real ADLS Gen2, `get_directory_properties()` returns HTTP 200 for any path entity, file or directory. `is_file(path)` calls `BlobClient.get_blob_properties()` and returns `True` when the `hdi_isfolder` marker is absent. `is_folder(path)` calls `DataLakeDirectoryClient.get_directory_properties()` and returns `True` when the `hdi_isfolder=true` marker is present. Both return `False` for non-existent paths or marker-mismatched entities.
 **Invariant (no HNS):** `is_file(path)` issues a HEAD request for the blob — returns `True` if the blob exists. `is_folder(path)` returns `True` if any blobs exist with prefix `{path}/` (same as S3-007).
-**Postconditions:** Both return `False` for non-existent paths — never raise (per BE-005).
+**Postconditions:** Both return `False` for non-existent paths — never raise (per BE-005). Both honour [AZ-036](#az-036-hns-directory-marker-probe-contract).
 
 ---
 
@@ -166,18 +166,18 @@ AzureBackend(
 
 **Invariant:** `read(path)` returns a `BinaryIO` stream via `_AzureBinaryIO`, a forward-only streaming adapter wrapping `StorageStreamDownloader.chunks()`. The raw adapter is wrapped in `io.BufferedReader` for efficient buffered reads.
 **Postconditions:** Data is streamed on demand — the full file is not loaded into memory. The stream is forward-only (not seekable). Callers that require seekability should use `read_bytes()` + `BytesIO`.
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the file does not exist. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names an HNS directory.
 
 ### AZ-021: read_bytes()
 
-**Invariant:** `read_bytes(path)` returns the full file content as `bytes`. Implemented as `read(path).read()` or via `download_file().readall()` directly.
-**Raises:** `NotFound` if the file does not exist.
+**Invariant:** `read_bytes(path)` returns the full file content as `bytes`. Implemented via `BlobClient.download_blob().readall()`.
+**Raises:** `NotFound` if the file does not exist. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names an HNS directory.
 
 ### AZ-022: write()
 
 **Invariant:** `write(path, content, overwrite=False)` uploads content via `BlobClient.upload_blob()` (Blob SDK).
 **Preconditions:** `content` is `bytes` or `BinaryIO`.
-**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. Existence check uses `ResourceNotFoundError` (not broad exception catch) to avoid swallowing auth/network errors.
+**Raises:** `AlreadyExists` if the file exists and `overwrite=False`. Existence check uses `ResourceNotFoundError` (not broad exception catch) to avoid swallowing auth/network errors. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names an HNS directory.
 **Postconditions (HNS):** Intermediate directories are created automatically by the ADLS Gen2 service.
 **Postconditions (no HNS):** No intermediate directory creation needed (flat blob namespace).
 
@@ -194,14 +194,14 @@ AzureBackend(
 
 **Note:** `content_type` is not included in `FileInfo`.
 
-**Raises:** `NotFound` if the file does not exist.
+**Raises:** `NotFound` if the file does not exist. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names an HNS directory.
 
 ### AZ-024: get_folder_info()
 
 **Invariant:** `get_folder_info(path)` returns a `FolderInfo`.
-**Invariant (HNS):** Uses `get_path_properties()` on the directory object.
+**Invariant (HNS):** Uses `DataLakeDirectoryClient.get_directory_properties()` on the directory object to confirm the entity exists, then probes `hdi_isfolder` (per [AZ-036](#az-036-hns-directory-marker-probe-contract)) to reject file-path mismatches. When `path == ""` (filesystem root), the per-path probe is skipped — the root is always a folder, and real ADLS Gen2 rejects `get_directory_client("")` with `"Please specify a file system name and file path"` (BUG-213). Child file count and total size are aggregated via `_fs.get_paths(recursive=True)`, skipping entries with `is_directory=True` (BUG-199).
 **Invariant (no HNS):** Checks for the existence of blobs under the prefix `{path}/`.
-**Raises:** `NotFound` if the folder does not exist.
+**Raises:** `NotFound` if the folder does not exist. `InvalidPath` per [AZ-036](#az-036-hns-directory-marker-probe-contract) if the path names a file on HNS (`hdi_isfolder` absent).
 
 ---
 
@@ -306,3 +306,11 @@ backend.to_key("data/file.txt")               # -> "data/file.txt" (no prefix, u
 **Invariant:** When no explicit credential is provided (`account_key`, `sas_token`, `connection_string`, and `credential` are all `None`), the backend attempts to use `DefaultAzureCredential` from `azure-identity`.
 **Raises:** `BackendUnavailable` if `azure-identity` is not installed and no explicit credential is provided.
 **Rationale:** Follows the principle of least surprise for Azure users. `DefaultAzureCredential` automatically resolves environment variables, managed identity, Azure CLI login, and other credential sources.
+
+### AZ-036: HNS Directory-Marker Probe Contract
+
+**Invariant (HNS only):** Every file-API operation on HNS — `read`, `read_bytes`, `read_seekable`, `delete`, `write`, `write_atomic`, `open_atomic`, `get_file_info`, `is_file`, `move(src, dst)`, `copy(src, dst)` — probes the `hdi_isfolder` metadata marker on the target before delegating to the SDK. If the marker is present on what the caller treats as a file path, the operation raises `InvalidPath` (BE-021) without mutating account state. Symmetric for folder-API operations on file paths: `delete_folder` and `get_folder_info` inspect the same marker and raise `InvalidPath` when it is absent on the target. `is_folder` and `is_file` are predicates and return `False` (not raise) when the marker disagrees with the call — see [AZ-013](#az-013-is_file-and-is_folder) for the predicate contract.
+**Rationale:** Real ADLS Gen2 accepts SDK calls Azurite correctly rejects: `download_blob()`, `delete_blob()`, `get_blob_properties()`, `get_directory_properties()` all return HTTP 200 against the wrong entity type. Without the probe, file-API `delete()` on a directory marker silently destroys the directory; file-API `read()` silently returns `b""`; folder-API `delete_folder()` on a file path silently destroys the file. The probe is the single load-bearing safety invariant that closes the BE-021 type-mismatch contract on HNS.
+**Probe placement:** Sync `read()` and `read_seekable()` pre-probe via `BlobClient.get_blob_properties()` (HEAD) before opening the stream — the stream is lazy and may never be drained, so a post-probe would leak the response. Async `read()` post-probes via `downloader.properties` (populated by the awaited `download_blob`) and explicitly closes the downloader before raising so the unconsumed HTTP body is returned to the pool — no separate HEAD round-trip is incurred. `read_bytes()` post-probes (the full body has already been read). Sync and async `delete()` pre-probe so the marker is preserved on the failure path. Folder-API operations probe `DataLakeDirectoryClient.get_directory_properties().metadata.hdi_isfolder` and treat absence-of-marker as "this is a file, not a folder." Root-path carve-out: `get_folder_info("")` skips the per-path probe entirely (see [AZ-024](#az-024-get_folder_info)) — the root is always a folder and the SDK rejects the empty path.
+**Postconditions:** Adds one HEAD round-trip per affected sync read/delete call on HNS; async paths reuse the eager-awaited SDK response for the probe (no extra RTT).
+**Originated in:** BUG-190, BUG-192 (write/open_atomic), then extended by BUG-195 (get_file_info), BUG-197 (read/delete), BUG-198 (folder-API on file), BUG-200 (move/copy directory checks), BUG-203 (is_file/is_folder).

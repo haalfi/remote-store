@@ -19,8 +19,10 @@ transport     = "http"
 # Stage 3 fixture inherits correctly; the Azurite emulator overrides
 # to flat_namespace=true at the per-fixture level (BK-185).
 flat_namespace    = false
-# Both Azurite and live HNS reject self-copy/self-move today; tracked
-# by BUG-201 on the async side and the same shape on sync.
+# BUG-201 fix landed on both sync and async branches; per-fixture overrides
+# in fixtures.toml flip this to true for each live/replay Azure fixture.
+# Family default stays false so any future Azure backend variant starts
+# conservative until self-op is explicitly verified.
 self_op_supported = false
 
 [backend.s3]
