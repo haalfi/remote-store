@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#features-remote-store-v0241" class="md-skip">
+        <a href="#features-remote-store-v0250" class="md-skip">
           Skip to content
         </a>
       
@@ -9633,7 +9633,7 @@
 
 
 <!-- doc: dual dest=reference/FEATURES.md -->
-<h1 id="features-remote-store-v0241">Features — remote-store v0.24.1<a class="headerlink" href="#features-remote-store-v0241" title="Permanent link">&para;</a></h1>
+<h1 id="features-remote-store-v0250">Features — remote-store v0.25.0<a class="headerlink" href="#features-remote-store-v0250" title="Permanent link">&para;</a></h1>
 <p>Authoritative snapshot of what remote-store delivers in this version.
 Updated each release. <strong>This is the single reference for the package's feature surface.</strong></p>
 <hr />
@@ -9841,14 +9841,14 @@ file, and a crash mid-write leaves the previous version intact.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>list_files(path, *, max_depth)</code></td>
+<td><code>list_files(path, *, max_depth, pattern)</code></td>
 <td><code>Iterator[str]</code></td>
-<td>Enumerate file paths under a prefix</td>
+<td>Enumerate file paths under a prefix; optional <code>pattern=</code> filters basenames via <code>fnmatch</code></td>
 </tr>
 <tr>
-<td><code>list_folders(path, *, max_depth)</code></td>
+<td><code>list_folders(path, *, max_depth, pattern)</code></td>
 <td><code>Iterator[str]</code></td>
-<td>Enumerate immediate subfolder paths</td>
+<td>Enumerate immediate subfolder paths; optional <code>pattern=</code> filters folder basenames via <code>fnmatch</code></td>
 </tr>
 <tr>
 <td><code>iter_children(path)</code></td>

@@ -4272,6 +4272,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0241-to-v0250" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.24.1 to v0.25.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0240-to-v0241" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9173,6 +9184,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0241-to-v0250" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.24.1 to v0.25.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0240-to-v0241" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9318,6 +9340,90 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
+<h2 id="v0241-to-v0250">v0.24.1 to v0.25.0<a class="headerlink" href="#v0241-to-v0250" title="Permanent link">&para;</a></h2>
+<p><strong><code>[sftp]</code> extra now requires <code>paramiko&gt;=3.0</code> (BUG-204):</strong></p>
+<p>The SFTP backend uses paramiko 3.0's <code>channel_timeout=</code> connect kwarg. Environments
+pinned to <code>paramiko&lt;3</code> must upgrade. <code>pip install "remote-store[sftp]"</code> resolves the
+correct version automatically; pinned <code>paramiko==2.x</code> will now conflict.</p>
+<p><strong>Azure HNS error types now match the canonical mapping (BUG-190 through BUG-203, BUG-213):</strong></p>
+<p>On real ADLS Gen2 (Hierarchical Namespace) accounts, many <code>AzureBackend</code> and
+<code>AsyncAzureBackend</code> operations previously raised the wrong error type when the path
+named a directory blob (or, conversely, a file blob where a directory was expected).
+Stage 3 live verification in this release surfaced the deviations; all now raise
+<code>InvalidPath</code> per the canonical mapping. <strong>If you catch the old error types</strong>, those
+clauses will no longer fire on HNS:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Old error (HNS)</th>
+<th>New error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>read</code>, <code>read_bytes</code>, <code>read_seekable</code> on dir</td>
+<td>silently returned <code>b""</code></td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>delete</code> on dir (file API)</td>
+<td>silently destroyed directory marker (<strong>data loss</strong>)</td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>get_file_info</code> on dir</td>
+<td><code>NotFound</code></td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>is_folder</code> on file</td>
+<td><code>True</code></td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>get_folder_info</code> on file</td>
+<td><code>NotFound</code></td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>delete_folder</code> on file</td>
+<td><code>DirectoryNotEmpty</code> / <code>NotFound</code></td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>move</code> / <code>copy</code> on dir source or dest</td>
+<td><code>RemoteStoreError(InvalidInput)</code> / <code>AlreadyExists</code></td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>open_atomic</code> on dir target</td>
+<td><code>AlreadyExists</code></td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>write</code> / <code>write_atomic</code> on dir target</td>
+<td><code>AlreadyExists</code></td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>move(p, p)</code> / <code>copy(p, p)</code> self-op</td>
+<td><code>AlreadyExists</code></td>
+<td>no-op</td>
+</tr>
+</tbody>
+</table>
+<p>Flat-namespace blob accounts (non-HNS) and Azurite were already correct and are
+unaffected. Sync and async siblings behave identically.</p>
+<p><strong><code>Store.move(p, p)</code> / <code>copy(p, p)</code> self-op error type (BK-227):</strong></p>
+<p>Across all backends, <code>Store.move</code> / <code>copy</code> and <code>AsyncStore.move</code> / <code>copy</code> now raise
+<code>InvalidPath</code> (was <code>NotFound</code>) when the source path is a directory and <code>src == dst</code>.
+The file no-op case is unchanged.</p>
+<p><strong><code>hatch run test-cov</code> no longer enforces <code>--cov-fail-under=95</code>:</strong></p>
+<p>The coverage floor moved to a new <code>hatch run test-cov-strict</code> script. Local
+<code>test-cov</code> is now a coverage <em>report</em> only; CI and the publish workflow run the
+strict variant. If your tooling or CI relied on <code>test-cov</code> failing under 95% switch
+to <code>test-cov-strict</code>.</p>
 <h2 id="v0240-to-v0241">v0.24.0 to v0.24.1<a class="headerlink" href="#v0240-to-v0241" title="Permanent link">&para;</a></h2>
 <p><strong>S3 botocore Config options route through <code>config_kwargs</code> (BUG-185):</strong></p>
 <p>Pre-built <code>botocore.config.Config</code> objects are no longer accepted in
