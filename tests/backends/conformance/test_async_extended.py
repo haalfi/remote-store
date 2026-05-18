@@ -545,7 +545,10 @@ class TestMoveCopySelfOperation:
     async def test_self_op_on_directory_raises_invalid_path(
         self, async_backend: AsyncBackend, op: str, cap: Capability
     ) -> None:
-        """{move,copy}(src, src) where src is a directory raises InvalidPath (BE-021)."""
+        """{move,copy}(src, src) where src is a directory raises InvalidPath.
+
+        ASYNC-018/019 src-type precondition; ASYNC-047 self-op contract.
+        """
         _require(async_backend, cap)
         if not _fixture_record(async_backend).self_op_supported:
             pytest.skip(f"Backend {async_backend.name!r} does not handle self-{op} yet")

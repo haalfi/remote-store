@@ -347,7 +347,10 @@ class TestMoveCopySelfOperation:
     @pytest.mark.spec("BE-021")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_self_op_on_directory_raises_invalid_path(self, backend: Backend, op: str, cap: Capability) -> None:
-        """{move,copy}(src, src) where src is a directory raises InvalidPath (BE-021)."""
+        """{move,copy}(src, src) where src is a directory raises InvalidPath.
+
+        BE-018/019 src-type precondition; BE-021 error mapping.
+        """
         _require(backend, cap)
         if not _fixture_record(backend).self_op_supported:
             pytest.skip(f"Backend {backend.name!r} does not handle self-{op} yet")

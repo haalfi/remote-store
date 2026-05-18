@@ -7,7 +7,7 @@ trigger: |
   the Store wrapper.
 source_items:
   - BK-227
-review_rounds: 2
+review_rounds: 3
 audience:
   - user.api
   - user.api_docs

@@ -231,7 +231,7 @@ class TestStoreSamePathOps:
     def test_same_path_folder_raises_invalid_path(self, store: Store, op: str) -> None:
         """BK-227: self-op on a directory source raises InvalidPath, not NotFound."""
         store.write("dir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="dir"):
+        with pytest.raises(InvalidPath, match=r"directory: dir"):
             getattr(store, op)("dir", "dir")
 
 
