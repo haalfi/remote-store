@@ -7,108 +7,213 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-227: `Store.move` / `copy` and `AsyncStore.move` / `copy` now raise `InvalidPath` (was `NotFound`) when the source path is a directory and `src == dst`; the self-op short-circuit probes `is_file` first (1 RTT for the common file no-op case), then `is_folder` to distinguish a directory source from a missing source; the missing-source error path costs 2 probes (acceptable — it is an error path, not a hot path) (BE-018, BE-019, BE-021)
-- BUG-202: `AzureBackend.write_atomic` streaming-input path now drives the DataLake DFS append protocol directly — `create_file` → per-chunk `append_data(offset, length)` → `flush_data(position)` — instead of `upload_data` with an unseekable wrapper. Closes the `MissingRequiredQueryParameter` error on real ADLS Gen2 (the unseekable `_ByteCountingIO` previously caused the SDK to omit `position` on `flush_data`, which Azurite forgave but real HNS rejected). Memory is bounded to `_AZURE_BLOCK_SIZE` per chunk, mirroring the async sibling introduced by BUG-194 (BE-010, WR-001a)
-- BUG-197 **(data-loss fix)**: `AzureBackend` and `AsyncAzureBackend` file-API operations now probe `hdi_isfolder` before invoking the SDK on HNS — `read_bytes`, `read`, and `read_seekable` raise `InvalidPath` instead of silently returning `b""` when the path is a directory blob, and `delete` raises `InvalidPath` instead of silently destroying the directory marker. The `delete` regression was a data-loss defect (file-API `delete()` on what the caller believed was a file but was actually a directory destroyed account state without surfacing an error). **Perf note:** sync `AzureBackend.read()` and `delete()` on HNS each add one HEAD round-trip per call (the probe); async `read_bytes` / `delete` reuse the same SDK response so they pay no extra RTT, but sync `read()` returns a lazy stream so the probe cannot be deferred (BE-006, BE-007, BE-012, ASYNC-006, ASYNC-007, ASYNC-012, BE-021, ASYNC-024)
-- BUG-195: `AzureBackend.get_file_info` and `AsyncAzureBackend.get_file_info` raise `InvalidPath` (not `NotFound`) when the path names an HNS directory blob (`hdi_isfolder=true`); both `TestAzureLiveHnsGetFileInfoOnDirectory` and `TestAsyncLiveHnsGetFileInfoOnDirectory` live tests now assert the spec instead of documenting the deviation (BE-016, ASYNC-016, BE-021)
-- BUG-203: `AzureBackend.is_folder()` and `AsyncAzureBackend.is_folder()` return `False` (not `True`) for HNS file paths; on HNS, `get_directory_properties()` succeeds for file paths too, so both sync and async branches now inspect `hdi_isfolder` metadata to distinguish a real directory marker from a regular file. The async sibling had the same defect (no async conformance test for `is_folder` exists yet) and is fixed in the same PR (BE-005, ASYNC-005, BE-021)
-- BUG-196: `AsyncAzureBackend.write_atomic` tolerates a post-rename `get_file_properties()` failure on HNS by returning `WriteResult(etag=None, last_modified=None)` and logging a warning — mirrors the sync sibling's BUG-173 pattern (WR-001a, WR-004, AZ-034)
-- BUG-198: `AsyncAzureBackend.delete_folder` and `get_folder_info` raise `InvalidPath` (not `DirectoryNotEmpty` / `NotFound`) when the path names a file on HNS; sync siblings receive the matching `hdi_isfolder` probe so the BK-186 `_skip_flat_namespace`-lifted parametrization stays green on `azure_live` (BE-014, BE-017, BE-021, ASYNC-013, ASYNC-017)
-- BUG-200: `AsyncAzureBackend.move` / `copy` raise `InvalidPath` (not `RemoteStoreError(InvalidInput)` / `AlreadyExists`) when the source or destination is an HNS directory; sync siblings receive the same probe so the BK-186-lifted `test_errors.py::TestMoveCopyErrorFidelity` stays green on `azure_live` (BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019, ASYNC-024)
-- BUG-201: `AzureBackend.move(p, p)` / `copy(p, p)` and the async siblings are no-ops (previously both raised `AlreadyExists`); `src == dst` short-circuit at the top of each method, with a `get_blob_properties()` precheck so a missing source still raises `NotFound` and an `hdi_isfolder` check so an HNS directory path still raises `InvalidPath`. The original report scoped this as async-only because `self_op_supported=false` gating hid the sync failure; PR #649 round-1 confirmed sync needed the same fix (BE-018, BE-019, BE-021, ASYNC-018, ASYNC-019)
-- BUG-213: `AzureBackend.get_folder_info("")` and the async sibling no longer fail on real ADLS Gen2 with `"Please specify a file system name and file path"`; the HNS branch now skips the per-path `get_directory_client` probe when `azure_path == ""` (root is always a folder; no `hdi_isfolder` probe needed). Surfaced by `TestAzureLiveHnsGetFolderInfoRoot` during PR #650 Stage 3 live verification (BE-017, ASYNC-017)
-- BUG-199: `AzureBackend.get_folder_info` and `AsyncAzureBackend.get_folder_info` no longer count HNS directory marker blobs (`hdi_isfolder=true`) as files; recursive `file_count` is now accurate on real ADLS Gen2 (BE-017, ASYNC-017)
-- ID-192: `aio.md` restructured to lead with `AsyncStore` — full per-category method sections mirroring `store.md`, and the four `members: false` stubs (`SyncBackendAdapter`, `AsyncBackendSyncAdapter`, `AsyncMemoryBackend`, `AsyncAzureBackend`) now render their full member surface, surfacing the layer-4 `Raises:` docstrings introduced by BK-173
-- BUG-208: fix `S3Backend.check_health()` unawaited `aiobotocore` coroutine that made the probe a silent no-op
-- BK-202: `SFTPUtils` helpers documented as true `@staticmethod` (correct `meth` rendering, signatures restored on docs.remotestore.dev)
-- BK-200: `SFTPUtils.scan_host_algorithms()` raw-socket SSH KEXINIT probe for diagnosing `IncompatiblePeer` failures
-- BK-199: `SFTPUtils.scan_host_keys()` preflight host-key discovery
-- BK-198: `SFTPUtils.enable_ssh_rsa_compat()` for paramiko 5+ legacy-server (`ssh-rsa` / SHA-1) compatibility
-- BK-197: `HostKeyPolicy` accepts enum-name aliases (case-insensitive on the name)
-- BUG-204: `[sftp]` extra requires `paramiko>=3.0` for the `channel_timeout=` connect kwarg (paramiko 2.x floor lift)
-- BK-192: `MemoryBackend.copy()` and `AsyncMemoryBackend.copy()` now preserve user metadata on the destination — fixes a silent metadata drop on the `write → copy → get_file_info` round-trip (BE-019, ASYNC-019, WR-013)
-- BK-176: `AsyncMemoryBackend` now preserves user metadata through `get_file_info`, `list_files` (recursive and non-recursive), and `iter_children` — sync `MemoryBackend` parity (ASYNC-016, WR-013)
-- BK-190: tests/ root cleanup — placement checks (rules S, B, E) + TESTING.md and spec 048 update
-- BK-189: tests/ root cleanup — `tests/ext/` package + ext-module moves (TEST-002 / TEST-010)
-- BK-188: tests/ root cleanup — backend-specific evictions and seekable rename (TEST-003 / TEST-010)
-- BK-184: s3_live Stage 3 conformance fixture
-- BK-186: physical fixture/backend registry as single source of truth (PR 1 foundation, PR 2 consumers)
-- BK-185: per-fixture flat-namespace / self-op flags replace the identity-keyed sets
-- BK-180: spec 048 Phase 2 — `azure_live` and `azure_live_async` Stage 3 conformance fixtures, `BackendFixture.aclose` async cleanup channel
-- BK-183: per-topic `mutate-conformance-*` scopes
-- tooling: `hatch run test-cov` no longer enforces `--cov-fail-under=95`; strict gate moved to new `hatch run test-cov-strict`
-
-### Fixed
-
-- BUG-211: `SFTPBackend.exists()` / `is_file()` / `is_folder()` no longer swallow non-`ENOENT` `OSError`s as "not found"; connect-time `PermissionError` (and any other unexpected `OSError`) now surfaces through `_errors()` as `PermissionDenied` / `BackendUnavailable` instead of returning a misleading `False`
-- BUG-209: `SFTPBackend` inline `known_host_keys` now load correctly on Windows — the helper used `tempfile.NamedTemporaryFile(delete=True)`, whose Windows `O_TEMPORARY` lock prevented paramiko from re-opening the file, causing `STRICT` verification to be silently bypassed
-- BUG-194: async `AsyncAzureBackend.write_atomic` broken for all payloads on real ADLS Gen2
-- BUG-193: completed the async HNS live test gap deferred by BUG-182 and added `WriteResult` assertions on the sync HNS live tests
-- BUG-182: live ADLS Gen2 (HNS) integration test confirming `AzureBackend.write_atomic` user metadata survives the atomic-rename commit (`tests/backends/test_azure_live_hns.py::TestAzureLiveHnsMetadataSurvivesRename`); closes the verification gap left by BUG-181's mock-only coverage (WR-013, BE-010).
-- BUG-191: live ADLS Gen2 (HNS) integration test class covering the `write`/`write_atomic`/`open_atomic` directory-path guards on a real account, complementing the mock-only coverage from BUG-190/BUG-192. Gated by the new `live` pytest marker (excluded by default `addopts`), `RS_TEST_LIVE_HNS=1`, and a non-Azurite `AZURE_STORAGE_CONNECTION_STRING` (BE-021, BE-008, BE-010, SAW-001).
-- BUG-192: `AzureBackend.open_atomic` now raises `InvalidPath` (not `AlreadyExists`) when the target is an HNS directory; both `overwrite=False` and `overwrite=True` are covered (BE-021).
-- BUG-190: `AzureBackend` and `AsyncAzureBackend` now raise `InvalidPath` (not `AlreadyExists`) when `write` or `write_atomic` targets an HNS directory path; both `overwrite=False` and `overwrite=True` are covered (BE-008, BE-010, ASYNC-008, ASYNC-010, BE-021, ASYNC-024).
-- BK-174: document `InvalidPath` on async `write`/`write_atomic` across the `AsyncBackend` ABC, `SyncBackendAdapter`, and `AsyncMemoryBackend.write_atomic`; bundle the matching `--` → `—` swap in `AsyncBackend.delete_folder` and add `write_atomic(dir)` regression coverage (ASYNC-010) to the async conformance suite. `AsyncAzureBackend` carved out as **BUG-190** — runtime does not uphold the canonical mapping on HNS directories.
-- BK-173: complete the four-layer async docstring ripple by adding `Raises:` clauses to nine I/O methods on `SyncBackendAdapter`, mirrored from the `AsyncBackend` ABC; surfaces in `help()` and IDE hover today.
-- BUG-189: `AsyncMemoryBackend` now mirrors the sync `MemoryBackend` error
-  fidelity for type-mismatched paths. `read`, `read_bytes`, and
-  `get_file_info` raise `InvalidPath` (not `NotFound`) when the path names
-  an existing directory; `get_folder_info` raises `InvalidPath` when the
-  path names an existing file; `delete_folder` raises `InvalidPath` when
-  the path is a file (regardless of `missing_ok`); `move`/`copy` raise
-  `InvalidPath` when the source is a directory; `copy(src, src,
-  overwrite=False)` is now a no-op instead of raising `AlreadyExists`.
-  Discovered by porting the extended conformance suite to async (see
-  `tests/aio/test_async_conformance_extended.py`); `AsyncBackend` ABC
-  docstrings updated to document the `InvalidPath` paths
-  (ASYNC-006 / ASYNC-007 / ASYNC-013 / ASYNC-016 / ASYNC-017 / ASYNC-018 /
-  ASYNC-019).
-- BUG-188: benchmark SVG images no longer broken on the performance docs page
-- BUG-187: EthicalAds ad no longer floats over graph viz canvas
-- BUG-186: render API graph viz on iOS Safari
+## [0.25.0] - 2026-05-18
 
 ### Added
 
-- ID-177: Design and set up long-term docstring style enforcement
-- ID-178: `Store.list_folders` and `AsyncStore.list_folders` now accept a
-  `pattern=` keyword — a glob string matched against each folder's **name**
-  (basename only) via `fnmatch.fnmatch`.  Mirrors `list_files(pattern=…)`
-  (STORE-014).  Composes naturally with `max_depth=`: BFS traversal runs first,
-  pattern filters what is yielded.  No backend changes required (STORE-017,
-  DEPTH-002).
-- Azure HNS account setup guide (`docs-src/guides/backends/azure-hns-setup.md`): step-by-step `az` CLI recipe for provisioning an ADLS Gen2 account suitable for the live HNS test suite, with cross-links from the Azure backend guide and `CONTRIBUTING.md`.
-- ID-176: `docs-src/context7.json` — claims `https://docs.remotestore.dev/stable/` on context7 and supplies the full `rules` array so AI tools surface correct usage context from the rendered docs site.
-- BK-171: Reliable link validation for docs-only files — universal on-disk
-  link rule (DOCFRAME-008). `mkdocs_hooks.py` applies `LinkResolver` to
-  every docs-src file at build time so authors write on-disk paths
-  everywhere; `check-links` collapses to a single mode that walks every
-  git-tracked `.md`. SDD kind rules hoisted to
-  `docs-src/_path_rules.yml`. Closes audit-012 F-01 honestly.
-- BK-172: route S3-PyArrow conformance tests to MinIO on pyarrow ≥ 24; lift `pyarrow<25` cap on `s3-pyarrow` extra
-- BK-169: unit tests for DOCFRAME-004 gate — five spec-traced pytest tests in
-  `tests/scripts/test_check_docs_framework.py` covering G-02 (dest collision),
-  G-03 (Jinja syntax), G-04 (include-markdown), G-05 (broken relative link),
-  G-06 (nav URL misalignment)
-- BK-168: lift `pyarrow<24` to `<25` across all extras; require `moto[server,s3]>=5.2.0` for multipart compatibility under pyarrow 23
-- BK-167b: docs framework bridge — `scan_dual_files` + `render_dual_pages`, `explanation/design/` URL alignment, nav restructure, `--strict` CI gate restored, audit-012 closed
-- BK-167b: `check_links.py` — two-mode internal link checker (`--mode repo`/`--mode site`); `hatch run check-links`
-- BK-167a (Step 1): `scan_dual_files`, `DualEntry`, `_parse_marker`, `_classify_file` in `scripts/docs/scan.py`; five spec-traced tests (DOCFRAME-001..003)
-- BK-167a: ADR-0027, Spec 047 (docs framework tooling contracts), `sdd/AUTHORING.md`
-- **End-to-end coverage for the S3 control path** (BK-166, S3-026, S3PA-026):
-  `tests/backends/test_s3_moto.py` drives a full lifecycle
-  (`write` / `list_files` / `read` / `delete`) for both `S3Backend` and
-  `S3PyArrowBackend` against a `ThreadedMotoServer` with the same tuned
-  `client_options` shape that triggered BUG-178 and BUG-185
-  (`s3.addressing_style="path"`, cleared proxies, custom timeouts; with
-  and without `RetryPolicy`). Nothing in the test patches the production
-  code path, so a regression in the `config_kwargs` routing surfaces as a
-  real `TypeError: got multiple values for keyword argument 'config'`
-  from `aiobotocore`. Runs in the default suite (`hatch run test`) so a
-  regression is caught without remembering a separate command — the gap
-  BUG-178 and BUG-185 fell through. Complements the unit-level
-  `TestAiobotocoreCreateClientBoundary` (kwarg shape) with wire-level
-  behavior. `moto[server,s3]` was already pinned in `[dev]`; no new
-  dependencies.
+- **`Store.list_folders(pattern=…)` and `AsyncStore.list_folders(pattern=…)`** (ID-178,
+  STORE-014, STORE-017, DEPTH-002): glob string matched against each folder's basename via
+  `fnmatch.fnmatch`. Mirrors `list_files(pattern=…)`; composes with `max_depth=` (BFS
+  traversal runs first, pattern filters what is yielded). No backend changes required.
+- **`SFTPUtils` host-key and algorithm preflight helpers**:
+    - `SFTPUtils.scan_host_keys(host, port=22) -> str` (BK-199) — preflight host-key
+      discovery for STRICT-policy callers.
+    - `SFTPUtils.scan_host_algorithms(host, port=22)` (BK-200) — raw-socket SSH KEXINIT
+      probe for diagnosing `IncompatiblePeer` failures.
+    - `SFTPUtils.enable_ssh_rsa_compat()` (BK-198) — paramiko 5+ legacy-server
+      (`ssh-rsa` / SHA-1) compatibility shim.
+    - `HostKeyPolicy(...)` accepts enum-name aliases case-insensitively (BK-197).
+- **Azure HNS account setup guide** (`docs-src/guides/backends/azure-hns-setup.md`):
+  step-by-step `az` CLI recipe for provisioning an ADLS Gen2 account suitable for the
+  live HNS test suite; cross-linked from the Azure backend guide and `CONTRIBUTING.md`.
+
+### Fixed
+
+#### Azure HNS correctness on real ADLS Gen2
+
+A coordinated set of fixes against real Hierarchical Namespace accounts, surfaced by the
+new Stage 3 live HNS test suite. Azurite forgave each of these; real HNS rejected them
+or silently corrupted state. Sync and async siblings are kept in lockstep throughout.
+
+- **File-API data loss (data-loss fix)** (BUG-197, BE-006, BE-007, BE-012, ASYNC-006,
+  ASYNC-007, ASYNC-012, BE-021): `AzureBackend` and `AsyncAzureBackend` `read`,
+  `read_bytes`, `read_seekable`, and `delete` now probe `hdi_isfolder` before invoking the
+  SDK — they raise `InvalidPath` instead of silently returning `b""` or destroying the
+  directory marker. The `delete` regression was a data-loss defect: a file-API `delete()`
+  on what the caller believed was a file but was actually an HNS directory destroyed
+  account state without surfacing an error. **Perf note:** sync `read()` and `delete()`
+  on HNS each add one HEAD round-trip per call; async `read_bytes` / `delete` reuse the
+  same SDK response so they pay no extra RTT.
+- **`write_atomic` streaming-input path** (BUG-194, BUG-202, BE-010, WR-001a): both
+  `AzureBackend.write_atomic` and `AsyncAzureBackend.write_atomic` streaming paths now
+  drive the DataLake DFS append protocol directly (`create_file` → per-chunk
+  `append_data(offset, length)` → `flush_data(position)`) instead of `upload_data` with an
+  unseekable wrapper. Closes the `MissingRequiredQueryParameter` error. Memory is bounded
+  to `_AZURE_BLOCK_SIZE` per chunk.
+- **Directory-vs-file error fidelity** across the public surface:
+    - `get_file_info` (BUG-195, BE-016, ASYNC-016) raises `InvalidPath` (not `NotFound`)
+      for a directory path.
+    - `is_folder` (BUG-203, BE-005, ASYNC-005) returns `False` (not `True`) for an HNS
+      file path; both branches now inspect `hdi_isfolder` to distinguish a directory
+      marker from a regular file.
+    - `get_folder_info` (BUG-198, BUG-199, BE-017, ASYNC-017) raises `InvalidPath` for a
+      file path; recursive `file_count` no longer counts HNS directory markers as files.
+    - `delete_folder` (BUG-198, BE-014, ASYNC-013) raises `InvalidPath` (not
+      `DirectoryNotEmpty` / `NotFound`) for a file path.
+    - `move` / `copy` (BUG-200, BE-018, BE-019, ASYNC-018, ASYNC-019) raises `InvalidPath`
+      (not `RemoteStoreError(InvalidInput)` / `AlreadyExists`) when the source or
+      destination is an HNS directory.
+    - `open_atomic` (BUG-192, BE-021) raises `InvalidPath` (not `AlreadyExists`) when the
+      target is an HNS directory; both `overwrite=False` and `overwrite=True` covered.
+    - `write` / `write_atomic` (BUG-190, BE-008, BE-010, ASYNC-008, ASYNC-010, ASYNC-024)
+      raises `InvalidPath` (not `AlreadyExists`) when the target is an HNS directory.
+- **`get_folder_info("")` root path** (BUG-213, BE-017, ASYNC-017): no longer fails with
+  `"Please specify a file system name and file path"` — the HNS branch now skips the
+  per-path `get_directory_client` probe when `azure_path == ""`.
+- **`move(p, p)` / `copy(p, p)` self-op** (BUG-201, BE-018, BE-019, ASYNC-018, ASYNC-019):
+  both sync and async siblings short-circuit as a no-op (previously both raised
+  `AlreadyExists`); a `get_blob_properties()` precheck preserves `NotFound` for a missing
+  source, and an `hdi_isfolder` check preserves `InvalidPath` for an HNS directory path.
+- **`Store.move` / `copy` and `AsyncStore.move` / `copy` self-op error type** (BK-227,
+  BE-018, BE-019, BE-021): now raise `InvalidPath` (was `NotFound`) when the source path
+  is a directory and `src == dst`. The short-circuit probes `is_file` first (1 RTT for
+  the file no-op case), then `is_folder` to distinguish a directory source from a missing
+  source. Surfaces the HNS-correctness fixes above through the Store layer.
+- **Async `write_atomic` post-rename quirk** (BUG-196, WR-001a, WR-004, AZ-034):
+  `AsyncAzureBackend.write_atomic` tolerates a post-rename `get_file_properties()` failure
+  by returning `WriteResult(etag=None, last_modified=None)` and logging a warning —
+  mirrors the sync sibling's BUG-173 pattern.
+
+#### Other
+
+- **`SFTPBackend.exists()` / `is_file()` / `is_folder()` error swallowing** (BUG-211): no
+  longer treat non-`ENOENT` `OSError`s as "not found"; connect-time `PermissionError` (and
+  any other unexpected `OSError`) now surfaces through `_errors()` as `PermissionDenied` /
+  `BackendUnavailable` instead of returning a misleading `False`.
+- **`SFTPBackend` inline `known_host_keys` on Windows** (BUG-209): the helper used
+  `tempfile.NamedTemporaryFile(delete=True)`, whose Windows `O_TEMPORARY` lock prevented
+  paramiko from re-opening the file, silently bypassing `STRICT` host-key verification.
+- **`S3Backend.check_health()` silent no-op** (BUG-208): unawaited `aiobotocore` coroutine
+  made the probe a silent no-op.
+- **`AsyncMemoryBackend` error fidelity for type-mismatched paths** (BUG-189, ASYNC-006,
+  ASYNC-007, ASYNC-013, ASYNC-016, ASYNC-017, ASYNC-018, ASYNC-019): `read`, `read_bytes`,
+  and `get_file_info` raise `InvalidPath` (not `NotFound`) when the path names an existing
+  directory; `get_folder_info` raises `InvalidPath` when the path names an existing file;
+  `delete_folder` raises `InvalidPath` when the path is a file (regardless of
+  `missing_ok`); `move` / `copy` raise `InvalidPath` when the source is a directory;
+  `copy(src, src, overwrite=False)` is a no-op instead of raising `AlreadyExists`. Matches
+  sync `MemoryBackend`; `AsyncBackend` ABC docstrings updated accordingly.
+- **`MemoryBackend.copy()` and `AsyncMemoryBackend.copy()` drop user metadata** (BK-192,
+  BE-019, ASYNC-019, WR-013): metadata now preserved on the destination — fixes a silent
+  metadata drop on `write → copy → get_file_info`.
+- **`AsyncMemoryBackend` metadata round-tripping** (BK-176, ASYNC-016, WR-013): metadata
+  now preserved through `get_file_info`, `list_files` (recursive and non-recursive), and
+  `iter_children` — sync `MemoryBackend` parity.
+- **Benchmark SVG images broken on the performance docs page** (BUG-188).
+- **EthicalAds ad floating over the API graph viz canvas on RTD** (BUG-187).
+- **API graph visualization blank on iOS Safari** (BUG-186).
+
+### Changed
+
+- **`[sftp]` extra now requires `paramiko>=3.0`** (BUG-204): for the `channel_timeout=`
+  connect kwarg used by `SFTPBackend`. paramiko 2.x floor lifted.
+  **Migration:** environments pinning `paramiko<3` must upgrade.
+- **`pyarrow` cap lifted to `<25` across all extras** (BK-168, BK-172): `s3-pyarrow` and
+  related extras now allow pyarrow 24.x; S3-PyArrow conformance tests are routed to MinIO
+  on pyarrow ≥ 24; `moto[server,s3]>=5.2.0` required for multipart compatibility under
+  pyarrow 23.
+- **`hatch run test-cov` no longer enforces `--cov-fail-under=95`**: the strict gate moved
+  to a new `hatch run test-cov-strict` script. Release publishing and CI run the strict
+  variant; local `test-cov` is now a coverage report only.
+
+### Documentation
+
+- **`aio.md` leads with `AsyncStore`** (ID-192): full per-category method sections
+  mirroring `store.md`. The four `members: false` stubs (`SyncBackendAdapter`,
+  `AsyncBackendSyncAdapter`, `AsyncMemoryBackend`, `AsyncAzureBackend`) now render their
+  full member surface, surfacing the layer-4 `Raises:` docstrings introduced by BK-173.
+- **Async docstring ripple completed** (BK-173, BK-174): nine I/O methods on
+  `SyncBackendAdapter` gain `Raises:` clauses mirrored from the `AsyncBackend` ABC;
+  `InvalidPath` documented on async `write` / `write_atomic` across the `AsyncBackend`
+  ABC, `SyncBackendAdapter`, and `AsyncMemoryBackend.write_atomic`. Surfaces in `help()`
+  and IDE hover.
+- **`SFTPUtils` rendering** (BK-202): helpers documented as true `@staticmethod` —
+  correct `meth` rendering, signatures restored on docs.remotestore.dev.
+- **RST cross-reference roles** in audit-013-touched files corrected (BK-178).
+
+### Internal
+
+- **Stage 3 live cloud test infrastructure** (BK-175, BK-179, BK-180, BK-181, BK-184,
+  BK-191, BK-204, BUG-182, BUG-191, BUG-193, BUG-210, BUG-212):
+    - Spec 048 Phase 1: fixture registry + conformance reorganisation (BK-179).
+    - Spec 048 Phase 2: `azure_live` and `azure_live_async` Stage 3 conformance fixtures
+      with `BackendFixture.aclose` async cleanup channel (BK-180).
+    - Spec 048 Phase 3: HTTP cassette/replay layer for Stage 2 Azure coverage (BK-181).
+    - `s3_live` Stage 3 conformance fixture (BK-184).
+    - SFTP-007 host-key resolution chain (config / env / STRICT-file tiers) coverage
+      (BK-204).
+    - Live ADLS Gen2 integration test classes for `write_atomic` metadata survival
+      (BUG-182) and `write` / `write_atomic` / `open_atomic` directory-path guards
+      (BUG-191); async-side gap closed and sync HNS live tests gained `WriteResult`
+      assertions (BUG-193).
+    - `azure_replay` fixture missing `cleanup=` caused ~133 phantom `Unclosed
+      AzureBackend` warnings per Stage-2 run — fixed (BUG-210).
+    - `scripts/record_cassettes.py` no longer deletes cassettes before validating env
+      (BUG-212).
+    - Stage 3 cassettes refreshed after PR #650; empty `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES`
+      roster (BK-224).
+- **Physical fixture/backend registry as single source of truth** (BK-185, BK-186):
+  per-fixture flat-namespace and self-op flags replace the identity-keyed sets,
+  eliminating drift.
+- **`tests/` root cleanup** (BK-188, BK-189, BK-190, BK-191, BK-215–BK-222): backend-
+  specific evictions and seekable rename (BK-188); `tests/ext/` package + ext-module
+  moves (BK-189); placement checks (rules S, B, E) + `TESTING.md` and spec 048 update
+  (BK-190); the `_BACKEND_AT_ROOT_GRANDFATHERED` allow-list audit completed in six slices
+  reshaping `test_config`, `test_ping`, `test_depth_listing`, `test_seekable`,
+  `test_pbt_write_result`, `test_coverage_gaps` per-backend; `test_examples.py` allow-list
+  justification documented (BK-215).
+- **End-to-end S3 control-path coverage** (BK-166, S3-026, S3PA-026):
+  `tests/backends/test_s3_moto.py` drives the full
+  `write` / `list_files` / `read` / `delete` lifecycle for both `S3Backend` and
+  `S3PyArrowBackend` against a `ThreadedMotoServer` with the tuned `client_options` shape
+  that triggered BUG-178 and BUG-185. Runs in the default suite so a regression in the
+  `config_kwargs` routing surfaces immediately.
+- **`hatch run all` performance** (ID-195): pytest-xdist, preflight, and SFTP-Docker
+  carve-out applied; pre-commit gate stays fast.
+- **Per-topic `mutate-conformance-*` scopes** (BK-183): Windows-compatible mutation-
+  testing topic scopes.
+- **Self-op test parametrization + tighter `match=` regexes** (BK-177, BK-223).
+- **Documentation framework tooling** (BK-167, BK-167a, BK-167b, BK-169, BK-170, BK-171,
+  BK-205, ID-175):
+    - ADR-0027, Spec 047 (docs framework tooling contracts), and `sdd/AUTHORING.md`
+      define the framework (BK-167a).
+    - Docs-framework bridge: `scan_dual_files` + `render_dual_pages`,
+      `explanation/design/` URL alignment, nav restructure, `--strict` CI gate restored,
+      audit-012 closed (BK-167b).
+    - Universal on-disk link rule (DOCFRAME-008): `mkdocs_hooks.py` applies `LinkResolver`
+      to every `docs-src/` file at build time; `check-links` collapses to a single mode
+      that walks every git-tracked `.md`; SDD kind rules hoisted to
+      `docs-src/_path_rules.yml` (BK-171).
+    - Five spec-traced pytest tests for the DOCFRAME-004 gate (BK-169).
+    - API graph visualization hosted in the docs Explanation section (BK-170).
+    - Authoring templates folder at `sdd/templates/` (ID-175).
+    - `check_rst_roles` and `check_docs_framework` wired into the CI lint job (BK-205).
+    - Docs structure audit for the post-ID-174 layout (BK-165).
+- **Coalesced `azure.core.exceptions` imports** across the Azure backend (BK-226).
+- **CI / build hygiene**: Node.js 20 → 22 audit closed as no bump needed (BK-206);
+  non-package tests scoped to Python 3.13 in the CI matrix (BK-207); CI Python version
+  centralised + primary-Python jobs split (BK-219); lint/format/typecheck scope expanded
+  to `scripts/` and `examples/` (BK-187); gen-checks dual-wired into `hatch run lint`
+  (BK-203); mutation-testing matrix shard pytest venv fix (BUG-207); mutation-testing
+  scheduled cron setup-job fix (BUG-206).
+- **SFTP test-hygiene**: TESTING.md Rule 3 violations on `SFTPBackend` private state
+  removed (BK-201).
+- **`docs-src/context7.json`** (ID-176): claims `https://docs.remotestore.dev/stable/` on
+  context7 and supplies the full `rules` array.
+- **Long-term docstring style enforcement design** (ID-177).
+- **Ripple-check rewrite** (BK-194, BK-193): compact pre-work index + detailed verify
+  checklist; trace schema gains `audience` field and post-hoc fields; unreleased traces
+  re-tagged.
 
 ## [0.24.1] - 2026-04-30
 

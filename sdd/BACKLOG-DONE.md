@@ -6,7 +6,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## v0.25.0
 
 - [x] **BK-226 — Coalesce local `from azure.core.exceptions import ...` imports across the Azure backend (sync + async + `_azure_common`)**
   spec: — · audience: internal.style

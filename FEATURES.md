@@ -1,5 +1,5 @@
 <!-- doc: dual dest=reference/FEATURES.md -->
-# Features — remote-store v0.24.1
+# Features — remote-store v0.25.0
 
 Authoritative snapshot of what remote-store delivers in this version.
 Updated each release. **This is the single reference for the package's feature surface.**
@@ -91,8 +91,8 @@ file, and a crash mid-write leaves the previous version intact.
 
 | Method | Returns | Description |
 |---|---|---|
-| `list_files(path, *, max_depth)` | `Iterator[str]` | Enumerate file paths under a prefix |
-| `list_folders(path, *, max_depth)` | `Iterator[str]` | Enumerate immediate subfolder paths |
+| `list_files(path, *, max_depth, pattern)` | `Iterator[str]` | Enumerate file paths under a prefix; optional `pattern=` filters basenames via `fnmatch` |
+| `list_folders(path, *, max_depth, pattern)` | `Iterator[str]` | Enumerate immediate subfolder paths; optional `pattern=` filters folder basenames via `fnmatch` |
 | `iter_children(path)` | `Iterator[FileInfo \| FolderInfo]` | Iterate files and folders together, with metadata |
 
 ### GLOB
