@@ -101,6 +101,11 @@
             "type": "command",
             "if": "Edit(*BACKLOG-DONE*)",
             "command": "python \"$CLAUDE_PROJECT_DIR\"/scripts/gen_backlogid.py"
+          },
+          {
+            "type": "command",
+            "if": "Edit(*BACKLOG.md)",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/backlog-status-brake.sh"
           }
         ]
       }

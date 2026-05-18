@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-227 — `Store.move`/`copy` self-op short-circuit masks backend BUG-201 `InvalidPath` for HNS directories**
+  spec: BE-018, BE-019, BE-021 · audience: user.api
+  After BUG-203 fixed `AzureBackend.is_file(hns_dir)` to return `False`, the
+  Store-layer self-op short-circuit (`if src == dst: if is_file: return; else
+  raise NotFound`) fell into the `NotFound` branch for any directory source —
+  the backend's BUG-201 `InvalidPath` contract was unreachable via the Store
+  wrapper. Backend-agnostic fix: probe `is_file` first (1 RTT for the common
+  file no-op case), then `is_folder` to raise `InvalidPath` for a directory
+  source, then `NotFound` for a missing source. Applied to all four methods
+  (`Store.move`, `Store.copy`, `AsyncStore.move`, `AsyncStore.copy`).
+  Specs `STORE-008a`, `ASYNC-047`, and `BE-018`/`BE-019` prose updated to
+  state the behavioural contract. Coverage: Store-layer regression tests in
+  `tests/test_store.py` + `tests/aio/test_async_store.py`, plus parallel
+  conformance cases in `tests/backends/conformance/test_atomic.py` +
+  `test_async_extended.py` (gated on `self_op_supported` + `_skip_flat_namespace`)
+  so a future backend SDK regression cannot pass at Memory while still
+  failing at the wrapper. Shipped as PR #652 across 4 review rounds.
+  Trace: [`sdd/traces/bk-227-store-self-op-invalidpath.yml`](traces/bk-227-store-self-op-invalidpath.yml).
+
 - [x] **BK-224 — Refresh Stage 3 cassettes after PR #650; empty `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES`**
   spec: — · audience: infra.test
   PR #650 fixed both BUG-202 (streaming `write_atomic`) and BUG-203 (`is_file`
