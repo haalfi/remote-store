@@ -203,7 +203,7 @@ discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 ### BE-018: move()
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
-**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory (cannot overwrite a directory with a file). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move is a no-op (Dafny: `Move: src == dst → Ok`). See BE-021 and BE-008 for precondition evaluation order.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory (cannot overwrite a directory with a file). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
 **Atomicity:** Backends SHOULD implement `move()` atomically where the
 underlying storage supports it (e.g. Local via `os.rename`, Memory under lock,
 SQL in a transaction). Backends that cannot provide atomicity (e.g. S3 and
@@ -215,7 +215,7 @@ destination; the backend MUST NOT silently swallow the error.
 ### BE-019: copy()
 
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
-**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory. `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"). See BE-021.
+**Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory. `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021.
 **Partial failure:** Unlike `move()`, `copy()` has no delete-after phase, so it
 cannot create a duplicate of the source. However, a backend that writes `dst`
 incrementally (e.g. multi-part upload) can leave a corrupt or incomplete
