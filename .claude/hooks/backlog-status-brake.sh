@@ -5,8 +5,8 @@
 # in-flight work spanning multiple PRs or sessions.
 
 INPUT=$(cat)
-OLD_IDS=$(echo "$INPUT" | jq -r '.tool_input.old_string // empty' | grep -oE '\[~\] \*\*(BK|BUG|ID|AF|BL)-[0-9]+' | sort -u)
-NEW_IDS=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // empty' | grep -oE '\[~\] \*\*(BK|BUG|ID|AF|BL)-[0-9]+' | sort -u)
+OLD_IDS=$(echo "$INPUT" | jq -r '.tool_input.old_string // empty' | grep -oE '\[~\] \*\*[A-Z]{2,}-[0-9]+' | sort -u)
+NEW_IDS=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // empty' | grep -oE '\[~\] \*\*[A-Z]{2,}-[0-9]+' | sort -u)
 
 ADDED=$(comm -23 <(echo "$NEW_IDS") <(echo "$OLD_IDS"))
 [ -z "$ADDED" ] && exit 0
