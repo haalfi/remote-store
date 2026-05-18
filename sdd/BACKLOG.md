@@ -57,20 +57,6 @@ Confirmed defects on real ADLS Gen2 accounts plus testing infrastructure for liv
 Bug fixes follow the `hdi_isfolder` probe pattern established by BUG-190/BUG-192.
 BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/replay layer from BK-181 (landed).
 
-- [ ] **BK-226 — Coalesce local `from azure.core.exceptions import ...` imports in `_azure.py` (sync + async)**
-  spec: — · effort: S · audience: library.maintainer
-  Both `src/remote_store/backends/_azure.py` and
-  `src/remote_store/aio/backends/_azure.py` repeat local
-  `from azure.core.exceptions import ResourceNotFoundError` /
-  `HttpResponseError` inside ~8 methods each. The pattern predates the
-  consolidation work (already imported at module level for the same
-  `HttpResponseError` symbol elsewhere) and entrenched further with the
-  BUG-200/BUG-201 paths. Promote the names to module-level imports — they
-  are already in scope on import of `azure.core` (a hard dependency via
-  the Azure SDK) so no extra extra-guard is needed. Flagged by
-  PR #650 review; deferred to keep the consolidation PR
-  scoped to the bug fixes themselves.
-
 - [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
   spec: TEST-002, TEST-003 · effort: M · audience: infra.test
   Originally targeted the now-removed top-level

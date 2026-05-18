@@ -8,6 +8,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-226 — Coalesce local `from azure.core.exceptions import ...` imports across the Azure backend (sync + async + `_azure_common`)**
+  spec: — · audience: internal.style
+  `src/remote_store/backends/_azure.py`,
+  `src/remote_store/aio/backends/_azure.py`, and
+  `src/remote_store/backends/_azure_common.py` repeated local
+  `from azure.core.exceptions import ...` blocks inside ~8 methods each
+  on the two `_azure.py` files plus the 7-symbol block in
+  `classify_azure_error()` — a pattern that predated the consolidation
+  work and entrenched further with the BUG-200/BUG-201 paths. Promoted
+  to module-level imports in all three files; `azure.core` is a hard
+  dependency of `azure-storage-blob` so no extras guard is required (the
+  whole module surface already lives behind `try/except ImportError` in
+  `backends/__init__.py`, and `_azure_common.py` is only imported by the
+  two `_azure.py` files). Net line reduction across `src/`. Flagged by
+  PR #650 review and folded in during PR #654 review.
+  Trace: [`sdd/traces/bk-226-azure-exceptions-imports.yml`](traces/bk-226-azure-exceptions-imports.yml).
+
 - [x] **BK-227 — `Store.move`/`copy` self-op short-circuit masks backend BUG-201 `InvalidPath` for HNS directories**
   spec: BE-018, BE-019, BE-021 · audience: user.api
   After BUG-203 fixed `AzureBackend.is_file(hns_dir)` to return `False`, the

@@ -11,6 +11,8 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, TypeVar, cast
 
+from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
+
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
@@ -289,8 +291,6 @@ class AzureBackend(Backend):
         )
 
     def exists(self, path: str) -> bool:
-        from azure.core.exceptions import ResourceNotFoundError
-
         with self._errors(path):
             azure_path = self._azure_path(path)
             if not azure_path:
@@ -315,8 +315,6 @@ class AzureBackend(Backend):
                 return any(True for _ in blobs)
 
     def is_file(self, path: str) -> bool:
-        from azure.core.exceptions import ResourceNotFoundError
-
         with self._errors(path):
             bc = self._blob_client(path)
             try:
@@ -358,8 +356,6 @@ class AzureBackend(Backend):
                 # download_blob().properties (populated by the eager await) on
                 # the same response. The HEAD-vs-no-HEAD asymmetry is
                 # intentional, not an oversight.
-                from azure.core.exceptions import ResourceNotFoundError
-
                 try:
                     props = bc.get_blob_properties()
                     blob_meta = getattr(props, "metadata", None) or {}
@@ -417,8 +413,6 @@ class AzureBackend(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        from azure.core.exceptions import ResourceNotFoundError
-
         with self._errors(path):
             bc = self._blob_client(path)
             if self._hns:
@@ -470,8 +464,6 @@ class AzureBackend(Backend):
             return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
         # HNS: write to temp file via DFS, then atomic rename
-        from azure.core.exceptions import ResourceNotFoundError
-
         with self._errors(path):
             bc = self._blob_client(path)
             try:
@@ -565,8 +557,6 @@ class AzureBackend(Backend):
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
         if not self._hns:
             # non-HNS: buffer then PUT (atomic by nature) -- SAW-011
-            from azure.core.exceptions import ResourceNotFoundError
-
             with self._errors(path):
                 bc = self._blob_client(path)
                 if not overwrite:
@@ -588,8 +578,6 @@ class AzureBackend(Backend):
                 buf.close()
         else:
             # HNS: write to temp file via DFS, then atomic rename -- SAW-011
-            from azure.core.exceptions import ResourceNotFoundError
-
             with self._errors(path):
                 bc = self._blob_client(path)
                 try:
@@ -660,8 +648,6 @@ class AzureBackend(Backend):
                     return
                 # BE-021: HNS non-empty directory yields DirectoryIsNotEmpty (409).
                 # The file-API delete() must raise InvalidPath, not AlreadyExists.
-                from azure.core.exceptions import HttpResponseError
-
                 if isinstance(exc, HttpResponseError) and getattr(exc, "error_code", None) == "DirectoryIsNotEmpty":
                     raise InvalidPath(
                         f"Cannot delete — '{path}' is a directory", path=path, backend=self.name
@@ -911,8 +897,6 @@ class AzureBackend(Backend):
             )
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        from azure.core.exceptions import ResourceNotFoundError
-
         # BE-018: self-move is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
@@ -969,8 +953,6 @@ class AzureBackend(Backend):
                 src_bc.delete_blob()
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        from azure.core.exceptions import ResourceNotFoundError
-
         # BE-019: self-copy is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
