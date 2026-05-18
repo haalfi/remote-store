@@ -6,6 +6,52 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
+## v0.24.1 to v0.25.0
+
+**`[sftp]` extra now requires `paramiko>=3.0` (BUG-204):**
+
+The SFTP backend uses paramiko 3.0's `channel_timeout=` connect kwarg. Environments
+pinned to `paramiko<3` must upgrade. `pip install "remote-store[sftp]"` resolves the
+correct version automatically; pinned `paramiko==2.x` will now conflict.
+
+**Azure HNS error types now match the canonical mapping (BUG-190 through BUG-203, BUG-213):**
+
+On real ADLS Gen2 (Hierarchical Namespace) accounts, many `AzureBackend` and
+`AsyncAzureBackend` operations previously raised the wrong error type when the path
+named a directory blob (or, conversely, a file blob where a directory was expected).
+Stage 3 live verification in this release surfaced the deviations; all now raise
+`InvalidPath` per the canonical mapping. **If you catch the old error types**, those
+clauses will no longer fire on HNS:
+
+| Operation                                      | Old error (HNS)                          | New error      |
+|------------------------------------------------|------------------------------------------|----------------|
+| `read`, `read_bytes`, `read_seekable` on dir   | silently returned `b""`                  | `InvalidPath`  |
+| `delete` on dir (file API)                     | silently destroyed directory marker (**data loss**) | `InvalidPath`  |
+| `get_file_info` on dir                         | `NotFound`                               | `InvalidPath`  |
+| `is_folder` on file                            | `True`                                   | `False`        |
+| `get_folder_info` on file                      | `NotFound`                               | `InvalidPath`  |
+| `delete_folder` on file                        | `DirectoryNotEmpty` / `NotFound`         | `InvalidPath`  |
+| `move` / `copy` on dir source or dest          | `RemoteStoreError(InvalidInput)` / `AlreadyExists` | `InvalidPath`  |
+| `open_atomic` on dir target                    | `AlreadyExists`                          | `InvalidPath`  |
+| `write` / `write_atomic` on dir target         | `AlreadyExists`                          | `InvalidPath`  |
+| `move(p, p)` / `copy(p, p)` self-op            | `AlreadyExists`                          | no-op          |
+
+Flat-namespace blob accounts (non-HNS) and Azurite were already correct and are
+unaffected. Sync and async siblings behave identically.
+
+**`Store.move(p, p)` / `copy(p, p)` self-op error type (BK-227):**
+
+Across all backends, `Store.move` / `copy` and `AsyncStore.move` / `copy` now raise
+`InvalidPath` (was `NotFound`) when the source path is a directory and `src == dst`.
+The file no-op case is unchanged.
+
+**`hatch run test-cov` no longer enforces `--cov-fail-under=95`:**
+
+The coverage floor moved to a new `hatch run test-cov-strict` script. Local
+`test-cov` is now a coverage *report* only; CI and the publish workflow run the
+strict variant. If your tooling or CI relied on `test-cov` failing under 95% switch
+to `test-cov-strict`.
+
 ## v0.24.0 to v0.24.1
 
 **S3 botocore Config options route through `config_kwargs` (BUG-185):**
