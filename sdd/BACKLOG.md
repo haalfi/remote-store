@@ -57,18 +57,6 @@ Confirmed defects on real ADLS Gen2 accounts plus testing infrastructure for liv
 Bug fixes follow the `hdi_isfolder` probe pattern established by BUG-190/BUG-192.
 BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/replay layer from BK-181 (landed).
 
-- [ ] **BK-224 — Remove BUG-202 xfail entry from `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES` after Stage 3 cassette refresh**
-  spec: — · effort: S · audience: infra.test
-  The BUG-202 fix leaves `test_size_matches_written_bytes_for_streaming_input`
-  in the `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES` frozenset
-  (`tests/backends/conformance/conftest.py`) because the existing `azure_replay`
-  cassettes do not yet exercise the new DFS append protocol against real
-  HNS wire responses. Once the BUG-202 cassettes are re-recorded
-  (`RS_TEST_LIVE_HNS=1 hatch run record-azure`), the xfail will flip to
-  xpass silently and the entry will remain in the frozenset as dead state.
-  Fix: remove the entry from the frozenset; verify the test passes against
-  the refreshed cassette.
-
 - [ ] **BK-227 — `Store.move`/`copy` self-op short-circuit masks backend BUG-201 `InvalidPath` for HNS directories**
   spec: BE-018, BE-019, BE-021 · effort: S · audience: library.maintainer
   `Store.move`/`copy` and `AsyncStore.move`/`copy` short-circuit `src == dst`
@@ -97,17 +85,6 @@ BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/r
   the Azure SDK) so no extra extra-guard is needed. Flagged by
   PR #650 review; deferred to keep the consolidation PR
   scoped to the bug fixes themselves.
-
-- [ ] **BK-225 — Record Stage 3 cassette for `TestAzureLiveHnsGetFolderInfoRoot` (BUG-213 follow-up)**
-  spec: BE-017, ASYNC-017 · effort: S · audience: infra.test
-  The BUG-213 fix adds live tests `TestAzureLiveHnsGetFolderInfoRoot` (sync)
-  and the async sibling that exercise `get_folder_info("")` against a real
-  ADLS Gen2 account. The cassettes for these tests do not exist yet —
-  they must be recorded via `RS_TEST_LIVE_HNS=1 hatch run record-azure`
-  before the `azure_replay` / `azure_replay_async` fixtures can replay them.
-  Until then, the live tests fail under replay because no cassette is
-  present. Fix: record + commit the cassettes; verify the replay path
-  passes.
 
 - [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
   spec: TEST-002, TEST-003 · effort: M · audience: infra.test

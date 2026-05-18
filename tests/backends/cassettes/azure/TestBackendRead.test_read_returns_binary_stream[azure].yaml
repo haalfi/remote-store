@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3F2E9ED9B2A"'
+      - '"0x8DEB4A996EDF887"'
       Last-Modified:
-      - Sun, 17 May 2026 09:01:42 GMT
+      - Mon, 18 May 2026 06:49:20 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - uV9n9h67A2GWIteY9F/C0w==
       ETag:
-      - '"0x8DEB3F2EA3C37A0"'
+      - '"0x8DEB4A99748D110"'
       Last-Modified:
-      - Sun, 17 May 2026 09:01:42 GMT
+      - Mon, 18 May 2026 06:49:21 GMT
       x-ms-content-crc64:
       - 11RkHimQOT8=
       x-ms-request-server-encrypted:
@@ -133,6 +133,66 @@ interactions:
     status:
       code: 201
       message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/xml
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - azsdk-python-replay
+      x-ms-version:
+      - '2026-04-06'
+    method: HEAD
+    uri: https://azreplay.blob.core.windows.net/conformance-azure-replay/data.bin
+  response:
+    body:
+      string: ''
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '3'
+      Content-MD5:
+      - uV9n9h67A2GWIteY9F/C0w==
+      Content-Type:
+      - application/octet-stream
+      ETag:
+      - '"0x8DEB4A99748D110"'
+      Last-Modified:
+      - Mon, 18 May 2026 06:49:21 GMT
+      x-ms-access-tier:
+      - Hot
+      x-ms-access-tier-inferred:
+      - 'true'
+      x-ms-acl:
+      - user::rw-,group::r--,other::---
+      x-ms-blob-type:
+      - BlockBlob
+      x-ms-creation-time:
+      - Mon, 18 May 2026 06:49:21 GMT
+      x-ms-group:
+      - $superuser
+      x-ms-lease-state:
+      - available
+      x-ms-lease-status:
+      - unlocked
+      x-ms-owner:
+      - $superuser
+      x-ms-permissions:
+      - rw-r-----
+      x-ms-resource-type:
+      - file
+      x-ms-server-encrypted:
+      - 'true'
+      x-ms-version:
+      - '2026-04-06'
+    status:
+      code: 200
+      message: OK
 - request:
     body: null
     headers:
@@ -163,9 +223,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEB3F2EA3C37A0"'
+      - '"0x8DEB4A99748D110"'
       Last-Modified:
-      - Sun, 17 May 2026 09:01:42 GMT
+      - Mon, 18 May 2026 06:49:21 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -177,7 +237,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 17 May 2026 09:01:42 GMT
+      - Mon, 18 May 2026 06:49:21 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:

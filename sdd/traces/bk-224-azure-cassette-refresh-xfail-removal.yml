@@ -1,0 +1,98 @@
+id: BK-224
+title: "Refresh Stage 3 Azure cassettes after PR #650; empty _AZURE_HNS_KNOWN_FAILURE_FN_NAMES"
+trigger: "PR #650 fixed BUG-202 (streaming write_atomic) and BUG-203 (is_file on HNS directory) but the existing azure_replay cassettes pre-dated the new SDK call shapes, so both names had to stay in the xfail roster (_AZURE_HNS_KNOWN_FAILURE_FN_NAMES, tests/backends/conformance/conftest.py) until the cassettes were re-recorded against a real ADLS Gen2 account. Left in place, the entries would silently turn into xpass-but-stay-listed dead state once the cassettes ever got refreshed."
+source_items:
+  - BK-224
+  - BUG-202
+  - BUG-203
+audience:
+  - infra.test
+co_shipped_items:
+  - BK-225
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-224"
+        read_type: gate
+        extract: "spec: — · audience: infra.test (skips CHANGELOG per schema derivation rule); literal task is to drop the BUG-202 entry once the cassette is refreshed"
+      - file: sdd/TESTING.md
+        section: "Cassette Refresh (HTTP-transport backends)"
+        read_type: gate
+        extract: "Recorder wipes the cassette tree at Step 1; needs RS_TEST_LIVE_HNS=1 + AZURE_STORAGE_CONNECTION_STRING; Stage 3 only"
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES + pytest_collection_modifyitems"
+        read_type: gate
+        extract: "Roster has 'test_size_matches_written_bytes_for_streaming_input' (BUG-202) and 'test_is_file' (BUG-203); xfail is unconditional in record + replay so cassettes still get written during recording"
+      - file: scripts/record_cassettes.py
+        section: "(full)"
+        read_type: gate
+        extract: "Targets `_CONFORMANCE = tests/backends/conformance/` only; deletes tree at Step 1, asserts >= 200 cassettes recorded, scrub-verifies account name, Stage-1 replay smoke. RS_TEST_LIVE_HNS=1 + real (non-Azurite) connection-string preflight runs BEFORE delete to prevent BUG-212-style wipes."
+
+  - id: pre_decision
+    name: Decide xfail-removal scope
+    steps:
+      - file: tests/backends/conformance/conftest.py
+        section: "Comment grouping at lines 224-229"
+        read_type: reference
+        extract: "Both entries trace back to PR-#650-fixed bugs; user widened scope from 'BUG-202 only' to 'both BUG-202 and BUG-203' because the roster's purpose is dead once both bugs are fixed and cassettes proven against them"
+      - file: C:/Users/harald/.claude/projects/K--Code-remote-store/memory/feedback_changelog_skip_infra_test.md
+        section: "(full)"
+        read_type: gate
+        extract: "audience: infra.test → no CHANGELOG entry; BK-223 is the precedent for this rule"
+        outcome: ok
+
+  - id: record
+    name: Record cassettes against live ADLS Gen2
+    steps:
+      - file: .env
+        section: "AZURE_STORAGE_CONNECTION_STRING, RS_TEST_LIVE_HNS_CONTAINER"
+        read_type: gate
+        extract: "Connection string already configured for remotestorehns; test container is remote-store-test; RS_TEST_LIVE_HNS gate set at invocation, not in .env"
+      - file: scripts/record_cassettes.py
+        section: "main / Step 1-5"
+        read_type: gate
+        extract: "Sync record (176 passed, 2 xpassed); async record (71 passed); count guard (>= 200, got 254); scrub clean; Stage-1 replay smoke (247 passed, 2 xpassed) — the two xpassed signals are BUG-202 and BUG-203 tests under the still-active xfail mark, confirming the new cassettes carry the post-fix wire shapes"
+
+  - id: diff_audit
+    name: Audit cassette diff for unrelated drift
+    steps:
+      - file: tests/backends/cassettes/azure/
+        section: "git diff --numstat"
+        read_type: verify
+        extract: "Most entries are symmetric +N/-N (timestamp + request-ID + ETag drift only); ~30 entries grew (+60-line bumps on delete/read tests) because PR #650 BUG-195/196/197/198/200/201 fixes added HEAD probes to inspect blob type before delete/read. Spot-checked test_delete_folder_empty[azure] (+67/-7): adds a HEAD on the file under deletion. Replay smoke already passed against current production code, so the diffs are by construction consistent with master."
+
+  - id: remove_xfail
+    name: Empty the xfail roster
+    steps:
+      - file: tests/backends/conformance/conftest.py
+        section: "_AZURE_HNS_KNOWN_FAILURE_FN_NAMES + accompanying comment + xfail reason string"
+        read_type: gate
+        extract: "Frozenset emptied; comment rewritten to document the currently-empty state + ready-to-reuse mechanism; reason string generalised from BUG-202/203 to a pointer at the frozenset"
+      - file: tests/backends/conformance/test_xfail_guard.py
+        section: "test_hns_xfail_names_are_live"
+        read_type: verify
+        extract: "Guard trivially passes on empty set; the guard itself stays (catches typos when a future entry is added)"
+
+  - id: verify
+    name: Verify on replay + ripple
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestWriteResultConformance::test_size_matches_written_bytes_for_streaming_input[azure_replay]"
+        read_type: verify
+        extract: "PASSED on the new cassette without the xfail mark"
+      - file: tests/backends/conformance/test_io.py
+        section: "TestBackendFileFolder::test_is_file[azure_replay]"
+        read_type: verify
+        extract: "PASSED on the new cassette without the xfail mark"
+      - file: tests/backends/conformance/test_xfail_guard.py
+        section: "test_hns_xfail_names_are_live"
+        read_type: verify
+        extract: "PASSED with empty frozenset"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix + Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG → BACKLOG-DONE handled; trace authored; CHANGELOG skipped per infra.test rule; sdd/backlogid.json regenerated via hatch run gen-backlogid"

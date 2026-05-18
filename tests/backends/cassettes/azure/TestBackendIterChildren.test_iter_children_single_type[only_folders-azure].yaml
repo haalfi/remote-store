@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3F30B2D43EA"'
+      - '"0x8DEB4A9BAFA12EC"'
       Last-Modified:
-      - Sun, 17 May 2026 09:02:37 GMT
+      - Mon, 18 May 2026 06:50:21 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - ndTkYSaMgDT1yFZOFVxnpg==
       ETag:
-      - '"0x8DEB3F30B86FA28"'
+      - '"0x8DEB4A9BB587BE0"'
       Last-Modified:
-      - Sun, 17 May 2026 09:02:38 GMT
+      - Mon, 18 May 2026 06:50:21 GMT
       x-ms-content-crc64:
       - seRUZAJnvS0=
       x-ms-request-server-encrypted:
@@ -150,8 +150,8 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=ico&recursive=false&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"0","creationTime":"134234821584709516","etag":"0x8DEB3F30B8269E0","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Sun,
-        17 May 2026 09:02:38 GMT","name":"ico/sub","owner":"$superuser","permissions":"rwxr-x---"}]}
+      string: '{"paths":[{"contentLength":"0","creationTime":"134235606218578316","etag":"0x8DEB4A9BB551B74","expiryTime":"0","group":"$superuser","isDirectory":"true","lastModified":"Mon,
+        18 May 2026 06:50:21 GMT","name":"ico/sub","owner":"$superuser","permissions":"rwxr-x---"}]}
 
         '
     headers:

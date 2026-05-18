@@ -8,6 +8,43 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-224 — Refresh Stage 3 cassettes after PR #650; empty `_AZURE_HNS_KNOWN_FAILURE_FN_NAMES`**
+  spec: — · audience: infra.test
+  PR #650 fixed both BUG-202 (streaming `write_atomic`) and BUG-203 (`is_file`
+  on HNS directory). Until the Stage 3 cassettes were re-recorded the fixes
+  could not be replay-verified, so the originating xfail roster
+  (`_AZURE_HNS_KNOWN_FAILURE_FN_NAMES` in `tests/backends/conformance/conftest.py`)
+  still listed both names as known failures; left in place they would have
+  flipped to xpass silently. Ran `RS_TEST_LIVE_HNS=1 hatch run record-azure`
+  against the real ADLS Gen2 account (254 cassettes refreshed; sync 176
+  passed + 2 xpassed, async 71 passed, replay smoke 247 passed + 2 xpassed —
+  both BUG-202 and BUG-203 names xpass against the new cassette), then
+  emptied the frozenset (kept the mechanism + `test_xfail_guard.py` as
+  ready-to-use infrastructure for any future HNS-only conformance gap).
+  Most cassette diffs are timestamp/request-ID drift; ~30 grew by ~60 lines
+  because PR #650's other fixes (BUG-195/196/197/198/200/201) added HEAD
+  probes on delete/read paths that the previous cassettes pre-dated.
+  Scope expanded from "remove the BUG-202 entry only" to "remove both"
+  after the xpassed signals confirmed BUG-203's fix was also reachable
+  through the new cassettes.
+  Trace: [`sdd/traces/bk-224-azure-cassette-refresh-xfail-removal.yml`](traces/bk-224-azure-cassette-refresh-xfail-removal.yml).
+
+- [x] **BK-225 — Closed as no-defect: `TestAzureLiveHnsGetFolderInfoRoot` is live-only by design**
+  spec: BE-017, ASYNC-017 · audience: infra.test
+  The original framing — "cassettes must be recorded so `azure_replay` /
+  `azure_replay_async` can replay these tests" — was based on a misread
+  of `tests/backends/azure/test_live_hns.py`: that file is gated by
+  `pytestmark = [pytest.mark.live, pytest.mark.skipif(RS_TEST_LIVE_HNS != "1")]`
+  with no `@pytest.mark.vcr`, and `scripts/record_cassettes.py` only
+  records the conformance suite (`_CONFORMANCE = "tests/backends/conformance/"`).
+  The `azure_replay` / `azure_replay_async` fixtures are not registered for
+  this file, so no cassette was ever going to materialise. Verified
+  end-to-end against the real account that both
+  `TestAzureLiveHnsGetFolderInfoRoot::test_get_folder_info_root_returns_valid_folder_info`
+  (sync) and the async sibling pass with `RS_TEST_LIVE_HNS=1 -m live --stage=3`.
+  No code or cassette change needed; closed to clear the dead item.
+  Trace: [`sdd/traces/bk-225-live-hns-root-coverage-misframed.yml`](traces/bk-225-live-hns-root-coverage-misframed.yml).
+
 - [x] **BUG-213 — `AzureBackend.get_folder_info("")` and async sibling fail on real ADLS Gen2 (sync + async)**
   spec: BE-017, ASYNC-017 · audience: library.maintainer
   The BUG-199 fix unconditionally called `self._fs.get_directory_client(azure_path)`
