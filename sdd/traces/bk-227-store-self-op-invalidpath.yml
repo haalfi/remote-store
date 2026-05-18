@@ -1,0 +1,78 @@
+id: BK-227
+title: "Store.move/copy self-op short-circuit masks InvalidPath for directory sources"
+trigger: |
+  PR #650 round-2 review revealed that after BUG-203 fixed is_file(hns_dir)
+  to return False, Store.move(dir, dir) / Store.copy(dir, dir) raises NotFound
+  instead of InvalidPath — the backend's BUG-201 contract is unreachable via
+  the Store wrapper.
+source_items:
+  - BK-227
+audience:
+  - user.api
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: "BK-227 canonical entry — self-op short-circuit raises NotFound for directory, InvalidPath expected"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Store method row — CHANGELOG required; public method signature row — docstring Raises update"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018, BE-019, BE-021"
+        read_type: gate
+        extract: "move/copy must raise InvalidPath when src is a directory; Store layer must honour the same contract"
+  - id: tests
+    name: Write failing tests
+    steps:
+      - file: tests/test_store.py
+        section: "TestStoreSamePathOps.test_same_path_folder_raises"
+        read_type: reference
+        extract: "Existing test asserts NotFound; update to InvalidPath (was wrong before BUG-203 but was never updated)"
+      - file: tests/aio/test_async_store.py
+        section: "TestAsyncStoreFileOps"
+        read_type: reference
+        extract: "No async test_same_path_folder_raises exists; add new test for async parity"
+  - id: implement
+    name: Fix Store and AsyncStore
+    steps:
+      - file: src/remote_store/_store.py
+        section: "Store.move, Store.copy — src == dst branch"
+        read_type: reference
+        extract: "Add is_folder probe before NotFound raise; both move and copy"
+      - file: src/remote_store/aio/_async_store.py
+        section: "AsyncStore.move, AsyncStore.copy — src == dst branch"
+        read_type: reference
+        extract: "Same fix with await; both move and copy"
+  - id: docs
+    name: Update docstrings and CHANGELOG
+    steps:
+      - file: src/remote_store/_store.py
+        section: "Store.move Raises, Store.copy Raises"
+        read_type: reference
+        extract: "Add InvalidPath clause for directory source to match BE-018/019"
+      - file: src/remote_store/aio/_async_store.py
+        section: "AsyncStore.move Raises, AsyncStore.copy Raises"
+        read_type: reference
+        extract: "Add InvalidPath clause for directory source"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "Prepend BK-227 entry"
+  - id: verify
+    name: Ripple-check verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Store method"
+        read_type: verify
+        extract: "Confirm CHANGELOG entry present; docstrings updated; spec untouched (BE-018/019 already correct)"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: verify
+        extract: "Mark BK-227 complete"

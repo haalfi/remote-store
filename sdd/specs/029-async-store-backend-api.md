@@ -261,7 +261,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 ### ASYNC-047: Same-Path Move and Copy
 
-**Invariant:** `move(src, dst)` or `copy(src, dst)` where `src` and `dst` resolve to the same path is a no-op. The source must be an existing file; otherwise `NotFound` is raised.
+**Invariant:** `move(src, dst)` or `copy(src, dst)` where `src` and `dst` resolve to the same path is a no-op. Precondition evaluation order: (1) if `src` is a directory, raises `InvalidPath`; (2) if `src` does not exist, raises `NotFound`; (3) otherwise returns without modification.
 **See also:** [STORE-008a](001-store-api.md).
 
 ### ASYNC-048: Resource Management
