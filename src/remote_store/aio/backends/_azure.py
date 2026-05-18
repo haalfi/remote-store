@@ -295,7 +295,6 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             ``True`` if a file or folder exists at *path*.
         """
-
         async with self._errors(path):
             ap = _azure_path_fn(path)
             if not ap:
@@ -328,7 +327,6 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             ``True`` if *path* exists and is a file.
         """
-
         async with self._errors(path):
             bc = self._blob_client(path)
             try:
@@ -455,7 +453,6 @@ class AsyncAzureBackend(AsyncBackend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If ``path`` names a directory.
         """
-
         async with self._errors(path):
             bc = self._blob_client(path)
             if await self._ensure_hns():
@@ -539,7 +536,6 @@ class AsyncAzureBackend(AsyncBackend):
             return await self.write(path, content, overwrite=overwrite, metadata=metadata)
 
         # HNS: write to temp file via DFS, then atomic rename
-
         async with self._errors(path):
             bc = self._blob_client(path)
             try:

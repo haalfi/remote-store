@@ -7,6 +7,16 @@ import re
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
+from azure.core.exceptions import (
+    AzureError,
+    ClientAuthenticationError,
+    HttpResponseError,
+    ResourceExistsError,
+    ResourceNotFoundError,
+    ServiceRequestError,
+    ServiceResponseError,
+)
+
 from remote_store._errors import (
     AlreadyExists,
     BackendUnavailable,
@@ -79,16 +89,6 @@ def classify_azure_error(exc: Exception, path: str, backend_name: str) -> Remote
     Returns:
         An appropriate ``RemoteStoreError`` subclass.
     """
-    from azure.core.exceptions import (
-        AzureError,
-        ClientAuthenticationError,
-        HttpResponseError,
-        ResourceExistsError,
-        ResourceNotFoundError,
-        ServiceRequestError,
-        ServiceResponseError,
-    )
-
     # Unwrap OSError wrapper from _AzureRangeReader.readinto().
     if isinstance(exc, OSError) and isinstance(exc.__cause__, AzureError):
         exc = exc.__cause__

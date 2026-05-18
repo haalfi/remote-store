@@ -291,7 +291,6 @@ class AzureBackend(Backend):
         )
 
     def exists(self, path: str) -> bool:
-
         with self._errors(path):
             azure_path = self._azure_path(path)
             if not azure_path:
@@ -316,7 +315,6 @@ class AzureBackend(Backend):
                 return any(True for _ in blobs)
 
     def is_file(self, path: str) -> bool:
-
         with self._errors(path):
             bc = self._blob_client(path)
             try:
@@ -415,7 +413,6 @@ class AzureBackend(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-
         with self._errors(path):
             bc = self._blob_client(path)
             if self._hns:
@@ -467,7 +464,6 @@ class AzureBackend(Backend):
             return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
         # HNS: write to temp file via DFS, then atomic rename
-
         with self._errors(path):
             bc = self._blob_client(path)
             try:
@@ -901,7 +897,6 @@ class AzureBackend(Backend):
             )
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-
         # BE-018: self-move is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.
@@ -958,7 +953,6 @@ class AzureBackend(Backend):
                 src_bc.delete_blob()
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-
         # BE-019: self-copy is a no-op (src == dst → Ok), but only for files.
         # Directory-path inputs must still raise InvalidPath per BE-021 — same
         # contract as the non-self-op path below.

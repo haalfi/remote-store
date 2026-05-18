@@ -1,5 +1,5 @@
 id: BK-226
-title: "Coalesce local `from azure.core.exceptions import ...` imports in `_azure.py` (sync + async)"
+title: "Coalesce local `from azure.core.exceptions import ...` imports across the Azure backend (sync + async + _azure_common)"
 trigger: |
   PR #650 review noted that both `src/remote_store/backends/_azure.py` and
   `src/remote_store/aio/backends/_azure.py` repeated local
@@ -10,11 +10,15 @@ trigger: |
 source_items:
   - BK-226
 audience:
-  - contributor.tooling
+  - internal.style
+review_rounds: 1
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
-  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  - src/remote_store/backends/_azure_common.py
 phases:
   - id: orient
     name: Orient
@@ -38,14 +42,37 @@ phases:
         section: "module-level imports + 7 local `from azure.core.exceptions import` sites"
         read_type: reference
         extract: "Same shape as sync sibling: one module-level import line, drop 6 `ResourceNotFoundError` + 1 `HttpResponseError` local re-imports"
+      - file: src/remote_store/backends/_azure_common.py
+        section: "module-level imports + `classify_azure_error()` local import block"
+        read_type: reference
+        extract: "Fold-in surfaced in PR #654 review: same safety chain applies (only `_azure.py` files import this module, and both sit behind `try/except ImportError`). Promote the 7-symbol local import block to module level so the PR title (\"coalesce local azure.core.exceptions imports\") is truthful across the whole Azure backend"
+  - id: fix
+    name: Apply PR-review fixes
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "post-import-removal blank lines"
+        read_type: reference
+        extract: "Drop the leftover blank line after the signature at exists/is_file/write/move/copy and the orphan blank between the `# HNS: write to temp file via DFS, then atomic rename` comment and its `with self._errors(path):` in `write_atomic`"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "post-import-removal blank lines"
+        read_type: reference
+        extract: "Same shape on the async side: drop blanks after the docstring at exists/is_file/write and the orphan blank after the same `# HNS: ...` comment in `write_atomic`"
+      - file: sdd/traces/_schema.yml
+        section: "audience enum descriptions"
+        read_type: gate
+        extract: "Re-classify audience from `contributor.tooling` (intended for hatch/lint/gen scripts) to `internal.style` (\"Format-only normalisation with no content or behavior delta\") — both still skip CHANGELOG"
   - id: verify
     name: Ripple-check verify
     steps:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Pre-work index — refactor row"
         read_type: verify
-        extract: "Refactor must produce net line reduction; confirm via `git diff --shortstat` (20 lines deleted, 4 added → net -16 LOC against 17 import sites removed)"
+        extract: "Refactor must produce net line reduction; confirm via `git diff --shortstat` against `origin/master` — `src/` net -27 LOC across 3 files (4 ins / 24 del in the two `_azure.py` files, then -7 from `_azure_common.py` fold-in)"
       - file: sdd/BACKLOG.md
         section: "(item)"
         read_type: verify
-        extract: "BK-226 removed from BACKLOG.md and migrated to BACKLOG-DONE.md as `[x]`; `hatch run gen-backlogid` re-run to refresh `sdd/backlogid.json`"
+        extract: "BK-226 removed from BACKLOG.md and migrated to BACKLOG-DONE.md as `[x]`; `hatch run gen-backlogid` re-run confirmed `sdd/backlogid.json` was already correct (BK=227 from BK-227 — moved ID ≤ DONE-max → JSON no-op per `gotcha_backlogid_json_max_only`; omitted from `expected_ripples`)"
+      - file: docs-src/_data/graph/graph.json
+        section: "(full)"
+        read_type: verify
+        extract: "Re-run `hatch run gen-graph` + `hatch run gen-graph-viz` after the new module-level imports shifted the class-line of `AzureBackend` and `AsyncAzureBackend` by +2 each; `test_graph_json_is_up_to_date` and `test_graph_viz_html_is_up_to_date` catch the drift"
