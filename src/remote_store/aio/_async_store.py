@@ -566,11 +566,11 @@ class AsyncStore:
         src_path = self._require_file_path(src)
         dst_path = self._require_file_path(dst)
         if src_path == dst_path:
+            if await self._backend.is_file(src_path):
+                return
             if await self._backend.is_folder(src_path):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=_bk)
-            if not await self._backend.is_file(src_path):
-                raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
-            return
+            raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
         await self._backend.move(src_path, dst_path, overwrite=overwrite)
         log.info("move complete src=%r dst=%r", src, dst, extra={"op": "move", "path": src, "backend": _bk})
 
@@ -600,11 +600,11 @@ class AsyncStore:
         src_path = self._require_file_path(src)
         dst_path = self._require_file_path(dst)
         if src_path == dst_path:
+            if await self._backend.is_file(src_path):
+                return
             if await self._backend.is_folder(src_path):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=_bk)
-            if not await self._backend.is_file(src_path):
-                raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
-            return
+            raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
         await self._backend.copy(src_path, dst_path, overwrite=overwrite)
         log.info("copy complete src=%r dst=%r", src, dst, extra={"op": "copy", "path": src, "backend": _bk})
 

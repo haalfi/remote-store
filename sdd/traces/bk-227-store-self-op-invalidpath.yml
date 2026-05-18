@@ -7,11 +7,17 @@ trigger: |
   the Store wrapper.
 source_items:
   - BK-227
+review_rounds: 1
 audience:
   - user.api
   - user.api_docs
 expected_ripples:
   - sdd/backlogid.json
+  - sdd/specs/001-store-api.md
+  - sdd/specs/029-async-store-backend-api.md
+  - CHANGELOG.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
 phases:
   - id: orient
     name: Orient
@@ -71,7 +77,7 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Detailed checklist / Store method"
         read_type: verify
-        extract: "Confirm CHANGELOG entry present; docstrings updated; spec untouched (BE-018/019 already correct)"
+        extract: "Confirm CHANGELOG entry present; docstrings updated; BE-018/019 unchanged; STORE-008a and ASYNC-047 updated to match new behavioral contract"
       - file: sdd/BACKLOG.md
         section: "(item)"
         read_type: verify
