@@ -10,6 +10,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
+from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
+
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._config import RetryPolicy, Secret, _reveal
 from remote_store._errors import (
@@ -293,7 +295,6 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             ``True`` if a file or folder exists at *path*.
         """
-        from azure.core.exceptions import ResourceNotFoundError
 
         async with self._errors(path):
             ap = _azure_path_fn(path)
@@ -327,7 +328,6 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             ``True`` if *path* exists and is a file.
         """
-        from azure.core.exceptions import ResourceNotFoundError
 
         async with self._errors(path):
             bc = self._blob_client(path)
@@ -455,7 +455,6 @@ class AsyncAzureBackend(AsyncBackend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If ``path`` names a directory.
         """
-        from azure.core.exceptions import ResourceNotFoundError
 
         async with self._errors(path):
             bc = self._blob_client(path)
@@ -540,7 +539,6 @@ class AsyncAzureBackend(AsyncBackend):
             return await self.write(path, content, overwrite=overwrite, metadata=metadata)
 
         # HNS: write to temp file via DFS, then atomic rename
-        from azure.core.exceptions import ResourceNotFoundError
 
         async with self._errors(path):
             bc = self._blob_client(path)
@@ -668,8 +666,6 @@ class AsyncAzureBackend(AsyncBackend):
                     return
                 # BE-021: HNS non-empty directory yields DirectoryIsNotEmpty (409).
                 # The file-API delete() must raise InvalidPath, not AlreadyExists.
-                from azure.core.exceptions import HttpResponseError
-
                 if isinstance(exc, HttpResponseError) and getattr(exc, "error_code", None) == "DirectoryIsNotEmpty":
                     raise InvalidPath(
                         f"Cannot delete — '{path}' is a directory", path=path, backend=self.name
@@ -1007,8 +1003,6 @@ class AsyncAzureBackend(AsyncBackend):
                     raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
             return
 
-        from azure.core.exceptions import ResourceNotFoundError
-
         async with self._errors(src):
             src_bc = self._blob_client(src)
             src_props = await src_bc.get_blob_properties()  # raises NotFound if missing
@@ -1078,8 +1072,6 @@ class AsyncAzureBackend(AsyncBackend):
                 if src_meta.get("hdi_isfolder"):  # pragma: no cover -- HNS only
                     raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
             return
-
-        from azure.core.exceptions import ResourceNotFoundError
 
         async with self._errors(src):
             src_bc = self._blob_client(src)

@@ -8,6 +8,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-226 — Coalesce local `from azure.core.exceptions import ...` imports in `_azure.py` (sync + async)**
+  spec: — · audience: contributor.tooling
+  Both `src/remote_store/backends/_azure.py` and
+  `src/remote_store/aio/backends/_azure.py` repeated local
+  `from azure.core.exceptions import ResourceNotFoundError` /
+  `HttpResponseError` inside ~8 methods each — a pattern that predated
+  the consolidation work and entrenched further with the BUG-200/BUG-201
+  paths. Promoted both names to a single module-level
+  `from azure.core.exceptions import HttpResponseError, ResourceNotFoundError`
+  in each file; `azure.core` is a hard dependency of `azure-storage-blob`
+  so no extras guard is required (the entire module already lives behind
+  `try/except ImportError` in `backends/__init__.py`). Net 20-line
+  reduction. Flagged by PR #650 review; deferred to keep that PR scoped
+  to the bug fixes themselves.
+  Trace: [`sdd/traces/bk-226-azure-exceptions-imports.yml`](traces/bk-226-azure-exceptions-imports.yml).
+
 - [x] **BK-227 — `Store.move`/`copy` self-op short-circuit masks backend BUG-201 `InvalidPath` for HNS directories**
   spec: BE-018, BE-019, BE-021 · audience: user.api
   After BUG-203 fixed `AzureBackend.is_file(hns_dir)` to return `False`, the
