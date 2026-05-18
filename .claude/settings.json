@@ -104,7 +104,7 @@
           },
           {
             "type": "command",
-            "if": "Edit(sdd/BACKLOG.md)",
+            "if": "Edit(*BACKLOG.md)",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/backlog-status-brake.sh"
           }
         ]

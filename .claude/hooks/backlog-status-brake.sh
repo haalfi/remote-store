@@ -9,6 +9,17 @@
 # matched (consistent with sibling Edit|Write hooks here).
 
 INPUT=$(cat)
+FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')
+
+# Filter to sdd/BACKLOG.md only — the matcher uses a loose glob (*BACKLOG.md)
+# for cross-platform safety (Claude Code may pass absolute paths with either
+# slash style, e.g. K:\Code\...\sdd\BACKLOG.md on Windows), so do the precise
+# path filter here. Excludes legacy/sam-services-snapshot/.../BACKLOG.md.
+case "$FILE" in
+  *sdd/BACKLOG.md|*sdd\\BACKLOG.md|sdd/BACKLOG.md|sdd\\BACKLOG.md) ;;
+  *) exit 0 ;;
+esac
+
 OLD_IDS=$(printf '%s' "$INPUT" | jq -r '.tool_input.old_string // empty' | grep -oE '\[~\] \*\*[A-Z]{2,}-[0-9]+' | sort -u)
 NEW_IDS=$(printf '%s' "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // empty' | grep -oE '\[~\] \*\*[A-Z]{2,}-[0-9]+' | sort -u)
 
