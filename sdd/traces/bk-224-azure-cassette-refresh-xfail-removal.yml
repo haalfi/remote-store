@@ -9,6 +9,7 @@ audience:
   - infra.test
 co_shipped_items:
   - BK-225
+review_rounds: 1
 expected_ripples:
   - sdd/backlogid.json
 phases:
@@ -39,10 +40,10 @@ phases:
         section: "Comment grouping at lines 224-229"
         read_type: reference
         extract: "Both entries trace back to PR-#650-fixed bugs; user widened scope from 'BUG-202 only' to 'both BUG-202 and BUG-203' because the roster's purpose is dead once both bugs are fixed and cassettes proven against them"
-      - file: C:/Users/harald/.claude/projects/K--Code-remote-store/memory/feedback_changelog_skip_infra_test.md
-        section: "(full)"
+      - file: sdd/traces/_schema.yml
+        section: "audience field / Derived rule"
         read_type: gate
-        extract: "audience: infra.test → no CHANGELOG entry; BK-223 is the precedent for this rule"
+        extract: "CHANGELOG required iff any audience entry starts with `user.` (or `contributor.process` introduces a new user-facing framework); audience: infra.test items skip CHANGELOG. BK-223 in sdd/BACKLOG-DONE.md is the precedent application of this rule for a test-only infra.test item."
         outcome: ok
 
   - id: record
