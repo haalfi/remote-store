@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import AlreadyExists, NotFound
+from remote_store._errors import AlreadyExists, InvalidPath, NotFound
 from remote_store._models import WriteResult
 from tests.backends.conformance._helpers import (
     _MOVE_COPY_PARAMS,
@@ -21,6 +21,7 @@ from tests.backends.conformance._helpers import (
     _fixture_record,
     _require,
     _seed,
+    _skip_flat_namespace,
 )
 from tests.backends.fixtures import fixture_params
 
@@ -340,6 +341,20 @@ class TestMoveCopySelfOperation:
         path = f"sm_{op}_missing.txt"
         with pytest.raises(NotFound, match=f"sm_{op}_missing"):
             _do_op(backend, op, path, path)
+
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("BE-019")
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    def test_self_op_on_directory_raises_invalid_path(self, backend: Backend, op: str, cap: Capability) -> None:
+        """{move,copy}(src, src) where src is a directory raises InvalidPath (BE-021)."""
+        _require(backend, cap)
+        if not _fixture_record(backend).self_op_supported:
+            pytest.skip(f"Backend {backend.name!r} does not handle self-{op} yet")
+        _skip_flat_namespace(backend, "flat-namespace backends cannot distinguish file vs folder")
+        backend.write(f"sd_{op}/file.txt", b"x")
+        with pytest.raises(InvalidPath, match=f"sd_{op}"):
+            _do_op(backend, op, f"sd_{op}", f"sd_{op}")
 
 
 @pytest.mark.extended_conformance
