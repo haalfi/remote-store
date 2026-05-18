@@ -3,10 +3,14 @@
 # Rule: sdd/BACKLOG.md § Completing work — shipping work means [x] plus
 # migrate to BACKLOG-DONE.md in the same commit; [~] is for genuinely
 # in-flight work spanning multiple PRs or sessions.
+#
+# Scope: Edit only. Write would false-positive (no old_string to diff
+# against, so every preserved [~] looks newly added); MultiEdit is not
+# matched (consistent with sibling Edit|Write hooks here).
 
 INPUT=$(cat)
-OLD_IDS=$(echo "$INPUT" | jq -r '.tool_input.old_string // empty' | grep -oE '\[~\] \*\*[A-Z]{2,}-[0-9]+' | sort -u)
-NEW_IDS=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // empty' | grep -oE '\[~\] \*\*[A-Z]{2,}-[0-9]+' | sort -u)
+OLD_IDS=$(printf '%s' "$INPUT" | jq -r '.tool_input.old_string // empty' | grep -oE '\[~\] \*\*[A-Z]{2,}-[0-9]+' | sort -u)
+NEW_IDS=$(printf '%s' "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // empty' | grep -oE '\[~\] \*\*[A-Z]{2,}-[0-9]+' | sort -u)
 
 ADDED=$(comm -23 <(echo "$NEW_IDS") <(echo "$OLD_IDS"))
 [ -z "$ADDED" ] && exit 0
