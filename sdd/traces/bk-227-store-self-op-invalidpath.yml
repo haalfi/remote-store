@@ -7,17 +7,18 @@ trigger: |
   the Store wrapper.
 source_items:
   - BK-227
-review_rounds: 1
+review_rounds: 2
 audience:
   - user.api
   - user.api_docs
 expected_ripples:
-  - sdd/backlogid.json
   - sdd/specs/001-store-api.md
   - sdd/specs/029-async-store-backend-api.md
   - CHANGELOG.md
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
+  - tests/backends/conformance/test_atomic.py
+  - tests/backends/conformance/test_async_extended.py
 phases:
   - id: orient
     name: Orient
