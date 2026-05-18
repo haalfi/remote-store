@@ -591,7 +591,8 @@ class Store:
             NotFound: If *src* does not exist.
             AlreadyExists: If *dst* exists and *overwrite* is
                 ``False``.
-            InvalidPath: If *src* or *dst* is empty.
+            InvalidPath: If *src* or *dst* is empty, or if *src* names a
+                directory (BE-018, BE-021).
         """
         _bk = self._backend.name
         log.debug(
@@ -601,9 +602,11 @@ class Store:
         src_path = self._require_file_path(src)
         dst_path = self._require_file_path(dst)
         if src_path == dst_path:
-            if not self._backend.is_file(src_path):
-                raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
-            return
+            if self._backend.is_file(src_path):
+                return
+            if self._backend.is_folder(src_path):
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend=_bk)
+            raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
         self._backend.move(src_path, dst_path, overwrite=overwrite)
         log.info("move complete src=%r dst=%r", src, dst, extra={"op": "move", "path": src, "backend": _bk})
 
@@ -622,7 +625,8 @@ class Store:
             NotFound: If *src* does not exist.
             AlreadyExists: If *dst* exists and *overwrite* is
                 ``False``.
-            InvalidPath: If *src* or *dst* is empty.
+            InvalidPath: If *src* or *dst* is empty, or if *src* names a
+                directory (BE-019, BE-021).
         """
         _bk = self._backend.name
         log.debug(
@@ -632,9 +636,11 @@ class Store:
         src_path = self._require_file_path(src)
         dst_path = self._require_file_path(dst)
         if src_path == dst_path:
-            if not self._backend.is_file(src_path):
-                raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
-            return
+            if self._backend.is_file(src_path):
+                return
+            if self._backend.is_folder(src_path):
+                raise InvalidPath(f"Source is a directory: {src}", path=src, backend=_bk)
+            raise NotFound(f"Source not found: {src}", path=src, backend=_bk)
         self._backend.copy(src_path, dst_path, overwrite=overwrite)
         log.info("copy complete src=%r dst=%r", src, dst, extra={"op": "copy", "path": src, "backend": _bk})
 

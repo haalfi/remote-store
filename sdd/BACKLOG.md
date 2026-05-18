@@ -57,8 +57,8 @@ Confirmed defects on real ADLS Gen2 accounts plus testing infrastructure for liv
 Bug fixes follow the `hdi_isfolder` probe pattern established by BUG-190/BUG-192.
 BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/replay layer from BK-181 (landed).
 
-- [ ] **BK-227 — `Store.move`/`copy` self-op short-circuit masks backend BUG-201 `InvalidPath` for HNS directories**
-  spec: BE-018, BE-019, BE-021 · effort: S · audience: library.maintainer
+- [~] **BK-227 — `Store.move`/`copy` self-op short-circuit masks backend BUG-201 `InvalidPath` for HNS directories**
+  spec: BE-018, BE-019, BE-021 · effort: S · audience: user.api
   `Store.move`/`copy` and `AsyncStore.move`/`copy` short-circuit `src == dst`
   by checking `self._backend.is_file(src_path)`; if False, raises
   `NotFound("Source not found: {src}")`. After BUG-203,

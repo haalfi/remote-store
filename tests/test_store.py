@@ -226,11 +226,12 @@ class TestStoreSamePathOps:
         with pytest.raises(NotFound):
             getattr(store, op)("ghost.txt", "ghost.txt")
 
-    @pytest.mark.spec("STORE-008a")
+    @pytest.mark.spec("STORE-008a", "BE-018", "BE-019", "BE-021")
     @pytest.mark.parametrize("op", _MOVE_COPY_OPS)
-    def test_same_path_folder_raises(self, store: Store, op: str) -> None:
+    def test_same_path_folder_raises_invalid_path(self, store: Store, op: str) -> None:
+        """BK-227: self-op on a directory source raises InvalidPath, not NotFound."""
         store.write("dir/file.txt", b"x")
-        with pytest.raises(NotFound):
+        with pytest.raises(InvalidPath, match=r"directory: dir"):
             getattr(store, op)("dir", "dir")
 
 

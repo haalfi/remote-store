@@ -490,6 +490,14 @@ class TestAsyncStoreFileOps:
         with pytest.raises(NotFound, match="not found"):
             await getattr(async_store, op)("ghost.txt", "ghost.txt")
 
+    @pytest.mark.spec("ASYNC-047", "BE-018", "BE-019", "BE-021")
+    @pytest.mark.parametrize("op", _MOVE_COPY_OPS)
+    async def test_same_path_folder_raises_invalid_path(self, async_store: AsyncStore, op: str) -> None:
+        """BK-227: async self-op on a directory source raises InvalidPath, not NotFound."""
+        await async_store.write("dir/file.txt", b"x")
+        with pytest.raises(InvalidPath, match=r"directory: dir"):
+            await getattr(async_store, op)("dir", "dir")
+
     @pytest.mark.spec("ASYNC-047")
     @pytest.mark.parametrize("op", _MOVE_COPY_OPS)
     async def test_empty_path_rejected(self, async_store: AsyncStore, op: str) -> None:

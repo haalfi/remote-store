@@ -43,7 +43,7 @@
 
 ### STORE-008a: Same-Path Move and Copy
 
-**Invariant:** `move(src, dst)` or `copy(src, dst)` where `src` and `dst` resolve to the same path is a no-op (the file is not modified, copied, or deleted). The source must be an existing file (verified via `is_file()`); otherwise `NotFound` is raised even for same-path calls.
+**Invariant:** `move(src, dst)` or `copy(src, dst)` where `src` and `dst` resolve to the same path is a no-op (the file is not modified, copied, or deleted). Precondition: `src` must name an existing file. `InvalidPath` if `src` names a directory; `NotFound` if `src` does not exist (BE-018, BE-019, BE-021).
 
 ### STORE-009: Resource Management
 

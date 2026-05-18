@@ -538,6 +538,25 @@ class TestMoveCopySelfOperation:
         with pytest.raises(NotFound, match=f"sm_{op}_missing"):
             await _do_op(async_backend, op, path, path)
 
+    @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.spec("ASYNC-019")
+    @pytest.mark.spec("ASYNC-047")
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
+    async def test_self_op_on_directory_raises_invalid_path(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        """{move,copy}(src, src) where src is a directory raises InvalidPath.
+
+        ASYNC-018/019 src-type precondition; ASYNC-047 self-op contract.
+        """
+        _require(async_backend, cap)
+        if not _fixture_record(async_backend).self_op_supported:
+            pytest.skip(f"Backend {async_backend.name!r} does not handle self-{op} yet")
+        _skip_flat_namespace(async_backend, "flat-namespace backends cannot distinguish file vs folder")
+        await async_backend.write(f"sd_{op}/file.txt", b"x")
+        with pytest.raises(InvalidPath, match=f"sd_{op}"):
+            await _do_op(async_backend, op, f"sd_{op}", f"sd_{op}")
+
 
 class TestMovePostState:
     """ASYNC-018: src removed, dst has src content."""
