@@ -1,0 +1,74 @@
+id: BK-225
+title: "Closed as no-defect: TestAzureLiveHnsGetFolderInfoRoot is live-only by design"
+trigger: "BK-225 was filed during BUG-213 round-3 review with the framing 'the sync + async TestAzureLiveHnsGetFolderInfoRoot tests have no cassette yet, so azure_replay / azure_replay_async paths cannot replay them — record via hatch run record-azure'. When the cassette refresh ran for BK-224 it became visible that no cassette was being written for these tests, and inspection showed why: tests/backends/azure/test_live_hns.py is gated by `pytestmark = [pytest.mark.live, pytest.mark.skipif(RS_TEST_LIVE_HNS != \"1\")]` and carries no @pytest.mark.vcr; scripts/record_cassettes.py only targets the conformance suite. The azure_replay fixtures are not registered for this file, so the framing's premise was structurally impossible. Verified end-to-end that the tests pass live with no cassette in scope."
+source_items:
+  - BK-225
+  - BUG-213
+audience:
+  - infra.test
+co_shipped_items:
+  - BK-224
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  # The misframing originated in the BUG-213 trace's live_tests phase
+  # ("new Stage 3 cassette will be recorded via RS_TEST_LIVE_HNS=1
+  # hatch run record-azure"). Author assumed any live-marked test would
+  # be picked up by record-azure; in fact only conformance/ tests are.
+  # No other live test file outside conformance/ carries a cassette
+  # today, so this is a general truth about the recorder, not a one-off
+  # gap.
+  - sdd/traces/bug-213-azure-get-folder-info-root-path.yml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-225"
+        read_type: gate
+        extract: "Framed as cassette-recording follow-up for BUG-213; spec: BE-017, ASYNC-017; audience: infra.test"
+      - file: sdd/traces/bug-213-azure-get-folder-info-root-path.yml
+        section: "live_tests phase"
+        read_type: reference
+        extract: "Source of the cassette-recording framing — 'new Stage 3 cassette will be recorded via RS_TEST_LIVE_HNS=1 hatch run record-azure'"
+        outcome: misleading
+
+  - id: discover_misframe
+    name: Discover the structural mismatch
+    steps:
+      - file: scripts/record_cassettes.py
+        section: "_CONFORMANCE constant + _BACKENDS azure entry"
+        read_type: gate
+        extract: "Recorder hard-codes _CONFORMANCE = 'tests/backends/conformance/'; sync_k = 'azure_live and not async', async_k = 'azure_live_async' — these k-filters select conformance tests by fixture id, not file path"
+      - file: tests/backends/azure/test_live_hns.py
+        section: "Module-level pytestmark + class TestAzureLiveHnsGetFolderInfoRoot"
+        read_type: gate
+        extract: "pytestmark = [pytest.mark.live, pytest.mark.skipif(RS_TEST_LIVE_HNS != '1')]; no @pytest.mark.vcr; fixture is live_hns_backend (live-only). No cassette path defined for this file."
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "class TestAsyncLiveHnsGetFolderInfoRoot"
+        read_type: gate
+        extract: "Same shape on the async side"
+
+  - id: verify_live
+    name: Verify live tests pass against real ADLS Gen2
+    steps:
+      - file: tests/backends/azure/test_live_hns.py
+        section: "TestAzureLiveHnsGetFolderInfoRoot::test_get_folder_info_root_returns_valid_folder_info"
+        read_type: verify
+        extract: "PASSED against remotestorehns/remote-store-test with RS_TEST_LIVE_HNS=1 --stage=3 -m live"
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "TestAsyncLiveHnsGetFolderInfoRoot::test_get_folder_info_root_returns_valid_folder_info"
+        read_type: verify
+        extract: "PASSED on the async side under the same gate"
+
+  - id: close
+    name: Close as no-defect
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-225 entry"
+        read_type: gate
+        extract: "Documented that the original framing was a misread of the test-file structure; no code or cassette change was needed; live verification suffices for the 'is the root path observed against a real account?' question this test class was added to answer"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace authored; BACKLOG → BACKLOG-DONE moved alongside BK-224; CHANGELOG skipped (infra.test); backlogid.json regenerated"

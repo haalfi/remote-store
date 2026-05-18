@@ -221,23 +221,15 @@ def vcr_config(_real_azure_account: str | None) -> dict[str, Any]:
 # Missing-cassette skip hook (TEST-007) + HNS known-failures xfail
 # ---------------------------------------------------------------------------
 
-# Test function names known to expose real-ADLS-Gen2 conformance gaps.
-# Real ADLS Gen2 accepts or mishandles calls that Azurite correctly rejects
-# per spec.  Each name below is grouped by the BUG it tracks:
-#   - BUG-202 (write_atomic streaming MissingRequiredQueryParameter on HNS):
-#     test_size_matches_written_bytes_for_streaming_input
-#   - BUG-203 (is_file returns True for HNS directory blob): test_is_file
-# Applied as xfail(strict=False) for real-Azure fixture IDs so that:
-#   - CI does not treat them as unexpected failures (they match live behaviour)
-#   - Once the bugs are fixed, they flip to xpass without blocking CI
-_AZURE_HNS_KNOWN_FAILURE_FN_NAMES: frozenset[str] = frozenset(
-    {
-        # BUG-202
-        "test_size_matches_written_bytes_for_streaming_input",
-        # BUG-203
-        "test_is_file",
-    }
-)
+# Test function names that expose a real-ADLS-Gen2 conformance gap not yet
+# fixed in the backend.  Applied as xfail(strict=False) for real-Azure
+# fixture IDs so CI does not treat them as unexpected failures; once the
+# underlying bug is fixed and cassettes are re-recorded, the xpass signals
+# the entry can be removed.  Currently empty: BUG-202 + BUG-203 fixes landed
+# in PR #650; cassettes were refreshed (BK-224) so both names xpass and were
+# removed from the roster.  Guard: ``test_xfail_guard.py`` asserts every
+# entry matches a live test function.
+_AZURE_HNS_KNOWN_FAILURE_FN_NAMES: frozenset[str] = frozenset()
 
 # Fixture IDs that represent real ADLS Gen2 (live or replay) — not Azurite.
 _AZURE_REAL_FIXTURE_IDS: frozenset[str] = frozenset(
@@ -285,7 +277,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(
                 pytest.mark.xfail(
                     strict=False,
-                    reason="Known real-ADLS-Gen2 conformance gap (see BUG-202/203 in BACKLOG.md)",
+                    reason="Known real-ADLS-Gen2 conformance gap (see _AZURE_HNS_KNOWN_FAILURE_FN_NAMES)",
                 )
             )
 

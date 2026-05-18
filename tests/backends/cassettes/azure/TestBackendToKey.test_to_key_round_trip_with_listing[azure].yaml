@@ -23,9 +23,9 @@ interactions:
       Content-Length:
       - '0'
       ETag:
-      - '"0x8DEB3F2F5E5E3EA"'
+      - '"0x8DEB4A9A414C4B4"'
       Last-Modified:
-      - Sun, 17 May 2026 09:02:02 GMT
+      - Mon, 18 May 2026 06:49:42 GMT
       x-ms-version:
       - '2026-04-06'
     status:
@@ -121,9 +121,9 @@ interactions:
       Content-MD5:
       - DMF1ucDxtqgxw5niaXcmYQ==
       ETag:
-      - '"0x8DEB3F2F63BCF18"'
+      - '"0x8DEB4A9A46D3CA8"'
       Last-Modified:
-      - Sun, 17 May 2026 09:02:02 GMT
+      - Mon, 18 May 2026 06:49:43 GMT
       x-ms-content-crc64:
       - PPzLtEWEL4w=
       x-ms-request-server-encrypted:
@@ -150,8 +150,8 @@ interactions:
     uri: https://azreplay.dfs.core.windows.net/conformance-azure-replay?directory=tk&recursive=false&resource=filesystem
   response:
     body:
-      string: '{"paths":[{"contentLength":"1","creationTime":"134234821227761432","etag":"0x8DEB3F2F63BCF18","expiryTime":"0","group":"$superuser","lastModified":"Sun,
-        17 May 2026 09:02:02 GMT","name":"tk/a.txt","owner":"$superuser","permissions":"rw-r-----"}]}
+      string: '{"paths":[{"contentLength":"1","creationTime":"134235605834284200","etag":"0x8DEB4A9A46D3CA8","expiryTime":"0","group":"$superuser","lastModified":"Mon,
+        18 May 2026 06:49:43 GMT","name":"tk/a.txt","owner":"$superuser","permissions":"rw-r-----"}]}
 
         '
     headers:
@@ -194,9 +194,9 @@ interactions:
       Content-Type:
       - application/octet-stream
       ETag:
-      - '"0x8DEB3F2F63BCF18"'
+      - '"0x8DEB4A9A46D3CA8"'
       Last-Modified:
-      - Sun, 17 May 2026 09:02:02 GMT
+      - Mon, 18 May 2026 06:49:43 GMT
       x-ms-access-tier:
       - Hot
       x-ms-access-tier-inferred:
@@ -208,7 +208,7 @@ interactions:
       x-ms-blob-type:
       - BlockBlob
       x-ms-creation-time:
-      - Sun, 17 May 2026 09:02:02 GMT
+      - Mon, 18 May 2026 06:49:43 GMT
       x-ms-group:
       - $superuser
       x-ms-lease-state:
