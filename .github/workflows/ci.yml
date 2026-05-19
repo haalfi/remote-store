@@ -128,9 +128,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v8.1.0
         with:
-          # BK-230: per-job suffix so the cache key diverges from
-          # test-primary and e2e, which share python-version 3.13 on Linux
-          # and otherwise race on the same setup-uv-*-pruned-* save key.
+          # BK-230: forward-defensive cache-suffix. The matrix excludes the
+          # primary (line 63: ALL_PYTHONS - PRIMARY), so today no shard
+          # collides with the test-primary and e2e save keys. Suffix is set
+          # anyway so reintroducing 3.13 into the matrix later does not
+          # silently revive the setup-uv-*-pruned-* reservation race.
           cache-suffix: ci-test-matrix
       - run: uv pip install -e ".[dev]"
       # tests/scripts/ holds contributor-tooling tests (script checkers, gen

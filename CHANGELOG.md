@@ -7,10 +7,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-### Fixed
-
-- **BK-230 — silenced residual CI annotations: nested Node 20 in `setup-dafny` + uv cache reservation race.**
-
 ## [0.25.0] - 2026-05-18
 
 ### Added

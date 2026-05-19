@@ -1,6 +1,6 @@
 id: BK-230
 title: "Silence persistent CI annotations: nested Node 20 in setup-dafny + uv cache reservation race"
-trigger: "After BK-206 closed (Node-20-deprecation audit) and BK-219 closed (CI Python split), two CI annotations kept firing on every run on master: (1) verify-formal still emitted the actions/setup-{dotnet,node}@v4 Node-20 warning because dafny-lang/setup-dafny-action@v1.9.1 is composite and pins those nested versions; (2) e2e and test-primary kept logging 'Failed to save: Unable to reserve cache with key setup-uv-2-...-3.13.13-pruned-...' because they race the matrix test 3.13 shard on the same content-hash cache key."
+trigger: "After BK-206 closed (Node-20-deprecation audit) and BK-219 closed (CI Python split), two CI annotations kept firing on every run on master: (1) verify-formal still emitted the actions/setup-{dotnet,node}@v4 Node-20 warning because dafny-lang/setup-dafny-action@v1.9.1 is composite and pins those nested versions; (2) test-primary and e2e kept logging 'Failed to save: Unable to reserve cache with key setup-uv-2-...-3.13.13-pruned-...' because both ran Linux+Python-3.13 with caching enabled and raced to save the same content-hash key. (Initial draft misread the race set as including a 3.13 matrix shard; ci.yml line 63 actually subtracts the primary, so the matrix never enters the race today — corrected in PR #661 review round 1.)"
 source_items:
   - BK-230
   - BK-206
@@ -9,9 +9,9 @@ audience:
 discovery_followups: []
 expected_ripples:
   - sdd/backlogid.json
-  - CHANGELOG.md
   - sdd/BACKLOG-DONE.md
 surprising_ripples: []
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -27,10 +27,10 @@ phases:
         extract: "BK-206 enumerated GitHub-org actions only; nested composite-action steps were never inspected"
         outcome: ok
       - file: .github/workflows/ci.yml
-        section: "verify-formal job (line 310), three setup-uv blocks without enable-cache:false (lines 129, 161, 272)"
+        section: "verify-formal job (line 310), setup-uv blocks without enable-cache:false"
         read_type: gate
-        extract: "identify the single workflow consumer of setup-dafny-action and the three cache-enabled setup-uv jobs racing on Python-3.13 Linux"
-        outcome: ok
+        extract: "identify the single workflow consumer of setup-dafny-action and the cache-enabled setup-uv jobs; missed on first pass that test-matrix excludes the primary (line 63: ALL_PYTHONS - [PRIMARY]) so only test-primary and e2e actually share the Linux+3.13 key"
+        outcome: misleading
   - id: verify_root_cause
     name: Verify root cause
     steps:
@@ -53,28 +53,33 @@ phases:
         extract: "add FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true at job level with a comment naming the nested dependency; mirrors the BK-168 pattern that BK-206 follow-up removed from mutation.yml"
         outcome: ok
       - file: .github/workflows/ci.yml
-        section: "setup-uv steps in test (matrix), test-primary, e2e"
+        section: "setup-uv steps in test-primary and e2e (live race); test matrix (forward-defensive)"
         read_type: gate
-        extract: "add unique cache-suffix per job so the save keys diverge; cross-platform job left alone because its OS axis already differentiates the key"
+        extract: "add unique cache-suffix to test-primary and e2e to break the live Linux+3.13 race; add ci-test-matrix as forward-defensive entry so reintroducing 3.13 to the matrix later cannot silently revive the race; cross-platform left alone because its OS axis already differentiates the key"
         outcome: ok
   - id: doc_sweep
     name: Document and amend prior audit
     steps:
       - file: sdd/BACKLOG-DONE.md
-        section: "BK-206 title and trailing addendum"
+        section: "BK-206 title and trailing addendum; new BK-230 entry under Unreleased"
         read_type: gate
-        extract: "correct the original 'Node.js 20 to Node.js 22' title (deprecation target was always Node.js 24) and append an Audit gap paragraph pointing to BK-230"
+        extract: "correct the original 'Node.js 20 to Node.js 22' title (deprecation target was always Node.js 24), append an Audit gap paragraph pointing to BK-230, and add the BK-230 entry itself"
         outcome: ok
       - file: CHANGELOG.md
-        section: "[Unreleased] / Fixed; 0.25.0 CI hygiene rollup"
+        section: "0.25.0 CI hygiene rollup line"
         read_type: gate
-        extract: "add a Fixed entry under [Unreleased] for BK-230; correct the 0.25.0 'Node.js 20 to 22' wording to 'Node.js 20 to 24'"
+        extract: "correct the v0.25.0 'Node.js 20 to 22' wording to 'Node.js 20 to 24' (typo fix on a shipped line — editorial). No [Unreleased] entry: BK-230 audience is infra.ci and the schema's literal rule (lines 115-119) excludes infra.ci from CHANGELOG; precedent set by BK-205, BK-207, BK-219, BUG-206."
         outcome: ok
   - id: verify
     name: Verify
     steps:
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule (lines 115-119)"
+        read_type: verify
+        extract: "confirm infra.ci-only items skip CHANGELOG; only the v0.25.0 line correction (editorial typo fix on a shipped line) stays in the diff"
+        outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Workflow change"
         read_type: verify
-        extract: "BACKLOG-DONE entry, CHANGELOG (audience starts user. or contributor.process is the gate — infra.ci would normally skip CHANGELOG, but this entry corrects an already-shipped CHANGELOG line and adds a paired entry to the same rollup, so the entry is editorial not derived); trace; backlogid.json regenerated"
+        extract: "BACKLOG-DONE entry; trace; backlogid.json regenerated; no [Unreleased] CHANGELOG entry per audience rule"
         outcome: ok

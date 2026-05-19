@@ -25,18 +25,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   follow-on cleanup removed from `mutation.yml` once direct actions were
   Node 24. Comment names the nested dependency so the flag is removable
   once upstream bumps.
-  (2) **uv cache reservation race.** `e2e` and `test-primary` both emitted
+  (2) **uv cache reservation race.** `test-primary` and `e2e` both emitted
   `Failed to save: Unable to reserve cache with key setup-uv-2-...-3.13.13-pruned-...`
-  whenever they ran in parallel against the matrix `test` job's 3.13
-  shard. Three Linux jobs racing to save the same content-hash key. The
-  benign warning hid real failures in the annotations panel. Added
-  per-job `cache-suffix` (`ci-test-matrix`, `ci-test-primary`, `ci-e2e`)
-  to the three cache-enabled `setup-uv` invocations so the keys diverge.
-  Cross-platform job left alone — its OS axis already differentiates the
-  key. Also corrected the stale "Node.js 20 → 22" wording in the BK-206
-  title and CHANGELOG line 203 — the deprecation target was always Node.js
-  24; the title typo dated to the original BK-206 draft in commit
-  30f993deb. Audience: `infra.ci`.
+  whenever they ran in parallel — two Linux jobs at the primary Python
+  with caching enabled, racing to save the same content-hash key. (The
+  `test` matrix shards do not enter the race today because line 63 of
+  `ci.yml` computes `test-matrix = ALL_PYTHONS - [PRIMARY]`, leaving
+  3.10/3.11/3.12/3.14 only.) The benign warning hid real failures in the
+  annotations panel. Added per-job `cache-suffix` (`ci-test-primary`,
+  `ci-e2e`) so the live race keys diverge, plus `ci-test-matrix` on the
+  matrix `test` job as a forward-defensive entry — reintroducing 3.13 to
+  the matrix would otherwise silently revive the race. Cross-platform job
+  left alone — its OS axis already differentiates the key. Also corrected
+  the stale "Node.js 20 → 22" wording in the BK-206 title and in the
+  v0.25.0 CI/build-hygiene rollup line — the deprecation target was
+  always Node.js 24; the title typo dated to the original BK-206 draft in
+  commit 30f993deb. Audience: `infra.ci`.
   Trace: [`sdd/traces/BK-230-ci-node24-uv-cache-race.yml`](traces/BK-230-ci-node24-uv-cache-race.yml).
 
 - [x] **ID-204 — Relocate `benchmarks/infra/` to top-level `infra/`, retune MinIO ports, single-source settings**
