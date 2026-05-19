@@ -9485,14 +9485,14 @@ and place it in your project <code>.env</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nv">RS_TEST_LIVE_HNS</span><span class="o">=</span><span class="m">1</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nv">RS_TEST_LIVE_HNS_CONTAINER</span><span class="o">=</span>&lt;FILESYSTEM_NAME&gt;
 </code></pre></div>
-<p><code>tests/backends/test_azure_live_hns.py</code> carries the <code>live</code> pytest marker
-and exercises sync HNS semantics that mocks cannot reach: the
-<code>InvalidPath</code> directory-path guards on <code>write</code>, <code>write_atomic</code>, and
-<code>open_atomic</code> against a real HNS directory blob, and that user metadata
-passed to <code>write_atomic</code> survives ADLS Gen2's atomic-rename commit
-(round-tripped via <code>get_file_info</code>). <code>live</code>-marked tests are excluded
-by default <code>addopts</code> and have to be opted into explicitly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>tests/backends/test_azure_live_hns.py
+<p><code>tests/backends/azure/test_live_hns.py</code> carries the <code>live</code> pytest marker
+and exercises sync HNS semantics that the conformance suite against
+<code>azure_live</code> cannot express: directory-blob <code>hdi_isfolder</code> probes,
+WriteResult etag normalisation cross-check, the <code>write_atomic</code> streaming
+guard against BUG-202, the <code>get_folder_info("")</code> HNS root carve-out,
+and the <code>_ensure_hns()</code> exists fallback. <code>live</code>-marked tests are
+excluded by default <code>addopts</code> and have to be opted into explicitly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>hatch<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>live<span class="w"> </span>tests/backends/azure/test_live_hns.py
 </code></pre></div>
 <p><code>tests/conftest.py</code> loads <code>.env</code> via <code>python-dotenv</code> when a <code>live</code> mark
 expression is in play, so dropping all three variables above into <code>.env</code>
@@ -9505,10 +9505,11 @@ missing, empty, or points at the Azurite local emulator, the suite fails
 loud with a <code>pytest.fail</code> message rather than silently skipping. Azurite
 does not emulate Hierarchical Namespace, so an Azurite-backed run cannot
 validate HNS-specific behaviour.</p>
-<p>Async HNS coverage lives in <code>tests/aio/test_async_azure_live_hns.py</code>,
+<p>Async HNS coverage lives in <code>tests/backends/azure/aio/test_live_hns.py</code>,
 which uses the same three-layer gate and a dedicated real-account fixture —
 it is explicitly <strong>not</strong> co-located with the Azurite-backed async live
-tests to avoid the Azurite reachability guard blocking real-ADLS-Gen2 CI.</p>
+tests in <code>tests/backends/azure/aio/test_live.py</code> to avoid the Azurite
+reachability guard blocking real-ADLS-Gen2 CI.</p>
 <p><code>.env</code> is gitignored. Do not commit the connection string.</p>
 <h2 id="smoke-test">Smoke test<a class="headerlink" href="#smoke-test" title="Permanent link">&para;</a></h2>
 <p>A round-trip via <code>az storage blob</code> confirms the account is usable:</p>
