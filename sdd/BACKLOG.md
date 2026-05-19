@@ -240,12 +240,17 @@ line number).
 
 ## Async API Verification
 
-Async API surface, conformance, and tooling. ID-192 (aio.md rework) has landed
-(see BACKLOG-DONE.md); the verifier (ID-194) can now be made authoritative and
-the conformance pattern (ID-193) can lock in the test shape against the
-stabilised page.
+Async API surface, conformance, and tooling. Two strands live here:
 
-**Sequence:** ID-194 (in parallel with ID-193) → ID-172 → ID-173
+1. **Doc-anchored verification sequence (ID arc).** ID-192 (aio.md rework) has
+   landed (see BACKLOG-DONE.md); the verifier (ID-194) can now be made
+   authoritative and the conformance pattern (ID-193) can lock in the test
+   shape against the stabilised page.
+   **Sequence:** ID-194 (in parallel with ID-193) → ID-172 → ID-173
+2. **Standalone async-conformance coverage gaps (BK arc).** Independent S-effort
+   fixes that add missing tests to `tests/backends/conformance/test_async_extended.py`
+   so every public async API surface has a conformance-tier assertion. No
+   ordering dependency on the ID arc.
 
 - [ ] **BK-228 — Async conformance gap: `iter_children` has no test in `test_async_extended.py`**
   spec: ASYNC-024 · effort: S · audience: infra.test
