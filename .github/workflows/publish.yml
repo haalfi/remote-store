@@ -69,6 +69,8 @@ jobs:
         # daemon. The single invocation still reaches the 95% floor via
         # Azure-backend coverage. `[tool.coverage.run] parallel = true` is
         # inert here because there is no `-n auto`.
+        # `--ignore=tests/scripts`: exercises scripts/, not remote_store —
+        # would only inflate the denominator without contributing coverage.
         run: pytest --cov=remote_store --cov-report=xml --cov-fail-under=95 --ignore=tests/scripts
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6

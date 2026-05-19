@@ -590,8 +590,8 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   spec: — · effort: M · audience: library.maintainer
   ASCII art diagrams in `sdd/`, `guides/`, and `docs-src/` are hard to
   maintain and render poorly. Mermaid renders natively on GitHub and in
-  MkDocs via `pymdownx.superfences`. The medallion-dagster showcase already
-  uses it as proof. Convert all non-trivial ASCII diagrams; leave simple
+  MkDocs via `pymdownx.superfences` (already used in `docs-src/index.md`
+  and several `sdd/` research docs). Convert all non-trivial ASCII diagrams; leave simple
   inline flows (single arrows, short sequences) as text.
 
 ---
