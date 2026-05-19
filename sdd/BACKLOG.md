@@ -292,6 +292,16 @@ stabilised page.
   (per the Phase 1 reviewers' staged-rollout preference).
   Page target: `docs-src/reference/api/index.md`.
 
+- [ ] **ID-203 — Align `tests/` folder structure with `src/` package layout**
+  spec: — · effort: M · audience: library.maintainer
+  `tests/` does not mirror the `src/remote_store/` package tree; as the `aio`
+  subtree and other packages grow, test file placement becomes ambiguous.
+  Mirror `src/` layout (e.g. `tests/aio/`, `tests/backends/`) and carve out
+  `tests/scripts/` for script-level tests.
+  **Blocked on:** ID-193 (async conformance pattern) + ID-194 (gen_graph async
+  gate) + ID-172 + ID-173 — the async API surface must be settled before
+  reorganising the tests that cover it.
+
 ---
 
 ## SFTP
@@ -576,6 +586,14 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
   Effort `L` reflects the parent scope; each individual guide is M-sized.
 
+- [ ] **ID-205 — Migrate complex ASCII diagrams to Mermaid**
+  spec: — · effort: M · audience: library.maintainer
+  ASCII art diagrams in `sdd/`, `guides/`, and `docs-src/` are hard to
+  maintain and render poorly. Mermaid renders natively on GitHub and in
+  MkDocs via `pymdownx.superfences` (already used in `docs-src/index.md`
+  and several `sdd/` research docs). Convert all non-trivial ASCII diagrams; leave simple
+  inline flows (single arrows, short sequences) as text.
+
 ---
 
 ## API Ergonomics
@@ -756,6 +774,27 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   symmetric capability-declaration test; (e) streaming-iteration assertion;
   (f) `tests/aio/README.md` update. Closes the pattern-drift risk before ID-127
   Graph backend repeats conformance-lag and doc-ripple issues.
+
+- [ ] **ID-204 — Relocate `benchmarks/infra/` compose file and retune MinIO ports**
+  spec: — · effort: M · audience: library.maintainer
+  Two unrelated debts bundled because they touch the same file and callers.
+
+  **1. Wrong home.** `benchmarks/infra/docker-compose.yml` is primarily consumed by
+  the test suite (`sftp_docker` and `azurite` conformance fixtures, `test-cov-strict`
+  second leg), not by benchmarks. The path misleads contributors into treating it as
+  benchmark-only. Candidate moves: `tests/infra/` (matches dominant consumer) or a
+  top-level `infra/`. Pick one, move the file, update all 23+ callers (test fixtures,
+  CI workflows, benchmark scripts, docs, `feedback_docker_infra` memory entry, and
+  any `sdd/` references).
+
+  **2. MinIO port collision with VSCode Jupyter.** The compose file exposes MinIO on
+  `9000:9000` and `127.0.0.1:9001:9001`. VSCode's Jupyter extension scans from ~9000
+  upward, causing bind failures when both are running. Move MinIO to less-trafficked
+  host ports (e.g. `19000:9000`, `19001:9001`) and update `INFRA.minio_url` resolution
+  and any test/benchmark callers that hardcode port 9000.
+
+  **Exit criteria:** compose file at new path; all CI jobs green; MinIO ports changed;
+  no remaining references to `benchmarks/infra/` in test or workflow files.
 
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer
