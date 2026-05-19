@@ -413,6 +413,46 @@ stabilised page.
   then assess whether our source docs already cover them or could adopt the same
   framing. Findings feed the next docs-improvement session or ID-161 content checklist.
 
+- [ ] **ID-199 — Backend setup & configuration guides expansion**
+  spec: — · effort: L · audience: user.site, library.maintainer
+  Expand the backend-related guide set in `docs-src/guides/` based on user
+  pain mined from two sources: in-repo signal (traces, BACKLOG, CHANGELOG,
+  PRs) and an external survey of GitHub issues across `boto3`/`s3fs`/
+  `azure-storage-blob`/`paramiko`/`fsspec`, Stack Overflow, Reddit, and
+  vendor forums. Seven candidate guides identified; full pain mapping,
+  scope boundaries, sequencing, and code-side flags are in
+  [research](research/research-backend-setup-guides.md). The two existing
+  guides (`azure-hns-setup.md`, `sftp.md`) are the proof-of-value pattern.
+
+  **Tier-1 standalone guides (per-guide PR when picked up; split a
+  dedicated backlog ID at that point):**
+  1. S3-compatible providers cookbook (`docs-src/guides/backends/s3-compatible.md`)
+  2. Large-object & streaming tuning (`docs-src/guides/large-object-tuning.md`)
+  3. Local-dev emulators (`docs-src/guides/local-dev-emulators.md`)
+  4. SFTP reliability (`docs-src/guides/backends/sftp-reliability.md`)
+  5. Azure keyless auth & private endpoints (`docs-src/guides/backends/azure-keyless-auth.md`)
+  6. Credential & secret rotation (`docs-src/guides/credential-rotation.md`)
+  7. SQLite operational notes — sidebar in `sql-blob.md` recommended over standalone
+
+  **Tier-2 sidebars** for `s3.md`, `sftp.md`, `azure.md`,
+  `azure-hns-setup.md` — see research doc § 4. Fold into adjacent
+  Tier-1 PRs where scope overlaps.
+
+  **Out of scope (Tier-3):** AWS root-email governance, MinIO operator
+  UX, `s3fs-fuse` FUSE-only concerns, generic DB pool tuning,
+  hypothetical Azure-Blob-like self-hosts. Redirect to vendor docs.
+
+  **Three code-side flags surfaced** (NOT guide work) — see research doc
+  § 6: `s3fs` typed-error mapping fidelity; `S3Backend`
+  `use_listings_cache` default; third S3 lane (`s3-boto3` direct)
+  viability. Triage as separate IDs if any reaches commit-worthy priority.
+
+  **Sequencing:** Phase 1 §3.1 + §3.4 (highest converging signal),
+  Phase 2 §3.2 + §3.6, Phase 3 §3.5 + §3.3, Tier-2 sidebars mopped up
+  alongside. §3.1 and §3.4 can ship in parallel.
+
+  Effort `L` reflects the parent scope; each individual guide is M-sized.
+
 ---
 
 ## API Ergonomics
