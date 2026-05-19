@@ -1,0 +1,99 @@
+id: ID-204
+title: "Relocate infra/ + retune MinIO ports + introduce single-source infra settings"
+trigger: "benchmarks/infra/docker-compose.yml was primarily consumed by tests (not benchmarks), exposed MinIO on host port 9000 (collides with the VSCode Jupyter scan band), and forced the same port number to be hardcoded in ~14 places (compose, three CI workflows, three conftests, two benchmark scripts, fixture skip messages, READMEs) with no drift guard"
+source_items:
+  - ID-204
+audience:
+  - infra.test
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - tests/backends/fixtures/_live_env.py
+  - .github/workflows/publish.yml
+  - benchmarks/_toxiproxy.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-204"
+        read_type: gate
+        extract: "Bundled scope: wrong home + MinIO port collision"
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Ship complete; single source of truth; repo describes reality at every commit"
+      - file: sdd/traces/_schema.yml
+        section: "audience / Derived rule"
+        read_type: gate
+        extract: "infra.test + contributor.tooling -> CHANGELOG skipped"
+
+  - id: design
+    name: Design
+    steps:
+      - file: benchmarks/infra/docker-compose.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Current literal port mappings; container internal ports stay 9000/9001"
+      - file: tests/conftest.py
+        section: "_CONTAINER_PORTS, _AZURITE_CONN_STR"
+        read_type: reference
+        extract: "Reachability probe consumes literal ports; conn str hardcodes Azurite endpoints"
+      - file: benchmarks/_toxiproxy.py
+        section: "(full)"
+        read_type: reference
+        extract: "TOXIPROXY_* and AZURITE_* constants already centralised here for benchmarks; absorb into infra._settings"
+      - file: .github/actions/start-backends/action.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Raw docker run with -p 9000:9000; survives even when compose changes"
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: infra/.env
+        section: "(full)"
+        read_type: reference
+        extract: "Author single source of truth for ports/creds; auto-loaded by compose project-dir convention"
+      - file: infra/_settings.py
+        section: "(full)"
+        read_type: reference
+        extract: "Stdlib KEY=VALUE parser; os.environ wins over file value"
+      - file: scripts/check_infra_settings.py
+        section: "(full)"
+        read_type: reference
+        extract: "Three-gate drift guard: .env parses, Python loads, no literal -p N:M in compose or CI YAML"
+      - file: .gitignore
+        section: "Secrets / .env"
+        read_type: reference
+        extract: "Negate infra/.env so the single-source file is committed despite the generic .env rule"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: reference
+        extract: "Wire check_infra_settings.py into lint"
+      - file: .github/workflows/ci.yml
+        section: "lint job"
+        read_type: reference
+        extract: "Dual-wire the check into the lint CI job per feedback_check_scripts_dual_wire"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_infra_settings.py
+        section: "(item)"
+        read_type: verify
+        extract: "Run script: must pass with zero violations after migration"
+      - file: tests/conftest.py
+        section: "_CONTAINER_PORTS, minio_server, RS_REQUIRE_MINIO error"
+        read_type: verify
+        extract: "All hardcoded ports now derived from settings"
+      - file: tests/backends/fixtures/_live_env.py
+        section: "_S3_EMULATOR_FRAGMENTS"
+        read_type: verify
+        extract: "Add :19100 alongside :9000; both fragments preserved so legacy MinIO setups still trip the guard"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: verify
+        extract: "Move ID-204 entry to BACKLOG-DONE.md"
