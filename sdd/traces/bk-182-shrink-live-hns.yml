@@ -12,7 +12,8 @@ discovery_followups:
   - BK-228
   - BK-229
 expected_ripples:
-  - sdd/backlogid.json
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
 phases:
   - id: orient
     name: Orient

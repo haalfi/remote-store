@@ -29,7 +29,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   guard against BUG-202 (`TestAzureLiveHnsWriteAtomicStreaming`),
   `get_folder_info("")` HNS root carve-out (BUG-213, AZ-024), and the
   `_ensure_hns()` exists fallback on a real HNS directory. Sync went
-  31 → ~12 cases; async went 33 → ~13 cases. Also deduped the inline
+  31 → 13 cases; async went 33 → 12 cases. Also deduped the inline
   `_require_live_env` validators in both files onto the shared
   `tests/backends/fixtures/_live_env.require_azure_live_connection_string`,
   refreshed stale `tests/backends/test_azure_live_hns.py` /
