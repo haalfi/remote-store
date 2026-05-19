@@ -82,7 +82,10 @@ SFTP_PORT: int = int(_get("SFTP_HOST_PORT"))
 SFTP_USER: str = _get("SFTP_USER")
 SFTP_PASS: str = _get("SFTP_PASS")
 
+LEGACY_SFTP_HOST: str = _get("LEGACY_SFTP_HOST")
 LEGACY_SFTP_PORT: int = int(_get("LEGACY_SFTP_HOST_PORT"))
+LEGACY_SFTP_USER: str = _get("LEGACY_SFTP_USER")
+LEGACY_SFTP_PASS: str = _get("LEGACY_SFTP_PASS")
 
 # Toxiproxy ------------------------------------------------------------------
 TOXIPROXY_HOST: str = _get("TOXIPROXY_HOST")

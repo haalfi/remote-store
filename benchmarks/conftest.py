@@ -1,6 +1,6 @@
 """Benchmark fixtures -- connect to Docker-hosted or cloud backend services.
 
-Requires ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
+Requires ``docker compose -f infra/docker-compose.yml up -d``
 to be running (Docker mode), or appropriate env vars set (cloud mode).
 
 Use ``--infra cloud`` to run against real cloud services instead of Docker.
@@ -210,22 +210,22 @@ def _paginated_delete_s3(client: Any, bucket: str, prefix: str = "") -> None:
 
 
 # ---------------------------------------------------------------------------
-# Docker defaults
+# Docker defaults (from infra/.env via infra._settings)
 # ---------------------------------------------------------------------------
 
-MINIO_HOST = os.environ.get("BENCH_MINIO_HOST", "127.0.0.1")
-MINIO_PORT = int(os.environ.get("BENCH_MINIO_PORT", "9000"))
-MINIO_ENDPOINT = f"http://{MINIO_HOST}:{MINIO_PORT}"
-MINIO_ACCESS_KEY = os.environ.get("BENCH_MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.environ.get("BENCH_MINIO_SECRET_KEY", "minioadmin")
-
-AZURE_MAX_CONCURRENCY = int(os.environ.get("BENCH_AZURE_MAX_CONCURRENCY", "1"))
-
-# Azurite and Toxiproxy connection strings / config from shared module.
-from benchmarks._toxiproxy import (  # noqa: E402
+from infra._settings import (  # noqa: E402
     AZURITE_CONN_STR,
     AZURITE_HOST,
     AZURITE_PORT,
+    MINIO_ACCESS_KEY,
+    MINIO_ENDPOINT,
+    MINIO_HOST,
+    MINIO_PORT,
+    MINIO_SECRET_KEY,
+    SFTP_HOST,
+    SFTP_PASS,
+    SFTP_PORT,
+    SFTP_USER,
     TOXIPROXY_API_PORT,
     TOXIPROXY_AZURITE_CONN_STR,
     TOXIPROXY_HOST,
@@ -233,10 +233,7 @@ from benchmarks._toxiproxy import (  # noqa: E402
     TOXIPROXY_SFTP_PORT,
 )
 
-SFTP_HOST = os.environ.get("BENCH_SFTP_HOST", "127.0.0.1")
-SFTP_PORT = int(os.environ.get("BENCH_SFTP_PORT", "2222"))
-SFTP_USER = os.environ.get("BENCH_SFTP_USER", "benchuser")
-SFTP_PASS = os.environ.get("BENCH_SFTP_PASS", "benchpass")
+AZURE_MAX_CONCURRENCY = int(os.environ.get("BENCH_AZURE_MAX_CONCURRENCY", "1"))
 
 
 # ---------------------------------------------------------------------------

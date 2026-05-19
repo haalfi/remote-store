@@ -25,6 +25,13 @@ from typing import Any
 
 import pyarrow.fs as pafs  # type: ignore[import-untyped]
 
+from infra._settings import (
+    MINIO_ACCESS_KEY,
+    MINIO_ENDPOINT,
+    MINIO_HOST,
+    MINIO_PORT,
+    MINIO_SECRET_KEY,
+)
 from remote_store import Store
 from remote_store.backends._local import LocalBackend
 from remote_store.ext.arrow import StoreFileSystemHandler, pyarrow_fs
@@ -178,9 +185,10 @@ def run_local_benchmark(sizes: list[int], rounds: int) -> None:
 # Part 2: S3PyArrow via MinIO -- actual Tier 1 A/B comparison
 # ---------------------------------------------------------------------------
 
-_MINIO_ENDPOINT = "http://127.0.0.1:9000"
-_MINIO_KEY = "minioadmin"
-_MINIO_SECRET = "minioadmin"
+
+_MINIO_ENDPOINT = MINIO_ENDPOINT
+_MINIO_KEY = MINIO_ACCESS_KEY
+_MINIO_SECRET = MINIO_SECRET_KEY
 _MINIO_REGION = "us-east-1"
 
 
@@ -300,7 +308,7 @@ def main() -> None:
     parser.add_argument(
         "--s3",
         action="store_true",
-        help="Run S3PyArrow benchmark (needs MinIO on :9000)",
+        help=f"Run S3PyArrow benchmark (needs MinIO on :{MINIO_PORT})",
     )
     args = parser.parse_args()
 
@@ -315,9 +323,9 @@ def main() -> None:
     run_local_benchmark(sizes, args.rounds)
 
     if args.s3:
-        if not _port_open("127.0.0.1", 9000):
+        if not _port_open(MINIO_HOST, MINIO_PORT):
             print()
-            print("=== Part 2: SKIPPED (MinIO not reachable on :9000) ===")
+            print(f"=== Part 2: SKIPPED (MinIO not reachable on :{MINIO_PORT}) ===")
             return
         print()
         print("=== Part 2: S3PyArrow via MinIO (Tier 1 vs Tier 2 A/B) ===")

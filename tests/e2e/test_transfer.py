@@ -4,7 +4,7 @@ Exercises ``ext.transfer.transfer()`` streaming data between different
 Docker-backed stores, verifying content integrity, progress tracking,
 and overwrite guard semantics.
 
-Requires: ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
+Requires: ``docker compose -f infra/docker-compose.yml up -d``
 """
 
 from __future__ import annotations

@@ -15,7 +15,7 @@ Two Docker images, both forcing the legacy-server shape:
 
 | Image | Forcing | Port |
 |---|---|---|
-| `legacy-sftp` (durable) | Only `ssh-rsa` host-key + pubkey algorithms; modern KEX defaults; `benchmarks/infra/legacy-sftp/Dockerfile` | 2223 |
+| `legacy-sftp` (durable) | Only `ssh-rsa` host-key + pubkey algorithms; modern KEX defaults; `infra/legacy-sftp/Dockerfile` | 2223 |
 | `legacy-sftp:kex` (research-only) | Same as above PLUS `KexAlgorithms diffie-hellman-group14-sha1,diffie-hellman-group1-sha1` | 2224 |
 
 The second image is kept only for research-time reproductions of the user's originally-reported `IncompatiblePeer: no acceptable kex algorithm` shape; the durable e2e test (`tests/e2e/test_sftp_legacy_recovery.py`) drives the first.

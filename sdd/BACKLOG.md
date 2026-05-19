@@ -749,7 +749,7 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   `pip install --upgrade --pre` with no consumer-side pins, diff
   resolved versions against a committed observed-lock, and for each
   delta run the most-likely-to-break smoke tests against deterministic
-  fixtures (the `benchmarks/infra/legacy-sftp` e2e is the model). Open
+  fixtures (the `infra/legacy-sftp` e2e is the model). Open
   an issue on drift; do not auto-merge a pin update — the point is
   early warning, not automated remediation. Surfaced during BK-198 (PR 613) review.
 

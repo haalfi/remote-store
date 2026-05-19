@@ -18,9 +18,9 @@ PyArrow's dataset I/O scheduling works correctly with the range reader.
 
 Usage::
 
-    docker compose -f benchmarks/infra/docker-compose.yml up -d
+    docker compose -f infra/docker-compose.yml up -d
     hatch run python benchmarks/bench_azure_pyarrow.py
-    docker compose -f benchmarks/infra/docker-compose.yml down -v
+    docker compose -f infra/docker-compose.yml down -v
 """
 
 from __future__ import annotations

@@ -45,7 +45,10 @@ _REQUIRED_KEYS = (
     "SFTP_HOST_PORT",
     "SFTP_USER",
     "SFTP_PASS",
+    "LEGACY_SFTP_HOST",
     "LEGACY_SFTP_HOST_PORT",
+    "LEGACY_SFTP_USER",
+    "LEGACY_SFTP_PASS",
     "TOXIPROXY_HOST",
     "TOXIPROXY_API_PORT",
     "TOXIPROXY_MINIO_PORT",
@@ -116,26 +119,26 @@ def check_compose_no_port_literals() -> list[str]:
     if not _COMPOSE_FILE.is_file():
         return [f"{_COMPOSE_FILE}: not found"]
     violations: list[str] = []
-    in_ports_block = False
+    ports_indent: int | None = None  # indent of the ``ports:`` key when in a block
     for lineno, raw in enumerate(_COMPOSE_FILE.read_text(encoding="utf-8").splitlines(), 1):
         stripped = raw.rstrip()
-        # Track entry into a ``ports:`` block. Reset on any sibling key.
-        if re.match(r"^\s{2,}ports:\s*$", stripped):
-            in_ports_block = True
+        if not stripped or stripped.lstrip().startswith("#"):
             continue
-        if in_ports_block:
-            if not stripped or not stripped.startswith(" "):
-                in_ports_block = False
-                continue
-            # Comments inside the block are fine.
-            if stripped.lstrip().startswith("#"):
-                continue
-            # A list entry inside ports must contain $ or # (skip blank).
-            content = stripped.lstrip()
-            if content.startswith("-") and "$" not in content and not content.startswith("- #"):
-                violations.append(
-                    f"{_COMPOSE_FILE}:{lineno}: literal port in ports list ('{content}'); use ${{VAR}} from infra/.env"
-                )
+        indent = len(stripped) - len(stripped.lstrip())
+        if ports_indent is not None and indent <= ports_indent:
+            # Same- or shallower-indent line ends the ports block.
+            ports_indent = None
+        match = re.match(r"^(\s*)ports:\s*$", raw)
+        if match:
+            ports_indent = len(match.group(1))
+            continue
+        if ports_indent is None:
+            continue
+        content = stripped.lstrip()
+        if content.startswith("-") and "$" not in content:
+            violations.append(
+                f"{_COMPOSE_FILE}:{lineno}: literal port in ports list ('{content}'); use ${{VAR}} from infra/.env"
+            )
     return violations
 
 

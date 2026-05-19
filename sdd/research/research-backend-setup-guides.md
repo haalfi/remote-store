@@ -130,7 +130,7 @@ design feature, not a bug); corporate-proxy snippets folded in; pin
 matrix for the `boto3` / `aiobotocore` / `s3fs` triangle; minimum IAM
 policy snippet for AWS S3 specifically.
 
-**Dogfood plan.** MinIO via the existing `benchmarks/infra/` compose
+**Dogfood plan.** MinIO via the existing `infra/` compose
 file (already in CI). Cloudflare R2 and Backblaze B2 via fresh free-tier
 accounts; one bucket each, smoke-tested for read / write / list /
 multipart / delete. Wasabi, Ceph, Garage, SeaweedFS are NOT in scope as
@@ -211,7 +211,7 @@ what fails on Azurite but works on real HNS, what moto accepts that real
 S3 rejects, the SFTPGo vs OpenSSH semantic differences we test against.
 
 **Dogfood plan.** Already dogfooded — every emulator runs in CI for
-every PR. Extract compose snippets verbatim from `benchmarks/infra/`
+every PR. Extract compose snippets verbatim from `infra/`
 and `.github/workflows/`; populate the divergences table from observed
 quirks already recorded in CHANGELOG entries and traces. No new setup.
 

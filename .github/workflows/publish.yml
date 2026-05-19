@@ -48,15 +48,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Load infra settings
+        run: |
+          set -a
+          . infra/.env
+          set +a
+          echo "AZURITE_HOST_PORT=$AZURITE_HOST_PORT" >> $GITHUB_ENV
       - name: Start Azurite
         run: |
-          docker run -d --name azurite -p 10000:10000 \
+          docker run -d --name azurite -p ${AZURITE_HOST_PORT}:10000 \
             mcr.microsoft.com/azure-storage/azurite:3.35.0 \
             azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
           for i in $(seq 1 30); do
-            nc -z 127.0.0.1 10000 && break || sleep 1
+            nc -z 127.0.0.1 ${AZURITE_HOST_PORT} && break || sleep 1
           done
-          nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
+          nc -z 127.0.0.1 ${AZURITE_HOST_PORT} || { echo "::error::Azurite failed to start"; exit 1; }
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"

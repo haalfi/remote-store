@@ -15,7 +15,7 @@ paramiko, using a Dockerized server:
   re-adds the four entries to restore the connection.
 
 Requires:
-    docker compose -f benchmarks/infra/docker-compose.yml up -d legacy-sftp
+    docker compose -f infra/docker-compose.yml up -d legacy-sftp
 
 Test is skipped when the legacy-sftp container is not reachable on
 ``127.0.0.1:2223`` (env-overridable: ``E2E_LEGACY_SFTP_PORT`` etc.).

@@ -91,7 +91,7 @@ already covers 50/1k/10k listings and 1KB–100MB throughput.
 
 #### 1a. Docker infrastructure
 
-Update `benchmarks/infra/docker-compose.yml`:
+Update `infra/docker-compose.yml`:
 
 - Add `minio` proxy: toxiproxy listens on 19000, forwards to minio:9000
 - Add `sftp` proxy: toxiproxy listens on 12222, forwards to sftp:2222

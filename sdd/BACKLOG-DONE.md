@@ -1000,7 +1000,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `scan_host_algorithms()` and `connect_kwargs={"disabled_algorithms":
   ...}`. New "Diagnose first" subsection in the SFTP backend guide.
   Tests: `TestSFTPScanHostAlgorithms` (unit/integration against the
-  benchmarks/infra sftp fixture, asserts the eleven documented entries
+  infra sftp fixture, asserts the eleven documented entries
   and shape) and `TestSFTPScanHostAlgorithmsLegacy` in
   `tests/e2e/test_sftp_legacy_recovery.py` (asserts
   `server_host_key_algorithms == ["ssh-rsa"]` against the legacy-sftp

@@ -1,6 +1,6 @@
 """Integration tests for AsyncBackendSyncAdapter against Azurite.
 
-Requires:  docker compose -f benchmarks/infra/docker-compose.yml up -d
+Requires:  docker compose -f infra/docker-compose.yml up -d
 Run with:  pytest -m integration tests/aio/test_async_to_sync_adapter_integration.py -s
 
 These tests exercise the full sync Backend API contract through the adapter

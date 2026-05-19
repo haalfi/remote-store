@@ -2,7 +2,7 @@
 
 Stage 2, real-local. The container ships with user ``benchuser`` /
 password ``benchpass`` and an upload directory at ``/upload``; it is
-defined in ``benchmarks/infra/docker-compose.yml`` and started by the
+defined in ``infra/docker-compose.yml`` and started by the
 CI ``test`` and ``e2e`` jobs on port 2222.
 
 This fixture differs from ``sftp_inproc`` only in its transport layer

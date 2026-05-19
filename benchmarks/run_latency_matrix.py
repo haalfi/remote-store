@@ -7,7 +7,7 @@ Usage::
 
 Requires Docker containers running::
 
-    docker compose -f benchmarks/infra/docker-compose.yml up -d --wait
+    docker compose -f infra/docker-compose.yml up -d --wait
 """
 
 from __future__ import annotations

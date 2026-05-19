@@ -9,6 +9,14 @@ from typing import TYPE_CHECKING
 import pytest
 from hypothesis import HealthCheck, settings
 
+from infra._settings import (
+    AZURITE_HOST,
+    AZURITE_PORT,
+    MINIO_ENDPOINT,
+    MINIO_HOST,
+    MINIO_PORT,
+    SFTP_PORT,
+)
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
@@ -104,9 +112,9 @@ def _sftp_available() -> bool:
 # only needs one entry added below; the per-helper boilerplate (one
 # function each for minio/azurite/sftp) is gone.
 _CONTAINER_PORTS: dict[str, int] = {
-    "minio": 9000,
-    "azurite": 10000,
-    "sftp": 2222,
+    "minio": MINIO_PORT,
+    "azurite": AZURITE_PORT,
+    "sftp": SFTP_PORT,
 }
 
 
@@ -143,9 +151,9 @@ _AZURITE_CONN_STR = (
     "DefaultEndpointsProtocol=http;"
     "AccountName=devstoreaccount1;"
     "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
-    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
-    "QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;"
-    "TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
+    f"BlobEndpoint=http://{AZURITE_HOST}:{AZURITE_PORT}/devstoreaccount1;"
+    f"QueueEndpoint=http://{AZURITE_HOST}:{AZURITE_PORT + 1}/devstoreaccount1;"
+    f"TableEndpoint=http://{AZURITE_HOST}:{AZURITE_PORT + 2}/devstoreaccount1;"
 )
 
 
@@ -170,24 +178,25 @@ def moto_server() -> Iterator[str | None]:
 
 @pytest.fixture(scope="session")
 def minio_server() -> Iterator[str | None]:
-    """Provide MinIO endpoint URL if reachable on 127.0.0.1:9000."""
+    """Provide MinIO endpoint URL if reachable on the configured host port."""
     if _minio_reachable():
-        yield "http://127.0.0.1:9000"
+        yield MINIO_ENDPOINT
     else:
         yield None
 
 
 @pytest.fixture(scope="session")
 def sftp_docker_server() -> Iterator[int | None]:
-    """Provide the Dockerised SFTP server port if reachable on 127.0.0.1:2222.
+    """Provide the Dockerised SFTP server port if reachable on the configured host port.
 
-    The container is the ``atmoz/sftp:alpine`` service published on port
-    2222 by ``benchmarks/infra/docker-compose.yml`` and the CI ``test``
-    job. When unreachable, fixtures depending on this yield ``None``
-    skip via factory-level ``pytest.skip(...)`` per spec 048 / TEST-006.
+    The container is the ``atmoz/sftp:alpine`` service published on
+    ``SFTP_HOST_PORT`` (from ``infra/.env``) by
+    ``infra/docker-compose.yml`` and the CI ``test`` job. When
+    unreachable, fixtures depending on this yield ``None`` and skip via
+    factory-level ``pytest.skip(...)`` per spec 048 / TEST-006.
     """
     if _sftp_docker_reachable():
-        yield 2222
+        yield SFTP_PORT
     else:
         yield None
 
@@ -348,7 +357,7 @@ def pytest_configure(config: object) -> None:
     """Register custom markers and set the active stage."""
     if os.environ.get("RS_REQUIRE_MINIO") == "1" and not _minio_reachable():
         pytest.exit(
-            "RS_REQUIRE_MINIO=1 but MinIO is not reachable at 127.0.0.1:9000",
+            f"RS_REQUIRE_MINIO=1 but MinIO is not reachable at {MINIO_HOST}:{MINIO_PORT}",
             returncode=1,
         )
     if isinstance(config, pytest.Config):

@@ -6,7 +6,7 @@ S3, Azure, SFTP, S3-PyArrow, SQLBlob, or Memory.
 
 Spec: EW-001..EW-004 in ``sdd/specs/046-ext-write.md``.
 
-Requires: ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
+Requires: ``docker compose -f infra/docker-compose.yml up -d``
 Run with: ``pytest -m integration tests/e2e/test_ext_write_e2e.py -s``
 """
 

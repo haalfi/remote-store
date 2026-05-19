@@ -26,7 +26,7 @@ allocations (what **remote-store** costs), not native buffers from ``boto3``,
 ``on_progress`` so the high-water mark during streaming is captured, not
 just post-cleanup state.
 
-Requires: ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
+Requires: ``docker compose -f infra/docker-compose.yml up -d``
 Run with: ``pytest -m integration tests/e2e/test_streaming_integrity.py -s``
 """
 

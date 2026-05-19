@@ -3,7 +3,7 @@
 Typical SFTP flow: check for new files in an inbox, fetch them,
 place daily files if they don't already exist.
 
-Requires: ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
+Requires: ``docker compose -f infra/docker-compose.yml up -d``
 """
 
 from __future__ import annotations
