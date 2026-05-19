@@ -7,6 +7,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+### Fixed
+
+- **BK-230 — silenced residual CI annotations: nested Node 20 in `setup-dafny` + uv cache reservation race.**
+
 ## [0.25.0] - 2026-05-18
 
 ### Added
@@ -200,7 +204,7 @@ or silently corrupted state. Sync and async siblings are kept in lockstep throug
     - `check_rst_roles` and `check_docs_framework` wired into the CI lint job (BK-205).
     - Docs structure audit for the post-ID-174 layout (BK-165).
 - **Coalesced `azure.core.exceptions` imports** across the Azure backend (BK-226).
-- **CI / build hygiene**: Node.js 20 → 22 audit closed as no bump needed (BK-206);
+- **CI / build hygiene**: Node.js 20 → 24 audit closed as no bump needed (BK-206);
   non-package tests scoped to Python 3.13 in the CI matrix (BK-207); CI Python version
   centralised + primary-Python jobs split (BK-219); lint/format/typecheck scope expanded
   to `scripts/` and `examples/` (BK-187); gen-checks dual-wired into `hatch run lint`

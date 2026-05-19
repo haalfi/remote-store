@@ -8,6 +8,37 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-230 — Silence persistent CI annotations: nested Node 20 in setup-dafny + uv cache reservation race**
+  spec: — · audience: infra.ci
+  Two CI annotations stayed visible after BK-206 and BK-219 closed; both
+  are noise, not failures, but they masked real signal.
+  (1) **Nested Node 20 actions in `verify-formal`.** BK-206 audited every
+  direct `uses:` line and concluded all GitHub-org actions were on Node 24,
+  but it scoped third-party actions out. The deprecation annotation kept
+  firing on every `verify-formal` run because
+  `dafny-lang/setup-dafny-action@v1.9.1` is composite and its `action.yml`
+  pins `actions/setup-dotnet@v4` and `actions/setup-node@v4` internally,
+  both Node 20. Latest upstream (`@main`) still pins the same versions, so
+  this is not a "bump our pin" fix. Set
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"` at job level on
+  `verify-formal` only, mirroring the BK-168 pattern that BK-206's
+  follow-on cleanup removed from `mutation.yml` once direct actions were
+  Node 24. Comment names the nested dependency so the flag is removable
+  once upstream bumps.
+  (2) **uv cache reservation race.** `e2e` and `test-primary` both emitted
+  `Failed to save: Unable to reserve cache with key setup-uv-2-...-3.13.13-pruned-...`
+  whenever they ran in parallel against the matrix `test` job's 3.13
+  shard. Three Linux jobs racing to save the same content-hash key. The
+  benign warning hid real failures in the annotations panel. Added
+  per-job `cache-suffix` (`ci-test-matrix`, `ci-test-primary`, `ci-e2e`)
+  to the three cache-enabled `setup-uv` invocations so the keys diverge.
+  Cross-platform job left alone — its OS axis already differentiates the
+  key. Also corrected the stale "Node.js 20 → 22" wording in the BK-206
+  title and CHANGELOG line 203 — the deprecation target was always Node.js
+  24; the title typo dated to the original BK-206 draft in commit
+  30f993deb. Audience: `infra.ci`.
+  Trace: [`sdd/traces/BK-230-ci-node24-uv-cache-race.yml`](traces/BK-230-ci-node24-uv-cache-race.yml).
+
 - [x] **ID-204 — Relocate `benchmarks/infra/` to top-level `infra/`, retune MinIO ports, single-source settings**
   spec: — · audience: infra.test, contributor.tooling
   Three coupled changes in one PR. (1) `git mv benchmarks/infra infra` — the
@@ -835,7 +866,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `infra.test`. Spec: TEST-003.
   Trace: [`sdd/traces/BK-215-test-examples-justification.yml`](traces/BK-215-test-examples-justification.yml).
 
-- [x] **BK-206 — Bump CI actions from Node.js 20 to Node.js 22 (audit: no bump required)**
+- [x] **BK-206 — Bump CI actions off Node.js 20 (audit: direct actions clear; nested actions tracked under BK-230)**
   Audited every `uses:` line across `.github/workflows/*.yml` against each
   action's published `action.yml` / release notes to determine the internal
   Node runtime. All Node-based GitHub-org actions are already pinned at
@@ -866,6 +897,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   force then-Node-20 actions onto Node 24). The audit confirms every action
   in `mutation.yml` is already pinned at a Node-24-runtime version, so the
   flag is a no-op.
+
+  **Audit gap surfaced post-merge (BK-230):** the third-party scope-out
+  missed that `dafny-lang/setup-dafny-action@v1.9.1` (used by
+  `verify-formal`) is *composite* and its internal steps pin
+  `actions/setup-dotnet@v4` + `actions/setup-node@v4`, both still Node 20.
+  The deprecation annotation kept firing on every `verify-formal` run.
+  Reintroducing `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` on that one job
+  silences it; tracked and fixed under BK-230.
   Trace: [`sdd/traces/BK-206-node-runtime-audit.yml`](traces/BK-206-node-runtime-audit.yml).
 
 - [x] **BK-207 — Scope non-package tests to Python 3.13 in CI matrix**

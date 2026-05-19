@@ -127,6 +127,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          # BK-230: per-job suffix so the cache key diverges from
+          # test-primary and e2e, which share python-version 3.13 on Linux
+          # and otherwise race on the same setup-uv-*-pruned-* save key.
+          cache-suffix: ci-test-matrix
       - run: uv pip install -e ".[dev]"
       # tests/scripts/ holds contributor-tooling tests (script checkers, gen
       # scripts) that exercise scripts/, not remote_store. They gain nothing
@@ -159,6 +164,8 @@ jobs:
         with:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          cache-suffix: ci-test-primary  # BK-230
       - run: uv pip install -e ".[dev]"
       # ID-195 two-pass split with --cov-append for pass 2. The 95% floor
       # is asserted on pass 2 after pass 1's `.coverage` data has been
@@ -270,6 +277,8 @@ jobs:
         with:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          cache-suffix: ci-e2e  # BK-230
       - run: uv pip install -e ".[dev]"
       - run: pytest tests/e2e/ -v -o addopts=
 
@@ -311,6 +320,15 @@ jobs:
     needs: [setup]
     if: needs.setup.outputs.formal == 'true'
     runs-on: ubuntu-latest
+    # dafny-lang/setup-dafny-action@v1.9.1 is composite; its internal steps
+    # pin actions/setup-dotnet@v4 and actions/setup-node@v4, both still on
+    # Node 20. Force them onto Node 24 to silence the deprecation annotation
+    # ahead of the June 2026 runner default and September 2026 removal.
+    # BK-206's audit scoped third-party actions out, so the warning slipped
+    # through; tracked under BK-230. Drop this once upstream bumps the
+    # nested actions.
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
       - uses: actions/checkout@v6
       - uses: dafny-lang/setup-dafny-action@be023fc606339d46ed6b077dcb8614d0279ded31  # v1.9.1
