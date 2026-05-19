@@ -14,7 +14,8 @@ async backend is added.
 
 Spec coverage: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008,
 ASYNC-010, ASYNC-012, ASYNC-013, ASYNC-014, ASYNC-015, ASYNC-016, ASYNC-017,
-ASYNC-018, ASYNC-019, ASYNC-020, ASYNC-024 (mirroring BE-004..BE-021 and SIO-001).
+ASYNC-018, ASYNC-019, ASYNC-020, ASYNC-024, ASYNC-029 (mirroring
+BE-004..BE-021, SIO-001, ITER-004/005).
 """
 
 from __future__ import annotations
@@ -337,7 +338,7 @@ class TestGetFolderInfoAggregates:
 
 
 # ===========================================================================
-# §2  Listing: ASYNC-014 / ASYNC-015 postconditions
+# §2  Listing: ASYNC-014 / ASYNC-015 / ASYNC-029 postconditions
 # ===========================================================================
 
 
@@ -432,11 +433,11 @@ class TestListFoldersCompleteness:
 
 
 class TestAsyncIterChildren:
-    """ASYNC-024 (mirrors ITER-004 / ITER-005): iter_children combined listing."""
+    """ASYNC-029 (mirrors ITER-004 / ITER-005): iter_children combined listing."""
 
-    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ASYNC-029")
     async def test_iter_children(self, async_backend: AsyncBackend) -> None:
-        _require(async_backend, Capability.WRITE)
+        _require(async_backend, Capability.LIST, Capability.WRITE)
         await _seed(async_backend, {"ic/a.txt": b"a", "ic/b.txt": b"b", "ic/sub/c.txt": b"c"})
         children = [c async for c in async_backend.iter_children("ic")]
         files = [c for c in children if isinstance(c, FileInfo)]
@@ -445,12 +446,13 @@ class TestAsyncIterChildren:
         assert {f.name for f in folders} == {"sub"}
         assert {str(f.path) for f in folders} == {"ic/sub"}
 
-    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ASYNC-029")
     async def test_iter_children_empty_or_nonexistent(self, async_backend: AsyncBackend) -> None:
+        _require(async_backend, Capability.LIST)
         children = [c async for c in async_backend.iter_children("ic_nonexistent")]
         assert children == []
 
-    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.spec("ASYNC-029")
     @pytest.mark.parametrize(
         ("prefix", "file_path", "expect_files", "expect_folders"),
         [
@@ -466,7 +468,7 @@ class TestAsyncIterChildren:
         expect_files: set[str],
         expect_folders: set[str],
     ) -> None:
-        _require(async_backend, Capability.WRITE)
+        _require(async_backend, Capability.LIST, Capability.WRITE)
         await async_backend.write(file_path, b"x")
         children = [c async for c in async_backend.iter_children(prefix)]
         files = [c for c in children if isinstance(c, FileInfo)]

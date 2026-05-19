@@ -35,12 +35,14 @@ in ``tests/backends/azure/test_live_hns.py``. Async-only KEEPs:
 * **``_ensure_hns()`` exists fallback** on the async branch
   (``TestAsyncLiveHnsExists``).
 
-User-metadata survives ADLS Gen2 ``rename_file`` is covered by the
-conformance suite (``test_atomic.py::TestWriteResultConformance::test_metadata_round_trips_via_get_file_info``,
-parametrised over ``write`` and ``write_atomic`` and run against
-``azure_live_async``). The async-iterator-payload metadata assertion
-lives in ``TestAsyncLiveHnsWriteAtomicAsyncIterator`` because that
-branch is async-only and exercises a different SDK call shape.
+User-metadata survives ADLS Gen2 ``rename_file`` is a service-side
+property that does not differ async vs sync, so one sibling carries it:
+the sync conformance ``test_atomic.py::TestWriteResultConformance::test_metadata_round_trips_via_get_file_info``
+runs against the real ADLS Gen2 account via the sync ``azure_live``
+fixture (the same backing storage as ``azure_live_async``). The
+async-iterator-payload metadata assertion lives in
+``TestAsyncLiveHnsWriteAtomicAsyncIterator`` because that branch is
+async-only and exercises a different SDK call shape.
 
 This file is intentionally **not** co-located with the Azurite-backed async
 live tests in ``tests/backends/azure/aio/test_live.py``. That file carries

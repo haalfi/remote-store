@@ -41,7 +41,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Trace: [`sdd/traces/bk-182-shrink-live-hns.yml`](traces/bk-182-shrink-live-hns.yml).
 
 - [x] **BK-228 — Async conformance gap: `iter_children` has no test in `test_async_extended.py`**
-  spec: ASYNC-024 · audience: infra.test
+  spec: ASYNC-029, ITER-004, ITER-005 · audience: infra.test
   Surfaced during the BK-182 inventory: the per-backend
   `tests/backends/azure/aio/test_live_hns.py::TestAsyncLiveHnsIterChildren`
   was the only live coverage and was deleted as a duplicate, leaving the
