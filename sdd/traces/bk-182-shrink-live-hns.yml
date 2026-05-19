@@ -1,0 +1,128 @@
+id: BK-182
+title: "Shrink live HNS suites under tests/backends/azure/ to HNS-unique cases"
+trigger: "After BK-179 (per-backend reorg), BK-180 (live conformance fixtures), and BK-181 (Azure cassette/replay layer) all landed in v0.25.0, the per-backend live HNS suites duplicated happy-path coverage now also exercised by the conformance suite against `azure_live` / `azure_live_async`."
+source_items:
+  - BK-182
+  - BK-179
+  - BK-180
+  - BK-181
+audience:
+  - infra.test
+discovery_followups: []
+co_shipped_items:
+  - BK-228
+  - BK-229
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - docs-src/guides/backends/azure-hns-setup.md
+  - tests/backends/azure/aio/test_config.py
+  - tests/backends/azure/aio/test_live.py
+  - tests/backends/fixtures/_live_env.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles / Principle 2, Backlog (mandatory), Trace authoring (mandatory)"
+        read_type: gate
+        extract: "Ripple-check; backlog-done move + same-commit rule; trace alongside work, not after"
+      - file: sdd/BACKLOG.md
+        section: "Azure HNS Correctness / BK-182"
+        read_type: gate
+        extract: "Keep only: DFS AsyncIterator (BUG-194), etag normalisation cross-check, hdi_isfolder probes, deviation guards. Async only when behaviour differs from sync."
+      - file: sdd/traces/_schema.yml
+        section: "audience / CHANGELOG-derived rule"
+        read_type: gate
+        extract: "audience: infra.test => no CHANGELOG entry"
+
+  - id: classify
+    name: Classify duplication
+    steps:
+      - file: tests/backends/azure/test_live_hns.py
+        section: "(full)"
+        read_type: reference
+        extract: "Inventory: 16 classes / ~31 cases sync"
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "(full)"
+        read_type: reference
+        extract: "Inventory: 16 classes / ~33 cases async"
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestBackendWriteAtomic, TestBackendMoveCopy, TestMovePostState, TestCopyPostState, TestMoveCopyOverwrite, TestWriteResultConformance"
+        read_type: reference
+        extract: "Sync conformance covers the deleted happy-path cases against azure_live"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestWriteReadRoundTrip, TestMovePostState, TestCopyPostState, TestMoveCopyOverwrite, TestOperationalConsistency, TestWriteErrorFidelity"
+        read_type: reference
+        extract: "Async conformance covers async deletes — except iter_children (no test) and async write_atomic happy-path round-trip (no test). Filed BK-228 + BK-229."
+        outcome: misleading
+      - file: tests/backends/conformance/test_atomic.py
+        section: "test_size_matches_written_bytes_for_streaming_input"
+        read_type: reference
+        extract: "Production dispatches on isinstance(content, bytes); BytesIO routes through the same DFS append branch in both suites. Conformance asserts only WriteResult.size; sync TestAzureLiveHnsWriteAtomicStreaming adds post-rename read-back byte-equality, which catches a miscomputed-position regression that would leave WriteResult.size right with wrong bytes on the wire — stays KEEP."
+
+  - id: implement
+    name: Shrink suites + dedupe validators
+    steps:
+      - file: tests/backends/azure/test_live_hns.py
+        section: "TestAzureLiveHnsContentRoundTrip, ...Move, ...OpenAtomicSuccess, ...NotFound, ...Exists (2 of 3), ...ListFiles, ...IterChildren, ...Delete, ...Copy, ...IsFolderIsFile.test_is_file_true_and_is_folder_false_on_hns_file, ...MetadataSurvivesRename (round 4 — overlaps conformance test_metadata_round_trips_via_get_file_info)"
+        read_type: gate
+        extract: "Delete 20 cases / 8 classes; keep 12 cases / 8 classes. Drop AlreadyExists, NotFound, FileInfo imports."
+      - file: tests/backends/azure/aio/test_live_hns.py
+        section: "TestAsyncLiveHnsMetadata, ...ContentRoundTrip, ...Move, ...IsFolderIsFile.test_is_file_true_and_is_folder_false_on_hns_file, ...NotFound, ...Exists (2 of 3), ...ListFiles, ...IterChildren, ...Delete, ...Copy"
+        read_type: gate
+        extract: "Delete 20 cases / 9 classes; keep 13 cases / 9 classes."
+      - file: tests/backends/fixtures/_live_env.py
+        section: "require_azure_live_connection_string"
+        read_type: reference
+        extract: "Dedupe inline _require_live_env in both test files onto the shared helper + a small RS_TEST_LIVE_HNS_CONTAINER lookup."
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestAsyncIterChildren, TestAsyncWriteAtomic"
+        read_type: gate
+        extract: "Round-4 review flagged a coverage regression window between BK-182 landing and BK-228/BK-229 landing. Closed both in this PR (ship-complete): TestAsyncIterChildren mirrors the sync TestBackendIterChildren in test_listing.py; TestAsyncWriteAtomic mirrors TestBackendWriteAtomic in test_atomic.py. Verified green against memory_async_native, memory_async_adapted, local_async_adapted, and azure_live_async (real ADLS Gen2). azure_replay_async skips pending cassette refresh per TEST-009."
+
+  - id: ripple
+    name: Ripple updates
+    steps:
+      - file: docs-src/guides/backends/azure-hns-setup.md
+        section: "lines 180, 189, 205"
+        read_type: verify
+        extract: "Replace legacy paths tests/backends/test_azure_live_hns.py and tests/aio/test_async_azure_live_hns.py with new tests/backends/azure/test_live_hns.py and tests/backends/azure/aio/test_live_hns.py"
+      - file: tests/backends/azure/aio/test_config.py
+        section: "test_write_atomic_hns_metadata_preserved docstring"
+        read_type: verify
+        extract: "Refresh stale path reference in docstring"
+      - file: tests/backends/azure/aio/test_live.py
+        section: "Module docstring"
+        read_type: verify
+        extract: "Refresh stale path reference tests.aio.test_async_azure_live_hns"
+      - file: sdd/BACKLOG.md
+        section: "Azure HNS Correctness / BK-182 + lead-in"
+        read_type: verify
+        extract: "Remove BK-182; the section's lead-in paragraph mentioning BK-182 dependencies also goes since only BK-182 referenced it"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased"
+        read_type: verify
+        extract: "BK-182 moved here as [x], same commit"
+      - file: sdd/BACKLOG.md
+        section: "Async API Verification (or new home)"
+        read_type: verify
+        extract: "File BK-228 (async iter_children conformance) and BK-229 (async write_atomic round-trip conformance) as discovery follow-ups"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: "Regenerate via hatch run gen-backlogid after BACKLOG↔DONE moves and new BK-228/229 IDs"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Test file shrink, backend infra"
+        read_type: verify
+        extract: "No spec edit (TEST-002/003 invariants unchanged). No CHANGELOG (audience: infra.test). Trace shipped same commit."
+      - file: tests/backends/azure/test_live_hns.py
+        section: "(full)"
+        read_type: verify
+        extract: "Live verification deferred to user (no Azure creds in sandbox). Stage-1 hatch run all is the local gate."
+        outcome: unclear

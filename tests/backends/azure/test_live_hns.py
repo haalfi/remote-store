@@ -1,32 +1,61 @@
 """Live ADLS Gen2 (HNS) integration tests for ``AzureBackend``.
 
-Covers HNS semantics that mock-only suites cannot reproduce.
+Covers HNS semantics that the conformance suite against ``azure_live``
+cannot reach. Happy-path coverage (write/read/move/copy/delete/list,
+NotFound, exists on regular paths, write_atomic content round-trip, etc.)
+lives in ``tests/backends/conformance/`` and runs against the same real
+ADLS Gen2 account via the ``azure_live`` fixture; duplicating those cases
+here is what BK-182 removed.
 
-**Directory-path guards.** ``TestAzureWriteOnHnsDirectory`` in
-``tests.backends.test_azure`` fabricates ``hdi_isfolder=true``
-metadata on a mocked ``BlobProperties`` and
-relies on the same probe the production code uses, so it verifies
-code logic but not real-account behaviour.
-``TestAzureLiveHnsDirectoryGuard`` here asserts the sync API raises
-``InvalidPath`` when the target is an HNS
-directory blob created via the real
-``DataLakeServiceClient``.
+What stays here are cases the conformance suite cannot express:
 
-**`write_atomic` metadata-survives-rename.**
-``test_write_atomic_hns_metadata_preserved`` in
-``tests.aio.test_async_azure`` only verifies that ``metadata=`` is
-forwarded to ``upload_data`` on the temp file and that
-``WriteResult.metadata`` echoes the caller's mapping by construction
-(WR-012). It cannot verify that ADLS Gen2's ``rename_file`` preserves
-user-defined metadata on the renamed final file, a filesystem-level
-semantics concern only the real service can answer.
-``TestAzureLiveHnsMetadataSurvivesRename`` writes a small payload through
-``write_atomic`` with metadata and asserts the round-trip via
-``get_file_info`` after the temp-then-rename has committed.
+* **Directory-blob ``hdi_isfolder`` probes.** Conformance fabricates a
+  "directory" by writing ``backend.write("dir/file.txt", ...)`` which only
+  creates a virtual prefix, not an HNS directory blob with the
+  ``hdi_isfolder`` marker. Tests here provision the directory via
+  ``DataLakeServiceClient.create_directory()`` and verify the production
+  marker-probe fires:
 
-Spec: BE-021 (directory-path guard) for BE-008 (``write``),
-BE-010 (``write_atomic``), SAW-001 (``open_atomic``);
-WR-013 (user-metadata round-trip).
+  - ``write`` / ``write_atomic`` / ``open_atomic`` on an HNS directory
+    raise ``InvalidPath`` (``TestAzureLiveHnsDirectoryGuard``).
+  - ``get_file_info`` on an HNS directory raises ``InvalidPath``
+    (``TestAzureLiveHnsGetFileInfoOnDirectory``).
+  - ``is_folder`` returns ``True`` and ``is_file`` returns ``False`` on
+    an HNS directory (``TestAzureLiveHnsIsFolderIsFile``, BUG-203).
+  - ``read_bytes`` / ``delete`` on an HNS directory raise ``InvalidPath``
+    without mutating account state (``TestAzureLiveHnsFileApiOnDirectory``,
+    BUG-197 data-loss guard).
+
+* **WriteResult etag normalisation cross-check.** WriteResult etag from
+  post-rename ``get_file_properties`` and FileInfo etag from
+  ``get_blob_properties`` must agree — a normalisation drift between the
+  two SDK paths only surfaces against a real account
+  (``TestAzureLiveHnsWriteResult``, AZ-034).
+
+* **``write_atomic`` streaming guard against BUG-202.** The DFS append
+  protocol (``create_file`` → ``append_data`` → ``flush_data``) is the
+  fix for the ``MissingRequiredQueryParameter`` regression on HNS.
+  Production dispatches on ``isinstance(content, bytes)``, so both the
+  conformance streaming test and this kept test route a ``BytesIO``
+  payload through the same DFS append branch; what this test adds is
+  post-rename read-back byte-equality, which catches the failure mode
+  where a miscomputed ``position`` lets ``WriteResult.size`` look right
+  while the uploaded bytes are wrong. The multi-chunk offset arithmetic
+  lives in monkeypatched mock tests under ``test_config.py``
+  (``TestAzureLiveHnsWriteAtomicStreaming``).
+
+* **``get_folder_info("")`` HNS root carve-out.** Real ADLS Gen2 rejects
+  ``get_directory_client("")``; the production code skips the per-path
+  probe for the root and relies on ``get_paths(path="/")`` instead
+  (``TestAzureLiveHnsGetFolderInfoRoot``, BUG-213, AZ-024).
+
+* **``_ensure_hns()`` exists fallback on real HNS directories.** Only a
+  real account exercises the blob-client miss → DataLake directory probe
+  fallback chain (``TestAzureLiveHnsExists``).
+
+Spec: TEST-003 (per-backend deviation tier); BE-005, BE-008, BE-010,
+BE-013, BE-014, BE-015, BE-016, BE-017, BE-021, SAW-001, WR-001a,
+AZ-024, AZ-034.
 
 Gating
 ------
@@ -36,7 +65,7 @@ Three layers, all required:
 1. ``pytest.mark.live`` at module level. Default ``addopts`` is
    ``-m 'not live'``, so plain ``hatch run test`` skips the file entirely.
 2. ``RS_TEST_LIVE_HNS=1`` env var (matches the async live HNS gate in
-   ``tests.aio.test_async_azure_live_hns``).
+   ``tests/backends/azure/aio/test_live_hns.py``).
 3. ``AZURE_STORAGE_CONNECTION_STRING`` and ``RS_TEST_LIVE_HNS_CONTAINER``
    pointing at a *real* ADLS Gen2 account. If layer 2 is enabled but
    either of these is missing or points at Azurite, the fixture raises
@@ -67,34 +96,16 @@ pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-dat
 
 from azure.storage.filedatalake import DataLakeServiceClient  # noqa: E402
 
-from remote_store._errors import AlreadyExists, InvalidPath, NotFound  # noqa: E402
-from remote_store._models import FileInfo  # noqa: E402
+from remote_store._errors import InvalidPath  # noqa: E402
 from remote_store._path import RemotePath  # noqa: E402
 from remote_store.backends._azure import AzureBackend  # noqa: E402
+from tests.backends.fixtures._live_env import require_azure_live_connection_string  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
 
 _LOG = logging.getLogger(__name__)
-
-# Connection-string fragments that unambiguously indicate Azurite (the
-# local emulator). Azurite does not emulate Hierarchical Namespace, so a
-# connection string pointing at it cannot validate the HNS directory-path
-# guards. See docs-src/guides/backends/azure-hns-setup.md.
-#
-# Both forms are caught:
-#  - The shorthand ``UseDevelopmentStorage=true`` token.
-#  - The explicit-endpoint form (used by the repo's own
-#    ``_AZURITE_CONN_STR`` in ``tests/conftest.py``), which omits the
-#    shorthand but always carries ``AccountName=devstoreaccount1`` —
-#    Azurite's well-known emulator account, globally reserved and
-#    unclaimable on real Azure.
-#
-# A real Azure account routed through a localhost tunnel or service-mesh
-# sidecar may legitimately contain ``127.0.0.1`` or ``localhost`` in the
-# BlobEndpoint, so those tokens are NOT used as Azurite signatures.
-_AZURITE_FRAGMENTS = ("UseDevelopmentStorage=true", "AccountName=devstoreaccount1")
 
 
 pytestmark = [
@@ -107,36 +118,17 @@ pytestmark = [
 
 
 def _require_live_env() -> tuple[str, str]:
-    """Return (connection_string, filesystem) or fail loud.
+    """Return ``(connection_string, filesystem)`` or fail loud.
 
-    The module-level skipif handles the opt-out path. Once the user opts
-    in, missing or Azurite-pointing credentials are a configuration bug,
-    not a reason to skip — silent skips defeat the whole point of running
-    a live test.
+    Connection-string validation (presence + Azurite-signature rejection)
+    is delegated to the shared ``require_azure_live_connection_string``
+    helper. ``RS_TEST_LIVE_HNS_CONTAINER`` is HNS-suite-specific and is
+    checked here.
     """
-    # Backstop ``.env`` load. The primary path is ``pytest_configure`` in
-    # ``tests/conftest.py``, which loads ``.env`` before collection when
-    # the mark expression includes ``live`` — that is the path the doc
-    # contract relies on. This call covers the niche case where someone
-    # runs the file with ``RS_TEST_LIVE_HNS=1`` exported in the shell but
-    # without ``-m live`` (so ``pytest_configure``'s heuristic skips the
-    # load), letting ``.env`` still supply the connection string and
-    # container. override=False keeps shell/CI values authoritative.
-    from dotenv import load_dotenv  # noqa: PLC0415 -- intentional lazy import
-
-    load_dotenv(override=False)
-
-    conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+    conn = require_azure_live_connection_string()
     fs = os.environ.get("RS_TEST_LIVE_HNS_CONTAINER")
-    if not conn:
-        pytest.fail("RS_TEST_LIVE_HNS=1 set but AZURE_STORAGE_CONNECTION_STRING is empty")
     if not fs:
         pytest.fail("RS_TEST_LIVE_HNS=1 set but RS_TEST_LIVE_HNS_CONTAINER is empty")
-    if any(frag in conn for frag in _AZURITE_FRAGMENTS):
-        pytest.fail(
-            "RS_TEST_LIVE_HNS=1 set but AZURE_STORAGE_CONNECTION_STRING points at Azurite; "
-            "the live HNS suite needs a real ADLS Gen2 account"
-        )
     return conn, fs
 
 
@@ -251,55 +243,6 @@ class TestAzureLiveHnsDirectoryGuard:
 
 
 # ---------------------------------------------------------------------------
-# WR-013 — user metadata survives the HNS atomic-rename commit
-# ---------------------------------------------------------------------------
-
-
-class TestAzureLiveHnsMetadataSurvivesRename:
-    """``write_atomic`` user metadata must survive ADLS Gen2's atomic rename.
-
-    Companion to ``test_write_atomic_hns_metadata_preserved`` in
-    ``tests.aio.test_async_azure``, which mocks ``upload_data`` and
-    asserts the ``metadata=`` kwarg reaches it on the temp file. The
-    mocks cannot answer the harder question: *does the subsequent
-    ``rename_file`` preserve that metadata on the renamed final file?*
-    That is a service-side semantics property of ADLS Gen2 and only a
-    real account can confirm it.
-    """
-
-    @pytest.mark.spec("WR-012", "WR-013", "BE-010")
-    def test_write_atomic_metadata_survives_rename(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        # Write a sibling file under the session prefix (alongside the
-        # directory blob the guard tests target). A unique suffix keeps
-        # repeated runs from colliding even though the prefix is shared.
-        prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/meta-{uuid.uuid4().hex[:8]}.txt"
-        metadata = {"env": "prod", "owner": "team-a"}
-
-        result = backend.write_atomic(path, _PAYLOAD, metadata=metadata)
-
-        # WR-012: WriteResult.metadata must echo the caller's mapping exactly —
-        # the backend must not wait for a round-trip to populate this field.
-        assert result.metadata == metadata
-        # WR-001a: size and source are always populated on the HNS write_atomic path.
-        assert result.size == len(_PAYLOAD)
-        assert result.source == "native"
-
-        info = backend.get_file_info(path)
-        assert info.metadata is not None, "expected metadata round-trip via get_file_info"
-        # Compare key-by-key rather than equality: ADLS Gen2 may surface
-        # internal markers (e.g. hdi_isfolder) alongside user metadata,
-        # and the production code is allowed to strip them. The contract
-        # is that user-supplied keys round-trip with their values.
-        assert info.metadata.get("env") == "prod"
-        assert info.metadata.get("owner") == "team-a"
-
-
-# ---------------------------------------------------------------------------
 # WR-001a / WR-004 — WriteResult native fields on real HNS account
 # ---------------------------------------------------------------------------
 
@@ -336,156 +279,33 @@ class TestAzureLiveHnsWriteResult:
         assert result.source == "native"
         # WR-001a: size must equal the committed byte count.
         assert result.size == len(_PAYLOAD)
-        # WR-001a / AZ-034: etag must be non-empty, quote-stripped, and lowercased.
-        # On HNS this comes from post-rename get_file_properties — only a real account
-        # confirms that call succeeds and the ETag is in a usable form.
-        # BUG-173 allows etag=None when get_file_properties() fails post-rename (the
-        # rename committed; the read is best-effort). That path is a transient fallback;
-        # this test targets the normal path where the read succeeds.
-        assert result.etag is not None, (
-            "HNS write_atomic must populate WriteResult.etag from post-rename get_file_properties"
-        )
-        assert result.etag != ""
-        assert '"' not in result.etag, f"etag must be quote-stripped; got {result.etag!r}"
-        assert result.etag == result.etag.lower(), f"etag must be lowercased; got {result.etag!r}"
-        # WR-001a: last_modified from the same post-rename read must be timezone-aware.
-        assert result.last_modified is not None, (
-            "HNS write_atomic must populate WriteResult.last_modified from post-rename get_file_properties"
-        )
-        assert result.last_modified.tzinfo is not None, "last_modified must be timezone-aware"
-        # AZ-034 consistency: WriteResult.etag and FileInfo.etag must agree.
-        # A normalisation bug that affects one SDK read path but not the other only
-        # surfaces here.
-        fi = backend.get_file_info(path)
-        assert fi.etag is not None
-        assert fi.etag == result.etag, (
-            f"WriteResult.etag {result.etag!r} != FileInfo.etag {fi.etag!r}: "
-            "normalisation inconsistent between post-rename get_file_properties and get_file_info"
-        )
-
-
-# ---------------------------------------------------------------------------
-# BE-010 — content round-trip and overwrite on the HNS write_atomic path
-# ---------------------------------------------------------------------------
-
-
-class TestAzureLiveHnsContentRoundTrip:
-    """Bytes written via write_atomic must survive the HNS temp-upload + rename_file commit.
-
-    The content round-trip (write then read_bytes) confirms the rename committed the
-    full payload, not a truncated or empty blob. The overwrite path exercises the
-    existing-file case through the same DFS rename. The overwrite=False guard confirms
-    AlreadyExists is raised before the temp upload starts.
-
-    Spec: BE-010 (write_atomic).
-    """
-
-    @pytest.mark.spec("BE-010", "WR-001a")
-    def test_write_atomic_content_survives_hns_rename(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/roundtrip-{uuid.uuid4().hex[:8]}.txt"
-        payload = b"roundtrip-" + uuid.uuid4().bytes
-
-        result = backend.write_atomic(path, payload)
-
-        assert result.size == len(payload)
-        assert backend.read_bytes(path) == payload
-
-    @pytest.mark.spec("BE-010")
-    def test_write_atomic_overwrite_replaces_content(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/overwrite-{uuid.uuid4().hex[:8]}.txt"
-        original = b"original-content"
-        replacement = b"replaced-content"
-
-        backend.write_atomic(path, original)
-        backend.write_atomic(path, replacement, overwrite=True)
-
-        assert backend.read_bytes(path) == replacement
-
-    @pytest.mark.spec("BE-010")
-    def test_write_atomic_overwrite_false_raises_already_exists(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/noover-{uuid.uuid4().hex[:8]}.txt"
-
-        backend.write_atomic(path, _PAYLOAD)
-        with pytest.raises(AlreadyExists, match="already exists"):
-            backend.write_atomic(path, _PAYLOAD, overwrite=False)
-
-
-# ---------------------------------------------------------------------------
-# BE-018 — move uses rename_file on HNS accounts
-# ---------------------------------------------------------------------------
-
-
-class TestAzureLiveHnsMove:
-    """``move`` must use ``rename_file`` on an HNS account for atomic relocation.
-
-    The non-HNS path uses server-side copy + delete, which is not atomic. On HNS
-    accounts the backend calls ``rename_file`` instead. Mock-only suites stub the
-    DFS client; only a real account confirms the rename path executes correctly
-    end-to-end.
-
-    Spec: BE-018 (move).
-    """
-
-    @pytest.mark.spec("BE-018")
-    def test_move_hns_src_content_reaches_dst(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        uid = uuid.uuid4().hex[:8]
-        src = f"{prefix}/move-src-{uid}.txt"
-        dst = f"{prefix}/move-dst-{uid}.txt"
-        payload = b"move-content-" + uuid.uuid4().bytes
-
-        backend.write_atomic(src, payload)
-        backend.move(src, dst)
-
-        assert backend.read_bytes(dst) == payload
-        with pytest.raises(NotFound, match="(?i)not found"):
-            backend.read_bytes(src)
-
-    @pytest.mark.spec("BE-018")
-    def test_move_existing_dst_overwrite_false_raises_already_exists(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        """``move`` must guard against silent overwrite when ``overwrite=False``.
-
-        On HNS the underlying ``rename_file`` could silently clobber the destination;
-        the production code interposes a ``get_blob_properties`` probe to raise
-        ``AlreadyExists`` first. Only a real account confirms the probe + raise
-        sequence on actual HNS resources.
-        """
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        uid = uuid.uuid4().hex[:8]
-        src = f"{prefix}/move-src-exists-{uid}.txt"
-        dst = f"{prefix}/move-dst-exists-{uid}.txt"
-
-        backend.write_atomic(src, b"src")
-        backend.write_atomic(dst, b"dst-original")
-
-        with pytest.raises(AlreadyExists, match="already exists"):
-            backend.move(src, dst)
-        # Both blobs must remain unchanged after the failed move.
-        assert backend.read_bytes(dst) == b"dst-original"
-        assert backend.read_bytes(src) == b"src"
+        # WR-001a / AZ-034: on the success path, etag from post-rename
+        # get_file_properties must be non-empty, quote-stripped, and lowercased.
+        # On a transient post-rename read failure the BUG-173 fallback returns
+        # etag=None (rename already committed; WR-001a lists etag as Optional).
+        if result.etag is not None:
+            assert result.etag != ""
+            assert '"' not in result.etag, f"etag must be quote-stripped; got {result.etag!r}"
+            assert result.etag == result.etag.lower(), f"etag must be lowercased; got {result.etag!r}"
+            # WR-001a: last_modified from the post-rename read must be timezone-aware.
+            assert result.last_modified is not None, "HNS write_atomic must populate WriteResult.last_modified"
+            assert result.last_modified.tzinfo is not None, "last_modified must be timezone-aware"
+            # AZ-034 consistency: WriteResult.etag and FileInfo.etag must agree.
+            fi = backend.get_file_info(path)
+            assert fi.etag is not None
+            assert fi.etag == result.etag, (
+                f"WriteResult.etag {result.etag!r} != FileInfo.etag {fi.etag!r}: "
+                "normalisation inconsistent between post-rename get_file_properties and get_file_info"
+            )
+        else:
+            # Fallback path — rename committed, post-rename read failed
+            # transiently. WR-001a allows etag=None; retrying would raise
+            # AlreadyExists. The fallback contract is verified by mock
+            # tests in tests/backends/azure/test_config.py. Skip rather
+            # than silently pass so a fallback run is audible — the
+            # method name asserts "fully native" and the rest of that
+            # contract is not exercised on this path.
+            pytest.skip("transient post-rename read failure; fully-native contract not exercised on fallback path")
 
 
 # ---------------------------------------------------------------------------
@@ -546,359 +366,30 @@ class TestAzureLiveHnsIsFolderIsFile:
         backend, dirpath = live_hns_backend
         assert backend.is_file(dirpath) is False
 
-    @pytest.mark.spec("BE-005")
-    def test_is_file_true_and_is_folder_false_on_hns_file(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        target = f"{dirpath}/file-{uuid.uuid4().hex[:8]}.txt"
-        backend.write_atomic(target, _PAYLOAD, overwrite=True)
-        try:
-            assert backend.is_file(target) is True
-            assert backend.is_folder(target) is False
-        finally:
-            with contextlib.suppress(Exception):
-                backend.delete(target, missing_ok=True)
-
 
 # ---------------------------------------------------------------------------
-# SAW-001 — open_atomic success path on a real HNS account
-# ---------------------------------------------------------------------------
-
-
-class TestAzureLiveHnsOpenAtomicSuccess:
-    """``open_atomic`` must commit written content atomically on an HNS account.
-
-    The HNS path uploads to a temp blob and renames atomically to the final path.
-    ``TestAzureLiveHnsDirectoryGuard`` covers the error path (directory target).
-    This class covers the success path: content written to the context manager
-    must be readable at the final path after the context exits.
-
-    Spec: SAW-001 (open_atomic).
-    """
-
-    @pytest.mark.spec("SAW-001")
-    def test_open_atomic_content_committed_on_hns(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/open-atomic-{uuid.uuid4().hex[:8]}.txt"
-        payload = b"open-atomic-content-" + uuid.uuid4().bytes
-
-        with backend.open_atomic(path) as fh:
-            fh.write(payload)
-
-        assert backend.read_bytes(path) == payload
-
-
-# ---------------------------------------------------------------------------
-# BE-013 / BE-014 / BE-018 — NotFound on real HNS account (read / delete / move)
-# ---------------------------------------------------------------------------
-
-
-def _read_bytes_missing(backend: AzureBackend, prefix: str) -> None:
-    backend.read_bytes(f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt")
-
-
-def _get_file_info_missing(backend: AzureBackend, prefix: str) -> None:
-    backend.get_file_info(f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt")
-
-
-def _delete_missing(backend: AzureBackend, prefix: str) -> None:
-    backend.delete(f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt")
-
-
-def _move_missing_src(backend: AzureBackend, prefix: str) -> None:
-    uid = uuid.uuid4().hex[:8]
-    backend.move(f"{prefix}/missing-src-{uid}.txt", f"{prefix}/missing-dst-{uid}.txt")
-
-
-class TestAzureLiveHnsNotFound:
-    """Operations on missing HNS paths must raise ``NotFound`` on a real account.
-
-    The most common error path in real usage. Mock suites stub
-    ``ResourceNotFoundError`` directly; only a real account confirms the SDK
-    actually raises it for the shapes the production code probes (blob client
-    vs file client paths can differ between flat-blob and HNS).
-
-    Spec: BE-013 (read), BE-014 (delete), BE-016 (get_file_info), BE-018 (move).
-    """
-
-    @pytest.mark.parametrize(
-        "operation",
-        [
-            pytest.param(_read_bytes_missing, id="read_bytes", marks=pytest.mark.spec("BE-013")),
-            pytest.param(_get_file_info_missing, id="get_file_info", marks=pytest.mark.spec("BE-016")),
-            pytest.param(_delete_missing, id="delete", marks=pytest.mark.spec("BE-014")),
-            pytest.param(_move_missing_src, id="move", marks=pytest.mark.spec("BE-018")),
-        ],
-    )
-    def test_operation_on_missing_path_raises_not_found(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-        operation: Callable[[AzureBackend, str], None],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        with pytest.raises(NotFound, match="(?i)not found"):
-            operation(backend, prefix)
-
-    @pytest.mark.spec("BE-014")
-    def test_delete_missing_with_missing_ok_is_silent(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        """``missing_ok=True`` is the contract for idempotent delete; live confirms."""
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
-        # Returning normally is the assertion: missing_ok=True must not raise.
-        result = backend.delete(missing, missing_ok=True)
-        assert result is None
-
-
-# ---------------------------------------------------------------------------
-# BE-015 — exists() on a real HNS account
+# BE-015 — exists() on a real HNS directory (DataLake probe fallback)
 # ---------------------------------------------------------------------------
 
 
 class TestAzureLiveHnsExists:
-    """``exists`` must return True for present files and HNS directories, False for missing.
+    """``exists`` on a real HNS directory — DataLake probe-fallback chain.
 
-    Most-hit predicate in real usage. The HNS path probes the blob client first;
-    on miss it falls back to a DataLake directory probe (`_ensure_hns()` branch).
-    Mock suites stub each branch in isolation; only a real account confirms the
-    fallback chain works end-to-end on actual HNS resources.
+    Conformance covers ``exists`` on regular present / missing files. The HNS
+    branch additionally falls back from the blob client to a DataLake directory
+    probe (``_ensure_hns()``); that fallback only fires on a real ADLS Gen2
+    directory blob created via ``DataLakeServiceClient``.
 
     Spec: BE-015 (exists).
     """
-
-    @pytest.mark.spec("BE-015")
-    def test_exists_returns_true_for_present_file(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/exists-{uuid.uuid4().hex[:8]}.txt"
-        backend.write_atomic(path, _PAYLOAD)
-        assert backend.exists(path) is True
-
-    @pytest.mark.spec("BE-015")
-    def test_exists_returns_false_for_missing_path(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        missing = f"{prefix}/does-not-exist-{uuid.uuid4().hex[:8]}.txt"
-        assert backend.exists(missing) is False
 
     @pytest.mark.spec("BE-015")
     def test_exists_returns_true_for_hns_directory(
         self,
         live_hns_backend: tuple[AzureBackend, str],
     ) -> None:
-        """The DataLake directory-probe fallback fires only on a real HNS account."""
         backend, dirpath = live_hns_backend
         assert backend.exists(dirpath) is True
-
-
-# ---------------------------------------------------------------------------
-# BE-022 — list_files on an HNS prefix (recursive vs non-recursive)
-# ---------------------------------------------------------------------------
-
-
-class TestAzureLiveHnsListFiles:
-    """``list_files`` traverses HNS prefixes via ``DataLakeFileSystemClient.get_paths``.
-
-    Non-recursive must yield only immediate files (filtering out the ``is_directory``
-    entries); recursive must yield files in nested subdirectories. The HNS path
-    differs structurally from the flat-blob ``walk_blobs`` / ``list_blobs`` path —
-    only a real ADLS Gen2 account exercises ``get_paths`` with real ``is_directory``
-    markers.
-
-    Spec: BE-022 (list_files).
-    """
-
-    @pytest.mark.spec("BE-022")
-    def test_list_files_non_recursive_yields_immediate_files_only(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        sub = f"{prefix}/listroot-{uuid.uuid4().hex[:8]}"
-        backend.write_atomic(f"{sub}/a.txt", b"a")
-        backend.write_atomic(f"{sub}/b.txt", b"b")
-        backend.write_atomic(f"{sub}/nested/c.txt", b"c")
-
-        files = sorted(str(fi.path) for fi in backend.list_files(sub))
-        assert files == [f"{sub}/a.txt", f"{sub}/b.txt"]
-
-    @pytest.mark.spec("BE-022")
-    def test_list_files_recursive_yields_nested_files(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        sub = f"{prefix}/listrec-{uuid.uuid4().hex[:8]}"
-        backend.write_atomic(f"{sub}/a.txt", b"a")
-        backend.write_atomic(f"{sub}/b.txt", b"b")
-        backend.write_atomic(f"{sub}/nested/c.txt", b"c")
-
-        files = sorted(str(fi.path) for fi in backend.list_files(sub, recursive=True))
-        assert files == [f"{sub}/a.txt", f"{sub}/b.txt", f"{sub}/nested/c.txt"]
-
-
-# ---------------------------------------------------------------------------
-# BE-024 — iter_children on an HNS prefix yields both files and folders
-# ---------------------------------------------------------------------------
-
-
-class TestAzureLiveHnsIterChildren:
-    """``iter_children`` must yield ``FileInfo`` for files and ``FolderEntry`` for subdirs.
-
-    On HNS, ``get_paths(recursive=False)`` returns both regular files and directory
-    blobs (marked ``is_directory=True``); the production code routes them to the
-    correct dataclass. Mock suites can fabricate the marker; only a real account
-    confirms the marker shape on a directory created via ``DataLakeServiceClient``.
-
-    Spec: BE-024 (iter_children).
-    """
-
-    @pytest.mark.spec("BE-024")
-    def test_iter_children_yields_files_and_folders(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        sub = f"{prefix}/iterchild-{uuid.uuid4().hex[:8]}"
-        backend.write_atomic(f"{sub}/a.txt", b"a")
-        backend.write_atomic(f"{sub}/b.txt", b"b")
-        backend.write_atomic(f"{sub}/nested/c.txt", b"c")
-
-        files: list[str] = []
-        folders: list[str] = []
-        for entry in backend.iter_children(sub):
-            if isinstance(entry, FileInfo):
-                files.append(str(entry.path))
-            else:
-                folders.append(str(entry.path))
-
-        assert sorted(files) == [f"{sub}/a.txt", f"{sub}/b.txt"]
-        assert sorted(folders) == [f"{sub}/nested"]
-
-
-# ---------------------------------------------------------------------------
-# BE-014 — delete happy path on a real HNS account
-# ---------------------------------------------------------------------------
-
-
-class TestAzureLiveHnsDelete:
-    """``delete`` must remove the file from the account.
-
-    The production code calls ``delete_blob`` on the blob client; on HNS the
-    SDK routes this through the DataLake layer. Mocks confirm the SDK call;
-    only a real account confirms the file actually vanishes (``exists`` flips
-    to ``False``, subsequent reads raise ``NotFound``).
-
-    Spec: BE-014 (delete).
-    """
-
-    @pytest.mark.spec("BE-014")
-    def test_delete_removes_file_from_account(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/delete-{uuid.uuid4().hex[:8]}.txt"
-        backend.write_atomic(path, _PAYLOAD)
-        assert backend.exists(path) is True
-
-        backend.delete(path)
-
-        assert backend.exists(path) is False
-        with pytest.raises(NotFound, match="(?i)not found"):
-            backend.read_bytes(path)
-
-
-# ---------------------------------------------------------------------------
-# BE-019 — copy on a real HNS account
-# ---------------------------------------------------------------------------
-
-
-class TestAzureLiveHnsCopy:
-    """``copy`` must create an independent blob; respect overwrite semantics.
-
-    Production code uses ``start_copy_from_url`` (no HNS-specific branch), but
-    running it against an HNS account confirms the blob layer remains usable
-    on HNS resources and that the ``get_blob_properties`` overwrite probe
-    correctly detects existing destinations.
-
-    Spec: BE-019 (copy).
-    """
-
-    @pytest.mark.spec("BE-019")
-    def test_copy_creates_independent_blob(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        uid = uuid.uuid4().hex[:8]
-        src = f"{prefix}/copy-src-{uid}.txt"
-        dst = f"{prefix}/copy-dst-{uid}.txt"
-        payload = b"copy-content-" + uuid.uuid4().bytes
-
-        backend.write_atomic(src, payload)
-        backend.copy(src, dst)
-
-        # Both must be readable after copy — src is preserved, dst is independent.
-        assert backend.read_bytes(src) == payload
-        assert backend.read_bytes(dst) == payload
-
-    @pytest.mark.spec("BE-019")
-    def test_copy_overwrite_false_existing_dst_raises_already_exists(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        uid = uuid.uuid4().hex[:8]
-        src = f"{prefix}/copy-src-exists-{uid}.txt"
-        dst = f"{prefix}/copy-dst-exists-{uid}.txt"
-
-        backend.write_atomic(src, b"src")
-        backend.write_atomic(dst, b"dst-original")
-
-        with pytest.raises(AlreadyExists, match="already exists"):
-            backend.copy(src, dst)
-        # The failed copy must not have touched the destination.
-        assert backend.read_bytes(dst) == b"dst-original"
-
-    @pytest.mark.spec("BE-019")
-    def test_copy_overwrite_true_replaces_dst(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        prefix = dirpath.rsplit("/", 1)[0]
-        uid = uuid.uuid4().hex[:8]
-        src = f"{prefix}/copy-src-over-{uid}.txt"
-        dst = f"{prefix}/copy-dst-over-{uid}.txt"
-
-        backend.write_atomic(src, b"new-content")
-        backend.write_atomic(dst, b"old-content")
-
-        backend.copy(src, dst, overwrite=True)
-        assert backend.read_bytes(dst) == b"new-content"
 
 
 # ---------------------------------------------------------------------------
@@ -1043,20 +534,29 @@ class TestAzureLiveHnsWriteAtomicStreaming:
     ) -> None:
         """Streaming write_atomic must succeed on real HNS and preserve the payload.
 
-        Contract under test: a ``BinaryIO`` payload (unseekable wrapper acceptable)
-        is uploaded via the DFS append protocol, ``flush_data(position)`` carries
-        the correct byte count, and the resulting blob's content matches the
-        original payload.  Pre-fix this raised ``MissingRequiredQueryParameter``.
+        Contract under test: a ``BinaryIO`` payload routed to the DFS append
+        branch (``create_file`` → ``append_data`` → ``flush_data``) uploads
+        successfully, ``flush_data(position)`` carries the correct byte count,
+        and the post-rename read-back matches the original payload. Pre-fix
+        this raised ``MissingRequiredQueryParameter``. Differentiator vs the
+        conformance streaming test: that test asserts only
+        ``WriteResult.size``; this one asserts post-rename body equality on
+        a real account, which catches the failure mode where a miscomputed
+        ``position`` lets ``result.size`` look right while the uploaded
+        bytes are wrong.
         """
         import io  # noqa: PLC0415 -- intentional late import
 
         backend, dirpath = live_hns_backend
         target = f"{dirpath}/streaming-{uuid.uuid4().hex[:8]}.bin"
         # 1152 bytes: single chunk at the default 1 MiB ``_AZURE_BLOCK_SIZE``.
-        # This live test pins the wire shape against real ADLS Gen2; the
-        # multi-chunk offset arithmetic is covered by the mock test
+        # The multi-chunk offset arithmetic is covered by the mock test
         # ``test_write_atomic_hns_streaming_uses_dfs_append_protocol`` in
-        # ``test_config.py`` (which monkeypatches the block size to 50).
+        # ``test_config.py`` (which monkeypatches the block size to 50);
+        # this live test asserts post-rename body equality against real
+        # ADLS Gen2 to guard against a miscomputed-position regression
+        # that would let ``result.size`` look right with wrong bytes on
+        # the wire.
         payload = b"streaming-payload-" * 64
         try:
             result = backend.write_atomic(target, io.BytesIO(payload), overwrite=True)

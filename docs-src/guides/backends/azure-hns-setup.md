@@ -177,16 +177,16 @@ RS_TEST_LIVE_HNS=1
 RS_TEST_LIVE_HNS_CONTAINER=<FILESYSTEM_NAME>
 ```
 
-`tests/backends/test_azure_live_hns.py` carries the `live` pytest marker
-and exercises sync HNS semantics that mocks cannot reach: the
-`InvalidPath` directory-path guards on `write`, `write_atomic`, and
-`open_atomic` against a real HNS directory blob, and that user metadata
-passed to `write_atomic` survives ADLS Gen2's atomic-rename commit
-(round-tripped via `get_file_info`). `live`-marked tests are excluded
-by default `addopts` and have to be opted into explicitly:
+`tests/backends/azure/test_live_hns.py` carries the `live` pytest marker
+and exercises sync HNS semantics that the conformance suite against
+`azure_live` cannot express: directory-blob `hdi_isfolder` probes,
+WriteResult etag normalisation cross-check, the `write_atomic` streaming
+guard against BUG-202, the `get_folder_info("")` HNS root carve-out,
+and the `_ensure_hns()` exists fallback. `live`-marked tests are
+excluded by default `addopts` and have to be opted into explicitly:
 
 ```bash
-hatch run pytest -m live tests/backends/test_azure_live_hns.py
+hatch run pytest -m live tests/backends/azure/test_live_hns.py
 ```
 
 `tests/conftest.py` loads `.env` via `python-dotenv` when a `live` mark
@@ -202,10 +202,11 @@ loud with a `pytest.fail` message rather than silently skipping. Azurite
 does not emulate Hierarchical Namespace, so an Azurite-backed run cannot
 validate HNS-specific behaviour.
 
-Async HNS coverage lives in `tests/aio/test_async_azure_live_hns.py`,
+Async HNS coverage lives in `tests/backends/azure/aio/test_live_hns.py`,
 which uses the same three-layer gate and a dedicated real-account fixture —
 it is explicitly **not** co-located with the Azurite-backed async live
-tests to avoid the Azurite reachability guard blocking real-ADLS-Gen2 CI.
+tests in `tests/backends/azure/aio/test_live.py` to avoid the Azurite
+reachability guard blocking real-ADLS-Gen2 CI.
 
 `.env` is gitignored. Do not commit the connection string.
 

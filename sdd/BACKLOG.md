@@ -51,32 +51,6 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## Azure HNS Correctness
-
-Confirmed defects on real ADLS Gen2 accounts plus testing infrastructure for live coverage.
-Bug fixes follow the `hdi_isfolder` probe pattern established by BUG-190/BUG-192.
-BK-182 depends on live fixtures from BK-180 (landed) and on the Azure cassette/replay layer from BK-181 (landed).
-
-- [ ] **BK-182 — Shrink live HNS suites under `tests/backends/azure/`**
-  spec: TEST-002, TEST-003 · effort: M · audience: infra.test
-  Originally targeted the now-removed top-level
-  `tests/backends/test_azure_live_hns.py` /
-  `tests/aio/test_async_azure_live_hns.py` pair; BK-179's reorg moved them
-  to `tests/backends/azure/test_live_hns.py` and
-  `tests/backends/azure/aio/test_live_hns.py`. BK-180 added live `azure_live`
-  / `azure_live_async` conformance fixtures, so most happy-path coverage
-  in the moved files is now duplicated against a real ADLS Gen2 account.
-  Now that BK-181 has landed the Azure cassette/replay layer (PRs #629/#630),
-  delete the duplicated cases and keep only HNS-unique tests at the new
-  paths: DFS AsyncIterator protocol
-  (BUG-194 regression guard), etag normalisation cross-check
-  (`get_file_properties` vs `get_file_info`), directory-blob `hdi_isfolder`
-  probes, and any remaining deviation guards. Async equivalents stay under
-  `tests/backends/azure/aio/test_live_hns.py` only where sync / async
-  behaviour differs. Spec: TEST-002, TEST-003.
-
----
-
 ## Formal Verification
 
 Goal: Dafny spec as authoritative contract, compiled oracle as reference backend,

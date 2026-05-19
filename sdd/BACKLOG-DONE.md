@@ -6,6 +6,69 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+- [x] **BK-182 — Shrink live HNS suites under `tests/backends/azure/` to HNS-unique cases**
+  spec: TEST-003 · audience: infra.test
+  After BK-179 (per-backend reorg), BK-180 (live `azure_live` /
+  `azure_live_async` conformance fixtures), and BK-181 (Azure cassette /
+  replay layer) all landed in v0.25.0, the per-backend live HNS suites at
+  `tests/backends/azure/test_live_hns.py` and
+  `tests/backends/azure/aio/test_live_hns.py` were duplicating happy-path
+  coverage now exercised by the conformance suite against the same real
+  ADLS Gen2 account. Trimmed both files to the cases conformance cannot
+  express: directory-blob `hdi_isfolder` probes
+  (`TestAzureLiveHnsDirectoryGuard`, `...GetFileInfoOnDirectory`,
+  `...IsFolderIsFile`, `...FileApiOnDirectory` and async siblings),
+  WriteResult etag normalisation cross-check on both SDK paths
+  (`TestAzureLiveHnsWriteResult` + async sibling; both skip on the
+  BUG-173/BUG-196 transient post-rename-read fallback), DFS AsyncIterator
+  protocol (BUG-194 guard,
+  `TestAsyncLiveHnsWriteAtomicAsyncIterator`), `write_atomic` streaming
+  guard against BUG-202 (`TestAzureLiveHnsWriteAtomicStreaming`),
+  `get_folder_info("")` HNS root carve-out (BUG-213, AZ-024), and the
+  `_ensure_hns()` exists fallback on a real HNS directory. Sync went
+  31 → 13 cases; async went 33 → 12 cases. Also deduped the inline
+  `_require_live_env` validators in both files onto the shared
+  `tests/backends/fixtures/_live_env.require_azure_live_connection_string`,
+  refreshed stale `tests/backends/test_azure_live_hns.py` /
+  `tests/aio/test_async_azure_live_hns.py` path references in
+  `docs-src/guides/backends/azure-hns-setup.md`,
+  `tests/backends/azure/aio/test_config.py`, and
+  `tests/backends/azure/aio/test_live.py`. Discovery follow-ups BK-228 and
+  BK-229 were ship-completed in the same PR (see entries below). No
+  CHANGELOG entry (audience `infra.test`).
+  Trace: [`sdd/traces/bk-182-shrink-live-hns.yml`](traces/bk-182-shrink-live-hns.yml).
+
+- [x] **BK-228 — Async conformance gap: `iter_children` has no test in `test_async_extended.py`**
+  spec: ASYNC-029, ITER-004, ITER-005 · audience: infra.test
+  Surfaced during the BK-182 inventory: the per-backend
+  `tests/backends/azure/aio/test_live_hns.py::TestAsyncLiveHnsIterChildren`
+  was the only live coverage and was deleted as a duplicate, leaving the
+  conformance gap exposed. Added `TestAsyncIterChildren` to
+  `tests/backends/conformance/test_async_extended.py` mirroring the sync
+  sibling in `test_listing.py::TestBackendIterChildren`: combined
+  files-and-folders listing, empty/nonexistent path returns `[]`, and the
+  files-only / folders-only parametrisation. Verified against
+  `memory_async_native`, `memory_async_adapted`, `local_async_adapted`,
+  and `azure_live_async` (real ADLS Gen2). `azure_replay_async` skips
+  pending cassette refresh per TEST-009 (refresh is a normal PR diff).
+  Closed in PR #658 alongside BK-182 per ship-complete (coverage
+  regression window otherwise).
+
+- [x] **BK-229 — Async conformance gap: `write_atomic` happy-path round-trip absent from `test_async_extended.py`**
+  spec: ASYNC-010, WR-001a · audience: infra.test
+  Surfaced during the BK-182 inventory: the per-backend
+  `tests/backends/azure/aio/test_live_hns.py::TestAsyncLiveHnsContentRoundTrip`
+  was the only async happy-path live coverage and was deleted as a
+  duplicate. Added `TestAsyncWriteAtomic` to `test_async_extended.py`
+  mirroring `test_atomic.py::TestBackendWriteAtomic`: creates-file, overwrite,
+  and `AlreadyExists` guard. Verified against the same fixture set as
+  BK-228; `azure_replay_async` skips pending cassette refresh. Closed in
+  PR #658 alongside BK-182.
+
+---
+
 ## v0.25.0
 
 - [x] **BK-226 — Coalesce local `from azure.core.exceptions import ...` imports across the Azure backend (sync + async + `_azure_common`)**

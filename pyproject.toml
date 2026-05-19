@@ -310,6 +310,16 @@ filterwarnings = [
   # finalize, triggering ResourceWarning on Python 3.13+. Upstream pool behaviour.
   "ignore:unclosed database:ResourceWarning:sqlalchemy",
   "ignore:unclosed database:ResourceWarning:weakref",
+  # OpenTelemetry's _importlib_metadata helper iterates entry_points via the
+  # deprecated SelectableGroups.values() interface, raising a DeprecationWarning
+  # at OTel context load time. Under pytest-xdist this is a Heisenbug: whether
+  # the first OTel import on a worker happens before or after pytest installs
+  # filterwarnings = error depends on test distribution. Surfaces in
+  # tests/ext/test_otel.py, tests/ext/test_contract.py::TestExtensionContract,
+  # and tests/test_examples.py::TestOtelTracing on Python 3.10 / 3.11.
+  # Upstream issue: OTel uses the deprecated dict-iteration path; will resolve
+  # when OTel updates _importlib_metadata to use .select().
+  "ignore:SelectableGroups dict interface is deprecated:DeprecationWarning",
 ]
 asyncio_mode = "auto"
 markers = [
