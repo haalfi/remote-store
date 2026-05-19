@@ -255,11 +255,16 @@ class TestAsyncLiveHnsWriteResult:
                 f"WriteResult.etag {result.etag!r} != FileInfo.etag {fi.etag!r}: "
                 "normalisation inconsistent between post-rename get_file_properties and get_file_info"
             )
-        # else: fallback path — rename committed, post-rename read failed transiently.
-        # WR-001a allows etag=None; retrying would raise AlreadyExists.
-        # The fallback contract is verified explicitly by mock tests
-        # test_write_atomic_hns_get_file_properties_* in tests/backends/azure/aio/test_config.py
-        # (live runs hit it only by chance under transient network conditions).
+        else:
+            # Fallback path — rename committed, post-rename read failed
+            # transiently. WR-001a allows etag=None; retrying would raise
+            # AlreadyExists. The fallback contract is verified explicitly
+            # by mock tests test_write_atomic_hns_get_file_properties_*
+            # in tests/backends/azure/aio/test_config.py. Skip rather than
+            # silently pass so a fallback run is audible — the method name
+            # asserts "fully native" and the rest of that contract is not
+            # exercised on this path.
+            pytest.skip("transient post-rename read failure; fully-native contract not exercised on fallback path")
 
 
 # ---------------------------------------------------------------------------

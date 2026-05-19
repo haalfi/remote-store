@@ -14,6 +14,10 @@ discovery_followups:
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
+  - docs-src/guides/backends/azure-hns-setup.md
+  - tests/backends/azure/aio/test_config.py
+  - tests/backends/azure/aio/test_live.py
+  - tests/backends/fixtures/_live_env.py
 phases:
   - id: orient
     name: Orient
@@ -54,7 +58,7 @@ phases:
       - file: tests/backends/conformance/test_atomic.py
         section: "test_size_matches_written_bytes_for_streaming_input"
         read_type: reference
-        extract: "BytesIO payload (has __len__) doesn't exercise BUG-202's unseekable-stream surface; sync TestAzureLiveHnsWriteAtomicStreaming stays KEEP"
+        extract: "Production dispatches on isinstance(content, bytes); BytesIO routes through the same DFS append branch in both suites. Conformance asserts only WriteResult.size; sync TestAzureLiveHnsWriteAtomicStreaming adds post-rename read-back byte-equality and pins wire shape via a single-chunk payload — stays KEEP."
 
   - id: implement
     name: Shrink suites + dedupe validators

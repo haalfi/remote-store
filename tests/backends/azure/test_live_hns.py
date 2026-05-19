@@ -39,10 +39,14 @@ What stays here are cases the conformance suite cannot express:
 
 * **``write_atomic`` streaming guard against BUG-202.** The DFS append
   protocol (``create_file`` → ``append_data`` → ``flush_data``) is the
-  fix for the ``MissingRequiredQueryParameter`` regression on HNS. The
-  conformance streaming test uses ``BytesIO`` (length known), so it does
-  not exercise the unseekable-stream surface that triggered BUG-202
-  (``TestAzureLiveHnsWriteAtomicStreaming``).
+  fix for the ``MissingRequiredQueryParameter`` regression on HNS.
+  Production dispatches on ``isinstance(content, bytes)``, so both the
+  conformance streaming test and this kept test route a ``BytesIO``
+  payload through the same DFS append branch; what this test adds is a
+  post-rename read-back byte-equality assertion and a single-chunk
+  payload that pins the wire shape against real HNS. The multi-chunk
+  offset arithmetic lives in monkeypatched mock tests under
+  ``test_config.py`` (``TestAzureLiveHnsWriteAtomicStreaming``).
 
 * **``get_folder_info("")`` HNS root carve-out.** Real ADLS Gen2 rejects
   ``get_directory_client("")``; the production code skips the per-path
@@ -582,10 +586,14 @@ class TestAzureLiveHnsWriteAtomicStreaming:
     ) -> None:
         """Streaming write_atomic must succeed on real HNS and preserve the payload.
 
-        Contract under test: a ``BinaryIO`` payload (unseekable wrapper acceptable)
-        is uploaded via the DFS append protocol, ``flush_data(position)`` carries
-        the correct byte count, and the resulting blob's content matches the
-        original payload.  Pre-fix this raised ``MissingRequiredQueryParameter``.
+        Contract under test: a ``BinaryIO`` payload routed to the DFS append
+        branch (``create_file`` → ``append_data`` → ``flush_data``) uploads
+        successfully, ``flush_data(position)`` carries the correct byte count,
+        and the post-rename read-back matches the original payload. Pre-fix
+        this raised ``MissingRequiredQueryParameter``. Differentiator vs the
+        conformance streaming test: that test asserts only ``WriteResult.size``;
+        this one pins the wire shape with a known single-chunk payload and
+        asserts post-rename body equality on a real account.
         """
         import io  # noqa: PLC0415 -- intentional late import
 
