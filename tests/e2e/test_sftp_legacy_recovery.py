@@ -15,10 +15,12 @@ paramiko, using a Dockerized server:
   re-adds the four entries to restore the connection.
 
 Requires:
-    docker compose -f benchmarks/infra/docker-compose.yml up -d legacy-sftp
+    docker compose -f infra/docker-compose.yml up -d legacy-sftp
 
-Test is skipped when the legacy-sftp container is not reachable on
-``127.0.0.1:2223`` (env-overridable: ``E2E_LEGACY_SFTP_PORT`` etc.).
+Test is skipped when the legacy-sftp container is not reachable.
+Host port and credentials come from ``infra/.env`` via
+``infra._settings`` (env-overridable per-process: ``LEGACY_SFTP_HOST``,
+``LEGACY_SFTP_HOST_PORT``, ``LEGACY_SFTP_USER``, ``LEGACY_SFTP_PASS``).
 """
 
 from __future__ import annotations
@@ -27,14 +29,14 @@ import pytest
 
 paramiko = pytest.importorskip("paramiko", reason="paramiko not installed")
 
-from remote_store.backends._sftp import SFTPUtils  # noqa: E402
-from tests.e2e.conftest import (  # noqa: E402
+from infra._settings import (  # noqa: E402
     LEGACY_SFTP_HOST,
     LEGACY_SFTP_PASS,
     LEGACY_SFTP_PORT,
     LEGACY_SFTP_USER,
-    legacy_sftp_skip,
 )
+from remote_store.backends._sftp import SFTPUtils  # noqa: E402
+from tests.e2e.conftest import legacy_sftp_skip  # noqa: E402
 
 _PARAMIKO_MAJOR = int(paramiko.__version__.split(".", 1)[0])
 _SSH_RSA_IN_DEFAULTS = _PARAMIKO_MAJOR < 5

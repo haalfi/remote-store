@@ -102,8 +102,10 @@ def require_live_credentials(
 
 # Endpoint-URL fragments that identify local S3 emulators (moto server,
 # MinIO, LocalStack). Applied only to AWS_ENDPOINT_URL / AWS_S3_ENDPOINT_URL
-# — the eu-central-1 region string is not checked here.
-_S3_EMULATOR_FRAGMENTS = ("127.0.0.1", "localhost", ":9000", ":5000", ":4566")
+# — the eu-central-1 region string is not checked here. ``:9000`` stays
+# alongside ``:19100`` so a developer still running raw MinIO on the
+# upstream-default port also trips the guard.
+_S3_EMULATOR_FRAGMENTS = ("127.0.0.1", "localhost", ":9000", ":19100", ":5000", ":4566")
 
 
 def require_s3_live_credentials() -> dict[str, str]:

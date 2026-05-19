@@ -1,12 +1,12 @@
 """End-to-end test fixtures -- connect to Docker-hosted backend services.
 
-Requires ``docker compose -f benchmarks/infra/docker-compose.yml up -d``.
-Tests are skipped when the required service is not reachable.
+Requires ``docker compose -f infra/docker-compose.yml up -d``. Tests are
+skipped when the required service is not reachable. Host ports, hosts,
+and credentials come from ``infra/.env`` (single source of truth).
 """
 
 from __future__ import annotations
 
-import os
 import socket
 import uuid
 from dataclasses import dataclass, field
@@ -14,6 +14,22 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from infra._settings import (
+    AZURITE_CONN_STR,
+    AZURITE_HOST,
+    AZURITE_PORT,
+    LEGACY_SFTP_HOST,
+    LEGACY_SFTP_PORT,
+    MINIO_ACCESS_KEY,
+    MINIO_ENDPOINT,
+    MINIO_HOST,
+    MINIO_PORT,
+    MINIO_SECRET_KEY,
+    SFTP_HOST,
+    SFTP_PASS,
+    SFTP_PORT,
+    SFTP_USER,
+)
 from remote_store import Store
 from remote_store.backends._memory import MemoryBackend
 
@@ -21,35 +37,10 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-# ---------------------------------------------------------------------------
-# Docker defaults (same as benchmarks/conftest.py)
-# ---------------------------------------------------------------------------
-
-MINIO_HOST = os.environ.get("E2E_MINIO_HOST", "127.0.0.1")
-MINIO_PORT = int(os.environ.get("E2E_MINIO_PORT", "9000"))
-MINIO_ENDPOINT = f"http://{MINIO_HOST}:{MINIO_PORT}"
-MINIO_ACCESS_KEY = os.environ.get("E2E_MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.environ.get("E2E_MINIO_SECRET_KEY", "minioadmin")
-
-AZURITE_HOST = os.environ.get("E2E_AZURITE_HOST", "127.0.0.1")
-AZURITE_PORT = int(os.environ.get("E2E_AZURITE_PORT", "10000"))
-AZURITE_CONN_STR = (
-    "DefaultEndpointsProtocol=http;"
-    "AccountName=devstoreaccount1;"
-    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq"
-    "/K1SZFPTOtr/KBHBeksoGMGw==;"
-    f"BlobEndpoint=http://{AZURITE_HOST}:{AZURITE_PORT}/devstoreaccount1;"
-)
-
-SFTP_HOST = os.environ.get("E2E_SFTP_HOST", "127.0.0.1")
-SFTP_PORT = int(os.environ.get("E2E_SFTP_PORT", "2222"))
-SFTP_USER = os.environ.get("E2E_SFTP_USER", "benchuser")
-SFTP_PASS = os.environ.get("E2E_SFTP_PASS", "benchpass")
-
-LEGACY_SFTP_HOST = os.environ.get("E2E_LEGACY_SFTP_HOST", "127.0.0.1")
-LEGACY_SFTP_PORT = int(os.environ.get("E2E_LEGACY_SFTP_PORT", "2223"))
-LEGACY_SFTP_USER = os.environ.get("E2E_LEGACY_SFTP_USER", "legacyuser")
-LEGACY_SFTP_PASS = os.environ.get("E2E_LEGACY_SFTP_PASS", "legacypass")
+# Docker defaults (host ports, credentials) come from ``infra/.env`` via
+# ``infra._settings``. ``infra._settings`` honours per-name os.environ
+# overrides, so ``E2E_MINIO_PORT=...`` style spot-overrides keep working
+# via the same name (without the ``E2E_`` prefix the old defaults used).
 
 
 # ---------------------------------------------------------------------------
@@ -171,8 +162,7 @@ sftp_skip = pytest.mark.skipif(not _sftp_available(), reason="SFTP container not
 legacy_sftp_skip = pytest.mark.skipif(
     not _legacy_sftp_available(),
     reason=(
-        "Legacy SFTP container not reachable "
-        "(start: docker compose -f benchmarks/infra/docker-compose.yml up -d legacy-sftp)"
+        "Legacy SFTP container not reachable (start: docker compose -f infra/docker-compose.yml up -d legacy-sftp)"
     ),
 )
 

@@ -3,7 +3,8 @@
 Stage 2, real-local. Active when ``pyarrow >= 24``, where the C++
 ``arrow::fs::S3FileSystem`` path requires a real S3-compatible endpoint
 (moto's HTTP server is no longer sufficient). MinIO runs as the
-``minio/minio`` Docker container exposed on port 9000.
+chainguard MinIO Docker container; the host port comes from
+``infra/.env`` (``MINIO_HOST_PORT``).
 
 The companion Stage 1 fixture for older pyarrow versions is
 ``s3_pyarrow_moto``; the two are mutually exclusive at runtime.
@@ -16,6 +17,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from infra._settings import MINIO_HOST, MINIO_PORT
 from tests._helpers import MINIO_KEY, MINIO_SECRET, pyarrow_ge_24
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures._state import INFRA
@@ -38,7 +40,7 @@ def _factory() -> Backend:
     if not pyarrow_ge_24():
         pytest.skip("pyarrow < 24 uses the s3_pyarrow_moto fixture, not MinIO")
     if INFRA.minio_url is None:
-        pytest.skip("MinIO not reachable on 127.0.0.1:9000")
+        pytest.skip(f"MinIO not reachable on {MINIO_HOST}:{MINIO_PORT}")
     import boto3
 
     from remote_store.backends._s3_pyarrow import S3PyArrowBackend

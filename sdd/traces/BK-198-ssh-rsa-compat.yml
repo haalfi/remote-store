@@ -54,14 +54,14 @@ surprising_ripples:
   - sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md
   - tests/e2e/test_sftp_legacy_recovery.py
   - tests/e2e/conftest.py
-  - benchmarks/infra/legacy-sftp/Dockerfile
-  - benchmarks/infra/docker-compose.yml
+  - infra/legacy-sftp/Dockerfile
+  - infra/docker-compose.yml
   - docs-src/guides/troubleshooting.md  # round 5: cross-link from troubleshooting -> Legacy Servers + scan_host_algorithms
 
 # Round 1: initial implementation (BK-198 first cut).
 # Round 2: empirical re-test against paramiko 2.12-4.0 -> corrective
 #          reframing (helper as recovery-only); promoted probe to
-#          benchmarks/infra/legacy-sftp + tests/e2e/test_sftp_legacy_recovery.py.
+#          infra/legacy-sftp + tests/e2e/test_sftp_legacy_recovery.py.
 # Round 3: paramiko 5.0 field-data finding -> matrix extended to 5.0,
 #          docstring/guide/CHANGELOG name 5.0 explicitly, pin alternative
 #          corrected to <5; T33 no-cap decision documented in research § 5;

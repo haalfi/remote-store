@@ -13,6 +13,10 @@ uv.lock
 
 # Secrets
 .env
+# infra/.env is the committed single-source-of-truth file for local-infra
+# ports/creds (non-secret container defaults). Real secrets live in
+# .env.local or environment variables.
+!infra/.env
 
 # Caching
 __pycache__/

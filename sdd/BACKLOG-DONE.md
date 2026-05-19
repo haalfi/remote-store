@@ -8,6 +8,36 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-204 — Relocate `benchmarks/infra/` to top-level `infra/`, retune MinIO ports, single-source settings**
+  spec: — · audience: infra.test, contributor.tooling
+  Three coupled changes in one PR. (1) `git mv benchmarks/infra infra` — the
+  compose stack is consumed primarily by the test suite (`sftp_docker` and
+  `azurite` conformance fixtures, `test-cov-strict` second leg, every
+  `tests/e2e/*` module), not by benchmarks; the old path misled
+  contributors. (2) MinIO host ports moved from `9000:9000` /
+  `9001:9001` to `19100:9000` / `19101:9001`. The container internal port
+  stays 9000 (so MinIO's healthcheck and toxiproxy upstream are
+  unchanged); only the host-side mapping moved off the VSCode Jupyter
+  scan band. (3) Introduced `infra/.env` as the single source of truth
+  for local-infra ports, hosts, and credentials. `infra/_settings.py`
+  parses the file with stdlib only and exposes typed constants;
+  `os.environ` wins over file values so ad-hoc per-test overrides keep
+  working. Docker compose auto-loads `infra/.env` from its project dir;
+  Python conftests import from `infra._settings`; CI workflows source the
+  file and use `$VAR` in `-p` flag construction. `scripts/check_infra_settings.py`
+  fails lint on any literal `-p N:M` outside `infra/.env`, dual-wired
+  into `hatch run lint` and the lint CI job. Callers migrated:
+  `tests/conftest.py`, `tests/e2e/conftest.py`, `benchmarks/conftest.py`,
+  `benchmarks/_toxiproxy.py`, `benchmarks/bench_pyarrow_tier1.py`,
+  `tests/backends/fixtures/s3_pyarrow_minio.py`, and the
+  `_live_env._S3_EMULATOR_FRAGMENTS` guard (additive: `:19100` now
+  alongside `:9000`). Three CI workflows updated to source the env
+  file: `start-backends/action.yml`, `mutation.yml`, `publish.yml`.
+  `benchmarks/_toxiproxy.py` collapsed onto the shared module and
+  re-exports from `infra._settings` for back-compat. No CHANGELOG entry
+  per `audience: infra.test, contributor.tooling` (schema-derived rule).
+  Trace: [`sdd/traces/ID-204-infra-settings.yml`](traces/ID-204-infra-settings.yml).
+
 - [x] **BK-182 — Shrink live HNS suites under `tests/backends/azure/` to HNS-unique cases**
   spec: TEST-003 · audience: infra.test
   After BK-179 (per-backend reorg), BK-180 (live `azure_live` /
@@ -1000,7 +1030,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `scan_host_algorithms()` and `connect_kwargs={"disabled_algorithms":
   ...}`. New "Diagnose first" subsection in the SFTP backend guide.
   Tests: `TestSFTPScanHostAlgorithms` (unit/integration against the
-  benchmarks/infra sftp fixture, asserts the eleven documented entries
+  infra sftp fixture, asserts the eleven documented entries
   and shape) and `TestSFTPScanHostAlgorithmsLegacy` in
   `tests/e2e/test_sftp_legacy_recovery.py` (asserts
   `server_host_key_algorithms == ["ssh-rsa"]` against the legacy-sftp

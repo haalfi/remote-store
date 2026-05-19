@@ -13,7 +13,7 @@ raw SDK calls, and fsspec implementations.
 
 ```bash
 # Start Docker services and wait for health checks to pass
-docker compose -f benchmarks/infra/docker-compose.yml up -d --wait
+docker compose -f infra/docker-compose.yml up -d --wait
 
 # Run quick-tier benchmarks (~2 min/backend)
 hatch run bench
@@ -36,8 +36,8 @@ hatch run bench-report-comparative
 | Backend | Docker Service | Remote-Store | Raw SDK | fsspec |
 |---------|---------------|-------------|---------|--------|
 | Local | - | LocalBackend | pathlib | fsspec.local |
-| S3 | MinIO :9000 | S3Backend | boto3 | s3fs |
-| S3-PyArrow | MinIO :9000 | S3PyArrowBackend | - | - |
+| S3 | MinIO :19100 | S3Backend | boto3 | s3fs |
+| S3-PyArrow | MinIO :19100 | S3PyArrowBackend | - | - |
 | SFTP | OpenSSH :2222 | SFTPBackend | paramiko | sshfs |
 | Azure | Azurite :10000 | AzureBackend | azure-storage-blob | adlfs |
 | S3 (latency) | Toxiproxy :19000 → MinIO | S3Backend | - | - |
@@ -70,14 +70,14 @@ hatch run bench-report-comparative
 Uses local Docker containers. No credentials needed.
 
 ```bash
-docker compose -f benchmarks/infra/docker-compose.yml up -d --wait
+docker compose -f infra/docker-compose.yml up -d --wait
 hatch run bench
 ```
 
 To stop and clean up Docker services afterwards:
 
 ```bash
-docker compose -f benchmarks/infra/docker-compose.yml down -v
+docker compose -f infra/docker-compose.yml down -v
 ```
 
 ### Cloud mode
@@ -202,28 +202,21 @@ hatch run bench -- --backend s3-latency --network-profile rtt50 \
 
 ## Environment Variables
 
+Local-infra host/port/credential defaults live in [`infra/.env`](../infra/.env)
+(the single source of truth shared by docker-compose, Python conftests, and
+CI workflows). Any value can be overridden for a single invocation by
+exporting the same name in the shell, e.g.
+`MINIO_HOST_PORT=12345 hatch run bench`.
+
+Benchmark-specific knobs not in `infra/.env`:
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `BENCH_MINIO_HOST` | 127.0.0.1 | MinIO host |
-| `BENCH_MINIO_PORT` | 9000 | MinIO port |
-| `BENCH_MINIO_ACCESS_KEY` | minioadmin | MinIO access key |
-| `BENCH_MINIO_SECRET_KEY` | minioadmin | MinIO secret key |
-| `BENCH_AZURITE_HOST` | 127.0.0.1 | Azurite host |
-| `BENCH_AZURITE_PORT` | 10000 | Azurite Blob port |
-| `BENCH_SFTP_HOST` | 127.0.0.1 | SFTP host |
-| `BENCH_SFTP_PORT` | 2222 | SFTP port |
-| `BENCH_SFTP_USER` | benchuser | SFTP username |
-| `BENCH_SFTP_PASS` | benchpass | SFTP password |
-| `BENCH_TOXIPROXY_HOST` | 127.0.0.1 | Toxiproxy API host |
-| `BENCH_TOXIPROXY_API_PORT` | 8474 | Toxiproxy API port |
-| `BENCH_TOXIPROXY_AZURITE_PORT` | 10001 | Proxied Azurite port |
-| `BENCH_MINIO_PROXY_PORT` | 19000 | Proxied MinIO port |
-| `BENCH_SFTP_PROXY_PORT` | 12222 | Proxied SFTP port |
 | `BENCH_AZURE_MAX_CONCURRENCY` | 1 | Azure max concurrency |
 | `BENCH_LARGE_FILE_MB` | 10 | Large-file test size (MB) |
-| `BENCH_S3_BUCKET` | - | Cloud S3 bucket |
-| `BENCH_AZURE_CONTAINER` | - | Cloud Azure container |
-| `BENCH_SFTP_KEY_FILE` | - | Cloud SFTP key file |
+| `BENCH_S3_BUCKET` | — | Cloud S3 bucket |
+| `BENCH_AZURE_CONTAINER` | — | Cloud Azure container |
+| `BENCH_SFTP_KEY_FILE` | — | Cloud SFTP key file |
 
 ## Adding a New Comparison Target
 
@@ -269,8 +262,9 @@ benchmarks/
   report.py                        # summary table generator (bench-report)
   results/
     comparative.md               # generated comparative data (checked in)
-  infra/
-    docker-compose.yml
-    toxiproxy.json               # proxy definitions (azurite, minio, sftp)
   README.md
 ```
+
+The Docker compose stack and Toxiproxy configuration live at the
+top-level [`infra/`](../infra/) — shared between benchmarks and the
+test suite. Ports and credentials come from [`infra/.env`](../infra/.env).

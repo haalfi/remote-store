@@ -67,39 +67,53 @@ jobs:
       # --- Backend service containers ---
       # Conditionally started based on the JSON arrays computed by setup
       # from scripts/mutate_scopes.py (one source of truth for which scopes
-      # need which container).
+      # need which container). Host ports come from infra/.env (single
+      # source of truth, also used by docker-compose and Python conftests).
+      - name: Load infra settings
+        run: |
+          set -a
+          . infra/.env
+          set +a
+          echo "MINIO_HOST_PORT=$MINIO_HOST_PORT" >> $GITHUB_ENV
+          echo "MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY" >> $GITHUB_ENV
+          echo "MINIO_SECRET_KEY=$MINIO_SECRET_KEY" >> $GITHUB_ENV
+          echo "AZURITE_HOST_PORT=$AZURITE_HOST_PORT" >> $GITHUB_ENV
+          echo "SFTP_HOST_PORT=$SFTP_HOST_PORT" >> $GITHUB_ENV
+          echo "SFTP_USER=$SFTP_USER" >> $GITHUB_ENV
+          echo "SFTP_PASS=$SFTP_PASS" >> $GITHUB_ENV
+
       - name: Start MinIO
         if: contains(fromJSON(needs.setup.outputs.minio-scopes), matrix.scope)
         run: |
-          docker run -d --name minio-mut -p 9000:9000 \
-            -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
+          docker run -d --name minio-mut -p ${MINIO_HOST_PORT}:9000 \
+            -e MINIO_ROOT_USER=${MINIO_ACCESS_KEY} -e MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY} \
             cgr.dev/chainguard/minio:latest-dev@sha256:2d8f8a3f8da60885794dfd0749c9d49c985b0ee642f1c522e6aa93be59f34a84 server /data
           for i in $(seq 1 30); do
-            wget -qO /dev/null http://127.0.0.1:9000/minio/health/live && break || sleep 1
+            wget -qO /dev/null http://127.0.0.1:${MINIO_HOST_PORT}/minio/health/live && break || sleep 1
           done
-          wget -qO /dev/null http://127.0.0.1:9000/minio/health/live || { echo "::error::MinIO failed to start"; exit 1; }
+          wget -qO /dev/null http://127.0.0.1:${MINIO_HOST_PORT}/minio/health/live || { echo "::error::MinIO failed to start"; exit 1; }
 
       - name: Start Azurite
         if: contains(fromJSON(needs.setup.outputs.azurite-scopes), matrix.scope)
         run: |
-          docker run -d --name azurite-mut -p 10000:10000 \
+          docker run -d --name azurite-mut -p ${AZURITE_HOST_PORT}:10000 \
             mcr.microsoft.com/azure-storage/azurite:3.35.0 \
             azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
           for i in $(seq 1 30); do
-            nc -z 127.0.0.1 10000 && break || sleep 1
+            nc -z 127.0.0.1 ${AZURITE_HOST_PORT} && break || sleep 1
           done
-          nc -z 127.0.0.1 10000 || { echo "::error::Azurite failed to start"; exit 1; }
+          nc -z 127.0.0.1 ${AZURITE_HOST_PORT} || { echo "::error::Azurite failed to start"; exit 1; }
 
       - name: Start SFTP
         if: contains(fromJSON(needs.setup.outputs.sftp-scopes), matrix.scope)
         run: |
-          docker run -d --name sftp-mut -p 2222:22 \
+          docker run -d --name sftp-mut -p ${SFTP_HOST_PORT}:22 \
             atmoz/sftp:alpine \
-            benchuser:benchpass:::upload
+            "${SFTP_USER}:${SFTP_PASS}:::upload"
           for i in $(seq 1 30); do
-            nc -z 127.0.0.1 2222 && break || sleep 1
+            nc -z 127.0.0.1 ${SFTP_HOST_PORT} && break || sleep 1
           done
-          nc -z 127.0.0.1 2222 || { echo "::error::SFTP failed to start"; exit 1; }
+          nc -z 127.0.0.1 ${SFTP_HOST_PORT} || { echo "::error::SFTP failed to start"; exit 1; }
 
       # --- Python + deps ---
       # Install the dev extra directly via uv (same pattern every other CI

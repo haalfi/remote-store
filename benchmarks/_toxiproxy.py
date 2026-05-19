@@ -1,30 +1,55 @@
 """Toxiproxy helpers and proxied connection strings for benchmarks.
 
 Supports latency simulation for all Docker backends (Azurite, MinIO, SFTP)
-via named network profiles.
+via named network profiles. Host/port constants come from
+``infra._settings`` (single source of truth shared with the test suite
+and docker-compose).
 """
 
 from __future__ import annotations
 
 import json
-import os
 import urllib.error
 import urllib.request
 
-# ---------------------------------------------------------------------------
-# Toxiproxy API
-# ---------------------------------------------------------------------------
+from infra._settings import (
+    AZURITE_CONN_STR,
+    AZURITE_HOST,
+    AZURITE_PORT,
+    TOXIPROXY_API_PORT,
+    TOXIPROXY_AZURITE_CONN_STR,
+    TOXIPROXY_AZURITE_PORT,
+    TOXIPROXY_HOST,
+    TOXIPROXY_MINIO_ENDPOINT,
+    TOXIPROXY_MINIO_PORT,
+    TOXIPROXY_SFTP_PORT,
+)
 
-TOXIPROXY_HOST = os.environ.get("BENCH_TOXIPROXY_HOST", "127.0.0.1")
-TOXIPROXY_API_PORT = int(os.environ.get("BENCH_TOXIPROXY_API_PORT", "8474"))
+# Re-exported so existing `from benchmarks._toxiproxy import ...` callers
+# (and any third party that grew to depend on this surface) keep working.
+__all__ = [
+    "AZURITE_CONN_STR",
+    "AZURITE_HOST",
+    "AZURITE_PORT",
+    "NETWORK_PROFILES",
+    "PROXY_NAMES",
+    "TOXIPROXY_API_PORT",
+    "TOXIPROXY_AZURITE_CONN_STR",
+    "TOXIPROXY_AZURITE_PORT",
+    "TOXIPROXY_HOST",
+    "TOXIPROXY_MINIO_ENDPOINT",
+    "TOXIPROXY_MINIO_PORT",
+    "TOXIPROXY_SFTP_PORT",
+    "apply_profile",
+    "clear_all_toxics",
+    "clear_latency",
+    "set_latency",
+]
+
 _TOXIPROXY_API = f"http://{TOXIPROXY_HOST}:{TOXIPROXY_API_PORT}"
 
 # Proxy names must match toxiproxy.json entries.
 PROXY_NAMES = ("azurite", "minio", "sftp")
-
-# ---------------------------------------------------------------------------
-# Named network profiles
-# ---------------------------------------------------------------------------
 
 NETWORK_PROFILES: dict[str, dict[str, int]] = {
     "clean": {"latency": 0, "jitter": 0},
@@ -32,43 +57,6 @@ NETWORK_PROFILES: dict[str, dict[str, int]] = {
     "rtt50": {"latency": 50, "jitter": 17},
     "rtt100": {"latency": 100, "jitter": 33},
 }
-
-# ---------------------------------------------------------------------------
-# Azurite connection strings (direct + proxied)
-# ---------------------------------------------------------------------------
-
-AZURITE_HOST = os.environ.get("BENCH_AZURITE_HOST", "127.0.0.1")
-AZURITE_PORT = int(os.environ.get("BENCH_AZURITE_PORT", "10000"))
-TOXIPROXY_AZURITE_PORT = int(os.environ.get("BENCH_TOXIPROXY_AZURITE_PORT", "10001"))
-
-_AZURITE_KEY = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
-
-AZURITE_CONN_STR = (
-    "DefaultEndpointsProtocol=http;"
-    "AccountName=devstoreaccount1;"
-    f"AccountKey={_AZURITE_KEY};"
-    f"BlobEndpoint=http://{AZURITE_HOST}:{AZURITE_PORT}/devstoreaccount1;"
-)
-
-TOXIPROXY_AZURITE_CONN_STR = (
-    "DefaultEndpointsProtocol=http;"
-    "AccountName=devstoreaccount1;"
-    f"AccountKey={_AZURITE_KEY};"
-    f"BlobEndpoint=http://{TOXIPROXY_HOST}:{TOXIPROXY_AZURITE_PORT}/devstoreaccount1;"
-)
-
-# ---------------------------------------------------------------------------
-# MinIO connection constants (proxied)
-# ---------------------------------------------------------------------------
-
-TOXIPROXY_MINIO_PORT = int(os.environ.get("BENCH_MINIO_PROXY_PORT", "19000"))
-TOXIPROXY_MINIO_ENDPOINT = f"http://{TOXIPROXY_HOST}:{TOXIPROXY_MINIO_PORT}"
-
-# ---------------------------------------------------------------------------
-# SFTP connection constants (proxied)
-# ---------------------------------------------------------------------------
-
-TOXIPROXY_SFTP_PORT = int(os.environ.get("BENCH_SFTP_PROXY_PORT", "12222"))
 
 # ---------------------------------------------------------------------------
 # Low-level toxic management

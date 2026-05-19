@@ -119,7 +119,7 @@ and directories are created per test fixture and cleaned up after.
 
 ```bash
 # Start Docker services
-docker compose -f benchmarks/infra/docker-compose.yml up -d --wait
+docker compose -f infra/docker-compose.yml up -d --wait
 
 # Quick tier (~2 min/backend)
 hatch run bench
@@ -146,7 +146,7 @@ hatch run bench-report-comparative        # remote-store vs raw SDK vs fsspec
 hatch run bench-charts                    # generate SVG charts
 
 # Stop services
-docker compose -f benchmarks/infra/docker-compose.yml down -v
+docker compose -f infra/docker-compose.yml down -v
 ```
 
 For cloud benchmarks, set the appropriate environment variables (see

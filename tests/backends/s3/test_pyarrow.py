@@ -379,11 +379,13 @@ class TestS3PyArrowMinIOSentinel:
     """
 
     def test_backend_endpoint_is_minio_when_pyarrow_ge_24(self, s3pa_backend: Backend) -> None:
-        """On pyarrow ≥ 24, s3pa_backend must route to MinIO at 127.0.0.1:9000."""
+        """On pyarrow ≥ 24, s3pa_backend must route to MinIO at the configured host port."""
         if not pyarrow_ge_24():
             return
+        from infra._settings import MINIO_ENDPOINT
+
         assert s3pa_backend._endpoint_url is not None
-        assert s3pa_backend._endpoint_url.startswith("http://127.0.0.1:9000"), (
+        assert s3pa_backend._endpoint_url.startswith(MINIO_ENDPOINT), (
             f"pyarrow_ge_24() is True but backend is not on MinIO: {s3pa_backend._endpoint_url!r}"
         )
 

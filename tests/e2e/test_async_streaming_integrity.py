@@ -23,7 +23,7 @@ loop fed into ``store.write()``.
 accept ``AsyncIterator[bytes]``) -- write-side chunk assertions are not made.
 Memory measurement (tracemalloc) deferred to a follow-up item.
 
-Requires: ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
+Requires: ``docker compose -f infra/docker-compose.yml up -d``
 Run with: ``pytest -m integration tests/e2e/test_async_streaming_integrity.py -s``
 """
 

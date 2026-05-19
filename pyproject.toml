@@ -143,7 +143,7 @@ dependencies = [
 # than after the full lint/typecheck/test gauntlet. CI runs the same checks inline
 # in the `lint` job (one step each) so the wall-time win is dev-loop only.
 preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check"]
-lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py"]
+lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"
@@ -186,7 +186,7 @@ record-azure = "python scripts/record_cassettes.py --backend azure"
 # and integrations/ (needs optional deps like PyArrow/Dagster).
 examples = "python tests/scripts/run_examples.py"
 notebooks = "python tests/scripts/run_notebooks.py"
-# End-to-end tests against Docker backends (docker compose -f benchmarks/infra/docker-compose.yml up -d)
+# End-to-end tests against Docker backends (docker compose -f infra/docker-compose.yml up -d)
 e2e = "pytest tests/e2e/ -v -o addopts="
 bench = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not standard and not full"'
 bench-standard = 'pytest benchmarks/ -v --benchmark-sort=mean -m "not full"'

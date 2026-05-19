@@ -1,25 +1,29 @@
-# Docker Compose for remote-store backend benchmarking.
+# Docker Compose for the remote-store test + benchmark backends.
 #
 # Starts MinIO (S3-compatible), Azurite (Azure Blob emulator), an
-# OpenSSH-based SFTP server, and Toxiproxy (latency simulation) so
-# benchmarks can run against realistic network services instead of
-# pure in-process mocks.
+# OpenSSH-based SFTP server, and Toxiproxy (latency simulation). The
+# stack is primarily consumed by the test suite (sftp_docker / azurite
+# conformance fixtures, all tests/e2e/* modules) and secondarily by
+# benchmarks/.
+#
+# Host-side ports and credentials come from infra/.env, which docker
+# compose auto-loads as the project-directory env file. Override one for
+# a single invocation with: MINIO_HOST_PORT=12345 docker compose ...
 #
 # Toxiproxy sits in front of all three network backends:
-#   - Azurite:  port 10001 → azurite:10000
-#   - MinIO:    port 19000 → minio:9000
-#   - SFTP:     port 12222 → sftp:22
+#   - Azurite:  proxied port -> azurite:10000
+#   - MinIO:    proxied port -> minio:9000
+#   - SFTP:     proxied port -> sftp:22
 #
 # Use ``--network-profile rtt50`` with pytest to add simulated network
-# latency to all proxied backends (default: clean = passthrough).
-# The Toxiproxy HTTP API is exposed on port 8474 for manual toxic
+# latency to all proxied backends (default: clean = passthrough). The
+# Toxiproxy HTTP API is exposed on TOXIPROXY_API_PORT for manual toxic
 # management.
 #
 # Usage:
-#   docker compose up -d
-#   pytest benchmarks/ -v
-#   pytest benchmarks/ -v --backend s3-latency --network-profile rtt50
-#   docker compose down -v
+#   docker compose -f infra/docker-compose.yml up -d
+#   pytest tests/e2e/ -v
+#   docker compose -f infra/docker-compose.yml down -v
 
 services:
   minio:
@@ -29,13 +33,14 @@ services:
     image: cgr.dev/chainguard/minio:latest-dev
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "127.0.0.1:9001:9001"   # console — localhost only
+      - "${MINIO_HOST_PORT}:9000"
+      - "${MINIO_HOST}:${MINIO_CONSOLE_HOST_PORT}:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     healthcheck:
       # Chainguard image has no `mc` binary; use HTTP liveness endpoint.
+      # Runs inside the container, so the upstream port (9000) is correct.
       test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:9000/minio/health/live 2>&1 || exit 1"]
       interval: 5s
       timeout: 5s
@@ -45,7 +50,7 @@ services:
     image: mcr.microsoft.com/azure-storage/azurite:3.35.0
     command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck
     ports:
-      - "10000:10000"
+      - "${AZURITE_HOST_PORT}:10000"
     healthcheck:
       test: ["CMD", "nc", "-z", "127.0.0.1", "10000"]
       interval: 5s
@@ -53,12 +58,18 @@ services:
       retries: 5
 
   toxiproxy:
+    # The container-side ports below (10001 / 19000 / 12222) must match
+    # the ``listen`` values in ``toxiproxy.json``. Toxiproxy reads its
+    # config at startup and does not perform env-var substitution, so the
+    # listen ports cannot themselves come from infra/.env. The host-side
+    # ports (``${TOXIPROXY_*_PORT}``) are overridable; the container side
+    # is intentionally fixed alongside ``toxiproxy.json``.
     image: ghcr.io/shopify/toxiproxy:2.12.0
     ports:
-      - "10001:10001"           # proxied Azurite blob endpoint
-      - "19000:19000"           # proxied MinIO S3 endpoint
-      - "12222:12222"           # proxied SFTP endpoint
-      - "127.0.0.1:8474:8474"  # Toxiproxy HTTP API — localhost only
+      - "${TOXIPROXY_AZURITE_PORT}:10001"   # proxied Azurite blob endpoint
+      - "${TOXIPROXY_MINIO_PORT}:19000"     # proxied MinIO S3 endpoint
+      - "${TOXIPROXY_SFTP_PORT}:12222"      # proxied SFTP endpoint
+      - "${TOXIPROXY_HOST}:${TOXIPROXY_API_PORT}:8474"  # API — localhost only
     volumes:
       - ./toxiproxy.json:/config/toxiproxy.json:ro
     command: -config /config/toxiproxy.json -host 0.0.0.0
@@ -80,8 +91,8 @@ services:
     # atmoz/sftp only publishes `alpine` (floating); no per-version Alpine tags.
     image: atmoz/sftp:alpine
     ports:
-      - "2222:22"
-    command: benchuser:benchpass:::upload
+      - "${SFTP_HOST_PORT}:22"
+    command: ${SFTP_USER}:${SFTP_PASS}:::upload
     healthcheck:
       test: ["CMD", "nc", "-z", "127.0.0.1", "22"]
       interval: 5s
@@ -95,7 +106,7 @@ services:
     build:
       context: ./legacy-sftp
     ports:
-      - "2223:22"
+      - "${LEGACY_SFTP_HOST_PORT}:22"
     healthcheck:
       test: ["CMD", "nc", "-z", "127.0.0.1", "22"]
       interval: 5s

@@ -4,7 +4,7 @@ Runs the full Bronze / Silver / Gold pipeline against real Docker backends,
 exercising extension interplay: ext.arrow, ext.partition, ext.batch,
 ext.cache, and ext.observe working together.
 
-Requires: ``docker compose -f benchmarks/infra/docker-compose.yml up -d``
+Requires: ``docker compose -f infra/docker-compose.yml up -d``
 
 This is the integration counterpart of ``examples/notebooks/04_data_lake_medallion.ipynb``
 which runs only on MemoryBackend.

@@ -749,7 +749,7 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   `pip install --upgrade --pre` with no consumer-side pins, diff
   resolved versions against a committed observed-lock, and for each
   delta run the most-likely-to-break smoke tests against deterministic
-  fixtures (the `benchmarks/infra/legacy-sftp` e2e is the model). Open
+  fixtures (the `infra/legacy-sftp` e2e is the model). Open
   an issue on drift; do not auto-merge a pin update — the point is
   early warning, not automated remediation. Surfaced during BK-198 (PR 613) review.
 
@@ -774,27 +774,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   symmetric capability-declaration test; (e) streaming-iteration assertion;
   (f) `tests/aio/README.md` update. Closes the pattern-drift risk before ID-127
   Graph backend repeats conformance-lag and doc-ripple issues.
-
-- [ ] **ID-204 — Relocate `benchmarks/infra/` compose file and retune MinIO ports**
-  spec: — · effort: M · audience: library.maintainer
-  Two unrelated debts bundled because they touch the same file and callers.
-
-  **1. Wrong home.** `benchmarks/infra/docker-compose.yml` is primarily consumed by
-  the test suite (`sftp_docker` and `azurite` conformance fixtures, `test-cov-strict`
-  second leg), not by benchmarks. The path misleads contributors into treating it as
-  benchmark-only. Candidate moves: `tests/infra/` (matches dominant consumer) or a
-  top-level `infra/`. Pick one, move the file, update all 23+ callers (test fixtures,
-  CI workflows, benchmark scripts, docs, `feedback_docker_infra` memory entry, and
-  any `sdd/` references).
-
-  **2. MinIO port collision with VSCode Jupyter.** The compose file exposes MinIO on
-  `9000:9000` and `127.0.0.1:9001:9001`. VSCode's Jupyter extension scans from ~9000
-  upward, causing bind failures when both are running. Move MinIO to less-trafficked
-  host ports (e.g. `19000:9000`, `19001:9001`) and update `INFRA.minio_url` resolution
-  and any test/benchmark callers that hardcode port 9000.
-
-  **Exit criteria:** compose file at new path; all CI jobs green; MinIO ports changed;
-  no remaining references to `benchmarks/infra/` in test or workflow files.
 
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer

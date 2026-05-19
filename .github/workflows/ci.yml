@@ -84,6 +84,7 @@ jobs:
       - run: python scripts/check_tla_no_emdash.py
       - run: python scripts/check_docs_framework.py
       - run: python scripts/check_rst_roles.py
+      - run: python scripts/check_infra_settings.py
       - run: python scripts/gen_graph.py --check
       - run: python scripts/check_api_docs.py
       - run: python scripts/gen_features.py --check
