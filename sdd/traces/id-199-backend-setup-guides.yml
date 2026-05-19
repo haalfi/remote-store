@@ -5,6 +5,10 @@ source_items:
   - ID-199
 audience:
   - contributor.process
+discovery_followups:
+  - ID-200
+  - ID-201
+  - ID-202
 expected_ripples:
   - sdd/backlogid.json
 review_rounds: 0

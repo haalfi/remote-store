@@ -184,8 +184,8 @@ this guide retires.
 **Out of scope.** Generic Python streaming patterns; benchmark
 methodology (lives in `docs-src/explanation/performance.md`).
 
-**Cross-links.** From per-backend pages. To `retry.md`, `ext.transfer`
-guide, `s3-pyarrow.md`.
+**Cross-links.** From per-backend pages. To `retry.md`,
+`transfer-operations.md`, `s3-pyarrow.md`.
 
 ### 3.3 Local-dev emulators
 
