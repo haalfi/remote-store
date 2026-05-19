@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/specs/012-azure-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-backend-setup-guides/">
       
       
-        <link rel="prev" href="../011-s3-pyarrow-backend/">
+        <link rel="prev" href="../research-backend-contract-completeness/">
       
       
-        <link rel="next" href="../013-memory-backend/">
+        <link rel="next" href="../research-benchmark-suite-v2/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>012: Azure Backend Specification - remote-store</title>
+        <title>Backend Setup & Configuration Guides Expansion - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#azure-backend-specification" class="md-skip">
+        <a href="#research-backend-setup-configuration-guides-expansion" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              012: Azure Backend Specification
+              Backend Setup & Configuration Guides Expansion
             
           </span>
         </div>
@@ -6487,6 +6487,8 @@
                 
   
   
+    
+  
   
   
     
@@ -6497,15 +6499,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_10" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_10" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -6529,7 +6531,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_10_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_10_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8_10">
             <span class="md-nav__icon md-icon"></span>
             
@@ -6547,7 +6549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-agent-workflow-substrate/" class="md-nav__link">
+      <a href="../research-agent-workflow-substrate/" class="md-nav__link">
         
   
   
@@ -6575,7 +6577,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -6603,7 +6605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -6631,7 +6633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -6659,7 +6661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -6667,1277 +6669,6 @@
     
   
     Backend Contract Completeness
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-backend-setup-guides/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend Setup & Configuration Guides Expansion
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-benchmark-suite-v2/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Benchmark Suite v2 — User-Decision Framing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-bk-181-cassette-replay-poc/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    HTTP cassette/replay layer — mechanism PoC (BK-181)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    BK-181 PR 2 — S3 cassette/replay infeasibility
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-bug-prevention-beyond-testing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Bug Prevention Beyond Testing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-dagster-extension/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Dagster Extension (ext.dagster, ID-075)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-depth-limited-listing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Depth-Limited Listing
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-doc-content-longevity/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Documentation Content Longevity
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-docs-landing-page/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ID-090 — Docs Landing Page
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-example-testing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Example Testing Across Language Ecosystems
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-fastapi-docs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FastAPI Documentation & CI/CD Patterns
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-feature-discoverability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Discoverability for Agents and Humans
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-google-docstring-migration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Google-Style Docstring Migration & Zensical Evaluation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-health-check/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backend Health Check (store.ping() / backend.check_health())
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147-obs003-decomposition/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OBS-003 Hand Decomposition (ID-147)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147-tla-augmentation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TLA+ Spec Augmentation (ID-147)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-id-147b-tla-poc/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    TLA+ PoC — WriteResult Spec Consistency (ID-147b)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-logging-monitoring-tracing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Logging, Monitoring & Tracing for remote-store
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-medallion-dagster-showcase/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Architecture: Medallion + Dagster Showcase
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-openrouter-integration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OpenRouter.ai Integration for Claude Code Workflow
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-readonly-http-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Read-Only HTTP Backend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-resolve-spec-proposal/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    `resolve()` Specification Proposal
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-retry-policy/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Retry Policy Configuration (ID-010)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-seekable-read/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Seekable Read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-sftpgo-comparison/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SFTPGo — Comparison and Design Insights
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-sqlalchemy-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SQLAlchemy Backends & Composite Store
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-store-api-refinement/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Store API Refinement
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-store-config/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Configuration Loaders and Store Config Patterns
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-store-middleware-architecture/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Store Middleware Architecture
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-testing-best-practices/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Testing Best Practices for Long-Term Package Quality
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../research/research-v1-communication-plan/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    v1.0 Communication & Announcement Plan
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_11" checked>
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Specs
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_5_8_11" id="__nav_5_8_11_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_11_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5_8_11">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Specs
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../001-store-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    001: Store API Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../002-registry-config/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    002: Registry & Configuration Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../003-backend-adapter-contract/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    003: Backend Adapter Contract Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../004-path-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    004: Path Model Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../005-error-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    005: Error Model Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../006-streaming-io/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    006: Streaming I/O Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../007-atomic-writes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    007: Atomic Writes Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../008-s3-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    008: S3 Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../009-sftp-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    009: SFTP Backend Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../010-native-path-resolution/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    010: Native Path Resolution Specification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../011-s3-pyarrow-backend/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    011: S3-PyArrow Hybrid Backend Specification
   
 
     
@@ -7974,7 +6705,7 @@
   <span class="md-ellipsis">
     
   
-    012: Azure Backend Specification
+    Backend Setup & Configuration Guides Expansion
   
 
     
@@ -7992,7 +6723,7 @@
   <span class="md-ellipsis">
     
   
-    012: Azure Backend Specification
+    Backend Setup & Configuration Guides Expansion
   
 
     
@@ -8018,10 +6749,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#1-context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        1. Context
       
     </span>
   </a>
@@ -8029,22 +6760,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#2-approach" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        2. Approach
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="2. Approach">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-001-constructor-parameters" class="md-nav__link">
+  <a href="#21-evidence-base" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-001: Constructor Parameters
+        2.1 Evidence base
       
     </span>
   </a>
@@ -8052,43 +6783,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-002-backend-name" class="md-nav__link">
+  <a href="#22-authoring-contract-dogfood-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-005: Construction Validation
+        2.2 Authoring contract (dogfood-first)
       
     </span>
   </a>
@@ -8101,22 +6799,99 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hns-detection" class="md-nav__link">
+  <a href="#3-proposed-guides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HNS Detection
+        3. Proposed guides
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="HNS Detection">
+    <nav class="md-nav" aria-label="3. Proposed guides">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" class="md-nav__link">
+  <a href="#tier-1-standalone-guides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-006: Adaptive Behavior Based on Hierarchical Namespace
+        Tier-1: standalone guides
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#31-s3-compatible-providers-cookbook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 S3-compatible providers cookbook
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-large-object-streaming-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Large-object &amp; streaming tuning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-local-dev-emulators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Local-dev emulators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-sftp-reliability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 SFTP reliability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-azure-keyless-auth-private-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Azure keyless auth &amp; private endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-credential-secret-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Credential &amp; secret rotation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#37-sqlite-operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.7 SQLite operational notes
       
     </span>
   </a>
@@ -8129,434 +6904,57 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#azure-storage-model" class="md-nav__link">
+  <a href="#4-tier-2-sidebar-additions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Azure Storage Model
+        4. Tier-2 sidebar additions
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Azure Storage Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-007-container-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-007: Container Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-008-directory-semantics-hns-enabled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-008: Directory Semantics (HNS Enabled)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-009-virtual-folder-semantics-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-009: Virtual Folder Semantics (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-010-write-does-not-create-folder-markers-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-010: Write Does Not Create Folder Markers (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-011-path-encoding" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-011: Path Encoding
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#path-inspection" class="md-nav__link">
+  <a href="#5-out-of-scope-tier-3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Path Inspection
+        5. Out of scope (Tier-3)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Path Inspection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-012-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-012: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-013-is_file-and-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-013: is_file() and is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
+  <a href="#6-code-side-questions-for-maintainers-not-guides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations
+        6. Code-side questions for maintainers (NOT guides)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-014-atomic-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-014: Atomic Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-015-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-015: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-016-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-016: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-017-move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-017: Move
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-018-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-018: Copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-019-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-019: Glob
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-022-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-022: write()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-023-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-023: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-024-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-024: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
+  <a href="#7-sequencing-recommendation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Mapping
+        7. Sequencing recommendation
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-025-structured-error-classification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-025: Structured Error Classification
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-026-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-026: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-027-to_key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-027: to_key
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-028-error-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-028: Error Context Manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
+  <a href="#8-open-questions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resource Management
+        8. Open questions
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-029-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-029: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-030-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-030: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-034-etag-and-content-md5-digest-population" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-034: ETag and Content-MD5 Digest Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-033-transfer-concurrency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-033: Transfer Concurrency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-031-client-options-passthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-031: Client Options Passthrough
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-035-staged-block-upload-defaults" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-035: Staged-Block Upload Defaults
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-032-default-credential-chain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-032: Default Credential Chain
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-036-hns-directory-marker-probe-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-036: HNS Directory-Marker Probe Contract
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -8576,7 +6974,1276 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-memory-backend/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark Suite v2 — User-Decision Framing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-bk-181-cassette-replay-poc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP cassette/replay layer — mechanism PoC (BK-181)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BK-181 PR 2 — S3 cassette/replay infeasibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    paramiko ssh-rsa host-key compatibility — empirical findings (BK-198)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-bug-prevention-beyond-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bug Prevention Beyond Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-dagster-extension/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster Extension (ext.dagster, ID-075)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Depth-Limited Listing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-doc-content-longevity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation Content Longevity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ID-090 — Docs Landing Page
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-example-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example Testing Across Language Ecosystems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FastAPI Documentation & CI/CD Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Discoverability for Agents and Humans
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Google-Style Docstring Migration & Zensical Evaluation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-health-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend Health Check (store.ping() / backend.check_health())
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-id-147-obs003-decomposition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OBS-003 Hand Decomposition (ID-147)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-id-147-tla-augmentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TLA+ Spec Augmentation (ID-147)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-id-147b-tla-poc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TLA+ PoC — WriteResult Spec Consistency (ID-147b)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging, Monitoring & Tracing for remote-store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture: Medallion + Dagster Showcase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-openrouter-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenRouter.ai Integration for Claude Code Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read-Only HTTP Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    `resolve()` Specification Proposal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-retry-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retry Policy Configuration (ID-010)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-seekable-read/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Seekable Read
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-sftpgo-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFTPGo — Comparison and Design Insights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQLAlchemy Backends & Composite Store
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store API Refinement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-store-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Loaders and Store Config Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store Middleware Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Best Practices for Long-Term Package Quality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v1.0 Communication & Announcement Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_11" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../specs/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specs
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_8_11" id="__nav_5_8_11_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    001: Store API Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    002: Registry & Configuration Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    003: Backend Adapter Contract Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    004: Path Model Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    005: Error Model Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    006: Streaming I/O Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    007: Atomic Writes Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    008: S3 Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    009: SFTP Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    010: Native Path Resolution Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    011: S3-PyArrow Hybrid Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    012: Azure Backend Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -8604,7 +8271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -8632,7 +8299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -8660,7 +8327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -8688,7 +8355,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -8716,7 +8383,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -8744,7 +8411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -8772,7 +8439,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -8800,7 +8467,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -8828,7 +8495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -8856,7 +8523,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -8884,7 +8551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -8912,7 +8579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -8940,7 +8607,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -8968,7 +8635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -8996,7 +8663,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -9024,7 +8691,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -9052,7 +8719,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -9080,7 +8747,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -9108,7 +8775,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -9136,7 +8803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -9164,7 +8831,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -9192,7 +8859,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -9220,7 +8887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -9248,7 +8915,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -9276,7 +8943,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -9304,7 +8971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -9332,7 +8999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -9360,7 +9027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -9388,7 +9055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -9416,7 +9083,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -9444,7 +9111,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../044-graph-backend/" class="md-nav__link">
+      <a href="../../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -9472,7 +9139,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../045-write-result/" class="md-nav__link">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -9500,7 +9167,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../046-ext-write/" class="md-nav__link">
+      <a href="../../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -9528,7 +9195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../047-docs-framework-tooling/" class="md-nav__link">
+      <a href="../../specs/047-docs-framework-tooling/" class="md-nav__link">
         
   
   
@@ -9556,7 +9223,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../048-testing-architecture/" class="md-nav__link">
+      <a href="../../specs/048-testing-architecture/" class="md-nav__link">
         
   
   
@@ -9627,10 +9294,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#1-context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        1. Context
       
     </span>
   </a>
@@ -9638,22 +9305,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#construction" class="md-nav__link">
+  <a href="#2-approach" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Construction
+        2. Approach
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Construction">
+    <nav class="md-nav" aria-label="2. Approach">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-001-constructor-parameters" class="md-nav__link">
+  <a href="#21-evidence-base" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-001: Constructor Parameters
+        2.1 Evidence base
       
     </span>
   </a>
@@ -9661,43 +9328,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#az-002-backend-name" class="md-nav__link">
+  <a href="#22-authoring-contract-dogfood-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-002: Backend Name
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-003-capability-declaration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-003: Capability Declaration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-004-lazy-connection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-004: Lazy Connection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-005-construction-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-005: Construction Validation
+        2.2 Authoring contract (dogfood-first)
       
     </span>
   </a>
@@ -9710,22 +9344,99 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hns-detection" class="md-nav__link">
+  <a href="#3-proposed-guides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        HNS Detection
+        3. Proposed guides
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="HNS Detection">
+    <nav class="md-nav" aria-label="3. Proposed guides">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" class="md-nav__link">
+  <a href="#tier-1-standalone-guides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AZ-006: Adaptive Behavior Based on Hierarchical Namespace
+        Tier-1: standalone guides
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#31-s3-compatible-providers-cookbook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 S3-compatible providers cookbook
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-large-object-streaming-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Large-object &amp; streaming tuning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-local-dev-emulators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Local-dev emulators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-sftp-reliability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 SFTP reliability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-azure-keyless-auth-private-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Azure keyless auth &amp; private endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-credential-secret-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Credential &amp; secret rotation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#37-sqlite-operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.7 SQLite operational notes
       
     </span>
   </a>
@@ -9738,434 +9449,57 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#azure-storage-model" class="md-nav__link">
+  <a href="#4-tier-2-sidebar-additions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Azure Storage Model
+        4. Tier-2 sidebar additions
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Azure Storage Model">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-007-container-scope" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-007: Container Scope
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-008-directory-semantics-hns-enabled" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-008: Directory Semantics (HNS Enabled)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-009-virtual-folder-semantics-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-009: Virtual Folder Semantics (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-010-write-does-not-create-folder-markers-no-hns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-010: Write Does Not Create Folder Markers (No HNS)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-011-path-encoding" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-011: Path Encoding
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#path-inspection" class="md-nav__link">
+  <a href="#5-out-of-scope-tier-3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Path Inspection
+        5. Out of scope (Tier-3)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Path Inspection">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-012-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-012: exists()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-013-is_file-and-is_folder" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-013: is_file() and is_folder()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
+  <a href="#6-code-side-questions-for-maintainers-not-guides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations
+        6. Code-side questions for maintainers (NOT guides)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Operations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-014-atomic-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-014: Atomic Write
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-015-delete_folder-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-015: delete_folder Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-016-delete_folder-non-recursive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-016: delete_folder Non-Recursive
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-017-move" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-017: Move
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-018-copy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-018: Copy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-019-glob" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-019: Glob
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-020-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-020: read()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-021-read_bytes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-021: read_bytes()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-022-write" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-022: write()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-023-get_file_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-023: get_file_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-024-get_folder_info" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-024: get_folder_info()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
+  <a href="#7-sequencing-recommendation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Mapping
+        7. Sequencing recommendation
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Error Mapping">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-025-structured-error-classification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-025: Structured Error Classification
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-026-no-native-exception-leakage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-026: No Native Exception Leakage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-027-to_key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-027: to_key
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-028-error-context-manager" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-028: Error Context Manager
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#resource-management" class="md-nav__link">
+  <a href="#8-open-questions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resource Management
+        8. Open questions
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Resource Management">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-029-close" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-029: close()
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-030-unwrap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-030: unwrap()
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#az-034-etag-and-content-md5-digest-population" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-034: ETag and Content-MD5 Digest Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-033-transfer-concurrency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-033: Transfer Concurrency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-031-client-options-passthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-031: Client Options Passthrough
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-035-staged-block-upload-defaults" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-035: Staged-Block Upload Defaults
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-032-default-credential-chain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-032: Default Credential Chain
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#az-036-hns-directory-marker-probe-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        AZ-036: HNS Directory-Marker Probe Contract
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -10186,266 +9520,537 @@
 
 
 
-<h1 id="azure-backend-specification">Azure Backend Specification<a class="headerlink" href="#azure-backend-specification" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>AzureBackend</code> implements the <code>Backend</code> ABC for Azure Storage using a dual-client architecture: <code>azure-storage-blob</code> (BlobServiceClient) for non-HNS accounts and <code>azure-storage-file-datalake</code> (DataLakeServiceClient) for HNS-only features. It targets ADLS Gen2 (Hierarchical Namespace) accounts as the primary use case, while remaining fully functional against plain Blob Storage accounts without HNS.</p>
-<p>Unlike the S3 backends (which use <code>s3fs</code>, an fsspec wrapper), this backend uses the Azure SDK directly. The dual-client design exists because the DFS wire protocol (used by <code>azure-storage-file-datalake</code>) is not supported by Azurite or plain Blob Storage accounts — only the Blob API works everywhere. HNS-only features (atomic rename, real directories) use the DataLake SDK; all other operations use the Blob SDK. See <a href="../../rfcs/rfc-0001-azure-backend/">RFC-0001</a> for the full rationale.</p>
-<p><strong>Dependencies:</strong> <code>azure-storage-file-datalake</code>, <code>azure-identity</code> (optional, for <code>DefaultAzureCredential</code>)
-<strong>Optional extra:</strong> <code>pip install "remote-store[azure]"</code></p>
+<h1 id="research-backend-setup-configuration-guides-expansion">Research: Backend Setup &amp; Configuration Guides Expansion<a class="headerlink" href="#research-backend-setup-configuration-guides-expansion" title="Permanent link">&para;</a></h1>
+<p><strong>Item ID:</strong> ID-199
+<strong>Date:</strong> 2026-05-19
+<strong>Status:</strong> Proposal — awaiting prioritization and per-guide commitment</p>
 <hr />
-<h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>
-<h3 id="az-001-constructor-parameters">AZ-001: Constructor Parameters<a class="headerlink" href="#az-001-constructor-parameters" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend</code> is constructed with a required <code>container</code> name and optional connection parameters.
-<strong>Signature:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">AzureBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">container</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">account_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">account_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">account_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">sas_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">connection_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">credential</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># e.g. DefaultAzureCredential()</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n">RetryPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># see spec 025</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">max_concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># see AZ-033</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
-</code></pre></div>
-<strong>Postconditions:</strong> The backend stores configuration but does not connect to Azure during construction (see AZ-004). At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> is raised at construction time.</p>
-<h3 id="az-002-backend-name">AZ-002: Backend Name<a class="headerlink" href="#az-002-backend-name" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>name</code> property returns <code>"azure"</code>.</p>
-<h3 id="az-003-capability-declaration">AZ-003: Capability Declaration<a class="headerlink" href="#az-003-capability-declaration" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend</code> declares capabilities: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>MOVE</code>, <code>COPY</code>, <code>ATOMIC_WRITE</code>, <code>METADATA</code>, <code>GLOB</code>. Native glob via prefix-optimized listing (see <a href="../018-glob/">018-glob.md</a> GLOB-020).
-<strong>Rationale:</strong>
-- <code>ATOMIC_WRITE</code>: HNS accounts use temp file + atomic rename; non-HNS accounts use direct upload (Azure PUT is atomic, same as S3). See AZ-006 and AZ-014.
-- <code>MOVE</code>: HNS accounts use native atomic rename; non-HNS accounts use copy + delete. See AZ-006 and AZ-017.
-- <code>COPY</code>: Implemented via server-side copy (<code>start_copy_from_url</code>). See AZ-018.
-- <code>GLOB</code>: Native prefix-optimized glob since v0.12.0 (BK-002).</p>
-<h3 id="az-004-lazy-connection">AZ-004: Lazy Connection<a class="headerlink" href="#az-004-lazy-connection" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No network call occurs during <code>__init__</code>. The <code>BlobServiceClient</code>, <code>DataLakeServiceClient</code> (HNS only), and HNS detection are deferred to first use.
-<strong>Rationale:</strong> Same as S3-004 — the backend may be created during application wiring before the network is available.</p>
-<h3 id="az-005-construction-validation">AZ-005: Construction Validation<a class="headerlink" href="#az-005-construction-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>container</code> must be a non-empty string. Passing an empty or whitespace-only container raises <code>ValueError</code> at construction time. At least one of <code>account_name</code>, <code>account_url</code>, or <code>connection_string</code> must be provided — otherwise <code>ValueError</code> at construction.
-<strong>Postconditions:</strong> No network validation of container existence at construction time. Invalid names are caught by Azure on first operation and mapped to the appropriate error.</p>
-<hr />
-<h2 id="hns-detection">HNS Detection<a class="headerlink" href="#hns-detection" title="Permanent link">&para;</a></h2>
-<h3 id="az-006-adaptive-behavior-based-on-hierarchical-namespace">AZ-006: Adaptive Behavior Based on Hierarchical Namespace<a class="headerlink" href="#az-006-adaptive-behavior-based-on-hierarchical-namespace" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On first use, the backend calls <code>GetAccountInfo</code> to determine whether the storage account has Hierarchical Namespace (HNS) enabled. The result is cached for the lifetime of the backend instance.</p>
-<p><strong>Behavior matrix:</strong></p>
+<h2 id="1-context">1. Context<a class="headerlink" href="#1-context" title="Permanent link">&para;</a></h2>
+<p>Two existing guides — <a href="../../../../guides/backends/azure-hns-setup/"><code>azure-hns-setup.md</code></a>
+and <a href="../../../../guides/backends/sftp/"><code>sftp.md</code></a> — came out of real
+setup pain hit during library development. Both proved valuable as
+user-facing documentation, not only as internal engineering notes.</p>
+<p>The question this research answers: <strong>what other setup / configuration
+pain hits remote-store users that they cannot resolve from the
+per-backend reference pages or README alone, and what guides would retire
+it?</strong></p>
+<p>The approach was deliberately pain-first rather than backend-first:
+enumerate dimensions of user challenge across the four backend families
+(S3, Azure Blob + HNS, SFTP, SQL Blob), then let guides fall out of the
+matrix where evidence is strong.</p>
+<h2 id="2-approach">2. Approach<a class="headerlink" href="#2-approach" title="Permanent link">&para;</a></h2>
+<h3 id="21-evidence-base">2.1 Evidence base<a class="headerlink" href="#21-evidence-base" title="Permanent link">&para;</a></h3>
+<p>Two independent sources of signal:</p>
+<p><strong>In-repo (mined via agent sweep).</strong> The two existing guides plus their
+commit history, every file under <a href="https://github.com/haalfi/remote-store/blob/master/sdd/traces"><code>sdd/traces/</code></a>,
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md"><code>sdd/BACKLOG.md</code></a> and <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md"><code>BACKLOG-DONE.md</code></a>,
+<a href="../../../../reference/changelog/"><code>CHANGELOG.md</code></a>, GitHub issues (sparse — one closed
+unrelated issue), and recent merged PRs.</p>
+<p><strong>External (mined out-of-session).</strong> GitHub issues across <code>boto3</code>,
+<code>aiobotocore</code>, <code>s3fs</code>, <code>azure-storage-blob</code>, <code>azure-identity</code>, <code>paramiko</code>,
+<code>asyncssh</code>, <code>fsspec</code>, <code>rclone</code>; Stack Overflow questions with recent
+activity; Reddit (r/aws, r/AZURE, r/devops, r/selfhosted); vendor support
+forums; engineering postmortems. Filtered through eight category axes
+(provisioning, self-hosting, auth, network, performance, quirks,
+operations, migration).</p>
+<p>The two sources cross-validate. External adds four high-signal categories
+the repo did not surface (large-object tuning, Azure keyless auth, SFTP
+reliability, SQLite operational); in-repo confirms one candidate
+(local-dev emulators) that the external sweep underweighted.</p>
+<h3 id="22-authoring-contract-dogfood-first">2.2 Authoring contract (dogfood-first)<a class="headerlink" href="#22-authoring-contract-dogfood-first" title="Permanent link">&para;</a></h3>
+<p>Every guide that ships under this initiative MUST satisfy the following.
+This is a hard contract, not a suggestion — a candidate that cannot meet
+it is deferred, scope-reduced, or dropped, never weakened to fit.</p>
+<ol>
+<li><strong>Self-validated.</strong> Every command, snippet, and configuration in the
+   guide has been executed end-to-end by a maintainer against a real
+   target (live cloud, real emulator, real legacy server). Untested
+   recipes do not ship.</li>
+<li><strong>Practicable.</strong> Steps are copy-pasteable. Prerequisites are explicit
+   and minimal. Failure modes the maintainer hit while dogfooding are
+   documented inline (per the <code>azure-hns-setup.md</code> precedent —
+   AADSTS50076, multi-line <code>\</code> HNS quirk, etc.).</li>
+<li><strong>Proven (dogfood evidence trail).</strong> The PR that lands each guide
+   either contains a short trace (<code>sdd/traces/</code>) of the dogfood walk,
+   or links to the artifacts (workflow run, account ID redacted,
+   recorded session) that prove the recipe works.</li>
+<li><strong>Down to the point.</strong> No background prose, no rationale paragraphs,
+   no "why this matters" framing. Each section is recipe + observed
+   outcome + caveat. Prose density follows <code>azure-hns-setup.md</code> —
+   short paragraphs, runnable blocks, no marketing.</li>
+<li><strong>Reliable external references only.</strong> Cite vendor official docs
+   (AWS, Azure, Microsoft Learn, Cloudflare), RFCs, language/library
+   official documentation (paramiko, boto3), and the relevant project
+   tracker only when the cite is the authoritative source. Do NOT
+   cite Stack Overflow, Reddit, Medium / personal blogs, AI-generated
+   SEO pages, or GitHub-issue threads in user-facing prose. Internal
+   evidence (CHANGELOG entries, BUG IDs, trace IDs) belongs in
+   commit/PR descriptions, not in the guide body.</li>
+<li><strong>Scope-honest.</strong> If the maintainer can dogfood three of four
+   providers, the guide names the tested three and explicitly says the
+   fourth is "documented from external pattern, not verified here."
+   No silent over-claiming.</li>
+</ol>
+<p>The two existing guides (<code>azure-hns-setup.md</code>, <code>sftp.md</code>) already meet
+this contract; they are the reference shape. New guides that cannot
+match it stay in this research doc as proposals, not as drafts.</p>
+<h2 id="3-proposed-guides">3. Proposed guides<a class="headerlink" href="#3-proposed-guides" title="Permanent link">&para;</a></h2>
+<p>Seven candidates. Tier-1 has converging evidence from both sources or
+strong evidence from one. Tier-2 are short sidebar additions to existing
+pages, not standalone documents. Tier-3 is explicitly out of scope.</p>
+<h3 id="tier-1-standalone-guides">Tier-1: standalone guides<a class="headerlink" href="#tier-1-standalone-guides" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Operation</th>
-<th>HNS enabled (ADLS Gen2)</th>
-<th>No HNS (plain Blob)</th>
+<th>#</th>
+<th>Guide</th>
+<th>Target path</th>
+<th>Effort</th>
+<th>Scope</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>write_atomic</code></td>
-<td>Temp file + atomic rename</td>
-<td>Direct upload (PUT is atomic)</td>
+<td>1</td>
+<td>S3-compatible providers cookbook</td>
+<td><code>docs-src/guides/backends/s3-compatible.md</code></td>
+<td>M</td>
+<td>Cross (S3 family)</td>
 </tr>
 <tr>
-<td><code>move</code></td>
-<td>Atomic <code>rename_file</code></td>
-<td>Copy + delete</td>
+<td>2</td>
+<td>Large-object &amp; streaming tuning</td>
+<td><code>docs-src/guides/large-object-tuning.md</code></td>
+<td>M</td>
+<td>Cross</td>
 </tr>
 <tr>
-<td><code>exists</code> / <code>is_file</code> / <code>is_folder</code></td>
-<td>Native path property check</td>
-<td>HEAD request + prefix check</td>
+<td>3</td>
+<td>Local-dev emulators</td>
+<td><code>docs-src/guides/local-dev-emulators.md</code></td>
+<td>M</td>
+<td>Cross</td>
 </tr>
 <tr>
-<td><code>list_files</code> / <code>list_folders</code></td>
-<td>Native directory listing</td>
-<td>Prefix-based listing</td>
+<td>4</td>
+<td>SFTP reliability</td>
+<td><code>docs-src/guides/backends/sftp-reliability.md</code></td>
+<td>S–M</td>
+<td>Backend</td>
 </tr>
 <tr>
-<td><code>delete_folder(recursive=True)</code></td>
-<td>Single recursive delete</td>
-<td>Iterate + delete each path</td>
+<td>5</td>
+<td>Azure keyless auth &amp; private endpoints</td>
+<td><code>docs-src/guides/backends/azure-keyless-auth.md</code></td>
+<td>M</td>
+<td>Backend</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Credential &amp; secret rotation</td>
+<td><code>docs-src/guides/credential-rotation.md</code></td>
+<td>M</td>
+<td>Cross</td>
+</tr>
+<tr>
+<td>7</td>
+<td>SQLite operational notes</td>
+<td>sidebar in <code>sql-blob.md</code> (or new guide)</td>
+<td>S</td>
+<td>Backend</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Rationale:</strong> ADLS Gen2 has real directories and atomic rename — the backend should use these when available. Plain Blob Storage accounts are still supported by falling back to S3-equivalent semantics (virtual folders, copy+delete move, PUT atomicity).</p>
-<p><strong>Postconditions:</strong> The HNS check is performed at most once. If the check itself fails (e.g. permissions), the backend falls back to non-HNS behavior and logs a warning.</p>
-<hr />
-<h2 id="azure-storage-model">Azure Storage Model<a class="headerlink" href="#azure-storage-model" title="Permanent link">&para;</a></h2>
-<h3 id="az-007-container-scope">AZ-007: Container Scope<a class="headerlink" href="#az-007-container-scope" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> All operations are scoped to a single Azure Storage container, analogous to S3Backend's bucket scope. Cross-container operations are not supported.</p>
-<h3 id="az-008-directory-semantics-hns-enabled">AZ-008: Directory Semantics (HNS Enabled)<a class="headerlink" href="#az-008-directory-semantics-hns-enabled" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When HNS is enabled, directories are real entities. <code>is_folder(path)</code> checks for the existence of a directory object. Empty directories persist after their contents are deleted.
-<strong>Postconditions:</strong> This matches SFTP behavior (SFTP-011, SFTP-013), not S3 behavior. Type-mismatch safety on HNS is captured by <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a>: every file-API op probes <code>hdi_isfolder</code> before delegating to the SDK, and folder-API ops probe its absence — without this, the Azure SDK silently accepts directory-vs-file mismatches that would corrupt or destroy account state.</p>
-<h3 id="az-009-virtual-folder-semantics-no-hns">AZ-009: Virtual Folder Semantics (No HNS)<a class="headerlink" href="#az-009-virtual-folder-semantics-no-hns" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When HNS is not enabled, folder semantics match S3: "folders" are logical constructs derived from <code>/</code>-delimited path prefixes. A folder exists only as long as blobs exist under its prefix.
-<strong>Postconditions:</strong> Same as S3-006 through S3-009.</p>
-<h3 id="az-010-write-does-not-create-folder-markers-no-hns">AZ-010: Write Does Not Create Folder Markers (No HNS)<a class="headerlink" href="#az-010-write-does-not-create-folder-markers-no-hns" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On non-HNS accounts, <code>write("a/b/c.txt", content)</code> creates only the blob with path <code>a/b/c.txt</code>. No folder marker blobs are created.
-<strong>Postconditions:</strong> Same as S3-008. Not applicable to HNS accounts where directories are managed natively by the service.</p>
-<h3 id="az-011-path-encoding">AZ-011: Path Encoding<a class="headerlink" href="#az-011-path-encoding" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Azure paths use <code>/</code> as separator. The backend normalizes paths by stripping leading <code>/</code> and collapsing double separators, consistent with the <code>RemotePath</code> model (PATH-001 through PATH-014).</p>
-<hr />
-<h2 id="path-inspection">Path Inspection<a class="headerlink" href="#path-inspection" title="Permanent link">&para;</a></h2>
-<h3 id="az-012-exists">AZ-012: exists()<a class="headerlink" href="#az-012-exists" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>exists(path)</code> first checks for a blob via <code>BlobClient.get_blob_properties()</code>, then checks for a directory via <code>DataLakeDirectoryClient.get_directory_properties()</code>. Returns <code>True</code> if either exists, <code>False</code> on <code>ResourceNotFoundError</code>.
-<strong>Invariant (no HNS):</strong> <code>exists(path)</code> issues a HEAD request for the blob via <code>BlobClient.get_blob_properties()</code>. Returns <code>True</code> if found, <code>False</code> on <code>ResourceNotFoundError</code>. Falls back to prefix check for folders.
-<strong>Postconditions:</strong> Never raises <code>NotFound</code> — returns <code>False</code> instead (per BE-004).</p>
-<h3 id="az-013-is_file-and-is_folder">AZ-013: is_file() and is_folder()<a class="headerlink" href="#az-013-is_file-and-is_folder" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> Both predicates use the <code>hdi_isfolder</code> metadata marker — not the SDK's <code>is_directory</code> attribute — because on real ADLS Gen2, <code>get_directory_properties()</code> returns HTTP 200 for any path entity, file or directory. <code>is_file(path)</code> calls <code>BlobClient.get_blob_properties()</code> and returns <code>True</code> when the <code>hdi_isfolder</code> marker is absent. <code>is_folder(path)</code> calls <code>DataLakeDirectoryClient.get_directory_properties()</code> and returns <code>True</code> when the <code>hdi_isfolder=true</code> marker is present. Both return <code>False</code> for non-existent paths or marker-mismatched entities.
-<strong>Invariant (no HNS):</strong> <code>is_file(path)</code> issues a HEAD request for the blob — returns <code>True</code> if the blob exists. <code>is_folder(path)</code> returns <code>True</code> if any blobs exist with prefix <code>{path}/</code> (same as S3-007).
-<strong>Postconditions:</strong> Both return <code>False</code> for non-existent paths — never raise (per BE-005). Both honour <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a>.</p>
-<hr />
-<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
-<h3 id="az-014-atomic-write">AZ-014: Atomic Write<a class="headerlink" href="#az-014-atomic-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>write_atomic</code> writes to a temporary file <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> in the same directory as the target, then renames atomically to the target via <code>rename_file</code>.
-<strong>Cleanup:</strong> If the rename fails, the backend attempts to delete the temporary file. If cleanup also fails (e.g. connection lost), the orphan temp file remains — this is an inherent limitation of simulated atomicity over a network. Temp files are identifiable by their <code>.~tmp.</code> prefix for manual cleanup.
-<strong>Invariant (no HNS):</strong> <code>write_atomic</code> is implemented identically to <code>write</code> — as a direct upload. Azure PUT is atomic at the blob level (same rationale as S3-010).
-<strong>Postconditions:</strong> Satisfies AW-001: no partial content is ever visible.</p>
-<h3 id="az-015-delete_folder-recursive">AZ-015: delete_folder Recursive<a class="headerlink" href="#az-015-delete_folder-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>delete_folder(path, recursive=True)</code> calls the ADLS Gen2 recursive delete API (single call).
-<strong>Invariant (no HNS):</strong> <code>delete_folder(path, recursive=True)</code> lists and deletes all blobs with prefix <code>{path}/</code>.
-<strong>Raises:</strong> <code>NotFound</code> if no directory/blobs exist under the path and <code>missing_ok=False</code>.</p>
-<h3 id="az-016-delete_folder-non-recursive">AZ-016: delete_folder Non-Recursive<a class="headerlink" href="#az-016-delete_folder-non-recursive" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>delete_folder(path, recursive=False)</code> succeeds only if the directory/prefix is empty.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist and <code>missing_ok=False</code>. Raises a non-empty error if children exist.
-<strong>Postconditions:</strong> Consistent with local filesystem and SFTP semantics.</p>
-<h3 id="az-017-move">AZ-017: Move<a class="headerlink" href="#az-017-move" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS):</strong> <code>move(src, dst)</code> uses ADLS Gen2's native <code>rename_file</code>, which is atomic.
-<strong>Invariant (no HNS):</strong> <code>move(src, dst)</code> is implemented as server-side copy + delete (same as S3-013). Not atomic — if copy succeeds but delete fails, both files exist.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
-<h3 id="az-018-copy">AZ-018: Copy<a class="headerlink" href="#az-018-copy" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>copy(src, dst)</code> uses Azure's server-side copy via <code>start_copy_from_url</code>. No data passes through the client.
-<strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>AlreadyExists</code> if <code>dst</code> exists and <code>overwrite=False</code>.</p>
-<h3 id="az-019-glob">AZ-019: Glob<a class="headerlink" href="#az-019-glob" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>glob(pattern)</code> uses Azure's <code>list_paths</code> with a prefix filter derived from the non-wildcard prefix of the pattern. The wildcard portion is matched client-side using <code>fnmatch</code>.
-<strong>Example:</strong> <code>glob("data/2024/*.csv")</code> sends <code>list_paths(path="data/2024")</code> to the server, then filters results client-side against <code>*.csv</code>.
-<strong>Rationale:</strong> Azure (like S3) supports prefix-based listing but not full glob syntax server-side. The prefix optimization reduces the result set sent over the wire; <code>fnmatch</code> handles the rest locally.</p>
-<h3 id="az-020-read">AZ-020: read()<a class="headerlink" href="#az-020-read" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> stream via <code>_AzureBinaryIO</code>, a forward-only streaming adapter wrapping <code>StorageStreamDownloader.chunks()</code>. The raw adapter is wrapped in <code>io.BufferedReader</code> for efficient buffered reads.
-<strong>Postconditions:</strong> Data is streamed on demand — the full file is not loaded into memory. The stream is forward-only (not seekable). Callers that require seekability should use <code>read_bytes()</code> + <code>BytesIO</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names an HNS directory.</p>
-<h3 id="az-021-read_bytes">AZ-021: read_bytes()<a class="headerlink" href="#az-021-read_bytes" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>read_bytes(path)</code> returns the full file content as <code>bytes</code>. Implemented via <code>BlobClient.download_blob().readall()</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the file does not exist. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names an HNS directory.</p>
-<h3 id="az-022-write">AZ-022: write()<a class="headerlink" href="#az-022-write" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>write(path, content, overwrite=False)</code> uploads content via <code>BlobClient.upload_blob()</code> (Blob SDK).
-<strong>Preconditions:</strong> <code>content</code> is <code>bytes</code> or <code>BinaryIO</code>.
-<strong>Raises:</strong> <code>AlreadyExists</code> if the file exists and <code>overwrite=False</code>. Existence check uses <code>ResourceNotFoundError</code> (not broad exception catch) to avoid swallowing auth/network errors. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names an HNS directory.
-<strong>Postconditions (HNS):</strong> Intermediate directories are created automatically by the ADLS Gen2 service.
-<strong>Postconditions (no HNS):</strong> No intermediate directory creation needed (flat blob namespace).</p>
-<h3 id="az-023-get_file_info">AZ-023: get_file_info()<a class="headerlink" href="#az-023-get_file_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>get_file_info(path)</code> returns a <code>FileInfo</code> populated from <code>BlobClient.get_blob_properties()</code>.
-<strong>Mapped fields:</strong>
-- <code>path</code>: the store-relative key
-- <code>name</code>: filename component of the path
-- <code>size</code>: from <code>content_length</code> (or <code>size</code> for HNS path objects)
-- <code>modified_at</code>: from <code>last_modified</code> (UTC datetime)
-- <code>etag</code>: see AZ-034
-- <code>digest</code>: see AZ-034</p>
-<p><strong>Note:</strong> <code>content_type</code> is not included in <code>FileInfo</code>.</p>
-<p><strong>Raises:</strong> <code>NotFound</code> if the file does not exist. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names an HNS directory.</p>
-<h3 id="az-024-get_folder_info">AZ-024: get_folder_info()<a class="headerlink" href="#az-024-get_folder_info" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>get_folder_info(path)</code> returns a <code>FolderInfo</code>.
-<strong>Invariant (HNS):</strong> Uses <code>DataLakeDirectoryClient.get_directory_properties()</code> on the directory object to confirm the entity exists, then probes <code>hdi_isfolder</code> (per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a>) to reject file-path mismatches. When <code>path == ""</code> (filesystem root), the per-path probe is skipped — the root is always a folder, and real ADLS Gen2 rejects <code>get_directory_client("")</code> with <code>"Please specify a file system name and file path"</code> (BUG-213). Child file count and total size are aggregated via <code>_fs.get_paths(recursive=True)</code>, skipping entries with <code>is_directory=True</code> (BUG-199).
-<strong>Invariant (no HNS):</strong> Checks for the existence of blobs under the prefix <code>{path}/</code>.
-<strong>Raises:</strong> <code>NotFound</code> if the folder does not exist. <code>InvalidPath</code> per <a href="#az-036-hns-directory-marker-probe-contract">AZ-036</a> if the path names a file on HNS (<code>hdi_isfolder</code> absent).</p>
-<hr />
-<h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<h3 id="az-025-structured-error-classification">AZ-025: Structured Error Classification<a class="headerlink" href="#az-025-structured-error-classification" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Azure SDK exceptions are mapped to <code>remote_store</code> errors using structured attributes (<code>status_code</code>, <code>error_code</code>), not string matching.</p>
+<h3 id="31-s3-compatible-providers-cookbook">3.1 S3-compatible providers cookbook<a class="headerlink" href="#31-s3-compatible-providers-cookbook" title="Permanent link">&para;</a></h3>
+<p><strong>Pain it retires.</strong> MinIO, Cloudflare R2, Backblaze B2, Wasabi, Ceph,
+Garage, and SeaweedFS users hit endpoint-URL setup, addressing-style
+choice (path vs virtual-hosted), signature version, region quirks, and
+capability gaps. Highest-volume category in the external survey; affects
+four-plus provider families. In-repo BUG-185 reproduced the same shape
+internally (s3fs path-style against MinIO required
+<code>s3.addressing_style="path"</code> plus explicit proxy disable).</p>
+<p><strong>Evidence pointers.</strong></p>
+<ul>
+<li>In-repo: CHANGELOG v0.24.1 BUG-185; CHANGELOG v0.24.0 BUG-178;
+  BACKLOG-DONE BK-149 (TLS-005); <a href="https://github.com/haalfi/remote-store/blob/master/examples/snippets/s3_botocore_tuning.py"><code>examples/snippets/s3_botocore_tuning.py</code></a>;
+  <a href="../../../../guides/backends/s3/"><code>s3.md</code></a> § "Botocore Client Tuning".</li>
+<li>External Tier-1 items #1 (boto3 / aiobotocore / s3fs pinning), #3 (s3fs
+  listings cache), #4 (S3-compatible partial-API coverage); Tier-2.A
+  (minimum IAM policy).</li>
+</ul>
+<p><strong>Scope.</strong> Endpoint URL + addressing-style + signature version per
+provider; capability-matrix expectations ("MinIO does not support X" as a
+design feature, not a bug); corporate-proxy snippets folded in; pin
+matrix for the <code>boto3</code> / <code>aiobotocore</code> / <code>s3fs</code> triangle; minimum IAM
+policy snippet for AWS S3 specifically.</p>
+<p><strong>Dogfood plan.</strong> MinIO via the existing <code>benchmarks/infra/</code> compose
+file (already in CI). Cloudflare R2 and Backblaze B2 via fresh free-tier
+accounts; one bucket each, smoke-tested for read / write / list /
+multipart / delete. Wasabi, Ceph, Garage, SeaweedFS are NOT in scope as
+verified — the guide says "documented from pattern, not tested here"
+inline. Pin matrix verified by <code>uv pip install</code> runs against pinned
+versions.</p>
+<p><strong>Verdict.</strong> Greenlit. Scope: AWS S3, MinIO, R2, B2 as tested;
+others as pattern.</p>
+<p><strong>Out of scope.</strong> Self-hosting MinIO at operator scale; cross-provider
+migration; provider-specific billing.</p>
+<p><strong>Cross-links.</strong> From <code>s3.md</code> and <code>s3-pyarrow.md</code>. To <code>troubleshooting.md</code>.</p>
+<h3 id="32-large-object-streaming-tuning">3.2 Large-object &amp; streaming tuning<a class="headerlink" href="#32-large-object-streaming-tuning" title="Permanent link">&para;</a></h3>
+<p><strong>Pain it retires.</strong> <code>s3fs</code> multipart-upload restart bug at the ~5 GB
+boundary, with counter-intuitive workarounds (<code>nomixupload</code>,
+<code>max_dirty_data</code> tuning); paramiko slow reads (~25 MB/s on gigabit per
+paramiko #1080, #2235, #2418) caused by default prefetch logic;
+"when to pick <code>s3-pyarrow</code> over <code>s3</code>" decision.</p>
+<p><strong>Evidence pointers.</strong></p>
+<ul>
+<li>In-repo: CHANGELOG v0.23.0 BUG-161 (Azure chunked upload), BUG-162
+  (256 KiB copy buffer); CHANGELOG v0.17.0 ID-076
+  (<code>AzureBackend(max_concurrency=)</code>); <code>azure.md</code> § "Upload tuning"
+  already has a table.</li>
+<li>External Tier-1 #2 (S3 5 GB cliff, s3fs-fuse #1936); Tier-1 #9
+  (paramiko <code>max_request_size</code> and read-window knobs); cross-cutting #2.</li>
+</ul>
+<p><strong>Scope.</strong> Decision tree: when defaults are enough vs when to tune. S3
+multipart boundary and <code>s3-pyarrow</code> recommendation. SFTP prefetch
+tunables. Azure multipart already in <code>azure.md</code>; link in.</p>
+<p><strong>Dogfood plan.</strong> Two halves:
+- <strong>SFTP prefetch tuning</strong> — measured against <code>atmoz/sftp</code> and <code>SFTPGo</code>
+  containers with synthetic 100 MB and 1 GB files; before/after numbers
+  recorded. Doable on any laptop.
+- <strong>S3 5 GB multipart cliff</strong> — requires a real AWS S3 bucket and
+  ~10 GB of write traffic against <code>s3fs</code> with and without <code>nomixupload</code>.
+  Costs AWS budget; cannot be reproduced on MinIO (the bug is in <code>s3fs</code>
+  control flow against AWS-specific responses).</p>
+<p><strong>Verdict.</strong> <strong>Split-ship.</strong> SFTP half greenlit (Phase 2); S3 5 GB
+sub-section deferred until AWS dogfood budget is approved. Do not ship
+the S3 cliff prose without the dogfood run — it is the central pain
+this guide retires.</p>
+<p><strong>Out of scope.</strong> Generic Python streaming patterns; benchmark
+methodology (lives in <code>docs-src/explanation/performance.md</code>).</p>
+<p><strong>Cross-links.</strong> From per-backend pages. To <code>retry.md</code>,
+<code>transfer-operations.md</code>, <code>s3-pyarrow.md</code>.</p>
+<h3 id="33-local-dev-emulators">3.3 Local-dev emulators<a class="headerlink" href="#33-local-dev-emulators" title="Permanent link">&para;</a></h3>
+<p><strong>Pain it retires.</strong> Azurite, MinIO, moto, SFTPGo, and atmoz/sftp each
+have known divergences from production. Today these notes are scattered:
+Azurite-no-HNS in <code>azure.md</code>; SFTPGo compat note in README + <code>sftp.md</code>;
+MinIO snippets in <code>s3.md</code>; moto + PyArrow ≥24 multipart-mismatch only in
+trace <code>bk-172-s3-pyarrow-minio.yml</code>.</p>
+<p><strong>Evidence pointers.</strong></p>
+<ul>
+<li>In-repo: traces <a href="https://github.com/haalfi/remote-store/blob/master/sdd/traces/bk-172-s3-pyarrow-minio.yml"><code>bk-172-s3-pyarrow-minio.yml</code></a>,
+  <a href="https://github.com/haalfi/remote-store/blob/master/sdd/traces/bk-180-live-azure-conformance-fixtures.yml"><code>bk-180-live-azure-conformance-fixtures.yml</code></a>,
+  <a href="https://github.com/haalfi/remote-store/blob/master/sdd/traces/id-195-speed-up-hatch.yml"><code>id-195-speed-up-hatch.yml</code></a>;
+  CHANGELOG v0.20.0 SFTPGo note; CHANGELOG v0.5.0 Azurite CI integration.</li>
+<li>External: scattered but consistent. Users hit emulator pain in
+  development; severe pain shows up in production where emulators are
+  irrelevant — explains the lower external signal.</li>
+</ul>
+<p><strong>Scope.</strong> Recipe per emulator: docker-compose snippet, env wiring,
+divergences-from-prod table. The divergences table is the value-add —
+what fails on Azurite but works on real HNS, what moto accepts that real
+S3 rejects, the SFTPGo vs OpenSSH semantic differences we test against.</p>
+<p><strong>Dogfood plan.</strong> Already dogfooded — every emulator runs in CI for
+every PR. Extract compose snippets verbatim from <code>benchmarks/infra/</code>
+and <code>.github/workflows/</code>; populate the divergences table from observed
+quirks already recorded in CHANGELOG entries and traces. No new setup.</p>
+<p><strong>Verdict.</strong> Greenlit. Lowest-friction guide of the seven.</p>
+<p><strong>Out of scope.</strong> Recommending one emulator over another; CI orchestration
+patterns (separate concern).</p>
+<p><strong>Cross-links.</strong> From every backend page and from <code>CONTRIBUTING.md</code>.</p>
+<h3 id="34-sftp-reliability">3.4 SFTP reliability<a class="headerlink" href="#34-sftp-reliability" title="Permanent link">&para;</a></h3>
+<p><strong>Pain it retires.</strong> Connection staleness on client IP change / NAT
+rebind (rclone #1541, #3656); opaque dropped connections that hang rather
+than surface a failure; keepalive + timeout settings; composition with
+the existing <code>retry.md</code>.</p>
+<p><strong>Evidence pointers.</strong></p>
+<ul>
+<li>In-repo: <code>sftp.md</code> § "Single-connection thread-safety caveat";
+  BUG-209 / BUG-211 (Windows tempfile leak); BACKLOG ID-181
+  (per-backend <code>ssh-rsa</code> opt-in, still open).</li>
+<li>External Tier-1 #10 (connection staleness), #9 (prefetch — partially
+  covered in §3.2); cross-cutting #4 (SFTP reliability).</li>
+</ul>
+<p><strong>Scope.</strong> Keepalive settings, timeout composition, retry strategy for
+transient drops, cross-link to prefetch tuning in §3.2.</p>
+<p><strong>Dogfood plan.</strong> Local <code>SFTPGo</code> container, drop the connection
+mid-transfer via <code>iptables -j DROP</code> (Linux), <code>pfctl</code> (macOS) or
+<code>Set-NetFirewallRule</code> (Windows), observe the failure shape with and
+without keepalive configured. NAT-rebind documented as "simulated link
+drop" — we cannot promise a real DSL-reconnect reproduction, and the
+guide says so explicitly.</p>
+<p><strong>Verdict.</strong> Greenlit with honest scope. Phase 1.</p>
+<p><strong>Out of scope.</strong> Auth and host-key topics — those live in <code>sftp.md</code>
+(already comprehensive) and its legacy-server section.</p>
+<p><strong>Cross-links.</strong> From <code>sftp.md</code> and <code>retry.md</code>.</p>
+<h3 id="35-azure-keyless-auth-private-endpoints">3.5 Azure keyless auth &amp; private endpoints<a class="headerlink" href="#35-azure-keyless-auth-private-endpoints" title="Permanent link">&para;</a></h3>
+<p><strong>Pain it retires.</strong> Disabling shared-key auth and public access on a
+storage account, then wiring <code>DefaultAzureCredential</code> plus Storage Blob
+Data Contributor RBAC plus firewall rules for CI runners. Trips up users
+on Microsoft Q&amp;A 5769536 and similar threads. Adjacent to our iceboxed
+ID-118b (Azure TLS CA bundle, Phase 2 — Azure Stack Hub / on-prem).</p>
+<p><strong>Evidence pointers.</strong></p>
+<ul>
+<li>In-repo: BACKLOG ID-118b (iceboxed) for the on-prem variant;
+  <code>azure-hns-setup.md</code> covers account-key auth only.</li>
+<li>External Tier-1 #6 (OIDC + RBAC + firewall for CI runners), #5 (SAS
+  token expiry that fails silently on stream-style writes); Tier-2.C
+  (GitHub-runner egress allowlist).</li>
+</ul>
+<p><strong>Scope.</strong> Sibling guide to <code>azure-hns-setup.md</code>: keyless setup, OIDC
+federation for GitHub Actions and Azure DevOps, private-endpoint wiring,
+egress allowlist, SAS-expiry diagnosis pattern.</p>
+<p><strong>Dogfood plan.</strong> Requires a real Azure subscription with elevated RBAC
+(<code>User Access Administrator</code> or <code>Owner</code> on the resource group, plus
+permission to create vNets / private endpoints / private DNS zones).
+OIDC federation tested via a sacrificial workflow on a private GitHub
+repo. SAS-expiry diagnosis reproduced by manufacturing a near-expired
+SAS and writing through it. Significant prep cost.</p>
+<p><strong>Verdict.</strong> <strong>Conditional.</strong> Greenlit only when subscription access
+with the required RBAC is confirmed available. Otherwise defer the
+entire guide — partial coverage (keyless without private endpoints, or
+vice versa) would mis-set user expectations.</p>
+<p><strong>Out of scope.</strong> Microsoft Entra ID administration (link to Microsoft
+docs); Azure Stack Hub specifics (fold into ID-118b if it reactivates).</p>
+<p><strong>Cross-links.</strong> From <code>azure.md</code> and <code>azure-hns-setup.md</code>. To <code>retry.md</code>
+and <code>troubleshooting.md</code>.</p>
+<h3 id="36-credential-secret-rotation">3.6 Credential &amp; secret rotation<a class="headerlink" href="#36-credential-secret-rotation" title="Permanent link">&para;</a></h3>
+<p><strong>Pain it retires.</strong> S3 STS and static keys, Azure SAS and OIDC
+federated identity, SFTP keypairs and host keys, SQL DSNs — all have
+rotation patterns and visible failure shapes (typically <code>PermissionDenied</code>
+or <code>BackendUnavailable</code>) that today are only documented for Azure
+account-key rotation in <code>azure-hns-setup.md</code>.</p>
+<p><strong>Evidence pointers.</strong></p>
+<ul>
+<li>In-repo: <code>Secret</code> wrapper (v0.13 ID-039), <code>__repr__</code> masking (v0.7
+  AF-008), cross-backend masking tests in BACKLOG-DONE; only Azure has
+  a documented rotation recipe.</li>
+<li>External: cross-cutting #1 ("ties into our <code>Secret</code> masking and typed
+  error model"); Tier-1 #11 (SSH key rotation).</li>
+</ul>
+<p><strong>Note on a source disagreement.</strong> In-repo evidence for this category
+was thin; external survey called it Tier-1 cross-cutting. The reframe:
+in-repo evidence is thin precisely <em>because</em> rotation pain lands at
+users' production environments, not in our test traces or bug reports.
+External wins on breadth here.</p>
+<p><strong>Scope.</strong> One short recipe per backend: how to rotate, how to surface
+rotation failures, how <code>Secret</code> masks the rotated value. Cross-link to
+typed-error model.</p>
+<p><strong>Dogfood plan.</strong> Per backend, perform a real rotation against the same
+target used elsewhere in this initiative (the dogfooded MinIO / R2 / B2
+buckets from §3.1; the SFTPGo container from §3.4; the SQLite store
+from §3.7; Azure rotation reuses the §3.5 subscription if §3.5 is
+greenlit, otherwise the Azure half of this guide defers). Each rotation
+recipe ends with the observed error shape when an in-flight stream hits
+expired credentials.</p>
+<p><strong>Verdict.</strong> Greenlit per-backend. Phase 1 for S3 + SFTP + SQLite halves;
+Azure half conditional on §3.5's subscription access.</p>
+<p><strong>Out of scope.</strong> Vendor-side rotation policies (link to AWS, Azure,
+OpenSSH docs).</p>
+<p><strong>Cross-links.</strong> From every backend page.</p>
+<h3 id="37-sqlite-operational-notes">3.7 SQLite operational notes<a class="headerlink" href="#37-sqlite-operational-notes" title="Permanent link">&para;</a></h3>
+<p><strong>Pain it retires.</strong> SQLite live-file concurrent-write fragility —
+syncing or copying a SQLite blob store while another process holds write
+locks risks corruption (rclone #4377). <code>SQLBlobBackend</code> already enables
+WAL plus <code>PRAGMA synchronous=NORMAL</code>, but the operational story ("do not
+sync a live file", recommended backup mechanisms) is undocumented.</p>
+<p><strong>Evidence pointers.</strong></p>
+<ul>
+<li>In-repo: <code>SQLBlobBackend</code> shipped v0.20.0 with WAL; no follow-up bug
+  evidence.</li>
+<li>External Tier-1 #12 (rclone #4377).</li>
+</ul>
+<p><strong>Open question.</strong> Standalone guide or sidebar in <code>sql-blob.md</code>.
+<strong>Recommendation: sidebar</strong> — single backend, ~200 words of content,
+no cross-backend ripple.</p>
+<p><strong>Dogfood plan.</strong> Two concurrent Python processes writing to the same
+SQLite blob store; observe WAL behavior and the lock-conflict failure
+shape remote-store surfaces. Copy the file mid-write with <code>cp</code> and read
+the copy back to demonstrate the inconsistent-snapshot risk. ~30
+minutes of work on any laptop.</p>
+<p><strong>Verdict.</strong> Greenlit. Sidebar in <code>sql-blob.md</code>. Phase 1.</p>
+<p><strong>Cross-links.</strong> From <code>sql-blob.md</code>.</p>
+<h2 id="4-tier-2-sidebar-additions">4. Tier-2 sidebar additions<a class="headerlink" href="#4-tier-2-sidebar-additions" title="Permanent link">&para;</a></h2>
+<p>Not full guides. Short additions to existing pages that retire support
+load without justifying a new file.</p>
 <table>
 <thead>
 <tr>
-<th>Azure SDK exception / code</th>
-<th>remote_store error</th>
+<th>Addition</th>
+<th>Target page</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>ResourceNotFoundError</code>; <code>status_code=404</code>; error codes <code>BlobNotFound</code>, <code>PathNotFound</code>, <code>FilesystemNotFound</code>, <code>ContainerNotFound</code></td>
-<td><code>NotFound</code></td>
+<td>Minimum IAM policy snippet for AWS S3</td>
+<td><code>s3.md</code></td>
 </tr>
 <tr>
-<td><code>status_code=403</code>; error codes <code>AuthorizationFailure</code>, <code>AuthorizationPermissionMismatch</code>, <code>InsufficientAccountPermissions</code></td>
-<td><code>PermissionDenied</code></td>
+<td>Minimum <code>sshd_config</code> plus "we test atmoz/sftp on OpenSSH"</td>
+<td><code>sftp.md</code></td>
 </tr>
 <tr>
-<td><code>ResourceExistsError</code>; <code>status_code=409</code>; error codes <code>PathAlreadyExists</code>, <code>BlobAlreadyExists</code>, <code>ContainerAlreadyExists</code></td>
-<td><code>AlreadyExists</code></td>
+<td>Azure egress allowlist one-liner</td>
+<td><code>azure.md</code></td>
 </tr>
 <tr>
-<td><code>ServiceRequestError</code>, <code>ServiceResponseError</code> (connection / DNS / timeout)</td>
-<td><code>BackendUnavailable</code></td>
+<td>HNS-vs-flat semantics table expansion (<code>is_folder</code>, <code>list_folders</code>, <code>delete_folder</code>)</td>
+<td><code>azure-hns-setup.md</code></td>
 </tr>
 <tr>
-<td><code>ClientAuthenticationError</code></td>
-<td><code>PermissionDenied</code></td>
+<td>"We do NOT use adlfs/fsspec for Azure" disclaimer</td>
+<td><code>azure.md</code></td>
+</tr>
+<tr>
+<td>SAS-token-expiry failure-mode note</td>
+<td><code>azure.md</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Rationale:</strong> The Azure SDK provides <code>HttpResponseError</code> with <code>status_code</code> and <code>error_code</code> attributes, enabling reliable classification. This is a significant improvement over the S3 backends' fragile string-matching pattern (<code>"404" in msg.lower()</code>).</p>
-<h3 id="az-026-no-native-exception-leakage">AZ-026: No Native Exception Leakage<a class="headerlink" href="#az-026-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> No <code>azure-storage-file-datalake</code>, <code>azure-core</code>, or <code>azure-identity</code> exceptions propagate to callers. All are mapped to <code>remote_store</code> error types per BE-021.
-<strong>Postconditions:</strong> <code>backend</code> attribute is set to <code>"azure"</code> on all mapped errors.</p>
-<h3 id="az-027-to_key">AZ-027: to_key<a class="headerlink" href="#az-027-to_key" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend.to_key(native_path)</code> strips the <code>{container}/</code> prefix from native paths.
-<strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">&quot;my-container&quot;</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;myaccount&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;my-container/data/file.txt&quot;</span><span class="p">)</span>  <span class="c1"># -&gt; &quot;data/file.txt&quot;</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">)</span>               <span class="c1"># -&gt; &quot;data/file.txt&quot; (no prefix, unchanged)</span>
-</code></pre></div>
-<strong>Postconditions:</strong> Pure, deterministic, total (never raises). Same contract as NPR-004.</p>
-<h3 id="az-028-error-context-manager">AZ-028: Error Context Manager<a class="headerlink" href="#az-028-error-context-manager" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> A single <code>_errors(path)</code> context manager catches all Azure SDK exceptions and maps them per AZ-025.
-<strong>Rationale:</strong> Unlike S3PyArrowBackend's dual error contexts (one for PyArrow, one for s3fs), this backend uses a single SDK, so a single error context suffices.</p>
+<p>Several of these can be absorbed into Tier-1 guides above where the scope
+overlaps (e.g. IAM-minimum may live in §3.1 if standalone fits poorly;
+the HNS-vs-flat expansion belongs in <code>azure-hns-setup.md</code> regardless of
+§3.5 progress).</p>
+<h2 id="5-out-of-scope-tier-3">5. Out of scope (Tier-3)<a class="headerlink" href="#5-out-of-scope-tier-3" title="Permanent link">&para;</a></h2>
+<p>Explicitly NOT to be written. If a future contribution starts drafting
+any of these, redirect to vendor docs instead.</p>
+<ul>
+<li>AWS account ownership and root-email governance</li>
+<li>MinIO operator console UX</li>
+<li><code>s3fs-fuse</code> 64 PB quota reporting (FUSE-only, irrelevant to our Python
+  <code>s3fs</code> usage)</li>
+<li>S3 Inventory not listing incomplete multipart uploads</li>
+<li>Generic DB driver / connection-pool tuning</li>
+<li>Self-hosted Azure-Blob-like servers (no real evidence)</li>
+</ul>
+<h2 id="6-code-side-questions-for-maintainers-not-guides">6. Code-side questions for maintainers (NOT guides)<a class="headerlink" href="#6-code-side-questions-for-maintainers-not-guides" title="Permanent link">&para;</a></h2>
+<p>The external survey flagged three design or implementation matters, not
+documentation gaps. All three have now been carved into the
+<code>S3 Client-Implementation Strategy</code> section of
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BACKLOG.md</a>: execute in order, ID-200 informs whether
+ID-202 needs to also cover error-mapping wins.</p>
+<ol>
+<li>
+<p><strong><code>s3fs</code> typed-error mapping fidelity</strong> → <strong>ID-200</strong>. Does
+   <code>_S3Base</code>'s error mapping preserve 403-vs-404 distinctions,
+   SAS-expiry signals, and partial-upload failure shapes? A short audit
+   driving five concrete scenarios (missing key, forbidden key, expired
+   token, mid-stream multipart abort, directory-marker ambiguity)
+   against a moto-backed <code>S3Backend</code>, recording target vs observed
+   typed error per row. If any row diverges, opens a BUG-NNN.</p>
+</li>
+<li>
+<p><strong><code>S3Backend</code> default for <code>use_listings_cache</code></strong> → <strong>ID-201</strong>.
+   Inheriting the <code>s3fs</code> default surprises <code>Store</code>-style readers with
+   stale listings (fsspec/filesystem_spec #324, #1423). Spike measuring
+   <code>list_files</code> / <code>iter_children</code> latency with cache on vs off at
+   100 / 1 000 / 10 000 keys per prefix, plus staleness frequency in a
+   write-then-list loop. Three exit dispositions: flip default, keep
+   default with docs, or expose a first-class <code>Store.refresh()</code> API.</p>
+</li>
+<li>
+<p><strong>Third S3 lane (<code>s3-boto3</code> direct)</strong> → <strong>ID-202</strong>. Three of the
+   Tier-1 S3 pains (boto3 / aiobotocore / s3fs pinning, 5 GB multipart
+   restart, listings-cache staleness) are <em>s3fs-specific</em> and would not
+   exist on a boto3-direct backend. PoC <code>S3Boto3Backend</code> sharing
+   <code>_S3Base</code> where sensible, conformance-tested under moto, decided on
+   three axes (user value, maintenance cost, interop loss) with
+   ship / park / reject exit dispositions.</p>
+</li>
+</ol>
+<p>These three IDs run independently of the guide-authoring work in §§ 3–5;
+their findings may inform the §3.1 and §3.2 guide content if landed
+before those guides ship.</p>
+<h2 id="7-sequencing-recommendation">7. Sequencing recommendation<a class="headerlink" href="#7-sequencing-recommendation" title="Permanent link">&para;</a></h2>
+<p>Phases are ordered by dogfood cost, not by user-pain ranking. The
+authoring contract (§ 2.2) makes dogfood-feasibility the binding
+constraint — a higher-pain guide we cannot validate yet is later in the
+queue than a lower-pain guide we can ship now.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Guides</th>
+<th>Dogfood cost</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 1 — zero / minimal new setup</td>
+<td>§3.3 (local-dev emulators), §3.7 (SQLite sidebar), §3.4 (SFTP reliability)</td>
+<td>Already in CI; laptop-only</td>
+<td>Can start immediately; proves the authoring contract end-to-end on low-risk targets</td>
+</tr>
+<tr>
+<td>Phase 2 — free-tier accounts</td>
+<td>§3.1 (S3-compatible: MinIO + R2 + B2 scope), §3.6 (credential rotation, non-Azure halves), §3.2-SFTP-half (prefetch tuning)</td>
+<td>Account signup; no budget</td>
+<td>Sign up R2 + B2 free-tier accounts; reuse §3.1 buckets for §3.6 rotation tests</td>
+</tr>
+<tr>
+<td>Phase 3 — budgeted dogfood</td>
+<td>§3.2-S3-half (5 GB cliff — AWS budget), §3.5 (Azure keyless — subscription + RBAC), §3.6-Azure-half</td>
+<td>Real AWS / Azure spend</td>
+<td>Defer until access is confirmed; do not start writing without it</td>
+</tr>
+<tr>
+<td>Tier-2 sidebars</td>
+<td><code>s3.md</code>, <code>sftp.md</code>, <code>azure.md</code>, <code>azure-hns-setup.md</code> additions</td>
+<td>Negligible</td>
+<td>Fold into adjacent Tier-1 PRs wherever the relevant page is already being edited</td>
+</tr>
+</tbody>
+</table>
+<p>Phase 1 candidates can ship in parallel and are mutually independent.
+Phase 2 candidates depend on the free-tier accounts being provisioned
+once; after that they are independent. Phase 3 is gated on §8 Q5.</p>
+<h2 id="8-open-questions">8. Open questions<a class="headerlink" href="#8-open-questions" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>One PR or many?</strong> Each guide is a self-contained addition; per-guide
+   PRs are easier to review but lose the consistency a single sweep
+   would give. Recommendation: <strong>per-Tier-1-guide PR</strong>, with sidebar
+   mop-up rolled into whichever PR touches the relevant backend page.</p>
+</li>
+<li>
+<p><strong>Guide template.</strong> The two existing guides (<code>azure-hns-setup.md</code>,
+   <code>sftp.md</code>) have slightly different shapes. Extract a shared template
+   (Prerequisites → Setup → Verification → Troubleshooting → Out of
+   scope) before authoring the next one? Recommendation: <strong>yes, but
+   cheap</strong> — derive from the structure both existing guides already
+   converge on; do not over-engineer.</p>
+</li>
+<li>
+<p><strong>Per-guide ownership.</strong> Each guide needs a backlog item of its own
+   when picked up. ID-199 (this proposal) is the parent; per-guide IDs
+   split off as work begins. Recommendation: defer per-guide IDs until
+   each guide is committed to.</p>
+</li>
+<li>
+<p><strong>Code-side flags (§6).</strong> Should the third-S3-lane question be folded
+   into ID-114 (iceboxed PyArrow bucket-path research) or get its own
+   ID? Recommendation: <strong>own ID</strong> — different design question, different
+   evidence base.</p>
+</li>
+<li>
+<p><strong>Dogfood budget and access (gates Phase 3).</strong> §3.5 (Azure keyless)
+   requires a real Azure subscription with elevated RBAC plus vNet /
+   private-endpoint provisioning rights. §3.2's S3 5 GB sub-section
+   requires an AWS bucket and ~10 GB of write traffic. Two paths: (a)
+   authorize the spend / access up front and queue Phase 3 immediately
+   after Phase 2; (b) ship Phase 1 + Phase 2 only and re-evaluate Phase
+   3 once user pain on those sections is confirmed or fades.
+   Recommendation: <strong>(b) — ship what we can dogfood now</strong>, treat
+   Phase 3 as an explicit follow-on decision rather than an assumption.</p>
+</li>
+</ol>
 <hr />
-<h2 id="resource-management">Resource Management<a class="headerlink" href="#resource-management" title="Permanent link">&para;</a></h2>
-<h3 id="az-029-close">AZ-029: close()<a class="headerlink" href="#az-029-close" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>close()</code> closes the underlying <code>BlobServiceClient</code>, <code>ContainerClient</code>, and (if HNS) <code>FileSystemClient</code> and <code>DataLakeServiceClient</code>. Resets all cached instances and HNS detection state.
-<strong>Postconditions:</strong> Safe to call multiple times. Note: because lazy properties re-initialize on next use, the backend is technically reusable after <code>close()</code>. This is consistent with S3Backend's behavior.</p>
-<h3 id="az-030-unwrap">AZ-030: unwrap()<a class="headerlink" href="#az-030-unwrap" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>unwrap(FileSystemClient)</code> returns the underlying <code>azure.storage.filedatalake.FileSystemClient</code>.
-<strong>Raises:</strong> <code>CapabilityNotSupported</code> for any other type hint.
-<strong>Rationale:</strong> Escape hatch for users who need Azure-specific features (per ADR-0003).</p>
-<hr />
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<h3 id="az-034-etag-and-content-md5-digest-population">AZ-034: ETag and Content-MD5 Digest Population<a class="headerlink" href="#az-034-etag-and-content-md5-digest-population" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_props_to_fileinfo</code> populates <code>FileInfo.etag</code> and <code>FileInfo.digest</code> from blob properties.</p>
-<p><strong>ETag (<code>FileInfo.etag</code>):</strong>
-- Source: <code>BlobProperties.etag</code> (always present for existing blobs).
-- Azure returns it double-quoted (e.g. <code>'"0x8D4BCC2E4835CD0"'</code>); the backend strips the outer quotes and lowercases before storing.
-- Populated for all operations that call <code>_props_to_fileinfo</code>: <code>get_file_info</code>, <code>list_files</code>, <code>iter_children</code>.</p>
-<p><strong>Digest (<code>FileInfo.digest</code>):</strong>
-- Source: <code>BlobProperties.content_settings.content_md5</code> — a <code>bytes</code> object when set, <code>None</code> when absent.
-- Azure does not auto-compute Content-MD5; it is set explicitly by the client at upload time. Blobs uploaded without Content-MD5 yield <code>digest=None</code>.
-- When present: converted to lowercase hex and stored as <code>ContentDigest("md5", hex_value)</code>.</p>
-<p><strong>Postconditions:</strong>
-- <code>FileInfo.etag</code> is a non-empty lowercase string for all existing blobs.
-- <code>FileInfo.digest</code> is a <code>ContentDigest("md5", …)</code> when Content-MD5 is set, <code>None</code> otherwise.</p>
-<hr />
-<h3 id="az-033-transfer-concurrency">AZ-033: Transfer Concurrency<a class="headerlink" href="#az-033-transfer-concurrency" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>AzureBackend</code> accepts a <code>max_concurrency: int = 1</code> constructor parameter that controls the number of parallel connections used for blob uploads and downloads. The value is threaded through to <code>BlobClient.upload_blob()</code>, <code>BlobClient.download_blob()</code>, and <code>DataLakeFileClient.upload_data()</code> (HNS atomic writes).
-<strong>Preconditions:</strong> <code>max_concurrency</code> must be &gt;= 1; <code>ValueError</code> is raised at construction time otherwise.
-<strong>Default:</strong> <code>1</code> (sequential transfer, matching prior behavior). Users opt in to parallelism for large-file workloads.
-<strong>Rationale:</strong> The Azure SDK natively supports parallel block uploads and parallel chunk downloads. Exposing this parameter lets users improve throughput for large files without changing application code. SFTP has no equivalent (Paramiko is sequential); S3 concurrency is controlled at the <code>s3fs</code>/<code>aiobotocore</code> level.</p>
-<hr />
-<h3 id="az-031-client-options-passthrough">AZ-031: Client Options Passthrough<a class="headerlink" href="#az-031-client-options-passthrough" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>client_options</code> dict is merged into both the <code>BlobServiceClient</code> and <code>DataLakeServiceClient</code> configurations, allowing advanced settings (custom timeouts, retry policies, proxies, API version overrides, etc.).
-<strong>Postconditions:</strong> Explicit constructor parameters (<code>account_key</code>, <code>sas_token</code>, <code>credential</code>, etc.) take precedence over keys in <code>client_options</code>.</p>
-<h3 id="az-035-staged-block-upload-defaults">AZ-035: Staged-Block Upload Defaults<a class="headerlink" href="#az-035-staged-block-upload-defaults" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>_blob_service</code> and <code>_datalake_service</code> set <code>max_block_size</code> and <code>max_single_put_size</code> to <code>_AZURE_BLOCK_SIZE</code> (1 MiB) via <code>setdefault</code>, and force <code>min_large_block_upload_threshold = 1</code> (1 byte — always stage). User-supplied <code>client_options</code> values take precedence (AZ-031).</p>
-<p><strong>Rationale:</strong> Bounds Azure SDK in-flight memory to ~2 × <code>_AZURE_BLOCK_SIZE</code> ≈ 2 MiB, within the streaming integrity threshold (65% × 7 MiB minimum file). <code>_AZURE_BLOCK_SIZE</code> is kept separate from <code>_COPY_BUFSIZE</code> (the pipe-layer copy buffer) because HTTP block granularity and Python-level streaming are independent concerns.</p>
-<h3 id="az-032-default-credential-chain">AZ-032: Default Credential Chain<a class="headerlink" href="#az-032-default-credential-chain" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> When no explicit credential is provided (<code>account_key</code>, <code>sas_token</code>, <code>connection_string</code>, and <code>credential</code> are all <code>None</code>), the backend attempts to use <code>DefaultAzureCredential</code> from <code>azure-identity</code>.
-<strong>Raises:</strong> <code>BackendUnavailable</code> if <code>azure-identity</code> is not installed and no explicit credential is provided.
-<strong>Rationale:</strong> Follows the principle of least surprise for Azure users. <code>DefaultAzureCredential</code> automatically resolves environment variables, managed identity, Azure CLI login, and other credential sources.</p>
-<h3 id="az-036-hns-directory-marker-probe-contract">AZ-036: HNS Directory-Marker Probe Contract<a class="headerlink" href="#az-036-hns-directory-marker-probe-contract" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant (HNS only):</strong> Every file-API operation on HNS — <code>read</code>, <code>read_bytes</code>, <code>read_seekable</code>, <code>delete</code>, <code>write</code>, <code>write_atomic</code>, <code>open_atomic</code>, <code>get_file_info</code>, <code>is_file</code>, <code>move(src, dst)</code>, <code>copy(src, dst)</code> — probes the <code>hdi_isfolder</code> metadata marker on the target before delegating to the SDK. If the marker is present on what the caller treats as a file path, the operation raises <code>InvalidPath</code> (BE-021) without mutating account state. Symmetric for folder-API operations on file paths: <code>delete_folder</code> and <code>get_folder_info</code> inspect the same marker and raise <code>InvalidPath</code> when it is absent on the target. <code>is_folder</code> and <code>is_file</code> are predicates and return <code>False</code> (not raise) when the marker disagrees with the call — see <a href="#az-013-is_file-and-is_folder">AZ-013</a> for the predicate contract.
-<strong>Rationale:</strong> Real ADLS Gen2 accepts SDK calls Azurite correctly rejects: <code>download_blob()</code>, <code>delete_blob()</code>, <code>get_blob_properties()</code>, <code>get_directory_properties()</code> all return HTTP 200 against the wrong entity type. Without the probe, file-API <code>delete()</code> on a directory marker silently destroys the directory; file-API <code>read()</code> silently returns <code>b""</code>; folder-API <code>delete_folder()</code> on a file path silently destroys the file. The probe is the single load-bearing safety invariant that closes the BE-021 type-mismatch contract on HNS.
-<strong>Probe placement:</strong> Sync <code>read()</code> and <code>read_seekable()</code> pre-probe via <code>BlobClient.get_blob_properties()</code> (HEAD) before opening the stream — the stream is lazy and may never be drained, so a post-probe would leak the response. Async <code>read()</code> post-probes via <code>downloader.properties</code> (populated by the awaited <code>download_blob</code>) and explicitly closes the downloader before raising so the unconsumed HTTP body is returned to the pool — no separate HEAD round-trip is incurred. <code>read_bytes()</code> post-probes (the full body has already been read). Sync and async <code>delete()</code> pre-probe so the marker is preserved on the failure path. Folder-API operations probe <code>DataLakeDirectoryClient.get_directory_properties().metadata.hdi_isfolder</code> and treat absence-of-marker as "this is a file, not a folder." Root-path carve-out: <code>get_folder_info("")</code> skips the per-path probe entirely (see <a href="#az-024-get_folder_info">AZ-024</a>) — the root is always a folder and the SDK rejects the empty path.
-<strong>Postconditions:</strong> Adds one HEAD round-trip per affected sync read/delete call on HNS; async paths reuse the eager-awaited SDK response for the probe (no extra RTT).
-<strong>Originated in:</strong> BUG-190, BUG-192 (write/open_atomic), then extended by BUG-195 (get_file_info), BUG-197 (read/delete), BUG-198 (folder-API on file), BUG-200 (move/copy directory checks), BUG-203 (is_file/is_folder).</p>
+<p>This research is advisory per
+<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#audits"><code>CLAUDE.md</code> § Audits Rule 3</a> ("an audit's
+authority is its diagnosis; its prescription is advisory"). The
+diagnosis — seven pain themes with cross-validated evidence — is what to
+trust. The proposed guide structure, scope boundaries, and sequencing
+are starting points to challenge during pick-up.</p>
 
 
 
@@ -10481,7 +10086,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../011-s3-pyarrow-backend/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 011: S3-PyArrow Hybrid Backend Specification">
+          <a href="../research-backend-contract-completeness/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Backend Contract Completeness">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -10491,20 +10096,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                011: S3-PyArrow Hybrid Backend Specification
+                Backend Contract Completeness
               </div>
             </div>
           </a>
         
         
           
-          <a href="../013-memory-backend/" class="md-footer__link md-footer__link--next" aria-label="Next: 013: Memory Backend Specification">
+          <a href="../research-benchmark-suite-v2/" class="md-footer__link md-footer__link--next" aria-label="Next: Benchmark Suite v2 — User-Decision Framing">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                013: Memory Backend Specification
+                Benchmark Suite v2 — User-Decision Framing
               </div>
             </div>
             <div class="md-footer__button md-icon">
