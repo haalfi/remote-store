@@ -4,11 +4,15 @@ Covers async HNS semantics that the conformance suite against
 ``azure_live_async`` cannot reach AND that differ from the sync sibling
 in ``tests/backends/azure/test_live_hns.py``. Async-only KEEPs:
 
-* **WriteResult post-rename etag normalisation cross-check** including the
-  WR-001a optional-etag fallback contract (BUG-196): the async backend may
-  return ``etag=None`` when the post-rename ``get_file_properties`` fails
-  transiently — sync raises in the same scenario, so the assertion shape
-  is genuinely different (``TestAsyncLiveHnsWriteResult``).
+* **WriteResult post-rename etag normalisation cross-check** on the async
+  SDK paths. Async ``write_atomic`` reads etag via ``get_file_properties``
+  on its own ``DataLakeFileClient`` and ``get_blob_properties`` on its
+  own ``BlobClient``; the sync sibling exercises the parallel sync SDK
+  pair. Normalisation drift between the two reads is per-backend and only
+  surfaces against a real account. Both tests skip on the BUG-173 /
+  BUG-196 transient post-rename-read fallback (``etag=None``) so the
+  "fully native" contract is audibly bypassed rather than silently
+  passed (``TestAsyncLiveHnsWriteResult``).
 
 * **DFS append protocol on async-iterator payloads (BUG-194).** The async
   HNS path drives ``create_file`` → per-chunk ``append_data(offset)`` →

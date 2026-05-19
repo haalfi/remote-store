@@ -20,9 +20,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   express: directory-blob `hdi_isfolder` probes
   (`TestAzureLiveHnsDirectoryGuard`, `...GetFileInfoOnDirectory`,
   `...IsFolderIsFile`, `...FileApiOnDirectory` and async siblings),
-  WriteResult etag normalisation cross-check
-  (`TestAzureLiveHnsWriteResult` + async sibling tolerating BUG-196
-  Optional-etag fallback), user-metadata survives `rename_file`
+  WriteResult etag normalisation cross-check on both SDK paths
+  (`TestAzureLiveHnsWriteResult` + async sibling; both skip on the
+  BUG-173/BUG-196 transient post-rename-read fallback), user-metadata
+  survives `rename_file`
   (`TestAzureLiveHnsMetadataSurvivesRename`; sync only — the rename is a
   service-side property), DFS AsyncIterator protocol (BUG-194 guard,
   `TestAsyncLiveHnsWriteAtomicAsyncIterator`), `write_atomic` streaming
