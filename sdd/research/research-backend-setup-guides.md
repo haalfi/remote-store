@@ -23,7 +23,9 @@ enumerate dimensions of user challenge across the four backend families
 (S3, Azure Blob + HNS, SFTP, SQL Blob), then let guides fall out of the
 matrix where evidence is strong.
 
-## 2. Evidence base
+## 2. Approach
+
+### 2.1 Evidence base
 
 Two independent sources of signal:
 
@@ -45,6 +47,45 @@ The two sources cross-validate. External adds four high-signal categories
 the repo did not surface (large-object tuning, Azure keyless auth, SFTP
 reliability, SQLite operational); in-repo confirms one candidate
 (local-dev emulators) that the external sweep underweighted.
+
+### 2.2 Authoring contract (dogfood-first)
+
+Every guide that ships under this initiative MUST satisfy the following.
+This is a hard contract, not a suggestion — a candidate that cannot meet
+it is deferred, scope-reduced, or dropped, never weakened to fit.
+
+1. **Self-validated.** Every command, snippet, and configuration in the
+   guide has been executed end-to-end by a maintainer against a real
+   target (live cloud, real emulator, real legacy server). Untested
+   recipes do not ship.
+2. **Practicable.** Steps are copy-pasteable. Prerequisites are explicit
+   and minimal. Failure modes the maintainer hit while dogfooding are
+   documented inline (per the `azure-hns-setup.md` precedent —
+   AADSTS50076, multi-line `\` HNS quirk, etc.).
+3. **Proven (dogfood evidence trail).** The PR that lands each guide
+   either contains a short trace (`sdd/traces/`) of the dogfood walk,
+   or links to the artifacts (workflow run, account ID redacted,
+   recorded session) that prove the recipe works.
+4. **Down to the point.** No background prose, no rationale paragraphs,
+   no "why this matters" framing. Each section is recipe + observed
+   outcome + caveat. Prose density follows `azure-hns-setup.md` —
+   short paragraphs, runnable blocks, no marketing.
+5. **Reliable external references only.** Cite vendor official docs
+   (AWS, Azure, Microsoft Learn, Cloudflare), RFCs, language/library
+   official documentation (paramiko, boto3), and the relevant project
+   tracker only when the cite is the authoritative source. Do NOT
+   cite Stack Overflow, Reddit, Medium / personal blogs, AI-generated
+   SEO pages, or GitHub-issue threads in user-facing prose. Internal
+   evidence (CHANGELOG entries, BUG IDs, trace IDs) belongs in
+   commit/PR descriptions, not in the guide body.
+6. **Scope-honest.** If the maintainer can dogfood three of four
+   providers, the guide names the tested three and explicitly says the
+   fourth is "documented from external pattern, not verified here."
+   No silent over-claiming.
+
+The two existing guides (`azure-hns-setup.md`, `sftp.md`) already meet
+this contract; they are the reference shape. New guides that cannot
+match it stay in this research doc as proposals, not as drafts.
 
 ## 3. Proposed guides
 
@@ -89,6 +130,17 @@ design feature, not a bug); corporate-proxy snippets folded in; pin
 matrix for the `boto3` / `aiobotocore` / `s3fs` triangle; minimum IAM
 policy snippet for AWS S3 specifically.
 
+**Dogfood plan.** MinIO via the existing `benchmarks/infra/` compose
+file (already in CI). Cloudflare R2 and Backblaze B2 via fresh free-tier
+accounts; one bucket each, smoke-tested for read / write / list /
+multipart / delete. Wasabi, Ceph, Garage, SeaweedFS are NOT in scope as
+verified — the guide says "documented from pattern, not tested here"
+inline. Pin matrix verified by `uv pip install` runs against pinned
+versions.
+
+**Verdict.** Greenlit. Scope: AWS S3, MinIO, R2, B2 as tested;
+others as pattern.
+
 **Out of scope.** Self-hosting MinIO at operator scale; cross-provider
 migration; provider-specific billing.
 
@@ -114,6 +166,20 @@ paramiko #1080, #2235, #2418) caused by default prefetch logic;
 **Scope.** Decision tree: when defaults are enough vs when to tune. S3
 multipart boundary and `s3-pyarrow` recommendation. SFTP prefetch
 tunables. Azure multipart already in `azure.md`; link in.
+
+**Dogfood plan.** Two halves:
+- **SFTP prefetch tuning** — measured against `atmoz/sftp` and `SFTPGo`
+  containers with synthetic 100 MB and 1 GB files; before/after numbers
+  recorded. Doable on any laptop.
+- **S3 5 GB multipart cliff** — requires a real AWS S3 bucket and
+  ~10 GB of write traffic against `s3fs` with and without `nomixupload`.
+  Costs AWS budget; cannot be reproduced on MinIO (the bug is in `s3fs`
+  control flow against AWS-specific responses).
+
+**Verdict.** **Split-ship.** SFTP half greenlit (Phase 2); S3 5 GB
+sub-section deferred until AWS dogfood budget is approved. Do not ship
+the S3 cliff prose without the dogfood run — it is the central pain
+this guide retires.
 
 **Out of scope.** Generic Python streaming patterns; benchmark
 methodology (lives in `docs-src/explanation/performance.md`).
@@ -144,6 +210,13 @@ divergences-from-prod table. The divergences table is the value-add —
 what fails on Azurite but works on real HNS, what moto accepts that real
 S3 rejects, the SFTPGo vs OpenSSH semantic differences we test against.
 
+**Dogfood plan.** Already dogfooded — every emulator runs in CI for
+every PR. Extract compose snippets verbatim from `benchmarks/infra/`
+and `.github/workflows/`; populate the divergences table from observed
+quirks already recorded in CHANGELOG entries and traces. No new setup.
+
+**Verdict.** Greenlit. Lowest-friction guide of the seven.
+
 **Out of scope.** Recommending one emulator over another; CI orchestration
 patterns (separate concern).
 
@@ -166,6 +239,15 @@ the existing `retry.md`.
 
 **Scope.** Keepalive settings, timeout composition, retry strategy for
 transient drops, cross-link to prefetch tuning in §3.2.
+
+**Dogfood plan.** Local `SFTPGo` container, drop the connection
+mid-transfer via `iptables -j DROP` (Linux), `pfctl` (macOS) or
+`Set-NetFirewallRule` (Windows), observe the failure shape with and
+without keepalive configured. NAT-rebind documented as "simulated link
+drop" — we cannot promise a real DSL-reconnect reproduction, and the
+guide says so explicitly.
+
+**Verdict.** Greenlit with honest scope. Phase 1.
 
 **Out of scope.** Auth and host-key topics — those live in `sftp.md`
 (already comprehensive) and its legacy-server section.
@@ -191,6 +273,18 @@ ID-118b (Azure TLS CA bundle, Phase 2 — Azure Stack Hub / on-prem).
 **Scope.** Sibling guide to `azure-hns-setup.md`: keyless setup, OIDC
 federation for GitHub Actions and Azure DevOps, private-endpoint wiring,
 egress allowlist, SAS-expiry diagnosis pattern.
+
+**Dogfood plan.** Requires a real Azure subscription with elevated RBAC
+(`User Access Administrator` or `Owner` on the resource group, plus
+permission to create vNets / private endpoints / private DNS zones).
+OIDC federation tested via a sacrificial workflow on a private GitHub
+repo. SAS-expiry diagnosis reproduced by manufacturing a near-expired
+SAS and writing through it. Significant prep cost.
+
+**Verdict.** **Conditional.** Greenlit only when subscription access
+with the required RBAC is confirmed available. Otherwise defer the
+entire guide — partial coverage (keyless without private endpoints, or
+vice versa) would mis-set user expectations.
 
 **Out of scope.** Microsoft Entra ID administration (link to Microsoft
 docs); Azure Stack Hub specifics (fold into ID-118b if it reactivates).
@@ -224,6 +318,17 @@ External wins on breadth here.
 rotation failures, how `Secret` masks the rotated value. Cross-link to
 typed-error model.
 
+**Dogfood plan.** Per backend, perform a real rotation against the same
+target used elsewhere in this initiative (the dogfooded MinIO / R2 / B2
+buckets from §3.1; the SFTPGo container from §3.4; the SQLite store
+from §3.7; Azure rotation reuses the §3.5 subscription if §3.5 is
+greenlit, otherwise the Azure half of this guide defers). Each rotation
+recipe ends with the observed error shape when an in-flight stream hits
+expired credentials.
+
+**Verdict.** Greenlit per-backend. Phase 1 for S3 + SFTP + SQLite halves;
+Azure half conditional on §3.5's subscription access.
+
 **Out of scope.** Vendor-side rotation policies (link to AWS, Azure,
 OpenSSH docs).
 
@@ -246,6 +351,14 @@ sync a live file", recommended backup mechanisms) is undocumented.
 **Open question.** Standalone guide or sidebar in `sql-blob.md`.
 **Recommendation: sidebar** — single backend, ~200 words of content,
 no cross-backend ripple.
+
+**Dogfood plan.** Two concurrent Python processes writing to the same
+SQLite blob store; observe WAL behavior and the lock-conflict failure
+shape remote-store surfaces. Copy the file mid-write with `cp` and read
+the copy back to demonstrate the inconsistent-snapshot risk. ~30
+minutes of work on any laptop.
+
+**Verdict.** Greenlit. Sidebar in `sql-blob.md`. Phase 1.
 
 **Cross-links.** From `sql-blob.md`.
 
@@ -310,17 +423,21 @@ not let them block guide work.
 
 ## 7. Sequencing recommendation
 
-If picked up as one body of work, suggested order:
+Phases are ordered by dogfood cost, not by user-pain ranking. The
+authoring contract (§ 2.2) makes dogfood-feasibility the binding
+constraint — a higher-pain guide we cannot validate yet is later in the
+queue than a lower-pain guide we can ship now.
 
-| Phase | Guides | Rationale |
-|---|---|---|
-| Phase 1 — highest pain | §3.1 (S3-compatible), §3.4 (SFTP reliability) | Converging in-repo + external evidence; clear scope |
-| Phase 2 — cross-cutting | §3.2 (large-object tuning), §3.6 (credential rotation) | Each retires pain across multiple backends; existing snippets to lean on |
-| Phase 3 — broader pulls | §3.5 (Azure keyless), §3.3 (local-dev emulators) | Azure keyless has strong external pull; local-dev consolidates scattered notes |
-| Phase 4 — sidebars | Tier-2 table; §3.7 (SQLite as sidebar) | Mop-up alongside Phase 1 or 2 wherever a backend page is already being edited |
+| Phase | Guides | Dogfood cost | Rationale |
+|---|---|---|---|
+| Phase 1 — zero / minimal new setup | §3.3 (local-dev emulators), §3.7 (SQLite sidebar), §3.4 (SFTP reliability) | Already in CI; laptop-only | Can start immediately; proves the authoring contract end-to-end on low-risk targets |
+| Phase 2 — free-tier accounts | §3.1 (S3-compatible: MinIO + R2 + B2 scope), §3.6 (credential rotation, non-Azure halves), §3.2-SFTP-half (prefetch tuning) | Account signup; no budget | Sign up R2 + B2 free-tier accounts; reuse §3.1 buckets for §3.6 rotation tests |
+| Phase 3 — budgeted dogfood | §3.2-S3-half (5 GB cliff — AWS budget), §3.5 (Azure keyless — subscription + RBAC), §3.6-Azure-half | Real AWS / Azure spend | Defer until access is confirmed; do not start writing without it |
+| Tier-2 sidebars | `s3.md`, `sftp.md`, `azure.md`, `azure-hns-setup.md` additions | Negligible | Fold into adjacent Tier-1 PRs wherever the relevant page is already being edited |
 
-Phases are sequenceable but not strictly serial: §3.1 and §3.4 can ship
-in parallel; sidebars are filler work folded into adjacent PRs.
+Phase 1 candidates can ship in parallel and are mutually independent.
+Phase 2 candidates depend on the free-tier accounts being provisioned
+once; after that they are independent. Phase 3 is gated on §8 Q5.
 
 ## 8. Open questions
 
@@ -345,6 +462,16 @@ in parallel; sidebars are filler work folded into adjacent PRs.
    into ID-114 (iceboxed PyArrow bucket-path research) or get its own
    ID? Recommendation: **own ID** — different design question, different
    evidence base.
+
+5. **Dogfood budget and access (gates Phase 3).** §3.5 (Azure keyless)
+   requires a real Azure subscription with elevated RBAC plus vNet /
+   private-endpoint provisioning rights. §3.2's S3 5 GB sub-section
+   requires an AWS bucket and ~10 GB of write traffic. Two paths: (a)
+   authorize the spend / access up front and queue Phase 3 immediately
+   after Phase 2; (b) ship Phase 1 + Phase 2 only and re-evaluate Phase
+   3 once user pain on those sections is confirmed or fades.
+   Recommendation: **(b) — ship what we can dogfood now**, treat
+   Phase 3 as an explicit follow-on decision rather than an assumption.
 
 ---
 

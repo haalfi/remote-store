@@ -424,15 +424,25 @@ stabilised page.
   [research](research/research-backend-setup-guides.md). The two existing
   guides (`azure-hns-setup.md`, `sftp.md`) are the proof-of-value pattern.
 
-  **Tier-1 standalone guides (per-guide PR when picked up; split a
-  dedicated backlog ID at that point):**
-  1. S3-compatible providers cookbook (`docs-src/guides/backends/s3-compatible.md`)
-  2. Large-object & streaming tuning (`docs-src/guides/large-object-tuning.md`)
-  3. Local-dev emulators (`docs-src/guides/local-dev-emulators.md`)
-  4. SFTP reliability (`docs-src/guides/backends/sftp-reliability.md`)
-  5. Azure keyless auth & private endpoints (`docs-src/guides/backends/azure-keyless-auth.md`)
-  6. Credential & secret rotation (`docs-src/guides/credential-rotation.md`)
-  7. SQLite operational notes — sidebar in `sql-blob.md` recommended over standalone
+  **Authoring contract (binding — see research § 2.2):** every guide
+  under this initiative must be self-validated (maintainer-walked
+  end-to-end against a real target), practicable (copy-pasteable steps),
+  proven (dogfood trace or artifact in the PR), down to the point
+  (recipe + outcome + caveat, no marketing), and link only reliable
+  external references (vendor docs, RFCs, library docs — not Stack
+  Overflow, Reddit, blogs, or GitHub-issue threads). Candidates that
+  cannot meet the contract are deferred or scope-reduced, never
+  weakened to fit.
+
+  **Tier-1 standalone guides (per-guide PR + dedicated backlog ID when
+  each is picked up):**
+  1. S3-compatible providers cookbook — greenlit; AWS S3 + MinIO + R2 + B2 tested scope
+  2. Large-object & streaming tuning — **split-ship**: SFTP half greenlit; S3 5 GB cliff deferred until AWS dogfood budget
+  3. Local-dev emulators — greenlit; already dogfooded via CI
+  4. SFTP reliability — greenlit
+  5. Azure keyless auth & private endpoints — **conditional** on Azure subscription with elevated RBAC + vNet rights
+  6. Credential & secret rotation — greenlit per-backend; Azure half tied to #5
+  7. SQLite operational notes — greenlit; sidebar in `sql-blob.md`
 
   **Tier-2 sidebars** for `s3.md`, `sftp.md`, `azure.md`,
   `azure-hns-setup.md` — see research doc § 4. Fold into adjacent
@@ -447,9 +457,11 @@ stabilised page.
   `use_listings_cache` default; third S3 lane (`s3-boto3` direct)
   viability. Triage as separate IDs if any reaches commit-worthy priority.
 
-  **Sequencing:** Phase 1 §3.1 + §3.4 (highest converging signal),
-  Phase 2 §3.2 + §3.6, Phase 3 §3.5 + §3.3, Tier-2 sidebars mopped up
-  alongside. §3.1 and §3.4 can ship in parallel.
+  **Sequencing (dogfood-cost ordered, see research § 7):**
+  Phase 1 (zero new setup) = §3.3 + §3.7 + §3.4;
+  Phase 2 (free-tier accounts) = §3.1 + §3.6 non-Azure halves + §3.2 SFTP half;
+  Phase 3 (budgeted dogfood — gated on the access decision in research § 8 Q5) = §3.2 S3 half + §3.5 + §3.6 Azure half;
+  Tier-2 sidebars mop up alongside Phase 1/2.
 
   Effort `L` reflects the parent scope; each individual guide is M-sized.
 
