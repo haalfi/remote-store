@@ -262,8 +262,9 @@ benchmarks/
   report.py                        # summary table generator (bench-report)
   results/
     comparative.md               # generated comparative data (checked in)
-  infra/
-    docker-compose.yml
-    toxiproxy.json               # proxy definitions (azurite, minio, sftp)
   README.md
 ```
+
+The Docker compose stack and Toxiproxy configuration live at the
+top-level [`infra/`](../infra/) — shared between benchmarks and the
+test suite. Ports and credentials come from [`infra/.env`](../infra/.env).

@@ -12,6 +12,11 @@ surprising_ripples:
   - tests/backends/fixtures/_live_env.py
   - .github/workflows/publish.yml
   - benchmarks/_toxiproxy.py
+  # PR-review-surfaced (round 1, PR #660):
+  - tests/backends/fixtures/sftp_docker.py
+  - tests/backends/fixtures/azurite.py
+  - tests/_helpers.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

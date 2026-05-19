@@ -79,6 +79,8 @@ jobs:
           echo "MINIO_SECRET_KEY=$MINIO_SECRET_KEY" >> $GITHUB_ENV
           echo "AZURITE_HOST_PORT=$AZURITE_HOST_PORT" >> $GITHUB_ENV
           echo "SFTP_HOST_PORT=$SFTP_HOST_PORT" >> $GITHUB_ENV
+          echo "SFTP_USER=$SFTP_USER" >> $GITHUB_ENV
+          echo "SFTP_PASS=$SFTP_PASS" >> $GITHUB_ENV
 
       - name: Start MinIO
         if: contains(fromJSON(needs.setup.outputs.minio-scopes), matrix.scope)
@@ -107,7 +109,7 @@ jobs:
         run: |
           docker run -d --name sftp-mut -p ${SFTP_HOST_PORT}:22 \
             atmoz/sftp:alpine \
-            benchuser:benchpass:::upload
+            "${SFTP_USER}:${SFTP_PASS}:::upload"
           for i in $(seq 1 30); do
             nc -z 127.0.0.1 ${SFTP_HOST_PORT} && break || sleep 1
           done

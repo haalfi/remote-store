@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from infra._settings import AZURITE_HOST, AZURITE_PORT
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures._state import INFRA
 from tests.backends.fixtures.registry import BackendFixture, register
@@ -32,7 +33,7 @@ _CONTAINERS: dict[int, tuple[str, object]] = {}
 
 def _factory() -> Backend:
     if INFRA.azurite_conn_str is None:
-        pytest.skip("Azure SDK not installed or Azurite not reachable on 127.0.0.1:10000")
+        pytest.skip(f"Azure SDK not installed or Azurite not reachable on {AZURITE_HOST}:{AZURITE_PORT}")
     from azure.storage.blob import BlobServiceClient
 
     from remote_store.backends._azure import AzureBackend

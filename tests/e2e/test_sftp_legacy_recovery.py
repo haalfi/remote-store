@@ -17,8 +17,10 @@ paramiko, using a Dockerized server:
 Requires:
     docker compose -f infra/docker-compose.yml up -d legacy-sftp
 
-Test is skipped when the legacy-sftp container is not reachable on
-``127.0.0.1:2223`` (env-overridable: ``E2E_LEGACY_SFTP_PORT`` etc.).
+Test is skipped when the legacy-sftp container is not reachable.
+Host port and credentials come from ``infra/.env`` via
+``infra._settings`` (env-overridable per-process: ``LEGACY_SFTP_HOST``,
+``LEGACY_SFTP_HOST_PORT``, ``LEGACY_SFTP_USER``, ``LEGACY_SFTP_PASS``).
 """
 
 from __future__ import annotations

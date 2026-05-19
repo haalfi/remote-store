@@ -1,9 +1,9 @@
 """``sftp_docker`` fixture: SFTPBackend against the atmoz/sftp container.
 
-Stage 2, real-local. The container ships with user ``benchuser`` /
-password ``benchpass`` and an upload directory at ``/upload``; it is
-defined in ``infra/docker-compose.yml`` and started by the
-CI ``test`` and ``e2e`` jobs on port 2222.
+Stage 2, real-local. The container's user / password / upload directory
+and host port come from ``infra/.env`` via ``infra._settings``; it is
+defined in ``infra/docker-compose.yml`` and started by the CI ``test``
+and ``e2e`` jobs.
 
 This fixture differs from ``sftp_inproc`` only in its transport layer
 (real SSH binary protocol against a Linux OpenSSH daemon, vs. an
@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from infra._settings import SFTP_HOST, SFTP_PASS, SFTP_PORT, SFTP_USER
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures._state import INFRA
 from tests.backends.fixtures.registry import BackendFixture, register
@@ -35,7 +36,7 @@ _BASE_PATHS: dict[int, str] = {}
 
 def _factory() -> Backend:
     if INFRA.sftp_docker_port is None:
-        pytest.skip("Dockerised SFTP not reachable on 127.0.0.1:2222")
+        pytest.skip(f"Dockerised SFTP not reachable on {SFTP_HOST}:{SFTP_PORT}")
     try:
         import paramiko
 
@@ -50,8 +51,8 @@ def _factory() -> Backend:
     # construction. The in-process paramiko server we use elsewhere is
     # forgiving about this; the real openssh-sftp-server in the atmoz/sftp
     # container is not. Pre-create the directory via a short-lived client.
-    transport = paramiko.Transport(("127.0.0.1", INFRA.sftp_docker_port))
-    transport.connect(username="benchuser", password="benchpass")
+    transport = paramiko.Transport((SFTP_HOST, INFRA.sftp_docker_port))
+    transport.connect(username=SFTP_USER, password=SFTP_PASS)
     try:
         sftp = paramiko.SFTPClient.from_transport(transport)
         if sftp is None:
@@ -70,10 +71,10 @@ def _factory() -> Backend:
     # path to follow. Roll back the mkdir on ctor failure before re-raising.
     try:
         backend = SFTPBackend(
-            host="127.0.0.1",
+            host=SFTP_HOST,
             port=INFRA.sftp_docker_port,
-            username="benchuser",
-            password="benchpass",
+            username=SFTP_USER,
+            password=SFTP_PASS,
             base_path=base_path,
             host_key_policy=HostKeyPolicy.AUTO_ADD,
             connect_kwargs={"allow_agent": False, "look_for_keys": False},
@@ -115,9 +116,9 @@ def _remove_base_path(base_path: str) -> None:
         import paramiko
     except ImportError:
         return
-    transport = paramiko.Transport(("127.0.0.1", INFRA.sftp_docker_port))
+    transport = paramiko.Transport((SFTP_HOST, INFRA.sftp_docker_port))
     try:
-        transport.connect(username="benchuser", password="benchpass")
+        transport.connect(username=SFTP_USER, password=SFTP_PASS)
         sftp = paramiko.SFTPClient.from_transport(transport)
         if sftp is None:
             return

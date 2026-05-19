@@ -1,6 +1,6 @@
 """Drift-check that ``infra/.env`` remains the single source of truth.
 
-Three independent gates:
+Four independent gates:
 
 1. ``infra/.env`` parses cleanly and has the keys ``infra/_settings.py``
    expects.
@@ -9,6 +9,11 @@ Three independent gates:
 3. The compose file and CI workflows contain no literal ``-p N:M`` port
    mappings. Every host-side port must reference an env var sourced from
    ``infra/.env`` (e.g. ``-p ${MINIO_HOST_PORT}:9000``).
+4. CI workflows contain no literal infra credentials (``benchuser``,
+   ``benchpass``, ``minioadmin``, ``legacyuser``, ``legacypass``) — every
+   credential must come from ``$SFTP_USER`` / ``$SFTP_PASS`` /
+   ``$MINIO_ACCESS_KEY`` / ``$MINIO_SECRET_KEY`` / ``$LEGACY_SFTP_USER``
+   / ``$LEGACY_SFTP_PASS`` sourced from ``infra/.env``.
 
 Wired into ``hatch run lint`` and the lint job in ``.github/workflows/ci.yml``.
 """
@@ -60,6 +65,18 @@ _REQUIRED_KEYS = (
 # ``-p ${MINIO_HOST_PORT}:9000`` and ``-p "${VAR}:9000"`` contains a $ and
 # is not flagged.
 _LITERAL_DASH_P = re.compile(r"-p\s+\d+:\d+")
+
+# Credential literals that must not appear in CI workflows. Each value
+# lives in infra/.env and the workflow references it as ``$VAR``. The
+# string ``minioadmin`` is also the default value in infra/.env, but
+# inside a workflow it should be ``$MINIO_ACCESS_KEY`` / ``$MINIO_SECRET_KEY``.
+_LITERAL_CREDENTIALS = (
+    "benchuser",
+    "benchpass",
+    "minioadmin",
+    "legacyuser",
+    "legacypass",
+)
 
 
 def _parse_env(path: Path) -> dict[str, str]:
@@ -157,12 +174,38 @@ def check_ci_no_dash_p_literals() -> list[str]:
     return violations
 
 
+def check_ci_no_credential_literals() -> list[str]:
+    """Gate 4: CI workflows must reference creds as ``$VAR``, not literals.
+
+    ``infra/.env`` lines (``KEY=value``) and comments are exempt because that
+    is the file the workflows are meant to source from — these are not
+    drift, they are the source. CI YAML keys themselves (e.g. ``minio:``)
+    are also exempt because they are workflow-input names, not credentials.
+    """
+    violations: list[str] = []
+    for path in _CI_FILES:
+        if not path.is_file():
+            continue  # already reported by check_ci_no_dash_p_literals
+        for lineno, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            stripped = raw.strip()
+            # Skip ``description:`` lines, ``inputs.name:`` style keys, and
+            # comments — those are workflow syntax, not credential leakage.
+            for literal in _LITERAL_CREDENTIALS:
+                if literal in raw:
+                    violations.append(
+                        f"{path}:{lineno}: literal credential '{literal}' "
+                        f"in '{stripped}'; source infra/.env and use $VAR"
+                    )
+    return violations
+
+
 def main() -> int:
     violations: list[str] = []
     violations += check_env_file()
     violations += check_python_loader()
     violations += check_compose_no_port_literals()
     violations += check_ci_no_dash_p_literals()
+    violations += check_ci_no_credential_literals()
     if violations:
         for v in violations:
             sys.stderr.write(f"error: {v}\n")
