@@ -9915,7 +9915,7 @@ already covers 50/1k/10k listings and 1KB–100MB throughput.</p>
 <h3 id="phase-1-toxiproxy-expansion">Phase 1: Toxiproxy expansion<a class="headerlink" href="#phase-1-toxiproxy-expansion" title="Permanent link">&para;</a></h3>
 <p><strong>Goal:</strong> Enable latency simulation for all Docker backends.</p>
 <h4 id="1a-docker-infrastructure">1a. Docker infrastructure<a class="headerlink" href="#1a-docker-infrastructure" title="Permanent link">&para;</a></h4>
-<p>Update <code>benchmarks/infra/docker-compose.yml</code>:</p>
+<p>Update <code>infra/docker-compose.yml</code>:</p>
 <ul>
 <li>Add <code>minio</code> proxy: toxiproxy listens on 19000, forwards to minio:9000</li>
 <li>Add <code>sftp</code> proxy: toxiproxy listens on 12222, forwards to sftp:2222</li>

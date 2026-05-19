@@ -9683,7 +9683,7 @@ provider; capability-matrix expectations ("MinIO does not support X" as a
 design feature, not a bug); corporate-proxy snippets folded in; pin
 matrix for the <code>boto3</code> / <code>aiobotocore</code> / <code>s3fs</code> triangle; minimum IAM
 policy snippet for AWS S3 specifically.</p>
-<p><strong>Dogfood plan.</strong> MinIO via the existing <code>benchmarks/infra/</code> compose
+<p><strong>Dogfood plan.</strong> MinIO via the existing <code>infra/</code> compose
 file (already in CI). Cloudflare R2 and Backblaze B2 via fresh free-tier
 accounts; one bucket each, smoke-tested for read / write / list /
 multipart / delete. Wasabi, Ceph, Garage, SeaweedFS are NOT in scope as
@@ -9750,7 +9750,7 @@ divergences-from-prod table. The divergences table is the value-add —
 what fails on Azurite but works on real HNS, what moto accepts that real
 S3 rejects, the SFTPGo vs OpenSSH semantic differences we test against.</p>
 <p><strong>Dogfood plan.</strong> Already dogfooded — every emulator runs in CI for
-every PR. Extract compose snippets verbatim from <code>benchmarks/infra/</code>
+every PR. Extract compose snippets verbatim from <code>infra/</code>
 and <code>.github/workflows/</code>; populate the divergences table from observed
 quirks already recorded in CHANGELOG entries and traces. No new setup.</p>
 <p><strong>Verdict.</strong> Greenlit. Lowest-friction guide of the seven.</p>
