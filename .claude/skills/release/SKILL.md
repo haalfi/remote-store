@@ -44,7 +44,9 @@ a feedstock exists, only the bot-PR verification step remains.
 
 <Extract sections from [Unreleased] in CHANGELOG.md and condense by section,
  following the section order in sdd/CLAUDE-REFERENCE.md § Ripple-check table > Detailed checklist.
- For each section with content, use brief bullet points (1 line per item, bold topic prefix)>
+ For each section with content, use brief bullet points (1 line per item, bold topic prefix).
+ Prefer `**Topic**: explanation` or `**Topic** explanation.` over `**Topic** — explanation`.
+ Em dashes belong to true asides, not bullet separators (CLAUDE.md § Response style).>
 
 **Links:**
 - [Full Changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md#xyz---yyyy-mm-dd)
