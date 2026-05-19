@@ -397,29 +397,38 @@ any of these, redirect to vendor docs instead.
 ## 6. Code-side questions for maintainers (NOT guides)
 
 The external survey flagged three design or implementation matters, not
-documentation gaps. Surfacing here so they can be triaged separately. If
-any reaches commit-worthy priority, open a dedicated backlog item; do
-not let them block guide work.
+documentation gaps. All three have now been carved into the
+`S3 Client-Implementation Strategy` section of
+[BACKLOG.md](../BACKLOG.md): execute in order, ID-200 informs whether
+ID-202 needs to also cover error-mapping wins.
 
-1. **`s3fs` typed-error mapping fidelity.** Does `_S3Base`'s error
-   mapping preserve 403-vs-404 distinctions, SAS-expiry signals, and
-   partial-upload failure shapes? Specifically: does `s3fs` swallow
-   `botocore.ClientError` before it reaches `_ErrorMappingStream`? A
-   short audit would tell us whether §3.4 and §3.6 have the typed errors
-   they need.
+1. **`s3fs` typed-error mapping fidelity** → **ID-200**. Does
+   `_S3Base`'s error mapping preserve 403-vs-404 distinctions,
+   SAS-expiry signals, and partial-upload failure shapes? A short audit
+   driving five concrete scenarios (missing key, forbidden key, expired
+   token, mid-stream multipart abort, directory-marker ambiguity)
+   against a moto-backed `S3Backend`, recording target vs observed
+   typed error per row. If any row diverges, opens a BUG-NNN.
 
-2. **`S3Backend` default for `use_listings_cache`.** Inheriting the
-   `s3fs` default surprises `Store`-style readers with stale listings
-   (fsspec/filesystem_spec #324, #1423). Worth considering
-   `use_listings_cache=False` as our default with documented perf
-   trade-off, instead of doc-only mitigation in §3.1.
+2. **`S3Backend` default for `use_listings_cache`** → **ID-201**.
+   Inheriting the `s3fs` default surprises `Store`-style readers with
+   stale listings (fsspec/filesystem_spec #324, #1423). Spike measuring
+   `list_files` / `iter_children` latency with cache on vs off at
+   100 / 1 000 / 10 000 keys per prefix, plus staleness frequency in a
+   write-then-list loop. Three exit dispositions: flip default, keep
+   default with docs, or expose a first-class `Store.refresh()` API.
 
-3. **Third S3 lane (`s3-boto3` direct).** Three of the Tier-1 S3 pains
-   (boto3 / aiobotocore / s3fs pinning, 5 GB multipart restart,
-   listings-cache staleness) are *s3fs-specific* and would not exist on
-   a boto3-direct backend. A short RFC weighing the third-lane
-   maintenance cost against the cumulative s3fs pain footprint may be
-   worth its own ID.
+3. **Third S3 lane (`s3-boto3` direct)** → **ID-202**. Three of the
+   Tier-1 S3 pains (boto3 / aiobotocore / s3fs pinning, 5 GB multipart
+   restart, listings-cache staleness) are *s3fs-specific* and would not
+   exist on a boto3-direct backend. PoC `S3Boto3Backend` sharing
+   `_S3Base` where sensible, conformance-tested under moto, decided on
+   three axes (user value, maintenance cost, interop loss) with
+   ship / park / reject exit dispositions.
+
+These three IDs run independently of the guide-authoring work in §§ 3–5;
+their findings may inform the §3.1 and §3.2 guide content if landed
+before those guides ship.
 
 ## 7. Sequencing recommendation
 
