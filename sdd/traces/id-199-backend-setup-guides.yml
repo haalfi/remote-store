@@ -1,0 +1,82 @@
+id: ID-199
+title: "Research doc + backlog item for backend setup/config guides expansion"
+trigger: "Two existing backend guides (azure-hns-setup.md, sftp.md) emerged from real setup pain and proved valuable; user asked whether similar guides for other backends would retire comparable user pain, and what categories deserve them"
+source_items:
+  - ID-199
+audience:
+  - contributor.process
+discovery_followups:
+  - ID-200
+  - ID-201
+  - ID-202
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: "sdd/research/research-*.md defaults to dual with dest explanation/design/research/<slug>.md — no marker needed"
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "Item attribute line shape (spec/effort/audience); ID prefixes and next-ID procedure"
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: gate
+        extract: "DONE-max per prefix; combined with highest in-file ID (198) → next safe ID-199"
+      - file: docs-src/guides/backends/azure-hns-setup.md
+        section: "Prerequisites, Sign in"
+        read_type: reference
+        extract: "Existing setup-guide shape — Prerequisites → Setup → Verification → Out-of-scope — to mirror in proposal"
+      - file: docs-src/guides/backends/_nav.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Backend-guide nav surface for proposed-guide placement decisions"
+
+  - id: discover
+    name: Discover (pain mining)
+    steps:
+      - file: sdd/traces/
+        section: "(directory browse)"
+        read_type: reference
+        extract: "Subagent surveyed traces for backend-pain evidence; cross-validated with CHANGELOG, BACKLOG, BACKLOG-DONE, and PR history"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: "v0.24.1 BUG-185 (s3fs path-style + MinIO), v0.25.0 Azure HNS cluster, SFTP legacy/paramiko drift — three highest-density pain themes"
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: reference
+        extract: "Open items adjacent to backend-setup pain (ID-118b Azure TLS Phase 2 iceboxed; ID-181 per-backend ssh-rsa opt-in)"
+
+  - id: propose
+    name: Propose plan
+    steps:
+      - file: sdd/research/research-feature-discoverability.md
+        section: "1, 2"
+        read_type: reference
+        extract: "Existing research-doc shape: Item ID / Date / Status header, then context, evidence, decision"
+      - file: sdd/research/research-doc-content-longevity.md
+        section: "Decision"
+        read_type: reference
+        extract: "Advisory-decision framing for research that proposes rules/guides rather than implementing them"
+      - file: sdd/research/research-store-config.md
+        section: "1 Executive Summary"
+        read_type: reference
+        extract: "Tiered-recommendation table shape — copied for the seven-guide candidate matrix"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item creation"
+        read_type: verify
+        extract: "Backlog edit + research doc together; backlogid.json regenerates on next hatch run gen-backlogid (DONE-max only — ID-199 not yet reflected)"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: "hatch run lint covers ruff, check_docs_framework (G-01..G-07 for the new research doc), and gen_backlogid.py --check"

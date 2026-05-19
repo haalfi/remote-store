@@ -315,6 +315,116 @@ stabilised page.
 
 ---
 
+## S3 Client-Implementation Strategy
+
+Three s3fs-inherited pain points (dep-conflict cascade, 5 GB multipart cliff,
+listing-cache staleness) would not exist on a boto3-direct backend. Two
+investigations and one PoC determine whether the answer is "live with it
+and document," "tweak s3fs defaults," or "ship a third S3 lane."
+Execute in order: ID-200 informs whether ID-202 needs to also cover
+error-mapping wins. All three were surfaced as code-side flags in
+[research](research/research-backend-setup-guides.md) § 6 and carved
+out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
+
+- [ ] **ID-200 — Audit s3fs error-mapping fidelity in `_S3Base`**
+  spec: — · effort: S · audience: library.maintainer
+  Establish whether the s3fs → `_ErrorMappingStream` boundary in
+  `src/remote_store/backends/_s3_base.py` preserves enough signal from
+  `botocore.ClientError` to meet our typed-error contract, or whether
+  s3fs swallows / collapses cases the docs claim we surface.
+  Concretely, drive these scenarios against a moto-backed `S3Backend`
+  and record which `RemoteStoreError` subclass is raised:
+  (a) `GetObject` on a missing key → `NotFound`.
+  (b) `GetObject` on a forbidden key (403) → `PermissionDenied`, not
+      `NotFound`. This is the one most likely lost across s3fs.
+  (c) `PutObject` with an expired/invalid session token →
+      `BackendUnavailable` or `PermissionDenied`, not silent success.
+  (d) Multipart upload abort mid-stream (e.g. connection reset during
+      `write_atomic` on a >5 MB file) → typed error, not a partial
+      object left in the bucket.
+  (e) `HeadObject` on a path whose parent is a key with the same name
+      (the directory-marker ambiguity) → `InvalidPath` or `NotFound`,
+      not a confused mix.
+  Output: a short findings note pinned in `sdd/research/`, with one
+  row per scenario (target typed error, observed typed error, the
+  underlying s3fs/botocore exception). If any row diverges, open a
+  BUG-NNN; otherwise close ID-200 with the note as evidence.
+  No spec change; no new tests in this item (failing tests come from
+  the BUGs it spawns, per the bug-fix protocol).
+
+- [ ] **ID-201 — Spike: default `S3Backend` to `use_listings_cache=False`?**
+  spec: — · effort: S · audience: user.api
+  `s3fs` keeps a directory-listing cache whose invalidation is
+  undocumented upstream (fsspec/filesystem_spec #324). For `Store`-shape
+  workloads this surfaces as stale `list_files` / `iter_children`
+  results after writes from another process. Spike whether disabling
+  the cache by default is the right trade.
+  Measure on a moto bucket and on a real S3 bucket if creds available:
+  (1) `list_files` latency with cache on vs off at 100 / 1 000 /
+      10 000 keys per prefix, hot vs cold;
+  (2) `iter_children` latency at the same sizes;
+  (3) frequency of stale results in a write-then-list loop across two
+      `Store` instances pointed at the same bucket.
+  Output one of three recommendations:
+  (a) flip default to `use_listings_cache=False`, document the perf
+      delta, expose a `client_options` override for users who need the
+      cache;
+  (b) keep current default, add a docs section in
+      `guides/backends/s3.md` explaining the cache and the override;
+  (c) expose a first-class `Store`-level `refresh()` / invalidation
+      API if the measurements show the cache is too valuable to drop
+      but staleness is too costly to leave silent.
+  No code change in this item beyond throwaway measurement scripts;
+  the chosen path becomes a new BK-NNN.
+
+- [ ] **ID-202 — PoC: `s3-boto3` backend lane alongside `s3` and `s3-pyarrow`**
+  spec: — · effort: L · audience: user.api
+  Three of the s3fs-inherited pains we cannot fix from our side are
+  (1) the aiobotocore-driven dep-pin cascade against user-installed
+  `boto3`, (2) the >5 GB multipart-restart bug (s3fs-fuse #1936), and
+  (3) the fsspec listing-cache staleness handled by ID-201. A boto3-
+  direct backend has none of these. Build a PoC to decide whether the
+  maintenance cost justifies a third S3 lane.
+  Scope of the PoC:
+  - New backend class `S3Boto3Backend` under
+    `src/remote_store/backends/_s3_boto3.py`, sharing `_S3Base` where
+    sensible (path normalisation, endpoint URL handling, TLS bundle
+    resolution) and diverging where s3fs-specific assumptions leak
+    (filesystem-shape walks, cache invalidation calls).
+  - New extra `s3-boto3 = ["boto3>=1.34"]`, no `aiobotocore`.
+  - Capability parity with `S3Backend` (all caps except
+    `ATOMIC_MOVE`), verified by running the conformance suite against
+    `S3Boto3Backend` under moto.
+  - Multipart upload via `boto3.s3.transfer.TransferConfig`, with an
+    explicit smoke test at 5 GB + 1 byte to prove the cliff is gone.
+    Run only in `bench` / `live` gates, not in `hatch run all`.
+  - Typed-error mapping built from `ClientError.response['Error']
+    ['Code']` directly, citing the findings from ID-200.
+  Decide on three axes and record the answer in
+  `sdd/research/`:
+  (a) **User value**: do the three retired pains justify a second
+      install path? Net new users gained vs choice-paralysis cost.
+  (b) **Maintenance cost**: lines of code in `_s3_boto3.py` beyond
+      what `_S3Base` factors out, plus test matrix expansion under
+      `hatch run test` and conformance runtime.
+  (c) **Interop loss**: which downstream extensions
+      (`ext.arrow`, `ext.parquet`, `ext.dagster`) break or degrade
+      without the fsspec-shaped backend underneath, and whether they
+      can be bridged.
+  Three exit dispositions:
+  - **Ship**: promote PoC to `BK-NNN` for hardening, docs, and
+    inclusion in `FEATURES.md`. Mark `s3` and `s3-boto3` as peers,
+    not default-and-alternate.
+  - **Park**: keep PoC branch alive but do not merge; revisit if
+    s3fs upstream stalls on the 5 GB / listing-cache issues.
+  - **Reject**: archive findings as the rationale for not splitting
+    the S3 surface; document the boto3 escape hatch via
+    `Store.unwrap()` and `s3-pyarrow` instead.
+  Out of scope: an async variant (`AsyncS3Boto3Backend`) — folded
+  into a follow-up if ID-202 ships.
+
+---
+
 ## Lint / CI Completeness
 
 
@@ -412,6 +522,59 @@ stabilised page.
   framing and structure against `docs-src/`, note strong angles and coverage gaps,
   then assess whether our source docs already cover them or could adopt the same
   framing. Findings feed the next docs-improvement session or ID-161 content checklist.
+
+- [ ] **ID-199 — Backend setup & configuration guides expansion**
+  spec: — · effort: L · audience: user.site, library.maintainer
+  Expand the backend-related guide set in `docs-src/guides/` based on user
+  pain mined from two sources: in-repo signal (traces, BACKLOG, CHANGELOG,
+  PRs) and an external survey of GitHub issues across `boto3`/`s3fs`/
+  `azure-storage-blob`/`paramiko`/`fsspec`, Stack Overflow, Reddit, and
+  vendor forums. Seven candidate guides identified; full pain mapping,
+  scope boundaries, sequencing, and code-side flags are in
+  [research](research/research-backend-setup-guides.md). The two existing
+  guides (`azure-hns-setup.md`, `sftp.md`) are the proof-of-value pattern.
+
+  **Authoring contract (binding — see research § 2.2):** every guide
+  under this initiative must be self-validated (maintainer-walked
+  end-to-end against a real target), practicable (copy-pasteable steps),
+  proven (dogfood trace or artifact in the PR), down to the point
+  (recipe + outcome + caveat, no marketing), and link only reliable
+  external references (vendor docs, RFCs, library docs — not Stack
+  Overflow, Reddit, blogs, or GitHub-issue threads). Candidates that
+  cannot meet the contract are deferred or scope-reduced, never
+  weakened to fit.
+
+  **Tier-1 standalone guides (per-guide PR + dedicated backlog ID when
+  each is picked up):**
+  1. S3-compatible providers cookbook — greenlit; AWS S3 + MinIO + R2 + B2 tested scope
+  2. Large-object & streaming tuning — **split-ship**: SFTP half greenlit; S3 5 GB cliff deferred until AWS dogfood budget
+  3. Local-dev emulators — greenlit; already dogfooded via CI
+  4. SFTP reliability — greenlit
+  5. Azure keyless auth & private endpoints — **conditional** on Azure subscription with elevated RBAC + vNet rights
+  6. Credential & secret rotation — greenlit per-backend; Azure half tied to #5
+  7. SQLite operational notes — greenlit; sidebar in `sql-blob.md`
+
+  **Tier-2 sidebars** for `s3.md`, `sftp.md`, `azure.md`,
+  `azure-hns-setup.md` — see research doc § 4. Fold into adjacent
+  Tier-1 PRs where scope overlaps.
+
+  **Out of scope (Tier-3):** AWS root-email governance, MinIO operator
+  UX, `s3fs-fuse` FUSE-only concerns, generic DB pool tuning,
+  hypothetical Azure-Blob-like self-hosts. Redirect to vendor docs.
+
+  **Three code-side flags surfaced** (NOT guide work) — see research doc
+  § 6: `s3fs` typed-error mapping fidelity; `S3Backend`
+  `use_listings_cache` default; third S3 lane (`s3-boto3` direct)
+  viability. Now tracked as **ID-200 / ID-201 / ID-202** in the
+  S3 Client-Implementation Strategy section.
+
+  **Sequencing (dogfood-cost ordered, see research § 7):**
+  Phase 1 (zero new setup) = §3.3 + §3.7 + §3.4;
+  Phase 2 (free-tier accounts) = §3.1 + §3.6 non-Azure halves + §3.2 SFTP half;
+  Phase 3 (budgeted dogfood — gated on the access decision in research § 8 Q5) = §3.2 S3 half + §3.5 + §3.6 Azure half;
+  Tier-2 sidebars mop up alongside Phase 1/2.
+
+  Effort `L` reflects the parent scope; each individual guide is M-sized.
 
 ---
 
