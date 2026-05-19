@@ -180,11 +180,10 @@ RS_TEST_LIVE_HNS_CONTAINER=<FILESYSTEM_NAME>
 `tests/backends/azure/test_live_hns.py` carries the `live` pytest marker
 and exercises sync HNS semantics that the conformance suite against
 `azure_live` cannot express: directory-blob `hdi_isfolder` probes,
-WriteResult etag normalisation cross-check, the user-metadata
-survives-rename guarantee, the `write_atomic` streaming guard against
-BUG-202, the `get_folder_info("")` HNS root carve-out, and the
-`_ensure_hns()` exists fallback. `live`-marked tests are excluded by
-default `addopts` and have to be opted into explicitly:
+WriteResult etag normalisation cross-check, the `write_atomic` streaming
+guard against BUG-202, the `get_folder_info("")` HNS root carve-out,
+and the `_ensure_hns()` exists fallback. `live`-marked tests are
+excluded by default `addopts` and have to be opted into explicitly:
 
 ```bash
 hatch run pytest -m live tests/backends/azure/test_live_hns.py

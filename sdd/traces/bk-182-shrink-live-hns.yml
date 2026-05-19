@@ -8,12 +8,14 @@ source_items:
   - BK-181
 audience:
   - infra.test
-discovery_followups:
+discovery_followups: []
+co_shipped_items:
   - BK-228
   - BK-229
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
   - docs-src/guides/backends/azure-hns-setup.md
   - tests/backends/azure/aio/test_config.py
   - tests/backends/azure/aio/test_live.py
@@ -58,15 +60,15 @@ phases:
       - file: tests/backends/conformance/test_atomic.py
         section: "test_size_matches_written_bytes_for_streaming_input"
         read_type: reference
-        extract: "Production dispatches on isinstance(content, bytes); BytesIO routes through the same DFS append branch in both suites. Conformance asserts only WriteResult.size; sync TestAzureLiveHnsWriteAtomicStreaming adds post-rename read-back byte-equality and pins wire shape via a single-chunk payload — stays KEEP."
+        extract: "Production dispatches on isinstance(content, bytes); BytesIO routes through the same DFS append branch in both suites. Conformance asserts only WriteResult.size; sync TestAzureLiveHnsWriteAtomicStreaming adds post-rename read-back byte-equality, which catches a miscomputed-position regression that would leave WriteResult.size right with wrong bytes on the wire — stays KEEP."
 
   - id: implement
     name: Shrink suites + dedupe validators
     steps:
       - file: tests/backends/azure/test_live_hns.py
-        section: "TestAzureLiveHnsContentRoundTrip, ...Move, ...OpenAtomicSuccess, ...NotFound, ...Exists (2 of 3), ...ListFiles, ...IterChildren, ...Delete, ...Copy, ...IsFolderIsFile.test_is_file_true_and_is_folder_false_on_hns_file"
+        section: "TestAzureLiveHnsContentRoundTrip, ...Move, ...OpenAtomicSuccess, ...NotFound, ...Exists (2 of 3), ...ListFiles, ...IterChildren, ...Delete, ...Copy, ...IsFolderIsFile.test_is_file_true_and_is_folder_false_on_hns_file, ...MetadataSurvivesRename (round 4 — overlaps conformance test_metadata_round_trips_via_get_file_info)"
         read_type: gate
-        extract: "Delete 19 cases / 7 classes; keep 12 cases / 9 classes. Drop AlreadyExists, NotFound, FileInfo imports."
+        extract: "Delete 20 cases / 8 classes; keep 12 cases / 8 classes. Drop AlreadyExists, NotFound, FileInfo imports."
       - file: tests/backends/azure/aio/test_live_hns.py
         section: "TestAsyncLiveHnsMetadata, ...ContentRoundTrip, ...Move, ...IsFolderIsFile.test_is_file_true_and_is_folder_false_on_hns_file, ...NotFound, ...Exists (2 of 3), ...ListFiles, ...IterChildren, ...Delete, ...Copy"
         read_type: gate
@@ -75,6 +77,10 @@ phases:
         section: "require_azure_live_connection_string"
         read_type: reference
         extract: "Dedupe inline _require_live_env in both test files onto the shared helper + a small RS_TEST_LIVE_HNS_CONTAINER lookup."
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestAsyncIterChildren, TestAsyncWriteAtomic"
+        read_type: gate
+        extract: "Round-4 review flagged a coverage regression window between BK-182 landing and BK-228/BK-229 landing. Closed both in this PR (ship-complete): TestAsyncIterChildren mirrors the sync TestBackendIterChildren in test_listing.py; TestAsyncWriteAtomic mirrors TestBackendWriteAtomic in test_atomic.py. Verified green against memory_async_native, memory_async_adapted, local_async_adapted, and azure_live_async (real ADLS Gen2). azure_replay_async skips pending cassette refresh per TEST-009."
 
   - id: ripple
     name: Ripple updates

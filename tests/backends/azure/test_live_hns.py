@@ -32,21 +32,17 @@ What stays here are cases the conformance suite cannot express:
   two SDK paths only surfaces against a real account
   (``TestAzureLiveHnsWriteResult``, AZ-034).
 
-* **User metadata survives ADLS Gen2 ``rename_file``.** WR-012 echo is
-  by-construction; WR-013 round-trip after the temp+rename commit is the
-  service-side property only a real account can confirm
-  (``TestAzureLiveHnsMetadataSurvivesRename``).
-
 * **``write_atomic`` streaming guard against BUG-202.** The DFS append
   protocol (``create_file`` → ``append_data`` → ``flush_data``) is the
   fix for the ``MissingRequiredQueryParameter`` regression on HNS.
   Production dispatches on ``isinstance(content, bytes)``, so both the
   conformance streaming test and this kept test route a ``BytesIO``
-  payload through the same DFS append branch; what this test adds is a
-  post-rename read-back byte-equality assertion and a single-chunk
-  payload that pins the wire shape against real HNS. The multi-chunk
-  offset arithmetic lives in monkeypatched mock tests under
-  ``test_config.py`` (``TestAzureLiveHnsWriteAtomicStreaming``).
+  payload through the same DFS append branch; what this test adds is
+  post-rename read-back byte-equality, which catches the failure mode
+  where a miscomputed ``position`` lets ``WriteResult.size`` look right
+  while the uploaded bytes are wrong. The multi-chunk offset arithmetic
+  lives in monkeypatched mock tests under ``test_config.py``
+  (``TestAzureLiveHnsWriteAtomicStreaming``).
 
 * **``get_folder_info("")`` HNS root carve-out.** Real ADLS Gen2 rejects
   ``get_directory_client("")``; the production code skips the per-path
@@ -59,7 +55,7 @@ What stays here are cases the conformance suite cannot express:
 
 Spec: TEST-003 (per-backend deviation tier); BE-005, BE-008, BE-010,
 BE-013, BE-014, BE-015, BE-016, BE-017, BE-021, SAW-001, WR-001a,
-WR-012, WR-013, AZ-024, AZ-034.
+AZ-024, AZ-034.
 
 Gating
 ------
@@ -244,55 +240,6 @@ class TestAzureLiveHnsDirectoryGuard:
         backend, dirpath = live_hns_backend
         with pytest.raises(InvalidPath, match="exists as a directory"):
             operation(backend, dirpath)
-
-
-# ---------------------------------------------------------------------------
-# WR-013 — user metadata survives the HNS atomic-rename commit
-# ---------------------------------------------------------------------------
-
-
-class TestAzureLiveHnsMetadataSurvivesRename:
-    """``write_atomic`` user metadata must survive ADLS Gen2's atomic rename.
-
-    Companion to ``test_write_atomic_hns_metadata_preserved`` in
-    ``tests.aio.test_async_azure``, which mocks ``upload_data`` and
-    asserts the ``metadata=`` kwarg reaches it on the temp file. The
-    mocks cannot answer the harder question: *does the subsequent
-    ``rename_file`` preserve that metadata on the renamed final file?*
-    That is a service-side semantics property of ADLS Gen2 and only a
-    real account can confirm it.
-    """
-
-    @pytest.mark.spec("WR-012", "WR-013", "BE-010")
-    def test_write_atomic_metadata_survives_rename(
-        self,
-        live_hns_backend: tuple[AzureBackend, str],
-    ) -> None:
-        backend, dirpath = live_hns_backend
-        # Write a sibling file under the session prefix (alongside the
-        # directory blob the guard tests target). A unique suffix keeps
-        # repeated runs from colliding even though the prefix is shared.
-        prefix = dirpath.rsplit("/", 1)[0]
-        path = f"{prefix}/meta-{uuid.uuid4().hex[:8]}.txt"
-        metadata = {"env": "prod", "owner": "team-a"}
-
-        result = backend.write_atomic(path, _PAYLOAD, metadata=metadata)
-
-        # WR-012: WriteResult.metadata must echo the caller's mapping exactly —
-        # the backend must not wait for a round-trip to populate this field.
-        assert result.metadata == metadata
-        # WR-001a: size and source are always populated on the HNS write_atomic path.
-        assert result.size == len(_PAYLOAD)
-        assert result.source == "native"
-
-        info = backend.get_file_info(path)
-        assert info.metadata is not None, "expected metadata round-trip via get_file_info"
-        # Compare key-by-key rather than equality: ADLS Gen2 may surface
-        # internal markers (e.g. hdi_isfolder) alongside user metadata,
-        # and the production code is allowed to strip them. The contract
-        # is that user-supplied keys round-trip with their values.
-        assert info.metadata.get("env") == "prod"
-        assert info.metadata.get("owner") == "team-a"
 
 
 # ---------------------------------------------------------------------------
@@ -592,19 +539,24 @@ class TestAzureLiveHnsWriteAtomicStreaming:
         successfully, ``flush_data(position)`` carries the correct byte count,
         and the post-rename read-back matches the original payload. Pre-fix
         this raised ``MissingRequiredQueryParameter``. Differentiator vs the
-        conformance streaming test: that test asserts only ``WriteResult.size``;
-        this one pins the wire shape with a known single-chunk payload and
-        asserts post-rename body equality on a real account.
+        conformance streaming test: that test asserts only
+        ``WriteResult.size``; this one asserts post-rename body equality on
+        a real account, which catches the failure mode where a miscomputed
+        ``position`` lets ``result.size`` look right while the uploaded
+        bytes are wrong.
         """
         import io  # noqa: PLC0415 -- intentional late import
 
         backend, dirpath = live_hns_backend
         target = f"{dirpath}/streaming-{uuid.uuid4().hex[:8]}.bin"
         # 1152 bytes: single chunk at the default 1 MiB ``_AZURE_BLOCK_SIZE``.
-        # This live test pins the wire shape against real ADLS Gen2; the
-        # multi-chunk offset arithmetic is covered by the mock test
+        # The multi-chunk offset arithmetic is covered by the mock test
         # ``test_write_atomic_hns_streaming_uses_dfs_append_protocol`` in
-        # ``test_config.py`` (which monkeypatches the block size to 50).
+        # ``test_config.py`` (which monkeypatches the block size to 50);
+        # this live test asserts post-rename body equality against real
+        # ADLS Gen2 to guard against a miscomputed-position regression
+        # that would let ``result.size`` look right with wrong bytes on
+        # the wire.
         payload = b"streaming-payload-" * 64
         try:
             result = backend.write_atomic(target, io.BytesIO(payload), overwrite=True)

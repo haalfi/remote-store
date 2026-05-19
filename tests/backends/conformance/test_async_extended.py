@@ -32,6 +32,7 @@ from remote_store._errors import (
     NotFound,
     RemoteStoreError,
 )
+from remote_store._models import FileInfo, FolderEntry
 from tests.backends.conformance._helpers import _fixture_record
 
 if TYPE_CHECKING:
@@ -430,6 +431,50 @@ class TestListFoldersCompleteness:
         assert {f.name for f in folders} == {"s1", "s2", "s3"}
 
 
+class TestAsyncIterChildren:
+    """ASYNC-024 (mirrors ITER-004 / ITER-005): iter_children combined listing."""
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_iter_children(self, async_backend: AsyncBackend) -> None:
+        _require(async_backend, Capability.WRITE)
+        await _seed(async_backend, {"ic/a.txt": b"a", "ic/b.txt": b"b", "ic/sub/c.txt": b"c"})
+        children = [c async for c in async_backend.iter_children("ic")]
+        files = [c for c in children if isinstance(c, FileInfo)]
+        folders = [c for c in children if isinstance(c, FolderEntry)]
+        assert {f.name for f in files} == {"a.txt", "b.txt"}
+        assert {f.name for f in folders} == {"sub"}
+        assert {str(f.path) for f in folders} == {"ic/sub"}
+
+    @pytest.mark.spec("ASYNC-024")
+    async def test_iter_children_empty_or_nonexistent(self, async_backend: AsyncBackend) -> None:
+        children = [c async for c in async_backend.iter_children("ic_nonexistent")]
+        assert children == []
+
+    @pytest.mark.spec("ASYNC-024")
+    @pytest.mark.parametrize(
+        ("prefix", "file_path", "expect_files", "expect_folders"),
+        [
+            pytest.param("icf", "icf/x.txt", {"x.txt"}, set(), id="only_files"),
+            pytest.param("ico", "ico/sub/y.txt", set(), {"sub"}, id="only_folders"),
+        ],
+    )
+    async def test_iter_children_single_type(
+        self,
+        async_backend: AsyncBackend,
+        prefix: str,
+        file_path: str,
+        expect_files: set[str],
+        expect_folders: set[str],
+    ) -> None:
+        _require(async_backend, Capability.WRITE)
+        await async_backend.write(file_path, b"x")
+        children = [c async for c in async_backend.iter_children(prefix)]
+        files = [c for c in children if isinstance(c, FileInfo)]
+        folders = [c for c in children if isinstance(c, FolderEntry)]
+        assert {f.name for f in files} == expect_files
+        assert {f.name for f in folders} == expect_folders
+
+
 # ===========================================================================
 # §3  Move/Copy: ASYNC-018 / ASYNC-019 postconditions
 # ===========================================================================
@@ -607,6 +652,30 @@ class TestWriteReadRoundTrip:
         _require(async_backend, Capability.WRITE)
         await async_backend.write("ec_rt.bin", content, overwrite=True)
         assert await async_backend.read_bytes("ec_rt.bin") == content
+
+
+class TestAsyncWriteAtomic:
+    """ASYNC-010 / WR-001a (mirrors BE-010): atomic write happy-path round-trip."""
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_creates_file(self, async_backend: AsyncBackend) -> None:
+        _require(async_backend, Capability.ATOMIC_WRITE)
+        await async_backend.write_atomic("async_atomic.txt", b"atomic content")
+        assert await async_backend.read_bytes("async_atomic.txt") == b"atomic content"
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_overwrite(self, async_backend: AsyncBackend) -> None:
+        _require(async_backend, Capability.ATOMIC_WRITE)
+        await async_backend.write_atomic("async_atomic2.txt", b"first")
+        await async_backend.write_atomic("async_atomic2.txt", b"second", overwrite=True)
+        assert await async_backend.read_bytes("async_atomic2.txt") == b"second"
+
+    @pytest.mark.spec("ASYNC-010")
+    async def test_write_atomic_already_exists(self, async_backend: AsyncBackend) -> None:
+        _require(async_backend, Capability.ATOMIC_WRITE)
+        await async_backend.write_atomic("async_atomic3.txt", b"first")
+        with pytest.raises(AlreadyExists):
+            await async_backend.write_atomic("async_atomic3.txt", b"second", overwrite=False)
 
 
 # ===========================================================================
