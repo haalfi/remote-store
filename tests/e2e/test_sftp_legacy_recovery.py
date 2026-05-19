@@ -27,14 +27,14 @@ import pytest
 
 paramiko = pytest.importorskip("paramiko", reason="paramiko not installed")
 
-from remote_store.backends._sftp import SFTPUtils  # noqa: E402
-from tests.e2e.conftest import (  # noqa: E402
+from infra._settings import (  # noqa: E402
     LEGACY_SFTP_HOST,
     LEGACY_SFTP_PASS,
     LEGACY_SFTP_PORT,
     LEGACY_SFTP_USER,
-    legacy_sftp_skip,
 )
+from remote_store.backends._sftp import SFTPUtils  # noqa: E402
+from tests.e2e.conftest import legacy_sftp_skip  # noqa: E402
 
 _PARAMIKO_MAJOR = int(paramiko.__version__.split(".", 1)[0])
 _SSH_RSA_IN_DEFAULTS = _PARAMIKO_MAJOR < 5
