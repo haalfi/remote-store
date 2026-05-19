@@ -58,6 +58,12 @@ services:
       retries: 5
 
   toxiproxy:
+    # The container-side ports below (10001 / 19000 / 12222) must match
+    # the ``listen`` values in ``toxiproxy.json``. Toxiproxy reads its
+    # config at startup and does not perform env-var substitution, so the
+    # listen ports cannot themselves come from infra/.env. The host-side
+    # ports (``${TOXIPROXY_*_PORT}``) are overridable; the container side
+    # is intentionally fixed alongside ``toxiproxy.json``.
     image: ghcr.io/shopify/toxiproxy:2.12.0
     ports:
       - "${TOXIPROXY_AZURITE_PORT}:10001"   # proxied Azurite blob endpoint

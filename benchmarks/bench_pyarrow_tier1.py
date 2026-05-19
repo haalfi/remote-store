@@ -18,23 +18,34 @@ import argparse
 import contextlib
 import socket
 import statistics
+import sys
 import tempfile
 import time
 from pathlib import Path
 from typing import Any
 
-import pyarrow.fs as pafs  # type: ignore[import-untyped]
+# Make ``infra._settings`` importable under the documented standalone
+# invocation (``python benchmarks/bench_pyarrow_tier1.py``). Python
+# prepends the script's directory (``benchmarks/``), not the repo root,
+# to ``sys.path`` at script launch, so the top-level ``infra/`` package
+# is otherwise invisible. Idempotent under ``hatch run`` and ``python -m``,
+# both of which already have the repo root on the path.
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
-from infra._settings import (
+import pyarrow.fs as pafs  # type: ignore[import-untyped]  # noqa: E402
+
+from infra._settings import (  # noqa: E402
     MINIO_ACCESS_KEY,
     MINIO_ENDPOINT,
     MINIO_HOST,
     MINIO_PORT,
     MINIO_SECRET_KEY,
 )
-from remote_store import Store
-from remote_store.backends._local import LocalBackend
-from remote_store.ext.arrow import StoreFileSystemHandler, pyarrow_fs
+from remote_store import Store  # noqa: E402
+from remote_store.backends._local import LocalBackend  # noqa: E402
+from remote_store.ext.arrow import StoreFileSystemHandler, pyarrow_fs  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers

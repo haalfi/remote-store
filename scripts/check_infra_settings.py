@@ -177,10 +177,9 @@ def check_ci_no_dash_p_literals() -> list[str]:
 def check_ci_no_credential_literals() -> list[str]:
     """Gate 4: CI workflows must reference creds as ``$VAR``, not literals.
 
-    ``infra/.env`` lines (``KEY=value``) and comments are exempt because that
-    is the file the workflows are meant to source from — these are not
-    drift, they are the source. CI YAML keys themselves (e.g. ``minio:``)
-    are also exempt because they are workflow-input names, not credentials.
+    Pure YAML comment lines (``# ...``) are exempt because a comment
+    mentioning a credential string by name is documentation, not drift.
+    Every other line is scanned for the literal set.
     """
     violations: list[str] = []
     for path in _CI_FILES:
@@ -188,8 +187,8 @@ def check_ci_no_credential_literals() -> list[str]:
             continue  # already reported by check_ci_no_dash_p_literals
         for lineno, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             stripped = raw.strip()
-            # Skip ``description:`` lines, ``inputs.name:`` style keys, and
-            # comments — those are workflow syntax, not credential leakage.
+            if stripped.startswith("#"):
+                continue
             for literal in _LITERAL_CREDENTIALS:
                 if literal in raw:
                     violations.append(

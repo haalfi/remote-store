@@ -7,6 +7,11 @@ audience:
   - infra.test
   - contributor.tooling
 expected_ripples:
+  # Anticipated dual-wire targets for any new scripts/check_*.py per
+  # memory feedback_check_scripts_dual_wire.
+  - pyproject.toml
+  - .github/workflows/ci.yml
+  # Backlog ID index regen after BACKLOG/BACKLOG-DONE edits.
   - sdd/backlogid.json
 surprising_ripples:
   - tests/backends/fixtures/_live_env.py
