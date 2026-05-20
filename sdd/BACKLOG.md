@@ -82,10 +82,12 @@ none of which is "run a second backend and diff the output":
 |---|---|---|
 | 0 — keystone | ID-206 | Traceability gate; its coverage matrix is the worklist for the (T) backfill |
 | 0 — contract (C) | ID-189, ID-190, BK-196 | Independent Dafny changes; each re-verifies the refinement |
-| 0 — oracle helper | ID-183 | Small; property-based-test support only |
+| 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
 | 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
 | 1 — test backfill (T) | ID-185, BK-195 | Conformance gaps for already-verified clauses |
-| 1 — property-based (O) | ID-187 | Needs ID-183 |
+
+Items stay granular for tracking, but a whole wave row may ship as one
+PR where its items share a file or proof.
 
 - [ ] **ID-206 — Mechanical spec ↔ Dafny ↔ test traceability gate**
   spec: — · effort: M · audience: infra.test, platform.tooling
@@ -106,35 +108,6 @@ none of which is "run a second backend and diff the output":
   immediately above each `ensures`) across `BackendContract.dfy`,
   `DepthCounting.dfy`, and `ResourceSafety.dfy`. The matrix output is the
   worklist for every (T) item below; run it first. No spec change.
-
-- [ ] **ID-183 — Oracle ground-truth helper for property-based tests**
-  spec: — · effort: S · audience: infra.test
-  The compiled oracle already certifies every deterministic conformance
-  test as a parametrized fixture (benefit 2 above), so a helper that
-  re-runs the oracle alongside the target inside a test adds nothing. The
-  one place the oracle must produce *values* is property-based testing,
-  where inputs are random and the expected value cannot be hardcoded. Add
-  a small helper in `tests/backends/dafny/`:
-  (1) `build_oracle(tree: dict[str, bytes]) -> DafnyOracleBackend`: a
-  fresh oracle seeded from the test-declared tree (the `dict[str, bytes]`
-  shape `conformance/_helpers.py::_seed` already takes). Seed from the
-  test's declared intent, never by enumerating the live target:
-  re-deriving the seed through the operation under test (`list_files`)
-  would let a truncating backend seed a truncated oracle and mask its
-  own bug.
-  (2) a comparator over the deterministic fields only (`path`, `name`,
-  `size`, `file_count`, `total_size`) that materializes iterators to
-  order-independent sets, excludes volatile fields (`modified_at`,
-  `etag`, `version_id`, `last_modified`, `source`, `digest`), and emits a
-  structured diff on mismatch.
-  (3) a seeded-break self-test (one known match, one known mismatch) so
-  the comparator cannot pass vacuously, per the Safe/Unsafe-pair
-  discipline in `sdd/formal/README.md`.
-  Sole consumer: ID-187. While here, fix the stale paths in the formal
-  README's "Compiled oracle" section (`tests/backends/dafny_oracle.py`,
-  `test_conformance.py`); the adapter is at
-  `tests/backends/dafny/_helpers.py`, the suite at
-  `tests/backends/conformance/`. No spec change.
 
 - [ ] **ID-184 — Listing traversability: prove the contract, then enforce it**
   spec: BE-008, BE-014, BE-015 · effort: M · audience: infra.test
@@ -224,18 +197,36 @@ none of which is "run a second backend and diff the output":
 
 - [ ] **ID-187 — Property-based aggregate verification for `GetFolderInfo`**
   spec: BE-017, ID-134 · effort: M · audience: infra.test
-  An (O) item. `TestGetFolderInfoAggregates` spot-checks `file_count` /
-  `total_size` against two hardcoded trees; those tests are already
-  certified by the oracle-as-fixture. The real gap is coverage breadth:
-  deterministic fixtures cannot reach the off-by-one paths in recursive
-  `ChildFiles` / `SumSizes`. Add a `hypothesis` test that generates
-  random file trees (nesting depth 0–4, file count 1–20, size 1–10000
-  bytes), seeds both the Python `MemoryBackend` and a Dafny oracle from
-  the same generated tree (ID-183's `build_oracle`), and asserts
-  `file_count` and `total_size` agree. This is where the oracle does
-  irreplaceable work: the expected aggregate cannot be hardcoded, and the
-  oracle's `get_folder_info` is the verified `file_count == |ChildFiles|`
-  / `total_size == SumSizes` postcondition. Depends on ID-183.
+  An (O) item, and the one place the oracle must produce *values* rather
+  than certify a fixed-value test. `TestGetFolderInfoAggregates`
+  spot-checks `file_count` / `total_size` against two hardcoded trees;
+  those tests are already certified by the oracle-as-fixture. The real
+  gap is coverage breadth: deterministic fixtures cannot reach the
+  off-by-one paths in recursive `ChildFiles` / `SumSizes`. Add a
+  `hypothesis` test that generates random file trees (nesting depth 0–4,
+  file count 1–20, size 1–10000 bytes), seeds both the Python
+  `MemoryBackend` and a Dafny oracle from the same generated tree, and
+  asserts `file_count` and `total_size` agree. Because the input is
+  random the expected aggregate cannot be hardcoded; the oracle's
+  `get_folder_info`, the verified `file_count == |ChildFiles|` /
+  `total_size == SumSizes` postcondition, supplies it.
+  The test needs a small helper, built as part of this item in
+  `tests/backends/dafny/`: `build_oracle(tree: dict[str, bytes]) ->
+  DafnyOracleBackend`, a fresh oracle seeded from the generated tree (the
+  `dict[str, bytes]` shape `conformance/_helpers.py::_seed` already
+  takes). Seed from the generated tree, never by enumerating a live
+  backend: re-deriving the seed through the operation under test would
+  let a buggy backend seed a matching-buggy oracle and hide the
+  divergence. Add a seeded-break self-test that builds the oracle and the
+  Python backend from deliberately divergent trees and confirms the
+  comparison fails, so a harness bug cannot leave the property-based test
+  vacuously green (the Safe/Unsafe-pair discipline in
+  `sdd/formal/README.md`).
+  While in `tests/backends/dafny/`, fix the stale paths in the formal
+  README's "Compiled oracle" section (`tests/backends/dafny_oracle.py`,
+  `test_conformance.py`); the adapter is at
+  `tests/backends/dafny/_helpers.py`, the suite at
+  `tests/backends/conformance/`.
 
 - [ ] **ID-190 — Formalize path well-formedness: `WellFormedPath` predicate**
   spec: PATH-002 -- PATH-008, NPR-020, NPR-010, STORE-012 · effort: L · audience: library.maintainer
