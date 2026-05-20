@@ -76,12 +76,6 @@ none of which is "run a second backend and diff the output":
    random inputs, need the verified oracle to *compute* the expected
    value.
 
-This retires the former "Pattern A (oracle differential) / Pattern B
-(inline assertions citing Dafny line numbers)" framing: A is redundant
-with (2), and B is an unenforced citation comment that rots as line
-numbers drift. The mechanical replacement is ID-206 (the traceability
-gate) plus the ordinary `@pytest.mark.spec` marker.
-
 **Execution order:**
 
 | Wave | Items | Notes |
