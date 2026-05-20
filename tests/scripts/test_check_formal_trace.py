@@ -133,6 +133,42 @@ class TestExtractConformanceSpecs:
         )
         assert extract_conformance_specs(tmp_path) == {}
 
+    def test_bare_marker_expression_ignored(self, tmp_path: Path) -> None:
+        # A *.mark.spec(...) call that decorates nothing is dead code. If it
+        # counted, one dead line would silence an F1 with no test added.
+        (tmp_path / "test_a.py").write_text(
+            'import pytest\n\n_ = pytest.mark.spec("CAP-004")\npytest.mark.spec("WR-010")\n',
+            encoding="utf-8",
+        )
+        assert extract_conformance_specs(tmp_path) == {}
+
+    def test_class_decorator_marker_detected(self, tmp_path: Path) -> None:
+        # A spec marker decorating a test class applies to its methods.
+        (tmp_path / "test_a.py").write_text(
+            'import pytest\n\n\n@pytest.mark.spec("BE-017")\nclass TestX:\n'
+            "    def test_y(self):\n        assert True\n",
+            encoding="utf-8",
+        )
+        assert set(extract_conformance_specs(tmp_path)) == {"BE-017"}
+
+    def test_pytestmark_assignment_detected(self, tmp_path: Path) -> None:
+        # `pytestmark = ...` is a real pytest marker-application site.
+        (tmp_path / "test_a.py").write_text(
+            'import pytest\n\npytestmark = [pytest.mark.spec("SIO-001")]\n',
+            encoding="utf-8",
+        )
+        assert set(extract_conformance_specs(tmp_path)) == {"SIO-001"}
+
+    def test_marker_on_skipped_test_still_counts(self, tmp_path: Path) -> None:
+        # Documents a deliberate scope limit (docstring § Scope): the check
+        # verifies citation, not enablement — a marker on a skipped test
+        # still counts toward T.
+        (tmp_path / "test_a.py").write_text(
+            'import pytest\n\n\n@pytest.mark.spec("BE-008")\n@pytest.mark.skip\ndef test_x():\n    assert True\n',
+            encoding="utf-8",
+        )
+        assert set(extract_conformance_specs(tmp_path)) == {"BE-008"}
+
 
 # ---------------------------------------------------------------------------
 # Source S — declared spec sections
@@ -160,6 +196,23 @@ class TestExtractDeclaredSpecs:
     def test_multi_word_family_prefix(self, tmp_path: Path) -> None:
         (tmp_path / "040.md").write_text("### SQL-BLOB-003: capabilities\n", encoding="utf-8")
         assert extract_declared_specs(tmp_path) == {"SQL-BLOB-003"}
+
+    def test_table_row_outside_requirement_table_ignored(self, tmp_path: Path) -> None:
+        # A table whose first column header is not `ID` (a summary /
+        # cross-reference table) declares nothing — otherwise one stray
+        # row could legitimise a bogus F2/F3 citation.
+        (tmp_path / "x.md").write_text(
+            "| Spec | Status |\n|----|----|\n| BE-099 | planned |\n",
+            encoding="utf-8",
+        )
+        assert extract_declared_specs(tmp_path) == set()
+
+    def test_requirement_table_header_is_case_insensitive(self, tmp_path: Path) -> None:
+        (tmp_path / "x.md").write_text(
+            "| id | Requirement |\n|----|----|\n| SAW-007 | empty path |\n",
+            encoding="utf-8",
+        )
+        assert extract_declared_specs(tmp_path) == {"SAW-007"}
 
     def test_inline_reference_is_not_a_declaration(self, tmp_path: Path) -> None:
         # "See BE-021" in prose must not count as declaring BE-021.

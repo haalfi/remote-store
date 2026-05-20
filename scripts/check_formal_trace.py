@@ -1,45 +1,76 @@
 #!/usr/bin/env python3
-"""Mechanical spec ↔ Dafny ↔ test traceability gate (ID-206).
+"""Mechanical spec ↔ Dafny ↔ test traceability check (ID-206).
 
-`000-process.md` Rule 2 ("no spec without tests") is prose, and the link
-from a verified Dafny postcondition to the conformance test that enforces
-it was unchecked. This script turns that link into a CI gate.
-
-It builds a coverage matrix across three sources:
+`000-process.md` Rule 2 ("no spec without tests") is prose. This script
+makes the spec ↔ Dafny ↔ test wiring mechanically checkable by building
+a coverage matrix across three sources:
 
   D — spec IDs carrying a verified Dafny postcondition, read from
       ``// @spec <ID>`` tags in ``sdd/formal/*.dfy``.
   T — spec IDs cited by a conformance ``@pytest.mark.spec`` marker under
-      ``tests/backends/conformance/``.
+      ``tests/backends/conformance/``. A ``*.mark.spec(...)`` call counts
+      only in a position pytest actually treats as a marker — a decorator
+      on a test function/class, a ``pytest.param(marks=...)`` entry, or a
+      ``pytestmark`` assignment. A bare ``pytest.mark.spec(...)``
+      expression that decorates nothing is dead code and is ignored.
   S — spec IDs declared as a section in ``sdd/specs/`` — either a
-      ``##``/``###`` heading (``### BE-014: ...``) or the first cell of a
-      requirements table row (``| SAW-001 | ... |``). Both forms occur;
-      heading level is not consistent across spec files.
+      ``##``/``###`` heading (``### BE-014: ...``) or a row of a
+      requirement table (a table whose first column header is ``ID`` —
+      the form spec 022 uses for SAW-001..015). Heading level and
+      declaration form are not consistent across spec files.
 
 Three failure modes (per ID-206):
 
-  F1  a Dafny-backed clause (in D, declared in S) with no conformance
-      test (not in T).
-  F2  a conformance test citing a spec ID absent from S.
+  F1  a Dafny-tagged spec ID (in D, declared in S) that no conformance
+      marker cites (not in T).
+  F2  a conformance marker citing a spec ID absent from S.
   F3  an ``@spec`` tag citing a spec ID absent from S.
+
+Scope — what this check does and does not prove
+-----------------------------------------------
+The check certifies *traceability* at spec-ID granularity. It is not a
+proof of test depth, and should be read with these limits in mind:
+
+  * **ID granularity, not clause granularity.** D, T and S key on spec
+    ID. Several distinct ``ensures`` may share one ID (e.g. the many
+    postconditions tagged ``BE-014``); one marker citing that ID clears
+    F1 for all of them. The check proves every Dafny-cited spec ID is
+    cited by at least one conformance marker — not that each individual
+    postcondition has its own test.
+  * **Citation, not assertion.** T records that a marker naming an ID
+    sits on a test; it does not verify the test asserts that clause, or
+    that the test is even enabled (a marker on a skipped test still
+    counts), or that the cited ID is the *right* one.
+  * **D is author-curated.** D is the set of postconditions an author
+    chose to tag. Keeping every contract postcondition tagged is a
+    review obligation — in the same spirit as the manually-mirrored
+    ``MemoryBackend`` / ``MemoryBackendMinimal`` parity already
+    documented in ``sdd/formal/README.md``; an untagged ``ensures`` is
+    invisible to this check.
+
+Closing these gaps fully would need per-clause sub-IDs and assertion-
+level analysis, deliberately out of ID-206's scope. What the check buys
+is a mechanical worklist and a regression tripwire on the *citation*
+layer, which the spec ↔ Dafny ↔ test chain had none of before.
 
 Landing strategy — checked-in baseline
 --------------------------------------
-Wiring this gate in surfaces every pre-existing spec↔Dafny↔test gap at
+Wiring this check in surfaces every pre-existing spec↔Dafny↔test gap at
 once; a hard gate would break the build on day one. ``_BASELINE`` is a
-checked-in allow-list of the violations known when the gate landed. The
-gate fails on:
+checked-in allow-list of the violations known when the check landed. Two
+things are mechanically enforced:
 
-  * any violation NOT in the baseline — a regression (a new untested
-    verified clause, a new bad marker), and
-  * any baseline entry that no longer matches a live violation — a stale
-    entry, i.e. the gap was closed.
+  * a violation NOT in the baseline fails the check — a regression, and
+  * a baseline entry that no longer matches a live violation fails the
+    check — a stale entry, i.e. the gap was closed.
 
-So the baseline can only shrink, never grow: closing a gap forces its
-baseline entry out in the same PR. The violation list printed below is
-the worklist for the (T)-backfill items (ID-184 / ID-185 / ID-188 /
-BK-195) — exactly the role ID-206 plays as the keystone of the Formal
-Verification wave.
+The second rule makes the baseline self-prune: closing a gap forces its
+entry out in the same change. Baseline *growth* is NOT blocked
+mechanically — a new violation can be parked by editing ``_BASELINE``.
+That edit is visible in review and is the point where a human must
+refuse new debt; the check cannot make that judgement. The printed
+violation list is the worklist for the (T)-backfill items (ID-184 /
+ID-185 / ID-188 / BK-195).
 
 CI enforcement. Exit code 0 = ok; 1 = violations found.
 """
@@ -61,10 +92,13 @@ ROOT = Path(__file__).resolve().parent.parent
 _SPEC_ID = r"[A-Z][A-Z0-9]*(?:-[A-Z]+)*-\d+[a-z]?"
 _SPEC_ID_RE = re.compile(_SPEC_ID)
 
-# Declaration of a spec section: a Markdown heading at any level, or the
-# first cell of a table row (the form spec 022 uses for SAW-001..015).
+# Declaration of a spec section: a Markdown heading at any level, or a
+# row of a requirement table — a table whose first column header is
+# ``ID`` (the form spec 022 uses for SAW-001..015). A table-shaped line
+# outside such a table does not declare a spec.
 _HEADING_RE = re.compile(rf"^#+[ \t]+({_SPEC_ID}):")
 _TABLE_ROW_RE = re.compile(rf"^\|[ \t]*({_SPEC_ID})[ \t]*\|")
+_ID_TABLE_HEADER_RE = re.compile(r"^\|[ \t]*ID[ \t]*\|", re.IGNORECASE)
 
 # A structured Dafny traceability tag: ``// @spec BE-014`` (one or more
 # IDs, comma- or space-separated) immediately above an ``ensures``.
@@ -147,28 +181,66 @@ def extract_dafny_specs(formal_dir: Path) -> dict[str, list[str]]:
 # ---------------------------------------------------------------------------
 
 
-def _iter_spec_marker_args(tree: ast.Module) -> list[tuple[int, str]]:
-    """Return ``(lineno, id)`` for every ``*.mark.spec("ID")`` call in a tree.
+def _is_spec_call(node: ast.AST) -> bool:
+    """True if ``node`` is a ``*.mark.spec(...)`` call (e.g. ``pytest.mark.spec``)."""
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "spec"
+        and isinstance(node.func.value, ast.Attribute)
+        and node.func.value.attr == "mark"
+    )
 
-    Walks all ``Call`` nodes (not just decorators) so markers attached via
-    ``pytest.param(..., marks=pytest.mark.spec(...))`` are caught too.
+
+def _is_pytestmark_name(node: ast.AST) -> bool:
+    """True if ``node`` is the ``pytestmark`` name (a module/class marker list)."""
+    return isinstance(node, ast.Name) and node.id == "pytestmark"
+
+
+def _marker_anchors(node: ast.AST) -> list[ast.expr]:
+    """Return the expressions where ``node`` may legitimately apply markers.
+
+    The four positions pytest treats as marker applications: a decorator
+    on a function/class, a ``marks=`` value, and a ``pytestmark``
+    assignment (plain or annotated). Anything else is not a marker site.
     """
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return list(node.decorator_list)
+    if isinstance(node, ast.Call):
+        return [kw.value for kw in node.keywords if kw.arg == "marks"]
+    if isinstance(node, ast.Assign) and any(_is_pytestmark_name(t) for t in node.targets):
+        return [node.value]
+    if isinstance(node, ast.AnnAssign) and node.value is not None and _is_pytestmark_name(node.target):
+        return [node.value]
+    return []
+
+
+def _iter_spec_marker_args(tree: ast.Module) -> list[tuple[int, str]]:
+    """Return ``(lineno, id)`` for every *applied* conformance ``spec`` marker.
+
+    A ``*.mark.spec("ID")`` call counts only when it sits in a position
+    pytest actually treats as a marker (see ``_marker_anchors``). A bare
+    ``pytest.mark.spec(...)`` expression that decorates nothing is dead
+    code and is ignored — otherwise a single dead line could silence an
+    F1 without adding any test.
+    """
+    # First pass: collect spec calls that are anchored to a real marker
+    # position. ``id()`` keys de-duplicate a call reached via two anchors
+    # (e.g. a parametrize decorator that itself contains pytest.param).
+    anchored: set[int] = set()
+    for node in ast.walk(tree):
+        for anchor in _marker_anchors(node):
+            for sub in ast.walk(anchor):
+                if _is_spec_call(sub):
+                    anchored.add(id(sub))
+
+    # Second pass: emit the string args of every anchored spec call.
     found: list[tuple[int, str]] = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        func = node.func
-        # Match X.mark.spec(...) — Attribute(attr="spec") over Attribute(attr="mark").
-        if not (
-            isinstance(func, ast.Attribute)
-            and func.attr == "spec"
-            and isinstance(func.value, ast.Attribute)
-            and func.value.attr == "mark"
-        ):
-            continue
-        for arg in node.args:
-            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                found.append((node.lineno, arg.value.strip()))
+        if isinstance(node, ast.Call) and _is_spec_call(node) and id(node) in anchored:
+            for arg in node.args:
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                    found.append((node.lineno, arg.value.strip()))
     return found
 
 
@@ -199,10 +271,16 @@ def extract_conformance_specs(conformance_dir: Path) -> dict[str, list[str]]:
 def extract_declared_specs(specs_dir: Path) -> set[str]:
     """Return every spec ID declared as a section in ``sdd/specs/``.
 
-    A section is declared by a Markdown heading (``### BE-014: ...`` — any
-    level) or by the first cell of a requirements-table row
-    (``| SAW-001 | ... |``). Both forms are in active use; the heading
-    level is not consistent across spec files.
+    A section is declared by either:
+
+      * a Markdown heading at any level (``### BE-014: ...``), or
+      * a row of a *requirement table* — a Markdown table whose first
+        column header is ``ID`` (the form spec 022 uses for
+        SAW-001..015).
+
+    A table-shaped line outside a requirement table (a summary,
+    cross-reference or changelog table) does not declare a spec, so a
+    stray ``| BE-099 | ... |`` row cannot legitimise a bogus citation.
     """
     declared: set[str] = set()
     for path in sorted(specs_dir.glob("*.md")):
@@ -211,11 +289,24 @@ def extract_declared_specs(specs_dir: Path) -> set[str]:
         except (UnicodeDecodeError, OSError) as exc:  # pragma: no cover - defensive
             sys.stderr.write(f"Skipping {path}: {type(exc).__name__}\n")
             continue
+        in_requirement_table = False
         for line in text.splitlines():
-            for pattern in (_HEADING_RE, _TABLE_ROW_RE):
-                match = pattern.match(line)
-                if match is not None:
-                    declared.add(match.group(1))
+            heading = _HEADING_RE.match(line)
+            if heading is not None:
+                declared.add(heading.group(1))
+                in_requirement_table = False
+                continue
+            if not line.startswith("|"):
+                # Any non-table line ends the current table.
+                in_requirement_table = False
+                continue
+            if _ID_TABLE_HEADER_RE.match(line):
+                in_requirement_table = True
+                continue
+            if in_requirement_table:
+                row = _TABLE_ROW_RE.match(line)
+                if row is not None:
+                    declared.add(row.group(1))
     return declared
 
 
@@ -254,7 +345,7 @@ def compute_violations(
 # ---------------------------------------------------------------------------
 
 _KIND_LABEL = {
-    KIND_UNTESTED: "Dafny-backed clause with no conformance test (F1)",
+    KIND_UNTESTED: "Dafny-tagged spec ID with no conformance marker (F1)",
     KIND_TEST_BAD_ID: "conformance marker cites an unknown spec ID (F2)",
     KIND_TAG_BAD_ID: "@spec tag cites an unknown spec ID (F3)",
 }
