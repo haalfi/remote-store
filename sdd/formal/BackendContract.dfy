@@ -299,7 +299,9 @@ trait Backend {
   // Returns True iff path exists AND all ancestors are directories.
   // Returns False for missing paths or paths with file-as-directory-component.
   method Exists(path: Path) returns (r: Result<bool>)
+    // @spec BE-004
     ensures r.Ok?
+    // @spec BE-004
     ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
 
   // ====================================================================
@@ -308,7 +310,9 @@ trait Backend {
   // Returns True iff path is a file AND all ancestors are directories.
   // Returns False for missing paths or paths with file-as-directory-component.
   method IsFileMethod(path: Path) returns (r: Result<bool>)
+    // @spec BE-005
     ensures r.Ok?
+    // @spec BE-005
     ensures r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
 
   // ====================================================================
@@ -317,15 +321,20 @@ trait Backend {
   // Returns True iff path is a folder AND all ancestors are directories.
   // Returns False for missing paths or paths with file-as-directory-component.
   method IsFolderMethod(path: Path) returns (r: Result<bool>)
+    // @spec BE-005
     ensures r.Ok?
+    // @spec BE-005
     ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
 
   // ====================================================================
   // read(path) → content  (no modifies: fs unchanged)
   // ====================================================================
   method Read(path: Path) returns (r: Result<seq<nat>>)
+    // @spec BE-021
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
+    // @spec BE-006
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    // @spec BE-006
     ensures IsFile(fs, path)      ==> r == Ok(fs[path].content)
 
   // ====================================================================
@@ -356,38 +365,50 @@ trait Backend {
   )
     returns (r: Result<WriteResult>)
     modifies this
+    // Gap 1 / BE-008: precondition order — type check first (directory
+    // path → InvalidPath).
+    // @spec BE-008
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
+    // Gap 1 / BE-008: precondition order — overwrite conflict second.
+    // @spec BE-008
     ensures !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
     // WR-010 strict gate: non-empty metadata on a backend without
     // CapUserMetadata → CapabilityNotSupported (pre-I/O).
+    // @spec WR-010
     ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             HasUserMetadata(metadata) && CapUserMetadata !in capabilities
       ==> r == Err(CapabilityNotSupported(
             CapabilityName(CapUserMetadata), name))
-    // Happy path: no error condition → must succeed.
+    // BE-008 happy path: no error condition → must succeed.
+    // @spec BE-008
     ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             (!HasUserMetadata(metadata) || CapUserMetadata in capabilities)
       ==> r.Ok?
-    // WR-001 / WR-003: written content is stored verbatim.
+    // BE-008: written content is stored verbatim on the success path.
+    // @spec BE-008
     ensures r.Ok? ==>
       IsFile(fs, path) && fs[path].content == content
-    // WR-001a / WR-002 / WR-003: WriteResult path and size schema.
+    // WR-001a: WriteResult path and size — the normative field schema.
+    // @spec WR-001a
     ensures r.Ok? ==>
       r.value.path == path && r.value.size == |content|
     // WR-004: source is Native iff CapWriteResultNative is declared.
+    // @spec WR-004
     ensures r.Ok? ==>
       r.value.source == (
         if CapWriteResultNative in capabilities
         then NativeSource
         else BasicSource)
     // WR-005: Basic source → rich fields are all None.
+    // @spec WR-005
     ensures r.Ok? && r.value.source == BasicSource ==>
       r.value.digest.None? && r.value.etag.None? &&
       r.value.version_id.None? && r.value.last_modified.None?
     // WR-012: metadata echo: verbatim when the gate was passed,
     // None otherwise (including the empty-mapping carve-out).
+    // @spec WR-012
     ensures r.Ok? ==>
       r.value.metadata == (
         if HasUserMetadata(metadata) && CapUserMetadata in capabilities
@@ -396,6 +417,7 @@ trait Backend {
     // WR-013: user-metadata round-trip: FileInfo carries what was
     // written when the gate was passed.  On a non-declaring backend
     // FileInfo.metadata is None regardless of what was passed.
+    // @spec WR-013
     ensures r.Ok? ==>
       fs[path].info.metadata == (
         if HasUserMetadata(metadata) && CapUserMetadata in capabilities
@@ -410,6 +432,7 @@ trait Backend {
     // vacuously.  Absence of rich-field population by a declaring
     // backend is an empirical quality concern (test assertion, review),
     // not a Dafny-expressible postcondition.
+    // @spec WR-001a
     ensures r.Ok? && CapWriteResultNative in capabilities ==>
       fs[path].info.digest == r.value.digest &&
       fs[path].info.etag == r.value.etag &&
@@ -422,14 +445,19 @@ trait Backend {
   // missing_ok only governs the absent-path case.
   method Delete(path: Path, missing_ok: bool) returns (r: Result<()>)
     modifies this
+    // @spec BE-021
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
+    // @spec BE-012
     ensures !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
+    // @spec BE-012
     ensures !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
-    // Happy path: file exists → must succeed.
+    // BE-012 happy path: file exists → must succeed.
+    // @spec BE-012
     ensures IsFile(old(fs), path) ==> r.Ok?
+    // @spec BE-012
     ensures IsFile(old(fs), path) && r.Ok?
       ==> !PathExists(fs, path)
 
@@ -440,22 +468,29 @@ trait Backend {
     returns (r: Result<()>)
     modifies this
     // File path → InvalidPath (wrong type, symmetric with Delete on dirs).
+    // @spec BE-021
     ensures IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
+    // @spec BE-013
     ensures !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
+    // @spec BE-013
     ensures !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
     // Non-empty directory with recursive=false → DirectoryNotEmpty.
+    // @spec BE-013
     ensures IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
-    // Happy path: empty dir or recursive → must succeed.
+    // BE-013 happy path: empty dir or recursive → must succeed.
+    // @spec BE-013
     ensures IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
     // On success, directory entry is removed.
+    // @spec BE-013
     ensures IsDir(old(fs), path) && r.Ok?
       ==> !IsDir(fs, path)
     // Recursive delete removes all children too.
+    // @spec BE-013
     ensures IsDir(old(fs), path) && recursive && r.Ok? ==>
       forall p: Path | IsChildOf(p, path) :: !PathExists(fs, p)
 
@@ -468,21 +503,31 @@ trait Backend {
   // recursive=false constrains results to immediate children (depth 0).
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
+    // Gap 3 / BE-014: listing is total — never raises NotFound.
+    // @spec BE-014
     ensures r.Ok?
+    // Gap 3 / BE-014: missing path yields an empty result, not an error.
+    // @spec BE-014
     ensures !PathExists(fs, path) ==> r.value == []
     // All results are files that are children of path.
+    // @spec BE-014
     ensures r.Ok? ==>
       forall fi | fi in r.value :: IsFile(fs, fi.path) && IsChildOf(fi.path, path)
     // Depth is always non-negative for returned entries (no -1 non-children).
+    // @spec BE-014
     ensures r.Ok? ==>
       forall fi | fi in r.value :: Depth(path, fi.path) >= 0
     // recursive=false → only immediate children (depth 0).
+    // @spec BE-014
     ensures !recursive && r.Ok? ==>
       forall fi | fi in r.value :: Depth(path, fi.path) == 0
-    // max_depth filtering (only when recursive; max_depth < 0 = unlimited).
+    // Gap 4 / DEPTH-003: backend-native max_depth filtering, inclusive
+    // (only when recursive; max_depth < 0 = unlimited).
+    // @spec DEPTH-003
     ensures recursive && max_depth >= 0 && r.Ok? ==>
       forall fi | fi in r.value :: Depth(path, fi.path) <= max_depth
     // Completeness: every matching file MUST appear in the result.
+    // @spec BE-014
     ensures r.Ok? && PathExists(fs, path) ==>
       forall p: Path | IsFile(fs, p) && IsChildOf(p, path) &&
         (if !recursive then Depth(path, p) == 0
@@ -494,12 +539,18 @@ trait Backend {
   // list_folders(path)
   // ====================================================================
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
+    // Gap 3 / BE-015: listing is total — never raises NotFound.
+    // @spec BE-015
     ensures r.Ok?
+    // Gap 3 / BE-015: missing path yields an empty result, not an error.
+    // @spec BE-015
     ensures !PathExists(fs, path) ==> r.value == []
     // All results are immediate child directories of path.
+    // @spec BE-015
     ensures r.Ok? ==>
       forall fe | fe in r.value :: IsDir(fs, fe.path) && IsChildOf(fe.path, path)
     // Completeness: every immediate child directory MUST appear.
+    // @spec BE-015
     ensures r.Ok? && PathExists(fs, path) ==>
       forall p: Path | IsDir(fs, p) && IsChildOf(p, path) ::
         exists fe | fe in r.value :: fe.path == p
@@ -508,8 +559,11 @@ trait Backend {
   // get_file_info(path) → FileInfo
   // ====================================================================
   method GetFileInfo(path: Path) returns (r: Result<FileInfo>)
+    // @spec BE-021
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
+    // @spec BE-016
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    // @spec BE-016
     ensures IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
 
   // ====================================================================
@@ -517,8 +571,11 @@ trait Backend {
   // ====================================================================
   // BE-017: symmetric with GetFileInfo: file path → InvalidPath.
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
+    // @spec BE-021
     ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
+    // @spec BE-017
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    // @spec BE-017
     ensures IsDir(fs, path)       ==>
       r.Ok? && r.value.path == path
       && r.value.file_count == |ChildFiles(fs, path)|
@@ -534,19 +591,25 @@ trait Backend {
   method Move(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
     modifies this
+    // @spec BE-021
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
+    // @spec BE-018
     ensures !PathExists(old(fs), src)
       ==> r == Err(NotFound(src, name))
     // Directory destination → InvalidPath (can't overwrite dir with file).
+    // @spec BE-021
     ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
+    // @spec BE-018
     ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
-    // Happy path: file src, dst is not a dir, no overwrite conflict.
+    // BE-018 happy path: file src, dst is not a dir, no overwrite conflict.
+    // @spec BE-018
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
+    // @spec BE-018
     ensures r.Ok? && IsFile(old(fs), src) ==>
       IsFile(fs, dst) &&
       fs[dst].content == old(fs)[src].content &&
@@ -560,18 +623,24 @@ trait Backend {
   method Copy(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
     modifies this
+    // @spec BE-021
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
+    // @spec BE-019
     ensures !PathExists(old(fs), src)
       ==> r == Err(NotFound(src, name))
+    // @spec BE-021
     ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
+    // @spec BE-019
     ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
-    // Happy path.
+    // BE-019 happy path.
+    // @spec BE-019
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
+    // @spec BE-019
     ensures r.Ok? && IsFile(old(fs), src) ==>
       IsFile(fs, src) && IsFile(fs, dst) &&
       fs[dst].content == old(fs)[src].content
@@ -580,7 +649,9 @@ trait Backend {
   // Capability gate
   // ====================================================================
   method RequireCapability(cap: Capability) returns (r: Result<()>)
+    // @spec CAP-004
     ensures cap in capabilities ==> r.Ok?
+    // @spec CAP-004
     ensures cap !in capabilities ==>
       r == Err(CapabilityNotSupported(CapabilityName(cap), name))
 }
@@ -814,6 +885,7 @@ function WriteResultFromFileInfo(info: FileInfo): WriteResult
 // to NativeSource | BasicSource (§6), so no separate lemma is needed
 // for that half.
 lemma WR008FieldMapping(info: FileInfo)
+  // @spec WR-008
   ensures (
     var wr := WriteResultFromFileInfo(info);
     wr.path == info.path

@@ -59,6 +59,7 @@ lemma ImmediateChildDepthIsZero(root: string, fileName: string)
   // (e.g. "data/raw/subdir").  Depth only examines the suffix
   // after root + "/", which is fileName.
   requires forall i | 0 <= i < |fileName| :: fileName[i] != '/'
+  // @spec DEPTH-001
   ensures Depth(root, root + "/" + fileName) == 0
 {
   var child := root + "/" + fileName;
@@ -92,6 +93,7 @@ lemma MaxDepthZeroIsImmediate(root: string, fileName: string)
   requires root != "."  // Root uses Depth(".", child) = SlashCount(child); this lemma is for prefix-based roots.
   requires fileName != ""
   requires forall i | 0 <= i < |fileName| :: fileName[i] != '/'
+  // @spec DEPTH-001
   ensures Depth(root, root + "/" + fileName) <= 0
 {
   ImmediateChildDepthIsZero(root, fileName);
@@ -105,6 +107,7 @@ lemma MaxDepthZeroIsImmediate(root: string, fileName: string)
 // cannot be trivially satisfied by non-children.
 lemma ChildHasNonNegativeDepth(root: string, child: string)
   requires IsChildOf(child, root)
+  // @spec DEPTH-001
   ensures Depth(root, child) >= 0
 {
   if root == "." {
@@ -127,6 +130,7 @@ lemma ChildHasNonNegativeDepth(root: string, child: string)
 // Property 4: Depth filter is inclusive: depth == maxDepth passes.
 lemma DepthFilterIsInclusive(root: string, child: string, maxDepth: nat)
   requires Depth(root, child) == maxDepth as int
+  // @spec DEPTH-001
   ensures Depth(root, child) <= maxDepth as int
 {
   calc {
@@ -141,6 +145,7 @@ lemma DepthFilterIsInclusive(root: string, child: string, maxDepth: nat)
 // Property 4: depth == maxDepth + 1 is excluded.
 lemma DepthFilterExcludesDeeper(root: string, child: string, maxDepth: nat)
   requires Depth(root, child) == (maxDepth + 1) as int
+  // @spec DEPTH-001
   ensures Depth(root, child) > maxDepth as int
 {
   calc {
