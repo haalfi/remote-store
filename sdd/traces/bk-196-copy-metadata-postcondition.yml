@@ -1,0 +1,86 @@
+id: BK-196
+title: "Pin metadata in the Dafny Copy postcondition"
+trigger: "The Dafny Copy postcondition pinned only destination content; MemoryBackend.dfy::Copy built the destination FileInfo via BasicFileInfo, which drops user metadata. The model verified cleanly while encoding the exact defect Python carried before BK-192. Surfaced as a discovery-followup during BK-192."
+source_items:
+  - BK-196
+  - BK-192
+audience:
+  - contributor.process
+  - infra.test
+expected_ripples:
+  - sdd/formal/MemoryBackend-py/module_.py
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-196, Formal Verification execution-order table"
+        read_type: gate
+        extract: "(C) Wave-0 item: tighten the Copy postcondition and thread metadata; pairs with BK-195 (the T side)"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-013"
+        read_type: gate
+        extract: "User-metadata round-trip invariant — copy must preserve the mapping on USER_METADATA-declaring backends"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-019"
+        read_type: gate
+        extract: "copy() duplicates a file; WR-013 supplies the metadata dimension the BE-019 prose leaves implicit"
+      - file: sdd/formal/BackendContract.dfy
+        section: "Copy"
+        read_type: gate
+        extract: "Copy success postcondition pinned content only — a BasicFileInfo destination verified cleanly"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "Copy (MemoryBackend and MemoryBackendMinimal)"
+        read_type: gate
+        extract: "Both classes build newInfo via BasicFileInfo(dst, dst, size); MemoryBackendMinimal must be mirrored manually"
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate, Verification practices"
+        read_type: gate
+        extract: "Non-ghost body change requires oracle regeneration; MemoryBackend/MemoryBackendMinimal parity is review-enforced"
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "Copy"
+        read_type: reference
+        extract: "Fold the metadata clause into the existing content ensures so the shared IsFile(fs, dst) conjunct keeps fs[dst] well-defined, rather than a standalone ensures that would need its own dst-membership guard"
+      - file: sdd/formal/BackendContract.dfy
+        section: "BasicFileInfo"
+        read_type: reference
+        extract: "Keep BasicFileInfo as the rich-field-empty helper; construct FileInfo directly in Copy instead of adding a metadata parameter that would ripple through every call site — a deliberate divergence from the item's advisory wording"
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "Copy"
+        read_type: reference
+        extract: "Add fs[dst].info.metadata == old(fs)[src].info.metadata to the Copy success postcondition; tag // @spec BE-019, WR-013"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "Copy (MemoryBackend and MemoryBackendMinimal)"
+        read_type: reference
+        extract: "Mirror the postcondition; construct newInfo as FileInfo(dst, dst, size, None, None, None, srcEntry.info.metadata); add metadata-equality assert breadcrumbs to the self-copy and main success branches"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "dafny verify on all four .dfy files — 163 verified, 0 errors"
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "Copy"
+        read_type: verify
+        extract: "Regenerate the compiled oracle (dafny build -t py + _dafny_classorder.py); diff is exactly the two Copy bodies"
+      - file: tests/backends/conformance/
+        section: "dafny_oracle parametrization"
+        read_type: verify
+        extract: "Oracle conformance suite still green (174 passed, 6 skipped); no test depended on the pre-fix metadata-dropping behaviour"
+      - file: scripts/check_formal_trace.py
+        section: "(full)"
+        read_type: verify
+        extract: "Traceability gate green — BE-019 and WR-013 already tested, no new F1"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG → BACKLOG-DONE move, gen-backlogid refresh, trace shipped in-PR; audience is contributor.process + infra.test so no CHANGELOG entry"

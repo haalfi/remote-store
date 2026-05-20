@@ -80,7 +80,7 @@ none of which is "run a second backend and diff the output":
 
 | Wave | Items | Notes |
 |---|---|---|
-| 0 — contract (C) | ID-190, BK-196 | Independent Dafny changes; each re-verifies the refinement |
+| 0 — contract (C) | ID-190 | Independent Dafny changes; each re-verifies the refinement |
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
 | 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
 | 1 — test backfill (T) | ID-185, BK-195 | Conformance gaps for already-verified clauses |
@@ -142,20 +142,6 @@ PR where its items share a file or proof.
   gate caught the omission. Add a conformance test against every backend
   declaring `USER_METADATA` (Local, S3, SFTP via metadata files, Azure,
   memory, async-memory). Surfaced during BK-192.
-  Trace: `sdd/traces/bk-192-copy-metadata-parity.yml`.
-
-- [ ] **BK-196 — Pin metadata in the Dafny `Copy` postcondition**
-  spec: WR-013, BE-019, ASYNC-019 · effort: S · audience: library.maintainer
-  A (C) gap, and the exemplar of benefit 1. `MemoryBackend.dfy::Copy`
-  builds the destination via `BasicFileInfo(dst, dst, srcEntry.info.size)`,
-  dropping user metadata, and the `Copy` postcondition does not pin it, so
-  the model verifies cleanly while encoding the exact defect Python had
-  before BK-192. Had the postcondition required
-  `dstEntry.info.userMetadata == srcEntry.info.userMetadata`, Dafny would
-  have forced the model to thread metadata and the bug class would have
-  surfaced as a verification failure, not a runtime bug. Fix: tighten the
-  postcondition and thread metadata through `Copy` and `BasicFileInfo`.
-  Surfaced during BK-192.
   Trace: `sdd/traces/bk-192-copy-metadata-parity.yml`.
 
 - [ ] **ID-185 — Depth-boundary conformance gap**

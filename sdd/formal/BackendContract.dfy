@@ -640,10 +640,15 @@ trait Backend {
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
-    // @spec BE-019
+    // BK-196 / WR-013: copy preserves user metadata on the destination.
+    // Before BK-196 the contract pinned only content, so a refinement
+    // that built the destination via BasicFileInfo (metadata dropped)
+    // verified cleanly — the exact defect Python carried before BK-192.
+    // @spec BE-019, WR-013
     ensures r.Ok? && IsFile(old(fs), src) ==>
       IsFile(fs, src) && IsFile(fs, dst) &&
-      fs[dst].content == old(fs)[src].content
+      fs[dst].content == old(fs)[src].content &&
+      fs[dst].info.metadata == old(fs)[src].info.metadata
 
   // ====================================================================
   // Capability gate

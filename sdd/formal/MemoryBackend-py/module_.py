@@ -1059,7 +1059,7 @@ class MemoryBackend(Backend):
         d_0_srcEntry_: Entry
         d_0_srcEntry_ = (self.fs)[src]
         d_1_newInfo_: FileInfo
-        d_1_newInfo_ = default__.BasicFileInfo(dst, dst, ((d_0_srcEntry_).info).size)
+        d_1_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_0_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_0_srcEntry_).info).metadata)
         (self).fs = (self.fs).set(dst, Entry_FileEntry((d_0_srcEntry_).content, d_1_newInfo_))
         r = Result_Ok(())
         return r
@@ -1458,7 +1458,7 @@ class MemoryBackendMinimal(Backend):
         d_0_srcEntry_: Entry
         d_0_srcEntry_ = (self.fs)[src]
         d_1_newInfo_: FileInfo
-        d_1_newInfo_ = default__.BasicFileInfo(dst, dst, ((d_0_srcEntry_).info).size)
+        d_1_newInfo_ = FileInfo_FileInfo(dst, dst, ((d_0_srcEntry_).info).size, Option_None(), Option_None(), Option_None(), ((d_0_srcEntry_).info).metadata)
         (self).fs = (self.fs).set(dst, Entry_FileEntry((d_0_srcEntry_).content, d_1_newInfo_))
         r = Result_Ok(())
         return r
