@@ -109,13 +109,12 @@ none of which is "run a second backend and diff the output":
 
 - [ ] **ID-183 — Oracle ground-truth helper for property-based tests**
   spec: — · effort: S · audience: infra.test
-  Recast from the former "Pattern A foundation". The compiled oracle
-  already certifies every deterministic conformance test as a
-  parametrized fixture (benefit 2 above), so a helper that re-runs the
-  oracle alongside the target inside a test adds nothing. The one place
-  the oracle must produce *values* is property-based testing, where
-  inputs are random and the expected value cannot be hardcoded. Add a
-  small helper in `tests/backends/dafny/`:
+  The compiled oracle already certifies every deterministic conformance
+  test as a parametrized fixture (benefit 2 above), so a helper that
+  re-runs the oracle alongside the target inside a test adds nothing. The
+  one place the oracle must produce *values* is property-based testing,
+  where inputs are random and the expected value cannot be hardcoded. Add
+  a small helper in `tests/backends/dafny/`:
   (1) `build_oracle(tree: dict[str, bytes]) -> DafnyOracleBackend`: a
   fresh oracle seeded from the test-declared tree (the `dict[str, bytes]`
   shape `conformance/_helpers.py::_seed` already takes). Seed from the
@@ -221,17 +220,13 @@ none of which is "run a second backend and diff the output":
   name-set check does not directly enforce the boundary. Assert the
   invariant itself, that every returned file's depth relative to the
   listed prefix is `<= max_depth`, via a shared `_depth(prefix, path)`
-  helper, and mark `@pytest.mark.spec("DEPTH-003")`. The former "oracle
-  differential for listing completeness" sub-item is dropped: the
-  existing completeness tests already assert full expected sets and the
-  oracle-as-fixture certifies those sets, so a differential adds nothing.
+  helper, and mark `@pytest.mark.spec("DEPTH-003")`.
 
 - [ ] **ID-187 — Property-based aggregate verification for `GetFolderInfo`**
   spec: BE-017, ID-134 · effort: M · audience: infra.test
   An (O) item. `TestGetFolderInfoAggregates` spot-checks `file_count` /
   `total_size` against two hardcoded trees; those tests are already
-  certified by the oracle-as-fixture, so the former "oracle differential"
-  upgrade is dropped as redundant. The real gap is coverage breadth:
+  certified by the oracle-as-fixture. The real gap is coverage breadth:
   deterministic fixtures cannot reach the off-by-one paths in recursive
   `ChildFiles` / `SumSizes`. Add a `hypothesis` test that generates
   random file trees (nesting depth 0–4, file count 1–20, size 1–10000
