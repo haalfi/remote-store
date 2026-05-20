@@ -97,7 +97,9 @@ method SafeWrap(rawId: nat, wrapperCount: nat, failAt: int)
   returns (pipeline: WrapPipeline)
   requires failAt >= -1
   requires failAt == -1 || failAt < wrapperCount as int
+  // @spec SIO-001
   ensures SafeWrapInvariant(pipeline)
+  // @spec SIO-001
   ensures AllHandlesAccountedFor(pipeline)
 {
   if failAt == -1 {
@@ -195,8 +197,11 @@ datatype MovePhase =
 
 method AtomicMove(srcExists: bool, dstExists: bool, overwrite: bool)
   returns (phase: MovePhase)
+  // @spec BE-018
   ensures srcExists && (!dstExists || overwrite) ==> phase == DeleteDone
+  // @spec BE-018
   ensures !srcExists ==> phase.Failed?
+  // @spec BE-018
   ensures srcExists && dstExists && !overwrite ==> phase.Failed?
 {
   if !srcExists {
@@ -218,11 +223,15 @@ method AtomicMove(srcExists: bool, dstExists: bool, overwrite: bool)
 method CopyDeleteMove(srcExists: bool, dstExists: bool, overwrite: bool,
                        deleteFails: bool)
   returns (phase: MovePhase)
+  // @spec BE-018
   ensures srcExists && (!dstExists || overwrite) && !deleteFails
     ==> phase == DeleteDone
+  // @spec BE-018
   ensures srcExists && (!dstExists || overwrite) && deleteFails
     ==> phase == CopyDone
+  // @spec BE-018
   ensures !srcExists ==> phase.Failed?
+  // @spec BE-018
   ensures srcExists && dstExists && !overwrite ==> phase.Failed?
 {
   if !srcExists {

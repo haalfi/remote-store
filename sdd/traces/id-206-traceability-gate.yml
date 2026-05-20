@@ -1,0 +1,123 @@
+id: ID-206
+title: "Mechanical spec ↔ Dafny ↔ test traceability gate"
+trigger: >-
+  The Formal Verification backlog section was recast (PR #662) so the Dafny
+  layer's value is concrete: Dafny is the machine-checked interlock between a
+  Markdown spec clause and the @pytest.mark.spec conformance test that enforces
+  it. But that interlock was a slogan — nothing mechanically checked that a
+  verified Dafny postcondition has a conformance test, that a test cites a real
+  spec ID, or that a postcondition cites a real spec section.
+source_items:
+  - ID-206
+co_shipped_items:
+  - BK-231
+audience:
+  - contributor.tooling
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/BACKLOG-DONE.md
+  - .github/workflows/ci.yml
+discovery_followups: []
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Formal Verification (intro + ID-206)"
+        read_type: gate
+        extract: "(C)/(T)/(O) framing, wave table, ID-206 scope: three-source matrix + @spec tags"
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Origin — the BK-140 gap table"
+        read_type: gate
+        extract: "Authoritative gap→spec→file mapping (gap 4 DEPTH-001, gap 6 SIO-001, gap 7 WR-001a/004/008/012/013)"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "§6 Backend contract (all trait method ensures)"
+        read_type: reference
+        extract: "Existing free-text spec-ID comments above postconditions; precondition-order block comment"
+        outcome: ok
+      - file: sdd/formal/DepthCounting.dfy
+        section: "(full)"
+        read_type: reference
+        extract: "Depth-filter lemmas prove the DEPTH-001 reference algorithm"
+        outcome: ok
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§1 SafeWrap, §2 move atomicity"
+        read_type: reference
+        extract: "SafeWrap → SIO-001 (gap 6); AtomicMove/CopyDeleteMove → BE-018 (gap 5)"
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rules (Rule 2 — no spec without tests)"
+        read_type: gate
+        extract: "Rule 2 prose is exactly what ID-206 mechanises into a gate"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/check_test_placement.py
+        section: "_BACKEND_AT_ROOT_GRANDFATHERED + stale-entry detection"
+        read_type: reference
+        extract: >-
+          Landing decision: a checked-in baseline (frozenset, self-pruning) that must
+          shrink and never grow — chosen over an informational-only gate, which the
+          formal README rule 3 warns silently becomes unrun. Matches this precedent.
+        outcome: ok
+      - file: scripts/check_mock_spec.py
+        section: "(full)"
+        read_type: reference
+        extract: "AST-walk a Call node for a pytest mark; main()/exit-code shape"
+        outcome: ok
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001a..WR-013"
+        read_type: reference
+        extract: "Spec IDs declared at level-2 (##) headings — heading level is NOT uniform across spec files"
+        outcome: ok
+      - file: sdd/specs/022-streaming-atomic-writes.md
+        section: "Requirements table"
+        read_type: reference
+        extract: "SAW-001..015 declared in a Markdown TABLE, not headings — the parser must accept both forms"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "§6 trait method ensures + §9 WR008FieldMapping"
+        read_type: reference
+        extract: "Add // @spec <ID> above each contract postcondition (comments — verification unaffected)"
+        outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "(full)"
+        read_type: reference
+        extract: "Three-source matrix (D/T/S), F1/F2/F3 violations, _BASELINE with stale detection"
+        outcome: ok
+      - file: tests/scripts/test_check_formal_trace.py
+        section: "(full)"
+        read_type: reference
+        extract: "Parser + violation-logic + baseline-mechanics tests on synthetic trees"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint"
+        read_type: reference
+        extract: "Wire check_formal_trace.py into lint (and so into all)"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "dafny verify (all three .dfy files)"
+        read_type: verify
+        extract: "65 verified, 0 errors — @spec comment tags do not change what Dafny proves"
+        outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "gate run under hatch run lint"
+        read_type: verify
+        extract: "5 gaps surfaced (CAP-004/DEPTH-001/WR-008/WR-010 untested, ID-134 non-spec marker), all baselined"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table"
+        read_type: verify
+        extract: "New check script dual-wired: hatch lint script + CI lint job; BACKLOG move + gen-backlogid"
+        outcome: ok

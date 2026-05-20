@@ -80,7 +80,6 @@ none of which is "run a second backend and diff the output":
 
 | Wave | Items | Notes |
 |---|---|---|
-| 0 — keystone | ID-206 | Traceability gate; its coverage matrix is the worklist for the (T) backfill |
 | 0 — contract (C) | ID-190, BK-196 | Independent Dafny changes; each re-verifies the refinement |
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
 | 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
@@ -88,26 +87,6 @@ none of which is "run a second backend and diff the output":
 
 Items stay granular for tracking, but a whole wave row may ship as one
 PR where its items share a file or proof.
-
-- [ ] **ID-206 — Mechanical spec ↔ Dafny ↔ test traceability gate**
-  spec: — · effort: M · audience: infra.test, platform.tooling
-  The keystone that turns "Dafny ties tests to specs" from a slogan into
-  a CI gate. `000-process.md` Rule 2 ("no spec without tests") is prose,
-  and the link from a verified Dafny postcondition to the conformance
-  test that enforces it is unchecked: an untested clause means the oracle
-  silently certifies nothing. Add a `hatch run` check
-  (`scripts/check_formal_trace.py`, tested under `tests/scripts/`) that
-  builds a coverage matrix across three sources: (1) spec IDs carrying a
-  verified Dafny postcondition; (2) spec IDs cited by a conformance
-  `@pytest.mark.spec` marker; (3) spec IDs declared in `sdd/specs/`. It
-  fails when a Dafny-backed clause has no conformance test, when a test
-  cites an absent spec ID, or when a postcondition cites an ID with no
-  spec section. Prerequisite step inside this item: the `.dfy` files tag
-  postconditions with free-text comments (`// WR-013: ...`) that are not
-  reliably parseable. Add a structured tag (e.g. `// @spec BE-014`
-  immediately above each `ensures`) across `BackendContract.dfy`,
-  `DepthCounting.dfy`, and `ResourceSafety.dfy`. The matrix output is the
-  worklist for every (T) item below; run it first. No spec change.
 
 - [ ] **ID-184 — Listing traversability: prove the contract, then enforce it**
   spec: BE-013, BE-014, BE-015 · effort: M · audience: infra.test
@@ -527,17 +506,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
   **Exit criteria:** `docs-src/llms.txt` committed; `GET
   https://docs.remotestore.dev/llms.txt` returns the file after next deploy.
-
-- [ ] **BK-231 — Fix stale paths in `sdd/formal/README.md`**
-  spec: — · effort: S · audience: library.maintainer
-  The "Compiled oracle" section is out of date with the test layout. It
-  names the oracle adapter `tests/backends/dafny_oracle.py`; the adapter
-  is `tests/backends/dafny/_helpers.py` (the similarly named
-  `tests/backends/fixtures/dafny_oracle.py` is the fixture, not the
-  adapter). Its `pytest tests/backends/test_conformance.py` /
-  `test_conformance_extended.py` commands also assume a flat layout the
-  suite no longer uses; the conformance tests live under
-  `tests/backends/conformance/`. Correct both.
 
 - [ ] **ID-180 — Stable HTML-anchor IDs across non-spec docs under `sdd/`**
   spec: — · effort: M · audience: library.maintainer

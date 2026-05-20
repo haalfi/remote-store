@@ -8,6 +8,36 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-206 — Mechanical spec ↔ Dafny ↔ test traceability gate**
+  spec: — · audience: infra.test, platform.tooling
+  The keystone of the Formal Verification wave: turns "Dafny ties tests
+  to specs" from a slogan into a CI gate. `scripts/check_formal_trace.py`
+  builds a coverage matrix across three sources — spec IDs with a
+  verified Dafny postcondition (`// @spec <ID>` tags in
+  `sdd/formal/*.dfy`), spec IDs cited by a conformance
+  `@pytest.mark.spec` marker, and spec sections declared in `sdd/specs/`
+  — and fails on a Dafny-backed clause with no conformance test, a test
+  citing an absent spec ID, or a tag citing an absent spec ID.
+  Structured `// @spec` tags were added above every contract
+  postcondition in `BackendContract.dfy`, `DepthCounting.dfy`, and
+  `ResourceSafety.dfy`; they are comments, so Dafny still verifies with
+  0 errors. Landed behind a checked-in `_BASELINE` of the five gaps
+  present at landing — it must shrink, never grow, so closing a gap
+  forces its entry out in the same PR. Wired into `hatch run lint` and
+  the CI lint job; tests under `tests/scripts/`. The printed matrix is
+  the worklist for the (T)-backfill items (ID-184 / ID-185 / ID-188 /
+  BK-195).
+  Trace: `sdd/traces/id-206-traceability-gate.yml`.
+
+- [x] **BK-231 — Fix stale paths in `sdd/formal/README.md`**
+  spec: — · audience: library.maintainer
+  The "Compiled oracle" section named the oracle adapter
+  `tests/backends/dafny_oracle.py`; the adapter is
+  `tests/backends/dafny/_helpers.py`. The oracle-test and conformance
+  commands assumed a flat `tests/backends/test_conformance*.py` layout
+  the suite no longer uses; corrected to `tests/backends/conformance/`.
+  Co-shipped with ID-206.
+
 - [x] **BK-230 — Silence persistent CI annotations: nested Node 20 in setup-dafny + uv cache reservation race**
   spec: — · audience: infra.ci
   Two CI annotations stayed visible after BK-206 and BK-219 closed; both

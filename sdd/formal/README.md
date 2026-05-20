@@ -297,7 +297,7 @@ the test itself has a bug and must be fixed.
 | `sdd/formal/MemoryBackend.dfy` | Source specification (verified) |
 | `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
-| `tests/backends/dafny_oracle.py` | Adapter: compiled oracle → `Backend` ABC |
+| `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |
 
 **Regenerating the compiled output.** Ghost-only changes (lemmas,
 invariants, ghost variables, postconditions) erase at compile time and
@@ -326,8 +326,7 @@ python -c "import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import
 **Running the oracle tests:**
 
 ```bash
-pytest tests/backends/test_conformance.py -k "dafny-oracle" -v
-pytest tests/backends/test_conformance_extended.py -k "dafny-oracle" -v
+pytest tests/backends/conformance/ -k "dafny-oracle" -v
 ```
 
 All tests should pass or self-skip (GLOB capability not declared).
@@ -337,7 +336,7 @@ Any failure indicates a conformance suite bug.
 
 Two distinct test suites cover the contract:
 
-- **Conformance tests** (`tests/backends/test_conformance*.py`) drive
+- **Conformance tests** (`tests/backends/conformance/`) drive
   every backend — including the compiled Dafny oracle
   (`DafnyOracleBackend`) — against the same scenarios. The oracle is
   the gate; if it passes, the test is known-correct.
