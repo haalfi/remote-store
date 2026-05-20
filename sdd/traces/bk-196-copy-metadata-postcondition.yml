@@ -10,7 +10,11 @@ audience:
 expected_ripples:
   - sdd/formal/MemoryBackend-py/module_.py
   - sdd/backlogid.json
-review_rounds: 0
+discovery_followups:
+  - BK-232
+surprising_ripples:
+  - sdd/specs/003-backend-adapter-contract.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -84,3 +88,14 @@ phases:
         section: "Ripple-check table / Backlog item touched"
         read_type: verify
         extract: "BACKLOG → BACKLOG-DONE move, gen-backlogid refresh, trace shipped in-PR; audience is contributor.process + infra.test so no CHANGELOG entry"
+  - id: review
+    name: Review
+    steps:
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "Move"
+        read_type: reference
+        extract: "Review caught that Move carries the identical metadata-dropping defect — postcondition pins only content, body builds the destination via BasicFileInfo. Filed as discovery-followup BK-232; not fixed here, the PR stays scoped to Copy"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-019"
+        read_type: reference
+        extract: "Review flagged the // @spec BE-019, WR-013 tag as stricter than the written spec (principle 5: no spec clause stated copy preserves metadata). Amended BE-019 with a Metadata invariant and Formal coverage paragraph so the verified contract is spec-backed — a ripple the original ripple-check did not anticipate"
