@@ -9,7 +9,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **ID-206 — Mechanical spec ↔ Dafny ↔ test traceability gate**
-  spec: — · audience: infra.test, platform.tooling
+  spec: — · audience: platform.tooling, infra.test
   The keystone of the Formal Verification wave: turns "Dafny ties tests
   to specs" from a slogan into a CI gate. `scripts/check_formal_trace.py`
   builds a coverage matrix across three sources — spec IDs with a

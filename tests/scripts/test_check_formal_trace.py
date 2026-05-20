@@ -185,6 +185,15 @@ class TestExtractDeclaredSpecs:
         (tmp_path / "045.md").write_text("## WR-013: User Metadata Round-Trip\n", encoding="utf-8")
         assert extract_declared_specs(tmp_path) == {"WR-013"}
 
+    def test_heading_with_parenthetical_before_colon(self, tmp_path: Path) -> None:
+        # Spec 046 declares its renamed sections as `## EW-001 (was WR-014): ...`
+        # — a parenthetical sits between the ID and the colon.
+        (tmp_path / "046.md").write_text(
+            "## EW-001 (was WR-014): write_with_hash Returns Digest\n",
+            encoding="utf-8",
+        )
+        assert extract_declared_specs(tmp_path) == {"EW-001"}
+
     def test_requirements_table_row(self, tmp_path: Path) -> None:
         # Spec 022 declares SAW-001..015 as table rows, not headings.
         (tmp_path / "022.md").write_text(

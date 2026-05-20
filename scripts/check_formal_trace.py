@@ -96,7 +96,11 @@ _SPEC_ID_RE = re.compile(_SPEC_ID)
 # row of a requirement table — a table whose first column header is
 # ``ID`` (the form spec 022 uses for SAW-001..015). A table-shaped line
 # outside such a table does not declare a spec.
-_HEADING_RE = re.compile(rf"^#+[ \t]+({_SPEC_ID}):")
+#
+# In a heading the ID may carry a parenthetical before the colon, as in
+# ``## EW-001 (was WR-014): ...`` (spec 046's renamed sections); the
+# optional ``(...)`` group keeps those declarations in S.
+_HEADING_RE = re.compile(rf"^#+[ \t]+({_SPEC_ID})(?: \([^)]*\))?:")
 _TABLE_ROW_RE = re.compile(rf"^\|[ \t]*({_SPEC_ID})[ \t]*\|")
 _ID_TABLE_HEADER_RE = re.compile(r"^\|[ \t]*ID[ \t]*\|", re.IGNORECASE)
 
