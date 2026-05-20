@@ -249,9 +249,9 @@ gate) plus the ordinary `@pytest.mark.spec` marker.
   / `total_size == SumSizes` postcondition. Depends on ID-183.
 
 - [ ] **ID-190 — Formalize path well-formedness: `WellFormedPath` predicate**
-  spec: PATH-002–008, NPR-020, NPR-010, STORE-012 · effort: L · audience: library.maintainer
+  spec: PATH-002 -- PATH-008, NPR-020, NPR-010, STORE-012 · effort: L · audience: library.maintainer
   A (C) gap. `BackendContract.dfy` treats paths as opaque strings and
-  assumes well-formedness. The normalization rules PATH-002..008
+  assumes well-formedness. The normalization rules PATH-002 -- PATH-008
   (backslash to slash, `..` rejection, slash stripping and collapsing,
   dot-segment removal, null-byte and empty-path rejection) are enforced
   by Python code only: with no Dafny postcondition, the oracle cannot
