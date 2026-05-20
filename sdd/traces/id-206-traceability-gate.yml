@@ -18,7 +18,8 @@ expected_ripples:
   - sdd/backlogid.json
   - sdd/BACKLOG-DONE.md
   - .github/workflows/ci.yml
-discovery_followups: []
+discovery_followups:
+  - ID-207
 surprising_ripples: []
 phases:
   - id: orient

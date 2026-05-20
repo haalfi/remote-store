@@ -442,6 +442,33 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   gap left open by BK-193. No priority while trace authoring is still
   ad-hoc; promote to BK-prefix when trace volume justifies enforcement.
 
+- [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
+  spec: — · effort: L · audience: platform.tooling
+  ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review
+  confirmed it certifies *citation hygiene at spec-ID granularity*, not
+  clause-level enforcement (its docstring was narrowed to say so). Four
+  independent hardening steps would close the gap:
+  1. **Derive D mechanically.** D is built from author-typed `// @spec`
+     tags, so deleting a tag silently drops an F1 and a new untagged
+     `ensures` never enters D. Parse every contract `ensures` and fail on
+     an untagged one — needs an exemption marker for proof-helper lemma
+     `ensures` (e.g. `SlashCountZero`, the Safe/Unsafe pairs) that encode
+     no spec clause.
+  2. **Clause granularity, not ID granularity.** D/T/S key on spec ID, so
+     one marker clears F1 for every `ensures` sharing that ID (~10 share
+     `BE-014`). Per-clause sub-IDs, or a tag→test-name link, would gate
+     each postcondition individually.
+  3. **Push T past citation.** A marker only cites an ID; it does not
+     prove the test asserts the clause, is enabled, or cites the *right*
+     ID — a wrong-but-real ID passes F2 and even satisfies F1.
+  4. **Bar baseline growth mechanically.** `_BASELINE` shrink-only is a
+     review convention; a new violation can be parked by editing the
+     frozenset. A committed count/hash pinned by a separate check would
+     make it mechanical.
+  Surfaced in the PR #663 review. Steps are independent and may split
+  into separate IDs. No priority until the gate is shown to miss a real
+  regression; promote to BK-prefix at that point.
+
 ---
 
 ## Docs & Discoverability
