@@ -81,7 +81,7 @@ none of which is "run a second backend and diff the output":
 | Wave | Items | Notes |
 |---|---|---|
 | 0 — keystone | ID-206 | Traceability gate; its coverage matrix is the worklist for the (T) backfill |
-| 0 — contract (C) | ID-189, ID-190, BK-196 | Independent Dafny changes; each re-verifies the refinement |
+| 0 — contract (C) | ID-190, BK-196 | Independent Dafny changes; each re-verifies the refinement |
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
 | 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
 | 1 — test backfill (T) | ID-185, BK-195 | Conformance gaps for already-verified clauses |
@@ -110,7 +110,7 @@ PR where its items share a file or proof.
   worklist for every (T) item below; run it first. No spec change.
 
 - [ ] **ID-184 — Listing traversability: prove the contract, then enforce it**
-  spec: BE-008, BE-014, BE-015 · effort: M · audience: infra.test
+  spec: BE-013, BE-014, BE-015 · effort: M · audience: infra.test
   A (C)+(T) pair: the Dafny change and the tests it makes certifiable
   ship together.
   (C) `AllAncestorsTraversable` is defined in `BackendContract.dfy` and
@@ -120,16 +120,12 @@ PR where its items share a file or proof.
   satisfies the contract today. Add the traversability requirement to
   both listing postconditions (BE-014, BE-015) and re-verify the
   `MemoryBackend` refinement, which already establishes it.
-  (T) Two conformance-test gaps for clauses the verified contract states.
-  BE-008 precondition order: `test_write_on_directory_overwrite_still_raises_error`
-  and `test_delete_on_directory_missing_ok_still_raises` check only the
-  error type, not that the `IsDir` check fires before the `overwrite` /
-  `missing_ok` flags are read; assert the ordering and mark
-  `@pytest.mark.spec("BE-008")`. And `delete_folder` completeness:
-  `test_delete_folder_recursive_removes_all` asserts two paths are gone;
-  add a scan asserting no path under the deleted prefix survives,
-  matching the Dafny `forall` quantifier. For move/copy destination
-  discrimination see BK-177, which already tracks that `match=` fix.
+  (T) One conformance-test gap for a clause the verified contract states:
+  `delete_folder` completeness. `test_delete_folder_recursive_removes_all`
+  asserts the named paths are gone; add a `list_files` scan asserting no
+  path under the deleted prefix survives, matching the Dafny `forall`
+  quantifier. For move/copy destination discrimination see BK-177, which
+  already tracks that `match=` fix.
 
 - [ ] **ID-188 — Resource safety: prove the quality flags, then enforce cleanup**
   spec: SIO-001, SIO-008, SIO-009, SAW-004 · effort: M · audience: infra.test
@@ -138,25 +134,24 @@ PR where its items share a file or proof.
   `CapSeekableRead` is declared, every stream `Read` returns satisfies
   `seekable()`; stub `CapLazyRead` as a no-I/O-before-first-read
   advisory. Re-verify the refinement.
-  (T) Two cleanup-coverage gaps for clauses `ResourceSafety.dfy` already
-  proves. `test_streaming.py`: assert `stream.closed` after every
-  context-manager exit and explicit `.close()`; `SafeWrapImpliesNoLeaks`
-  guarantees no handle is left open, and the assertions make that visible
-  on real backends. `test_atomic.py`: after the `open_atomic`
-  exception-cleanup test, scan with `list_files` for orphan temp files
-  anywhere under the test prefix, not just absence of the target path.
-  Mark both `@pytest.mark.spec("SIO-001")`.
+  (T) One cleanup-coverage gap: `test_open_atomic_exception_cleanup` in
+  `test_atomic.py` asserts only that the target path is absent after an
+  `open_atomic` failure. Add a `list_files` scan asserting no orphan temp
+  files remain anywhere under the test prefix.
 
-- [ ] **ID-189 — Complete the Dafny `Error` datatype: `ResourceLocked` variant**
+- [ ] **ID-189 — Dafny `Error` variant for `ResourceLocked`**
   spec: ERR-013 · effort: S · audience: library.maintainer
-  A (C) gap. `RemoteStoreResourceLockedError` (ERR-013, spec 005) is a
-  first-class Python exception, but the `Error` datatype in
-  `BackendContract.dfy` omits the variant, so the verified contract is
-  incomplete: a backend that surfaces `ResourceLocked` (e.g. the future
-  Graph backend, ID-127) exercises behaviour the model cannot express,
-  and the oracle adapter `_raise_if_err` cannot map it. Add the
-  `ResourceLocked(path: Path)` variant and dispatch it in
-  `tests/backends/dafny/_helpers.py::_raise_if_err` to the Python class.
+  `ResourceLocked` (ERR-013, spec 005) is specified but not implemented:
+  `src/remote_store/_errors.py` has no such class, the hierarchy ends at
+  `BackendUnavailable`. The Dafny `Error` datatype omitting the variant is
+  therefore correct for the current code, not a gap. The variant becomes
+  warranted only when `ResourceLocked` is implemented, which the Graph
+  backend (ID-127, ADR-0024) requires. That change adds three coupled
+  pieces together: the `ResourceLocked` Python exception class (named
+  `ResourceLocked`, per the flat error hierarchy and spec 005's own
+  example), the Dafny `Error.ResourceLocked(path: Path)` variant, and its
+  dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err`. Track as
+  a sub-task of ID-127, not standalone work today.
 
 - [ ] **BK-195 — Conformance test: `copy()` preserves user metadata**
   spec: WR-013, BE-019, ASYNC-019 · effort: M · audience: infra.test
@@ -193,7 +188,8 @@ PR where its items share a file or proof.
   name-set check does not directly enforce the boundary. Assert the
   invariant itself, that every returned file's depth relative to the
   listed prefix is `<= max_depth`, via a shared `_depth(prefix, path)`
-  helper, and mark `@pytest.mark.spec("DEPTH-003")`.
+  helper; the variants already carry the `DEPTH-003` and `BE-014`
+  markers, so this is purely an added assertion.
 
 - [ ] **ID-187 — Property-based aggregate verification for `GetFolderInfo`**
   spec: BE-017, ID-134 · effort: M · audience: infra.test
@@ -222,11 +218,6 @@ PR where its items share a file or proof.
   comparison fails, so a harness bug cannot leave the property-based test
   vacuously green (the Safe/Unsafe-pair discipline in
   `sdd/formal/README.md`).
-  While in `tests/backends/dafny/`, fix the stale paths in the formal
-  README's "Compiled oracle" section (`tests/backends/dafny_oracle.py`,
-  `test_conformance.py`); the adapter is at
-  `tests/backends/dafny/_helpers.py`, the suite at
-  `tests/backends/conformance/`.
 
 - [ ] **ID-190 — Formalize path well-formedness: `WellFormedPath` predicate**
   spec: PATH-002 -- PATH-008, NPR-020, NPR-010, STORE-012 · effort: L · audience: library.maintainer
@@ -536,6 +527,17 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
 
   **Exit criteria:** `docs-src/llms.txt` committed; `GET
   https://docs.remotestore.dev/llms.txt` returns the file after next deploy.
+
+- [ ] **BK-231 — Fix stale paths in `sdd/formal/README.md`**
+  spec: — · effort: S · audience: library.maintainer
+  The "Compiled oracle" section is out of date with the test layout. It
+  names the oracle adapter `tests/backends/dafny_oracle.py`; the adapter
+  is `tests/backends/dafny/_helpers.py` (the similarly named
+  `tests/backends/fixtures/dafny_oracle.py` is the fixture, not the
+  adapter). Its `pytest tests/backends/test_conformance.py` /
+  `test_conformance_extended.py` commands also assume a flat layout the
+  suite no longer uses; the conformance tests live under
+  `tests/backends/conformance/`. Correct both.
 
 - [ ] **ID-180 — Stable HTML-anchor IDs across non-spec docs under `sdd/`**
   spec: — · effort: M · audience: library.maintainer
