@@ -28,6 +28,7 @@ class MemoryBackend extends Backend {
   }
 
   method Exists(path: Path) returns (r: Result<bool>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
   {
@@ -37,6 +38,7 @@ class MemoryBackend extends Backend {
   }
 
   method IsFileMethod(path: Path) returns (r: Result<bool>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
   {
@@ -46,6 +48,7 @@ class MemoryBackend extends Backend {
   }
 
   method IsFolderMethod(path: Path) returns (r: Result<bool>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
   {
@@ -86,6 +89,7 @@ class MemoryBackend extends Backend {
   }
 
   method Read(path: Path) returns (r: Result<seq<nat>>)
+    requires WellFormedPath(path)
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     ensures IsFile(fs, path)      ==> r == Ok(fs[path].content)
@@ -141,6 +145,7 @@ class MemoryBackend extends Backend {
     metadata: Option<map<string, string>>
   )
     returns (r: Result<WriteResult>)
+    requires WellFormedPath(path)
     modifies this
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -257,6 +262,7 @@ class MemoryBackend extends Backend {
   }
 
   method Delete(path: Path, missing_ok: bool) returns (r: Result<()>)
+    requires WellFormedPath(path)
     modifies this
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -290,6 +296,7 @@ class MemoryBackend extends Backend {
 
   method DeleteFolder(path: Path, recursive: bool, missing_ok: bool)
     returns (r: Result<()>)
+    requires WellFormedPath(path)
     modifies this
     ensures IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -347,6 +354,7 @@ class MemoryBackend extends Backend {
   // Includes completeness lower bound: every matching file appears.
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures !PathExists(fs, path) ==> r.value == []
     ensures r.Ok? ==>
@@ -419,6 +427,7 @@ class MemoryBackend extends Backend {
   }
 
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures !PathExists(fs, path) ==> r.value == []
     ensures r.Ok? ==>
@@ -462,6 +471,7 @@ class MemoryBackend extends Backend {
   }
 
   method GetFileInfo(path: Path) returns (r: Result<FileInfo>)
+    requires WellFormedPath(path)
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     ensures IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
@@ -483,6 +493,7 @@ class MemoryBackend extends Backend {
   // GetFolderInfo: symmetric with GetFileInfo: file path → InvalidPath.
   // Computes file_count and total_size by scanning the filesystem.
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
+    requires WellFormedPath(path)
     ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     ensures IsDir(fs, path)       ==>
@@ -538,6 +549,8 @@ class MemoryBackend extends Backend {
   // Move: directory src → InvalidPath; missing src → NotFound.
   method Move(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
+    requires WellFormedPath(src)
+    requires WellFormedPath(dst)
     modifies this
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
@@ -607,6 +620,8 @@ class MemoryBackend extends Backend {
   // Copy: directory src → InvalidPath; self-copy is no-op.
   method Copy(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
+    requires WellFormedPath(src)
+    requires WellFormedPath(dst)
     modifies this
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
@@ -717,6 +732,7 @@ class MemoryBackendMinimal extends Backend {
   }
 
   method Exists(path: Path) returns (r: Result<bool>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
   {
@@ -726,6 +742,7 @@ class MemoryBackendMinimal extends Backend {
   }
 
   method IsFileMethod(path: Path) returns (r: Result<bool>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
   {
@@ -735,6 +752,7 @@ class MemoryBackendMinimal extends Backend {
   }
 
   method IsFolderMethod(path: Path) returns (r: Result<bool>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
   {
@@ -769,6 +787,7 @@ class MemoryBackendMinimal extends Backend {
   }
 
   method Read(path: Path) returns (r: Result<seq<nat>>)
+    requires WellFormedPath(path)
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     ensures IsFile(fs, path)      ==> r == Ok(fs[path].content)
@@ -821,6 +840,7 @@ class MemoryBackendMinimal extends Backend {
     metadata: Option<map<string, string>>
   )
     returns (r: Result<WriteResult>)
+    requires WellFormedPath(path)
     modifies this
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -921,6 +941,7 @@ class MemoryBackendMinimal extends Backend {
   }
 
   method Delete(path: Path, missing_ok: bool) returns (r: Result<()>)
+    requires WellFormedPath(path)
     modifies this
     ensures IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -954,6 +975,7 @@ class MemoryBackendMinimal extends Backend {
 
   method DeleteFolder(path: Path, recursive: bool, missing_ok: bool)
     returns (r: Result<()>)
+    requires WellFormedPath(path)
     modifies this
     ensures IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -1001,6 +1023,7 @@ class MemoryBackendMinimal extends Backend {
 
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures !PathExists(fs, path) ==> r.value == []
     ensures r.Ok? ==>
@@ -1067,6 +1090,7 @@ class MemoryBackendMinimal extends Backend {
   }
 
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
+    requires WellFormedPath(path)
     ensures r.Ok?
     ensures !PathExists(fs, path) ==> r.value == []
     ensures r.Ok? ==>
@@ -1106,6 +1130,7 @@ class MemoryBackendMinimal extends Backend {
   }
 
   method GetFileInfo(path: Path) returns (r: Result<FileInfo>)
+    requires WellFormedPath(path)
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     ensures IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
@@ -1125,6 +1150,7 @@ class MemoryBackendMinimal extends Backend {
   }
 
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
+    requires WellFormedPath(path)
     ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
     ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     ensures IsDir(fs, path)       ==>
@@ -1176,6 +1202,8 @@ class MemoryBackendMinimal extends Backend {
 
   method Move(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
+    requires WellFormedPath(src)
+    requires WellFormedPath(dst)
     modifies this
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
@@ -1234,6 +1262,8 @@ class MemoryBackendMinimal extends Backend {
 
   method Copy(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
+    requires WellFormedPath(src)
+    requires WellFormedPath(dst)
     modifies this
     ensures IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))

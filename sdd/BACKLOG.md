@@ -80,7 +80,7 @@ none of which is "run a second backend and diff the output":
 
 | Wave | Items | Notes |
 |---|---|---|
-| 0 — contract (C) | ID-190, BK-232 | Independent Dafny changes; each re-verifies the refinement |
+| 0 — contract (C) | BK-232 | Independent Dafny changes; each re-verifies the refinement |
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
 | 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
 | 1 — test backfill (T) | ID-185, BK-195, BK-233 | Conformance gaps for already-verified clauses |
@@ -212,21 +212,6 @@ PR where its items share a file or proof.
   comparison fails, so a harness bug cannot leave the property-based test
   vacuously green (the Safe/Unsafe-pair discipline in
   `sdd/formal/README.md`).
-
-- [ ] **ID-190 — Formalize path well-formedness: `WellFormedPath` predicate**
-  spec: PATH-002 -- PATH-008, NPR-020, NPR-010, STORE-012 · effort: L · audience: library.maintainer
-  A (C) gap. `BackendContract.dfy` treats paths as opaque strings and
-  assumes well-formedness. The normalization rules PATH-002 -- PATH-008
-  (backslash to slash, `..` rejection, slash stripping and collapsing,
-  dot-segment removal, null-byte and empty-path rejection) are enforced
-  by Python code only: with no Dafny postcondition, the oracle cannot
-  certify a path-normalization test. Add a `WellFormedPath(s: string):
-  bool` predicate encoding these rules, declare it as a precondition
-  assumption on all contract methods, and thread it through
-  `MemoryBackend.dfy`. Second part: add a `NativePathRoundTrip` lemma (or
-  axiom, if the full proof is out of scope) for NPR-020's
-  `to_key(native_path(k)) == k` identity, enabling future Store-Backend
-  composition reasoning.
 
 - [ ] **ID-191 — Move atomicity: model the observable contract, then enforce it**
   spec: BE-018, ASYNC-018 · effort: L · audience: infra.test

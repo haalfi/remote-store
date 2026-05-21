@@ -1,0 +1,88 @@
+id: ID-190
+title: "Formalize path well-formedness: WellFormedPath predicate"
+trigger: "BackendContract.dfy treated paths as opaque non-empty strings; the PATH-002 -- PATH-008 normalisation rules and NPR-020's to_key/native_path round-trip were enforced in Python only, so the Dafny oracle could not certify a path-normalisation test. A Wave-0 (C) item of the Formal Verification backlog."
+source_items:
+  - ID-190
+audience:
+  - contributor.process
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-190, Formal Verification execution-order table"
+        read_type: gate
+        extract: "(C) Wave-0 item: a WellFormedPath predicate encoding PATH-002 -- PATH-008 as a precondition assumption, plus a NativePathRoundTrip lemma for NPR-020"
+      - file: sdd/formal/README.md
+        section: "Verification practices, Compiled oracle as conformance gate"
+        read_type: gate
+        extract: "assert breadcrumbs per branch; ghost-only changes need no oracle regeneration; MemoryBackend / MemoryBackendMinimal parity is review-enforced"
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-002 -- PATH-008, PATH-015"
+        read_type: gate
+        extract: "The seven normalisation rules to encode; PATH-015 establishes '.' as the canonical Root value that bypasses construction validation"
+      - file: src/remote_store/_path.py
+        section: "RemotePath._normalize"
+        read_type: reference
+        extract: "PATH-003 rejects a segment exactly equal to '..' (equality, not substring), so a filename like 'a..b' is accepted — resolves the spec's 'segments containing ..' ambiguity against the code"
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-020, NPR-005, NPR-021"
+        read_type: gate
+        extract: "native_path prepends the backend root, to_key strips it; the round-trip identity to_key(native_path(k)) == k; an empty key resolves to the root"
+      - file: sdd/formal/BackendContract.dfy
+        section: "§3 Path type, §5 Path utilities, §6 Backend trait"
+        read_type: gate
+        extract: "Path is a non-empty-string subset type; §5 hosts path predicates; the 13 trait methods take path parameters and carry no preconditions today"
+      - file: scripts/check_formal_trace.py
+        section: "_BASELINE, extract_dafny_specs, extract_conformance_specs"
+        read_type: gate
+        extract: "// @spec tags feed the F1 check; conformance markers count only under tests/backends/conformance/, so a new @spec NPR-020 tag with no marker there is an F1 to baseline"
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "WellFormedPath"
+        read_type: reference
+        extract: "Encode the normalised-path fixed point with substring/segment helpers, not a split function — no recursion, one bounded exists; carve out the Root sentinel explicitly as the first disjunct"
+      - file: sdd/formal/BackendContract.dfy
+        section: "NativePath, ToKey"
+        read_type: reference
+        extract: "Model to_key/native_path as pure string functions parameterised by root; the round-trip holds for every root and key with no precondition, so NativePathRoundTrip is a real lemma, not the axiom the item permitted"
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "§5a, §6 trait methods, §8"
+        read_type: reference
+        extract: "Add WellFormedPath + ContainsSub/HasSegment and NativePath/ToKey to §5a; requires WellFormedPath on all 13 trait methods; NativePathRoundTrip lemma in §8 tagged // @spec NPR-020"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "MemoryBackend and MemoryBackendMinimal methods"
+        read_type: reference
+        extract: "Mirror requires WellFormedPath on all 13 methods of both classes (parity rule); src and dst both for Move/Copy"
+      - file: scripts/check_formal_trace.py
+        section: "_BASELINE"
+        read_type: reference
+        extract: "Baseline (KIND_UNTESTED, NPR-020): the lemma tag is a Dafny-backed clause whose cross-backend conformance test is a separate (T) gap"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "dafny verify on all four .dfy files — 168 verified, 0 errors; an explicit {:trigger} on the ContainsSub exists silences the brittle-quantifier warning that fails the no-warnings build"
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "(unchanged)"
+        read_type: verify
+        extract: "Ghost-only change: requires clauses, the ghost predicate/functions and the lemma erase at compile time, so the compiled oracle needs no regeneration"
+      - file: scripts/check_formal_trace.py
+        section: "(full)"
+        read_type: verify
+        extract: "Traceability gate green — NPR-020 baselined, no new F1; PATH-002 -- PATH-008 carry no @spec tag because a precondition is an assumption, not a verified postcondition"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG -> BACKLOG-DONE move, gen-backlogid refresh, trace shipped in-PR; audience contributor.process + infra.test so no CHANGELOG entry"

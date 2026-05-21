@@ -235,6 +235,84 @@ predicate AllAncestorsTraversable(fs: Filesystem, p: Path)
 }
 
 // ---------------------------------------------------------------------------
+// §5a  Path well-formedness and native-path resolution  (ID-190)
+// ---------------------------------------------------------------------------
+// WellFormedPath characterises a *normalised* path: the fixed point of
+// RemotePath._normalize (src/remote_store/_path.py).  It is the set of
+// strings normalisation accepts and returns unchanged — no backslash,
+// no "." or ".." segment, no leading/trailing or doubled slash, no null
+// byte, non-empty.  Every Path reaching a Backend operation has already
+// cleared RemotePath construction, so the contract methods below take
+// WellFormedPath as a precondition assumption: the contract reasons
+// about normalised input only.  Before ID-190 the contract treated
+// paths as opaque non-empty strings and these rules lived in Python
+// alone, so the oracle could not certify a path-normalisation test.
+//
+// The Root sentinel "." is well-formed by fiat (PATH-015): it is the
+// canonical root value the Python adapter maps "" onto, even though
+// RemotePath(".") as constructor input is rejected (PATH-006 strips the
+// "." segment, PATH-008 then rejects the empty result).
+
+// `sub` occurs somewhere in `s`.
+ghost predicate ContainsSub(s: string, sub: string)
+{
+  exists i {:trigger s[i..i + |sub|]} :: 0 <= i <= |s| - |sub| && s[i..i + |sub|] == sub
+}
+
+// `seg` occurs in `s` as a complete '/'-delimited segment: the whole
+// string, a leading segment, a trailing segment, or an interior one.
+ghost predicate HasSegment(s: string, seg: string)
+{
+  s == seg
+  || (|s| >= |seg| + 1 && s[..|seg| + 1] == seg + "/")
+  || (|s| >= |seg| + 1 && s[|s| - |seg| - 1..] == "/" + seg)
+  || ContainsSub(s, "/" + seg + "/")
+}
+
+// PATH-002 -- PATH-008: `s` is a normalised, well-formed path.
+ghost predicate WellFormedPath(s: string)
+{
+  s == Root                                  // PATH-015: root sentinel
+  || (
+    |s| > 0                                  // PATH-008: non-empty
+    && '\0' !in s                            // PATH-007: no null byte
+    && '\\' !in s                            // PATH-002: no backslash
+    && s[0] != '/'                           // PATH-004: no leading slash
+    && s[|s| - 1] != '/'                     // PATH-004: no trailing slash
+    && !ContainsSub(s, "//")                 // PATH-005: no doubled slash
+    && !HasSegment(s, ".")                   // PATH-006: no "." segment
+    && !HasSegment(s, "..")                  // PATH-003: no ".." segment
+  )
+}
+
+// to_key / native_path model the bidirectional conversion between a
+// backend-native path and a backend-relative key (spec 010; BE-023 /
+// BE-025).  `root` is the backend's native prefix — a filesystem root,
+// an S3 bucket, an SFTP base_path; the empty root models the
+// identity-default backends (MemoryBackend, the plain Backend ABC).
+// The round-trip identity is proved as NativePathRoundTrip in §8.
+
+// native_path(key): prepend the backend root to a relative key.  An
+// empty key resolves to the root itself (NPR-021).
+ghost function NativePath(root: string, key: string): string
+{
+  if key == "" then root
+  else if root == "" then key
+  else root + "/" + key
+}
+
+// to_key(native): strip the backend root prefix (NPR-005).  A path that
+// does not start with the root is returned unchanged (best-effort).
+ghost function ToKey(root: string, native: string): string
+{
+  if root == "" then native
+  else if native == root then ""
+  else if |native| > |root| && native[..|root| + 1] == root + "/"
+    then native[|root| + 1..]
+  else native
+}
+
+// ---------------------------------------------------------------------------
 // §5b  Aggregate helpers (ID-134)
 // ---------------------------------------------------------------------------
 
@@ -299,6 +377,7 @@ trait Backend {
   // Returns True iff path exists AND all ancestors are directories.
   // Returns False for missing paths or paths with file-as-directory-component.
   method Exists(path: Path) returns (r: Result<bool>)
+    requires WellFormedPath(path)
     // @spec BE-004
     ensures r.Ok?
     // @spec BE-004
@@ -310,6 +389,7 @@ trait Backend {
   // Returns True iff path is a file AND all ancestors are directories.
   // Returns False for missing paths or paths with file-as-directory-component.
   method IsFileMethod(path: Path) returns (r: Result<bool>)
+    requires WellFormedPath(path)
     // @spec BE-005
     ensures r.Ok?
     // @spec BE-005
@@ -321,6 +401,7 @@ trait Backend {
   // Returns True iff path is a folder AND all ancestors are directories.
   // Returns False for missing paths or paths with file-as-directory-component.
   method IsFolderMethod(path: Path) returns (r: Result<bool>)
+    requires WellFormedPath(path)
     // @spec BE-005
     ensures r.Ok?
     // @spec BE-005
@@ -330,6 +411,7 @@ trait Backend {
   // read(path) → content  (no modifies: fs unchanged)
   // ====================================================================
   method Read(path: Path) returns (r: Result<seq<nat>>)
+    requires WellFormedPath(path)
     // @spec BE-021
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     // @spec BE-006
@@ -364,6 +446,7 @@ trait Backend {
     metadata: Option<map<string, string>>
   )
     returns (r: Result<WriteResult>)
+    requires WellFormedPath(path)
     modifies this
     // Gap 1 / BE-008: precondition order — type check first (directory
     // path → InvalidPath).
@@ -444,6 +527,7 @@ trait Backend {
   // IsDir → InvalidPath regardless of missing_ok.
   // missing_ok only governs the absent-path case.
   method Delete(path: Path, missing_ok: bool) returns (r: Result<()>)
+    requires WellFormedPath(path)
     modifies this
     // @spec BE-021
     ensures IsDir(old(fs), path)
@@ -466,6 +550,7 @@ trait Backend {
   // ====================================================================
   method DeleteFolder(path: Path, recursive: bool, missing_ok: bool)
     returns (r: Result<()>)
+    requires WellFormedPath(path)
     modifies this
     // File path → InvalidPath (wrong type, symmetric with Delete on dirs).
     // @spec BE-021
@@ -503,6 +588,7 @@ trait Backend {
   // recursive=false constrains results to immediate children (depth 0).
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
+    requires WellFormedPath(path)
     // Gap 3 / BE-014: listing is total — never raises NotFound.
     // @spec BE-014
     ensures r.Ok?
@@ -539,6 +625,7 @@ trait Backend {
   // list_folders(path)
   // ====================================================================
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
+    requires WellFormedPath(path)
     // Gap 3 / BE-015: listing is total — never raises NotFound.
     // @spec BE-015
     ensures r.Ok?
@@ -559,6 +646,7 @@ trait Backend {
   // get_file_info(path) → FileInfo
   // ====================================================================
   method GetFileInfo(path: Path) returns (r: Result<FileInfo>)
+    requires WellFormedPath(path)
     // @spec BE-021
     ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     // @spec BE-016
@@ -571,6 +659,7 @@ trait Backend {
   // ====================================================================
   // BE-017: symmetric with GetFileInfo: file path → InvalidPath.
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
+    requires WellFormedPath(path)
     // @spec BE-021
     ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
     // @spec BE-017
@@ -590,6 +679,8 @@ trait Backend {
   //   Postcondition covers only the final state, not intermediate visibility.
   method Move(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
+    requires WellFormedPath(src)
+    requires WellFormedPath(dst)
     modifies this
     // @spec BE-021
     ensures IsDir(old(fs), src)
@@ -622,6 +713,8 @@ trait Backend {
   // Self-copy (src == dst) is a no-op, not AlreadyExists.
   method Copy(src: Path, dst: Path, overwrite: bool)
     returns (r: Result<()>)
+    requires WellFormedPath(src)
+    requires WellFormedPath(dst)
     modifies this
     // @spec BE-021
     ensures IsDir(old(fs), src)
@@ -852,6 +945,35 @@ lemma MoveIsNotNoop(
   assert src in oldFs;
   assert src !in newFs;
   assert oldFs != newFs;
+}
+
+// NPR-020: native_path is a right inverse of to_key.  Round-tripping a
+// key out to the backend-native form and back returns the key
+// unchanged, for every root and every key — to_key strips exactly what
+// native_path prepended.  This backend-level identity is the base case
+// future Store-Backend composition reasoning builds on: Store.to_key /
+// Store.native_path (NPR-010, STORE-012) layer the store root_path on
+// top of it.
+// @spec NPR-020
+lemma NativePathRoundTrip(root: string, key: string)
+  ensures ToKey(root, NativePath(root, key)) == key
+{
+  if key == "" {
+    assert NativePath(root, key) == root;
+    assert ToKey(root, root) == "";
+  } else if root == "" {
+    assert NativePath(root, key) == key;
+    assert ToKey(root, key) == key;
+  } else {
+    var native := NativePath(root, key);
+    assert native == root + "/" + key;
+    assert |root + "/"| == |root| + 1;
+    assert |native| == |root| + 1 + |key|;
+    assert native != root;
+    assert native[..|root| + 1] == root + "/";
+    assert native[|root| + 1..] == key;
+    assert ToKey(root, native) == native[|root| + 1..];
+  }
 }
 
 // ---------------------------------------------------------------------------
