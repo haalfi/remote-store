@@ -15,7 +15,9 @@ discovery_followups:
   - BK-235
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+surprising_ripples:
+  - scripts/check_formal_trace.py
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -94,3 +96,10 @@ phases:
         section: "Ripple-check table / Backlog item touched"
         read_type: verify
         extract: "BACKLOG -> BACKLOG-DONE move for both items, execution-order row trimmed to ID-185, gen-backlogid refresh, trace shipped in-PR; audience infra.test so no CHANGELOG entry"
+  - id: review
+    name: Review
+    steps:
+      - file: scripts/check_formal_trace.py
+        section: "Landing strategy — checked-in baseline"
+        read_type: reference
+        extract: "Review caught a stale BK-195 token in the (T)-backfill worklist docstring (ID-184 / ID-185 / ID-188 / BK-195) — BK-195 is closed by this PR. Dropped it per principle 3; the ripple-check table has no row for backlog-ID mentions in tooling docstrings, so the edit was an unanticipated ripple"
