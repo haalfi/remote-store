@@ -8,7 +8,7 @@ audience:
   - infra.test
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -86,3 +86,14 @@ phases:
         section: "Ripple-check table / Backlog item touched"
         read_type: verify
         extract: "BACKLOG -> BACKLOG-DONE move, gen-backlogid refresh, trace shipped in-PR; audience contributor.process + infra.test so no CHANGELOG entry"
+  - id: review
+    name: Review
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "§5a header comment"
+        read_type: reference
+        extract: "Review flagged WellFormedPath as inert as a verification artifact (a requires only weakens proof obligations, catches no bug today). Added a Scope paragraph stating the contract does not reject malformed paths until a future item makes a postcondition or refinement depend on the predicate"
+      - file: sdd/formal/BackendContract.dfy
+        section: "NativePathRoundTrip"
+        read_type: reference
+        extract: "Review noted the // @spec NPR-020 tag sat above the lemma rather than directly above its ensures (the documented convention, matching WR008FieldMapping). Moved the tag one line down onto the ensures"

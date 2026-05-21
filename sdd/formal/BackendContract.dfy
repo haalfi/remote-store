@@ -252,6 +252,13 @@ predicate AllAncestorsTraversable(fs: Filesystem, p: Path)
 // canonical root value the Python adapter maps "" onto, even though
 // RemotePath(".") as constructor input is rejected (PATH-006 strips the
 // "." segment, PATH-008 then rejects the empty result).
+//
+// Scope: as a `requires`, WellFormedPath is an *assumption*, not a
+// checked obligation.  It weakens what each method body must prove, and
+// nothing here establishes that callers pass a well-formed path — so the
+// contract does not *reject* a malformed path, it just says nothing
+// about one.  The predicate becomes load-bearing only once a future item
+// makes a postcondition or a path-construction refinement depend on it.
 
 // `sub` occurs somewhere in `s`.
 ghost predicate ContainsSub(s: string, sub: string)
@@ -954,8 +961,8 @@ lemma MoveIsNotNoop(
 // future Store-Backend composition reasoning builds on: Store.to_key /
 // Store.native_path (NPR-010, STORE-012) layer the store root_path on
 // top of it.
-// @spec NPR-020
 lemma NativePathRoundTrip(root: string, key: string)
+  // @spec NPR-020
   ensures ToKey(root, NativePath(root, key)) == key
 {
   if key == "" {
