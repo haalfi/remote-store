@@ -10095,12 +10095,22 @@ destination; the backend MUST NOT silently swallow the error.</p>
 <h3 id="be-019-copy">BE-019: copy()<a class="headerlink" href="#be-019-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>copy(src, dst, overwrite=False)</code> duplicates a file.
 <strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, or if <code>dst</code> names an existing directory. <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021.
+<strong>Metadata:</strong> <code>copy()</code> preserves the source file's user metadata: after a
+successful copy, <code>get_file_info(dst)</code> returns the same <code>metadata</code> mapping as
+<code>get_file_info(src)</code> — the WR-013 user-metadata round-trip, applied to the
+copy path. A backend that rebuilds the destination <code>FileInfo</code> without
+carrying <code>metadata</code> across violates this invariant.
 <strong>Partial failure:</strong> Unlike <code>move()</code>, <code>copy()</code> has no delete-after phase, so it
 cannot create a duplicate of the source. However, a backend that writes <code>dst</code>
 incrementally (e.g. multi-part upload) can leave a corrupt or incomplete
 destination if the transfer fails mid-way. Backends MUST NOT silently return
 success on a failed copy — the caller should assume <code>dst</code> is corrupt if an
-error is raised mid-operation.</p>
+error is raised mid-operation.
+<strong>Formal coverage:</strong> <code>copy()</code> is modelled in
+<code>sdd/formal/BackendContract.dfy</code> as <code>Copy</code>; the success postcondition pins
+both <code>fs[dst].content == old(fs)[src].content</code> and
+<code>fs[dst].info.metadata == old(fs)[src].info.metadata</code>, so a refinement that
+drops metadata fails to verify. Verified in <code>MemoryBackend.dfy</code>. See BK-196.</p>
 <h3 id="be-020-close">BE-020: close()<a class="headerlink" href="#be-020-close" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>close()</code> is optional (default no-op). Called for resource cleanup.</p>
 <h3 id="be-021-error-mapping">BE-021: Error Mapping<a class="headerlink" href="#be-021-error-mapping" title="Permanent link">&para;</a></h3>
