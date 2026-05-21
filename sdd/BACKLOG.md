@@ -82,7 +82,7 @@ none of which is "run a second backend and diff the output":
 |---|---|---|
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
 | 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
-| 1 — test backfill (T) | ID-185, BK-195, BK-233 | Conformance gaps for already-verified clauses |
+| 1 — test backfill (T) | ID-185 | Conformance gaps for already-verified clauses |
 
 Items stay granular for tracking, but a whole wave row may ship as one
 PR where its items share a file or proof.
@@ -130,31 +130,6 @@ PR where its items share a file or proof.
   example), the Dafny `Error.ResourceLocked(path: Path)` variant, and its
   dispatch in `tests/backends/dafny/_helpers.py::_raise_if_err`. Track as
   a sub-task of ID-127, not standalone work today.
-
-- [ ] **BK-195 — Conformance test: `copy()` preserves user metadata**
-  spec: WR-013, BE-019, ASYNC-019 · effort: M · audience: infra.test
-  A (T) gap; pairs with BK-196 (the contract side).
-  `tests/backends/conformance/test_atomic.py::TestWriteResultConformance`
-  covers `write → get_file_info` metadata round-trip, but nothing
-  exercises `write → copy → get_file_info`. That gap let BK-192 reach
-  master: only memory backends had targeted tests, and no cross-backend
-  gate caught the omission. Add a conformance test against every backend
-  declaring `USER_METADATA` (Local, S3, SFTP via metadata files, Azure,
-  memory, async-memory). Surfaced during BK-192.
-  Trace: `sdd/traces/bk-192-copy-metadata-parity.yml`.
-
-- [ ] **BK-233 — Conformance test: `move()` preserves user metadata**
-  spec: WR-013, BE-018, ASYNC-018 · effort: M · audience: infra.test
-  A (T) gap; the `move()` sibling of BK-195, pairs with BK-232 (the
-  contract side).
-  `tests/backends/conformance/test_atomic.py::TestWriteResultConformance`
-  covers `write → get_file_info` and BK-195 adds `write → copy →
-  get_file_info`, but nothing exercises `write → move → get_file_info`. A
-  move is observationally copy-then-delete: on a `USER_METADATA`-declaring
-  backend the metadata mapping must survive the move (the WR-013
-  round-trip). Add a conformance test against every backend declaring
-  `USER_METADATA` (Local, S3, SFTP via metadata files, Azure, memory,
-  async-memory). Surfaced during BK-196 review.
 
 - [ ] **ID-185 — Depth-boundary conformance gap**
   spec: DEPTH-003, BE-014 · effort: S · audience: infra.test

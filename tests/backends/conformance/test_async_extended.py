@@ -97,6 +97,24 @@ _MOVE_COPY_PARAMS = [
     pytest.param("copy", Capability.COPY, id="copy"),
 ]
 
+# (op, cap) for the user-metadata round-trip across move/copy (BK-195 /
+# BK-233). Per-param @spec marks differ by op: copy carries BE-019 +
+# ASYNC-019, move BE-018 + ASYNC-018; both carry WR-013.
+_MOVE_COPY_META_PARAMS = [
+    pytest.param(
+        "copy",
+        Capability.COPY,
+        id="copy",
+        marks=[pytest.mark.spec("WR-013"), pytest.mark.spec("BE-019"), pytest.mark.spec("ASYNC-019")],
+    ),
+    pytest.param(
+        "move",
+        Capability.MOVE,
+        id="move",
+        marks=[pytest.mark.spec("WR-013"), pytest.mark.spec("BE-018"), pytest.mark.spec("ASYNC-018")],
+    ),
+]
+
 pytestmark = pytest.mark.extended_conformance
 
 # ``async_backend`` is parametrised by the registry-driven hook in
@@ -629,6 +647,33 @@ class TestCopyPostState:
         await async_backend.copy("cpps_src.txt", "cpps_dst.txt")
         assert await async_backend.read_bytes("cpps_src.txt") == b"data"
         assert await async_backend.read_bytes("cpps_dst.txt") == b"data"
+
+
+class TestMoveCopyMetadataPreservation:
+    """ASYNC-018 / ASYNC-019: move/copy preserve user metadata (BK-233 / BK-195).
+
+    Async mirror of ``test_atomic.py::TestWriteResultConformance``
+    ``::test_metadata_round_trips_through_move_copy`` — the WR-013
+    user-metadata round-trip applied to the async move/copy paths.
+    """
+
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_META_PARAMS)
+    async def test_metadata_round_trips_through_move_copy(
+        self, async_backend: AsyncBackend, op: str, cap: Capability
+    ) -> None:
+        """A successful move/copy preserves the source file's user metadata.
+
+        BE-018/BE-019 Metadata invariant: ``get_file_info(dst)`` MUST return
+        the same mapping the source carried before the operation.
+        """
+        _require(async_backend, cap, Capability.USER_METADATA, Capability.METADATA)
+        meta = {"author": "carol", "stage": "bronze"}
+        src = f"mcmeta/{op}-src.txt"
+        dst = f"mcmeta/{op}-dst.txt"
+        await async_backend.write(src, b"data", metadata=meta)
+        await _do_op(async_backend, op, src, dst)
+        info = await async_backend.get_file_info(dst)
+        assert info.metadata == meta
 
 
 # ===========================================================================

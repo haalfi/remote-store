@@ -8,6 +8,41 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-195 — Conformance test: `copy()` preserves user metadata**
+  spec: WR-013, BE-019, ASYNC-019 · audience: infra.test
+  A (T) gap, paired with BK-196 (the contract side).
+  `test_atomic.py::TestWriteResultConformance` covered the
+  `write → get_file_info` user-metadata round-trip but nothing exercised
+  `write → copy → get_file_info`; that gap let BK-192 (memory `copy()`
+  dropping metadata) reach master with no cross-backend gate.
+  `TestWriteResultConformance::test_metadata_round_trips_through_move_copy`
+  now writes a file with a non-empty metadata mapping, copies it, and
+  asserts `get_file_info(dst)` returns the mapping verbatim — parametrized
+  over the backend registry, self-skipping backends without
+  `USER_METADATA` (consistent with the sibling round-trip test), and gated
+  by the compiled Dafny oracle (`dafny_oracle`), which is green because
+  BK-196 pinned metadata in the `Copy` postcondition. The `copy`
+  parameter is tagged `@pytest.mark.spec` WR-013 + BE-019; the async
+  mirror `test_async_extended.py::TestMoveCopyMetadataPreservation`
+  additionally carries ASYNC-019. Shipped with BK-233 as one PR — the
+  items share `test_atomic.py`, which the wave execution-order note
+  allows.
+  Trace: `sdd/traces/bk-195-copy-move-metadata-conformance.yml`.
+
+- [x] **BK-233 — Conformance test: `move()` preserves user metadata**
+  spec: WR-013, BE-018, ASYNC-018 · audience: infra.test
+  A (T) gap, the `move()` sibling of BK-195, paired with BK-232 (the
+  contract side). A move is observationally copy-then-delete, so on a
+  `USER_METADATA`-declaring backend the metadata mapping must survive it
+  (the WR-013 round-trip). The parametrized test BK-195 added,
+  `test_metadata_round_trips_through_move_copy`, carries a `move`
+  parameter tagged `@pytest.mark.spec` WR-013 + BE-018; the async mirror
+  carries ASYNC-018. The Dafny oracle is green because BK-232 pinned
+  metadata in the `Move` postcondition. Shipped with BK-195 as one PR;
+  the trace is rolled up under BK-195's via `co_shipped_items` rather
+  than authored as a near-duplicate.
+  Trace: `sdd/traces/bk-195-copy-move-metadata-conformance.yml`.
+
 - [x] **BK-232 — Pin metadata in the Dafny `Move` postcondition**
   spec: WR-013, BE-018, ASYNC-018 · audience: library.maintainer
   A (C) gap, the `Move` sibling of BK-196. `MemoryBackend.dfy::Move`
