@@ -11,6 +11,8 @@ audience:
   - infra.test
 co_shipped_items:
   - BK-233
+discovery_followups:
+  - BK-235
 expected_ripples:
   - sdd/backlogid.json
 review_rounds: 0

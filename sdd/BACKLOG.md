@@ -760,6 +760,15 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   so async patterns are settled. Findings inform the next release scope; no code changes
   are produced by this item itself.
 
+- [ ] **BK-235 — Record the Azure cassette for the copy/move metadata conformance tests**
+  spec: — · effort: S · audience: infra.test
+  BK-195/BK-233 added `test_metadata_round_trips_through_move_copy` (sync +
+  async), but `azure_replay` self-skips it — no replay cassette exists, so
+  the Azure backend is not actually exercised by the new gate. Record the
+  cassette via `RS_TEST_LIVE_HNS=1 hatch run record-azure` against a live
+  ADLS Gen2 account (Stage-3 credentials; per TEST-009 CI does not
+  auto-record). Surfaced during BK-195/BK-233.
+
 - [ ] **BK-208 — Triage post-v0.23.0 lessons-learned into backlog items**
   spec: — · effort: M · audience: library.maintainer
   A post-v0.23.0 retrospective covers the v0.23.0→master cycle (~100 PRs, two
