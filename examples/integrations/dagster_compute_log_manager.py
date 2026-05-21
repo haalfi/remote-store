@@ -10,6 +10,9 @@ Unlike the IO manager, the compute log manager has no Python construction API â€
 Dagster instantiates it from a dagster.yaml config dict. This demo wires the
 equivalent config programmatically through DagsterInstance overrides.
 
+Note: Dagster's file-descriptor-level capture under ``execute_in_process``
+yields empty log files on Windows, so the captured output is empty there.
+
 ---
 see_also:
   - label: Dagster
@@ -78,9 +81,9 @@ def demo() -> dict[str, Any]:
 
             # Read the captured logs back out of the Store.
             print("=== Read compute logs back from the Store ===")
-            log_key = list(
-                manager.get_log_keys_for_log_key_prefix([run.run_id, "compute_logs"], ComputeIOType.STDOUT)[0]
-            )
+            keys = manager.get_log_keys_for_log_key_prefix([run.run_id, "compute_logs"], ComputeIOType.STDOUT)
+            assert keys, "expected the run's captured compute logs in the Store"
+            log_key = list(keys[0])
             stdout, _ = manager.get_log_data_for_type(log_key, ComputeIOType.STDOUT, offset=0, max_bytes=None)
             stderr, _ = manager.get_log_data_for_type(log_key, ComputeIOType.STDERR, offset=0, max_bytes=None)
             print(f"  stdout: {stdout!r}")
