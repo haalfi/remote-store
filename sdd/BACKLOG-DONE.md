@@ -15,13 +15,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   conversion, `..` rejection, slash stripping and collapsing, dot-segment
   removal, null-byte and empty-path rejection) lived in Python alone, so
   the oracle could not certify a path-normalisation test. `WellFormedPath`
-  is now a `ghost predicate` characterising a normalised path (the fixed
-  point of `RemotePath._normalize`), declared as a `requires` precondition
-  on all 13 contract methods and mirrored across both `MemoryBackend`
-  classes. The Root sentinel `"."` is well-formed by fiat (PATH-015).
-  Second part: `NativePathRoundTrip` proves NPR-020's
-  `to_key(native_path(k)) == k` identity over pure `NativePath` / `ToKey`
-  string models, for every root and key (a real lemma, no axiom needed).
+  is now a `ghost predicate` characterising a normalised path (a fixed
+  point of `RemotePath._normalize` for non-root paths, plus the Root
+  sentinel `"."` by fiat per PATH-015), declared as a `requires`
+  precondition on all 13 contract methods and mirrored across both
+  `MemoryBackend` classes. Second part: `NativePathRoundTrip` proves
+  NPR-020's `to_key(native_path(k)) == k` identity over pure `NativePath`
+  / `ToKey` string models for non-empty keys (and identity-default
+  roots); the empty-key round-trip is backend-divergent — `to_key` of the
+  bare root differs across backends — and is excluded, tracked as BK-234.
   Ghost-only: the `requires` clauses, the `ghost` predicate and functions,
   and the lemma erase at compile time, so the compiled oracle is
   unchanged; all four `.dfy` files verify (168 verified, 0 errors). The

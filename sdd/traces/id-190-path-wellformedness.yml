@@ -8,7 +8,9 @@ audience:
   - infra.test
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 1
+discovery_followups:
+  - BK-234
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -97,3 +99,11 @@ phases:
         section: "NativePathRoundTrip"
         read_type: reference
         extract: "Review noted the // @spec NPR-020 tag sat above the lemma rather than directly above its ensures (the documented convention, matching WR008FieldMapping). Moved the tag one line down onto the ensures"
+      - file: src/remote_store/backends/_s3_base.py
+        section: "S3Backend.to_key"
+        read_type: reference
+        extract: "Round-2 review caught that the ToKey model's bare-root branch (native == root) matched LocalBackend/SFTPBackend but not S3Backend/AzureBackend, which return the bare bucket unchanged. Dropped that unsanctioned branch so ToKey follows NPR-005, and scoped NativePathRoundTrip to non-empty keys / identity roots"
+      - file: sdd/BACKLOG.md
+        section: "BK-234"
+        read_type: reference
+        extract: "The empty-key round-trip is genuinely backend-divergent and NPR-005 contradicts NPR-020 on it. Filed BK-234 to reconcile the to_key contract; the lemma now excludes the case rather than papering it over with an unsanctioned model branch"
