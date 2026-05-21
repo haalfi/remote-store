@@ -1804,6 +1804,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster Compute Log Manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8837,7 +8865,7 @@
   <span class="md-ellipsis">
     
   
-    031: ext.dagster - Dagster IO Manager Adapter Specification
+    031: ext.dagster - Dagster Integration Specification
   
 
     
@@ -9660,7 +9688,18 @@
 
 <h1 id="rfc-0014-dagster-compute-log-manager">RFC-0014: Dagster Compute Log Manager<a class="headerlink" href="#rfc-0014-dagster-compute-log-manager" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft</p>
+<p>Implemented (ID-208). Graduated to <code>sdd/specs/031-ext-dagster.md</code>
+(DAG-021 – DAG-033).</p>
+<p>Open Questions resolved during implementation: OQ1 — v1 returns <code>None</code> for
+download URLs; OQ2 — the Dagster API was verified against the installed
+<code>dagster</code> (1.13.5) and the import paths corrected (notably
+<code>PollingComputeLogSubscriptionManager</code> and <code>IO_TYPE_EXTENSION</code> live in the
+<code>cloud_storage_compute_log_manager</code> / <code>local_compute_log_manager</code> modules,
+and <code>ConfigurableClass</code> in <code>dagster._serdes</code>); OQ3 — extended spec 031;
+OQ4 — same <code>ext/dagster.py</code> module; OQ5 — <code>get_log_keys_for_log_key_prefix</code>
+implemented; OQ6 — <code>Secret</code>-wrapping added to the shared <code>_build_store</code>
+(DAG-033), which also fixes the v2 <code>DagsterStoreResource</code> /
+<code>RemoteStoreIOManager</code>.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Add <code>RemoteStoreComputeLogManager</code> to <code>ext.dagster</code>: a Dagster
 <a href="https://docs.dagster.io/deployment/dagster-plus/management/managing-compute-logs-and-error-messages"><code>ComputeLogManager</code></a>

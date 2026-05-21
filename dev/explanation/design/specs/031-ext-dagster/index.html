@@ -27,7 +27,7 @@
     
     
       
-        <title>031: ext.dagster - Dagster IO Manager Adapter Specification - remote-store</title>
+        <title>031: ext.dagster - Dagster Integration Specification - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#extdagster-dagster-io-manager-adapter-specification" class="md-skip">
+        <a href="#extdagster-dagster-integration-specification" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              031: ext.dagster - Dagster IO Manager Adapter Specification
+              031: ext.dagster - Dagster Integration Specification
             
           </span>
         </div>
@@ -1791,6 +1791,34 @@
     
   
     Dagster v2 Resource
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster Compute Log Manager
   
 
     
@@ -8534,7 +8562,7 @@
   <span class="md-ellipsis">
     
   
-    031: ext.dagster - Dagster IO Manager Adapter Specification
+    031: ext.dagster - Dagster Integration Specification
   
 
     
@@ -8552,7 +8580,7 @@
   <span class="md-ellipsis">
     
   
-    031: ext.dagster - Dagster IO Manager Adapter Specification
+    031: ext.dagster - Dagster Integration Specification
   
 
     
@@ -8899,6 +8927,166 @@
     <span class="md-ellipsis">
       
         DAG-020: load_input with Multiple Partition Keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v3-compute-log-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v3: Compute Log Manager
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v3: Compute Log Manager">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dag-021-configurableclass-plumbing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-021: ConfigurableClass Plumbing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-022-store-construction-and-capability-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-022: Store Construction and Capability Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-023-local_manager-and-upload_interval-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-023: local_manager and upload_interval Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-024-remote-path-scheme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-024: Remote Path Scheme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-025-_upload_file_obj" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-025: _upload_file_obj
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-026-download_from_cloud_storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-026: download_from_cloud_storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-027-cloud_storage_has_logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-027: cloud_storage_has_logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-028-display_path_for_type-download_url_for_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-028: display_path_for_type / download_url_for_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-029-delete_logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-029: delete_logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-030-on_subscribe-on_unsubscribe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-030: on_subscribe / on_unsubscribe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-031-get_log_keys_for_log_key_prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-031: get_log_keys_for_log_key_prefix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-032-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-032: Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-033-credential-masking-in-_build_store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-033: Credential Masking in _build_store
       
     </span>
   </a>
@@ -9777,6 +9965,166 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#v3-compute-log-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v3: Compute Log Manager
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v3: Compute Log Manager">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dag-021-configurableclass-plumbing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-021: ConfigurableClass Plumbing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-022-store-construction-and-capability-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-022: Store Construction and Capability Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-023-local_manager-and-upload_interval-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-023: local_manager and upload_interval Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-024-remote-path-scheme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-024: Remote Path Scheme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-025-_upload_file_obj" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-025: _upload_file_obj
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-026-download_from_cloud_storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-026: download_from_cloud_storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-027-cloud_storage_has_logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-027: cloud_storage_has_logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-028-display_path_for_type-download_url_for_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-028: display_path_for_type / download_url_for_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-029-delete_logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-029: delete_logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-030-on_subscribe-on_unsubscribe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-030: on_subscribe / on_unsubscribe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-031-get_log_keys_for_log_key_prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-031: get_log_keys_for_log_key_prefix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-032-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-032: Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-033-credential-masking-in-_build_store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG-033: Credential Masking in _build_store
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -9794,19 +10142,23 @@
 
 
 
-<h1 id="extdagster-dagster-io-manager-adapter-specification">ext.dagster - Dagster IO Manager Adapter Specification<a class="headerlink" href="#extdagster-dagster-io-manager-adapter-specification" title="Permanent link">&para;</a></h1>
+<h1 id="extdagster-dagster-integration-specification">ext.dagster - Dagster Integration Specification<a class="headerlink" href="#extdagster-dagster-integration-specification" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><code>ext.dagster</code> provides a thin adapter that wraps any existing <code>Store</code> as a
-Dagster <code>IOManager</code>, enabling teams already using remote-store to reuse their
-Store configuration (credentials, retry policy, caching, observability) inside
-Dagster pipelines without duplicating config into <code>dagster-aws</code> /
-<code>dagster-azure</code>.</p>
+<p><code>ext.dagster</code> covers both of Dagster's storage extension points. The
+<code>IOManager</code> adapter wraps any existing <code>Store</code> so teams already using
+remote-store can reuse their Store configuration (credentials, retry policy,
+caching, observability) inside Dagster pipelines without duplicating config
+into <code>dagster-aws</code> / <code>dagster-azure</code>. The <code>RemoteStoreComputeLogManager</code>
+(v3) is a Dagster <em>instance</em> component, configured in <code>dagster.yaml</code>, that
+persists op/step <code>stdout</code> / <code>stderr</code> to any remote-store backend.</p>
 <p><strong>Module:</strong> <code>src/remote_store/ext/dagster.py</code>
 <strong>Dependencies:</strong> <code>dagster&gt;=1.9</code> (optional extra)
 <strong>Related:</strong> <a href="../001-store-api/">001-store-api.md</a> (Store API),
-research (<code>sdd/research/research-dagster-extension.md</code>), ID-075.</p>
+research (<code>sdd/research/research-dagster-extension.md</code>),
+<a href="../../rfcs/rfc-0014-dagster-compute-log-manager/">RFC-0014</a>, ID-075, ID-208.</p>
 <p><strong>Scope:</strong> v1 — <code>dagster_io_manager(store)</code> factory function (DAG-001 – DAG-011).
-v2 adds <code>DagsterStoreResource</code> and <code>RemoteStoreIOManager</code> (DAG-012 – DAG-019).</p>
+v2 adds <code>DagsterStoreResource</code> and <code>RemoteStoreIOManager</code> (DAG-012 – DAG-020).
+v3 adds <code>RemoteStoreComputeLogManager</code> (DAG-021 – DAG-033).</p>
 <hr />
 <h2 id="serializer-protocol">Serializer Protocol<a class="headerlink" href="#serializer-protocol" title="Permanent link">&para;</a></h2>
 <h3 id="dag-001-serializer-protocol">DAG-001: Serializer Protocol<a class="headerlink" href="#dag-001-serializer-protocol" title="Permanent link">&para;</a></h3>
@@ -10017,6 +10369,212 @@ is absent.</p>
 <p><strong>Note:</strong> <code>handle_output</code> remains single-partition per Dagster convention —
 Dagster calls <code>handle_output</code> once per partition key. Multi-partition
 aggregation only applies on the <code>load_input</code> side.</p>
+<hr />
+<h2 id="v3-compute-log-manager">v3: Compute Log Manager<a class="headerlink" href="#v3-compute-log-manager" title="Permanent link">&para;</a></h2>
+<p><code>RemoteStoreComputeLogManager</code> is a Dagster
+<a href="https://docs.dagster.io/api/dagster/internals"><code>ComputeLogManager</code></a> that
+captures op/step <code>stdout</code> / <code>stderr</code> and persists it to any remote-store
+backend. Unlike the <code>IOManager</code> (a resource), it is a Dagster <em>instance</em>
+component wired in <code>dagster.yaml</code>, so Dagster instantiates it from a config
+dict rather than from a live <code>Store</code>. It subclasses Dagster's
+<code>TruncatingCloudStorageComputeLogManager</code> (capture-locally-then-upload
+machinery, partial-upload polling, 50 MB upload truncation) and
+<code>ConfigurableClass</code> (<code>dagster.yaml</code> plumbing). Design: RFC-0014.</p>
+<h3 id="dag-021-configurableclass-plumbing">DAG-021: ConfigurableClass Plumbing<a class="headerlink" href="#dag-021-configurableclass-plumbing" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>RemoteStoreComputeLogManager</code> subclasses
+<code>TruncatingCloudStorageComputeLogManager</code> and <code>ConfigurableClass</code>. It is
+referenced by string from <code>dagster.yaml</code> (<code>module: remote_store.ext.dagster</code>,
+<code>class: RemoteStoreComputeLogManager</code>), so the import path is part of the
+public contract. The <code>ConfigurableClass</code> hooks are:</p>
+<ul>
+<li><code>config_type()</code> returns a config schema with fields:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>backend_type</code></td>
+<td><code>StringSource</code></td>
+<td>yes</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>backend_options</code></td>
+<td><code>Permissive</code> dict</td>
+<td>no</td>
+<td><code>{}</code></td>
+</tr>
+<tr>
+<td><code>root_path</code></td>
+<td><code>StringSource</code></td>
+<td>no</td>
+<td><code>""</code></td>
+</tr>
+<tr>
+<td><code>local_dir</code></td>
+<td><code>StringSource</code></td>
+<td>no</td>
+<td>system temp dir</td>
+</tr>
+<tr>
+<td><code>prefix</code></td>
+<td><code>StringSource</code></td>
+<td>no</td>
+<td><code>"dagster"</code></td>
+</tr>
+<tr>
+<td><code>skip_empty_files</code></td>
+<td><code>bool</code></td>
+<td>no</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>upload_interval</code></td>
+<td><code>Noneable(int)</code></td>
+<td>no</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>inst_data</code> (property) returns the <code>ConfigurableClassData</code> passed to the
+  constructor, or <code>None</code> when constructed directly.</li>
+<li><code>from_config_value(inst_data, config_value)</code> returns
+  <code>cls(inst_data=inst_data, **config_value)</code>.</li>
+</ul>
+<h3 id="dag-022-store-construction-and-capability-validation">DAG-022: Store Construction and Capability Validation<a class="headerlink" href="#dag-022-store-construction-and-capability-validation" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> the constructor builds its own <code>Store</code> from config via the
+shared <code>_build_store(backend_type, backend_options, root_path)</code> helper (the
+same helper used by <code>DagsterStoreResource</code> and <code>RemoteStoreIOManager</code>). After
+construction it validates that the backend declares every capability the
+manager needs: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>METADATA</code>, and <code>LIST</code>, queried via
+<code>store.supports(...)</code>.</p>
+<p><strong>Raises:</strong> <code>ValueError</code> if <code>backend_type</code> is not registered, if the backend
+constructor rejects <code>backend_options</code> (both from <code>_build_store</code>), or if any
+required capability is missing — the message names the missing capabilities.
+When a required capability is missing the Store is closed before the error is
+raised.</p>
+<h3 id="dag-023-local_manager-and-upload_interval-properties">DAG-023: <code>local_manager</code> and <code>upload_interval</code> Properties<a class="headerlink" href="#dag-023-local_manager-and-upload_interval-properties" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>local_manager</code> returns a <code>LocalComputeLogManager</code> rooted at
+<code>local_dir</code> (the configured directory, or the system temp directory when
+unset). Capture is performed against this local manager before upload.
+<code>upload_interval</code> returns the configured interval in seconds, or <code>None</code> when
+unset or zero — <code>None</code> disables the partial-upload polling thread (no live
+tailing).</p>
+<h3 id="dag-024-remote-path-scheme">DAG-024: Remote Path Scheme<a class="headerlink" href="#dag-024-remote-path-scheme" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> the Store-relative path for one captured log stream is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>{prefix}/storage/{*log_key[:-1]}/{log_key[-1]}.{ext}[.partial]
+</code></pre></div>
+<p>where <code>ext</code> is <code>out</code> for <code>ComputeIOType.STDOUT</code> and <code>err</code> for
+<code>ComputeIOType.STDERR</code> (Dagster's <code>IO_TYPE_EXTENSION</code>), and the <code>.partial</code>
+suffix is appended for in-progress partial uploads. Empty path segments (e.g.
+an empty <code>prefix</code>) are dropped. The Store's <code>root_path</code> is a separate
+namespace prefix and is <strong>not</strong> embedded in this derivation — identical to the
+path-derivation contract for the IOManager (DAG-005).</p>
+<table>
+<thead>
+<tr>
+<th><code>log_key</code></th>
+<th><code>io_type</code></th>
+<th><code>partial</code></th>
+<th>Path (default <code>prefix="dagster"</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>["run1", "compute_logs", "step_a"]</code></td>
+<td><code>STDOUT</code></td>
+<td><code>False</code></td>
+<td><code>dagster/storage/run1/compute_logs/step_a.out</code></td>
+</tr>
+<tr>
+<td><code>["run1", "compute_logs", "step_a"]</code></td>
+<td><code>STDERR</code></td>
+<td><code>True</code></td>
+<td><code>dagster/storage/run1/compute_logs/step_a.err.partial</code></td>
+</tr>
+<tr>
+<td><code>["report"]</code></td>
+<td><code>STDOUT</code></td>
+<td><code>False</code></td>
+<td><code>dagster/storage/report.out</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="dag-025-_upload_file_obj">DAG-025: <code>_upload_file_obj</code><a class="headerlink" href="#dag-025-_upload_file_obj" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>_upload_file_obj(data, log_key, io_type, partial=False)</code> writes
+the captured local log file to the Store at the DAG-024 path via
+<code>store.write(path, data, overwrite=True)</code>, where <code>data</code> is the open binary
+file object. When <code>skip_empty_files</code> is set, or the upload is <code>partial</code>, a
+zero-byte local file is not uploaded.</p>
+<h3 id="dag-026-download_from_cloud_storage">DAG-026: <code>download_from_cloud_storage</code><a class="headerlink" href="#dag-026-download_from_cloud_storage" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>download_from_cloud_storage(log_key, io_type, partial=False)</code>
+reads the Store object at the DAG-024 path via <code>store.read(path)</code> and streams
+it into the local staging file
+<code>local_manager.get_captured_local_path(log_key, ext, partial=partial)</code>,
+creating the parent directory if needed. This is how the Dagster webserver
+serves logs for a completed run whose worker is gone.</p>
+<h3 id="dag-027-cloud_storage_has_logs">DAG-027: <code>cloud_storage_has_logs</code><a class="headerlink" href="#dag-027-cloud_storage_has_logs" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>cloud_storage_has_logs(log_key, io_type, partial=False)</code>
+returns <code>store.is_file(path)</code> for the DAG-024 path.</p>
+<h3 id="dag-028-display_path_for_type-download_url_for_type">DAG-028: <code>display_path_for_type</code> / <code>download_url_for_type</code><a class="headerlink" href="#dag-028-display_path_for_type-download_url_for_type" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>display_path_for_type(log_key, io_type)</code> returns
+<code>store.native_path(path)</code> for the DAG-024 path — a human-readable location for
+the Dagster UI — once capture is complete, and <code>None</code> otherwise.
+<code>download_url_for_type(log_key, io_type)</code> returns <code>None</code>: remote-store has no
+URL-minting primitive, so the Dagster webserver streams log bytes through
+itself via <code>get_log_data</code> (the same behaviour as <code>LocalComputeLogManager</code>).</p>
+<h3 id="dag-029-delete_logs">DAG-029: <code>delete_logs</code><a class="headerlink" href="#dag-029-delete_logs" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>delete_logs</code> deletes both the local copies (via
+<code>local_manager.delete_logs</code>) and the Store copies.</p>
+<ul>
+<li>Called with <code>log_key</code>: deletes the Store object for each <code>io_type</code>
+  (<code>STDOUT</code>, <code>STDERR</code>) × each partial variant (<code>False</code>, <code>True</code>) via
+  <code>store.delete(path, missing_ok=True)</code>.</li>
+<li>Called with <code>prefix</code>: deletes the Store folder
+  <code>{prefix}/storage/{*prefix}</code> via
+  <code>store.delete_folder(folder, recursive=True, missing_ok=True)</code>.</li>
+</ul>
+<p><strong>Raises:</strong> a <code>dagster._check</code> failure when neither <code>log_key</code> nor <code>prefix</code> is
+passed — matching <code>LocalComputeLogManager.delete_logs</code>.</p>
+<h3 id="dag-030-on_subscribe-on_unsubscribe">DAG-030: <code>on_subscribe</code> / <code>on_unsubscribe</code><a class="headerlink" href="#dag-030-on_subscribe-on_unsubscribe" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> the manager holds a <code>PollingComputeLogSubscriptionManager</code>.
+<code>on_subscribe</code> delegates to its <code>add_subscription</code>, <code>on_unsubscribe</code> to its
+<code>remove_subscription</code>. This drives the Dagster UI's live-tail polling.</p>
+<h3 id="dag-031-get_log_keys_for_log_key_prefix">DAG-031: <code>get_log_keys_for_log_key_prefix</code><a class="headerlink" href="#dag-031-get_log_keys_for_log_key_prefix" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>get_log_keys_for_log_key_prefix(log_key_prefix, io_type)</code>
+lists the files under <code>{prefix}/storage/{*log_key_prefix}</code> via
+<code>store.list_files</code> and returns one log key <code>[*log_key_prefix, filebase]</code> per
+file whose extension matches <code>io_type</code> (<code>out</code> for <code>STDOUT</code>, <code>err</code> for
+<code>STDERR</code>). Partial-upload files (<code>.partial</code>) are excluded. Returns an empty
+list when the prefix contains no matching files. This enables the Dagster
+UI's per-run log-file listing.</p>
+<h3 id="dag-032-lifecycle">DAG-032: Lifecycle<a class="headerlink" href="#dag-032-lifecycle" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> the manager is a process-lifetime singleton. The <code>Store</code> is
+built once in <code>__init__</code> and closed in <code>dispose()</code>, which also disposes the
+<code>PollingComputeLogSubscriptionManager</code> and the <code>LocalComputeLogManager</code>.</p>
+<h3 id="dag-033-credential-masking-in-_build_store">DAG-033: Credential Masking in <code>_build_store</code><a class="headerlink" href="#dag-033-credential-masking-in-_build_store" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>_build_store</code> wraps any value in <code>backend_options</code> whose key
+name is in <code>_SENSITIVE_KEYS</code> (<code>remote_store._config</code> — <code>key</code>, <code>secret</code>,
+<code>password</code>, <code>account_key</code>, <code>sas_token</code>, <code>connection_string</code>) in a <code>Secret</code>
+before passing it to the backend constructor, so credentials are masked in
+<code>repr()</code> and tracebacks. Wrapping is applied to a copy; the caller's
+<code>backend_options</code> mapping is not mutated. Because <code>_build_store</code> is the shared
+construction helper, this masking applies equally to <code>DagsterStoreResource</code>
+(DAG-012) and <code>RemoteStoreIOManager</code> (DAG-015). It reuses the exact
+<code>_SENSITIVE_KEYS</code> set that <code>RegistryConfig._from_dict</code> applies, so the two
+config paths mask the same keys.</p>
+<p><strong>Scope note:</strong> the <code>ConfigurableClass</code> <code>inst_data</code> config-YAML fragment is
+owned and serialised by Dagster, not by <code>_build_store</code>; masking it is out of
+scope. Credentials in <code>dagster.yaml</code> should be supplied through environment
+indirection where the field type allows it.</p>
 
 
 

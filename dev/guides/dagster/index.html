@@ -1804,6 +1804,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster Compute Log Manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2817,6 +2845,34 @@
     <span class="md-ellipsis">
       
         Dataset mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compute-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compute logs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Compute logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config fields
       
     </span>
   </a>
@@ -8747,7 +8803,7 @@
   <span class="md-ellipsis">
     
   
-    031: ext.dagster - Dagster IO Manager Adapter Specification
+    031: ext.dagster - Dagster Integration Specification
   
 
     
@@ -9453,6 +9509,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#compute-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compute logs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Compute logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9484,7 +9568,8 @@
 
 
 <h1 id="dagster-integration">Dagster Integration<a class="headerlink" href="#dagster-integration" title="Permanent link">&para;</a></h1>
-<p>How to use remote-store as the IO manager backend for Dagster pipelines.</p>
+<p>How to use remote-store as the IO manager and compute log backend for
+Dagster pipelines.</p>
 <h2 id="the-idea">The idea<a class="headerlink" href="#the-idea" title="Permanent link">&para;</a></h2>
 <p>Teams already using remote-store should not duplicate their Store
 configuration (credentials, retry policy, caching, observability) into
@@ -9744,11 +9829,101 @@ as the corresponding backend constructor.</p>
 <a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="p">}</span>
 </code></pre></div>
 <p>Requires <code>pip install "remote-store[dagster,arrow]"</code>.</p>
+<h2 id="compute-logs">Compute logs<a class="headerlink" href="#compute-logs" title="Permanent link">&para;</a></h2>
+<p><code>RemoteStoreComputeLogManager</code> is the second half of the Dagster integration.
+Where the IO manager persists asset and op <em>return values</em>, the compute log
+manager persists the raw <code>stdout</code> / <code>stderr</code> a step emits while it runs — the
+text the Dagster UI shows under a run's stdout/stderr tabs.</p>
+<p>A <a href="https://docs.dagster.io/api/dagster/internals"><code>ComputeLogManager</code></a> is not a
+resource. It is a Dagster <em>instance</em> component, so it is configured in
+<code>dagster.yaml</code> rather than wired into <code>Definitions</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">compute_logs</span><span class="p">:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">remote_store.ext.dagster</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">class</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RemoteStoreComputeLogManager</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="nt">backend_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span><span class="nt">backend_options</span><span class="p">:</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">      </span><span class="nt">bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-logs-bucket</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="nt">root_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dagster/compute-logs</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">    </span><span class="nt">upload_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+</code></pre></div>
+<p>With this in place every run worker, the webserver, and the daemon stream
+compute logs to the same backend the rest of your Dagster storage already
+uses — no <code>dagster-aws</code> / <code>dagster-azure</code> needed. This is the standard fix
+for ephemeral run workers (Kubernetes, ECS): logs survive the pod or task
+being reclaimed.</p>
+<h3 id="config-fields">Config fields<a class="headerlink" href="#config-fields" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>backend_type</code></td>
+<td>string</td>
+<td><em>(required)</em></td>
+<td>Registered backend type (<code>local</code>, <code>s3</code>, <code>sftp</code>, <code>azure</code>, <code>memory</code>, ...)</td>
+</tr>
+<tr>
+<td><code>backend_options</code></td>
+<td>dict</td>
+<td><code>{}</code></td>
+<td>Keyword arguments for the backend constructor</td>
+</tr>
+<tr>
+<td><code>root_path</code></td>
+<td>string</td>
+<td><code>""</code></td>
+<td>Store root prefix for all log objects</td>
+</tr>
+<tr>
+<td><code>local_dir</code></td>
+<td>string</td>
+<td>system temp dir</td>
+<td>Local staging directory for capture</td>
+</tr>
+<tr>
+<td><code>prefix</code></td>
+<td>string</td>
+<td><code>"dagster"</code></td>
+<td>Path prefix within the Store</td>
+</tr>
+<tr>
+<td><code>skip_empty_files</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td>Skip uploading zero-byte log files</td>
+</tr>
+<tr>
+<td><code>upload_interval</code></td>
+<td>int</td>
+<td><code>None</code></td>
+<td>Seconds between partial uploads while a step runs; <code>None</code> disables live tailing</td>
+</tr>
+</tbody>
+</table>
+<p>Logs are captured to <code>local_dir</code> at the file-descriptor level — a descriptor
+cannot point at a remote object — then uploaded to the Store on step
+completion. Each stream is stored at <code>{prefix}/storage/&lt;log-key&gt;/&lt;step&gt;.out</code>
+(or <code>.err</code>); uploads are truncated at 50 MB, matching Dagster's own cloud
+compute log managers. Credential-named <code>backend_options</code> (<code>secret</code>,
+<code>password</code>, ...) are wrapped in <code>Secret</code> so they are masked in <code>repr()</code> and
+tracebacks.</p>
+<p>The webserver streams log bytes through itself rather than minting a signed
+download URL, so the process running the Dagster UI must also be able to
+reach the backend.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../reference/api/extensions/dagster/">ext.dagster API reference</a> — full API docs</li>
 <li><a href="../../tutorial/examples/dagster-v2-resource/">Dagster v2 resource example</a> — config-driven
   Store construction with <code>RemoteStoreIOManager</code></li>
+<li><a href="../../tutorial/examples/dagster-compute-log-manager/">Dagster compute log example</a> — capturing
+  op <code>stdout</code> / <code>stderr</code> to a Store with <code>RemoteStoreComputeLogManager</code></li>
 <li><a href="../../tutorial/examples/medallion-dagster/">Medallion + Dagster Showcase</a> — end-to-end
   Bronze/Silver/Gold pipeline demonstrating extensions over live MeteoSwiss data</li>
 <li><a href="../data-lake-patterns/">Data Lake Patterns</a> — medallion architecture with
