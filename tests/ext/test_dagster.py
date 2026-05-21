@@ -1208,6 +1208,17 @@ class TestBuildStoreCredentialMasking:
         with pytest.raises(ValueError, match="Unknown backend type"):
             _build_store("definitely-not-registered", {}, "")
 
+    @pytest.mark.spec("DAG-033")
+    def test_rejected_options_rewrapped_as_valueerror(self) -> None:
+        """A backend ctor TypeError becomes a ValueError naming the type and options."""
+        from remote_store.ext.dagster import _build_store
+
+        with pytest.raises(ValueError, match="'memory' rejected the provided options") as exc_info:
+            _build_store("memory", {"bogus_option": 1}, "")
+
+        assert "bogus_option" in str(exc_info.value)
+        assert isinstance(exc_info.value.__cause__, TypeError)
+
 
 class TestComputeLogManagerEndToEnd:
     """DAG-021, DAG-022: a real Dagster run captures stdout/stderr into a Store."""
