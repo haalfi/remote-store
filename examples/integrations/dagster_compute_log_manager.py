@@ -85,8 +85,8 @@ def demo() -> dict[str, Any]:
             stderr, _ = manager.get_log_data_for_type(log_key, ComputeIOType.STDERR, offset=0, max_bytes=None)
             print(f"  stdout: {stdout!r}")
             print(f"  stderr: {stderr!r}")
-            results["stdout_captured"] = b"processed 3 records" in stdout
-            results["stderr_captured"] = b"null field" in stderr
+            results["stdout_captured"] = stdout is not None and b"processed 3 records" in stdout
+            results["stderr_captured"] = stderr is not None and b"null field" in stderr
         finally:
             instance.dispose()
 
