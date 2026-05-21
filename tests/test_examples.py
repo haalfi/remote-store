@@ -590,6 +590,21 @@ class TestDagsterV2Resource:
         assert results["teardown_ok"] is True
 
 
+class TestDagsterComputeLogManager:
+    @pytest.mark.spec("DAG-021,DAG-022,DAG-025")
+    def test_demo(self):
+        pytest.importorskip("dagster")
+
+        from examples.integrations.dagster_compute_log_manager import demo
+
+        results = demo()
+
+        assert results["manager_is_remote_store"] is True
+        assert results["job_succeeded"] is True
+        assert results["stdout_captured"] is True
+        assert results["stderr_captured"] is True
+
+
 # ---------------------------------------------------------------------------
 # Async Store
 # ---------------------------------------------------------------------------

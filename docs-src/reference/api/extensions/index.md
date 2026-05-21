@@ -9,7 +9,7 @@ to enable each one. For usage guides, see [Extensions](../../../guides/extension
 | [ext.arrow](arrow.md) | PyArrow `FileSystemHandler` adapter for Store |
 | [ext.batch](batch.md) | Batch delete, copy, and exists operations |
 | [ext.cache](cache.md) | Store-level caching middleware with TTL |
-| [ext.dagster](dagster.md) | Dagster IO Manager adapter; config-driven Store resource |
+| [ext.dagster](dagster.md) | Dagster IO manager, config-driven Store resource, and compute log manager |
 | [ext.glob](glob.md) | Portable glob pattern matching fallback |
 | [ext.integrity](integrity.md) | Checksum computation and verification helpers |
 | [ext.observe](observe.md) | Callback hooks for store operations |

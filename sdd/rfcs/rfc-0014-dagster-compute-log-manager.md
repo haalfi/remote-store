@@ -2,7 +2,19 @@
 
 ## Status
 
-Draft
+Implemented (ID-208). Graduated to `sdd/specs/031-ext-dagster.md`
+(DAG-021 – DAG-033).
+
+Open Questions resolved during implementation: OQ1 — v1 returns `None` for
+download URLs; OQ2 — the Dagster API was verified against the installed
+`dagster` (1.13.5) and the import paths corrected (notably
+`PollingComputeLogSubscriptionManager` and `IO_TYPE_EXTENSION` live in the
+`cloud_storage_compute_log_manager` / `local_compute_log_manager` modules,
+and `ConfigurableClass` in `dagster._serdes`); OQ3 — extended spec 031;
+OQ4 — same `ext/dagster.py` module; OQ5 — `get_log_keys_for_log_key_prefix`
+implemented; OQ6 — `Secret`-wrapping added to the shared `_build_store`
+(DAG-033), which also fixes the v2 `DagsterStoreResource` /
+`RemoteStoreIOManager`.
 
 ## Summary
 

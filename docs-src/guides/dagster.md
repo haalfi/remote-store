@@ -1,6 +1,7 @@
 # Dagster Integration
 
-How to use remote-store as the IO manager backend for Dagster pipelines.
+How to use remote-store as the IO manager and compute log backend for
+Dagster pipelines.
 
 ## The idea
 
@@ -222,11 +223,66 @@ resources = {
 
 Requires `pip install "remote-store[dagster,arrow]"`.
 
+## Compute logs
+
+`RemoteStoreComputeLogManager` is the second half of the Dagster integration.
+Where the IO manager persists asset and op *return values*, the compute log
+manager persists the raw `stdout` / `stderr` a step emits while it runs — the
+text the Dagster UI shows under a run's stdout/stderr tabs.
+
+A [`ComputeLogManager`](https://docs.dagster.io/api/dagster/internals) is not a
+resource. It is a Dagster *instance* component, so it is configured in
+`dagster.yaml` rather than wired into `Definitions`:
+
+```yaml
+compute_logs:
+  module: remote_store.ext.dagster
+  class: RemoteStoreComputeLogManager
+  config:
+    backend_type: s3
+    backend_options:
+      bucket: my-logs-bucket
+    root_path: dagster/compute-logs
+    upload_interval: 30
+```
+
+With this in place every run worker, the webserver, and the daemon stream
+compute logs to the same backend the rest of your Dagster storage already
+uses — no `dagster-aws` / `dagster-azure` needed. This is the standard fix
+for ephemeral run workers (Kubernetes, ECS): logs survive the pod or task
+being reclaimed.
+
+### Config fields
+
+| Field | Type | Default | Purpose |
+|-------|------|---------|---------|
+| `backend_type` | string | *(required)* | Registered backend type (`local`, `s3`, `sftp`, `azure`, `memory`, ...) |
+| `backend_options` | dict | `{}` | Keyword arguments for the backend constructor |
+| `root_path` | string | `""` | Store root prefix for all log objects |
+| `local_dir` | string | system temp dir | Local staging directory for capture |
+| `prefix` | string | `"dagster"` | Path prefix within the Store |
+| `skip_empty_files` | bool | `false` | Skip uploading zero-byte log files |
+| `upload_interval` | int | `None` | Seconds between partial uploads while a step runs; `None` disables live tailing |
+
+Logs are captured to `local_dir` at the file-descriptor level — a descriptor
+cannot point at a remote object — then uploaded to the Store on step
+completion. Each stream is stored at `{prefix}/storage/<log-key>/<step>.out`
+(or `.err`); uploads are truncated at 50 MB, matching Dagster's own cloud
+compute log managers. Credential-named `backend_options` (`secret`,
+`password`, ...) are wrapped in `Secret` so they are masked in `repr()` and
+tracebacks.
+
+The webserver streams log bytes through itself rather than minting a signed
+download URL, so the process running the Dagster UI must also be able to
+reach the backend.
+
 ## See also
 
 - [ext.dagster API reference](../reference/api/extensions/dagster.md) — full API docs
 - [Dagster v2 resource example](../../examples/integrations/dagster_v2_resource.py) — config-driven
   Store construction with `RemoteStoreIOManager`
+- [Dagster compute log example](../../examples/integrations/dagster_compute_log_manager.py) — capturing
+  op `stdout` / `stderr` to a Store with `RemoteStoreComputeLogManager`
 - [Medallion + Dagster Showcase](../../examples/medallion_dagster/README.md) — end-to-end
   Bronze/Silver/Gold pipeline demonstrating extensions over live MeteoSwiss data
 - [Data Lake Patterns](data-lake-patterns.md) — medallion architecture with
