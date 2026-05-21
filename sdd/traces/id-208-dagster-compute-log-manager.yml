@@ -8,13 +8,12 @@ audience:
   - user.api_docs
   - user.site
   - contributor.process
-discovery_followups:
-  # PR #669 review: examples/integrations/ ships runnable demos for the
-  # Dagster IO manager but none for the compute log manager. Deferred —
-  # the dagster.yaml snippet in the guide already documents the config.
-  - ID-209
 expected_ripples:
   - sdd/backlogid.json
+  # PR #669 review caught the missing runnable example; the Extension
+  # ripple-check row already lists examples/ as a target, so adding it
+  # (and its tests/test_examples.py entry) is an anticipated ripple.
+  - examples/integrations/dagster_compute_log_manager.py
 surprising_ripples:
   # The dagster compute-log-manager classes are partially untyped, so the
   # ext.dagster mypy override needed `disallow_untyped_calls = false` — a
@@ -25,7 +24,7 @@ surprising_ripples:
   # The os_sensitive Windows CI leg forced a skipif — our upload/download
   # hooks stay covered cross-platform by the seeded-file unit tests.
   - tests/ext/test_dagster.py
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient

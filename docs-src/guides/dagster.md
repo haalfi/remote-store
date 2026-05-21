@@ -281,6 +281,8 @@ reach the backend.
 - [ext.dagster API reference](../reference/api/extensions/dagster.md) — full API docs
 - [Dagster v2 resource example](../../examples/integrations/dagster_v2_resource.py) — config-driven
   Store construction with `RemoteStoreIOManager`
+- [Dagster compute log example](../../examples/integrations/dagster_compute_log_manager.py) — capturing
+  op `stdout` / `stderr` to a Store with `RemoteStoreComputeLogManager`
 - [Medallion + Dagster Showcase](../../examples/medallion_dagster/README.md) — end-to-end
   Bronze/Silver/Gold pipeline demonstrating extensions over live MeteoSwiss data
 - [Data Lake Patterns](data-lake-patterns.md) — medallion architecture with
