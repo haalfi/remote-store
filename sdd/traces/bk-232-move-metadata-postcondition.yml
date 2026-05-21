@@ -11,7 +11,7 @@ expected_ripples:
   - sdd/formal/MemoryBackend-py/module_.py
   - sdd/backlogid.json
   - sdd/specs/003-backend-adapter-contract.md
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -98,3 +98,14 @@ phases:
         section: "Ripple-check table / Backlog item touched"
         read_type: verify
         extract: "BACKLOG → BACKLOG-DONE move, gen-backlogid refresh, trace shipped in-PR; audience is contributor.process + infra.test so no CHANGELOG entry"
+  - id: review
+    name: Review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018, BE-019"
+        read_type: reference
+        extract: "Review flagged the descriptive 'get_file_info(dst) returns ...' phrasing as reading like confirmed runtime behaviour when no src/ test covers move+metadata until BK-233. Reworded the BE-018 Metadata invariant to a normative 'MUST return', and the BE-019 sibling identically so the two paragraphs stay consistent — a ripple into BK-196's merged spec text the original ripple-check did not anticipate"
+      - file: sdd/formal/BackendContract.dfy
+        section: "Move postcondition / @spec BE-018, WR-013"
+        read_type: reference
+        extract: "Review noted the green traceability gate proves the WR-013 ID is tested somewhere (the write/copy path), not that WR-013 is exercised through move — the new clause is verifier-covered, not conformance-covered, until BK-233 lands. No code change; the PR-body 'covered by tests' wording was corrected to state the split explicitly"
