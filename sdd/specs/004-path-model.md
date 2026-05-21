@@ -19,7 +19,7 @@ assert str(RemotePath("a\\b\\c")) == "a/b/c"
 
 ## PATH-003: Double-Dot Rejection
 
-**Invariant:** Path segments containing `..` are rejected.
+**Invariant:** A path segment exactly equal to `..` is rejected. A segment that merely contains `..` as a substring (e.g. a filename like `a..b`) is allowed.
 **Raises:** `InvalidPath`
 **Example:**
 ```python

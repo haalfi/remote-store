@@ -6,11 +6,9 @@ source_items:
 audience:
   - contributor.process
   - infra.test
-expected_ripples:
-  - sdd/backlogid.json
 discovery_followups:
   - BK-234
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -87,7 +85,7 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Backlog item touched"
         read_type: verify
-        extract: "BACKLOG -> BACKLOG-DONE move, gen-backlogid refresh, trace shipped in-PR; audience contributor.process + infra.test so no CHANGELOG entry"
+        extract: "BACKLOG -> BACKLOG-DONE move; gen-backlogid is a no-op here (the json tracks the BACKLOG-DONE max only, which ID-190 does not raise); trace shipped in-PR; audience contributor.process + infra.test so no CHANGELOG entry"
   - id: review
     name: Review
     steps:
@@ -107,3 +105,11 @@ phases:
         section: "BK-234"
         read_type: reference
         extract: "The empty-key round-trip is genuinely backend-divergent and NPR-005 contradicts NPR-020 on it. Filed BK-234 to reconcile the to_key contract; the lemma now excludes the case rather than papering it over with an unsanctioned model branch"
+      - file: sdd/traces/id-190-path-wellformedness.yml
+        section: "expected_ripples, verify phase"
+        read_type: reference
+        extract: "Round-3 review caught the trace claiming sdd/backlogid.json as an expected_ripple when the json (BACKLOG-DONE max only) is unchanged by ID-190. Dropped expected_ripples and corrected the gen-backlogid verify step"
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-003"
+        read_type: reference
+        extract: "Round-3 review: the PR resolved PATH-003's 'segments containing ..' ambiguity in Dafny but left the spec prose inaccurate. Tightened PATH-003 to 'a segment exactly equal to ..' so the spec, _normalize, and WellFormedPath agree (principle 3/5)"
