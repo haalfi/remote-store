@@ -225,7 +225,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Stream wrappers | *(none)* | Composable BinaryIO wrappers for progress tracking and checksums |
 | Integrity helpers | *(none)* | Checksum computation and verification over Store's public API |
 | Write helpers | *(none)* | Client-side content hashing for write operations, compatible with any backend |
-| Dagster IO manager | `remote-store[dagster]` | IOManager adapter + config-driven Store resource for Dagster pipelines |
+| Dagster integration | `remote-store[dagster]` | IOManager adapter, config-driven Store resource, and compute log manager for Dagster pipelines |
 
 Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/how-to/extensions/) for details.
 

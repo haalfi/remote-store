@@ -19,16 +19,35 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import pickle
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+import shutil
+import tempfile
+from typing import IO, TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 try:
     from dagster import (  # type: ignore[import-untyped]
         ConfigurableIOManagerFactory,
         ConfigurableResource,
+        Field,
         InitResourceContext,
         IOManager,
+        Noneable,
+        Permissive,
+        StringSource,
     )
+    from dagster import _check as dagster_check  # type: ignore[import-untyped]
+    from dagster._core.storage.cloud_storage_compute_log_manager import (  # type: ignore[import-untyped]
+        PollingComputeLogSubscriptionManager,
+        TruncatingCloudStorageComputeLogManager,
+    )
+    from dagster._core.storage.compute_log_manager import ComputeIOType  # type: ignore[import-untyped]
+    from dagster._core.storage.local_compute_log_manager import (  # type: ignore[import-untyped]
+        IO_TYPE_EXTENSION,
+        LocalComputeLogManager,
+    )
+    from dagster._serdes import ConfigurableClass, ConfigurableClassData  # type: ignore[import-untyped]
+    from dagster._utils import ensure_dir  # type: ignore[import-untyped]
     from pydantic import PrivateAttr  # dagster depends on pydantic
 except ModuleNotFoundError as _exc:  # pragma: no cover
     raise ModuleNotFoundError(
@@ -37,13 +56,22 @@ except ModuleNotFoundError as _exc:  # pragma: no cover
 
 if TYPE_CHECKING:
     import contextlib
+    from collections.abc import Mapping, Sequence
 
     import pyarrow as pa  # type: ignore[import-untyped]
 
     with contextlib.suppress(ImportError):
         from dagster import InputContext, OutputContext  # type: ignore[import-untyped]
+        from dagster._core.storage.compute_log_manager import (  # type: ignore[import-untyped]
+            CapturedLogSubscription,
+        )
 
     from remote_store._store import Store
+
+# The compute-log-manager classes above have no public dagster import path —
+# dagster's own `dagster-aws` / `dagster-azure` compute log managers import
+# them from these `dagster._core` modules too. Paths verified against the
+# installed `dagster` (RFC-0014 Open Question 2).
 
 # private: framework integration requires direct registry access; no public path exists
 from remote_store._registry import (
@@ -58,6 +86,7 @@ __all__ = [
     "JsonSerializer",
     "ParquetSerializer",
     "PickleSerializer",
+    "RemoteStoreComputeLogManager",
     "RemoteStoreIOManager",
     "Serializer",
     "dagster_dataset_io_manager",
@@ -380,11 +409,17 @@ def dagster_dataset_io_manager(store: Store) -> IOManager:  # type: ignore[type-
 def _build_store(backend_type: str, backend_options: dict[str, Any], root_path: str) -> Store:
     """Build a Store from registry config fields.
 
+    Credential-named options (the ``_SENSITIVE_KEYS`` set shared with
+    ``RegistryConfig._from_dict``) are wrapped in ``Secret`` before reaching
+    the backend constructor, so they are masked in ``repr()`` and tracebacks
+    (DAG-033). The caller's *backend_options* mapping is copied, never mutated.
+
     Raises:
         ValueError: If *backend_type* is not registered, or if the backend
             constructor rejects the supplied options.
     """
-    from remote_store import Store
+    from remote_store import Secret, Store
+    from remote_store._config import _SENSITIVE_KEYS
 
     _register_builtin_backends()
 
@@ -394,10 +429,16 @@ def _build_store(backend_type: str, backend_options: dict[str, Any], root_path: 
         msg = f"Unknown backend type {backend_type!r}. Registered types: {registered}"
         raise ValueError(msg)
 
+    options = dict(backend_options)
+    for sensitive_key in _SENSITIVE_KEYS:
+        value = options.get(sensitive_key)
+        if isinstance(value, str):
+            options[sensitive_key] = Secret(value)
+
     try:
-        backend = factory(**backend_options)
+        backend = factory(**options)
     except TypeError as exc:
-        opts = list(backend_options.keys())
+        opts = list(options.keys())
         msg = f"Backend {backend_type!r} rejected the provided options {opts}: {exc}"
         raise ValueError(msg) from exc
 
@@ -513,3 +554,249 @@ class RemoteStoreIOManager(ConfigurableIOManagerFactory):  # type: ignore[misc,t
             return _DatasetIOManagerImpl(self._store)
         resolved = _resolve_serializer(self.serializer)
         return _RemoteStoreIOManagerImpl(self._store, resolved)
+
+
+# ---------------------------------------------------------------------------
+# Compute log manager (public API — v3)
+# ---------------------------------------------------------------------------
+
+
+def _clean_prefix(prefix: str) -> str:
+    """Drop empty segments from a Store path prefix (e.g. leading/trailing slashes)."""
+    return "/".join(part for part in prefix.split("/") if part)
+
+
+class RemoteStoreComputeLogManager(  # type: ignore[misc]
+    TruncatingCloudStorageComputeLogManager,
+    ConfigurableClass,
+):
+    """Captures op/step ``stdout`` / ``stderr`` to any remote-store backend (DAG-021 – DAG-033).
+
+    A Dagster ``ComputeLogManager`` wired into ``dagster.yaml`` as an instance
+    component. Logs are captured to a local staging directory at the
+    file-descriptor level, then uploaded to a ``Store`` the manager builds
+    itself from ``backend_type`` + ``backend_options``. When ``upload_interval``
+    is set, partial uploads also run periodically while a step executes so the
+    Dagster UI can tail them. Subclasses Dagster's
+    ``TruncatingCloudStorageComputeLogManager`` (capture-then-upload machinery,
+    50 MB upload truncation) and ``ConfigurableClass`` (``dagster.yaml``
+    plumbing).
+
+    Configure it in ``dagster.yaml``:
+
+    ```yaml
+    compute_logs:
+      module: remote_store.ext.dagster
+      class: RemoteStoreComputeLogManager
+      config:
+        backend_type: s3
+        backend_options:
+          bucket: my-logs-bucket
+        root_path: dagster/compute-logs
+        upload_interval: 30
+    ```
+
+    Attributes:
+        backend_type: Registered backend type (``"local"``, ``"s3"``, ``"sftp"``,
+            ``"azure"``, ``"memory"``, ...).
+        backend_options: Keyword arguments for the backend constructor.
+        root_path: Store root prefix applied to every log object.
+        local_dir: Local staging directory for capture. Defaults to the
+            system temp directory.
+        prefix: Path prefix within the Store. Defaults to ``"dagster"``.
+        skip_empty_files: Skip uploading zero-byte log files.
+        upload_interval: Seconds between partial uploads while a step runs;
+            ``None`` (default) disables live tailing.
+    """
+
+    def __init__(
+        self,
+        backend_type: str,
+        backend_options: dict[str, Any] | None = None,
+        root_path: str = "",
+        local_dir: str | None = None,
+        prefix: str = "dagster",
+        skip_empty_files: bool = False,
+        upload_interval: int | None = None,
+        inst_data: ConfigurableClassData | None = None,
+    ) -> None:
+        """Build the Store, validate its capabilities, and wire the local manager.
+
+        Raises:
+            ValueError: If *backend_type* is not registered, if the backend
+                rejects *backend_options*, or if the backend is missing a
+                capability the manager requires (``READ``, ``WRITE``,
+                ``DELETE``, ``METADATA``, ``LIST``).
+        """
+        from remote_store import Capability
+
+        self._store = _build_store(backend_type, backend_options or {}, root_path)
+        required = (
+            Capability.READ,
+            Capability.WRITE,
+            Capability.DELETE,
+            Capability.METADATA,
+            Capability.LIST,
+        )
+        missing = [cap.name for cap in required if not self._store.supports(cap)]
+        if missing:
+            self._store.close()
+            msg = (
+                f"Backend {backend_type!r} is missing capabilities required by "
+                f"RemoteStoreComputeLogManager: {', '.join(missing)}"
+            )
+            raise ValueError(msg)
+
+        self._prefix = _clean_prefix(prefix)
+        self._skip_empty_files = skip_empty_files
+        self._upload_interval = upload_interval
+        self._inst_data = inst_data
+
+        self._local_manager = LocalComputeLogManager(local_dir or tempfile.gettempdir())
+        self._subscription_manager = PollingComputeLogSubscriptionManager(self)
+        super().__init__()
+
+    # -- ConfigurableClass plumbing (DAG-021) -------------------------------
+
+    @property
+    def inst_data(self) -> ConfigurableClassData | None:
+        """The ``ConfigurableClassData`` this manager was rehydrated from, if any."""
+        return self._inst_data
+
+    @classmethod
+    def config_type(cls) -> dict[str, Any]:
+        """The ``dagster.yaml`` config schema for this manager (DAG-021)."""
+        return {
+            "backend_type": StringSource,
+            "backend_options": Field(Permissive(), is_required=False),
+            "root_path": Field(StringSource, is_required=False, default_value=""),
+            "local_dir": Field(StringSource, is_required=False),
+            "prefix": Field(StringSource, is_required=False, default_value="dagster"),
+            "skip_empty_files": Field(bool, is_required=False, default_value=False),
+            "upload_interval": Field(Noneable(int), is_required=False, default_value=None),
+        }
+
+    @classmethod
+    def from_config_value(
+        cls, inst_data: ConfigurableClassData | None, config_value: Mapping[str, Any]
+    ) -> RemoteStoreComputeLogManager:
+        """Construct a manager from a validated ``dagster.yaml`` config value (DAG-021)."""
+        return cls(inst_data=inst_data, **config_value)
+
+    # -- Inherited-behaviour properties (DAG-023) ---------------------------
+
+    @property
+    def local_manager(self) -> LocalComputeLogManager:
+        """The ``LocalComputeLogManager`` that stages captures before upload."""
+        return self._local_manager
+
+    @property
+    def upload_interval(self) -> int | None:
+        """Seconds between partial uploads, or ``None`` when live tailing is off."""
+        return self._upload_interval if self._upload_interval else None
+
+    # -- Remote path scheme (DAG-024) ---------------------------------------
+
+    def _store_path(self, log_key: Sequence[str], io_type: ComputeIOType, partial: bool = False) -> str:
+        """Derive the Store-relative path for one captured log stream (DAG-024)."""
+        *namespace, filebase = log_key
+        filename = f"{filebase}.{IO_TYPE_EXTENSION[io_type]}"
+        if partial:
+            filename = f"{filename}.partial"
+        segments = [seg for seg in (self._prefix, "storage", *namespace) if seg]
+        segments.append(filename)
+        return "/".join(segments)
+
+    def _store_folder(self, log_key_prefix: Sequence[str]) -> str:
+        """Derive the Store-relative folder for a log-key prefix (DAG-024)."""
+        return "/".join(seg for seg in (self._prefix, "storage", *log_key_prefix) if seg)
+
+    # -- Cloud-storage hooks (DAG-025 – DAG-028) ----------------------------
+
+    def _upload_file_obj(
+        self, data: IO[bytes], log_key: Sequence[str], io_type: ComputeIOType, partial: bool = False
+    ) -> None:
+        """Upload a captured local log file to the Store (DAG-025)."""
+        local_path = self._local_manager.get_captured_local_path(log_key, IO_TYPE_EXTENSION[io_type])
+        if (self._skip_empty_files or partial) and os.stat(local_path).st_size == 0:
+            return
+        self._store.write(
+            self._store_path(log_key, io_type, partial=partial),
+            data,  # type: ignore[arg-type]  # an open binary file satisfies BinaryIO at runtime
+            overwrite=True,
+        )
+
+    def download_from_cloud_storage(
+        self, log_key: Sequence[str], io_type: ComputeIOType, partial: bool = False
+    ) -> None:
+        """Stream a log object from the Store into the local staging file (DAG-026)."""
+        local_path = self._local_manager.get_captured_local_path(log_key, IO_TYPE_EXTENSION[io_type], partial=partial)
+        ensure_dir(os.path.dirname(local_path))
+        store_path = self._store_path(log_key, io_type, partial=partial)
+        with self._store.read(store_path) as src, open(local_path, "wb") as dst:
+            shutil.copyfileobj(src, dst)
+
+    def cloud_storage_has_logs(self, log_key: Sequence[str], io_type: ComputeIOType, partial: bool = False) -> bool:
+        """Return whether the Store holds a log object for this key (DAG-027)."""
+        return self._store.is_file(self._store_path(log_key, io_type, partial=partial))
+
+    def display_path_for_type(  # type: ignore[override]  # base hint is `str`; `None` until capture completes (matches S3ComputeLogManager)
+        self, log_key: Sequence[str], io_type: ComputeIOType
+    ) -> str | None:
+        """A human-readable Store location for the Dagster UI, once capture is done (DAG-028)."""
+        if not self.is_capture_complete(log_key):
+            return None
+        return self._store.native_path(self._store_path(log_key, io_type))
+
+    def download_url_for_type(self, log_key: Sequence[str], io_type: ComputeIOType) -> str | None:
+        """No signed-URL primitive in v1 — the webserver streams logs itself (DAG-028)."""
+        return None
+
+    # -- Deletion and enumeration (DAG-029, DAG-031) ------------------------
+
+    def delete_logs(self, log_key: Sequence[str] | None = None, prefix: Sequence[str] | None = None) -> None:
+        """Delete captured logs by ``log_key`` or by ``prefix``, local and remote (DAG-029).
+
+        Raises:
+            CheckError: If neither *log_key* nor *prefix* is given.
+        """
+        if log_key is None and prefix is None:
+            dagster_check.failed("Must pass in either `log_key` or `prefix` argument to delete_logs")
+        self._local_manager.delete_logs(log_key=log_key, prefix=prefix)
+        if log_key:
+            for io_type in (ComputeIOType.STDOUT, ComputeIOType.STDERR):
+                for partial in (False, True):
+                    self._store.delete(self._store_path(log_key, io_type, partial=partial), missing_ok=True)
+        elif prefix:
+            self._store.delete_folder(self._store_folder(prefix), recursive=True, missing_ok=True)
+
+    def get_log_keys_for_log_key_prefix(
+        self, log_key_prefix: Sequence[str], io_type: ComputeIOType
+    ) -> Sequence[Sequence[str]]:
+        """Enumerate the stored log keys under a log-key prefix (DAG-031)."""
+        extension = IO_TYPE_EXTENSION[io_type]
+        results: list[list[str]] = []
+        for info in self._store.list_files(self._store_folder(log_key_prefix)):
+            # `rpartition` keeps this robust against a dotless stray file
+            # (no extension) and excludes `.partial` uploads, whose final
+            # segment is `partial`, not `out` / `err`.
+            filebase, dot, obj_extension = info.name.rpartition(".")
+            if dot and obj_extension == extension:
+                results.append([*log_key_prefix, filebase])
+        return results
+
+    # -- Subscriptions and lifecycle (DAG-030, DAG-032) ---------------------
+
+    def on_subscribe(self, subscription: CapturedLogSubscription) -> None:
+        """Register a UI live-tail subscription with the polling manager (DAG-030)."""
+        self._subscription_manager.add_subscription(subscription)
+
+    def on_unsubscribe(self, subscription: CapturedLogSubscription) -> None:
+        """Deregister a UI live-tail subscription from the polling manager (DAG-030)."""
+        self._subscription_manager.remove_subscription(subscription)
+
+    def dispose(self) -> None:
+        """Dispose the subscription and local managers and close the Store (DAG-032)."""
+        self._subscription_manager.dispose()
+        self._local_manager.dispose()
+        self._store.close()

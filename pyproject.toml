@@ -268,9 +268,13 @@ module = "dagster.*"
 ignore_missing_imports = true
 
 # ext/dagster.py uses `# type: ignore[import-untyped]` on dagster imports.
+# disallow_untyped_calls is relaxed because the compute-log-manager integration
+# calls into dagster's partially-untyped internal classes (subscription manager,
+# config primitives, the cloud-storage base ctor).
 [[tool.mypy.overrides]]
 module = "remote_store.ext.dagster"
 warn_unused_ignores = false
+disallow_untyped_calls = false
 
 # pyarrow 24.x ships partial type stubs that are still incomplete (re-evaluated
 # under BK-168: 33 attr-defined / name-defined errors when stubs are honoured).

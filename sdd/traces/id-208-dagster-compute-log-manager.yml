@@ -1,0 +1,120 @@
+id: ID-208
+title: "RemoteStoreComputeLogManager — Dagster compute log manager (RFC-0014)"
+trigger: "RFC-0014 was reviewed and merged; ext.dagster covered only the IOManager storage extension point, not Dagster's ComputeLogManager, so op/step stdout/stderr could not be persisted to a remote-store backend."
+source_items:
+  - ID-208
+audience:
+  - user.api
+  - user.api_docs
+  - user.site
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  # The dagster compute-log-manager classes are partially untyped, so the
+  # ext.dagster mypy override needed `disallow_untyped_calls = false` — a
+  # pyproject change the ripple-check "Extension" row does not anticipate.
+  - pyproject.toml
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: "Ship complete; verify beyond the diff; specs are source of truth"
+      - file: sdd/rfcs/rfc-0014-dagster-compute-log-manager.md
+        section: "(full)"
+        read_type: gate
+        extract: "Class shape, config schema, hook->Store mapping, path scheme, proposed DAG-021..DAG-032, Open Questions"
+        outcome: misleading
+      - file: sdd/specs/031-ext-dagster.md
+        section: "(full)"
+        read_type: gate
+        extract: "Existing DAG-001..DAG-020; extend the same spec file (OQ3)"
+      - file: src/remote_store/ext/dagster.py
+        section: "_build_store, DagsterStoreResource, RemoteStoreIOManager"
+        read_type: gate
+        extract: "Reuse _build_store; __all__; existing v2 ConfigurableClass-adjacent patterns"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Extension"
+        read_type: gate
+        extract: "Extension ripples: __init__ exports, pyproject extras, README, api docs + index + nav, guides, CHANGELOG, BACKLOG"
+
+  - id: verify_api
+    name: Verify Dagster API
+    steps:
+      - file: ".venv/lib/python3.11/site-packages/dagster/_core/storage/cloud_storage_compute_log_manager.py"
+        section: "TruncatingCloudStorageComputeLogManager, PollingComputeLogSubscriptionManager"
+        read_type: gate
+        extract: "Real abstract hooks and that PollingComputeLogSubscriptionManager lives here, not in local_compute_log_manager (RFC OQ2 was wrong)"
+        outcome: misleading
+      - file: ".venv/lib/python3.11/site-packages/dagster/_core/storage/local_compute_log_manager.py"
+        section: "LocalComputeLogManager, IO_TYPE_EXTENSION"
+        read_type: reference
+        extract: "LocalComputeLogManager(base_dir) ctor; IO_TYPE_EXTENSION mapping STDOUT->out / STDERR->err"
+      - file: ".venv/lib/python3.11/site-packages/dagster/_serdes/config_class.py"
+        section: "ConfigurableClass"
+        read_type: reference
+        extract: "config_type / from_config_value / inst_data contract"
+
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules, Spec format"
+        read_type: gate
+        extract: "Rule 1 spec-before-code; Rule 2 every spec ID needs a spec test; section-ID skeleton"
+      - file: sdd/specs/031-ext-dagster.md
+        section: "DAG-021..DAG-033"
+        read_type: gate
+        extract: "Added v3 Compute Log Manager section; DAG-033 records the OQ6 credential-masking resolution"
+
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/ext/test_dagster.py
+        section: "(full)"
+        read_type: gate
+        extract: "Existing test style; MemoryBackend fixture; @pytest.mark.spec markers"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Assertion depth, mock discipline, spec tracing for new tests"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_config.py
+        section: "_SENSITIVE_KEYS, Secret"
+        read_type: reference
+        extract: "Reuse the exact sensitive-key set RegistryConfig._from_dict uses for the OQ6 _build_store fix (DAG-033)"
+      - file: sdd/DESIGN.md
+        section: "Code conventions"
+        read_type: reference
+        extract: "PEP 604 types, Google docstrings, formatting"
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/dagster.md
+        section: "(full)"
+        read_type: reference
+        extract: "Add a Compute Logs section to the guide"
+      - file: FEATURES.md
+        section: "Extensions"
+        read_type: gate
+        extract: "Update the Dagster extension key-exports row"
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Extension"
+        read_type: verify
+        extract: "__all__, pyproject extras, README, api docs+index+nav, guide, CHANGELOG, BACKLOG"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Add one-line ID-208 stub"

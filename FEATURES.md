@@ -299,7 +299,7 @@ ownership — they never call `store.close()`.
 | **OpenTelemetry** | Emit distributed tracing spans for every store operation | `remote_store.ext.otel` | `otel_hooks`, `otel_observe` | `remote-store[otel]` |
 | **Pydantic** | Derive `RegistryConfig` from a Pydantic settings model | `remote_store.ext.pydantic` | `from_pydantic` | `remote-store[pydantic]` |
 | **YAML** | Load `RegistryConfig` from a YAML file | `remote_store.ext.yaml` | `from_yaml` | `remote-store[yaml]` |
-| **Dagster** | IO manager and resource for Dagster pipelines | `remote_store.ext.dagster` | `RemoteStoreIOManager`, `DagsterStoreResource`, `dagster_io_manager` | `remote-store[dagster]` |
+| **Dagster** | IO manager, config-driven Store resource, and compute log manager for Dagster pipelines | `remote_store.ext.dagster` | `RemoteStoreIOManager`, `DagsterStoreResource`, `RemoteStoreComputeLogManager`, `dagster_io_manager` | `remote-store[dagster]` |
 
 ---
 

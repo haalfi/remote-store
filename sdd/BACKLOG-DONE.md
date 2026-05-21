@@ -8,6 +8,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-208 — `RemoteStoreComputeLogManager`: Dagster compute log manager (RFC-0014)**
+  spec: DAG-021 -- DAG-033 · audience: user.api
+  `ext.dagster` now covers Dagster's second storage extension point. The new
+  `RemoteStoreComputeLogManager` is a Dagster *instance* component, configured
+  in `dagster.yaml`, that captures op/step `stdout` / `stderr` and persists it
+  to any remote-store backend — complementing the existing IO manager. It
+  subclasses Dagster's `TruncatingCloudStorageComputeLogManager` and builds its
+  own `Store` from `backend_type` + `backend_options` via the shared
+  `_build_store`. RFC-0014 OQ6 resolved: `_build_store` now `Secret`-wraps
+  credential-named options (DAG-033), which also retroactively masks
+  credentials for the v2 `DagsterStoreResource` / `RemoteStoreIOManager`. The
+  Dagster API paths were verified against the installed `dagster` 1.13.5; the
+  RFC's assumed import paths were corrected.
+  Trace: `sdd/traces/id-208-dagster-compute-log-manager.yml`.
+
 - [x] **BK-195 — Conformance test: `copy()` preserves user metadata**
   spec: WR-013, BE-019, ASYNC-019 · audience: infra.test
   A (T) gap, paired with BK-196 (the contract side).

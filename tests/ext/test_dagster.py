@@ -1,17 +1,23 @@
-"""Tests for remote_store.ext.dagster -- Dagster IO Manager adapter."""
+"""Tests for remote_store.ext.dagster -- Dagster IO manager and compute log manager."""
 
 from __future__ import annotations
 
+import os
 from typing import Any
 from unittest import mock
 
 import pytest
 from dagster import AssetKey, InputContext, build_init_resource_context, build_input_context, build_output_context
+from dagster._check import CheckError
+from dagster._core.storage.compute_log_manager import ComputeIOType
+from dagster._core.storage.local_compute_log_manager import IO_TYPE_EXTENSION, LocalComputeLogManager
 
+from remote_store import Capability
 from remote_store._store import Store
 from remote_store.backends._memory import MemoryBackend
 from remote_store.ext.dagster import (
     ParquetSerializer,
+    RemoteStoreComputeLogManager,
     Serializer,
     dagster_io_manager,
 )
@@ -774,3 +780,491 @@ class TestMultiPartitionLoading:
         )
         with pytest.raises(DatasetIncomplete, match="missing"):
             mgr.load_input(in_ctx)
+
+
+# ---------------------------------------------------------------------------
+# v3: RemoteStoreComputeLogManager (DAG-021 .. DAG-033)
+# ---------------------------------------------------------------------------
+
+_OUT = ComputeIOType.STDOUT
+_ERR = ComputeIOType.STDERR
+
+
+@pytest.fixture
+def clm(tmp_path):
+    """A RemoteStoreComputeLogManager backed by a fresh in-memory Store."""
+    mgr = RemoteStoreComputeLogManager(
+        backend_type="memory",
+        local_dir=str(tmp_path / "local"),
+    )
+    yield mgr
+    mgr.dispose()
+
+
+def _seed_local_capture(mgr, log_key, io_type, content):
+    """Write a local capture file the way Dagster's LocalComputeLogManager would."""
+    path = mgr.local_manager.get_captured_local_path(log_key, IO_TYPE_EXTENSION[io_type])
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as fh:
+        fh.write(content)
+    return path
+
+
+def _upload(mgr, log_key, io_type, content, *, partial=False):
+    """Seed a local capture file, then drive the cloud-upload hook."""
+    path = _seed_local_capture(mgr, log_key, io_type, content)
+    with open(path, "rb") as fh:
+        mgr._upload_file_obj(fh, log_key, io_type, partial)
+
+
+def _read_cloud(mgr, log_key, io_type, *, partial=False):
+    """Read uploaded content back through the cloud-download hook."""
+    mgr.download_from_cloud_storage(log_key, io_type, partial)
+    local_path = mgr.local_manager.get_captured_local_path(log_key, IO_TYPE_EXTENSION[io_type], partial=partial)
+    with open(local_path, "rb") as fh:
+        return fh.read()
+
+
+class TestComputeLogManagerConfig:
+    """DAG-021, DAG-022, DAG-023: ConfigurableClass plumbing, construction, properties."""
+
+    pytestmark = pytest.mark.os_sensitive
+
+    @pytest.mark.spec("DAG-021")
+    def test_config_type_fields(self) -> None:
+        """config_type() exposes exactly the documented config fields."""
+        cfg = RemoteStoreComputeLogManager.config_type()
+        assert set(cfg.keys()) == {
+            "backend_type",
+            "backend_options",
+            "root_path",
+            "local_dir",
+            "prefix",
+            "skip_empty_files",
+            "upload_interval",
+        }
+
+    @pytest.mark.spec("DAG-021")
+    def test_from_config_value_builds_instance(self, tmp_path) -> None:
+        """from_config_value() constructs a working manager from a config dict."""
+        mgr = RemoteStoreComputeLogManager.from_config_value(
+            None,
+            {"backend_type": "memory", "local_dir": str(tmp_path / "local")},
+        )
+        try:
+            assert isinstance(mgr, RemoteStoreComputeLogManager)
+            _upload(mgr, ["run", "step"], _OUT, b"ok")
+            assert mgr.cloud_storage_has_logs(["run", "step"], _OUT)
+        finally:
+            mgr.dispose()
+
+    @pytest.mark.spec("DAG-021")
+    def test_inst_data_default_none(self, clm) -> None:
+        """inst_data is None when the manager is constructed directly."""
+        assert clm.inst_data is None
+
+    @pytest.mark.spec("DAG-021")
+    def test_inst_data_roundtrip(self, tmp_path) -> None:
+        """inst_data returns the ConfigurableClassData passed to the constructor."""
+        from dagster._serdes import ConfigurableClassData
+
+        data = ConfigurableClassData("remote_store.ext.dagster", "RemoteStoreComputeLogManager", "{}")
+        mgr = RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(tmp_path / "local"), inst_data=data)
+        try:
+            assert mgr.inst_data is data
+        finally:
+            mgr.dispose()
+
+    @pytest.mark.spec("DAG-022")
+    def test_unknown_backend_type_raises(self, tmp_path) -> None:
+        """An unregistered backend_type raises ValueError naming the type."""
+        with pytest.raises(ValueError, match="nonexistent"):
+            RemoteStoreComputeLogManager(backend_type="nonexistent", local_dir=str(tmp_path / "local"))
+
+    @pytest.mark.spec("DAG-022")
+    def test_missing_capability_raises_and_closes_store(self, tmp_path) -> None:
+        """A backend missing a required capability raises ValueError and the Store is closed."""
+        fake_store = mock.MagicMock(spec=Store)
+        fake_store.supports.side_effect = lambda cap: cap is not Capability.LIST
+
+        with (
+            mock.patch("remote_store.ext.dagster._build_store", return_value=fake_store),
+            pytest.raises(ValueError, match="LIST"),
+        ):
+            RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(tmp_path / "local"))
+        fake_store.close.assert_called_once()
+
+    @pytest.mark.spec("DAG-023")
+    def test_local_manager_rooted_at_local_dir(self, tmp_path) -> None:
+        """local_manager is a LocalComputeLogManager staging under the configured local_dir."""
+        local_dir = tmp_path / "local"
+        mgr = RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(local_dir))
+        try:
+            assert isinstance(mgr.local_manager, LocalComputeLogManager)
+            captured = mgr.local_manager.get_captured_local_path(["run", "step"], "out")
+            assert captured.startswith(str(local_dir))
+        finally:
+            mgr.dispose()
+
+    @pytest.mark.spec("DAG-023")
+    def test_upload_interval_default_none(self, clm) -> None:
+        """upload_interval is None by default — partial-upload polling disabled."""
+        assert clm.upload_interval is None
+
+    @pytest.mark.spec("DAG-023")
+    def test_upload_interval_configured(self, tmp_path) -> None:
+        """A configured upload_interval is returned; zero collapses to None."""
+        mgr = RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(tmp_path / "a"), upload_interval=30)
+        zero = RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(tmp_path / "b"), upload_interval=0)
+        try:
+            assert mgr.upload_interval == 30
+            assert zero.upload_interval is None
+        finally:
+            mgr.dispose()
+            zero.dispose()
+
+
+class TestComputeLogManagerPaths:
+    """DAG-024: remote path scheme."""
+
+    pytestmark = pytest.mark.os_sensitive
+
+    @pytest.mark.spec("DAG-024")
+    def test_path_scheme_nested_log_key(self, clm) -> None:
+        """A multi-segment log key maps to {prefix}/storage/<namespace>/<base>.<ext>."""
+        log_key = ["run1", "compute_logs", "step_a"]
+        _upload(clm, log_key, _ERR, b"e")  # capture is complete once the store has stderr
+        assert clm.display_path_for_type(log_key, _OUT) == "dagster/storage/run1/compute_logs/step_a.out"
+        assert clm.display_path_for_type(log_key, _ERR) == "dagster/storage/run1/compute_logs/step_a.err"
+
+    @pytest.mark.spec("DAG-024")
+    def test_path_scheme_single_segment_log_key(self, clm) -> None:
+        """A single-segment log key maps directly under {prefix}/storage."""
+        log_key = ["report"]
+        _upload(clm, log_key, _ERR, b"e")
+        assert clm.display_path_for_type(log_key, _OUT) == "dagster/storage/report.out"
+
+    @pytest.mark.spec("DAG-024")
+    def test_partial_and_final_paths_are_distinct(self, clm) -> None:
+        """The .partial suffix gives partial uploads a path of their own."""
+        log_key = ["run1", "compute_logs", "step_a"]
+        _upload(clm, log_key, _OUT, b"streaming", partial=True)
+        assert clm.cloud_storage_has_logs(log_key, _OUT, partial=True)
+        assert not clm.cloud_storage_has_logs(log_key, _OUT, partial=False)
+
+    @pytest.mark.spec("DAG-024")
+    def test_custom_prefix(self, tmp_path) -> None:
+        """A multi-segment prefix is honoured verbatim."""
+        mgr = RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(tmp_path / "local"), prefix="logs/dag")
+        try:
+            log_key = ["run1", "step"]
+            _upload(mgr, log_key, _ERR, b"e")
+            assert mgr.display_path_for_type(log_key, _OUT) == "logs/dag/storage/run1/step.out"
+        finally:
+            mgr.dispose()
+
+    @pytest.mark.spec("DAG-024")
+    def test_empty_prefix_drops_segment(self, tmp_path) -> None:
+        """An empty prefix produces no leading slash and no empty segment."""
+        mgr = RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(tmp_path / "local"), prefix="")
+        try:
+            log_key = ["run1", "step"]
+            _upload(mgr, log_key, _ERR, b"e")
+            path = mgr.display_path_for_type(log_key, _OUT)
+            assert path == "storage/run1/step.out"
+            assert not path.startswith("/")
+        finally:
+            mgr.dispose()
+
+
+class TestComputeLogManagerUploadDownload:
+    """DAG-025, DAG-026, DAG-027, DAG-028: upload, download, existence, UI metadata."""
+
+    pytestmark = pytest.mark.os_sensitive
+
+    @pytest.mark.spec("DAG-025")
+    def test_upload_writes_content_to_store(self, clm) -> None:
+        """_upload_file_obj persists the captured bytes to the Store."""
+        log_key = ["run1", "compute_logs", "step_a"]
+        _upload(clm, log_key, _OUT, b"hello stdout")
+        assert clm.cloud_storage_has_logs(log_key, _OUT)
+        assert _read_cloud(clm, log_key, _OUT) == b"hello stdout"
+
+    @pytest.mark.spec("DAG-025")
+    def test_upload_skips_empty_when_configured(self, tmp_path) -> None:
+        """skip_empty_files=True suppresses upload of a zero-byte log."""
+        mgr = RemoteStoreComputeLogManager(
+            backend_type="memory",
+            local_dir=str(tmp_path / "local"),
+            skip_empty_files=True,
+        )
+        try:
+            log_key = ["run1", "step"]
+            _upload(mgr, log_key, _OUT, b"")
+            assert not mgr.cloud_storage_has_logs(log_key, _OUT)
+        finally:
+            mgr.dispose()
+
+    @pytest.mark.spec("DAG-025")
+    def test_upload_skips_empty_partial(self, clm) -> None:
+        """A zero-byte partial upload is skipped even with skip_empty_files off."""
+        log_key = ["run1", "step"]
+        _upload(clm, log_key, _OUT, b"", partial=True)
+        assert not clm.cloud_storage_has_logs(log_key, _OUT, partial=True)
+
+    @pytest.mark.spec("DAG-025")
+    def test_upload_empty_final_is_kept(self, clm) -> None:
+        """A zero-byte final upload is kept when skip_empty_files is off (the default)."""
+        log_key = ["run1", "step"]
+        _upload(clm, log_key, _OUT, b"")
+        assert clm.cloud_storage_has_logs(log_key, _OUT)
+
+    @pytest.mark.spec("DAG-026")
+    def test_download_streams_store_to_local(self, clm) -> None:
+        """download_from_cloud_storage fetches a Store object back to the local stage."""
+        log_key = ["run1", "compute_logs", "step_a"]
+        _upload(clm, log_key, _OUT, b"captured output")
+        # Drop the local capture file so the read must come from the Store.
+        local_path = clm.local_manager.get_captured_local_path(log_key, IO_TYPE_EXTENSION[_OUT])
+        os.remove(local_path)
+        clm.download_from_cloud_storage(log_key, _OUT)
+        with open(local_path, "rb") as fh:
+            assert fh.read() == b"captured output"
+
+    @pytest.mark.spec("DAG-027")
+    def test_cloud_storage_has_logs(self, clm) -> None:
+        """cloud_storage_has_logs reports presence per log key and io_type."""
+        log_key = ["run1", "step"]
+        assert not clm.cloud_storage_has_logs(log_key, _OUT)
+        _upload(clm, log_key, _OUT, b"x")
+        assert clm.cloud_storage_has_logs(log_key, _OUT)
+        assert not clm.cloud_storage_has_logs(log_key, _ERR)
+
+    @pytest.mark.spec("DAG-028")
+    def test_download_url_is_none(self, clm) -> None:
+        """download_url_for_type returns None — v1 has no signed-URL primitive."""
+        log_key = ["run1", "step"]
+        _upload(clm, log_key, _OUT, b"x")
+        assert clm.download_url_for_type(log_key, _OUT) is None
+
+    @pytest.mark.spec("DAG-028")
+    def test_display_path_gated_on_capture_completeness(self, clm) -> None:
+        """display_path_for_type is None until capture completes, then a real location."""
+        log_key = ["run1", "compute_logs", "step_a"]
+        assert clm.display_path_for_type(log_key, _OUT) is None
+        _upload(clm, log_key, _ERR, b"e")
+        assert clm.display_path_for_type(log_key, _OUT) is not None
+
+
+class TestComputeLogManagerDeleteAndListing:
+    """DAG-029, DAG-031: delete_logs and get_log_keys_for_log_key_prefix."""
+
+    pytestmark = pytest.mark.os_sensitive
+
+    @pytest.mark.spec("DAG-029")
+    def test_delete_logs_by_log_key(self, clm) -> None:
+        """delete_logs(log_key=...) removes every io_type x partial variant from the Store."""
+        log_key = ["run1", "compute_logs", "step_a"]
+        _upload(clm, log_key, _OUT, b"o")
+        _upload(clm, log_key, _ERR, b"e")
+        _upload(clm, log_key, _OUT, b"op", partial=True)
+        _upload(clm, log_key, _ERR, b"ep", partial=True)
+
+        clm.delete_logs(log_key=log_key)
+
+        for io_type in (_OUT, _ERR):
+            for partial in (False, True):
+                assert not clm.cloud_storage_has_logs(log_key, io_type, partial=partial)
+
+    @pytest.mark.spec("DAG-029")
+    def test_delete_logs_by_prefix(self, clm) -> None:
+        """delete_logs(prefix=...) removes the whole run's log folder from the Store."""
+        prefix = ["run1", "compute_logs"]
+        key_a = [*prefix, "step_a"]
+        key_b = [*prefix, "step_b"]
+        _upload(clm, key_a, _OUT, b"a")
+        _upload(clm, key_b, _OUT, b"b")
+
+        clm.delete_logs(prefix=prefix)
+
+        assert not clm.cloud_storage_has_logs(key_a, _OUT)
+        assert not clm.cloud_storage_has_logs(key_b, _OUT)
+
+    @pytest.mark.spec("DAG-029")
+    def test_delete_logs_requires_an_argument(self, clm) -> None:
+        """delete_logs() with neither log_key nor prefix raises a Dagster check failure."""
+        with pytest.raises(CheckError):
+            clm.delete_logs()
+
+    @pytest.mark.spec("DAG-031")
+    def test_get_log_keys_for_prefix(self, clm) -> None:
+        """get_log_keys_for_log_key_prefix enumerates one key per stored step log."""
+        prefix = ["run1", "compute_logs"]
+        _upload(clm, [*prefix, "step_a"], _OUT, b"a")
+        _upload(clm, [*prefix, "step_b"], _OUT, b"b")
+        _upload(clm, [*prefix, "step_a"], _ERR, b"ae")
+
+        keys = clm.get_log_keys_for_log_key_prefix(prefix, _OUT)
+
+        assert sorted("/".join(k) for k in keys) == [
+            "run1/compute_logs/step_a",
+            "run1/compute_logs/step_b",
+        ]
+
+    @pytest.mark.spec("DAG-031")
+    def test_get_log_keys_excludes_partial_uploads(self, clm) -> None:
+        """Partial-upload files are not surfaced as log keys."""
+        prefix = ["run1", "compute_logs"]
+        _upload(clm, [*prefix, "step_a"], _OUT, b"a")
+        _upload(clm, [*prefix, "step_a"], _OUT, b"ap", partial=True)
+
+        keys = clm.get_log_keys_for_log_key_prefix(prefix, _OUT)
+
+        assert [list(k) for k in keys] == [["run1", "compute_logs", "step_a"]]
+
+    @pytest.mark.spec("DAG-031")
+    def test_get_log_keys_empty_prefix(self, clm) -> None:
+        """An unknown prefix yields no log keys rather than raising."""
+        assert list(clm.get_log_keys_for_log_key_prefix(["no", "such", "run"], _OUT)) == []
+
+
+class TestComputeLogManagerSubscriptionsAndLifecycle:
+    """DAG-030, DAG-032: subscription delegation and dispose."""
+
+    pytestmark = pytest.mark.os_sensitive
+
+    @pytest.mark.spec("DAG-030")
+    def test_subscribe_completes_when_capture_done(self, clm) -> None:
+        """on_subscribe delegates to the polling manager, which completes a finished capture."""
+        log_key = ["run1", "step"]
+        _upload(clm, log_key, _ERR, b"e")  # capture complete: the Store has stderr
+        subscription = clm.subscribe(log_key)
+        try:
+            assert subscription.is_complete
+        finally:
+            clm.unsubscribe(subscription)
+
+    @pytest.mark.spec("DAG-030")
+    def test_unsubscribe_completes_a_pending_subscription(self, clm) -> None:
+        """on_unsubscribe delegates removal; the pending subscription is then completed."""
+        log_key = ["run1", "step"]  # nothing uploaded: capture is not complete
+        subscription = clm.subscribe(log_key)
+        assert not subscription.is_complete
+        clm.unsubscribe(subscription)
+        assert subscription.is_complete
+
+    @pytest.mark.spec("DAG-032")
+    def test_dispose_closes_the_store(self, tmp_path) -> None:
+        """dispose() closes the Store built in the constructor."""
+        fake_store = mock.MagicMock(spec=Store)
+        fake_store.supports.return_value = True
+        with mock.patch("remote_store.ext.dagster._build_store", return_value=fake_store):
+            mgr = RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(tmp_path / "local"))
+        mgr.dispose()
+        assert fake_store.close.call_count == 1
+
+
+class TestBuildStoreCredentialMasking:
+    """DAG-033: _build_store wraps sensitive backend_options in Secret (RFC-0014 OQ6)."""
+
+    @pytest.mark.spec("DAG-033")
+    def test_build_store_masks_sensitive_keys(self, monkeypatch) -> None:
+        """Credential-named options reach the backend constructor wrapped in Secret."""
+        from remote_store._config import Secret
+        from remote_store._registry import _BACKEND_FACTORIES, _register_builtin_backends
+        from remote_store.ext.dagster import _build_store
+
+        captured: dict[str, object] = {}
+
+        def recording_factory(**kwargs):
+            captured.update(kwargs)
+            return MemoryBackend()
+
+        _register_builtin_backends()
+        monkeypatch.setitem(_BACKEND_FACTORIES, "_recording_backend", recording_factory)
+
+        options = {
+            "secret": "s3cr3t",
+            "password": "hunter2",
+            "bucket": "public-bucket",
+            "region": "eu-central-1",
+        }
+        store = _build_store("_recording_backend", options, "")
+        store.close()
+
+        assert isinstance(captured["secret"], Secret)
+        assert captured["secret"].reveal() == "s3cr3t"
+        assert isinstance(captured["password"], Secret)
+        assert captured["bucket"] == "public-bucket"
+        assert captured["region"] == "eu-central-1"
+        # The caller's mapping is copied, never mutated.
+        assert options["secret"] == "s3cr3t"
+
+    @pytest.mark.spec("DAG-033")
+    def test_unknown_backend_type_raises(self) -> None:
+        """_build_store raises ValueError listing registered types for an unknown backend."""
+        from remote_store.ext.dagster import _build_store
+
+        with pytest.raises(ValueError, match="Unknown backend type"):
+            _build_store("definitely-not-registered", {}, "")
+
+
+class TestComputeLogManagerEndToEnd:
+    """DAG-021, DAG-022: a real Dagster run captures stdout/stderr into a Store."""
+
+    pytestmark = pytest.mark.os_sensitive
+
+    @pytest.mark.spec("DAG-021")
+    @pytest.mark.spec("DAG-022")
+    def test_end_to_end_capture_and_read_back(self, tmp_path) -> None:
+        """A job configured via dagster.yaml-style overrides persists and serves its logs."""
+        import sys
+
+        from dagster import DagsterInstance, job, op
+
+        @op
+        def chatty() -> None:
+            print("STDOUT-MARKER-12345")  # noqa: T201 -- exercising compute-log capture
+            print("STDERR-MARKER-67890", file=sys.stderr)  # noqa: T201
+
+        @job
+        def chatty_job() -> None:
+            chatty()
+
+        dagster_home = tmp_path / "dagster_home"
+        dagster_home.mkdir()
+        instance = DagsterInstance.local_temp(
+            str(dagster_home),
+            overrides={
+                "compute_logs": {
+                    "module": "remote_store.ext.dagster",
+                    "class": "RemoteStoreComputeLogManager",
+                    "config": {
+                        "backend_type": "local",
+                        "backend_options": {"root": str(tmp_path / "store")},
+                        "local_dir": str(tmp_path / "local"),
+                    },
+                }
+            },
+        )
+        try:
+            result = chatty_job.execute_in_process(instance=instance)
+            assert result.success
+
+            manager = instance.compute_log_manager
+            assert isinstance(manager, RemoteStoreComputeLogManager)
+
+            # The run's compute logs were captured and uploaded to the Store;
+            # discover the actual log key via the enumeration hook (DAG-031).
+            keys = manager.get_log_keys_for_log_key_prefix([result.run_id, "compute_logs"], _OUT)
+            assert keys, "the run's captured stdout should be persisted to the Store"
+
+            log_key = list(keys[0])
+            assert manager.cloud_storage_has_logs(log_key, _OUT)
+            # Logs are read back from the Store (the local capture is gone).
+            stdout, _ = manager.get_log_data_for_type(log_key, _OUT, offset=0, max_bytes=None)
+            stderr, _ = manager.get_log_data_for_type(log_key, _ERR, offset=0, max_bytes=None)
+            assert b"STDOUT-MARKER-12345" in stdout
+            assert b"STDERR-MARKER-67890" in stderr
+        finally:
+            instance.dispose()

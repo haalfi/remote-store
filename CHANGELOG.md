@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-208: Dagster compute log manager (`RemoteStoreComputeLogManager`)
+
 ## [0.25.0] - 2026-05-18
 
 ### Added
