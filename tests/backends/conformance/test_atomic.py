@@ -100,6 +100,24 @@ _LAST_MODIFIED_XFAIL: dict[str, tuple[str, bool]] = {}
 # disagrees with get_file_info() on etag, digest, or last_modified.
 _RICH_FIELDS_XFAIL: dict[str, tuple[str, bool]] = {}
 
+# (op, cap) for the copy/move user-metadata round-trip (BK-195 / BK-233).
+# Per-param @spec marks differ by op: copy carries BE-019, move BE-018;
+# both carry WR-013, the user-metadata round-trip invariant.
+_MOVE_COPY_META_PARAMS = [
+    pytest.param(
+        "copy",
+        Capability.COPY,
+        id="copy",
+        marks=[pytest.mark.spec("WR-013"), pytest.mark.spec("BE-019")],
+    ),
+    pytest.param(
+        "move",
+        Capability.MOVE,
+        id="move",
+        marks=[pytest.mark.spec("WR-013"), pytest.mark.spec("BE-018")],
+    ),
+]
+
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
 class TestWriteResultConformance:
@@ -211,6 +229,23 @@ class TestWriteResultConformance:
         key = f"wr/{op}-meta-roundtrip.txt"
         getattr(backend, op)(key, b"data", metadata=meta)
         info = backend.get_file_info(key)
+        assert info.metadata == meta
+
+    @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_META_PARAMS)
+    def test_metadata_round_trips_through_move_copy(self, backend: Backend, op: str, cap: Capability) -> None:
+        """WR-013 round-trip applied to the move/copy paths (BK-195 / BK-233).
+
+        BE-018/BE-019 Metadata invariant: a successful move/copy preserves the
+        source file's user metadata, so ``get_file_info(dst)`` MUST return the
+        same mapping the source carried before the operation.
+        """
+        _require(backend, cap, Capability.USER_METADATA, Capability.METADATA)
+        meta = {"author": "carol", "stage": "bronze"}
+        src = f"wr/{op}-meta-src.txt"
+        dst = f"wr/{op}-meta-dst.txt"
+        backend.write(src, b"data", metadata=meta)
+        _do_op(backend, op, src, dst)
+        info = backend.get_file_info(dst)
         assert info.metadata == meta
 
     @pytest.mark.spec("WR-013")

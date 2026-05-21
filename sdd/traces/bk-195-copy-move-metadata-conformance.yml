@@ -1,0 +1,105 @@
+id: BK-195
+title: "copy() and move() conformance tests for user-metadata preservation"
+trigger: "TestWriteResultConformance covered the write -> get_file_info user-metadata round-trip, but no conformance test exercised write -> copy -> get_file_info or write -> move -> get_file_info. The cross-backend gate that would have caught BK-192 (memory copy() dropping metadata) did not exist. BK-196 and BK-232 had already pinned metadata in the Dafny Copy/Move postconditions, leaving the (T) conformance side as the open gap."
+source_items:
+  - BK-195
+  - BK-233
+  - BK-196
+  - BK-232
+  - BK-192
+audience:
+  - infra.test
+co_shipped_items:
+  - BK-233
+discovery_followups:
+  - BK-235
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - scripts/check_formal_trace.py
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-195, BK-233, Formal Verification execution-order table"
+        read_type: gate
+        extract: "The two (T) test-backfill siblings; the wave row may ship as one PR when its items share a file — both add tests to test_atomic.py"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-196, BK-232"
+        read_type: gate
+        extract: "Merged contract side: the Copy and Move success postconditions now pin fs[dst].info.metadata == old(fs)[src].info.metadata, so the oracle can certify the conformance tests"
+      - file: sdd/traces/bk-196-copy-metadata-postcondition.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Contract side of the copy gate — the (C)/(T) pairing, and the BE-019 Metadata-invariant spec amendment the conformance test encodes"
+      - file: sdd/traces/bk-232-move-metadata-postcondition.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Contract side of the move gate; also flags the README dafny-oracle/dafny_oracle selector typo — the parametrization id is dafny_oracle (underscore)"
+      - file: sdd/traces/bk-192-copy-metadata-parity.yml
+        section: "(full)"
+        read_type: reference
+        extract: "The original copy-metadata defect this conformance test closes the cross-backend gate for; only memory backends had targeted tests at the time"
+      - file: sdd/specs/045-write-result.md
+        section: "WR-013"
+        read_type: gate
+        extract: "User-metadata round-trip invariant: metadata survives write -> get_file_info on USER_METADATA backends — the contract the copy/move test extends to those paths"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018, BE-019"
+        read_type: gate
+        extract: "Metadata invariant — a successful move/copy MUST leave get_file_info(dst) returning the source's metadata mapping; normative MUST after the BK-196/BK-232 amendments"
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestWriteResultConformance, TestBackendMoveCopy"
+        read_type: gate
+        extract: "Structural template: test_metadata_round_trips_via_get_file_info for the round-trip shape; _MOVE_COPY_PARAMS / _do_op for the copy/move parametrize style"
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: gate
+        extract: "Assertion depth (rule 1), parametrize over copy-paste (rule 7), spec tracing for new conformance tests"
+  - id: tests
+    name: Add conformance tests
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestWriteResultConformance"
+        read_type: reference
+        extract: "Add test_metadata_round_trips_through_move_copy: write(metadata) -> copy/move -> get_file_info(dst); parametrized over _MOVE_COPY_META_PARAMS with per-op @spec marks (copy: WR-013 + BE-019, move: WR-013 + BE-018)"
+      - file: tests/backends/conformance/_helpers.py
+        section: "_do_op, _require"
+        read_type: reference
+        extract: "Reuse the shared copy/move invoker and the capability self-skip helper rather than inventing a new shape"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "section 3 Move/Copy"
+        read_type: reference
+        extract: "Mirror the sync test as TestMoveCopyMetadataPreservation; async params additionally carry ASYNC-019 (copy) / ASYNC-018 (move)"
+      - file: tests/backends/dafny/_helpers.py
+        section: "DafnyOracleBackend.copy, move, _to_file_info"
+        read_type: reference
+        extract: "The oracle threads srcEntry metadata after BK-196/BK-232; a green oracle proves the test demands nothing the verified contract does not"
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/test_atomic.py
+        section: "dafny_oracle parametrization"
+        read_type: verify
+        extract: "hatch run pytest tests/backends/conformance/ -k dafny_oracle green for both copy and move — the compiled oracle certifies the test (id is dafny_oracle, underscore)"
+      - file: FEATURES.md
+        section: "Write-result quality flags by backend"
+        read_type: verify
+        extract: "Authoritative USER_METADATA matrix: only azure/memory/s3/sql-blob declare it. local/sftp/s3-pyarrow self-skip via _require — the BK-195/BK-233 backlog prose listing Local and SFTP as declarers is imprecise; the capability self-skip is the correct behaviour and matches the sibling round-trip test"
+      - file: scripts/check_formal_trace.py
+        section: "(full)"
+        read_type: verify
+        extract: "Traceability gate green — BE-018, BE-019 and WR-013 already show tested, so the new @spec markers add no F1 and need no _BASELINE change"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG -> BACKLOG-DONE move for both items, execution-order row trimmed to ID-185, gen-backlogid refresh, trace shipped in-PR; audience infra.test so no CHANGELOG entry"
+  - id: review
+    name: Review
+    steps:
+      - file: scripts/check_formal_trace.py
+        section: "Landing strategy — checked-in baseline"
+        read_type: reference
+        extract: "Review caught a stale BK-195 token in the (T)-backfill worklist docstring (ID-184 / ID-185 / ID-188 / BK-195) — BK-195 is closed by this PR. Dropped it per principle 3; the ripple-check table has no row for backlog-ID mentions in tooling docstrings, so the edit was an unanticipated ripple"

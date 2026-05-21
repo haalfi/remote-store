@@ -70,7 +70,7 @@ mechanically — a new violation can be parked by editing ``_BASELINE``.
 That edit is visible in review and is the point where a human must
 refuse new debt; the check cannot make that judgement. The printed
 violation list is the worklist for the (T)-backfill items (ID-184 /
-ID-185 / ID-188 / BK-195).
+ID-185 / ID-188).
 
 CI enforcement. Exit code 0 = ok; 1 = violations found.
 """
