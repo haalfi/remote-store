@@ -8,6 +8,27 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-232 — Pin metadata in the Dafny `Move` postcondition**
+  spec: WR-013, BE-018, ASYNC-018 · audience: library.maintainer
+  A (C) gap, the `Move` sibling of BK-196. `MemoryBackend.dfy::Move`
+  built the destination via `BasicFileInfo`, dropping user metadata, and
+  the abstract `Move` postcondition pinned only content — so the model
+  verified cleanly while encoding a metadata-losing move, the exact
+  defect class BK-196 closed for `Copy`. The `Move` success
+  postcondition in `BackendContract.dfy` now also pins
+  `fs[dst].info.metadata == old(fs)[src].info.metadata`, and both
+  `MemoryBackend.Move` and `MemoryBackendMinimal.Move` thread
+  `srcEntry.info.metadata` onto the destination `FileInfo`. The metadata
+  clause is folded into the existing content `ensures`; `BasicFileInfo`
+  stays the rich-field-empty helper — `Move` constructs `FileInfo`
+  directly rather than rippling a new parameter through its call sites.
+  Spec 003 BE-018 gains the matching `Metadata` invariant and `Formal
+  coverage` paragraph, mirroring what BK-196 added to BE-019. Compiled
+  oracle regenerated; all four `.dfy` files verify. Surfaced during
+  BK-196 review; the `write → move → get_file_info` conformance test is
+  the distinct (T) gap BK-233.
+  Trace: `sdd/traces/bk-232-move-metadata-postcondition.yml`.
+
 - [x] **ID-190 — Formalize path well-formedness: `WellFormedPath` predicate**
   spec: PATH-002 -- PATH-008, NPR-020, NPR-010, STORE-012 · audience: library.maintainer
   A (C) gap. `BackendContract.dfy` treated paths as opaque non-empty

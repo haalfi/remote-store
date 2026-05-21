@@ -204,6 +204,11 @@ discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory (cannot overwrite a directory with a file). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
+**Metadata:** `move()` preserves the source file's user metadata: after a
+successful move, `get_file_info(dst)` returns the same `metadata` mapping the
+source file carried before the move — the WR-013 user-metadata round-trip,
+applied to the move path. A backend that rebuilds the destination `FileInfo`
+without carrying `metadata` across violates this invariant.
 **Atomicity:** Backends SHOULD implement `move()` atomically where the
 underlying storage supports it (e.g. Local via `os.rename`, Memory under lock,
 SQL in a transaction). Backends that cannot provide atomicity (e.g. S3 and
@@ -211,6 +216,11 @@ Azure non-HNS, which use copy-then-delete) MUST document this in their class
 docstring. The caller MUST NOT assume atomicity. On partial failure in a
 copy-then-delete implementation, the source file may still exist alongside the
 destination; the backend MUST NOT silently swallow the error.
+**Formal coverage:** `move()` is modelled in
+`sdd/formal/BackendContract.dfy` as `Move`; the success postcondition pins
+both `fs[dst].content == old(fs)[src].content` and
+`fs[dst].info.metadata == old(fs)[src].info.metadata`, so a refinement that
+drops metadata fails to verify. Verified in `MemoryBackend.dfy`. See BK-232.
 
 ### BE-019: copy()
 

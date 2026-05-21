@@ -1,0 +1,100 @@
+id: BK-232
+title: "Pin metadata in the Dafny Move postcondition"
+trigger: "The Dafny Move success postcondition pinned only destination content; MemoryBackend.dfy::Move built the destination FileInfo via BasicFileInfo, which drops user metadata. The model verified cleanly while encoding a metadata-losing move — the exact defect class BK-196 fixed for Copy. Surfaced as a discovery-followup during BK-196 review."
+source_items:
+  - BK-232
+  - BK-196
+audience:
+  - contributor.process
+  - infra.test
+expected_ripples:
+  - sdd/formal/MemoryBackend-py/module_.py
+  - sdd/backlogid.json
+  - sdd/specs/003-backend-adapter-contract.md
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-232, Formal Verification execution-order table"
+        read_type: gate
+        extract: "(C) Wave-0 item: tighten the Move postcondition and thread metadata; the move() sibling of BK-196, pairs with BK-233 (the T side)"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-196"
+        read_type: gate
+        extract: "BK-196 is the Copy exemplar this item mirrors; supplies the done-entry prose shape and the spec/audience line format"
+      - file: sdd/traces/bk-196-copy-metadata-postcondition.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Template trace: the ordered orient/design/implement/verify reads BK-196 used, and the review-round that the BE-019 amendment cost"
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate, Verification practices"
+        read_type: gate
+        extract: "Non-ghost body change requires oracle regeneration; MemoryBackend/MemoryBackendMinimal parity is review-enforced, not CI-enforced"
+      - file: sdd/formal/BackendContract.dfy
+        section: "Move, Copy"
+        read_type: gate
+        extract: "Move success postcondition pinned content only — a BasicFileInfo destination verified cleanly; Copy already carries fs[dst].info.metadata == old(fs)[src].info.metadata as the BK-196 template"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "Move (MemoryBackend and MemoryBackendMinimal)"
+        read_type: gate
+        extract: "Both classes build newInfo via BasicFileInfo(dst, dst, size); Copy in the same file shows the FileInfo-direct form to mirror; MemoryBackendMinimal must be mirrored manually"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018, BE-019"
+        read_type: gate
+        extract: "BE-019 (copy) carries the Metadata invariant and Formal coverage paragraph BK-196 added; BE-018 (move) lacks both — the prose ripple to mirror"
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "Move"
+        read_type: reference
+        extract: "Fold the metadata clause into the existing content ensures, between the content and src-removal conjuncts, so the shared IsFile(fs, dst) conjunct keeps fs[dst] well-defined — no standalone ensures needing its own dst-membership guard"
+      - file: sdd/formal/BackendContract.dfy
+        section: "BasicFileInfo"
+        read_type: reference
+        extract: "Keep BasicFileInfo as the rich-field-empty helper; construct FileInfo directly in Move, mirroring BK-196's Copy decision rather than adding a metadata parameter that would ripple through every call site"
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "Move"
+        read_type: reference
+        extract: "Add fs[dst].info.metadata == old(fs)[src].info.metadata to the Move success postcondition; retag // @spec BE-018, WR-013"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "Move (MemoryBackend and MemoryBackendMinimal)"
+        read_type: reference
+        extract: "Mirror the postcondition in both classes; construct newInfo as FileInfo(dst, dst, size, None, None, None, srcEntry.info.metadata); add metadata-equality assert breadcrumbs to the self-move and main success branches"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018"
+        read_type: reference
+        extract: "Amend BE-018 with a Metadata invariant and a Formal coverage paragraph, mirroring BK-196's BE-019 amendment — shipped in the same PR, since PR #664 needed a review round for missing the BE-019 half"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "dafny verify on all four .dfy files — 168 verified, 0 errors"
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "Move"
+        read_type: verify
+        extract: "Regenerate the compiled oracle (dafny translate py + _dafny_classorder.py); diff is exactly the two Move bodies — newInfo switched from BasicFileInfo to FileInfo with the metadata field"
+      - file: tests/backends/conformance/
+        section: "dafny_oracle parametrization"
+        read_type: verify
+        extract: "Oracle conformance suite still green (174 passed, 6 skipped); no test depended on the pre-fix metadata-dropping behaviour"
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate / Running the oracle tests"
+        read_type: verify
+        outcome: misleading
+        extract: "README's `pytest tests/backends/conformance/ -k \"dafny-oracle\"` selector collects zero tests — the conformance parametrization id is `dafny_oracle` (underscore). Stale doc, out of BK-232 scope; flagged for a follow-up"
+      - file: scripts/check_formal_trace.py
+        section: "(full)"
+        read_type: verify
+        extract: "Traceability gate green — BE-018 and WR-013 already conformance-tested, so // @spec BE-018, WR-013 adds no new F1 and needs no _BASELINE change"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG → BACKLOG-DONE move, gen-backlogid refresh, trace shipped in-PR; audience is contributor.process + infra.test so no CHANGELOG entry"
