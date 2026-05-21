@@ -1155,13 +1155,22 @@ class TestComputeLogManagerSubscriptionsAndLifecycle:
         assert subscription.is_complete
 
     @pytest.mark.spec("DAG-032")
-    def test_dispose_closes_the_store(self, tmp_path) -> None:
-        """dispose() closes the Store built in the constructor."""
+    def test_dispose_disposes_managers_and_closes_store(self, tmp_path) -> None:
+        """dispose() disposes the subscription + local managers and closes the Store."""
         fake_store = mock.MagicMock(spec=Store)
         fake_store.supports.return_value = True
         with mock.patch("remote_store.ext.dagster._build_store", return_value=fake_store):
             mgr = RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(tmp_path / "local"))
-        mgr.dispose()
+
+        with (
+            # internal: no public observable for the subscription manager
+            mock.patch.object(mgr._subscription_manager, "dispose") as sub_dispose,
+            mock.patch.object(mgr.local_manager, "dispose") as local_dispose,
+        ):
+            mgr.dispose()
+
+        sub_dispose.assert_called_once()
+        local_dispose.assert_called_once()
         assert fake_store.close.call_count == 1
 
 

@@ -573,6 +573,21 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   and several `sdd/` research docs). Convert all non-trivial ASCII diagrams; leave simple
   inline flows (single arrows, short sequences) as text.
 
+- [ ] **ID-209 — Runnable `RemoteStoreComputeLogManager` example**
+  spec: — · effort: S · audience: user.site
+  `examples/integrations/` ships runnable demos for the Dagster IO manager
+  (`dagster_io_manager.py`, `dagster_v2_resource.py`) but none for
+  `RemoteStoreComputeLogManager` (ID-208). Unlike the IO manager, the compute
+  log manager has no Python construction API — it is configured purely via
+  `dagster.yaml` — so a demo must build a `DagsterInstance` with a
+  `compute_logs` override, run a job, and show captured `stdout` / `stderr`
+  landing in the Store (the shape of `test_end_to_end_capture_and_read_back`).
+  When picked up, add `examples/integrations/dagster_compute_log_manager.py`,
+  its `tests/test_examples.py` entry, and the "See also" links in the dagster
+  guide and API page. The `dagster.yaml` snippet in `docs-src/guides/dagster.md`
+  already documents the configuration, so this is a low-priority discoverability
+  gap. Surfaced during ID-208 (PR #669) review.
+
 ---
 
 ## API Ergonomics

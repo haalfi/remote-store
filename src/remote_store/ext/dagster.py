@@ -798,5 +798,8 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
     def dispose(self) -> None:
         """Dispose the subscription and local managers and close the Store (DAG-032)."""
         self._subscription_manager.dispose()
-        self._local_manager.dispose()
+        # super().dispose() disposes local_manager; calling it (rather than
+        # self._local_manager.dispose() directly) inherits any cleanup a
+        # future dagster CloudStorageComputeLogManager.dispose() adds.
+        super().dispose()
         self._store.close()

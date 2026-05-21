@@ -8,6 +8,11 @@ audience:
   - user.api_docs
   - user.site
   - contributor.process
+discovery_followups:
+  # PR #669 review: examples/integrations/ ships runnable demos for the
+  # Dagster IO manager but none for the compute log manager. Deferred —
+  # the dagster.yaml snippet in the guide already documents the config.
+  - ID-209
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
@@ -20,7 +25,7 @@ surprising_ripples:
   # The os_sensitive Windows CI leg forced a skipif — our upload/download
   # hooks stay covered cross-platform by the seeded-file unit tests.
   - tests/ext/test_dagster.py
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
