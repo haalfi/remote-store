@@ -9464,7 +9464,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a</span><span class="se">\\</span><span class="s2">b</span><span class="se">\\</span><span class="s2">c&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b/c&quot;</span>
 </code></pre></div></p>
 <h2 id="path-003-double-dot-rejection">PATH-003: Double-Dot Rejection<a class="headerlink" href="#path-003-double-dot-rejection" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Path segments containing <code>..</code> are rejected.
+<p><strong>Invariant:</strong> A path segment exactly equal to <code>..</code> is rejected. A segment that merely contains <code>..</code> as a substring (e.g. a filename like <code>a..b</code>) is allowed.
 <strong>Raises:</strong> <code>InvalidPath</code>
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
