@@ -80,7 +80,7 @@ none of which is "run a second backend and diff the output":
 
 | Wave | Items | Notes |
 |---|---|---|
-| 0 — contract (C) | ID-190, BK-232 | Independent Dafny changes; each re-verifies the refinement |
+| 0 — contract (C) | BK-232 | Independent Dafny changes; each re-verifies the refinement |
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
 | 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
 | 1 — test backfill (T) | ID-185, BK-195, BK-233 | Conformance gaps for already-verified clauses |
@@ -212,21 +212,6 @@ PR where its items share a file or proof.
   comparison fails, so a harness bug cannot leave the property-based test
   vacuously green (the Safe/Unsafe-pair discipline in
   `sdd/formal/README.md`).
-
-- [ ] **ID-190 — Formalize path well-formedness: `WellFormedPath` predicate**
-  spec: PATH-002 -- PATH-008, NPR-020, NPR-010, STORE-012 · effort: L · audience: library.maintainer
-  A (C) gap. `BackendContract.dfy` treats paths as opaque strings and
-  assumes well-formedness. The normalization rules PATH-002 -- PATH-008
-  (backslash to slash, `..` rejection, slash stripping and collapsing,
-  dot-segment removal, null-byte and empty-path rejection) are enforced
-  by Python code only: with no Dafny postcondition, the oracle cannot
-  certify a path-normalization test. Add a `WellFormedPath(s: string):
-  bool` predicate encoding these rules, declare it as a precondition
-  assumption on all contract methods, and thread it through
-  `MemoryBackend.dfy`. Second part: add a `NativePathRoundTrip` lemma (or
-  axiom, if the full proof is out of scope) for NPR-020's
-  `to_key(native_path(k)) == k` identity, enabling future Store-Backend
-  composition reasoning.
 
 - [ ] **ID-191 — Move atomicity: model the observable contract, then enforce it**
   spec: BE-018, ASYNC-018 · effort: L · audience: infra.test
@@ -643,6 +628,24 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   `src/remote_store/_path.py`, then audit `RemotePath` against the `PurePath`
   API surface (`__fspath__`, `fspath`, etc.) to close remaining parity gaps.
   Discovered during HNS listing test authoring; workaround was explicit `str()` conversion.
+
+- [ ] **BK-234 — Reconcile `to_key` empty-key / bare-root behaviour across backends**
+  spec: NPR-005, NPR-020, NPR-021 · effort: M · audience: library.maintainer
+  NPR-020 states the round-trip `to_key(native_path(k)) == k` holds "for
+  all valid keys", but for the empty key it contradicts NPR-005. For
+  `k == ""`, `native_path("")` returns the bare root (NPR-021); NPR-005
+  then says `to_key` returns a path that does not start with `root + "/"`
+  unchanged, so `to_key(root) == root`, not `""`. The backends split:
+  `S3Backend.to_key` (`_s3_base.py`) and `AzureBackend.to_key`
+  (`_azure.py`) follow NPR-005 and return the bare bucket/container;
+  `LocalBackend.to_key` and `SFTPBackend.to_key` special-case the bare
+  root to `""`. So `to_key(native_path("")) == ""` on Local/SFTP but
+  `== root` on S3/Azure — the NPR-001 round-trip invariant fails on
+  S3/Azure for the empty key. Decide the contract (amend NPR-005 / NPR-020
+  so they agree, then align the four backends) or rule the empty key out
+  of the round-trip's domain. ID-190's `NativePathRoundTrip` lemma
+  excludes the empty-key / non-empty-root case for this reason. Surfaced
+  during ID-190 review.
 
 - [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
   spec: RES-100 · effort: M · audience: user.api

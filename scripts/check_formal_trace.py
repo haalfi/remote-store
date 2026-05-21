@@ -140,6 +140,12 @@ _BASELINE: frozenset[tuple[str, str]] = frozenset(
         #   conformance suite exercises metadata round-trips (WR-012/013) but
         #   carries no WR-010 marker for the pre-I/O gate. Surfaced by ID-206.
         (KIND_UNTESTED, "WR-010"),
+        # NPR-020 — NativePathRoundTrip (BackendContract.dfy) proves the
+        #   to_key / native_path round-trip identity for non-empty keys
+        #   (and identity-default roots); the empty-key case is backend-
+        #   divergent and excluded, tracked as BK-234. The cross-backend
+        #   conformance test is a separate (T) gap surfaced by ID-190.
+        (KIND_UNTESTED, "NPR-020"),
         # -- F2: conformance markers citing an ID with no spec section.
         #
         # ID-134 — TestGetFolderInfoAggregates markers cite the backlog ID
