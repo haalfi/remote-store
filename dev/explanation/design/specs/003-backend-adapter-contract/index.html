@@ -10113,21 +10113,32 @@ discharged structurally. Verified in <code>MemoryBackend.dfy</code>. See ID-151.
 <h3 id="be-018-move">BE-018: move()<a class="headerlink" href="#be-018-move" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst, overwrite=False)</code> renames/moves a file.
 <strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, or if <code>dst</code> names an existing directory (cannot overwrite a directory with a file). <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-move on a file is a no-op (Dafny: <code>Move: src == dst → Ok</code>); self-move on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
+<strong>Metadata:</strong> <code>move()</code> preserves the source file's user metadata: after a
+successful move, <code>get_file_info(dst)</code> MUST return the same <code>metadata</code>
+mapping the source file carried before the move — the WR-013 user-metadata
+round-trip, applied to the move path. A backend that rebuilds the
+destination <code>FileInfo</code> without carrying <code>metadata</code> across violates this
+invariant.
 <strong>Atomicity:</strong> Backends SHOULD implement <code>move()</code> atomically where the
 underlying storage supports it (e.g. Local via <code>os.rename</code>, Memory under lock,
 SQL in a transaction). Backends that cannot provide atomicity (e.g. S3 and
 Azure non-HNS, which use copy-then-delete) MUST document this in their class
 docstring. The caller MUST NOT assume atomicity. On partial failure in a
 copy-then-delete implementation, the source file may still exist alongside the
-destination; the backend MUST NOT silently swallow the error.</p>
+destination; the backend MUST NOT silently swallow the error.
+<strong>Formal coverage:</strong> <code>move()</code> is modelled in
+<code>sdd/formal/BackendContract.dfy</code> as <code>Move</code>; the success postcondition pins
+both <code>fs[dst].content == old(fs)[src].content</code> and
+<code>fs[dst].info.metadata == old(fs)[src].info.metadata</code>, so a refinement that
+drops metadata fails to verify. Verified in <code>MemoryBackend.dfy</code>. See BK-232.</p>
 <h3 id="be-019-copy">BE-019: copy()<a class="headerlink" href="#be-019-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>copy(src, dst, overwrite=False)</code> duplicates a file.
 <strong>Raises:</strong> <code>NotFound</code> if <code>src</code> does not exist. <code>InvalidPath</code> if <code>src</code> names a directory, or if <code>dst</code> names an existing directory. <code>AlreadyExists</code> if <code>dst</code> names an existing file, <code>overwrite=False</code>, and <code>src != dst</code> — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises <code>InvalidPath</code> per the precondition ordering in BE-008. See BE-021.
 <strong>Metadata:</strong> <code>copy()</code> preserves the source file's user metadata: after a
-successful copy, <code>get_file_info(dst)</code> returns the same <code>metadata</code> mapping as
-<code>get_file_info(src)</code> — the WR-013 user-metadata round-trip, applied to the
-copy path. A backend that rebuilds the destination <code>FileInfo</code> without
-carrying <code>metadata</code> across violates this invariant.
+successful copy, <code>get_file_info(dst)</code> MUST return the same <code>metadata</code>
+mapping as <code>get_file_info(src)</code> — the WR-013 user-metadata round-trip,
+applied to the copy path. A backend that rebuilds the destination
+<code>FileInfo</code> without carrying <code>metadata</code> across violates this invariant.
 <strong>Partial failure:</strong> Unlike <code>move()</code>, <code>copy()</code> has no delete-after phase, so it
 cannot create a duplicate of the source. However, a backend that writes <code>dst</code>
 incrementally (e.g. multi-part upload) can leave a corrupt or incomplete
