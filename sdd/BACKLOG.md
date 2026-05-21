@@ -80,7 +80,6 @@ none of which is "run a second backend and diff the output":
 
 | Wave | Items | Notes |
 |---|---|---|
-| 0 — contract (C) | BK-232 | Independent Dafny changes; each re-verifies the refinement |
 | 0 — property-based (O) | ID-187 | Self-contained; bundles its own oracle helper |
 | 1 — contract + test | ID-184, ID-188, ID-191 | Each pairs a Dafny change with the conformance tests it makes certifiable |
 | 1 — test backfill (T) | ID-185, BK-195, BK-233 | Conformance gaps for already-verified clauses |
@@ -143,22 +142,6 @@ PR where its items share a file or proof.
   declaring `USER_METADATA` (Local, S3, SFTP via metadata files, Azure,
   memory, async-memory). Surfaced during BK-192.
   Trace: `sdd/traces/bk-192-copy-metadata-parity.yml`.
-
-- [ ] **BK-232 — Pin metadata in the Dafny `Move` postcondition**
-  spec: WR-013, BE-018, ASYNC-018 · effort: S · audience: library.maintainer
-  A (C) gap, the `Move` sibling of BK-196. `MemoryBackend.dfy::Move` builds
-  the destination via `BasicFileInfo(dst, dst, srcEntry.info.size)`,
-  dropping user metadata, and the `Move` success postcondition pins only
-  `fs[dst].content`, so the model verifies cleanly while encoding a
-  metadata-losing move. A move is observationally copy-then-delete: on a
-  `USER_METADATA`-declaring backend `write → move → get_file_info` must
-  return the same metadata (WR-013, applied to the move path). Add
-  `fs[dst].info.metadata == old(fs)[src].info.metadata` to the `Move`
-  success postcondition, thread metadata onto the destination `FileInfo`
-  in both `MemoryBackend.Move` and `MemoryBackendMinimal.Move`, and
-  re-verify. The matching `write → move → get_file_info` conformance test
-  is a distinct (T) gap tracked by BK-233; BK-195 stays copy-scoped.
-  Surfaced during BK-196 review.
 
 - [ ] **BK-233 — Conformance test: `move()` preserves user metadata**
   spec: WR-013, BE-018, ASYNC-018 · effort: M · audience: infra.test

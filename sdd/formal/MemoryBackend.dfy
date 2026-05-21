@@ -566,6 +566,7 @@ class MemoryBackend extends Backend {
     ensures r.Ok? && IsFile(old(fs), src) ==>
       IsFile(fs, dst) &&
       fs[dst].content == old(fs)[src].content &&
+      fs[dst].info.metadata == old(fs)[src].info.metadata &&
       (src != dst ==> !PathExists(fs, src))
   {
     // Directory src → InvalidPath.
@@ -594,6 +595,7 @@ class MemoryBackend extends Backend {
     if src == dst {
       assert IsFile(fs, dst);
       assert fs[dst].content == old(fs)[src].content;
+      assert fs[dst].info.metadata == old(fs)[src].info.metadata;
       r := Ok(());
       return;
     }
@@ -607,11 +609,15 @@ class MemoryBackend extends Backend {
 
     EnsureParents(dst);
     var srcEntry := fs[src];
-    var newInfo := BasicFileInfo(dst, dst, srcEntry.info.size);
+    // BK-232 / WR-013: thread user metadata onto the move destination.
+    // BasicFileInfo would drop it — the gap this item closes.
+    var newInfo := FileInfo(dst, dst, srcEntry.info.size,
+                            None, None, None, srcEntry.info.metadata);
     var newEntry := FileEntry(srcEntry.content, newInfo);
     fs := (map k | k in fs && k != src :: fs[k])[dst := newEntry];
     assert dst in fs;
     assert fs[dst].content == old(fs)[src].content;
+    assert fs[dst].info.metadata == old(fs)[src].info.metadata;
     assert src != dst;
     assert src !in fs;
     r := Ok(());
@@ -1219,6 +1225,7 @@ class MemoryBackendMinimal extends Backend {
     ensures r.Ok? && IsFile(old(fs), src) ==>
       IsFile(fs, dst) &&
       fs[dst].content == old(fs)[src].content &&
+      fs[dst].info.metadata == old(fs)[src].info.metadata &&
       (src != dst ==> !PathExists(fs, src))
   {
     if src in fs && fs[src].DirEntry? {
@@ -1240,6 +1247,7 @@ class MemoryBackendMinimal extends Backend {
     if src == dst {
       assert IsFile(fs, dst);
       assert fs[dst].content == old(fs)[src].content;
+      assert fs[dst].info.metadata == old(fs)[src].info.metadata;
       r := Ok(());
       return;
     }
@@ -1250,11 +1258,15 @@ class MemoryBackendMinimal extends Backend {
     }
     EnsureParents(dst);
     var srcEntry := fs[src];
-    var newInfo := BasicFileInfo(dst, dst, srcEntry.info.size);
+    // BK-232 / WR-013: thread user metadata onto the move destination.
+    // BasicFileInfo would drop it — the gap this item closes.
+    var newInfo := FileInfo(dst, dst, srcEntry.info.size,
+                            None, None, None, srcEntry.info.metadata);
     var newEntry := FileEntry(srcEntry.content, newInfo);
     fs := (map k | k in fs && k != src :: fs[k])[dst := newEntry];
     assert dst in fs;
     assert fs[dst].content == old(fs)[src].content;
+    assert fs[dst].info.metadata == old(fs)[src].info.metadata;
     assert src != dst;
     assert src !in fs;
     r := Ok(());

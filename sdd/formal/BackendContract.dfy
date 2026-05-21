@@ -712,10 +712,15 @@ trait Backend {
     ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
-    // @spec BE-018
+    // BK-232 / WR-013: move preserves user metadata on the destination.
+    // Before BK-232 the contract pinned only content, so a refinement
+    // that built the destination via BasicFileInfo (metadata dropped)
+    // verified cleanly — the exact defect Python carried before BK-192.
+    // @spec BE-018, WR-013
     ensures r.Ok? && IsFile(old(fs), src) ==>
       IsFile(fs, dst) &&
       fs[dst].content == old(fs)[src].content &&
+      fs[dst].info.metadata == old(fs)[src].info.metadata &&
       (src != dst ==> !PathExists(fs, src))
 
   // ====================================================================
