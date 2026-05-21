@@ -15,6 +15,11 @@ surprising_ripples:
   # ext.dagster mypy override needed `disallow_untyped_calls = false` — a
   # pyproject change the ripple-check "Extension" row does not anticipate.
   - pyproject.toml
+  # The end-to-end test exercises Dagster's own FD-level stdout/stderr
+  # capture, which yields empty files on Windows under execute_in_process.
+  # The os_sensitive Windows CI leg forced a skipif — our upload/download
+  # hooks stay covered cross-platform by the seeded-file unit tests.
+  - tests/ext/test_dagster.py
 review_rounds: 0
 phases:
   - id: orient

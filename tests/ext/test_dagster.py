@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from typing import Any
 from unittest import mock
 
@@ -1227,10 +1228,12 @@ class TestComputeLogManagerEndToEnd:
 
     @pytest.mark.spec("DAG-021")
     @pytest.mark.spec("DAG-022")
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="Dagster's FD-level compute-log capture yields empty files on Windows under execute_in_process",
+    )
     def test_end_to_end_capture_and_read_back(self, tmp_path) -> None:
         """A job configured via dagster.yaml-style overrides persists and serves its logs."""
-        import sys
-
         from dagster import DagsterInstance, job, op
 
         @op
