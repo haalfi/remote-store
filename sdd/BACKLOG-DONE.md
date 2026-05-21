@@ -8,6 +8,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-196 — Pin metadata in the Dafny `Copy` postcondition**
+  spec: WR-013, BE-019, ASYNC-019 · audience: library.maintainer
+  A (C) gap, and the exemplar of benefit 1. `MemoryBackend.dfy::Copy`
+  built the destination via `BasicFileInfo`, dropping user metadata, and
+  the abstract `Copy` postcondition pinned only content — so the model
+  verified cleanly while encoding the exact defect Python carried before
+  BK-192. The `Copy` success postcondition in `BackendContract.dfy` now
+  also pins `fs[dst].info.metadata == old(fs)[src].info.metadata`, and
+  both `MemoryBackend.Copy` and `MemoryBackendMinimal.Copy` thread
+  `srcEntry.info.metadata` onto the destination `FileInfo`. The metadata
+  clause is folded into the existing content `ensures` so the shared
+  `IsFile(fs, dst)` conjunct keeps `fs[dst]` well-defined. `BasicFileInfo`
+  stays the rich-field-empty helper — `Copy` constructs `FileInfo`
+  directly rather than rippling a new parameter through its call sites
+  (a deliberate divergence from the item's advisory prescription).
+  Compiled oracle regenerated; all four `.dfy` files verify. Surfaced
+  during BK-192; pairs with BK-195 (the conformance-test side).
+  Trace: `sdd/traces/bk-196-copy-metadata-postcondition.yml`.
+
 - [x] **ID-206 — Mechanical spec ↔ Dafny ↔ test traceability gate**
   spec: — · audience: platform.tooling, infra.test
   The keystone of the Formal Verification wave: turns "Dafny ties tests

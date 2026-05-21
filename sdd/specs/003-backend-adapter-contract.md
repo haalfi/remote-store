@@ -216,12 +216,22 @@ destination; the backend MUST NOT silently swallow the error.
 
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, or if `dst` names an existing directory. `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021.
+**Metadata:** `copy()` preserves the source file's user metadata: after a
+successful copy, `get_file_info(dst)` returns the same `metadata` mapping as
+`get_file_info(src)` — the WR-013 user-metadata round-trip, applied to the
+copy path. A backend that rebuilds the destination `FileInfo` without
+carrying `metadata` across violates this invariant.
 **Partial failure:** Unlike `move()`, `copy()` has no delete-after phase, so it
 cannot create a duplicate of the source. However, a backend that writes `dst`
 incrementally (e.g. multi-part upload) can leave a corrupt or incomplete
 destination if the transfer fails mid-way. Backends MUST NOT silently return
 success on a failed copy — the caller should assume `dst` is corrupt if an
 error is raised mid-operation.
+**Formal coverage:** `copy()` is modelled in
+`sdd/formal/BackendContract.dfy` as `Copy`; the success postcondition pins
+both `fs[dst].content == old(fs)[src].content` and
+`fs[dst].info.metadata == old(fs)[src].info.metadata`, so a refinement that
+drops metadata fails to verify. Verified in `MemoryBackend.dfy`. See BK-196.
 
 ### BE-020: close()
 
