@@ -977,6 +977,20 @@ class TestComputeLogManagerPaths:
         finally:
             mgr.dispose()
 
+    @pytest.mark.spec("DAG-024")
+    def test_root_path_is_namespace_prefix_not_embedded(self, tmp_path) -> None:
+        """The Store's root_path is an outer namespace prefix, not woven into the derivation."""
+        mgr = RemoteStoreComputeLogManager(backend_type="memory", local_dir=str(tmp_path / "local"), root_path="ns")
+        try:
+            log_key = ["run1", "step"]
+            _upload(mgr, log_key, _ERR, b"e")
+            # root_path is applied once by the Store as an outer prefix; the
+            # compute-log derivation (dagster/storage/...) is identical to the
+            # root_path="" case in test_path_scheme_* above.
+            assert mgr.display_path_for_type(log_key, _OUT) == "ns/dagster/storage/run1/step.out"
+        finally:
+            mgr.dispose()
+
 
 class TestComputeLogManagerUploadDownload:
     """DAG-025, DAG-026, DAG-027, DAG-028: upload, download, existence, UI metadata."""

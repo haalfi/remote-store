@@ -230,8 +230,9 @@ Where the IO manager persists asset and op *return values*, the compute log
 manager persists the raw `stdout` / `stderr` a step emits while it runs — the
 text the Dagster UI shows under a run's stdout/stderr tabs.
 
-A `ComputeLogManager` is not a resource. It is a Dagster *instance* component,
-so it is configured in `dagster.yaml` rather than wired into `Definitions`:
+A [`ComputeLogManager`](https://docs.dagster.io/api/dagster/internals) is not a
+resource. It is a Dagster *instance* component, so it is configured in
+`dagster.yaml` rather than wired into `Definitions`:
 
 ```yaml
 compute_logs:
