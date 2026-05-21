@@ -12,9 +12,10 @@ expected_ripples:
   - sdd/backlogid.json
 discovery_followups:
   - BK-232
+  - BK-233
 surprising_ripples:
   - sdd/specs/003-backend-adapter-contract.md
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -99,3 +100,7 @@ phases:
         section: "BE-019"
         read_type: reference
         extract: "Review flagged the // @spec BE-019, WR-013 tag as stricter than the written spec (principle 5: no spec clause stated copy preserves metadata). Amended BE-019 with a Metadata invariant and Formal coverage paragraph so the verified contract is spec-backed — a ripple the original ripple-check did not anticipate"
+      - file: sdd/BACKLOG.md
+        section: "BK-232"
+        read_type: reference
+        extract: "Round-2 review caught BK-232's prose pointing the move conformance test at BK-195, which is copy-scoped — a scope contradiction. Filed BK-233 as the move (T) sibling of BK-195 and repointed BK-232 at it"
