@@ -1,0 +1,87 @@
+id: BK-236
+title: "Docs-site link gate in check-links (DOCFRAME-009)"
+trigger: >-
+  Two README links shipped to PyPI pointing at docs-site paths that never
+  existed (/stable/api/store/ and /stable/how-to/extensions/). check_links.py
+  validated relative on-disk links only and exempted every external URL, so
+  no offline gate could have caught a mistyped docs.remotestore.dev path.
+source_items:
+  - BK-236
+  - BK-171
+audience:
+  - contributor.tooling
+  - user.site
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - examples/_categories.yml
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: README.md
+        section: "Store API, Extensions"
+        read_type: reference
+        extract: "Locate the two broken docs-site links and the /stable/ URL shape they use"
+      - file: mkdocs.yml
+        section: "site_url, plugins (mike), validation.links"
+        read_type: reference
+        extract: "Docs site is mike-versioned, use_directory_urls default, not_found only warns"
+      - file: scripts/docs/link.py
+        section: "build_source_map"
+        read_type: gate
+        extract: "The single source->docs-URL map; its codomain is the served-page set to validate against"
+      - file: scripts/docs/check_links.py
+        section: "(full)"
+        read_type: gate
+        extract: "Existing on-disk gate to extend; _extract_links discards external URLs"
+      - file: docs-src/_path_rules.yml
+        section: "(full)"
+        read_type: reference
+        extract: "How docs-src/ paths map onto docs-site URL prefixes"
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules 1, 2, 6"
+        read_type: gate
+        extract: "No code without a spec; no spec without a @pytest.mark.spec test"
+      - file: sdd/specs/047-docs-framework-tooling.md
+        section: "DOCFRAME-008"
+        read_type: gate
+        extract: "check_links.py is spec-governed; external URLs exempt — DOCFRAME-009 narrows that exemption"
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/docs/render.py
+        section: "render_example_index, render_sdd_indexes"
+        read_type: reference
+        extract: "A few generated index pages have no source-map entry of their own name"
+      - file: scripts/docs/nav.py
+        section: "build_summary"
+        read_type: reference
+        extract: "Every section directory carries an index page — justifies the ancestor-directory rule"
+  - id: tests
+    name: Tests
+    steps:
+      - file: tests/scripts/test_check_links.py
+        section: "(full)"
+        read_type: reference
+        extract: "Module-fixture pattern and the live-repo positive-control test shape to mirror"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section, Backlog item touched, Example script"
+        read_type: verify
+        extract: >-
+          Spec section needs spec-tagged tests and a backlog item; the Example-script row
+          omits examples/_categories.yml, the file the new check's scan_examples call tripped on
+        outcome: unclear
+      - file: examples/_categories.yml
+        section: "integrations"
+        read_type: verify
+        extract: >-
+          scan_examples warned dagster_compute_log_manager was on disk but unregistered
+          (an ID-208 ripple miss) — surprising ripple, registered in the same PR

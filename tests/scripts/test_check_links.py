@@ -154,3 +154,130 @@ def test_check_repo_links_against_live_repo(check_links_mod):
         pytest.skip("not a git checkout")
     broken = check_links_mod.check_repo_links(ROOT)
     assert broken == [], "\n".join(f"{b.source.relative_to(ROOT)}:{b.line}: {b.raw}" for b in broken)
+
+
+# ---------------------------------------------------------------------------
+# _resolve_docs_site_path — docs-site URL → page path (DOCFRAME-009)
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_docs_site_path_skips_non_url(check_links_mod):
+    assert check_links_mod._resolve_docs_site_path("../reference/api/store.md") is None
+
+
+def test_resolve_docs_site_path_skips_other_host(check_links_mod):
+    assert check_links_mod._resolve_docs_site_path("https://example.com/stable/x/") is None
+
+
+def test_resolve_docs_site_path_skips_bare_site_root(check_links_mod):
+    # Bare root redirects to the default version; nothing to validate.
+    assert check_links_mod._resolve_docs_site_path("https://docs.remotestore.dev/") is None
+
+
+def test_resolve_docs_site_path_returns_page_for_stable_alias(check_links_mod):
+    url = "https://docs.remotestore.dev/stable/reference/api/store/"
+    assert check_links_mod._resolve_docs_site_path(url) == "reference/api/store"
+
+
+def test_resolve_docs_site_path_accepts_latest_alias(check_links_mod):
+    url = "https://docs.remotestore.dev/latest/guides/extensions/"
+    assert check_links_mod._resolve_docs_site_path(url) == "guides/extensions"
+
+
+def test_resolve_docs_site_path_stable_root_is_empty_string(check_links_mod):
+    assert check_links_mod._resolve_docs_site_path("https://docs.remotestore.dev/stable/") == ""
+
+
+def test_resolve_docs_site_path_skips_numbered_version(check_links_mod):
+    # A pinned snapshot cannot be validated against the current docs-src/ tree.
+    url = "https://docs.remotestore.dev/0.25/reference/api/store/"
+    assert check_links_mod._resolve_docs_site_path(url) is None
+
+
+def test_resolve_docs_site_path_drops_fragment(check_links_mod):
+    url = "https://docs.remotestore.dev/stable/reference/api/store/#remote_store.Store.read"
+    assert check_links_mod._resolve_docs_site_path(url) == "reference/api/store"
+
+
+# ---------------------------------------------------------------------------
+# _normalize_docs_dest — source path → directory-URL page path (DOCFRAME-009)
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_docs_dest_site_root(check_links_mod):
+    assert check_links_mod._normalize_docs_dest("index.md") == ""
+
+
+def test_normalize_docs_dest_section_index(check_links_mod):
+    assert check_links_mod._normalize_docs_dest("reference/api/index.md") == "reference/api"
+
+
+def test_normalize_docs_dest_page(check_links_mod):
+    assert check_links_mod._normalize_docs_dest("reference/api/store.md") == "reference/api/store"
+
+
+def test_normalize_docs_dest_asset_kept_verbatim(check_links_mod):
+    asset = "img/benchmarks/overhead.svg"
+    assert check_links_mod._normalize_docs_dest(asset) == asset
+
+
+# ---------------------------------------------------------------------------
+# _find_broken_docs_site_links — flag links to non-existent pages (DOCFRAME-009)
+# ---------------------------------------------------------------------------
+
+# The stale segment that shipped to production: /stable/api/store/ should have
+# been /stable/reference/api/store/.
+_VALID = {"", "reference", "reference/api", "reference/api/store", "guides/extensions"}
+
+
+@pytest.mark.spec("DOCFRAME-009")
+def test_find_broken_docs_site_links_detects_stale_segment(check_links_mod, tmp_path):
+    text = "See the [API reference](https://docs.remotestore.dev/stable/api/store/).\n"
+    broken = check_links_mod._find_broken_docs_site_links(text, tmp_path / "README.md", _VALID)
+    assert len(broken) == 1
+    assert broken[0].raw == "https://docs.remotestore.dev/stable/api/store/"
+    assert broken[0].line == 1
+
+
+def test_find_broken_docs_site_links_accepts_real_page(check_links_mod, tmp_path):
+    text = "See the [API reference](https://docs.remotestore.dev/stable/reference/api/store/).\n"
+    assert check_links_mod._find_broken_docs_site_links(text, tmp_path / "README.md", _VALID) == []
+
+
+def test_find_broken_docs_site_links_accepts_section_index(check_links_mod, tmp_path):
+    # A section directory is a valid URL even with no page of its own name.
+    text = "[API](https://docs.remotestore.dev/stable/reference/api/)\n"
+    assert check_links_mod._find_broken_docs_site_links(text, tmp_path / "x.md", _VALID) == []
+
+
+def test_find_broken_docs_site_links_ignores_other_hosts(check_links_mod, tmp_path):
+    text = "[gh](https://github.com/haalfi/remote-store/blob/master/README.md)\n"
+    assert check_links_mod._find_broken_docs_site_links(text, tmp_path / "x.md", _VALID) == []
+
+
+def test_find_broken_docs_site_links_skips_fenced_code(check_links_mod, tmp_path):
+    text = "```\n[x](https://docs.remotestore.dev/stable/api/store/)\n```\n"
+    assert check_links_mod._find_broken_docs_site_links(text, tmp_path / "x.md", _VALID) == []
+
+
+@pytest.mark.spec("DOCFRAME-009")
+def test_docs_site_links_against_live_repo(check_links_mod):
+    """Docs-site links resolve, and the page set covers known pages.
+
+    Positive control on the live repo; skipped outside a git checkout.
+    """
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        cwd=ROOT,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        pytest.skip("not a git checkout")
+    pages = check_links_mod._docs_site_pages(ROOT)
+    # A static page, a static section index, a purely-generated section
+    # index (no docs-src/ file), and the site root.
+    assert {"", "reference/api/store", "guides/extensions", "explanation/design"} <= pages
+    broken = check_links_mod.check_docs_site_links(ROOT)
+    assert broken == [], "\n".join(f"{b.source.relative_to(ROOT)}:{b.line}: {b.raw}" for b in broken)

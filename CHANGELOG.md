@@ -8,10 +8,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ## [Unreleased]
 
 - ID-208: Dagster compute log manager (`RemoteStoreComputeLogManager`)
-- Fix two broken documentation links in `README.md`: the API reference
-  (`api/store/` → `reference/api/store/`) and the extensions guide
-  (`how-to/extensions/` → `guides/extensions/`) pointed at paths that do not
-  exist on the docs site.
+- BK-236: Fix broken documentation links in the README and the data-lake
+  patterns guide that pointed at docs-site paths which do not exist.
 
 ## [0.25.0] - 2026-05-18
 

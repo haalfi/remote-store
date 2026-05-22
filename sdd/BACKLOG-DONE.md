@@ -8,6 +8,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-236 — Docs-site link gate in `check-links` (DOCFRAME-009)**
+  spec: DOCFRAME-009 · audience: contributor.tooling, user.site
+  `check_links.py` validated relative on-disk links only (DOCFRAME-008);
+  absolute `docs.remotestore.dev` links were exempt as external URLs, so
+  two README links shipped to PyPI pointing at docs-site paths that never
+  existed. `check_docs_site_links` now resolves every
+  `https://docs.remotestore.dev/stable|latest/<path>` link against the
+  page set derived from `build_source_map` — the same source→docs-URL map
+  the mkdocs bridge uses — flagging a stale or mistyped path segment
+  offline, with no docs build and no HTTP request. The new gate surfaced
+  three more broken links (the data-lake-patterns guide and a research
+  doc) and an unregistered example (`dagster_compute_log_manager` missing
+  from `examples/_categories.yml`, an ID-208 ripple miss), all fixed in
+  the same PR.
+  Trace: `sdd/traces/bk-236-docs-site-link-check.yml`.
+
 - [x] **ID-208 — `RemoteStoreComputeLogManager`: Dagster compute log manager (RFC-0014)**
   spec: DAG-021 -- DAG-033 · audience: user.api
   `ext.dagster` now covers Dagster's second storage extension point. The new
