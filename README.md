@@ -203,7 +203,7 @@ store.resolve("path/to/file.txt")               # resolution plan (introspection
 store.ping()                                    # health check
 ```
 
-For the full method list, see the [API reference](https://docs.remotestore.dev/stable/api/store/). All write, move, and copy methods accept `overwrite=True` to replace existing files.
+For the full method list, see the [API reference](https://docs.remotestore.dev/stable/reference/api/store/). All write, move, and copy methods accept `overwrite=True` to replace existing files.
 
 ## Performance
 
@@ -227,7 +227,7 @@ The core library handles storage operations. Extensions add optional capabilitie
 | Write helpers | *(none)* | Client-side content hashing for write operations, compatible with any backend |
 | Dagster integration | `remote-store[dagster]` | IOManager adapter, config-driven Store resource, and compute log manager for Dagster pipelines |
 
-Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/how-to/extensions/) for details.
+Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the [extensions guide](https://docs.remotestore.dev/stable/guides/extensions/) for details.
 
 ## Quality & Testing
 
