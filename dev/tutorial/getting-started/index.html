@@ -9662,7 +9662,7 @@ use a Registry with declarative config:</p>
 <a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;path/to/file.txt&quot;</span><span class="p">)</span>               <span class="c1"># resolution plan (introspection)</span>
 <a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>                                    <span class="c1"># health check</span>
 </code></pre></div>
-<p>For the full method list, see the <a href="https://docs.remotestore.dev/stable/api/store/">API reference</a>. All write, move, and copy methods accept <code>overwrite=True</code> to replace existing files.</p>
+<p>For the full method list, see the <a href="https://docs.remotestore.dev/stable/reference/api/store/">API reference</a>. All write, move, and copy methods accept <code>overwrite=True</code> to replace existing files.</p>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <p>Per-operation overhead is small relative to network round-trip time for most workloads. S3 listing is significantly faster via s3fs connection caching. See the <a href="https://docs.remotestore.dev/stable/explanation/performance/">performance guide</a> for full comparative benchmarks, methodology, and per-operation breakdowns.</p>
 <h2 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h2>
@@ -9733,7 +9733,7 @@ use a Registry with declarative config:</p>
 </tr>
 </tbody>
 </table>
-<p>Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the <a href="https://docs.remotestore.dev/stable/how-to/extensions/">extensions guide</a> for details.</p>
+<p>Plus glob helpers, partition helpers, YAML and Pydantic config adapters. See the <a href="https://docs.remotestore.dev/stable/guides/extensions/">extensions guide</a> for details.</p>
 <h2 id="quality-testing">Quality &amp; Testing<a class="headerlink" href="#quality-testing" title="Permanent link">&para;</a></h2>
 <p>Storage behavior must be predictable and correct. We verify this across multiple dimensions:</p>
 <ul>

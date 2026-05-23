@@ -9142,6 +9142,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#docframe-009-docs-site-link-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DOCFRAME-009: Docs-Site Link Resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9327,6 +9338,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#docframe-009-docs-site-link-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DOCFRAME-009: Docs-Site Link Resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tests" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9373,7 +9395,8 @@ narrows ADR-0007's "build hook" tier to one bridge mechanism.</p>
 <p><strong>Tracks:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-167a</a>. <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-167b</a>
 applies the framework and closes the remaining audit-012 findings.
 <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-171</a> collapses link validation into a single on-disk
-gate (DOCFRAME-008).</p>
+gate (DOCFRAME-008). <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md">BK-236</a> extends the gate to
+docs-site links (DOCFRAME-009).</p>
 <hr />
 <h2 id="docframe-001-single-bridge-mechanism">DOCFRAME-001: Single Bridge Mechanism<a class="headerlink" href="#docframe-001-single-bridge-mechanism" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Exactly one mechanism in <code>scripts/docs/</code> discovers the
@@ -9581,6 +9604,36 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).</p>
 <code>--mode site</code>. This mode split is removed: a single walker over
 <code>_git_repo_markdown(repo_root)</code> checks every link in every file.</p>
 <hr />
+<h2 id="docframe-009-docs-site-link-resolution">DOCFRAME-009: Docs-Site Link Resolution<a class="headerlink" href="#docframe-009-docs-site-link-resolution" title="Permanent link">&para;</a></h2>
+<p><strong>Scope:</strong> BK-236.</p>
+<p><strong>Invariant:</strong> Every absolute link to the published docs site
+(<code>https://docs.remotestore.dev/</code>) in any git-tracked <code>.md</code> file whose
+path carries a moving version alias (<code>/stable/</code> or <code>/latest/</code>) resolves
+to a page the docs site builds. DOCFRAME-008 governs relative on-disk
+links and exempts external URLs wholesale; this rule narrows that
+exemption for the one external host the repository itself owns.</p>
+<p><strong>Out of scope:</strong> A different host, the bare site root (it redirects to
+the default version), and numbered-version snapshots (<code>/0.25/...</code>, which
+the current <code>docs-src/</code> tree cannot vouch for) are not checked.</p>
+<p><strong>Mechanism:</strong> <code>scripts/docs/check_links.py:check_docs_site_links</code>
+derives the valid page set from
+<a href="https://github.com/haalfi/remote-store/blob/master/scripts/docs/link.py"><code>build_source_map</code></a> — the same
+source→docs-URL map the mkdocs bridge (DOCFRAME-008) uses — so the gate
+stays in lockstep with the real site without a docs build or a live HTTP
+request. Each served page also validates its ancestor directories: a
+section directory has an index page (<code>mkdocs-section-index</code> plus
+literate-nav), so <code>reference/api/store</code> makes <code>reference/api</code> a valid
+section URL.</p>
+<p><strong>Postcondition:</strong> <code>hatch run check-links</code> exits 0 against the live
+repository. <code>main</code> reports on-disk (DOCFRAME-008) and docs-site
+(DOCFRAME-009) violations together, one line per violation.</p>
+<p><strong>Rationale:</strong> The pre-BK-236 gate validated relative links only. Two
+README links shipped to PyPI pointing at docs-site paths that never
+existed (<code>/stable/api/store/</code>, <code>/stable/how-to/extensions/</code>); nothing
+offline could have caught them. Closing the loop for the project's own
+docs host costs one extra source-map scan and keeps the README — the
+package's PyPI long description — honest.</p>
+<hr />
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
 <p><code>tests/scripts/test_docs_framework.py</code> (parser and scanner — DOCFRAME-001..003):</p>
 <table>
@@ -9673,6 +9726,48 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).</p>
 <td><code>test_check_repo_links_against_live_repo</code></td>
 <td>DOCFRAME-008</td>
 <td>live repo: exercises git ls-files path</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/scripts/test_check_links.py</code> (docs-site gate — DOCFRAME-009):</p>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Spec ref</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_resolve_docs_site_path_returns_page_for_stable_alias</code></td>
+<td>DOCFRAME-009</td>
+<td>docs-site URL → page path</td>
+</tr>
+<tr>
+<td><code>test_resolve_docs_site_path_skips_numbered_version</code></td>
+<td>DOCFRAME-009</td>
+<td>pinned snapshot out of scope</td>
+</tr>
+<tr>
+<td><code>test_normalize_docs_dest_section_index</code></td>
+<td>DOCFRAME-009</td>
+<td><code>index.md</code> → directory URL</td>
+</tr>
+<tr>
+<td><code>test_find_broken_docs_site_links_detects_stale_segment</code></td>
+<td>DOCFRAME-009</td>
+<td>the README bug class</td>
+</tr>
+<tr>
+<td><code>test_find_broken_docs_site_links_accepts_section_index</code></td>
+<td>DOCFRAME-009</td>
+<td>section directory is a valid URL</td>
+</tr>
+<tr>
+<td><code>test_docs_site_links_against_live_repo</code></td>
+<td>DOCFRAME-009</td>
+<td>live repo: no broken docs-site links</td>
 </tr>
 </tbody>
 </table>
