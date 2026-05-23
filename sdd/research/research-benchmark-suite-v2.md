@@ -211,7 +211,7 @@ Approximately 3 lines of prose + link. Content:
 > network backends (S3, Azure, SFTP), writes and reads are typically within
 > 5–15% of raw SDK calls; under realistic network latency, the abstraction
 > cost becomes negligible. See the
-> [performance guide](https://docs.remotestore.dev/stable/performance/) for
+> [performance guide](https://docs.remotestore.dev/stable/explanation/performance/) for
 > comparative benchmarks, methodology, and overhead analysis.
 
 No tables, no charts in README. Just the story + link.

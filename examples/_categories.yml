@@ -79,3 +79,4 @@
     - parquet_dataset
     - dagster_io_manager
     - dagster_v2_resource
+    - dagster_compute_log_manager

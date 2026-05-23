@@ -22,7 +22,8 @@ narrows ADR-0007's "build hook" tier to one bridge mechanism.
 **Tracks:** [BK-167a](../BACKLOG.md). [BK-167b](../BACKLOG.md)
 applies the framework and closes the remaining audit-012 findings.
 [BK-171](../BACKLOG.md) collapses link validation into a single on-disk
-gate (DOCFRAME-008).
+gate (DOCFRAME-008). [BK-236](../BACKLOG-DONE.md) extends the gate to
+docs-site links (DOCFRAME-009).
 
 ---
 
@@ -246,6 +247,44 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).
 
 ---
 
+## DOCFRAME-009: Docs-Site Link Resolution
+
+**Scope:** BK-236.
+
+**Invariant:** Every absolute link to the published docs site
+(`https://docs.remotestore.dev/`) in any git-tracked `.md` file whose
+path carries a moving version alias (`/stable/` or `/latest/`) resolves
+to a page the docs site builds. DOCFRAME-008 governs relative on-disk
+links and exempts external URLs wholesale; this rule narrows that
+exemption for the one external host the repository itself owns.
+
+**Out of scope:** A different host, the bare site root (it redirects to
+the default version), and numbered-version snapshots (`/0.25/...`, which
+the current `docs-src/` tree cannot vouch for) are not checked.
+
+**Mechanism:** `scripts/docs/check_links.py:check_docs_site_links`
+derives the valid page set from
+[`build_source_map`](../../scripts/docs/link.py) — the same
+source→docs-URL map the mkdocs bridge (DOCFRAME-008) uses — so the gate
+stays in lockstep with the real site without a docs build or a live HTTP
+request. Each served page also validates its ancestor directories: a
+section directory has an index page (`mkdocs-section-index` plus
+literate-nav), so `reference/api/store` makes `reference/api` a valid
+section URL.
+
+**Postcondition:** `hatch run check-links` exits 0 against the live
+repository. `main` reports on-disk (DOCFRAME-008) and docs-site
+(DOCFRAME-009) violations together, one line per violation.
+
+**Rationale:** The pre-BK-236 gate validated relative links only. Two
+README links shipped to PyPI pointing at docs-site paths that never
+existed (`/stable/api/store/`, `/stable/how-to/extensions/`); nothing
+offline could have caught them. Closing the loop for the project's own
+docs host costs one extra source-map scan and keeps the README — the
+package's PyPI long description — honest.
+
+---
+
 ## Tests
 
 `tests/scripts/test_docs_framework.py` (parser and scanner — DOCFRAME-001..003):
@@ -271,6 +310,17 @@ not GitHub-browser presentation; BK-171 enforces R1 honestly).
 | `test_check_repo_links_detects_broken` | DOCFRAME-008 | |
 | `test_check_repo_links_strips_fragment` | DOCFRAME-008 | anchor handling |
 | `test_check_repo_links_against_live_repo` | DOCFRAME-008 | live repo: exercises git ls-files path |
+
+`tests/scripts/test_check_links.py` (docs-site gate — DOCFRAME-009):
+
+| Test | Spec ref | Note |
+|---|---|---|
+| `test_resolve_docs_site_path_returns_page_for_stable_alias` | DOCFRAME-009 | docs-site URL → page path |
+| `test_resolve_docs_site_path_skips_numbered_version` | DOCFRAME-009 | pinned snapshot out of scope |
+| `test_normalize_docs_dest_section_index` | DOCFRAME-009 | `index.md` → directory URL |
+| `test_find_broken_docs_site_links_detects_stale_segment` | DOCFRAME-009 | the README bug class |
+| `test_find_broken_docs_site_links_accepts_section_index` | DOCFRAME-009 | section directory is a valid URL |
+| `test_docs_site_links_against_live_repo` | DOCFRAME-009 | live repo: no broken docs-site links |
 
 `tests/scripts/test_scan_sdd_kinds.py` (YAML loader — DOCFRAME-008 Source map):
 

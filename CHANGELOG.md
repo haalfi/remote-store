@@ -8,6 +8,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ## [Unreleased]
 
 - ID-208: Dagster compute log manager (`RemoteStoreComputeLogManager`)
+- BK-236: Fix broken documentation links in the README and the data-lake
+  patterns guide that pointed at docs-site paths which do not exist.
 
 ## [0.25.0] - 2026-05-18
 
