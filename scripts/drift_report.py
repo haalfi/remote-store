@@ -88,6 +88,21 @@ def _render_body(reports: dict[str, dict], run_url: str) -> str:
                     lines.append(f"| `{d['package']}` | `{d['baseline'] or '—'}` | `{d['resolved'] or '—'}` |")
                 lines.append("")
 
+    errors = [e for e, r in reports.items() if r.get("status") == "error"]
+    if errors:
+        lines.append("## Errors")
+        lines.append("")
+        lines.append(
+            "The drift check could not complete for these extras. The most "
+            "common cause is a transient PyPI failure; if the next scheduled "
+            "run still shows the same extra here, investigate."
+        )
+        lines.append("")
+        for extra in errors:
+            r = reports[extra]
+            lines.append(f"- `[{extra}]` — `{r.get('reason', 'unknown')}`")
+        lines.append("")
+
     clear = [e for e, r in reports.items() if r["status"] == "ok"]
     if clear:
         lines.append("## Clear")
@@ -149,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No drift reports found; nothing to reconcile.", file=sys.stderr)
         return 0
 
-    has_signal = any(r["status"] in ("drift", "needs_refresh") for r in reports.values())
+    has_signal = any(r.get("status") in ("drift", "needs_refresh", "error") for r in reports.values())
     existing = _find_open_issue(args.repo, args.title)
     body = _render_body(reports, args.run_url)
 

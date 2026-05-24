@@ -139,12 +139,23 @@ def resolve_extra(extra: str) -> dict[str, str]:
         pip = venv_dir / "bin" / "pip"
         if not pip.exists():  # Windows fallback — not used in CI but harmless.
             pip = venv_dir / "Scripts" / "pip.exe"
-        # Quiet pip; we only care about the freeze output.
-        subprocess.run(
-            [str(pip), "install", "--upgrade", "--pre", "--quiet", f".[{extra}]"],
-            cwd=ROOT,
-            check=True,
-        )
+        # Pin pip's streams. Without this, --quiet still leaks deprecation
+        # notices / retry messages on transient PyPI failures to the parent
+        # stdout, which corrupts the JSON / candidate-lock the workflow
+        # redirects script stdout into. Stderr is captured so we can surface
+        # it if the install fails.
+        try:
+            subprocess.run(
+                [str(pip), "install", "--upgrade", "--pre", "--quiet", f".[{extra}]"],
+                cwd=ROOT,
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            sys.stderr.write(exc.stderr or "")
+            raise
         result = subprocess.run(
             [str(pip), "freeze", "--all"],
             check=True,
@@ -352,8 +363,35 @@ def _cmd_resolve(args: argparse.Namespace) -> int:
 
 
 def _cmd_diff(args: argparse.Namespace) -> int:
-    report = diff_extra(args.extra)
-    print(json.dumps(report, indent=2, sort_keys=True))
+    # When ``--out`` is set, catch resolve / subprocess errors and emit a
+    # synthetic ``status: error`` report instead of crashing. drift_report.py
+    # surfaces error rows in the rolling issue so a single per-extra failure
+    # does not mask drift on the other extras.
+    try:
+        report = diff_extra(args.extra)
+    except Exception as exc:
+        if args.out is None:
+            raise
+        report = {
+            "extra": args.extra,
+            "status": "error",
+            "reason": f"{type(exc).__name__}: {exc}",
+            "python_run": f"{sys.version_info.major}.{sys.version_info.minor}",
+        }
+    payload = json.dumps(report, indent=2, sort_keys=True)
+    if args.out is None:
+        print(payload)
+        return 0
+    # Atomic write: a mid-execution failure inside diff_extra would leave a
+    # zero-length file under the shell's ``> path`` redirect. Writing to a
+    # tempfile and ``os.replace``-ing keeps the report dir free of truncated
+    # JSON that would crash drift_report.py's _load_reports for every extra.
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=out.parent, delete=False, suffix=".tmp") as f:
+        f.write(payload)
+        tmp_path = Path(f.name)
+    tmp_path.replace(out)
     return 0
 
 
@@ -400,6 +438,11 @@ def main(argv: list[str] | None = None) -> int:
 
     p_diff = sub.add_parser("diff", help="Diff resolved vs baseline (JSON report).")
     p_diff.add_argument("extra")
+    p_diff.add_argument(
+        "--out",
+        default=None,
+        help="Write the JSON report atomically to PATH instead of stdout.",
+    )
     p_diff.set_defaults(func=_cmd_diff)
 
     p_refresh = sub.add_parser(

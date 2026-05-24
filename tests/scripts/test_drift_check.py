@@ -275,3 +275,53 @@ class TestListExtras:
     def test_returns_sorted(self, drift_check):
         extras = drift_check.list_extras()
         assert extras == sorted(extras)
+
+
+class TestDiffOutMode:
+    """``diff --out PATH`` writes atomically (tempfile + os.replace) so a
+    script-internal failure cannot leave a truncated JSON file under the
+    artefact path. On an unrecoverable ``resolve_extra`` error the script
+    writes a synthetic ``status: error`` report rather than exiting
+    non-zero, so one extra's PyPI flake doesn't mask drift on the others.
+    """
+
+    def test_synthetic_error_report_written_on_resolve_failure(self, drift_check, tmp_path, monkeypatch):
+        # Force resolve_extra to fail.
+        def boom(_extra: str) -> dict[str, str]:
+            raise RuntimeError("simulated PyPI 500")
+
+        monkeypatch.setattr(drift_check, "resolve_extra", boom)
+        out = tmp_path / "httpx.json"
+        rc = drift_check.main(["diff", "httpx", "--out", str(out)])
+        assert rc == 0  # Synthetic report path must not propagate the error.
+        import json
+
+        report = json.loads(out.read_text(encoding="utf-8"))
+        assert report["status"] == "error"
+        assert report["extra"] == "httpx"
+        assert "simulated PyPI 500" in report["reason"]
+
+    def test_atomic_write_leaves_no_temp_files(self, drift_check, tmp_path, monkeypatch):
+        monkeypatch.setattr(drift_check, "LOCK_DIR", tmp_path / "locks")
+        (tmp_path / "locks").mkdir()
+        # Stub baseline -> needs_refresh -> still writes a valid report.
+        (tmp_path / "locks" / "httpx.txt").write_text("# extra: httpx\n# python:\n# captured:\n", encoding="utf-8")
+
+        def fake_resolve(_extra: str) -> dict[str, str]:
+            return {"httpx": "0.27.0"}
+
+        monkeypatch.setattr(drift_check, "resolve_extra", fake_resolve)
+        out = tmp_path / "reports" / "httpx.json"
+        drift_check.main(["diff", "httpx", "--out", str(out)])
+        # Only the final file should exist; no .tmp leftover.
+        siblings = sorted(p.name for p in out.parent.iterdir())
+        assert siblings == ["httpx.json"]
+
+    def test_stdout_mode_propagates_errors(self, drift_check, monkeypatch, capsys):
+        # Without --out, errors must surface so the developer sees them.
+        def boom(_extra: str) -> dict[str, str]:
+            raise RuntimeError("loud failure")
+
+        monkeypatch.setattr(drift_check, "resolve_extra", boom)
+        with pytest.raises(RuntimeError, match="loud failure"):
+            drift_check.main(["diff", "httpx"])

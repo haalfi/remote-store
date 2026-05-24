@@ -34,6 +34,15 @@ permissions:
   contents: read
   issues: write
 
+# Single-writer guarantee on the rolling issue: a manual `workflow_dispatch`
+# launched while the scheduled Monday run is still in its longest matrix leg
+# would otherwise race the `report` job and last-writer-wins on `gh issue
+# edit` / `close`. Queue dispatches behind a running schedule rather than
+# cancelling, so the schedule's wider matrix always completes.
+concurrency:
+  group: drift-guard
+  cancel-in-progress: false
+
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -97,10 +106,16 @@ jobs:
       # Diff: writes a structured JSON report; never fails the job on drift,
       # so we collect every extra's report before the report job decides
       # whether to open / update / close the rolling issue.
+      #
+      # `--out` writes atomically (tempfile + rename) so a script-internal
+      # failure leaves no truncated JSON for `drift_report.py` to crash on.
+      # On unrecoverable error the script writes a synthetic `status:error`
+      # report rather than failing the step, so one extra's PyPI flake does
+      # not mask drift on the other twelve.
       - name: Resolve and diff
         run: |
           mkdir -p drift-reports
-          python scripts/drift_check.py diff "${{ matrix.extra }}" > "drift-reports/${{ matrix.extra }}.json"
+          python scripts/drift_check.py diff "${{ matrix.extra }}" --out "drift-reports/${{ matrix.extra }}.json"
           echo "=== diff report for ${{ matrix.extra }} ==="
           cat "drift-reports/${{ matrix.extra }}.json"
 
@@ -119,7 +134,12 @@ jobs:
             exit 0
           fi
           python -m pip install --upgrade --pre ".[${{ matrix.extra }}]"
-          python -m pip install pytest pytest-asyncio pytest-xdist
+          # Test infrastructure — not pulled from the drifted resolution, so
+          # version flux here does not compromise the smoke. pytest-recording
+          # is hard-required by tests/backends/conformance/conftest.py
+          # (TEST-007); the rest match what `[dev]` brings in for tests.
+          python -m pip install \
+            pytest pytest-asyncio pytest-xdist pytest-recording hypothesis 'moto[server,s3]'
           TARGETS=$(python -c "
           import json, shlex
           from scripts.drift_smoke_map import smoke_for

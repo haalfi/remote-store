@@ -21,8 +21,11 @@ expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
 
-# Review surfaced five operational issues + an under-tested-script concern,
-# all addressable in-scope:
+# Two review rounds. Round 1 surfaced five operational issues + an
+# under-tested-script concern (items 1-6 below). Round 2 surfaced four more
+# operational issues caught on a closer pass (items 7-10). One claim in
+# round 2 (co_shipped_items: BK-236) was checked against the diff and
+# skipped — BK-236 shipped in PR #670, not this one.
 #   1. render_docs interpolated today's date → --check in preflight would
 #      fail every CI run after the PR-author day. Fixed by removing the
 #      date from the rendered footer (output is now idempotent).
@@ -41,11 +44,38 @@ expected_ripples:
 #      only on Python 3.11+. Docstring rewritten to be accurate.
 # Also added unit tests for the pure helpers (_is_prerelease, _parse_freeze,
 # _direct_deps_for, lock parsing, write_lock no-op refresh, render_docs
-# idempotency) — 39 tests, all green.
-review_rounds: 1
+# idempotency).
+#
+# Round 2 findings:
+#   7. resolve_extra ran `pip install` without redirecting stdout, so pip's
+#      deprecation notices / retry messages could leak into the JSON file
+#      the workflow redirects script stdout into. Switched to explicit
+#      stdout=DEVNULL, stderr=PIPE; stderr surfaces on CalledProcessError.
+#   8. Drift-guard workflow installed only pytest/pytest-asyncio/pytest-xdist
+#      for the smoke run, but tests/backends/conformance/conftest.py exits
+#      with UsageError when pytest-recording is missing (TEST-007). Backend
+#      smokes would fail at collection rather than detect drift. Added the
+#      hard-required test plugins (pytest-recording, hypothesis, moto[server,s3]).
+#   9. Workflow used `> file` shell redirect for the JSON report. A
+#      script-internal failure inside diff_extra left a truncated/empty
+#      file that drift_report.py would crash on, masking every other extra.
+#      Added `diff --out PATH` which writes atomically (tempfile + os.replace)
+#      and emits a synthetic `status: error` report on resolve failure;
+#      drift_report.py now renders an "Errors" section for them.
+#  10. No `concurrency:` group declared. A manual workflow_dispatch racing
+#      the scheduled Monday run could last-writer-wins the rolling-issue
+#      reconciliation. Added `concurrency: { group: drift-guard, cancel-in-progress: false }`.
+#
+# Round 2 also claimed `co_shipped_items: BK-236`; checked against
+# `git diff origin/master...HEAD` — BK-236 was closed by PR #670 (merge
+# commit fbc2258, the base of this PR), not by this PR. Claim incorrect,
+# skipped. The BK-236 BACKLOG-DONE entry appears in our diff only because
+# our ID-182 entry was inserted above it; no BK-236 code changes here.
+review_rounds: 2
 
 surprising_ripples:
   - scripts/check_infra_settings.py
+  - scripts/drift_report.py
   - tests/scripts/test_drift_check.py
 
 phases:
