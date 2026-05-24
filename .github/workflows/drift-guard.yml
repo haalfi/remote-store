@@ -86,9 +86,12 @@ jobs:
       - name: Build legacy-sftp container (sftp only)
         if: matrix.extra == 'sftp'
         run: |
+          set -a
+          . infra/.env
+          set +a
           docker compose -f infra/docker-compose.yml up -d legacy-sftp
           for i in $(seq 1 30); do
-            nc -z 127.0.0.1 2223 && break || sleep 1
+            nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" && break || sleep 1
           done
 
       # Diff: writes a structured JSON report; never fails the job on drift,
@@ -105,8 +108,10 @@ jobs:
       # fresh resolution into the runner Python and run the smoke targets.
       # Status "needs_refresh" (empty baseline) is reported but does not
       # gate a smoke run — there is nothing to compare against yet.
+      # Gated on success() so a resolve-step failure surfaces as the
+      # original error rather than a confusing FileNotFoundError here.
       - name: Install fresh resolution and run smokes (on drift)
-        if: ${{ !cancelled() }}
+        if: success()
         run: |
           STATUS=$(python -c "import json; print(json.load(open('drift-reports/${{ matrix.extra }}.json'))['status'])")
           if [ "$STATUS" != "drift" ]; then

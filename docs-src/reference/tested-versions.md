@@ -60,4 +60,4 @@ _First population pending. Run `hatch run drift-check refresh-baseline yaml` on 
 
 ---
 
-_Page rendered 2026-05-24. Sections marked "first population pending" will fill in once a maintainer runs the refresh command and commits the lock._
+_Sections marked "first population pending" will fill in once a maintainer runs `hatch run drift-check refresh-baseline <extra>` and commits the generated `infra/drift-locks/<extra>.txt`._

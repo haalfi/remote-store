@@ -21,6 +21,33 @@ expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
 
+# Review surfaced five operational issues + an under-tested-script concern,
+# all addressable in-scope:
+#   1. render_docs interpolated today's date → --check in preflight would
+#      fail every CI run after the PR-author day. Fixed by removing the
+#      date from the rendered footer (output is now idempotent).
+#   2. drift_smoke_map.py routed tests/e2e/* into the sftp smoke, but
+#      pyproject's addopts="--ignore=tests/e2e ..." silently dropped them.
+#      Added `-o addopts=` to the sftp target (same shape as the `e2e`
+#      hatch script).
+#   3. Workflow used `if: !cancelled()` after the diff step, so a
+#      resolve-step failure surfaced as a confusing FileNotFoundError.
+#      Switched to `if: success()`.
+#   4. Workflow hard-coded port 2223 for legacy-sftp; check_infra_settings
+#      enforces .env-sourced ports for CI files in _CI_FILES, but
+#      drift-guard.yml was not in that tuple. Both fixed: sourced the
+#      port from infra/.env, added the workflow to _CI_FILES.
+#   5. drift_check docstring claimed "stdlib-only" but tomllib is stdlib
+#      only on Python 3.11+. Docstring rewritten to be accurate.
+# Also added unit tests for the pure helpers (_is_prerelease, _parse_freeze,
+# _direct_deps_for, lock parsing, write_lock no-op refresh, render_docs
+# idempotency) — 39 tests, all green.
+review_rounds: 1
+
+surprising_ripples:
+  - scripts/check_infra_settings.py
+  - tests/scripts/test_drift_check.py
+
 phases:
   - id: orient
     name: Orient

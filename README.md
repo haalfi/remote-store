@@ -235,12 +235,12 @@ Storage behavior must be predictable and correct. We verify this across multiple
 
 - **Spec-driven development:** behavior specifications are the source of truth; tests link directly to them. *Prevents feature drift.*
 - **Extensive unit tests:** high coverage across all backends, focused on behavior. *Catches integration issues early.*
+- **Dependency drift guard:** scheduled CI re-resolves every backend extra against latest versions to catch silent transitive upgrades. *Surfaces upstream breakage early.*
 - **Design by Contract:** pre/post conditions and invariants catch incorrect usage early. *Fails fast on misuse.*
 - **Property-based testing:** randomized input generation via [Hypothesis](https://hypothesis.readthedocs.io/) surfaces edge cases no hand-written test would find. *Finds blind spots.*
 - **Formal verification:** critical paths are proven correct in [Dafny](https://dafny.org/) before implementation. *Eliminates logic errors.*
 - **Mutation testing:** [gremlins](https://pypi.org/project/pytest-gremlins/) modify the code; if they survive the tests, the tests have gaps. *Exposes weak test coverage.*
 - **Benchmarks:** performance tracked per operation and backend. *Provides baseline for optimization.*
-- **Dependency drift guard:** weekly CI re-resolves every `pip install remote-store[<extra>]` against the latest transitive versions (including pre-releases) and runs smoke tests against the resolved set; see [Tested upper-bound versions](https://docs.remotestore.dev/stable/reference/tested-versions/). *Surfaces upstream breakage before it reaches users.*
 - **Examples and snippets:** runnable code in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) and [notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks); docs are tested against actual behavior. *Keeps examples real.*
 
 ## Learn more

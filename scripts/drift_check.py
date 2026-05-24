@@ -5,8 +5,11 @@ transitive versions (including pre-releases) and diffs the resolution
 against a committed baseline in ``infra/drift-locks/``. The scheduled
 workflow that drives this lives at ``.github/workflows/drift-guard.yml``.
 
-The script is deliberately stdlib-only so it can run in a freshly created
-venv before any project dependency is installed.
+The script depends only on the standard library on Python 3.11+
+(``tomllib`` is stdlib). On Python 3.10 the ``tomli`` package is required
+— ``[dev]`` brings it in for local development, and the workflow runs on
+Python 3.13 so CI is not affected. A standalone 3.10 invocation needs
+``pip install tomli`` first.
 
 Subcommands:
 
@@ -157,12 +160,19 @@ def _lock_path(extra: str) -> Path:
 
 def write_lock(extra: str, packages: dict[str, str]) -> None:
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
-    today = _dt.date.today().isoformat()
     pyver = f"{sys.version_info.major}.{sys.version_info.minor}"
+    # Preserve `captured:` when the resolved package set has not changed,
+    # so a no-op refresh does not churn the lock file (and through it the
+    # docs page) just to bump the date.
+    existing = read_lock(extra)
+    if existing.packages == packages and existing.python == pyver and existing.captured:
+        captured = existing.captured
+    else:
+        captured = _dt.date.today().isoformat()
     lines = [
         f"# extra: {extra}",
         f"# python: {pyver}",
-        f"# captured: {today}",
+        f"# captured: {captured}",
         "# Regenerate with: hatch run drift-check refresh-baseline " + extra,
         "",
     ]
@@ -271,7 +281,6 @@ def _is_prerelease(version: str) -> bool:
 
 def render_docs() -> str:
     """Render ``docs-src/reference/tested-versions.md`` from the lock files."""
-    today = _dt.date.today().isoformat()
     extras = list_extras()
 
     buf = io.StringIO()
@@ -317,10 +326,9 @@ def render_docs() -> str:
     if any_pending:
         buf.write(
             "\n---\n\n"
-            "_Page rendered "
-            f'{today}. Sections marked "first population pending" will '
-            "fill in once a maintainer runs the refresh command and "
-            "commits the lock._\n"
+            '_Sections marked "first population pending" will fill in once a '
+            "maintainer runs `hatch run drift-check refresh-baseline <extra>` "
+            "and commits the generated `infra/drift-locks/<extra>.txt`._\n"
         )
 
     return buf.getvalue()

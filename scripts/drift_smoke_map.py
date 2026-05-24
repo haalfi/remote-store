@@ -22,7 +22,13 @@ SMOKE_TARGETS: dict[str, list[str]] = {
     "s3": ["tests/backends/conformance/", "-k", "s3 and not s3_pyarrow"],
     "s3-pyarrow": ["tests/backends/conformance/", "-k", "s3_pyarrow"],
     "azure": ["tests/backends/conformance/", "-k", "azure"],
+    # sftp: includes tests/e2e/, which pyproject.toml's addopts excludes by
+    # default. `-o addopts=` clears that override (same shape as the `e2e`
+    # hatch script) so the legacy-sftp recovery test — the model BK-198
+    # baked into the design — actually runs.
     "sftp": [
+        "-o",
+        "addopts=",
         "tests/backends/conformance/",
         "tests/e2e/test_sftp_legacy_recovery.py",
         "tests/e2e/test_sftp_workflow.py",
