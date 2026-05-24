@@ -166,15 +166,18 @@ jobs:
           python -m pip install --upgrade-strategy only-if-needed \
             pytest pytest-asyncio pytest-xdist pytest-recording hypothesis 'moto[server,s3]'
           TARGETS=$(python -c "
-          import json, shlex
-          from scripts.drift_smoke_map import smoke_for
+          import json, shlex, sys
+          sys.path.insert(0, 'scripts')
+          from drift_smoke_map import smoke_for
           print(' '.join(shlex.quote(t) for t in smoke_for('${{ matrix.extra }}')))
           ")
           if [ "$TARGETS" = "--import-only" ]; then
             python -c "import remote_store; print('import smoke passed for ${{ matrix.extra }}')"
           else
-            # Drop coverage / xdist for clarity; serial run + plain output.
-            eval pytest -p no:benchmark $TARGETS
+            # Serial run, no special plugin disables: pytest-cov and
+            # pytest-benchmark are not installed by the smoke setup, and
+            # pytest-xdist is harmless without `-n`.
+            eval pytest $TARGETS
           fi
 
       - name: Upload drift report and fresh resolution

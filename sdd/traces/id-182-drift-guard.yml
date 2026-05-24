@@ -106,7 +106,24 @@ expected_ripples:
 #      collects ≥1 item. rc=2 with ModuleNotFoundError is treated as
 #      "not installed locally" and skipped (CI installs `.[<extra>]`
 #      before running the smoke).
-review_rounds: 3
+#
+# Round 4 findings:
+#  17. render_docs emitted RST double-backticks (``foo``) in the prose
+#      header. MkDocs/CommonMark renders these as code spans containing
+#      literal backtick characters, not as inline code around `foo`.
+#      Switched to single-backtick Markdown spans; tested-versions.md
+#      regenerated.
+#  18. Two import shapes for scripts/ in drift-guard.yml: setup used
+#      `sys.path.insert(0, "scripts"); from drift_check import ...`,
+#      the smoke step used `from scripts.drift_smoke_map import ...`
+#      (implicit namespace package). The two would diverge if cwd
+#      changes or `scripts/__init__.py` is later added. Unified on the
+#      sys.path.insert shape (matching setup).
+#  19. Smoke comment claimed `-p no:benchmark` "drops coverage / xdist",
+#      but pytest-cov / pytest-benchmark aren't installed by the smoke
+#      install (so the flag was dead) and pytest-xdist is harmless
+#      without `-n`. Dropped the flag and updated the comment.
+review_rounds: 4
 
 surprising_ripples:
   - scripts/check_infra_settings.py
