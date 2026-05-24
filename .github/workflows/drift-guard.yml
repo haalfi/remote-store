@@ -56,14 +56,27 @@ jobs:
       - id: set-extras
         env:
           # Route the user-supplied input through env, not direct template
-          # interpolation (mutation.yml:35-42 pattern).
+          # interpolation (mutation.yml:35-42 pattern). Validation below
+          # additionally ensures INPUT_EXTRA reaches `matrix.extra` (and
+          # downstream shell interpolation in the check job) only after
+          # matching against the known extras list — otherwise a crafted
+          # workflow_dispatch input could break out of the shell context.
           INPUT_EXTRA: ${{ github.event.inputs.extra }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ "$EVENT_NAME" = "schedule" ] || [ -z "$INPUT_EXTRA" ] || [ "$INPUT_EXTRA" = "all" ]; then
             extras=$(python scripts/drift_check.py extras)
           else
-            extras=$(python -c 'import json, os; print(json.dumps([os.environ["INPUT_EXTRA"]]))')
+            extras=$(python -c '
+          import json, os, sys
+          sys.path.insert(0, "scripts")
+          from drift_check import list_extras
+          chosen = os.environ["INPUT_EXTRA"]
+          known = list_extras()
+          if chosen not in known:
+              sys.exit(f"::error::INPUT_EXTRA={chosen!r} is not in the known extras list: {known}")
+          print(json.dumps([chosen]))
+          ')
           fi
           echo "extras=${extras}" >> "$GITHUB_OUTPUT"
 
@@ -102,6 +115,10 @@ jobs:
           for i in $(seq 1 30); do
             nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" && break || sleep 1
           done
+          # Match the start-backends action's validation shape: fail loudly
+          # if the port never came up, rather than letting the smoke fail
+          # later with a confusing connection-refused error.
+          nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" || { echo "::error::legacy-sftp failed to start on port ${LEGACY_SFTP_HOST_PORT}"; exit 1; }
 
       # Diff: writes a structured JSON report; never fails the job on drift,
       # so we collect every extra's report before the report job decides
@@ -134,11 +151,19 @@ jobs:
             exit 0
           fi
           python -m pip install --upgrade --pre ".[${{ matrix.extra }}]"
-          # Test infrastructure — not pulled from the drifted resolution, so
-          # version flux here does not compromise the smoke. pytest-recording
-          # is hard-required by tests/backends/conformance/conftest.py
-          # (TEST-007); the rest match what `[dev]` brings in for tests.
-          python -m pip install \
+          # Test infrastructure. pytest-recording is hard-required by
+          # tests/backends/conformance/conftest.py (TEST-007); the rest match
+          # what `[dev]` brings in. `--upgrade-strategy only-if-needed` is
+          # pip's default but explicit here: shared transitive deps already
+          # installed at the drifted version (urllib3, cryptography, etc.)
+          # are left alone unless moto / boto3 / etc. cannot otherwise be
+          # satisfied. Honest caveat: when constraints DO conflict, pip
+          # will downgrade the shared dep to satisfy the test plugins,
+          # which means the smoke for that one extra exercises a slightly
+          # mixed version set rather than the pure fresh resolution. For
+          # early-warning that is acceptable; a future refactor could
+          # isolate the two via separate venvs.
+          python -m pip install --upgrade-strategy only-if-needed \
             pytest pytest-asyncio pytest-xdist pytest-recording hypothesis 'moto[server,s3]'
           TARGETS=$(python -c "
           import json, shlex

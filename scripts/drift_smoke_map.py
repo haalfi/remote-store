@@ -18,7 +18,7 @@ from __future__ import annotations
 # needed; the workflow does not add ``-n auto`` (drift smokes run serially
 # to avoid masking flakiness as resolution noise).
 SMOKE_TARGETS: dict[str, list[str]] = {
-    # Backend extras — conformance + the legacy-sftp e2e for sftp.
+    # Backend extras — conformance + per-backend config tests.
     "s3": ["tests/backends/conformance/", "-k", "s3 and not s3_pyarrow"],
     "s3-pyarrow": ["tests/backends/conformance/", "-k", "s3_pyarrow"],
     "azure": ["tests/backends/conformance/", "-k", "azure"],
@@ -35,12 +35,24 @@ SMOKE_TARGETS: dict[str, list[str]] = {
         "-k",
         "sftp",
     ],
-    "sql": ["tests/backends/conformance/", "-k", "sql_blob"],
-    "sql-query": ["tests/backends/conformance/", "-k", "sql_query"],
-    # HTTP adapters — import + ReadOnlyHttpBackend smokes (no conformance
-    # suite for HTTP yet; the unit tests are the most-likely-to-break surface).
-    "requests": ["tests/ext/", "-k", "http or requests"],
-    "httpx": ["tests/ext/", "-k", "http or httpx"],
+    # sql: the conformance fixture is registered as ``sqlblob`` (one word,
+    # no underscore — see tests/backends/fixtures/sqlblob.py). The per-backend
+    # config test lives at tests/backends/sqlblob/.
+    "sql": [
+        "tests/backends/sqlblob/",
+        "tests/backends/conformance/",
+        "-k",
+        "sqlblob",
+    ],
+    # sql-query: no conformance fixture exists (SQLQueryBackend is
+    # read-only and not in the conformance carve-out). The per-backend
+    # config test is the smoke surface.
+    "sql-query": ["tests/backends/sqlquery/"],
+    # HTTP adapters: backend tests live at tests/backends/http/ (not
+    # tests/ext/). Same target for both `requests` and `httpx` since the
+    # backend chooses its transport at construction time.
+    "requests": ["tests/backends/http/"],
+    "httpx": ["tests/backends/http/"],
     # Extension extras — the matching tests/ext/ module is the smoke.
     "arrow": ["tests/ext/test_arrow.py", "tests/ext/test_parquet.py"],
     "otel": ["tests/ext/test_otel.py"],

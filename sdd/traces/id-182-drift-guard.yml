@@ -71,12 +71,48 @@ expected_ripples:
 # commit fbc2258, the base of this PR), not by this PR. Claim incorrect,
 # skipped. The BK-236 BACKLOG-DONE entry appears in our diff only because
 # our ID-182 entry was inserted above it; no BK-236 code changes here.
-review_rounds: 2
+#
+# Round 3 findings:
+#  11. drift_smoke_map keyword selectors `sql_blob`, `sql_query`,
+#      `"http or requests"`, `"http or httpx"` all collected zero tests.
+#      The conformance fixture is registered as `sqlblob` (one word); no
+#      `sqlquery` conformance fixture exists; HTTP backend tests live at
+#      tests/backends/http/, not tests/ext/. Switched the four selectors
+#      to direct paths (`tests/backends/sqlblob/`, `tests/backends/sqlquery/`,
+#      `tests/backends/http/`).
+#  12. workflow_dispatch.inputs.extra reached `matrix.extra` (and from there
+#      multiple shell `run:` blocks) without validation. The setup step's
+#      env-routing pattern (mutation.yml-style) only hides template
+#      interpolation in setup itself; the matrix re-introduces the value
+#      into shell unguarded. Added a validate-against-list_extras() check
+#      in setup so a crafted INPUT_EXTRA never reaches matrix.
+#  13. render_docs prose claimed "deliberately no ceiling" library-wide,
+#      but pyproject.toml's arrow / sql-query carry `pyarrow<25`. Reworded
+#      to "in most cases deliberately no ceiling" with the explicit
+#      exception named. Same update applied to CONTRIBUTING.md and FEATURES.md.
+#  14. Inline legacy-sftp wait loop fell through after 30s without checking
+#      whether the port had come up. Added the `nc -z ... || exit 1`
+#      terminal validation that .github/actions/start-backends already uses.
+#  15. Comment on the smoke-step install claimed test infrastructure was
+#      "not pulled from the drifted resolution, so version flux here does
+#      not compromise the smoke". That overstates the isolation — pip
+#      installs into one env, so shared transitives (urllib3, cryptography)
+#      can be re-pinned to satisfy moto. Comment rewritten to be honest
+#      about the limitation; `--upgrade-strategy only-if-needed` made
+#      explicit to maximise drift-preservation when constraints allow.
+#  16. drift_smoke_map shipped with no tests (gap from round 2, now
+#      addressed). Added tests/scripts/test_drift_smoke_map.py — one
+#      parametrized test per extra that asserts `pytest --collect-only`
+#      collects ≥1 item. rc=2 with ModuleNotFoundError is treated as
+#      "not installed locally" and skipped (CI installs `.[<extra>]`
+#      before running the smoke).
+review_rounds: 3
 
 surprising_ripples:
   - scripts/check_infra_settings.py
   - scripts/drift_report.py
   - tests/scripts/test_drift_check.py
+  - tests/scripts/test_drift_smoke_map.py
 
 phases:
   - id: orient

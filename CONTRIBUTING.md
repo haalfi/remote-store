@@ -269,8 +269,10 @@ errors.
 
 ## Dependency drift guard
 
-Every `[<extra>]` in `pyproject.toml` declares a floor and deliberately no
-ceiling. `.github/workflows/drift-guard.yml` runs weekly (Monday 07:00 UTC):
+Every `[<extra>]` in `pyproject.toml` declares a floor and in most cases
+deliberately no ceiling (the `arrow` and `sql-query` extras carry a
+`pyarrow<25` ceiling — see the comment on `[project.optional-dependencies]`
+in `pyproject.toml`). `.github/workflows/drift-guard.yml` runs weekly (Monday 07:00 UTC):
 it re-resolves each `remote-store[<extra>]` with `pip install --upgrade --pre`,
 diffs against the committed baselines in `infra/drift-locks/`, runs the
 smoke targets in `scripts/drift_smoke_map.py` for any extra that drifted,
