@@ -51,6 +51,12 @@ Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
 
 [project.optional-dependencies]
+# Each extra below declares a floor and deliberately no ceiling (with rare
+# exceptions, see `arrow` / `sql-query`). A scheduled drift guard
+# (`.github/workflows/drift-guard.yml`, ID-182) re-resolves each extra
+# weekly against the latest available transitive versions and diffs the
+# result against `infra/drift-locks/<extra>.txt`. Refresh a baseline after
+# a deliberate floor bump with `hatch run drift-check refresh-baseline <extra>`.
 # -- Backend extras (pip install remote-store[s3], etc.) --
 s3 = ["s3fs>=2024.2.0"]
 s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
@@ -142,7 +148,7 @@ dependencies = [
 # Surfacing them ahead of `lint` in `hatch run all` catches drift in seconds rather
 # than after the full lint/typecheck/test gauntlet. CI runs the same checks inline
 # in the `lint` job (one step each) so the wall-time win is dev-loop only.
-preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check"]
+preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/drift_check.py render-docs --check"]
 lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
@@ -214,6 +220,10 @@ gen-graph-viz-check = "python scripts/gen_graph_viz.py --check"
 gen-backlogid = "python scripts/gen_backlogid.py"
 gen-backlogid-check = "python scripts/gen_backlogid.py --check"
 gen-api-check = "python scripts/check_api_docs.py"
+# ID-182 drift-guard helpers. `drift-check extras|resolve|diff|refresh-baseline|render-docs`
+# — see scripts/drift_check.py docstring. The scheduled workflow uses the same script.
+drift-check = "python scripts/drift_check.py {args}"
+drift-docs-check = "python scripts/drift_check.py render-docs --check"
 check-test-placement = "python scripts/check_test_placement.py tests"
 check-test-quality = ["python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests"]
 # Mutation testing. Single shim that delegates to the manifest in

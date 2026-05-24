@@ -4,6 +4,7 @@
 # Default rule: files before sub-section (api/).
 - Features: FEATURES.md
 - Capabilities Matrix: capabilities-matrix.md
+- Tested versions: tested-versions.md
 - API: api/
 - Migration: migration.md
 - Changelog: changelog.md

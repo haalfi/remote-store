@@ -267,6 +267,31 @@ Jupyter notebooks in `examples/notebooks/` are validated in CI via
 Visual output is not checked — the runner validates that cells execute without
 errors.
 
+## Dependency drift guard
+
+Every `[<extra>]` in `pyproject.toml` declares a floor and deliberately no
+ceiling. `.github/workflows/drift-guard.yml` runs weekly (Monday 07:00 UTC):
+it re-resolves each `remote-store[<extra>]` with `pip install --upgrade --pre`,
+diffs against the committed baselines in `infra/drift-locks/`, runs the
+smoke targets in `scripts/drift_smoke_map.py` for any extra that drifted,
+and reconciles a single rolling GitHub issue. The workflow never edits
+`pyproject.toml` and never opens a pin-update PR — it is early warning,
+not automated remediation.
+
+When you deliberately bump a floor (e.g. `paramiko>=3.0` after BUG-204),
+refresh the baseline in the same PR:
+
+```
+hatch run drift-check refresh-baseline <extra>     # regenerate the lock
+hatch run drift-check render-docs                  # regenerate the docs page
+```
+
+Then commit `infra/drift-locks/<extra>.txt` and
+`docs-src/reference/tested-versions.md`. Run on Python 3.13 (matching the
+workflow's runner) so the lock is comparable.
+
+`hatch run drift-check refresh-baseline all` refreshes every extra at once.
+
 ## Versioning
 
 This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes. The public API surface is everything in `remote_store.__init__.__all__`.

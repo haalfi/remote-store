@@ -1,0 +1,5 @@
+# extra: s3-pyarrow
+# python:
+# captured:
+# Stub baseline — first population pending.
+# Run: hatch run drift-check refresh-baseline s3-pyarrow

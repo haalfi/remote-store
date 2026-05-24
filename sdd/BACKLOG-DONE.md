@@ -8,6 +8,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-182 — Scheduled CI drift guard for unbounded extra-dependency floors**
+  spec: — · audience: user.site, infra.ci, contributor.tooling
+  Every `[<extra>]` in `pyproject.toml` declares a floor and deliberately no
+  ceiling; PR 613 fixed two paramiko silent-upgrade breakages back-to-back
+  (BUG-204, BK-198). The new `.github/workflows/drift-guard.yml` runs Mondays
+  07:00 UTC, re-resolving each `remote-store[<extra>]` with
+  `pip install --upgrade --pre`, diffing against `infra/drift-locks/<extra>.txt`,
+  and running smoke targets from `scripts/drift_smoke_map.py` for any drifted
+  extra. A single rolling GitHub issue is created / updated / auto-closed by
+  `scripts/drift_report.py`. Pre-release resolutions surface in a distinct
+  section of the report so RCs do not look like stable drift. Baselines ship
+  as stubs; the first scheduled run advises maintainers to populate them via
+  `hatch run drift-check refresh-baseline <extra>`. A new user-facing page —
+  `docs-src/reference/tested-versions.md`, generated from the locks — records
+  the upper-bound versions CI was last green against; `FEATURES.md` links to
+  it. Workflow never edits `pyproject.toml` and never opens a pin-update PR.
+  Trace: `sdd/traces/id-182-drift-guard.yml`.
+
 - [x] **BK-236 — Docs-site link gate in `check-links` (DOCFRAME-009)**
   spec: DOCFRAME-009 · audience: contributor.tooling, user.site
   `check_links.py` validated relative on-disk links only (DOCFRAME-008);

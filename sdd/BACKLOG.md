@@ -732,24 +732,6 @@ out of [ID-199](#docs--discoverability) (backend setup-guides initiative).
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
-- [ ] **ID-182 — Scheduled CI drift guard for unbounded extra-dependency floors**
-  spec: — · effort: M · audience: library.maintainer
-  Applies library-wide, not to `[sftp]` alone. Every `[<extra>]` in
-  `pyproject.toml` declares a floor and (today) no ceiling — `[s3]`,
-  `[azure]`, `[sftp]`, `[sql]`, `[arrow]`, etc. A silent transitive
-  upgrade on day N+3 can break a working pin set on day N. PR 613
-  addressed two such incidents in the same shape: `paramiko` 2.x → 3.x
-  (BUG-204, `channel_timeout`) and 4.x → 5.x (BK-198, `ssh-rsa`).
-  Without a guard, the next one is just a matter of time. Shape that
-  would catch this class of drift before users do: scheduled job
-  (weekly), resolve each `remote-store[<extra>]` against
-  `pip install --upgrade --pre` with no consumer-side pins, diff
-  resolved versions against a committed observed-lock, and for each
-  delta run the most-likely-to-break smoke tests against deterministic
-  fixtures (the `infra/legacy-sftp` e2e is the model). Open
-  an issue on drift; do not auto-merge a pin update — the point is
-  early warning, not automated remediation. Surfaced during BK-198 (PR 613) review.
-
 - [ ] **ID-198 — Medallion Dagster + Azure HNS live showcase validation run**
   spec: — · effort: S · audience: library.maintainer, user.api
   The `examples/medallion_dagster/` showcase demonstrates a realistic user journey
