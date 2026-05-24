@@ -240,6 +240,7 @@ Storage behavior must be predictable and correct. We verify this across multiple
 - **Formal verification:** critical paths are proven correct in [Dafny](https://dafny.org/) before implementation. *Eliminates logic errors.*
 - **Mutation testing:** [gremlins](https://pypi.org/project/pytest-gremlins/) modify the code; if they survive the tests, the tests have gaps. *Exposes weak test coverage.*
 - **Benchmarks:** performance tracked per operation and backend. *Provides baseline for optimization.*
+- **Dependency drift guard:** weekly CI re-resolves every `pip install remote-store[<extra>]` against the latest transitive versions (including pre-releases) and runs smoke tests against the resolved set; see [Tested upper-bound versions](docs-src/reference/tested-versions.md). *Surfaces upstream breakage before it reaches users.*
 - **Examples and snippets:** runnable code in [`examples/`](https://github.com/haalfi/remote-store/tree/master/examples) and [notebooks](https://github.com/haalfi/remote-store/tree/master/examples/notebooks); docs are tested against actual behavior. *Keeps examples real.*
 
 ## Learn more
