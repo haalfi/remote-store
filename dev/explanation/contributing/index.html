@@ -3031,6 +3031,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../reference/tested-versions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tested versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3043,7 +3071,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3065,14 +3093,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3408,7 +3436,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_12" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3430,14 +3458,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_3_12" id="__nav_4_3_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_12" id="__nav_4_4_12_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_3_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3725,7 +3753,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3747,14 +3775,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_3_13" id="__nav_4_3_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_3_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4830,6 +4858,17 @@
     <span class="md-ellipsis">
       
         Examples and Notebooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependency-drift-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency drift guard
       
     </span>
   </a>
@@ -9834,6 +9873,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#dependency-drift-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency drift guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#versioning" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10199,6 +10249,26 @@ test user.</p>
 <code>hatch run notebooks</code> (code cells executed with <code>exec()</code>, no Jupyter needed).
 Visual output is not checked — the runner validates that cells execute without
 errors.</p>
+<h2 id="dependency-drift-guard">Dependency drift guard<a class="headerlink" href="#dependency-drift-guard" title="Permanent link">&para;</a></h2>
+<p>Every <code>[&lt;extra&gt;]</code> in <code>pyproject.toml</code> declares a floor and in most cases
+deliberately no ceiling (the <code>arrow</code> and <code>sql-query</code> extras carry a
+<code>pyarrow&lt;25</code> ceiling — see the comment on <code>[project.optional-dependencies]</code>
+in <code>pyproject.toml</code>). <code>.github/workflows/drift-guard.yml</code> runs weekly (Monday 07:00 UTC):
+it re-resolves each <code>remote-store[&lt;extra&gt;]</code> with <code>pip install --upgrade --pre</code>,
+diffs against the committed baselines in <code>infra/drift-locks/</code>, runs the
+smoke targets in <code>scripts/drift_smoke_map.py</code> for any extra that drifted,
+and reconciles a single rolling GitHub issue. The workflow never edits
+<code>pyproject.toml</code> and never opens a pin-update PR — it is early warning,
+not automated remediation.</p>
+<p>When you deliberately bump a floor (e.g. <code>paramiko&gt;=3.0</code> after BUG-204),
+refresh the baseline in the same PR:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>hatch run drift-check refresh-baseline &lt;extra&gt;     # regenerate the lock
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>hatch run drift-check render-docs                  # regenerate the docs page
+</code></pre></div>
+<p>Then commit <code>infra/drift-locks/&lt;extra&gt;.txt</code> and
+<code>docs-src/reference/tested-versions.md</code>. Run on Python 3.13 (matching the
+workflow's runner) so the lock is comparable.</p>
+<p><code>hatch run drift-check refresh-baseline all</code> refreshes every extra at once.</p>
 <h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h2>
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes. The public API surface is everything in <code>remote_store.__init__.__all__</code>.</p>
 <h3 id="when-to-bump">When to bump<a class="headerlink" href="#when-to-bump" title="Permanent link">&para;</a></h3>
@@ -10264,9 +10334,9 @@ errors.</p>
 <h3 id="how-to-bump">How to bump<a class="headerlink" href="#how-to-bump" title="Permanent link">&para;</a></h3>
 <p>Version is managed with <a href="https://github.com/callowayproject/bump-my-version"><code>bump-my-version</code></a>. It modifies the files listed in <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code> in-place without committing or tagging. The release checklist below handles the commit and tag lifecycle.</p>
 <p>Quick reference for the command syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w">   </span><span class="c1"># 0.4.1 → 1.0.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w">   </span><span class="c1"># 0.4.1 → 0.4.2</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w">   </span><span class="c1"># 0.4.1 → 0.5.0</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w">   </span><span class="c1"># 0.4.1 → 1.0.0</span>
 </code></pre></div>
 <h2 id="consistency-checklists">Consistency Checklists<a class="headerlink" href="#consistency-checklists" title="Permanent link">&para;</a></h2>
 <p>Documentation, examples, and metadata live in many places. Use these to keep them in sync.</p>

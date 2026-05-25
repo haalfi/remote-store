@@ -3232,6 +3232,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../reference/tested-versions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tested versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -3244,7 +3272,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3266,14 +3294,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3609,7 +3637,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_12" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3631,14 +3659,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_3_12" id="__nav_4_3_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_12" id="__nav_4_4_12_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_3_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3926,7 +3954,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3948,14 +3976,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_3_13" id="__nav_4_3_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_4_13" id="__nav_4_4_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_3_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -9739,6 +9767,7 @@ use a Registry with declarative config:</p>
 <ul>
 <li><strong>Spec-driven development:</strong> behavior specifications are the source of truth; tests link directly to them. <em>Prevents feature drift.</em></li>
 <li><strong>Extensive unit tests:</strong> high coverage across all backends, focused on behavior. <em>Catches integration issues early.</em></li>
+<li><strong>Dependency drift guard:</strong> scheduled CI re-resolves every backend extra against latest versions to catch silent transitive upgrades. <em>Surfaces upstream breakage early.</em></li>
 <li><strong>Design by Contract:</strong> pre/post conditions and invariants catch incorrect usage early. <em>Fails fast on misuse.</em></li>
 <li><strong>Property-based testing:</strong> randomized input generation via <a href="https://hypothesis.readthedocs.io/">Hypothesis</a> surfaces edge cases no hand-written test would find. <em>Finds blind spots.</em></li>
 <li><strong>Formal verification:</strong> critical paths are proven correct in <a href="https://dafny.org/">Dafny</a> before implementation. <em>Eliminates logic errors.</em></li>
