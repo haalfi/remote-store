@@ -85,10 +85,16 @@ jobs:
       # ubuntu-latest runners ship shellcheck preinstalled, which would
       # otherwise surface style nits (SC2086, SC2129, ...) across the
       # pre-existing workflows that were not authored against shellcheck.
-      # Re-enabling it is tracked as a follow-up (see BACKLOG).
+      # Re-enabling it is deferred — turn back on once the pre-existing
+      # workflows pass shellcheck, or move to a per-file ignore list via
+      # .github/actionlint.yaml so new workflows benefit immediately.
       - name: Install actionlint
         run: |
-          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) 1.7.7 "$RUNNER_TEMP"
+          # Pin both the binary version (1.7.7) AND the downloader script
+          # to the matching tag — pulling the bootstrap from `main` would
+          # execute whatever the latest commit there contains in the lint
+          # job, defeating the purpose of pinning the binary.
+          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7 "$RUNNER_TEMP"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - run: actionlint -color -shellcheck=
       - run: ruff check src/ tests/ examples/ scripts/

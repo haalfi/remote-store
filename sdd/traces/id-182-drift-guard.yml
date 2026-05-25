@@ -158,7 +158,34 @@ expected_ripples:
 # at least running the static lint on every PR that touches a workflow
 # file. CODE_PAT widened to trigger lint on any `.github/workflows/`
 # change, not just `ci.yml`.
-review_rounds: 5
+#
+# Round 6 findings (post-actionlint, post-rebase):
+#  24. ci.yml comment claimed "see BACKLOG" for the re-enable-shellcheck
+#      follow-up, but no entry exists in sdd/BACKLOG.md. Rephrased the
+#      comment to be honest ("deferred — turn back on once pre-existing
+#      workflows pass shellcheck, or move to per-file ignore via
+#      .github/actionlint.yaml") rather than file a backlog item
+#      unilaterally — that decision is the user's.
+#  25. actionlint downloader-script URL was pulled from `main`
+#      (https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/...)
+#      while the binary version was pinned to 1.7.7. Supply-chain hygiene
+#      gap: a pushed-to-main bootstrap could run arbitrary code in the
+#      lint job before the pinned binary executes. Pinned the script URL
+#      to the matching v1.7.7 tag.
+#
+# Round 6 findings deferred by the reviewer's own recommendation (paper
+# trail per "deferred review threads" rule); nothing required before
+# landing — these are hardening / clarity passes for the follow-up:
+#  - Tighten test_drift_smoke_map skip message to "rc=2 with import/internal
+#    marker — assumed env mismatch; CI is authoritative", so a debugging
+#    maintainer doesn't trust the skip prematurely on a real script bug.
+#  - Replace `eval pytest "${TARGETS#PYTEST:}"` in drift-guard.yml smoke
+#    step with a python-driven exec (argv via temp JSON + subprocess.run)
+#    to remove the future-fragility if shlex.quote is ever dropped.
+#  - Switch `-shellcheck=` (global) to per-file ignores via
+#    .github/actionlint.yaml, so new workflows benefit from shellcheck
+#    immediately and only the pre-existing noisy files are silenced.
+review_rounds: 6
 
 surprising_ripples:
   - scripts/check_infra_settings.py
